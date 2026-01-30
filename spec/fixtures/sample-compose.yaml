@@ -1,0 +1,27 @@
+name: solectrus
+
+services:
+  helios:
+    image: ghcr.io/solectrus/helios:latest
+    ports:
+      - "3999:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/app/solectrus
+      - ./helios:/app/data
+    restart: unless-stopped
+
+  postgresql:
+    image: postgres:18-alpine
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=solectrus
+    volumes:
+      - ./postgresql:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    volumes:
+      - ./redis:/data
+    restart: unless-stopped

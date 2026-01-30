@@ -1,0 +1,6 @@
+{
+  "[ruby]": {
+    "editor.defaultFormatter": "ruby-syntax-tree.vscode-syntax-tree",
+    "editor.formatOnSave": true
+  }
+}

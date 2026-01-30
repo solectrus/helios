@@ -1,0 +1,61 @@
+plugins:
+  - rubocop-rails
+  - rubocop-rspec
+  - rubocop-rspec_rails
+  - rubocop-performance
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 4.0
+  Exclude:
+    - bin/**/*
+    - db/schema.rb
+    - vendor/**/*
+
+# Align with SyntaxTree formatting
+Style/StringLiterals:
+  EnforcedStyle: single_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: single_quotes
+
+# Always use trailing commas (aligns with SyntaxTree)
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInArguments:
+  EnforcedStyleForMultiline: comma
+
+Style/FrozenStringLiteralComment:
+  EnforcedStyle: never
+
+# Documentation not required for all classes
+Style/Documentation:
+  Enabled: false
+
+# Allow slightly longer methods
+Metrics/MethodLength:
+  Max: 15
+
+Metrics/CyclomaticComplexity:
+  Max: 10
+
+# Disable - conflicts with SyntaxTree formatting
+Layout/FirstArgumentIndentation:
+  Enabled: false
+
+Style/MultilineBlockChain:
+  Enabled: false
+
+Style/IfUnlessModifier:
+  Enabled: false
+
+# RSpec settings - allow more flexibility
+RSpec/MultipleExpectations:
+  Max: 5
+
+RSpec/ExampleLength:
+  Max: 15

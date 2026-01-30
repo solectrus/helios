@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bin/rspec:*)",
+      "Bash(bin/rubocop:*)",
+      "Bash(bin/rails:*)",
+      "Bash(bin/rake:*)",
+      "Bash(bin/ci:*)",
+      "Bash(bin/brakeman:*)",
+      "Bash(bin/bundler-audit:*)",
+      "Bash(bundle install:*)",
+      "Bash(docker compose:*)"
+    ]
+  }
+}
