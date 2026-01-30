@@ -9,7 +9,12 @@
       "Bash(bin/brakeman:*)",
       "Bash(bin/bundler-audit:*)",
       "Bash(bundle install:*)",
-      "Bash(docker compose:*)"
+      "Bash(docker compose:*)",
+      "Bash(bundle exec vite:*)",
+      "Bash(bundle exec rspec:*)",
+      "Bash(bundle show:*)",
+      "Bash(gh api:*)",
+      "Bash(yarn tsc:*)"
     ]
   }
 }

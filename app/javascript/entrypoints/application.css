@@ -1,0 +1,8 @@
+@import 'tailwindcss';
+@plugin 'daisyui';
+
+@source '../../**/*.{erb,rb}';
+@source '../../javascript/**/*.{js,ts}';
+
+@plugin '@tailwindcss/forms';
+@plugin '@tailwindcss/typography';

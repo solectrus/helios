@@ -1,11 +1,22 @@
 source 'https://rubygems.org'
 
-gem 'puma', '>= 5.0'
+gem 'puma'
 gem 'rails', '~> 8.1.2'
-gem 'sqlite3', '>= 2.1'
+gem 'solid_cable'
+gem 'solid_queue'
+gem 'sqlite3'
 
 # Docker API access
 gem 'docker-api'
+
+# Authentication
+gem 'bcrypt'
+
+# Frontend
+gem 'stimulus-rails'
+gem 'turbo-rails'
+gem 'view_component'
+gem 'vite_rails'
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'tzinfo-data', platforms: %i[windows jruby]

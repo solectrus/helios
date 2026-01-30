@@ -1,0 +1,57 @@
+module Compose
+  class ServiceCollection
+    include Enumerable
+
+    PRIORITY_ORDER = %w[dashboard influxdb postgresql redis].freeze
+
+    def initialize(services_hash)
+      @services_hash = services_hash || {}
+    end
+
+    def each(&)
+      all.each(&)
+    end
+
+    def all
+      @services_hash.map { |name, config| Service.new(name, config) }
+    end
+
+    def sorted
+      all.sort_by { |service| sort_key(service.name) }
+    end
+
+    def find(name)
+      config = @services_hash[name.to_s]
+      Service.new(name.to_s, config) if config
+    end
+
+    def [](name)
+      find(name)
+    end
+
+    def exists?(name)
+      @services_hash.key?(name.to_s)
+    end
+
+    def names
+      @services_hash.keys
+    end
+
+    def count
+      @services_hash.size
+    end
+
+    delegate :empty?, to: :@services_hash
+
+    private
+
+    def sort_key(name)
+      priority_index = PRIORITY_ORDER.index(name)
+      if priority_index
+        [0, priority_index]
+      else
+        [1, name]
+      end
+    end
+  end
+end

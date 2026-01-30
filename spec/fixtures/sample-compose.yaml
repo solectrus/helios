@@ -4,7 +4,7 @@ services:
   helios:
     image: ghcr.io/solectrus/helios:latest
     ports:
-      - "3999:3000"
+      - '3999:3000'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/app/solectrus

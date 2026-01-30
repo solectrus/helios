@@ -1,0 +1,15 @@
+<div class="min-h-screen p-8">
+  <div class="max-w-4xl mx-auto">
+    <div class="flex justify-between items-center mb-8">
+      <h1 class="text-4xl font-bold">HELIOS</h1>
+      <%= button_to "Logout", session_path, method: :delete, class: "btn btn-ghost btn-sm" %>
+    </div>
+
+    <%= turbo_stream_from "services" %>
+    <%= render "services", compose_services: @compose_services, containers_by_service: @containers_by_service, host: @host %>
+
+    <div class="mt-8 flex justify-end">
+      <%= render GlobalActions::Component.new(stopped_services: @stopped_services, any_running: @any_running) %>
+    </div>
+  </div>
+</div>

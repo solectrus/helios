@@ -1,0 +1,50 @@
+{
+  "name": "helios",
+  "private": true,
+  "scripts": {
+    "erb:format": "herb-format",
+    "erb:check": "herb-format --check",
+    "lint": "eslint --cache .",
+    "format": "prettier . --write --plugin=prettier-plugin-tailwindcss",
+    "tsc": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hotwired/stimulus": "^3.2.2",
+    "@hotwired/turbo-rails": "^8.0.23",
+    "@rails/actioncable": "^8.1.200"
+  },
+  "devDependencies": {
+    "@herb-tools/formatter": "^0.8.9",
+    "@tailwindcss/forms": "^0.5.11",
+    "@tailwindcss/typography": "^0.5.19",
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/node": "^25.1.0",
+    "daisyui": "^5.5.14",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2",
+    "rollup": "^4.57.1",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0",
+    "vite": "^7.3.1",
+    "vite-plugin-rails": "^0.5.0"
+  },
+  "dependenciesMeta": {
+    "@tailwindcss/oxide": {
+      "built": true
+    },
+    "esbuild": {
+      "built": true
+    },
+    "vite": {
+      "built": true
+    }
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "yarn@4.12.0"
+}

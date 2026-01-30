@@ -28,4 +28,12 @@
 #       enabled: "ON"
 
 en:
-  hello: 'Hello world'
+  flash:
+    admin:
+      password_blank: 'Password cannot be blank'
+      passwords_mismatch: 'Passwords do not match'
+    session:
+      invalid_password: 'Invalid password'
+    setup:
+      installation_date_required: 'Installation date is required'
+      timezone_required: 'Timezone is required'

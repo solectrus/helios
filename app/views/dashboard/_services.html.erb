@@ -1,0 +1,10 @@
+<div class="space-y-3">
+  <% compose_services.each do |compose_service| %>
+    <%= render ServiceRow::Component.new(
+      compose_service:,
+      container: containers_by_service[compose_service.name],
+      host:,
+      pending: false
+    ) %>
+  <% end %>
+</div>

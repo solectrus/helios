@@ -1,0 +1,44 @@
+import { defineConfig } from 'vite';
+import ViteRails from 'vite-plugin-rails';
+import tailwindcss from '@tailwindcss/vite';
+import { resolve } from 'path';
+
+export default defineConfig(() => ({
+  plugins: [
+    tailwindcss(),
+    ViteRails({
+      fullReload: {
+        additionalPaths: [
+          'config/routes.rb',
+          'app/views/**/*',
+          'app/components/**/*',
+          'app/**/*.rb',
+          'config/locales/**/*.yml',
+        ],
+      },
+    }),
+  ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks(id: string) {
+          if (id.includes('node_modules')) {
+            return 'vendor';
+          }
+        },
+      },
+    },
+    chunkSizeWarningLimit: 620,
+  },
+  resolve: {
+    alias: {
+      '@': resolve(__dirname, 'app/javascript'),
+    },
+  },
+  server: {
+    hmr: {
+      host: 'vite.helios.test',
+      clientPort: 443,
+    },
+  },
+}));

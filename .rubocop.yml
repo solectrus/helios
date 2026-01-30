@@ -10,6 +10,7 @@ AllCops:
   Exclude:
     - bin/**/*
     - db/schema.rb
+    - db/*_schema.rb
     - vendor/**/*
 
 # Align with SyntaxTree formatting
@@ -40,6 +41,10 @@ Style/Documentation:
 Metrics/MethodLength:
   Max: 15
 
+# ComposeGenerator needs more lines due to service configurations
+Metrics/ClassLength:
+  Max: 200
+
 Metrics/CyclomaticComplexity:
   Max: 10
 
@@ -53,9 +58,14 @@ Style/MultilineBlockChain:
 Style/IfUnlessModifier:
   Enabled: false
 
+# Exclude environment configs from block length check
+Metrics/BlockLength:
+  Exclude:
+    - config/environments/*.rb
+
 # RSpec settings - allow more flexibility
 RSpec/MultipleExpectations:
   Max: 5
 
 RSpec/ExampleLength:
-  Max: 15
+  Max: 20

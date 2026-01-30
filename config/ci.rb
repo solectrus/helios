@@ -4,6 +4,9 @@ CI.run do
   step 'Setup', 'bin/setup --skip-server'
 
   step 'Style: Ruby', 'bin/rubocop'
+  step 'Style: ERB', 'yarn erb:check'
+  step 'Style: JavaScript', 'bin/yarn lint'
+  step 'Style: TypeScript', 'bin/yarn tsc'
 
   step 'Security: Gem audit', 'bin/bundler-audit'
   step 'Security: Brakeman code analysis',
@@ -16,4 +19,6 @@ CI.run do
   # else
   #   failure "Signoff: CI failed. Do not merge or deploy.", "Fix the issues and try again."
   # end
+
+  step 'Tests: Unit', 'bin/rspec'
 end

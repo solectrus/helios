@@ -1,6 +1,6 @@
 module DockerHelpers
   def docker_available?
-    DockerClient.connected?
+    DockerHost.connected?
   rescue StandardError
     false
   end
