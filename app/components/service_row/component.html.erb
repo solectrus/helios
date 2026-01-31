@@ -10,12 +10,14 @@
 >
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-4">
-      <div class="w-3 h-3 flex items-center justify-center">
-        <% if pending %>
-          <span class="loading loading-spinner loading-xs text-primary"></span>
-        <% else %>
-          <div class="w-3 h-3 rounded-full <%= indicator_class %>"></div>
-        <% end %>
+      <div class="tooltip tooltip-left tooltip-info" data-tip="<%= status_label %>">
+        <div class="w-3 h-3 flex items-center justify-center">
+          <% if show_spinner? %>
+            <span class="loading loading-spinner loading-xs text-primary"></span>
+          <% else %>
+            <div class="w-3 h-3 rounded-full <%= indicator_class %>"></div>
+          <% end %>
+        </div>
       </div>
 
       <div>
@@ -27,11 +29,7 @@
           <% end %>
         </div>
 
-        <div class="text-xs text-base-content/50 flex items-center">
-          <span class="w-56 truncate"><%= compose_service.image %></span>
-
-          <%= render StatusBadge::Component.new(container:, pending:) %>
-        </div>
+        <div class="text-xs text-base-content/50"><span class="truncate"><%= compose_service.image %></span></div>
       </div>
     </div>
 

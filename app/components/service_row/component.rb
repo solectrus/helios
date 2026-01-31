@@ -41,13 +41,41 @@ module ServiceRow
       'stopped'
     end
 
-    def indicator_class
-      return nil if pending
-      return 'bg-base-300' if status.nil?
-      return 'border-2 border-base-content/30' if status == 'created'
-      return indicator_running_class if running?
+    def show_spinner?
+      pending || transitioning?
+    end
 
-      'bg-error'
+    def indicator_class
+      return 'bg-base-300' if status.nil?
+
+      case status
+      when 'running'
+        indicator_running_class
+      when 'created', 'removing'
+        'border-2 border-base-content/30'
+      when 'paused'
+        'bg-info'
+      when 'exited'
+        'bg-neutral'
+      else # dead or unknown
+        'bg-error'
+      end
+    end
+
+    def transitioning?
+      return true if %w[starting restarting].include?(status)
+      return true if running? && health == 'starting'
+
+      false
+    end
+
+    def status_label
+      return 'Processing...' if pending
+      return 'Not created' if container.nil?
+      return status.capitalize unless running?
+      return health.capitalize if health
+
+      'Running'
     end
 
     def open_button_enabled?
@@ -71,7 +99,7 @@ module ServiceRow
     def indicator_running_class
       return 'bg-success' if health == 'healthy' || health.nil?
 
-      'bg-warning'
+      'bg-warning' # unhealthy
     end
   end
 end
