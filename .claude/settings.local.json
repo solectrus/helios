@@ -14,7 +14,9 @@
       "Bash(bundle exec rspec:*)",
       "Bash(bundle show:*)",
       "Bash(gh api:*)",
-      "Bash(yarn tsc:*)"
+      "Bash(yarn tsc:*)",
+      "Bash(gh search issues:*)",
+      "Bash(gh issue view:*)"
     ]
   }
 }
