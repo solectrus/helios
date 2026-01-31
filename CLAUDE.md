@@ -19,6 +19,11 @@ Helios is a web-based bootstrap helper for SOLECTRUS. It manages Docker Compose 
 
 **ADRs:** [docs/adr/](docs/adr/) - All architecture decisions
 
+## daisyUI Reference
+
+For daisyUI components, fetch the official LLM documentation:
+https://daisyui.com/llms.txt
+
 ## Project-Specific Rules
 
 - Use bind mounts, not Docker volumes (ADR-0003)
