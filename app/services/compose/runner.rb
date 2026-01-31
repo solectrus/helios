@@ -14,9 +14,13 @@ module Compose
     end
 
     class << self
+      SELF_SERVICE = 'helios'.freeze
+
       def up(detach: true)
         args = %w[up --no-build]
         args << '-d' if detach
+        # Exclude self to avoid restarting Helios during up
+        args.concat(services_except_self)
         run_compose(*args)
       end
 
@@ -67,14 +71,28 @@ module Compose
         Rails.configuration.helios_stack_path
       end
 
+      def host_stack_path
+        Rails.configuration.helios_host_stack_path
+      end
+
       private
 
       def run_compose(*args)
         validate_stack_path!
 
-        cmd = ['docker', 'compose', '--progress', 'plain', *args.map(&:to_s)]
+        cmd = [
+          'docker',
+          'compose',
+          '-f',
+          Compose.path,
+          '--project-directory',
+          host_stack_path,
+          '--progress',
+          'plain',
+          *args.map(&:to_s),
+        ]
 
-        output, status = Open3.capture2e(*cmd, chdir: stack_path)
+        output, status = Open3.capture2e(*cmd)
 
         unless status.success?
           raise CommandError.new(
@@ -99,6 +117,11 @@ module Compose
         return if Dir.exist?(path)
 
         raise CommandError, "Stack path does not exist: #{path}"
+      end
+
+      def services_except_self
+        compose_file = Compose.load
+        compose_file.services.map(&:name) - [SELF_SERVICE]
       end
     end
   end

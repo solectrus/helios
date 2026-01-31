@@ -40,6 +40,11 @@ module Helios
     config.generators.system_tests = nil
 
     # Helios stack path configuration
-    config.helios_stack_path = ENV.fetch('HELIOS_STACK_PATH', '/opt/solectrus')
+    # HELIOS_STACK_PATH: Path inside the container where stack files are mounted
+    # HELIOS_HOST_STACK_PATH: Path on the Docker host (for Docker Compose commands)
+    config.helios_stack_path =
+      ENV.fetch('HELIOS_STACK_PATH', Rails.root.join('stack').to_s)
+    config.helios_host_stack_path =
+      ENV.fetch('HELIOS_HOST_STACK_PATH') { config.helios_stack_path }
   end
 end
