@@ -10,11 +10,8 @@ Dotenv.load('.env.development')
 default_browser =
   `defaults read ~/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure | awk -F'\"' '/http;/{print window[(NR-1)]}{window[NR]=$2}'`.chomp
 
-# Set the protocol based on FORCE_SSL value
-protocol = ENV['FORCE_SSL'] == 'true' ? 'https' : 'http'
-
 # Set the application URL
-url = "#{protocol}://#{ENV['APP_HOST']}"
+url = 'https://helios.test'
 
 # Function to check if Brave is running
 def running?(browser)
