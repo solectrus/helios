@@ -74,7 +74,7 @@ module DockerHost
       image_id = container.info['ImageID']
       return nil unless image_id
 
-      Image.find(image_id)&.version
+      DockerHost::Image.find(image_id)&.version
     end
 
     def status

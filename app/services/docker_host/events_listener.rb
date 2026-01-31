@@ -29,7 +29,9 @@ module DockerHost
     def listen
       DockerHost.configure!
 
-      Docker::Event.stream { |raw_event| process_event(Event.new(raw_event)) }
+      Docker::Event.stream do |raw_event|
+        process_event(DockerHost::Event.new(raw_event))
+      end
     rescue Docker::Error::UnexpectedResponseError, Excon::Error::Socket => e
       # Stream interrupted - this is expected, reconnect silently
       Rails.logger.debug { "Docker event stream interrupted: #{e.message}" }
@@ -68,30 +70,30 @@ module DockerHost
     end
 
     def broadcast_status_update(service_name)
-      container = Container.find(service_name)
-      return unless container
+      Rails.application.reloader.wrap do
+        container = DockerHost::Container.find(service_name)
+        return unless container
 
-      compose_service = Compose.load.services.find(service_name)
-      html = render_service_row(service_name, container, compose_service)
+        compose_service = Compose.load.services.find(service_name)
+        html = render_service_row(service_name, container, compose_service)
 
-      Turbo::StreamsChannel.broadcast_replace_to(
-        'services',
-        target: "service-#{service_name}",
-        html: html,
-      )
+        Turbo::StreamsChannel.broadcast_replace_to(
+          'services',
+          target: "service-#{service_name}",
+          html: html,
+        )
+      end
     end
 
     def render_service_row(_service_name, container, compose_service)
-      Rails.application.reloader.wrap do
-        ApplicationController.render(
-          ServiceRow::Component.new(
-            compose_service:,
-            container:,
-            host: 'localhost',
-            pending: false,
-          ),
-        )
-      end
+      ApplicationController.render(
+        ServiceRow::Component.new(
+          compose_service:,
+          container:,
+          host: 'localhost',
+          pending: false,
+        ),
+      )
     end
   end
 end
