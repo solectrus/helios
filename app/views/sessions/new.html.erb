@@ -8,25 +8,21 @@
     <div class="card bg-base-100 w-full max-w-sm shadow-2xl">
       <div class="card-body">
         <%= form_with url: session_path, method: :post do %>
-          <div class="form-control">
-            <label class="label"><span class="label-text">Password</span></label>
+          <fieldset class="fieldset">
+            <label class="label">Password</label>
 
             <input
               type="password"
               name="password"
-              class="input input-bordered"
+              class="input"
               placeholder="Enter password"
               required
               autofocus
               autocomplete="off"
             >
-          </div>
 
-          <div class="form-control mt-6">
-            <button type="submit" class="btn btn-primary">
-              Login
-            </button>
-          </div>
+            <button type="submit" class="btn btn-primary mt-4">Login</button>
+          </fieldset>
         <% end %>
       </div>
     </div>
