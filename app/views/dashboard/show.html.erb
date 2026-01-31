@@ -2,7 +2,10 @@
   <div class="max-w-4xl mx-auto">
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-4xl font-bold">HELIOS</h1>
-      <%= button_to "Logout", session_path, method: :delete, class: "btn btn-ghost btn-sm" %>
+      <div class="flex items-center gap-2">
+        <%= render ThemeToggle::Component.new %>
+        <%= button_to "Logout", session_path, method: :delete, class: "btn btn-ghost btn-sm" %>
+      </div>
     </div>
 
     <%= turbo_stream_from "services" %>

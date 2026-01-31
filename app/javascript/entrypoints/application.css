@@ -1,5 +1,6 @@
 @import 'tailwindcss';
 @plugin 'daisyui';
+@import 'daisyui/theme/aqua.css';
 
 @source '../../**/*.{erb,rb}';
 @source '../../javascript/**/*.{js,ts}';

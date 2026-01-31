@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 
 <html data-theme="light">
+  <script>
+    (function() {
+      var theme = localStorage.getItem('theme') ||
+        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'aqua' : 'light');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
   <head>
     <title><%= content_for(:title) || "Helios" %></title>
 
