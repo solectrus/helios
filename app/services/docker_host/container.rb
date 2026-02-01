@@ -3,6 +3,8 @@ module DockerHost
     class NotFoundError < StandardError
     end
 
+    CONTAINER_CACHE_TTL = 3.seconds
+
     class << self
       def all(project: nil)
         DockerHost.configure!
@@ -35,7 +37,11 @@ module DockerHost
       private
 
       def docker_containers
-        Docker::Container.all(all: true)
+        Rails
+          .cache
+          .fetch('docker_containers', expires_in: CONTAINER_CACHE_TTL) do
+            Docker::Container.all(all: true)
+          end
       end
     end
 

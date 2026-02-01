@@ -24,6 +24,12 @@ Helios is a web-based bootstrap helper for SOLECTRUS. It manages Docker Compose 
 For daisyUI components, fetch the official LLM documentation:
 https://daisyui.com/llms.txt
 
+## Code Quality
+
+- All code must pass `bin/rubocop` without offenses
+- Run Rubocop before considering any code change complete
+- Use `bin/rubocop --autocorrect` for automatic fixes
+
 ## Rails Conventions
 
 - **Controllers**: Always use plural names (e.g., `SetupsController`, not `SetupController`)
