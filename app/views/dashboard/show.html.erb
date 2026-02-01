@@ -10,10 +10,11 @@
     </div>
 
     <%= turbo_stream_from "services" %>
-    <%= render "services", compose_services: @compose_services, containers_by_service: @containers_by_service, host: @host %>
 
-    <div class="mt-8 flex justify-end">
+    <div class="flex justify-center mb-8">
       <%= render GlobalActions::Component.new(stopped_services: @stopped_services, any_running: @any_running) %>
     </div>
+
+    <%= render "services", compose_services: @compose_services, containers_by_service: @containers_by_service, host: @host %>
   </div>
 </div>
