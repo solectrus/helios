@@ -45,6 +45,22 @@ module ServiceRow
       pending || transitioning?
     end
 
+    def status_indicator
+      if pending
+        # Action was triggered, waiting for response
+        helpers.tag.span(class: 'loading loading-spinner loading-xs text-primary')
+      elsif status == 'starting' || status == 'restarting'
+        # Container is starting up
+        helpers.tag.span(class: 'loading loading-spinner loading-xs text-warning')
+      elsif running? && health == 'starting'
+        # Container running, healthcheck in progress - pulsing green ring
+        helpers.tag.div(class: 'w-3 h-3 rounded-full border-2 border-success animate-pulse')
+      else
+        # Static indicator
+        helpers.tag.div(class: "w-3 h-3 rounded-full #{indicator_class}")
+      end
+    end
+
     def indicator_class
       return 'bg-base-300' if status.nil?
 
@@ -73,6 +89,7 @@ module ServiceRow
       return 'Processing...' if pending
       return 'Not created' if container.nil?
       return status.capitalize unless running?
+      return 'Waiting for healthcheck...' if health == 'starting'
       return health.capitalize if health
 
       'Running'

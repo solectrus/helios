@@ -12,11 +12,7 @@
     <div class="flex items-center gap-4">
       <div class="tooltip tooltip-left tooltip-info" data-tip="<%= status_label %>">
         <div class="w-3 h-3 flex items-center justify-center">
-          <% if show_spinner? %>
-            <span class="loading loading-spinner loading-xs text-primary"></span>
-          <% else %>
-            <div class="w-3 h-3 rounded-full <%= indicator_class %>"></div>
-          <% end %>
+          <%= status_indicator %>
         </div>
       </div>
 
