@@ -37,12 +37,6 @@ module Compose
       image == 'helios:latest'
     end
 
-    def image_version
-      return nil unless image
-
-      DockerHost::Image.find(image)&.version
-    end
-
     def ports
       config['ports'] || []
     end
