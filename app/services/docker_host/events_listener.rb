@@ -27,23 +27,29 @@ module DockerHost
     end
 
     def listen
+      log_reconnect if @reconnecting
       DockerHost.configure!
 
       Docker::Event.stream do |raw_event|
         process_event(DockerHost::Event.new(raw_event))
       end
-    rescue Docker::Error::UnexpectedResponseError, Excon::Error::Socket => e
-      # Stream interrupted - this is expected, reconnect silently
-      Rails.logger.debug { "Docker event stream interrupted: #{e.message}" }
+    rescue Docker::Error::UnexpectedResponseError, Excon::Error::Socket
+      # Stream interrupted - this is expected, reconnect after delay
       sleep 1
+      @reconnecting = true
       retry
     rescue StandardError => e
       Rails.logger.error "DockerHost::EventsListener error: #{e.class}: #{e.message}"
       sleep 5
+      @reconnecting = true
       retry
     end
 
     private
+
+    def log_reconnect
+      Rails.logger.debug { 'Docker event stream reconnecting...' }
+    end
 
     def process_event(event)
       return unless event.relevant?
