@@ -46,19 +46,24 @@ module ServiceRow
     end
 
     def status_indicator
-      if pending
-        # Action was triggered, waiting for response
-        helpers.tag.span(class: 'loading loading-spinner loading-xs text-primary')
-      elsif %w[starting restarting].include?(status)
-        # Container is starting up
-        helpers.tag.span(class: 'loading loading-spinner loading-xs text-warning')
-      elsif running? && health == 'starting'
-        # Container running, healthcheck in progress - pulsing green ring
-        helpers.tag.div(class: 'w-3 h-3 rounded-full border-2 border-success animate-pulse')
-      else
-        # Static indicator
-        helpers.tag.div(class: "w-3 h-3 rounded-full #{indicator_class}")
-      end
+      tag_name, css_class = status_indicator_config
+      helpers.tag.public_send(tag_name, class: css_class)
+    end
+
+    def status_indicator_config
+      return [:span, 'loading loading-spinner loading-xs text-primary'] if pending
+      return [:span, 'loading loading-spinner loading-xs text-warning'] if status_starting?
+      return [:div, 'w-3 h-3 rounded-full border-2 border-success animate-pulse'] if healthcheck_starting?
+
+      [:div, "w-3 h-3 rounded-full #{indicator_class}"]
+    end
+
+    def status_starting?
+      %w[starting restarting].include?(status)
+    end
+
+    def healthcheck_starting?
+      running? && health == 'starting'
     end
 
     def indicator_class
@@ -79,10 +84,7 @@ module ServiceRow
     end
 
     def transitioning?
-      return true if %w[starting restarting].include?(status)
-      return true if running? && health == 'starting'
-
-      false
+      status_starting? || healthcheck_starting?
     end
 
     def status_label
