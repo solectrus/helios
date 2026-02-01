@@ -3,8 +3,8 @@ import { Controller } from '@hotwired/stimulus';
 export default class extends Controller {
   static targets = ['sunIcon', 'moonIcon'];
 
-  declare sunIconTarget: SVGElement;
-  declare moonIconTarget: SVGElement;
+  declare sunIconTarget: HTMLElement;
+  declare moonIconTarget: HTMLElement;
 
   connect() {
     this.updateIcons();

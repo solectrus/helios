@@ -5,27 +5,11 @@
   data-controller="theme-toggle--component"
   data-action="click->theme-toggle--component#toggle"
 >
-  <svg
-    viewBox="0 0 20 20"
-    fill="currentColor"
-    class="h-5 w-5"
-    data-theme-toggle--component-target="sunIcon"
-  >
-    <path
-      d="M10 2a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 2Zm0 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7.25-2.25a.75.75 0 0 0 0-1.5h-1.5a.75.75 0 0 0 0 1.5h1.5Zm-14.5 0a.75.75 0 0 0 0-1.5h-1.5a.75.75 0 0 0 0 1.5h1.5Zm13.36-8.71a.75.75 0 0 0-1.06-1.06l-1.06 1.06a.75.75 0 0 0 1.06 1.06l1.06-1.06ZM6.11 14.95a.75.75 0 0 0-1.06-1.06l-1.06 1.06a.75.75 0 1 0 1.06 1.06l1.06-1.06ZM10 17a.75.75 0 0 1 .75.75v1.5a.75.75 0 0 1-1.5 0v-1.5A.75.75 0 0 1 10 17Zm4.95-2.05a.75.75 0 0 0 1.06 1.06l1.06-1.06a.75.75 0 1 0-1.06-1.06l-1.06 1.06ZM5.05 6.11a.75.75 0 0 0 1.06-1.06L5.05 3.99a.75.75 0 1 0-1.06 1.06l1.06 1.06Z"
-    />
-  </svg>
+  <span data-theme-toggle--component-target="sunIcon">
+    <i class="fa-solid fa-sun"></i>
+  </span>
 
-  <svg
-    viewBox="0 0 20 20"
-    fill="currentColor"
-    class="h-5 w-5 hidden"
-    data-theme-toggle--component-target="moonIcon"
-  >
-    <path
-      fill-rule="evenodd"
-      d="M7.455 2.004a.75.75 0 0 1 .26.77 7 7 0 0 0 9.958 7.967.75.75 0 0 1 1.067.853A8.5 8.5 0 1 1 6.647 1.921a.75.75 0 0 1 .808.083Z"
-      clip-rule="evenodd"
-    />
-  </svg>
+  <span class="hidden" data-theme-toggle--component-target="moonIcon">
+    <i class="fa-solid fa-moon"></i>
+  </span>
 </button>

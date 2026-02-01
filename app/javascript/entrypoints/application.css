@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import '@fortawesome/fontawesome-svg-core/styles.css';
 @plugin 'daisyui';
 @import 'daisyui/theme/aqua.css';
 
