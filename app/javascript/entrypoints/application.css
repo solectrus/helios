@@ -1,5 +1,6 @@
 @import 'tailwindcss';
-@import '@fortawesome/fontawesome-svg-core/styles.css';
+@import '@fortawesome/fontawesome-free/css/solid.css';
+@import '@fortawesome/fontawesome-free/css/fontawesome.css';
 @plugin 'daisyui';
 @import 'daisyui/theme/aqua.css';
 
