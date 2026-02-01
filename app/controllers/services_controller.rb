@@ -1,5 +1,6 @@
 class ServicesController < ApplicationController
   before_action :set_service_name
+  before_action :reject_helios_commands
 
   def start
     ComposeJob.perform_later(:start, @service_name)
@@ -20,6 +21,12 @@ class ServicesController < ApplicationController
 
   def set_service_name
     @service_name = params[:id]
+  end
+
+  def reject_helios_commands
+    return unless @service_name == 'helios'
+
+    head :forbidden
   end
 
   def respond_with_pending_status

@@ -25,6 +25,7 @@ RSpec.describe 'Dashboard' do
       image: "#{name}:latest",
       public_port: nil,
       image_version: nil,
+      helios?: name == 'helios',
     )
   end
 

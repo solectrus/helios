@@ -2,7 +2,7 @@ module Compose
   class ServiceCollection
     include Enumerable
 
-    PRIORITY_ORDER = %w[dashboard influxdb postgresql redis].freeze
+    PRIORITY_ORDER = %w[helios dashboard influxdb postgresql redis].freeze
 
     def initialize(services_hash)
       @services_hash = services_hash || {}

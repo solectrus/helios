@@ -33,6 +33,10 @@ module Compose
       DISPLAY_NAMES[image_name] || name
     end
 
+    def helios?
+      image == 'helios:latest'
+    end
+
     def image_version
       return nil unless image
 

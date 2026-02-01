@@ -49,7 +49,7 @@ module ServiceRow
       if pending
         # Action was triggered, waiting for response
         helpers.tag.span(class: 'loading loading-spinner loading-xs text-primary')
-      elsif status == 'starting' || status == 'restarting'
+      elsif %w[starting restarting].include?(status)
         # Container is starting up
         helpers.tag.span(class: 'loading loading-spinner loading-xs text-warning')
       elsif running? && health == 'starting'
@@ -94,6 +94,8 @@ module ServiceRow
 
       'Running'
     end
+
+    delegate :helios?, to: :compose_service
 
     def open_button_enabled?
       !pending && (health == 'healthy' || (running? && !health))

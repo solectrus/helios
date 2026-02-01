@@ -109,5 +109,20 @@ RSpec.describe Compose::ServiceCollection do
     it 'returns Service objects' do
       expect(collection.sorted).to all(be_a(Compose::Service))
     end
+
+    context 'with helios service' do
+      let(:services_hash) do
+        {
+          'dashboard' => { 'image' => 'solectrus/solectrus:latest' },
+          'helios' => { 'image' => 'helios:latest' },
+          'redis' => { 'image' => 'redis:8-alpine' },
+        }
+      end
+
+      it 'returns helios first, before all other priority services' do
+        names = collection.sorted.map(&:name)
+        expect(names.first).to eq('helios')
+      end
+    end
   end
 end

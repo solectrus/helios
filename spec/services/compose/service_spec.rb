@@ -176,4 +176,21 @@ RSpec.describe Compose::Service do
       expect(service.to_h).to eq(config)
     end
   end
+
+  describe '#helios?' do
+    it 'returns true for helios:latest image' do
+      service = described_class.new('helios', { 'image' => 'helios:latest' })
+      expect(service.helios?).to be true
+    end
+
+    it 'returns false for other images' do
+      service = described_class.new('test', { 'image' => 'postgres:18-alpine' })
+      expect(service.helios?).to be false
+    end
+
+    it 'returns false when image is nil' do
+      service = described_class.new('test', {})
+      expect(service.helios?).to be false
+    end
+  end
 end

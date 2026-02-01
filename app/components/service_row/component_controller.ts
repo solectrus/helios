@@ -9,25 +9,31 @@ export default class extends Controller {
   declare startButtonTarget: HTMLButtonElement;
   declare stopButtonTarget: HTMLButtonElement;
   declare restartButtonTarget: HTMLButtonElement;
+  declare hasStartButtonTarget: boolean;
+  declare hasStopButtonTarget: boolean;
+  declare hasRestartButtonTarget: boolean;
   declare nameValue: string;
 
   get canStart() {
-    return !this.startButtonTarget.disabled;
+    return this.hasStartButtonTarget && !this.startButtonTarget.disabled;
   }
 
   get canStop() {
-    return !this.stopButtonTarget.disabled;
+    return this.hasStopButtonTarget && !this.stopButtonTarget.disabled;
   }
 
   start() {
+    if (!this.hasStartButtonTarget) return Promise.resolve();
     return this.#clickAndWait(this.startButtonTarget);
   }
 
   stop() {
+    if (!this.hasStopButtonTarget) return Promise.resolve();
     return this.#clickAndWait(this.stopButtonTarget);
   }
 
   restart() {
+    if (!this.hasRestartButtonTarget) return Promise.resolve();
     return this.#clickAndWait(this.restartButtonTarget);
   }
 
