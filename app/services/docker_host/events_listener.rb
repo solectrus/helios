@@ -58,6 +58,7 @@ module DockerHost
         "Docker event: #{event.action} for #{event.service_name}"
       end
 
+      DockerHost::Container.invalidate_cache
       schedule_broadcast(event.service_name)
     end
 

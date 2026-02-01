@@ -6,6 +6,10 @@ module DockerHost
     CONTAINER_CACHE_TTL = 3.seconds
 
     class << self
+      def invalidate_cache
+        Rails.cache.delete('docker_containers')
+      end
+
       def all(project: nil)
         DockerHost.configure!
         project ||= DockerHost.default_project
