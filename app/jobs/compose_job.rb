@@ -24,7 +24,8 @@ class ComposeJob < ApplicationJob
     return unless service_name
 
     error_message = extract_error_details(error)
-    broadcast_service_status(service_name, error_message:)
+    affected_service = extract_affected_service(error) || service_name
+    broadcast_service_status(affected_service, error_message:)
   end
 
   def broadcast_service_status(service_name, error_message: nil)
@@ -44,5 +45,21 @@ class ComposeJob < ApplicationJob
 
   def extract_error_details(error)
     error.stdout.to_s.lines.last&.strip.presence || 'Unknown error'
+  end
+
+  # Extract service name from container name in error message
+  # Container names follow the pattern: <project>-<service>-<instance>
+  # Example: "/solectrus-influxdb-1" -> "influxdb"
+  def extract_affected_service(error)
+    output = error.stdout.to_s
+
+    # Match container name pattern in quotes: "/<project>-<service>-<number>"
+    return unless (match = output.match(%r{"/([^"]+)-(\w+)-\d+"}).presence)
+
+    service_name = match[2]
+
+    # Verify this service exists in our compose file
+    compose_service = Compose.load.services.find(service_name)
+    compose_service ? service_name : nil
   end
 end
