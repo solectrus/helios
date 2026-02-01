@@ -1,4 +1,4 @@
-class SetupController < ApplicationController
+class SetupsController < ApplicationController
   before_action :redirect_if_setup_completed
 
   def new

@@ -8,7 +8,7 @@
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-4">
       <%= helpers.turbo_frame_tag "service-#{service_name}-status",
-                                   src: (helpers.status_service_path(service_name) unless pending || error?),
+                                   src: (helpers.service_status_path(service_name) unless pending || error?),
                                    loading: :lazy do %>
         <div class="<%= basic_tooltip_class %>" data-tip="<%= basic_status_label %>">
           <div class="w-3 h-3 flex items-center justify-center">
@@ -22,7 +22,7 @@
           <%= compose_service.display_name %>
 
           <%= helpers.turbo_frame_tag "service-#{service_name}-version",
-                                   src: (helpers.version_service_path(service_name) unless pending || error?),
+                                   src: (helpers.service_version_path(service_name) unless pending || error?),
                                    loading: :lazy %>
         </div>
 
@@ -43,7 +43,7 @@
           </a>
         <% end %>
         <div class="join">
-          <%= button_to start_service_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square join-item", title: "Start", data: { service_row__component_target: "startButton" } do %>
+          <%= button_to service_task_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square join-item", title: "Start", data: { service_row__component_target: "startButton" } do %>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
@@ -56,7 +56,7 @@
             </svg>
           <% end %>
 
-          <%= button_to stop_service_path(service_name), method: :post, disabled: stop_disabled?, class: "btn btn-ghost btn-sm btn-square join-item", title: "Stop", data: { service_row__component_target: "stopButton" } do %>
+          <%= button_to service_task_path(service_name), method: :delete, disabled: stop_disabled?, class: "btn btn-ghost btn-sm btn-square join-item", title: "Stop", data: { service_row__component_target: "stopButton" } do %>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"
@@ -69,7 +69,7 @@
             </svg>
           <% end %>
 
-          <%= button_to restart_service_path(service_name), method: :post, disabled: restart_disabled?, class: "btn btn-ghost btn-sm btn-square join-item", title: "Restart", data: { service_row__component_target: "restartButton" } do %>
+          <%= button_to service_task_path(service_name), method: :patch, disabled: restart_disabled?, class: "btn btn-ghost btn-sm btn-square join-item", title: "Restart", data: { service_row__component_target: "restartButton" } do %>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 20 20"

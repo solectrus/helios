@@ -24,6 +24,14 @@ Helios is a web-based bootstrap helper for SOLECTRUS. It manages Docker Compose 
 For daisyUI components, fetch the official LLM documentation:
 https://daisyui.com/llms.txt
 
+## Rails Conventions
+
+- **Controllers**: Always use plural names (e.g., `SetupsController`, not `SetupController`)
+- **Routes**: Only use the 7 standard RESTful actions (`index`, `show`, `new`, `create`, `edit`, `update`, `destroy`)
+- **Custom actions**: Model as nested resources instead of custom member/collection routes
+  - Example: Instead of `post :start` on services, use `Services::StartsController#create`
+  - This keeps routing RESTful and controllers focused
+
 ## Project-Specific Rules
 
 - Use bind mounts, not Docker volumes (ADR-0003)

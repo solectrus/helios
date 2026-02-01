@@ -7,19 +7,15 @@ Rails.application.routes.draw do
   resource :session, only: %i[new create destroy]
 
   # Setup wizard
-  resource :setup, only: %i[new create], controller: 'setup'
+  resource :setup, only: %i[new create]
 
   # Dashboard
   root 'dashboard#show'
 
-  # Individual service actions
-  resources :services, only: [] do
-    member do
-      get :version
-      get :status
-      post :start
-      post :stop
-      post :restart
-    end
+  # Service management (RESTful nested resources)
+  resources :services, only: [], module: :services do
+    resource :version, only: :show
+    resource :status, only: :show
+    resource :task, only: %i[create update destroy]
   end
 end
