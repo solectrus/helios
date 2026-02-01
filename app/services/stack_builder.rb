@@ -1,15 +1,6 @@
 class StackBuilder
   DATA_DIRECTORIES = %w[postgresql redis influxdb].freeze
 
-  SENSOR_MAPPING_KEYS = %w[
-    INFLUX_SENSOR_GRID_IMPORT_POWER
-    INFLUX_SENSOR_HOUSE_POWER
-    INFLUX_SENSOR_WALLBOX_POWER
-    INFLUX_SENSOR_HEATPUMP_POWER
-    INFLUX_SENSOR_BATTERY_CHARGING_POWER
-    INFLUX_EXCLUDE_FROM_HOUSE_POWER
-  ].freeze
-
   def initialize(configuration)
     @configuration = configuration
   end
@@ -179,7 +170,6 @@ class StackBuilder
     apply_user_configuration
     apply_secrets
     apply_influxdb_configuration
-    apply_sensor_mappings
     env.save
   end
 
@@ -198,10 +188,6 @@ class StackBuilder
     env['INFLUX_ORG'] ||= 'solectrus'
     env['INFLUX_BUCKET'] ||= 'solectrus'
     env['INFLUX_TOKEN'] ||= generate_token
-  end
-
-  def apply_sensor_mappings
-    SENSOR_MAPPING_KEYS.each { |key| env[key] ||= '' }
   end
 
   def generate_secret(length = 32)

@@ -34,7 +34,7 @@ module Compose
     end
 
     def helios?
-      image == 'helios:latest'
+      image_name&.end_with?('/helios') || image_name == 'helios'
     end
 
     def ports

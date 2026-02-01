@@ -110,8 +110,8 @@ COVERAGE=true bin/rspec
 
 ### Phase 0 Focus
 
-- Unit tests for `ComposeFile`, `EnvFile` classes
-- Integration tests for `DockerClient`, `ComposeRunner`
+- Unit tests for `Compose::File`, `Env::File` classes
+- Integration tests for `DockerHost::Container`, `Compose::Runner`
 - Tests run against real Docker (no mocking of Docker API)
 
 ### Test Structure
@@ -119,10 +119,13 @@ COVERAGE=true bin/rspec
 ```
 spec/
 ├── services/
-│   ├── compose_file_spec.rb
-│   ├── env_file_spec.rb
-│   ├── docker_client_spec.rb
-│   └── compose_runner_spec.rb
+│   ├── compose/
+│   │   ├── file_spec.rb
+│   │   └── runner_spec.rb
+│   ├── env/
+│   │   └── file_spec.rb
+│   └── docker_host/
+│       └── container_spec.rb
 ├── models/
 │   └── configuration_spec.rb
 ├── fixtures/

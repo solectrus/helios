@@ -129,14 +129,6 @@ RSpec.describe StackBuilder do
       expect(env['INFLUX_ORG']).to eq('solectrus')
       expect(env['INFLUX_BUCKET']).to eq('solectrus')
     end
-
-    it 'sets empty sensor mappings for MVP' do
-      env = Env.load
-
-      StackBuilder::SENSOR_MAPPING_KEYS.each do |key|
-        expect(env[key]).to eq('')
-      end
-    end
   end
 
   describe 'env file generation with existing secrets' do

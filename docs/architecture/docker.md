@@ -42,7 +42,7 @@ Helios performs these operations via Docker API / CLI:
 | Read running containers | Docker API: `GET /containers/json`      |
 | Start stack             | `docker compose up -d`                  |
 | Stop stack              | `docker compose down`                   |
-| Restart service         | `docker compose restart <service>`      |
+| Recreate service        | `docker compose up -d --force-recreate <service>` |
 | Pull new images         | `docker compose pull`                   |
 | View logs               | Docker API: `GET /containers/{id}/logs` |
 
@@ -88,7 +88,7 @@ Used for:
 - `docker compose up -d` – start stack
 - `docker compose down` – stop stack
 - `docker compose pull` – pull new images
-- `docker compose restart <service>` – restart service
+- `docker compose up -d --force-recreate <service>` – recreate service
 
 **Rationale:** The `docker-api` gem provides clean Ruby access to container info and logs, but cannot execute `docker compose` commands. Compose operations require CLI because they involve YAML parsing, service dependencies, and network setup that only the Compose CLI handles.
 
@@ -120,12 +120,22 @@ services:
     volumes:
       - ./postgresql:/var/lib/postgresql/data
     restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:8-alpine
     volumes:
       - ./redis:/data
     restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   influxdb:
     image: influxdb:2-alpine
@@ -141,52 +151,45 @@ services:
     volumes:
       - ./influxdb:/var/lib/influxdb2
     restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'influx', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   dashboard:
     image: ghcr.io/solectrus/solectrus:latest
     ports:
       - '3000:3000'
     environment:
-      - DATABASE_URL=postgres://postgres:${POSTGRES_PASSWORD}@postgresql/solectrus
-      - REDIS_URL=redis://redis:6379
-      - INFLUX_HOST=influxdb
-      - INFLUX_TOKEN=${INFLUX_TOKEN}
-      - INFLUX_ORG=${INFLUX_ORG}
-      - INFLUX_BUCKET=${INFLUX_BUCKET}
-      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
-      - APP_HOST=${APP_HOST:-localhost}
-      - INSTALLATION_DATE=${INSTALLATION_DATE}
-    depends_on:
-      - postgresql
-      - redis
-      - influxdb
-    restart: unless-stopped
-
-  power-splitter:
-    image: ghcr.io/solectrus/power-splitter:latest
-    environment:
       - TZ=${TZ}
       - INSTALLATION_DATE=${INSTALLATION_DATE}
+      - REDIS_URL=redis://redis:6379
       - INFLUX_HOST=influxdb
       - INFLUX_TOKEN=${INFLUX_TOKEN}
       - INFLUX_ORG=${INFLUX_ORG}
       - INFLUX_BUCKET=${INFLUX_BUCKET}
-      - INFLUX_SENSOR_GRID_IMPORT_POWER=${INFLUX_SENSOR_GRID_IMPORT_POWER}
-      - INFLUX_SENSOR_HOUSE_POWER=${INFLUX_SENSOR_HOUSE_POWER}
-      - INFLUX_SENSOR_WALLBOX_POWER=${INFLUX_SENSOR_WALLBOX_POWER:-}
-      - INFLUX_SENSOR_HEATPUMP_POWER=${INFLUX_SENSOR_HEATPUMP_POWER:-}
-      - INFLUX_SENSOR_BATTERY_CHARGING_POWER=${INFLUX_SENSOR_BATTERY_CHARGING_POWER:-}
-      - INFLUX_EXCLUDE_FROM_HOUSE_POWER=${INFLUX_EXCLUDE_FROM_HOUSE_POWER:-}
-      - REDIS_URL=redis://redis:6379
       - DB_HOST=postgresql
       - DB_USER=postgres
       - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_DATABASE=solectrus
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
     depends_on:
-      - influxdb
-      - redis
-      - postgresql
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
     restart: unless-stopped
+    healthcheck:
+      test: ['CMD-SHELL', 'nc -z 127.0.0.1 3000 || exit 1']
+      interval: 10s
+      timeout: 5s
+      retries: 3
 ```
+
+> **Note:** Power-Splitter is added in Phase 2 after sensor configuration is available.
 
 ### .env (MVP)
 
@@ -209,22 +212,14 @@ INFLUX_TOKEN=<generated>
 
 # Dashboard
 SECRET_KEY_BASE=<generated>
-
-# Sensor mappings (configured in Phase 2, defaults for MVP)
-INFLUX_SENSOR_GRID_IMPORT_POWER=
-INFLUX_SENSOR_HOUSE_POWER=
-INFLUX_SENSOR_WALLBOX_POWER=
-INFLUX_SENSOR_HEATPUMP_POWER=
-INFLUX_SENSOR_BATTERY_CHARGING_POWER=
-INFLUX_EXCLUDE_FROM_HOUSE_POWER=
 ```
 
 **Notes:**
 
-- All secrets are auto-generated during setup (`SecureRandom.hex(64)` or similar)
+- All secrets are auto-generated during setup (`SecureRandom.alphanumeric` or `SecureRandom.hex`)
 - `INSTALLATION_DATE` is collected from the user during initial setup (format: `YYYY-MM-DD`)
 - `TZ` is collected from the user during initial setup (e.g., `Europe/Berlin`)
-- Sensor mappings are empty in MVP; configured via UI in Phase 2
+- Sensor mappings are added in Phase 2 when Power-Splitter is enabled
 
 ---
 
@@ -235,8 +230,8 @@ Helios detects whether it's a fresh installation (Scenario A) or an existing ins
 **Detection method:** Check if `compose.yaml` contains services other than Helios.
 
 ```ruby
-compose = ComposeFile.load('compose.yaml')
-services = compose.services.keys
+compose = Compose.load
+services = compose.services.map(&:name)
 
 if services == ['helios']
   # Scenario A: Fresh installation
@@ -367,25 +362,25 @@ postgresql:
     test: ['CMD-SHELL', 'pg_isready -U postgres']
     interval: 10s
     timeout: 5s
-    retries: 3
+    retries: 5
 
 redis:
   healthcheck:
     test: ['CMD', 'redis-cli', 'ping']
     interval: 10s
     timeout: 5s
-    retries: 3
+    retries: 5
 
 influxdb:
   healthcheck:
-    test: ['CMD', 'curl', '-f', 'http://localhost:8086/health']
+    test: ['CMD', 'influx', 'ping']
     interval: 10s
     timeout: 5s
-    retries: 3
+    retries: 5
 
 dashboard:
   healthcheck:
-    test: ['CMD', 'curl', '-f', 'http://localhost:3000/up']
+    test: ['CMD-SHELL', 'nc -z 127.0.0.1 3000 || exit 1']
     interval: 10s
     timeout: 5s
     retries: 3

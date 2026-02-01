@@ -31,8 +31,8 @@ Validate that we can:
 # Example console session after Phase 0:
 
 # Read compose.yaml
-compose = ComposeFile.load('./tmp/stack/compose.yaml')
-compose.services.keys
+compose = Compose.load
+compose.services.map(&:name)
 # => ["helios", "postgresql", "redis", "influxdb", "dashboard"]
 
 # Modify and write
@@ -40,26 +40,26 @@ compose.add_service('watchtower', image: 'nickfedor/watchtower:latest')
 compose.save
 
 # Read/write .env
-env = EnvFile.load('./tmp/stack/.env')
+env = Env.load
 env['POSTGRES_PASSWORD']
 # => "secretpassword123"
 env['NEW_VAR'] = 'value'
 env.save
 
 # Docker API access
-DockerClient.containers
-# => [#<Container name="solectrus-dashboard-1" status="running" health="healthy">, ...]
+DockerHost::Container.all
+# => [#<DockerHost::Container dashboard: running (healthy)>, ...]
 
-DockerClient.find('dashboard').logs(tail: 50)
+DockerHost::Container.find('dashboard').logs(tail: 50)
 # => "2024-01-15 10:23:45 Rails started..."
 
-DockerClient.find('postgresql').health_status
+DockerHost::Container.find('postgresql').health_status
 # => "healthy"
 
 # Compose operations
-ComposeRunner.up          # docker compose up -d
-ComposeRunner.pull        # docker compose pull
-ComposeRunner.restart('dashboard')
+Compose::Runner.up           # docker compose up -d
+Compose::Runner.pull         # docker compose pull
+Compose::Runner.recreate('dashboard')
 ```
 
 ### Success Criteria
@@ -105,16 +105,16 @@ Once configured, measurement data flows into InfluxDB and appears in the Dashboa
 
 Only essential services for a working (but empty) SOLECTRUS:
 
-| Service             | Purpose                    |
-| ------------------- | -------------------------- |
-| PostgreSQL          | Relational database        |
-| Redis               | Background jobs / caching  |
-| InfluxDB            | Time-series data storage   |
-| SOLECTRUS Dashboard | Main web application       |
-| Power-Splitter      | Derived power calculations |
+| Service             | Purpose                   |
+| ------------------- | ------------------------- |
+| PostgreSQL          | Relational database       |
+| Redis               | Background jobs / caching |
+| InfluxDB            | Time-series data storage  |
+| SOLECTRUS Dashboard | Main web application      |
 
 **Not included in MVP:**
 
+- Power-Splitter (requires sensor configuration, added in Phase 2)
 - Watchtower (automatic updates)
 - Forecast-Collector
 - Log viewer
