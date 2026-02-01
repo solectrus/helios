@@ -58,6 +58,7 @@ RSpec.describe ComposeJob do
             error_message: 'Error: manifest unknown',
             pending: false,
           ),
+          { layout: false },
         )
       end
     end
@@ -92,21 +93,21 @@ RSpec.describe ComposeJob do
       perform_with_error("Pulling image...\nError: manifest unknown")
 
       expect(ApplicationController).to have_received(:render)
-        .with(an_object_having_attributes(error_message: 'Error: manifest unknown'))
+        .with(an_object_having_attributes(error_message: 'Error: manifest unknown'), { layout: false })
     end
 
     it 'strips whitespace from error message' do
       perform_with_error("line 1\n  some error with spaces  \n")
 
       expect(ApplicationController).to have_received(:render)
-        .with(an_object_having_attributes(error_message: 'some error with spaces'))
+        .with(an_object_having_attributes(error_message: 'some error with spaces'), { layout: false })
     end
 
     it 'returns Unknown error for empty output' do
       perform_with_error('')
 
       expect(ApplicationController).to have_received(:render)
-        .with(an_object_having_attributes(error_message: 'Unknown error'))
+        .with(an_object_having_attributes(error_message: 'Unknown error'), { layout: false })
     end
   end
 

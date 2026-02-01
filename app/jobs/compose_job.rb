@@ -34,6 +34,7 @@ class ComposeJob < ApplicationJob
 
     html = ApplicationController.render(
       ServiceRow::Component.new(compose_service:, container:, host: 'localhost', pending: false, error_message:),
+      layout: false,
     )
 
     Turbo::StreamsChannel.broadcast_replace_to(

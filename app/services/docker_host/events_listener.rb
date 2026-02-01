@@ -113,12 +113,14 @@ module DockerHost
           host: 'localhost',
           pending: false,
         ),
+        layout: false,
       )
     end
 
     def render_service_status(service_name, container)
       ApplicationController.render(
         ServiceStatus::Component.new(service_name:, container:),
+        layout: false,
       )
     end
   end
