@@ -16,6 +16,7 @@ class ComposeJob < ApplicationJob
     end
   rescue Compose::Runner::CommandError => e
     Rails.logger.error("ComposeJob failed: #{e.message}")
+    broadcast_error(service_name, e)
   end
 
   private
@@ -23,5 +24,31 @@ class ComposeJob < ApplicationJob
   def restart_stack
     Compose::Runner.down
     Compose::Runner.up
+  end
+
+  def broadcast_error(service_name, error)
+    return unless service_name
+
+    error_message = extract_error_details(error)
+    broadcast_service_status(service_name, error_message:)
+  end
+
+  def broadcast_service_status(service_name, error_message: nil)
+    container = DockerHost::Container.find(service_name)
+    compose_service = Compose.load.services.find(service_name)
+
+    html = ApplicationController.render(
+      ServiceRow::Component.new(compose_service:, container:, host: 'localhost', pending: false, error_message:),
+    )
+
+    Turbo::StreamsChannel.broadcast_replace_to(
+      'services',
+      target: "service-#{service_name}",
+      html:,
+    )
+  end
+
+  def extract_error_details(error)
+    error.stdout.to_s.lines.last&.strip.presence || 'Unknown error'
   end
 end

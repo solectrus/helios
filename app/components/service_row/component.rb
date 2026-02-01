@@ -1,13 +1,24 @@
 module ServiceRow
   class Component < ViewComponent::Base
-    attr_reader :compose_service, :container, :host, :pending
+    attr_reader :compose_service, :container, :host, :pending, :error_message
 
-    def initialize(compose_service:, container:, host:, pending: false)
+    def initialize(
+      compose_service:,
+      container:,
+      host:,
+      pending: false,
+      error_message: nil
+    )
       super()
       @compose_service = compose_service
       @container = container
       @host = host
       @pending = pending
+      @error_message = error_message
+    end
+
+    def error?
+      error_message.present?
     end
 
     def service_name
@@ -45,17 +56,15 @@ module ServiceRow
       pending || transitioning?
     end
 
-    def status_indicator
-      tag_name, css_class = status_indicator_config
-      helpers.tag.public_send(tag_name, class: css_class)
-    end
+    def status_indicator_class
+      return 'loading loading-spinner loading-xs text-primary' if pending
+      return 'loading loading-spinner loading-xs text-warning' if status_starting?
 
-    def status_indicator_config
-      return [:span, 'loading loading-spinner loading-xs text-primary'] if pending
-      return [:span, 'loading loading-spinner loading-xs text-warning'] if status_starting?
-      return [:div, 'w-3 h-3 rounded-full border-2 border-success animate-pulse'] if healthcheck_starting?
+      dot = 'inline-block w-3 h-3 rounded-full'
+      return "#{dot} bg-error" if error?
+      return "#{dot} border-2 border-success animate-pulse" if healthcheck_starting?
 
-      [:div, "w-3 h-3 rounded-full #{indicator_class}"]
+      "#{dot} #{indicator_class}"
     end
 
     def status_starting?
@@ -89,6 +98,7 @@ module ServiceRow
 
     def status_label
       return 'Processing...' if pending
+      return error_message if error?
       return 'Not created' if container.nil?
       return status.capitalize unless running?
       return 'Waiting for healthcheck...' if health == 'starting'
@@ -97,7 +107,23 @@ module ServiceRow
       'Running'
     end
 
+    def tooltip_class
+      base = 'tooltip tooltip-left before:text-left before:text-xs'
+
+      error? ? "#{base} tooltip-error" : "#{base} tooltip-info"
+    end
+
     delegate :helios?, to: :compose_service
+
+    def row_class
+      base = 'rounded-lg border border-base-300 p-4 shadow-sm transition-shadow'
+
+      if helios?
+        "#{base} bg-base-300 mb-6"
+      else
+        "#{base} bg-base-100 hover:shadow-md"
+      end
+    end
 
     def open_button_enabled?
       !pending && (health == 'healthy' || (running? && !health))

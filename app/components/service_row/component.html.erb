@@ -3,15 +3,12 @@
   data-controller="service-row--component"
   data-service-row--component-name-value="<%= service_name %>"
   data-service-row--component-status-value="<%= status_value %>"
-  class="
-    rounded-lg border border-base-300 p-4 shadow-sm transition-shadow
-    <%= helios? ? 'bg-base-300 mb-6' : 'bg-base-100 hover:shadow-md' %>
-  "
+  class="<%= row_class %>"
 >
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-4">
-      <div class="tooltip tooltip-left tooltip-info" data-tip="<%= status_label %>">
-        <div class="w-3 h-3 flex items-center justify-center"><%= status_indicator %></div>
+      <div class="<%= tooltip_class %>" data-tip="<%= status_label %>">
+        <div class="w-3 h-3 flex items-center justify-center"><span class="<%= status_indicator_class %>"></span></div>
       </div>
 
       <div>
