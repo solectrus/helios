@@ -17,6 +17,8 @@ module Compose
       SELF_SERVICE = 'helios'.freeze
 
       def up(detach: true)
+        validate_stack_path!
+
         args = %w[up --no-build]
         args << '-d' if detach
         # Exclude self to avoid restarting Helios during up
@@ -80,30 +82,30 @@ module Compose
       def run_compose(*args)
         validate_stack_path!
 
-        cmd = [
-          'docker',
-          'compose',
-          '-f',
-          Compose.path,
-          '--project-directory',
-          host_stack_path,
-          '--progress',
-          'plain',
-          *args.map(&:to_s),
-        ]
-
+        cmd = build_compose_command(*args)
         output, status = Open3.capture2e(*cmd)
 
-        unless status.success?
-          raise CommandError.new(
-                  "docker compose #{args.first} failed: #{output}",
-                  stdout: output,
-                  stderr: '',
-                  exit_status: status.exitstatus,
-                )
-        end
+        raise_command_error(args.first, output, status) unless status.success?
 
-        CommandResult.new(output: output, exit_status: status.exitstatus)
+        CommandResult.new(output:, exit_status: status.exitstatus)
+      end
+
+      def build_compose_command(*args)
+        [
+          'docker', 'compose',
+          '-f', Compose.path,
+          '--project-directory', host_stack_path,
+          '--progress', 'plain'
+        ] + args.map(&:to_s)
+      end
+
+      def raise_command_error(subcommand, output, status)
+        raise CommandError.new(
+          "docker compose #{subcommand} failed: #{output}",
+          stdout: output,
+          stderr: '',
+          exit_status: status.exitstatus,
+        )
       end
 
       def validate_stack_path!
