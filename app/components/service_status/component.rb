@@ -46,7 +46,7 @@ module ServiceStatus
     end
 
     def indicator_class
-      return 'bg-base-300' if status.nil?
+      return 'border-2 border-dashed border-base-content/30' if status.nil?
 
       case status
       when 'running'

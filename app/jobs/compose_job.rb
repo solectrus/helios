@@ -2,18 +2,7 @@ class ComposeJob < ApplicationJob
   queue_as :default
 
   def perform(action, service_name = nil)
-    case action.to_sym
-    when :up
-      Compose::Runner.up
-    when :down
-      Compose::Runner.down
-    when :start
-      Compose::Runner.start(*Array(service_name))
-    when :stop
-      Compose::Runner.stop(service_name)
-    when :restart
-      service_name ? Compose::Runner.restart(service_name) : restart_stack
-    end
+    execute_action(action.to_sym, service_name)
   rescue Compose::Runner::CommandError => e
     Rails.logger.error("ComposeJob failed: #{e.message}")
     broadcast_error(service_name, e)
@@ -21,9 +10,14 @@ class ComposeJob < ApplicationJob
 
   private
 
-  def restart_stack
-    Compose::Runner.down
-    Compose::Runner.up
+  def execute_action(action, service_name)
+    case action
+    when :up then Compose::Runner.up
+    when :down then Compose::Runner.down
+    when :start then Compose::Runner.start(*Array(service_name))
+    when :stop then Compose::Runner.stop(service_name)
+    when :recreate then Compose::Runner.recreate(service_name)
+    end
   end
 
   def broadcast_error(service_name, error)

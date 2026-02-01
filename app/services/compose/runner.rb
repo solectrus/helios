@@ -38,9 +38,9 @@ module Compose
         run_compose(*args)
       end
 
-      def restart(service = nil)
-        args = ['restart']
-        args << service if service
+      def recreate(service)
+        args = %w[up --no-build -d --force-recreate]
+        args << service
         run_compose(*args)
       end
 
@@ -51,9 +51,10 @@ module Compose
         run_compose(*args)
       end
 
-      def stop(service = nil)
-        args = ['stop']
-        args << service if service
+      def stop(service)
+        # Use 'down' to stop AND remove the container (not just stop)
+        args = ['down']
+        args << service
         run_compose(*args)
       end
 

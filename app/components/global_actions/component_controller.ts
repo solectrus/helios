@@ -2,12 +2,12 @@ import { Controller } from '@hotwired/stimulus';
 import ServiceRowComponentController from '../service_row/component_controller';
 
 export default class extends Controller {
-  static targets = ['startButton', 'stopButton', 'restartButton'];
+  static targets = ['startButton', 'stopButton', 'recreateButton'];
   static outlets = ['service-row--component'];
 
   declare startButtonTarget: HTMLButtonElement;
   declare stopButtonTarget: HTMLButtonElement;
-  declare restartButtonTarget: HTMLButtonElement;
+  declare recreateButtonTarget: HTMLButtonElement;
   declare serviceRowComponentOutlets: ServiceRowComponentController[];
 
   serviceRowComponentOutletConnected() {
@@ -25,10 +25,13 @@ export default class extends Controller {
     const canStop = this.serviceRowComponentOutlets.filter(
       (outlet) => outlet.canStop,
     );
+    const canRecreate = this.serviceRowComponentOutlets.filter(
+      (outlet) => outlet.canRecreate,
+    );
 
     this.startButtonTarget.disabled = canStart.length === 0;
     this.stopButtonTarget.disabled = canStop.length === 0;
-    this.restartButtonTarget.disabled = canStop.length === 0;
+    this.recreateButtonTarget.disabled = canRecreate.length === 0;
   }
 
   async startAll() {
@@ -47,11 +50,11 @@ export default class extends Controller {
     }
   }
 
-  async restartAll() {
+  async recreateAll() {
     for (const outlet of this.serviceRowComponentOutlets.filter(
-      (o) => o.canStop,
+      (o) => o.canRecreate,
     )) {
-      await outlet.restart();
+      await outlet.recreate();
     }
   }
 }

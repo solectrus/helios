@@ -126,47 +126,6 @@ RSpec.describe Compose::Runner do
     end
   end
 
-  describe '.restart' do
-    before { skip_without_docker }
-
-    context 'with running containers' do
-      before do
-        File.write(File.join(stack_path, 'compose.yaml'), <<~YAML)
-          name: helios-test
-          services:
-            test:
-              image: alpine:latest
-              command: sleep 60
-        YAML
-        system(
-          'docker compose up -d',
-          chdir: stack_path,
-          out: File::NULL,
-          err: File::NULL,
-        )
-      end
-
-      after do
-        system(
-          'docker compose down -v',
-          chdir: stack_path,
-          out: File::NULL,
-          err: File::NULL,
-        )
-      end
-
-      it 'restarts all services' do
-        result = described_class.restart
-        expect(result.success?).to be true
-      end
-
-      it 'restarts specific service' do
-        result = described_class.restart('test')
-        expect(result.success?).to be true
-      end
-    end
-  end
-
   describe '.ps' do
     before { skip_without_docker }
 

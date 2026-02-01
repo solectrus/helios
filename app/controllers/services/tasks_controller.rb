@@ -8,9 +8,9 @@ module Services
       respond_with_pending_status
     end
 
-    # PATCH /services/:service_id/task - Restart
+    # PATCH /services/:service_id/task - Recreate
     def update
-      ComposeJob.perform_later(:restart, service_name)
+      ComposeJob.perform_later(:recreate, service_name)
       respond_with_pending_status
     end
 

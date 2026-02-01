@@ -16,7 +16,7 @@ module GlobalActions
       !any_running
     end
 
-    def restart_disabled?
+    def recreate_disabled?
       !any_running
     end
   end

@@ -79,9 +79,11 @@ module DockerHost
       Rails.application.reloader.wrap do
         DockerHost::Container.invalidate_cache
         container = DockerHost::Container.find(service_name)
-        return unless container
-
         compose_service = Compose.load.services.find(service_name)
+
+        # Always broadcast, even if container is nil (stopped/removed)
+        return unless compose_service
+
         broadcast_service_row(service_name, container, compose_service)
         broadcast_service_status(service_name, container)
       end

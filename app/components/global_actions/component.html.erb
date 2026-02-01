@@ -3,65 +3,65 @@
   data-controller="global-actions--component"
   data-global-actions--component-service-row--component-outlet="[data-controller='service-row--component']"
 >
-      <button
-        type="button"
-        class="btn btn-success gap-2"
-        data-global-actions--component-target="startButton"
-        data-action="click->global-actions--component#startAll"
-        <%= 'disabled' if start_disabled? %>
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          class="h-5 w-5"
-        >
-          <path
-            d="M6.3 2.84A1.5 1.5 0 0 0 4 4.11v11.78a1.5 1.5 0 0 0 2.3 1.27l9.344-5.891a1.5 1.5 0 0 0 0-2.538L6.3 2.841Z"
-          />
-        </svg>
-        Start
-      </button>
+  <button
+    type="button"
+    class="btn btn-success gap-2"
+    data-global-actions--component-target="startButton"
+    data-action="click->global-actions--component#startAll"
+    <%= 'disabled' if start_disabled? %>
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      class="h-5 w-5"
+    >
+      <path
+        d="M6.3 2.84A1.5 1.5 0 0 0 4 4.11v11.78a1.5 1.5 0 0 0 2.3 1.27l9.344-5.891a1.5 1.5 0 0 0 0-2.538L6.3 2.841Z"
+      />
+    </svg>
+    Start
+  </button>
 
-      <button
-        type="button"
-        class="btn btn-error gap-2"
-        data-global-actions--component-target="stopButton"
-        data-action="click->global-actions--component#stopAll"
-        <%= 'disabled' if stop_disabled? %>
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          class="h-5 w-5"
-        >
-          <path
-            d="M5.75 3a.75.75 0 0 0-.75.75v12.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75V3.75a.75.75 0 0 0-.75-.75h-8.5Z"
-          />
-        </svg>
-        Stop
-      </button>
+  <button
+    type="button"
+    class="btn btn-error gap-2"
+    data-global-actions--component-target="stopButton"
+    data-action="click->global-actions--component#stopAll"
+    <%= 'disabled' if stop_disabled? %>
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      class="h-5 w-5"
+    >
+      <path
+        d="M5.75 3a.75.75 0 0 0-.75.75v12.5c0 .414.336.75.75.75h8.5a.75.75 0 0 0 .75-.75V3.75a.75.75 0 0 0-.75-.75h-8.5Z"
+      />
+    </svg>
+    Stop
+  </button>
 
-      <button
-        type="button"
-        class="btn btn-warning gap-2"
-        data-global-actions--component-target="restartButton"
-        data-action="click->global-actions--component#restartAll"
-        <%= 'disabled' if restart_disabled? %>
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-          class="h-5 w-5"
-        >
-          <path
-            fill-rule="evenodd"
-            d="M15.312 11.424a5.5 5.5 0 0 1-9.201 2.466l-.312-.311h2.433a.75.75 0 0 0 0-1.5H3.989a.75.75 0 0 0-.75.75v4.242a.75.75 0 0 0 1.5 0v-2.43l.31.31a7 7 0 0 0 11.712-3.138.75.75 0 0 0-1.449-.39Zm1.23-3.723a.75.75 0 0 0 .219-.53V2.929a.75.75 0 0 0-1.5 0v2.43l-.31-.31A7 7 0 0 0 3.239 8.188a.75.75 0 1 0 1.448.389 5.5 5.5 0 0 1 9.2-2.466l.312.311h-2.433a.75.75 0 0 0 0 1.5h4.243a.75.75 0 0 0 .53-.219Z"
-            clip-rule="evenodd"
-          />
-        </svg>
-        Restart
-      </button>
+  <button
+    type="button"
+    class="btn btn-warning gap-2"
+    data-global-actions--component-target="recreateButton"
+    data-action="click->global-actions--component#recreateAll"
+    <%= 'disabled' if recreate_disabled? %>
+  >
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 20 20"
+      fill="currentColor"
+      class="h-5 w-5"
+    >
+      <path
+        fill-rule="evenodd"
+        d="M10 4.5c1.215 0 2.417.055 3.604.162a.68.68 0 0 1 .615.597c.124 1.038.208 2.088.25 3.15l-1.689-1.69a.75.75 0 0 0-1.06 1.061l2.999 3a.75.75 0 0 0 1.06 0l3.001-3a.75.75 0 0 0-1.06-1.06l-1.748 1.747a41.31 41.31 0 0 0-.264-3.386 2.18 2.18 0 0 0-1.97-1.913 41.512 41.512 0 0 0-7.477 0 2.18 2.18 0 0 0-1.969 1.913 41.16 41.16 0 0 0-.16 1.61.75.75 0 1 0 1.495.12c.041-.52.093-1.038.154-1.552a.68.68 0 0 1 .615-.597A40.012 40.012 0 0 1 10 4.5ZM5.281 9.22a.75.75 0 0 0-1.06 0l-3.001 3a.75.75 0 1 0 1.06 1.06l1.748-1.747c.042 1.141.13 2.27.264 3.386a2.18 2.18 0 0 0 1.97 1.913 41.533 41.533 0 0 0 7.477 0 2.18 2.18 0 0 0 1.969-1.913c.064-.534.117-1.071.16-1.61a.75.75 0 1 0-1.495-.12c-.041.52-.093 1.037-.154 1.552a.68.68 0 0 1-.615.597 40.013 40.013 0 0 1-7.208 0 .68.68 0 0 1-.615-.597 39.785 39.785 0 0 1-.25-3.15l1.689 1.69a.75.75 0 0 0 1.06-1.061l-2.999-3Z"
+        clip-rule="evenodd"
+      />
+    </svg>
+    Recreate
+  </button>
 </div>

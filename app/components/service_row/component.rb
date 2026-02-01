@@ -79,7 +79,7 @@ module ServiceRow
     private
 
     def basic_indicator_class
-      return 'bg-base-300' if status.nil?
+      return 'border-2 border-dashed border-base-content/30' if status.nil?
 
       case status
       when 'running'
@@ -122,7 +122,7 @@ module ServiceRow
       pending || !running?
     end
 
-    def restart_disabled?
+    def recreate_disabled?
       pending || !running?
     end
   end

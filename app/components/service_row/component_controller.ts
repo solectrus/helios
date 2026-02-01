@@ -1,17 +1,17 @@
 import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller {
-  static targets = ['startButton', 'stopButton', 'restartButton'];
+  static targets = ['startButton', 'stopButton', 'recreateButton'];
   static values = {
     name: String,
   };
 
   declare startButtonTarget: HTMLButtonElement;
   declare stopButtonTarget: HTMLButtonElement;
-  declare restartButtonTarget: HTMLButtonElement;
+  declare recreateButtonTarget: HTMLButtonElement;
   declare hasStartButtonTarget: boolean;
   declare hasStopButtonTarget: boolean;
-  declare hasRestartButtonTarget: boolean;
+  declare hasRecreateButtonTarget: boolean;
   declare nameValue: string;
 
   get canStart() {
@@ -20,6 +20,10 @@ export default class extends Controller {
 
   get canStop() {
     return this.hasStopButtonTarget && !this.stopButtonTarget.disabled;
+  }
+
+  get canRecreate() {
+    return this.hasRecreateButtonTarget && !this.recreateButtonTarget.disabled;
   }
 
   start() {
@@ -32,9 +36,9 @@ export default class extends Controller {
     return this.#clickAndWait(this.stopButtonTarget);
   }
 
-  restart() {
-    if (!this.hasRestartButtonTarget) return Promise.resolve();
-    return this.#clickAndWait(this.restartButtonTarget);
+  recreate() {
+    if (!this.hasRecreateButtonTarget) return Promise.resolve();
+    return this.#clickAndWait(this.recreateButtonTarget);
   }
 
   #clickAndWait(button: HTMLButtonElement) {
