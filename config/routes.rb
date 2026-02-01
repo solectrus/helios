@@ -15,6 +15,8 @@ Rails.application.routes.draw do
   # Individual service actions
   resources :services, only: [] do
     member do
+      get :version
+      get :status
       post :start
       post :stop
       post :restart

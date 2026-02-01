@@ -1,6 +1,21 @@
 class ServicesController < ApplicationController
   before_action :set_service_name
-  before_action :reject_helios_commands
+  before_action :reject_helios_commands, only: %i[start stop restart]
+
+  def version
+    container = DockerHost::Container.find(@service_name)
+
+    render ServiceVersion::Component.new(
+             service_name: @service_name,
+             version: container&.image_version,
+           )
+  end
+
+  def status
+    container = DockerHost::Container.find(@service_name)
+
+    render ServiceStatus::Component.new(service_name: @service_name, container:)
+  end
 
   def start
     ComposeJob.perform_later(:start, @service_name)
@@ -32,10 +47,11 @@ class ServicesController < ApplicationController
   def respond_with_pending_status
     respond_to do |format|
       format.turbo_stream do
-        render turbo_stream: turbo_stream.replace(
-          "service-#{@service_name}",
-          service_row_component,
-        )
+        render turbo_stream:
+                 turbo_stream.replace(
+                   "service-#{@service_name}",
+                   service_row_component,
+                 )
       end
       format.html { redirect_to root_path }
     end

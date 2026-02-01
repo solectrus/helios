@@ -46,12 +46,8 @@ RSpec.describe 'Dashboard' do
           DockerHost::Container,
           service_name: 'dashboard',
           running?: true,
-          healthy?: true,
-          health_status: 'healthy',
           status: 'running',
           public_port: 3001,
-          image_tag: 'latest',
-          image_version: '1.0.0',
         )
       allow(DockerHost::Container).to receive(:all).and_return([container])
       mock_compose_services('dashboard')
@@ -59,7 +55,10 @@ RSpec.describe 'Dashboard' do
       get root_path
 
       expect(response.body).to include('dashboard')
-      expect(response.body).to include('Healthy')
+      # Basic status shown immediately (health loaded lazy via turbo frame)
+      expect(response.body).to include('Running')
+      expect(response.body).to include('turbo-frame')
+      expect(response.body).to include('/services/dashboard/status')
     end
 
     it 'shows services without containers' do

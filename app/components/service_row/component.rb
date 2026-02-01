@@ -29,20 +29,12 @@ module ServiceRow
       container&.running?
     end
 
-    def health
-      container&.health_status
-    end
-
     def status
       container&.status
     end
 
     def public_port
       container&.public_port || compose_service.public_port
-    end
-
-    def image_version
-      container&.image_version || compose_service.image_version
     end
 
     def status_value
@@ -52,66 +44,58 @@ module ServiceRow
       'stopped'
     end
 
-    def show_spinner?
-      pending || transitioning?
-    end
-
-    def status_indicator_class
+    # Basic status indicator without health check (used for initial render)
+    def basic_status_indicator_class
       return 'loading loading-spinner loading-xs text-primary' if pending
-      return 'loading loading-spinner loading-xs text-warning' if status_starting?
+      if status_starting?
+        return 'loading loading-spinner loading-xs text-warning'
+      end
 
       dot = 'inline-block w-3 h-3 rounded-full'
       return "#{dot} bg-error" if error?
-      return "#{dot} border-2 border-success animate-pulse" if healthcheck_starting?
 
-      "#{dot} #{indicator_class}"
+      "#{dot} #{basic_indicator_class}"
+    end
+
+    # Basic status label without health check (used for initial render)
+    def basic_status_label
+      return 'Processing...' if pending
+      return error_message if error?
+      return 'Not created' if container.nil?
+      return status&.capitalize || 'Unknown' unless running?
+
+      'Running'
     end
 
     def status_starting?
       %w[starting restarting].include?(status)
     end
 
-    def healthcheck_starting?
-      running? && health == 'starting'
+    def basic_tooltip_class
+      base = 'tooltip tooltip-left before:text-left before:text-xs'
+      error? ? "#{base} tooltip-error" : "#{base} tooltip-info"
     end
 
-    def indicator_class
+    private
+
+    def basic_indicator_class
       return 'bg-base-300' if status.nil?
 
       case status
       when 'running'
-        indicator_running_class
+        'bg-success'
       when 'created', 'removing'
         'border-2 border-base-content/30'
       when 'paused'
         'bg-info'
       when 'exited'
         'bg-neutral'
-      else # dead or unknown
+      else
         'bg-error'
       end
     end
 
-    def transitioning?
-      status_starting? || healthcheck_starting?
-    end
-
-    def status_label
-      return 'Processing...' if pending
-      return error_message if error?
-      return 'Not created' if container.nil?
-      return status.capitalize unless running?
-      return 'Waiting for healthcheck...' if health == 'starting'
-      return health.capitalize if health
-
-      'Running'
-    end
-
-    def tooltip_class
-      base = 'tooltip tooltip-left before:text-left before:text-xs'
-
-      error? ? "#{base} tooltip-error" : "#{base} tooltip-info"
-    end
+    public
 
     delegate :helios?, to: :compose_service
 
@@ -126,7 +110,8 @@ module ServiceRow
     end
 
     def open_button_enabled?
-      !pending && (health == 'healthy' || (running? && !health))
+      # Optimistic: enable if running (health will be checked lazy)
+      !pending && running?
     end
 
     def start_disabled?
@@ -139,14 +124,6 @@ module ServiceRow
 
     def restart_disabled?
       pending || !running?
-    end
-
-    private
-
-    def indicator_running_class
-      return 'bg-success' if health == 'healthy' || health.nil?
-
-      'bg-warning' # unhealthy
     end
   end
 end

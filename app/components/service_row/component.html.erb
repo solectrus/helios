@@ -7,17 +7,23 @@
 >
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-4">
-      <div class="<%= tooltip_class %>" data-tip="<%= status_label %>">
-        <div class="w-3 h-3 flex items-center justify-center"><span class="<%= status_indicator_class %>"></span></div>
-      </div>
+      <%= helpers.turbo_frame_tag "service-#{service_name}-status",
+                                   src: (helpers.status_service_path(service_name) unless pending || error?),
+                                   loading: :lazy do %>
+        <div class="<%= basic_tooltip_class %>" data-tip="<%= basic_status_label %>">
+          <div class="w-3 h-3 flex items-center justify-center">
+            <span class="<%= basic_status_indicator_class %>"></span>
+          </div>
+        </div>
+      <% end %>
 
       <div>
         <div class="font-semibold text-base">
           <%= compose_service.display_name %>
 
-          <% if image_version %>
-            <span class="text-base-content/50 ml-1"><%= image_version %></span>
-          <% end %>
+          <%= helpers.turbo_frame_tag "service-#{service_name}-version",
+                                   src: (helpers.version_service_path(service_name) unless pending || error?),
+                                   loading: :lazy %>
         </div>
 
         <div class="text-xs text-base-content/50"><span class="truncate"><%= compose_service.image %></span></div>
