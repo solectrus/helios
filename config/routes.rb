@@ -17,5 +17,9 @@ Rails.application.routes.draw do
     resource :version, only: :show
     resource :status, only: :show
     resource :task, only: %i[create update destroy]
+
+    collection do
+      resource :batch, only: %i[create destroy]
+    end
   end
 end

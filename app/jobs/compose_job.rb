@@ -5,7 +5,7 @@ class ComposeJob < ApplicationJob
     execute_action(action.to_sym, service_name)
   rescue Compose::Runner::CommandError => e
     Rails.logger.error("ComposeJob failed: #{e.message}")
-    broadcast_error(service_name, e)
+    broadcast_error(action, service_name, e)
   end
 
   private
@@ -20,12 +20,47 @@ class ComposeJob < ApplicationJob
     end
   end
 
-  def broadcast_error(service_name, error)
-    return unless service_name
+  def broadcast_error(action, service_name, error)
+    if batch_action?(action)
+      broadcast_all_services_error(error)
+    elsif service_name
+      error_message = extract_error_details(error)
+      affected_service = extract_affected_service(error) || service_name
+      broadcast_service_status(affected_service, error_message:)
+    end
+  end
 
+  def batch_action?(action)
+    %i[up down].include?(action.to_sym)
+  end
+
+  def broadcast_all_services_error(error)
     error_message = extract_error_details(error)
-    affected_service = extract_affected_service(error) || service_name
-    broadcast_service_status(affected_service, error_message:)
+    affected_service_name = extract_affected_service(error) || extract_service_from_image(error)
+
+    all_services.each do |compose_service|
+      # Show error on affected service, or on ALL services if we can't identify the culprit
+      service_error = if affected_service_name.nil? || compose_service.name == affected_service_name
+                        error_message
+                      end
+      broadcast_service_status(compose_service.name, error_message: service_error)
+    end
+  end
+
+  def extract_service_from_image(error)
+    output = error.stdout.to_s
+    compose_file = Compose.load
+
+    # Find which service uses the failing image mentioned in the error
+    compose_file.services.each do |service|
+      return service.name if output.include?(service.image.to_s)
+    end
+
+    nil
+  end
+
+  def all_services
+    Compose.load.services.reject(&:helios?)
   end
 
   def broadcast_service_status(service_name, error_message: nil)

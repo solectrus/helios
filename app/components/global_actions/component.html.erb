@@ -3,36 +3,27 @@
   data-controller="global-actions--component"
   data-global-actions--component-service-row--component-outlet="[data-controller='service-row--component']"
 >
-  <button
-    type="button"
-    class="btn btn-lg btn-info gap-2"
-    data-global-actions--component-target="startButton"
-    data-action="click->global-actions--component#startAll"
-    <%= 'disabled' if start_disabled? %>
-  >
-    <i class="fa-solid fa-play"></i>
-    Start
-  </button>
+  <%= form_with url: batch_path, method: :post, data: { turbo_frame: "_top" } do %>
+    <button
+      type="submit"
+      class="btn btn-lg btn-info gap-2"
+      data-global-actions--component-target="startButton"
+      <%= 'disabled' if start_disabled? %>
+    >
+      <i class="fa-solid fa-play"></i>
+      Start
+    </button>
+  <% end %>
 
-  <button
-    type="button"
-    class="btn btn-lg btn-info gap-2"
-    data-global-actions--component-target="stopButton"
-    data-action="click->global-actions--component#stopAll"
-    <%= 'disabled' if stop_disabled? %>
-  >
-    <i class="fa-solid fa-stop"></i>
-    Stop
-  </button>
-
-  <button
-    type="button"
-    class="btn btn-lg btn-info gap-2"
-    data-global-actions--component-target="recreateButton"
-    data-action="click->global-actions--component#recreateAll"
-    <%= 'disabled' if recreate_disabled? %>
-  >
-    <i class="fa-solid fa-arrows-rotate"></i>
-    Recreate
-  </button>
+  <%= form_with url: batch_path, method: :delete, data: { turbo_frame: "_top" } do %>
+    <button
+      type="submit"
+      class="btn btn-lg btn-info gap-2"
+      data-global-actions--component-target="stopButton"
+      <%= 'disabled' if stop_disabled? %>
+    >
+      <i class="fa-solid fa-stop"></i>
+      Stop
+    </button>
+  <% end %>
 </div>

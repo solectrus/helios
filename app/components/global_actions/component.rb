@@ -8,15 +8,15 @@ module GlobalActions
       @any_running = any_running
     end
 
+    def batch_path
+      '/services/batch'
+    end
+
     def start_disabled?
       stopped_services.empty?
     end
 
     def stop_disabled?
-      !any_running
-    end
-
-    def recreate_disabled?
       !any_running
     end
   end
