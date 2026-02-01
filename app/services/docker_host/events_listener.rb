@@ -58,7 +58,6 @@ module DockerHost
         "Docker event: #{event.action} for #{event.service_name}"
       end
 
-      DockerHost::Container.invalidate_cache
       schedule_broadcast(event.service_name)
     end
 
@@ -78,21 +77,33 @@ module DockerHost
 
     def broadcast_status_update(service_name)
       Rails.application.reloader.wrap do
+        DockerHost::Container.invalidate_cache
         container = DockerHost::Container.find(service_name)
         return unless container
 
         compose_service = Compose.load.services.find(service_name)
-        html = render_service_row(service_name, container, compose_service)
-
-        Turbo::StreamsChannel.broadcast_replace_to(
-          'services',
-          target: "service-#{service_name}",
-          html: html,
-        )
+        broadcast_service_row(service_name, container, compose_service)
+        broadcast_service_status(service_name, container)
       end
     end
 
-    def render_service_row(_service_name, container, compose_service)
+    def broadcast_service_row(service_name, container, compose_service)
+      Turbo::StreamsChannel.broadcast_replace_to(
+        'services',
+        target: "service-#{service_name}",
+        html: render_service_row(container, compose_service),
+      )
+    end
+
+    def broadcast_service_status(service_name, container)
+      Turbo::StreamsChannel.broadcast_replace_to(
+        'services',
+        target: "service-#{service_name}-status",
+        html: render_service_status(service_name, container),
+      )
+    end
+
+    def render_service_row(container, compose_service)
       ApplicationController.render(
         ServiceRow::Component.new(
           compose_service:,
@@ -100,6 +111,12 @@ module DockerHost
           host: 'localhost',
           pending: false,
         ),
+      )
+    end
+
+    def render_service_status(service_name, container)
+      ApplicationController.render(
+        ServiceStatus::Component.new(service_name:, container:),
       )
     end
   end
