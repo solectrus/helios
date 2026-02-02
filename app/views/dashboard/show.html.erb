@@ -1,13 +1,8 @@
 <div class="min-h-screen p-8" data-controller="visibility">
   <div class="mx-auto max-w-4xl">
-    <div class="mb-8 flex items-center justify-between">
-      <h1 class="text-4xl font-bold">HELIOS</h1>
+    <%= render Header::Component.new %>
 
-      <div class="flex items-center gap-2">
-        <%= render ThemeToggle::Component.new %>
-        <%= button_to "Logout", session_path, method: :delete, class: "btn btn-ghost btn-sm" %>
-      </div>
-    </div>
+    <div class="mb-8"><%= render MainNav::Component.new(active_tab: :services) %></div>
 
     <%= turbo_stream_from "services" %>
 

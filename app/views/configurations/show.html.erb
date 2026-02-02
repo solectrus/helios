@@ -1,0 +1,38 @@
+<% content_for :title, t('.title') %>
+
+<div class="min-h-screen p-8">
+  <div class="mx-auto max-w-4xl">
+    <%= render Header::Component.new %>
+
+    <div class="mb-8"><%= render MainNav::Component.new(active_tab: :configuration) %></div>
+
+    <div class="grid gap-4">
+      <% @chapters.each do |chapter| %>
+        <%= link_to edit_configuration_chapter_path(chapter),
+                    class: "card bg-base-100 shadow-md hover:shadow-lg transition-shadow" do %>
+          <div class="card-body">
+            <div class="flex items-center justify-between">
+              <div>
+                <h2 class="card-title"><%= t("configurations.chapters.#{chapter}.title") %></h2>
+                <p class="text-base-content/70"><%= t("configurations.chapters.#{chapter}.description") %></p>
+              </div>
+
+              <div class="flex items-center gap-2">
+                <% if @configuration.chapter_completed?(chapter) %>
+                  <span class="badge badge-success gap-1">
+                    <i class="fa-solid fa-check"></i>
+                    <%= t('.configured') %>
+                  </span>
+                <% else %>
+                  <span class="badge badge-ghost"><%= t('.pending') %></span>
+                <% end %>
+
+                <i class="fa-solid fa-chevron-right text-base-content/50"></i>
+              </div>
+            </div>
+          </div>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+</div>

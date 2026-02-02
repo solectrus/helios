@@ -1,0 +1,41 @@
+de:
+  common:
+    back: "Zurück"
+
+  header:
+    component:
+      logout: "Abmelden"
+
+  main_nav:
+    component:
+      services: "Docker-Services"
+      configuration: "Konfiguration"
+
+  configurations:
+    show:
+      title: "Konfiguration - Helios"
+      configured: "Konfiguriert"
+      pending: "Offen"
+    chapters:
+      devices:
+        title: "Geräte"
+        description: "Welche Geräte möchtest du überwachen?"
+      inverter:
+        title: "Wechselrichter & Stromspeicher"
+        description: "Konfiguration deines Wechselrichters und Stromspeichers"
+      wallbox:
+        title: "Wallbox"
+        description: "Konfiguration deiner Wallbox"
+      heatpump:
+        title: "Wärmepumpe"
+        description: "Konfiguration deiner Wärmepumpe"
+      mqtt:
+        title: "MQTT"
+        description: "Verbindung zu deinem MQTT-Broker"
+      forecast:
+        title: "Ertragsprognose"
+        description: "Prognose deines PV-Ertrags"
+      system:
+        title: "System"
+        description: "Grundeinstellungen für SOLECTRUS"
+      invalid_chapter: "Unbekanntes Kapitel"

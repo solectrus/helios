@@ -1,0 +1,95 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Wärmepumpe",
+    "default": "Heat pump"
+  },
+  "description": {
+    "de": "Konfiguration deiner Wärmepumpe",
+    "default": "Configuration of your heat pump"
+  },
+  "pages": [
+    {
+      "name": "p_heatpump_access",
+      "title": {
+        "de": "Messmethode",
+        "default": "Measurement method"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "heatpump_access",
+          "title": {
+            "de": "Wie wird der Stromverbrauch der Wärmepumpe gemessen?",
+            "default": "How is the electricity consumption of the heat pump measured?"
+          },
+          "isRequired": true,
+          "choices": [
+            {
+              "value": "shelly",
+              "text": {
+                "de": "Über einen Shelly Stromzähler",
+                "default": "Using Shelly energy monitor"
+              }
+            },
+            {
+              "value": "mqtt",
+              "text": {
+                "de": "Über MQTT",
+                "default": "Via MQTT"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_shelly",
+      "visibleIf": "{heatpump_access} = 'shelly'",
+      "title": {
+        "de": "Shelly Konfiguration",
+        "default": "Shelly Configuration"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "shelly_host",
+          "title": {
+            "de": "Lokale IP-Adresse oder Hostname",
+            "default": "Local IP address or host name"
+          },
+          "isRequired": true,
+          "placeholder": {
+            "de": "z.B. 192.168.178.43",
+            "default": "e.g. 192.168.178.43"
+          }
+        },
+        {
+          "type": "text",
+          "name": "shelly_interval",
+          "title": {
+            "de": "Abfrage-Intervall (in Sekunden)",
+            "default": "Query interval (in seconds)"
+          },
+          "defaultValue": 5,
+          "isRequired": true,
+          "inputType": "number"
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  },
+  "showCompletePage": false
+}

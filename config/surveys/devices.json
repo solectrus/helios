@@ -1,0 +1,86 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Geräte",
+    "default": "Devices"
+  },
+  "description": {
+    "de": "Welche Geräte möchtest du mit SOLECTRUS überwachen?",
+    "default": "Which devices do you want to monitor with SOLECTRUS?"
+  },
+  "pages": [
+    {
+      "name": "p_devices",
+      "elements": [
+        {
+          "type": "checkbox",
+          "name": "devices",
+          "title": {
+            "de": "Wähle deine Geräte:",
+            "default": "Select your devices:"
+          },
+          "defaultValue": ["inverter"],
+          "isRequired": true,
+          "validators": [
+            {
+              "type": "expression",
+              "text": {
+                "de": "Ein Solarwechselrichter muss beteiligt sein",
+                "default": "A solar inverter must be involved"
+              },
+              "expression": "{devices} contains 'inverter'"
+            },
+            {
+              "type": "expression",
+              "text": {
+                "de": "Für ein E-Auto wird eine Wallbox benötigt",
+                "default": "A wallbox is required for an electric car"
+              },
+              "expression": "{devices} contains 'wallbox' or {devices} notcontains 'car'"
+            }
+          ],
+          "choices": [
+            {
+              "value": "inverter",
+              "text": {
+                "de": "Solarwechselrichter",
+                "default": "Solar inverter"
+              }
+            },
+            {
+              "value": "battery",
+              "text": {
+                "de": "Stromspeicher",
+                "default": "Battery"
+              }
+            },
+            {
+              "value": "wallbox",
+              "text": "Wallbox"
+            },
+            {
+              "value": "car",
+              "text": {
+                "de": "E-Auto",
+                "default": "Electric car"
+              }
+            },
+            {
+              "value": "heatpump",
+              "text": {
+                "de": "Wärmepumpe",
+                "default": "Heat pump"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

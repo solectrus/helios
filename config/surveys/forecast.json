@@ -1,0 +1,333 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Ertragsvorhersage",
+    "default": "Yield forecast"
+  },
+  "description": {
+    "de": "Prognose deines PV-Ertrags",
+    "default": "Forecast of your PV yield"
+  },
+  "pages": [
+    {
+      "name": "p_forecast_provider",
+      "title": {
+        "de": "Prognoseanbieter",
+        "default": "Forecast provider"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "forecast",
+          "title": {
+            "de": "Welchen Prognosedienst möchtest du nutzen?",
+            "default": "Which forecast service do you want to use?"
+          },
+          "description": {
+            "de": "Die Prognose erfolgt kostenfrei individuell für deinen Standort",
+            "default": "The forecast is provided free of charge for your location"
+          },
+          "isRequired": true,
+          "choices": [
+            {
+              "value": "forecast_forecast_solar",
+              "text": "forecast.solar"
+            },
+            {
+              "value": "forecast_solcast",
+              "text": "solcast.com"
+            },
+            {
+              "value": "forecast_none",
+              "text": {
+                "de": "Keine Prognose",
+                "default": "No forecast"
+              }
+            }
+          ]
+        },
+        {
+          "type": "radiogroup",
+          "name": "forecast_roofs",
+          "visibleIf": "{forecast} anyof ['forecast_forecast_solar', 'forecast_solcast']",
+          "title": {
+            "de": "Anzahl Dachflächen mit Solarmodulen",
+            "default": "Number of roof surfaces with solar modules"
+          },
+          "isRequired": true,
+          "choices": [
+            "1",
+            "2",
+            { "value": "3", "visibleIf": "{forecast} = 'forecast_forecast_solar'" },
+            { "value": "4", "visibleIf": "{forecast} = 'forecast_forecast_solar'" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_forecast_solar_location",
+      "visibleIf": "{forecast} = 'forecast_forecast_solar'",
+      "title": {
+        "de": "Standort",
+        "default": "Location"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "forecast_latitude",
+          "title": {
+            "de": "Breitengrad",
+            "default": "Latitude"
+          },
+          "description": {
+            "de": "-90 (Süd) bis 90 (Nord)",
+            "default": "-90 (South) to 90 (North)"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": -90,
+          "max": 90
+        },
+        {
+          "type": "text",
+          "name": "forecast_longitude",
+          "title": {
+            "de": "Längengrad",
+            "default": "Longitude"
+          },
+          "description": {
+            "de": "-180 (West) bis 180 (Ost)",
+            "default": "-180 (West) to 180 (East)"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": -180,
+          "max": 180
+        }
+      ]
+    },
+    {
+      "name": "p_forecast_solar_roofs",
+      "visibleIf": "{forecast} = 'forecast_forecast_solar'",
+      "title": {
+        "de": "Dachflächen-Konfiguration",
+        "default": "Roof configuration"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "forecast_azimuth1",
+          "title": {
+            "de": "1. Dachfläche: Ausrichtung",
+            "default": "1. Roof: Azimuth"
+          },
+          "description": {
+            "de": "-180 = Nord, -90 = Ost, 0 = Süd, 90 = West",
+            "default": "-180 = north, -90 = east, 0 = south, 90 = west"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": -180,
+          "max": 180
+        },
+        {
+          "type": "text",
+          "name": "forecast_declination1",
+          "title": {
+            "de": "1. Dachfläche: Neigung",
+            "default": "1. Roof: Declination"
+          },
+          "description": {
+            "de": "0 (horizontal) bis 90 (vertikal)",
+            "default": "0 (horizontal) to 90 (vertical)"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": 0,
+          "max": 90
+        },
+        {
+          "type": "text",
+          "name": "forecast_kwp1",
+          "title": {
+            "de": "1. Dachfläche: Leistung (kWp)",
+            "default": "1. Roof: Power (kWp)"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": 0
+        },
+        {
+          "type": "text",
+          "name": "forecast_azimuth2",
+          "visibleIf": "{forecast_roofs} anyof [2, 3, 4]",
+          "title": {
+            "de": "2. Dachfläche: Ausrichtung",
+            "default": "2. Roof: Azimuth"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": -180,
+          "max": 180
+        },
+        {
+          "type": "text",
+          "name": "forecast_declination2",
+          "visibleIf": "{forecast_roofs} anyof [2, 3, 4]",
+          "title": {
+            "de": "2. Dachfläche: Neigung",
+            "default": "2. Roof: Declination"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": 0,
+          "max": 90
+        },
+        {
+          "type": "text",
+          "name": "forecast_kwp2",
+          "visibleIf": "{forecast_roofs} anyof [2, 3, 4]",
+          "title": {
+            "de": "2. Dachfläche: Leistung (kWp)",
+            "default": "2. Roof: Power (kWp)"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": 0
+        },
+        {
+          "type": "text",
+          "name": "forecast_azimuth3",
+          "visibleIf": "{forecast_roofs} anyof [3, 4]",
+          "title": {
+            "de": "3. Dachfläche: Ausrichtung",
+            "default": "3. Roof: Azimuth"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": -180,
+          "max": 180
+        },
+        {
+          "type": "text",
+          "name": "forecast_declination3",
+          "visibleIf": "{forecast_roofs} anyof [3, 4]",
+          "title": {
+            "de": "3. Dachfläche: Neigung",
+            "default": "3. Roof: Declination"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": 0,
+          "max": 90
+        },
+        {
+          "type": "text",
+          "name": "forecast_kwp3",
+          "visibleIf": "{forecast_roofs} anyof [3, 4]",
+          "title": {
+            "de": "3. Dachfläche: Leistung (kWp)",
+            "default": "3. Roof: Power (kWp)"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": 0
+        },
+        {
+          "type": "text",
+          "name": "forecast_azimuth4",
+          "visibleIf": "{forecast_roofs} = '4'",
+          "title": {
+            "de": "4. Dachfläche: Ausrichtung",
+            "default": "4. Roof: Azimuth"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": -180,
+          "max": 180
+        },
+        {
+          "type": "text",
+          "name": "forecast_declination4",
+          "visibleIf": "{forecast_roofs} = '4'",
+          "title": {
+            "de": "4. Dachfläche: Neigung",
+            "default": "4. Roof: Declination"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": 0,
+          "max": 90
+        },
+        {
+          "type": "text",
+          "name": "forecast_kwp4",
+          "visibleIf": "{forecast_roofs} = '4'",
+          "title": {
+            "de": "4. Dachfläche: Leistung (kWp)",
+            "default": "4. Roof: Power (kWp)"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": 0
+        }
+      ]
+    },
+    {
+      "name": "p_solcast",
+      "visibleIf": "{forecast} = 'forecast_solcast'",
+      "title": {
+        "de": "Solcast API",
+        "default": "Solcast API"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "forecast_solcast_api_key",
+          "title": {
+            "de": "API-Key",
+            "default": "API key"
+          },
+          "description": {
+            "de": "Kostenfrei bei https://toolkit.solcast.com.au/",
+            "default": "Free at https://toolkit.solcast.com.au/"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "forecast_solcast_id1",
+          "title": {
+            "de": "Ressourcen-ID 1. Dachfläche",
+            "default": "Resource ID 1st roof"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "forecast_solcast_id2",
+          "visibleIf": "{forecast_roofs} = '2'",
+          "title": {
+            "de": "Ressourcen-ID 2. Dachfläche",
+            "default": "Resource ID 2nd roof"
+          },
+          "isRequired": true
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  },
+  "showCompletePage": false
+}

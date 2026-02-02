@@ -28,6 +28,47 @@
 #       enabled: "ON"
 
 en:
+  common:
+    back: "Back"
+
+  header:
+    component:
+      logout: "Logout"
+
+  main_nav:
+    component:
+      services: "Docker Services"
+      configuration: "Configuration"
+
+  configurations:
+    show:
+      title: "Configuration - Helios"
+      configured: "Configured"
+      pending: "Pending"
+    chapters:
+      devices:
+        title: "Devices"
+        description: "Which devices do you want to monitor?"
+      inverter:
+        title: "Inverter & Battery"
+        description: "Configuration of your inverter and battery storage"
+      wallbox:
+        title: "Wallbox"
+        description: "Configuration of your wallbox"
+      heatpump:
+        title: "Heat pump"
+        description: "Configuration of your heat pump"
+      mqtt:
+        title: "MQTT"
+        description: "Connection to your MQTT broker"
+      forecast:
+        title: "Yield forecast"
+        description: "Forecast of your PV yield"
+      system:
+        title: "System"
+        description: "Basic settings for SOLECTRUS"
+      invalid_chapter: "Unknown chapter"
+
   flash:
     admin:
       password_blank: 'Password cannot be blank'

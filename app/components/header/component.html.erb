@@ -1,0 +1,8 @@
+<div class="mb-8 flex items-center justify-between">
+  <h1 class="text-4xl font-bold">HELIOS</h1>
+
+  <div class="flex items-center gap-2">
+    <%= render ThemeToggle::Component.new %>
+    <%= button_to t('.logout'), session_path, method: :delete, class: "btn btn-ghost btn-sm" %>
+  </div>
+</div>

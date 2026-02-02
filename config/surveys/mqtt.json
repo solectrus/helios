@@ -1,0 +1,371 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "MQTT-Konfiguration",
+    "default": "MQTT Configuration"
+  },
+  "description": {
+    "de": "Zugriff auf deinen MQTT-Broker für Messwerte",
+    "default": "Access to your MQTT broker for measurements"
+  },
+  "pages": [
+    {
+      "name": "p_mqtt_broker",
+      "title": {
+        "de": "MQTT-Broker Verbindung",
+        "default": "MQTT Broker Connection"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "mqtt_host",
+          "title": {
+            "de": "IP-Adresse oder Hostname",
+            "default": "IP address or host name"
+          },
+          "isRequired": true,
+          "placeholder": {
+            "de": "z.B. 192.168.178.44",
+            "default": "e.g. 192.168.178.44"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_port",
+          "title": "Port",
+          "defaultValue": 1883,
+          "isRequired": true,
+          "inputType": "number"
+        },
+        {
+          "type": "boolean",
+          "name": "mqtt_ssl",
+          "title": "SSL",
+          "defaultValue": false
+        },
+        {
+          "type": "text",
+          "name": "mqtt_username",
+          "title": {
+            "de": "Benutzername (optional)",
+            "default": "Username (optional)"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_password",
+          "title": {
+            "de": "Passwort (optional)",
+            "default": "Password (optional)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_mqtt_topics_inverter",
+      "title": {
+        "de": "MQTT Topics - Wechselrichter",
+        "default": "MQTT Topics - Inverter"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "mqtt_inverter_power",
+          "title": {
+            "de": "Erzeugung (in Watt)",
+            "default": "Inverter power (in Watt)"
+          },
+          "placeholder": {
+            "de": "z.B. myhome/inverter/power",
+            "default": "e.g. myhome/inverter/power"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_house_power",
+          "title": {
+            "de": "Hausverbrauch (in Watt)",
+            "default": "House power (in Watt)"
+          },
+          "placeholder": {
+            "de": "z.B. myhome/energy/house_power",
+            "default": "e.g. myhome/energy/house_power"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_grid_power",
+          "title": {
+            "de": "Netzbezug / -einspeisung (in Watt)",
+            "default": "Grid power (in Watt)"
+          },
+          "placeholder": {
+            "de": "z.B. myhome/grid/power",
+            "default": "e.g. myhome/grid/power"
+          }
+        },
+        {
+          "type": "radiogroup",
+          "name": "mqtt_grid_power_pos_neg",
+          "visibleIf": "{mqtt_grid_power} notempty",
+          "title": {
+            "de": "Netz: Vorzeichenbehandlung",
+            "default": "Grid: Sign handling"
+          },
+          "choices": [
+            {
+              "value": "pos_neg",
+              "text": {
+                "de": "Positiv = Netzbezug, Negativ = Einspeisung",
+                "default": "Positive = import, negative = export"
+              }
+            },
+            {
+              "value": "neg_pos",
+              "text": {
+                "de": "Positiv = Einspeisung, Negativ = Netzbezug",
+                "default": "Positive = export, negative = import"
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "mqtt_grid_export_limit",
+          "title": {
+            "de": "Einspeisebegrenzung (in %)",
+            "default": "Grid export limit (in %)"
+          },
+          "placeholder": {
+            "de": "z.B. myhome/grid/power_ratio",
+            "default": "e.g. myhome/grid/power_ratio"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_case_temp",
+          "title": {
+            "de": "Gerätetemperatur (in °C)",
+            "default": "Case temperature (in °C)"
+          },
+          "placeholder": {
+            "de": "z.B. myhome/inverter/case_temp",
+            "default": "e.g. myhome/inverter/case_temp"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_system_status",
+          "title": {
+            "de": "Systemstatus (als Text)",
+            "default": "System status (as text)"
+          },
+          "placeholder": {
+            "de": "z.B. myhome/inverter/system_state",
+            "default": "e.g. myhome/inverter/system_state"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_system_status_ok",
+          "title": {
+            "de": "Systemstatus OK (als Boolean)",
+            "default": "System status OK (as boolean)"
+          },
+          "placeholder": {
+            "de": "z.B. myhome/inverter/system_state_ok",
+            "default": "e.g. myhome/inverter/system_state_ok"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_mqtt_topics_battery",
+      "title": {
+        "de": "MQTT Topics - Batterie",
+        "default": "MQTT Topics - Battery"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "mqtt_battery_power",
+          "title": {
+            "de": "Batterie: Beladung / Entladung (in Watt)",
+            "default": "Battery charging power (in Watt)"
+          },
+          "placeholder": {
+            "de": "z.B. myhome/battery/0/power",
+            "default": "e.g. myhome/battery/0/power"
+          }
+        },
+        {
+          "type": "radiogroup",
+          "name": "mqtt_battery_power_pos_neg",
+          "visibleIf": "{mqtt_battery_power} notempty",
+          "title": {
+            "de": "Batterie: Vorzeichenbehandlung",
+            "default": "Battery: Sign handling"
+          },
+          "choices": [
+            {
+              "value": "pos_neg",
+              "text": {
+                "de": "Positiv = Beladung, Negativ = Entladung",
+                "default": "Positive = charging, negative = discharging"
+              }
+            },
+            {
+              "value": "neg_pos",
+              "text": {
+                "de": "Positiv = Entladung, Negativ = Beladung",
+                "default": "Positive = discharging, negative = charging"
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "mqtt_battery_soc",
+          "title": {
+            "de": "Batterie-Ladestand (in %)",
+            "default": "Battery SOC (in %)"
+          },
+          "placeholder": {
+            "de": "z.B. myhome/battery/0/soc",
+            "default": "e.g. myhome/battery/0/soc"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_mqtt_topics_wallbox",
+      "title": {
+        "de": "MQTT Topics - Wallbox",
+        "default": "MQTT Topics - Wallbox"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "mqtt_wallbox_power",
+          "title": {
+            "de": "Wallbox Leistung (in Watt)",
+            "default": "Wallbox power (in Watt)"
+          },
+          "placeholder": {
+            "de": "z.B. myhome/wallbox/0/power",
+            "default": "e.g. myhome/wallbox/0/power"
+          }
+        },
+        {
+          "type": "radiogroup",
+          "name": "wallbox_exclude_from_house_power",
+          "visibleIf": "{mqtt_wallbox_power} notempty",
+          "title": {
+            "de": "Wallbox im Hausverbrauch enthalten?",
+            "default": "Wallbox included in house consumption?"
+          },
+          "choices": [
+            {
+              "value": "yes",
+              "text": {
+                "de": "Ja, soll herausgerechnet werden",
+                "default": "Yes, should be excluded"
+              }
+            },
+            {
+              "value": "no",
+              "text": {
+                "de": "Nein, nicht enthalten",
+                "default": "No, not included"
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "mqtt_wallbox_car_connected",
+          "title": {
+            "de": "Auto verbunden (True/False)",
+            "default": "Car connected (True/False)"
+          },
+          "placeholder": {
+            "de": "z.B. myhome/wallbox/0/car_connected",
+            "default": "e.g. myhome/wallbox/0/car_connected"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_car_battery_soc",
+          "title": {
+            "de": "E-Auto Ladestand (in %)",
+            "default": "Car battery SOC (in %)"
+          },
+          "placeholder": {
+            "de": "z.B. mycar/battery/0/soc",
+            "default": "e.g. mycar/battery/0/soc"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_mqtt_topics_heatpump",
+      "title": {
+        "de": "MQTT Topics - Wärmepumpe",
+        "default": "MQTT Topics - Heat pump"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "mqtt_heatpump_power",
+          "title": {
+            "de": "Wärmepumpe Leistung (in Watt)",
+            "default": "Heat pump power (in Watt)"
+          },
+          "placeholder": {
+            "de": "z.B. myhome/heatpump/power",
+            "default": "e.g. myhome/heatpump/power"
+          }
+        },
+        {
+          "type": "radiogroup",
+          "name": "heatpump_exclude_from_house_power",
+          "visibleIf": "{mqtt_heatpump_power} notempty",
+          "title": {
+            "de": "Wärmepumpe im Hausverbrauch enthalten?",
+            "default": "Heat pump included in house consumption?"
+          },
+          "choices": [
+            {
+              "value": "yes",
+              "text": {
+                "de": "Ja, soll herausgerechnet werden",
+                "default": "Yes, should be excluded"
+              }
+            },
+            {
+              "value": "no",
+              "text": {
+                "de": "Nein, nicht enthalten",
+                "default": "No, not included"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  },
+  "showCompletePage": false
+}

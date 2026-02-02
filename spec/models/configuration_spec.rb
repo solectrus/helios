@@ -10,7 +10,7 @@ RSpec.describe Configuration do
 
     it 'creates with default data if none exists' do
       config = described_class.current
-      expect(config.data).to include('general', 'setup_completed')
+      expect(config.data).to include('setup_completed')
       expect(config.setup_completed?).to be false
     end
   end

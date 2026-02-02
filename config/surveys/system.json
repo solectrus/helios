@@ -1,0 +1,197 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "System-Einstellungen",
+    "default": "System Settings"
+  },
+  "description": {
+    "de": "Grundlegende Einstellungen für SOLECTRUS",
+    "default": "Basic settings for SOLECTRUS"
+  },
+  "pages": [
+    {
+      "name": "p_machine",
+      "title": {
+        "de": "Linux-Gerät",
+        "default": "Linux Machine"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "linux_machine",
+          "title": {
+            "de": "Auf welchem Gerät läuft SOLECTRUS?",
+            "default": "On which device does SOLECTRUS run?"
+          },
+          "isRequired": true,
+          "choices": [
+            {
+              "value": "raspberry",
+              "text": "Raspberry Pi"
+            },
+            {
+              "value": "synology",
+              "text": "Synology NAS"
+            },
+            {
+              "value": "other",
+              "text": {
+                "de": "Anderer Linux-Server",
+                "default": "Other Linux server"
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "app_host",
+          "title": {
+            "de": "IP-Adresse oder Hostname",
+            "default": "IP address or host name"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "app_port",
+          "title": {
+            "de": "Port",
+            "default": "Port"
+          },
+          "defaultValue": "3000",
+          "isRequired": true,
+          "inputType": "number",
+          "min": 1024,
+          "max": 65535
+        }
+      ]
+    },
+    {
+      "name": "p_traefik",
+      "title": {
+        "de": "Domain & HTTPS",
+        "default": "Domain & HTTPS"
+      },
+      "elements": [
+        {
+          "type": "boolean",
+          "name": "traefik",
+          "title": {
+            "de": "Eigene Domain mit HTTPS nutzen?",
+            "default": "Use custom domain with HTTPS?"
+          },
+          "description": {
+            "de": "Ermöglicht HTTPS mit Let's Encrypt-Zertifikat",
+            "default": "Enables HTTPS with Let's Encrypt certificate"
+          }
+        },
+        {
+          "type": "text",
+          "name": "app_domain",
+          "visibleIf": "{traefik} = true",
+          "title": {
+            "de": "Domain oder Subdomain",
+            "default": "Domain or subdomain"
+          },
+          "description": {
+            "de": "z.B. meine-domain.de oder solectrus.meine-domain.de",
+            "default": "e.g. my-domain.com or solectrus.my-domain.com"
+          },
+          "isRequired": true
+        }
+      ]
+    },
+    {
+      "name": "p_backup",
+      "title": {
+        "de": "Backup",
+        "default": "Backup"
+      },
+      "elements": [
+        {
+          "type": "boolean",
+          "name": "backup",
+          "title": {
+            "de": "Automatisches Backup auf Amazon S3?",
+            "default": "Automatic backup to Amazon S3?"
+          }
+        },
+        {
+          "type": "text",
+          "name": "aws_access_key_id",
+          "visibleIf": "{backup} = true",
+          "title": "AWS Access Key ID",
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "aws_secret_access_key",
+          "visibleIf": "{backup} = true",
+          "title": "AWS Secret Access Key",
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "aws_region",
+          "visibleIf": "{backup} = true",
+          "title": "AWS Region",
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "aws_bucket",
+          "visibleIf": "{backup} = true",
+          "title": "S3 Bucket",
+          "isRequired": true
+        }
+      ]
+    },
+    {
+      "name": "p_dashboard",
+      "title": "Dashboard",
+      "elements": [
+        {
+          "type": "text",
+          "name": "installation_date",
+          "title": {
+            "de": "Inbetriebnahme der PV-Anlage",
+            "default": "Commissioning date of PV system"
+          },
+          "description": {
+            "de": "Wird für die Zeitraumauswahl benötigt",
+            "default": "Required for time range selection"
+          },
+          "isRequired": true,
+          "inputType": "date"
+        },
+        {
+          "type": "text",
+          "name": "admin_password",
+          "title": {
+            "de": "Administrator-Passwort",
+            "default": "Administrator password"
+          },
+          "description": {
+            "de": "Nur der Admin kann Einstellungen und Strompreise bearbeiten",
+            "default": "Only the admin can edit settings and electricity prices"
+          },
+          "isRequired": true
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  },
+  "showCompletePage": false
+}

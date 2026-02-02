@@ -9,6 +9,11 @@ Rails.application.routes.draw do
   # Setup wizard
   resource :setup, only: %i[new create]
 
+  # Configuration with chapters
+  resource :configuration, only: :show do
+    resources :chapters, only: %i[show edit update], module: :configurations
+  end
+
   # Dashboard
   root 'dashboard#show'
 

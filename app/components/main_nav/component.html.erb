@@ -1,0 +1,10 @@
+<div class="flex justify-center">
+  <div role="tablist" class="tabs tabs-border tabs-xl">
+    <% tabs.each do |tab| %>
+      <%= link_to tab[:path], role: "tab", class: tab_classes(tab) do %>
+        <i class="<%= tab[:icon] %>"></i>
+        <%= tab[:label] %>
+      <% end %>
+    <% end %>
+  </div>
+</div>

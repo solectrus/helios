@@ -1,0 +1,204 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Wechselrichter & Stromspeicher",
+    "default": "Inverter & Battery"
+  },
+  "description": {
+    "de": "Konfiguration deines Wechselrichters und Stromspeichers",
+    "default": "Configuration of your inverter and battery storage"
+  },
+  "pages": [
+    {
+      "name": "p_battery_vendor",
+      "title": {
+        "de": "Stromspeicher-Hersteller",
+        "default": "Battery vendor"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "battery_vendor",
+          "title": {
+            "de": "Welchen Stromspeicher hast du?",
+            "default": "Which manufacturer is your storage system from?"
+          },
+          "isRequired": true,
+          "choices": [
+            {
+              "value": "senec3",
+              "text": {
+                "de": "SENEC.Home V3 oder V2.1",
+                "default": "SENEC.Home V3 or V2.1"
+              }
+            },
+            {
+              "value": "senec4",
+              "text": "SENEC.Home 4"
+            },
+            {
+              "value": "other",
+              "text": {
+                "de": "Anderer (Messwerte per MQTT)",
+                "default": "Other (data via MQTT)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_senec3",
+      "visibleIf": "{battery_vendor} = 'senec3'",
+      "title": {
+        "de": "SENEC V3 Konfiguration",
+        "default": "SENEC V3 Configuration"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "senec_host",
+          "title": {
+            "de": "Lokale IP-Adresse oder Hostname",
+            "default": "Local IP address or host name"
+          },
+          "isRequired": true,
+          "placeholder": {
+            "de": "z.B. 192.168.178.42",
+            "default": "e.g. 192.168.178.42"
+          }
+        },
+        {
+          "type": "text",
+          "name": "senec_interval",
+          "title": {
+            "de": "Abfrage-Intervall (in Sekunden)",
+            "default": "Query interval (in seconds)"
+          },
+          "defaultValue": 5,
+          "isRequired": true,
+          "inputType": "number"
+        },
+        {
+          "type": "radiogroup",
+          "name": "senec_schema",
+          "title": {
+            "de": "Zugriffsprotokoll",
+            "default": "Protocol"
+          },
+          "defaultValue": "https",
+          "isRequired": true,
+          "choices": ["https", "http"]
+        },
+        {
+          "type": "radiogroup",
+          "name": "senec_language",
+          "title": {
+            "de": "Sprache des SENEC-Geräts",
+            "default": "Language of SENEC device"
+          },
+          "defaultValue": "de",
+          "isRequired": true,
+          "choices": [
+            { "value": "de", "text": { "de": "Deutsch", "default": "German" } },
+            { "value": "en", "text": { "de": "Englisch", "default": "English" } },
+            { "value": "it", "text": { "de": "Italienisch", "default": "Italian" } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_senec4",
+      "visibleIf": "{battery_vendor} = 'senec4'",
+      "title": {
+        "de": "SENEC Home 4 Konfiguration",
+        "default": "SENEC Home 4 Configuration"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "senec_username",
+          "title": {
+            "de": "E-Mail-Adresse",
+            "default": "Email address"
+          },
+          "description": {
+            "de": "Die Adresse, mit der du dich bei mein-senec.de einloggst",
+            "default": "The address you use to log in to mein-senec.de"
+          },
+          "isRequired": true,
+          "inputType": "email"
+        },
+        {
+          "type": "text",
+          "name": "senec_password",
+          "title": {
+            "de": "Passwort",
+            "default": "Password"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "senec_totp_uri",
+          "title": {
+            "de": "URI für MFA (optional)",
+            "default": "URI for MFA (optional)"
+          },
+          "description": {
+            "de": "Nur erforderlich, falls MFA bei SENEC aktiviert ist",
+            "default": "Only required if MFA is enabled"
+          },
+          "validators": [
+            {
+              "type": "expression",
+              "text": {
+                "de": "Muss mit otpauth:// beginnen",
+                "default": "Must start with otpauth://"
+              },
+              "expression": "{senec_totp_uri} contains 'otpauth://' or {senec_totp_uri} empty"
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "senec_system_id",
+          "title": {
+            "de": "System-ID (optional)",
+            "default": "System ID (optional)"
+          },
+          "description": {
+            "de": "Leer lassen, falls nicht bekannt oder nur ein Speicher vorhanden",
+            "default": "Leave empty if not known or only one battery"
+          }
+        },
+        {
+          "type": "text",
+          "name": "senec_interval_cloud",
+          "title": {
+            "de": "Abfrageintervall (in Sekunden)",
+            "default": "Query interval (in seconds)"
+          },
+          "defaultValue": 60,
+          "isRequired": true,
+          "inputType": "number",
+          "min": 60
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  },
+  "showCompletePage": false
+}

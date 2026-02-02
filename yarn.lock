@@ -1831,6 +1831,8 @@ __metadata:
     prettier: "npm:^3.8.1"
     prettier-plugin-tailwindcss: "npm:^0.7.2"
     rollup: "npm:^4.57.1"
+    survey-core: "npm:^2.5.8"
+    survey-js-ui: "npm:^2.5.8"
     tailwindcss: "npm:^4.1.18"
     typescript: "npm:^5.9.3"
     typescript-eslint: "npm:^8.54.0"
@@ -2923,6 +2925,24 @@ __metadata:
   version: 1.0.0
   resolution: "supports-preserve-symlinks-flag@npm:1.0.0"
   checksum: 10c0/6c4032340701a9950865f7ae8ef38578d8d7053f5e10518076e6554a9381fa91bd9c6850193695c141f32b21f979c985db07265a758867bac95de05f7d8aeb39
+  languageName: node
+  linkType: hard
+
+"survey-core@npm:^2.5.8":
+  version: 2.5.8
+  resolution: "survey-core@npm:2.5.8"
+  checksum: 10c0/9ebdcdf38970e0726bea5e50ee78886bba7d2da808520ee0cff19d7850ee4b3687cc63720e8ef66ff346e083e45ab1314a3e0584b7490b0bc3b254c0adc274e0
+  languageName: node
+  linkType: hard
+
+"survey-js-ui@npm:^2.5.8":
+  version: 2.5.8
+  resolution: "survey-js-ui@npm:2.5.8"
+  peerDependencies:
+    "@types/react": "*"
+    "@types/react-dom": "*"
+    survey-core: 2.5.8
+  checksum: 10c0/a5065c705802f54d066d49d3075f2a118e21e6a21fdd63047283712364020de9d57b61d18051210d134dd666228886911fa756e5164d20a81e88fc0e3ba107c5
   languageName: node
   linkType: hard
 

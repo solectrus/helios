@@ -1,0 +1,49 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Wallbox",
+    "default": "Wallbox"
+  },
+  "description": {
+    "de": "Konfiguration deiner Wallbox",
+    "default": "Configuration of your wallbox"
+  },
+  "pages": [
+    {
+      "name": "p_wallbox",
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "wallbox_vendor",
+          "title": {
+            "de": "Von welchem Hersteller ist deine Wallbox?",
+            "default": "Which manufacturer is your wallbox from?"
+          },
+          "isRequired": true,
+          "choices": [
+            {
+              "value": "senec",
+              "text": {
+                "de": "SENEC (gesteuert vom Stromspeicher)",
+                "default": "SENEC (controlled by the battery)"
+              }
+            },
+            {
+              "value": "other",
+              "text": {
+                "de": "Anderer (Messwerte per MQTT)",
+                "default": "Other (data via MQTT)"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}
