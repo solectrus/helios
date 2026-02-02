@@ -6,3 +6,11 @@ formatter:
   exclude:
     - 'public/**'
     - node_modules/**
+
+  rewriter:
+    # Pre-format rewriters (run before formatting)
+    pre:
+      - tailwind-class-sorter
+
+    # Post-format rewriters (run after formatting)
+    post: []

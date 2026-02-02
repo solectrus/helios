@@ -31,7 +31,7 @@
     <%= vite_stylesheet_tag 'application.css', media: 'all' %>
   </head>
 
-  <body class="min-h-screen bg-base-200">
+  <body class="bg-base-200 min-h-screen">
     <% if flash[:alert] %>
       <div class="toast toast-top toast-center z-50">
         <div class="alert alert-error"><span><%= flash[:alert] %></span></div>
