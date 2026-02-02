@@ -77,7 +77,9 @@ module DockerHost
     end
 
     def version
-      @version ||= read_version
+      @version ||= VersionExtractor.extract(container)
+    rescue Docker::Error::NotFoundError
+      nil
     end
 
     def status
@@ -140,41 +142,6 @@ module DockerHost
     def inspect
       health = health_status ? " (#{health_status})" : ''
       "#<DockerHost::Container #{service_name}: #{status}#{health}>"
-    end
-
-    private
-
-    def read_version
-      version_from_label || version_from_env
-    rescue Docker::Error::NotFoundError
-      nil
-    end
-
-    def version_from_label
-      labels['org.opencontainers.image.version']
-    end
-
-    def version_from_env
-      env_value('INFLUXDB_VERSION') ||
-        env_value('PG_VERSION') ||
-        version_from_redis_url
-    end
-
-    def version_from_redis_url
-      url = env_value('REDIS_DOWNLOAD_URL')
-      url&.[](%r{/(\d+\.\d+\.\d+)\.tar}, 1)
-    end
-
-    def labels
-      @labels ||= container.json.dig('Config', 'Labels') || {}
-    end
-
-    def env
-      @env ||= container.json.dig('Config', 'Env') || []
-    end
-
-    def env_value(key)
-      env.find { |var| var.start_with?("#{key}=") }&.split('=', 2)&.last
     end
   end
 end
