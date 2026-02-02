@@ -3,6 +3,7 @@ class ComposeJob < ApplicationJob
 
   def perform(action, service_name = nil)
     execute_action(action.to_sym, service_name)
+    broadcast_success(action.to_sym, service_name)
   rescue Compose::Runner::CommandError => e
     Rails.logger.error("ComposeJob failed: #{e.message}")
     broadcast_error(action, service_name, e)
@@ -17,6 +18,14 @@ class ComposeJob < ApplicationJob
     when :start then Compose::Runner.start(*Array(service_name))
     when :stop then Compose::Runner.stop(service_name)
     when :recreate then Compose::Runner.recreate(service_name)
+    end
+  end
+
+  def broadcast_success(action, service_name)
+    if batch_action?(action)
+      all_services.each { |s| broadcast_service_status(s.name) }
+    elsif service_name
+      broadcast_service_status(service_name)
     end
   end
 
