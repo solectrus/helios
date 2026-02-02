@@ -46,14 +46,10 @@ module Compose
     private
 
     def sort_key(name)
-      return [2, 0] if name == 'helios'
+      return 2, 0 if name == 'helios'
 
       priority_index = PRIORITY_ORDER.index(name)
-      if priority_index
-        [0, priority_index]
-      else
-        [1, name]
-      end
+      priority_index ? [0, priority_index] : [1, name]
     end
   end
 end

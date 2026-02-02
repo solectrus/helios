@@ -93,20 +93,24 @@ module Compose
 
       def build_compose_command(*args)
         [
-          'docker', 'compose',
-          '-f', Compose.path,
-          '--project-directory', host_stack_path,
-          '--progress', 'plain'
+          'docker',
+          'compose',
+          '-f',
+          Compose.path,
+          '--project-directory',
+          host_stack_path,
+          '--progress',
+          'plain',
         ] + args.map(&:to_s)
       end
 
       def raise_command_error(subcommand, output, status)
         raise CommandError.new(
-          "docker compose #{subcommand} failed: #{output}",
-          stdout: output,
-          stderr: '',
-          exit_status: status.exitstatus,
-        )
+                "docker compose #{subcommand} failed: #{output}",
+                stdout: output,
+                stderr: '',
+                exit_status: status.exitstatus,
+              )
       end
 
       def validate_stack_path!
