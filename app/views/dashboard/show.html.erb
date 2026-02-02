@@ -1,6 +1,6 @@
-<div class="min-h-screen p-8">
-  <div class="max-w-4xl mx-auto">
-    <div class="flex justify-between items-center mb-8">
+<div class="min-h-screen p-8" data-controller="visibility">
+  <div class="mx-auto max-w-4xl">
+    <div class="mb-8 flex items-center justify-between">
       <h1 class="text-4xl font-bold">HELIOS</h1>
 
       <div class="flex items-center gap-2">
@@ -11,10 +11,12 @@
 
     <%= turbo_stream_from "services" %>
 
-    <div class="flex justify-center mb-8">
-      <%= render GlobalActions::Component.new(stopped_services: @stopped_services, any_running: @any_running) %>
-    </div>
+    <div class="mb-8 flex justify-center"><%= render GlobalActions::Component.new %></div>
 
-    <%= render "services", compose_services: @compose_services, containers_by_service: @containers_by_service, host: @host %>
+    <div class="space-y-3">
+      <% @compose_services.each do |compose_service| %>
+        <%= render ServiceRow::Component.new(compose_service:, container: nil) %>
+      <% end %>
+    </div>
   </div>
 </div>

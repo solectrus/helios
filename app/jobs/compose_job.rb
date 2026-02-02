@@ -68,7 +68,7 @@ class ComposeJob < ApplicationJob
     compose_service = Compose.load.services.find(service_name)
 
     html = ApplicationController.render(
-      ServiceRow::Component.new(compose_service:, container:, host: 'localhost', pending: false, error_message:),
+      ServiceRow::Component.new(compose_service:, container:, error_message:, lazy: false),
       layout: false,
     )
 

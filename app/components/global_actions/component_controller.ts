@@ -9,6 +9,19 @@ export default class extends Controller {
   declare stopButtonTarget: HTMLButtonElement;
   declare serviceRowComponentOutlets: ServiceRowComponentController[];
 
+  connect() {
+    // Listen for Turbo frame loads to update buttons after lazy loading completes
+    document.addEventListener('turbo:frame-load', this.handleFrameLoad);
+  }
+
+  disconnect() {
+    document.removeEventListener('turbo:frame-load', this.handleFrameLoad);
+  }
+
+  private handleFrameLoad = () => {
+    this.updateButtons();
+  };
+
   serviceRowComponentOutletConnected() {
     this.updateButtons();
   }

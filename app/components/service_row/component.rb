@@ -1,20 +1,28 @@
 module ServiceRow
   class Component < ViewComponent::Base
-    attr_reader :compose_service, :container, :host, :pending, :error_message
+    attr_reader :compose_service, :container, :pending, :error_message, :lazy
 
     def initialize(
       compose_service:,
       container:,
-      host:,
       pending: false,
-      error_message: nil
+      error_message: nil,
+      lazy: true
     )
       super()
       @compose_service = compose_service
       @container = container
-      @host = host
       @pending = pending
       @error_message = error_message
+      @lazy = lazy
+    end
+
+    def dom_id
+      "service-#{service_name}"
+    end
+
+    def skip_lazy_loading?
+      !lazy || pending || error?
     end
 
     def error?
@@ -33,6 +41,14 @@ module ServiceRow
       container&.status
     end
 
+    def health
+      container&.health_status
+    end
+
+    def version
+      container&.version
+    end
+
     def public_port
       container&.public_port || compose_service.public_port
     end
@@ -44,46 +60,78 @@ module ServiceRow
       'stopped'
     end
 
-    # Basic status indicator without health check (used for initial render)
-    def basic_status_indicator_class
+    def status_indicator_class
       return 'loading loading-spinner loading-xs text-primary' if pending
-      if status_starting?
-        return 'loading loading-spinner loading-xs text-warning'
-      end
+      return 'loading loading-spinner loading-xs text-warning' if status_starting?
 
       dot = 'inline-block w-3 h-3 rounded-full'
       return "#{dot} bg-error" if error?
+      return "#{dot} border-2 border-success animate-pulse" if healthcheck_starting?
 
-      "#{dot} #{basic_indicator_class}"
+      "#{dot} #{indicator_class}"
     end
 
-    # Basic status label without health check (used for initial render)
-    def basic_status_label
+    def status_label
       return 'Processing...' if pending
       return error_message if error?
       return 'Not created' if container.nil?
-      return status&.capitalize || 'Unknown' unless running?
 
-      'Running'
+      running? ? running_status_label : (status&.capitalize || 'Unknown')
     end
 
     def status_starting?
       %w[starting restarting].include?(status)
     end
 
-    def basic_tooltip_class
+    def healthcheck_starting?
+      running? && health == 'starting'
+    end
+
+    def tooltip_class
       base = 'tooltip tooltip-left before:text-left before:text-xs'
       error? ? "#{base} tooltip-error" : "#{base} tooltip-info"
     end
 
+    delegate :helios?, to: :compose_service
+
+    def row_class
+      base = 'block rounded-lg border border-base-300 p-4 shadow-sm transition-shadow'
+
+      if helios?
+        "#{base} bg-base-300 mt-6"
+      else
+        "#{base} bg-base-100 hover:shadow-md"
+      end
+    end
+
+    def open_button_enabled?
+      !pending && running? && healthy?
+    end
+
+    def healthy?
+      health.nil? || health == 'healthy'
+    end
+
+    def start_disabled?
+      lazy || pending || running?
+    end
+
+    def stop_disabled?
+      lazy || pending || !running?
+    end
+
+    def recreate_disabled?
+      lazy || pending || !running?
+    end
+
     private
 
-    def basic_indicator_class
+    def indicator_class
       return 'border-2 border-dashed border-base-content/30' if status.nil?
 
       case status
       when 'running'
-        'bg-success'
+        indicator_running_class
       when 'created', 'removing'
         'border-2 border-base-content/30'
       when 'paused'
@@ -95,35 +143,16 @@ module ServiceRow
       end
     end
 
-    public
+    def indicator_running_class
+      return 'bg-success' if health == 'healthy' || health.nil?
 
-    delegate :helios?, to: :compose_service
-
-    def row_class
-      base = 'rounded-lg border border-base-300 p-4 shadow-sm transition-shadow'
-
-      if helios?
-        "#{base} bg-base-300 mb-6"
-      else
-        "#{base} bg-base-100 hover:shadow-md"
-      end
+      'bg-warning'
     end
 
-    def open_button_enabled?
-      # Optimistic: enable if running (health will be checked lazy)
-      !pending && running?
-    end
+    def running_status_label
+      return 'Waiting for healthcheck...' if health == 'starting'
 
-    def start_disabled?
-      pending || running?
-    end
-
-    def stop_disabled?
-      pending || !running?
-    end
-
-    def recreate_disabled?
-      pending || !running?
+      health&.capitalize || 'Running'
     end
   end
 end

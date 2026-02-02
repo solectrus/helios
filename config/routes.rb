@@ -14,8 +14,7 @@ Rails.application.routes.draw do
 
   # Service management (RESTful nested resources)
   resources :services, only: [], module: :services do
-    resource :version, only: :show
-    resource :status, only: :show
+    resource :row, only: :show
     resource :task, only: %i[create update destroy]
 
     collection do

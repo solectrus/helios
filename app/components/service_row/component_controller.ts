@@ -41,6 +41,15 @@ export default class extends Controller {
     return this.#clickAndWait(this.recreateButtonTarget);
   }
 
+  open(event: Event) {
+    event.preventDefault();
+    const target = event.currentTarget as HTMLElement;
+    const port = target.dataset.port;
+    if (port) {
+      window.open(`http://${window.location.hostname}:${port}`, '_blank');
+    }
+  }
+
   #clickAndWait(button: HTMLButtonElement) {
     return new Promise((resolve) => {
       const form = button.closest('form');

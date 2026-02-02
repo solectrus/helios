@@ -13,7 +13,6 @@ module DockerHost
         return false unless compose_service
 
         broadcast_service_row(service_name, container, compose_service)
-        broadcast_service_status(service_name, container)
         true
       end
     rescue StandardError => e
@@ -31,29 +30,13 @@ module DockerHost
       )
     end
 
-    def broadcast_service_status(service_name, container)
-      Turbo::StreamsChannel.broadcast_replace_to(
-        'services',
-        target: "service-#{service_name}-status",
-        html: render_service_status(service_name, container),
-      )
-    end
-
     def render_service_row(container, compose_service)
       ApplicationController.render(
         ServiceRow::Component.new(
           compose_service:,
           container:,
-          host: 'localhost',
-          pending: false,
+          lazy: false,
         ),
-        layout: false,
-      )
-    end
-
-    def render_service_status(service_name, container)
-      ApplicationController.render(
-        ServiceStatus::Component.new(service_name:, container:),
         layout: false,
       )
     end

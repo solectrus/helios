@@ -39,13 +39,15 @@ RSpec.describe 'Dashboard' do
       expect(response.body).to include('HELIOS')
     end
 
-    it 'shows service status' do
+    it 'shows service skeleton with lazy loading' do
       container =
         instance_double(
           DockerHost::Container,
           service_name: 'dashboard',
           running?: true,
           status: 'running',
+          health_status: nil,
+          version: '1.0.0',
           public_port: 3001,
         )
       allow(DockerHost::Container).to receive(:all).and_return([container])
@@ -54,13 +56,12 @@ RSpec.describe 'Dashboard' do
       get root_path
 
       expect(response.body).to include('dashboard')
-      # Basic status shown immediately (health loaded lazy via turbo frame)
-      expect(response.body).to include('Running')
+      expect(response.body).to include('loading loading-spinner') # Skeleton spinner
       expect(response.body).to include('turbo-frame')
-      expect(response.body).to include('/services/dashboard/status')
+      expect(response.body).to include('src="/services/dashboard/row"') # Lazy loading URL
     end
 
-    it 'shows services without containers' do
+    it 'shows service skeletons for services without containers' do
       allow(DockerHost::Container).to receive(:all).and_return([])
       mock_compose_services('redis', 'postgresql', 'dashboard')
 
@@ -69,7 +70,7 @@ RSpec.describe 'Dashboard' do
       expect(response.body).to include('redis')
       expect(response.body).to include('postgresql')
       expect(response.body).to include('dashboard')
-      expect(response.body).to include('Not created')
+      expect(response.body).to include('loading loading-spinner') # Skeleton spinner
     end
 
     context 'when setup not completed' do

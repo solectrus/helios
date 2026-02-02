@@ -119,9 +119,9 @@ RSpec.describe Compose::ServiceCollection do
         }
       end
 
-      it 'returns helios first, before all other priority services' do
+      it 'returns helios last, after all other services' do
         names = collection.sorted.map(&:name)
-        expect(names.first).to eq('helios')
+        expect(names.last).to eq('helios')
       end
     end
   end

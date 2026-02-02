@@ -31,8 +31,8 @@ module Services
           ServiceRow::Component.new(
             compose_service:,
             container:,
-            host: request.host,
             pending: yield(container),
+            lazy: false,
           ),
         )
       end
