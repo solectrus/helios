@@ -8,9 +8,7 @@ module DockerHost
       @raw_event = raw_event
     end
 
-    delegate :type, to: :raw_event
-
-    delegate :action, to: :raw_event
+    delegate :type, :action, to: :raw_event
 
     def container?
       type == 'container'

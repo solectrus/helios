@@ -3,6 +3,7 @@ plugins:
   - rubocop-rspec
   - rubocop-rspec_rails
   - rubocop-performance
+  - rubocop-thread_safety
 
 AllCops:
   NewCops: enable
@@ -68,4 +69,7 @@ RSpec/MultipleExpectations:
   Max: 5
 
 RSpec/ExampleLength:
+  Max: 20
+
+Metrics/AbcSize:
   Max: 20

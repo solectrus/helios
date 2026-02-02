@@ -14,11 +14,8 @@ module DockerHost
 
   class << self
     def configure!
-      return if @configured
-
       socket = SOCKET_PATHS.find { |path| ::File.exist?(path) }
       Docker.url = "unix://#{socket}" if socket
-      @configured = true
     end
 
     def connected?
