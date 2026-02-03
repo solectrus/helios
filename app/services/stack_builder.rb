@@ -68,7 +68,7 @@ class StackBuilder
         'POSTGRES_PASSWORD' => '${POSTGRES_PASSWORD}',
         'POSTGRES_DB' => 'solectrus',
       },
-      volumes: ['./postgresql:/var/lib/postgresql/data'],
+      volumes: ['./postgresql:/var/lib/postgresql'],
       restart: 'unless-stopped',
       healthcheck: healthcheck_config('CMD-SHELL', 'pg_isready -U postgres'),
     }
