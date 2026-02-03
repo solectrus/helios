@@ -1288,10 +1288,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"daisyui@npm:^5.5.16":
-  version: 5.5.16
-  resolution: "daisyui@npm:5.5.16"
-  checksum: 10c0/d7f3f089b7f95ecbf3afae1752b832405628f8777e8978bcb41e3b37d37d155465bdc14920cc657c59e6f041216c7e9f94fbf3b96c7a83c2756c6170c1f6ad06
+"daisyui@npm:^5.5.17":
+  version: 5.5.17
+  resolution: "daisyui@npm:5.5.17"
+  checksum: 10c0/5d3d7f6a9a499325bf32f27bbab496aafb6aa10956cefbc9797dadb9d1848636576c35d98ebecc048da1516423bf306924579a7d75c6a6a6770e3a2cf62d43b0
   languageName: node
   linkType: hard
 
@@ -1824,7 +1824,7 @@ __metadata:
     "@tailwindcss/typography": "npm:^0.5.19"
     "@tailwindcss/vite": "npm:^4.1.18"
     "@types/node": "npm:^25.2.0"
-    daisyui: "npm:^5.5.16"
+    daisyui: "npm:^5.5.17"
     eslint: "npm:^9.39.2"
     eslint-config-prettier: "npm:^10.1.8"
     eslint-plugin-prettier: "npm:^5.5.5"
@@ -2251,17 +2251,17 @@ __metadata:
   linkType: hard
 
 "minipass-fetch@npm:^5.0.0":
-  version: 5.0.0
-  resolution: "minipass-fetch@npm:5.0.0"
+  version: 5.0.1
+  resolution: "minipass-fetch@npm:5.0.1"
   dependencies:
     encoding: "npm:^0.1.13"
     minipass: "npm:^7.0.3"
-    minipass-sized: "npm:^1.0.3"
+    minipass-sized: "npm:^2.0.0"
     minizlib: "npm:^3.0.1"
   dependenciesMeta:
     encoding:
       optional: true
-  checksum: 10c0/9443aab5feab190972f84b64116e54e58dd87a58e62399cae0a4a7461b80568281039b7c3a38ba96453431ebc799d1e26999e548540156216729a4967cd5ef06
+  checksum: 10c0/50bcf48c9841ebb25e29a2817468595219c72cfffc7c175a1d7327843c8bef9b72cb01778f46df7eca695dfe47ab98e6167af4cb026ddd80f660842919a5193c
   languageName: node
   linkType: hard
 
@@ -2283,12 +2283,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"minipass-sized@npm:^1.0.3":
-  version: 1.0.3
-  resolution: "minipass-sized@npm:1.0.3"
+"minipass-sized@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "minipass-sized@npm:2.0.0"
   dependencies:
-    minipass: "npm:^3.0.0"
-  checksum: 10c0/298f124753efdc745cfe0f2bdfdd81ba25b9f4e753ca4a2066eb17c821f25d48acea607dfc997633ee5bf7b6dfffb4eee4f2051eb168663f0b99fad2fa4829cb
+    minipass: "npm:^7.1.2"
+  checksum: 10c0/f9201696a6f6d68610d04c9c83e3d2e5cb9c026aae1c8cbf7e17f386105cb79c1bb088dbc21bf0b1eb4f3fb5df384fd1e7aa3bf1f33868c416ae8c8a92679db8
   languageName: node
   linkType: hard
 
