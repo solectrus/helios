@@ -38,8 +38,6 @@ RSpec.describe 'Setup Wizard' do
     end
 
     it 'saves configuration' do
-      allow(Compose::Runner).to receive(:up)
-
       post setup_path, params: valid_params
 
       config = Configuration.current
@@ -48,33 +46,19 @@ RSpec.describe 'Setup Wizard' do
     end
 
     it 'generates compose.yaml and .env' do
-      allow(Compose::Runner).to receive(:up)
-
       post setup_path, params: valid_params
 
       expect(File.exist?(tmp_dir.join('compose.yaml'))).to be true
       expect(File.exist?(tmp_dir.join('.env'))).to be true
     end
 
-    it 'starts services' do
-      allow(Compose::Runner).to receive(:up)
-
-      post setup_path, params: valid_params
-
-      expect(Compose::Runner).to have_received(:up)
-    end
-
     it 'marks setup as completed' do
-      allow(Compose::Runner).to receive(:up)
-
       post setup_path, params: valid_params
 
       expect(Configuration.current.setup_completed?).to be true
     end
 
     it 'redirects to dashboard' do
-      allow(Compose::Runner).to receive(:up)
-
       post setup_path, params: valid_params
 
       expect(response).to redirect_to(root_path)

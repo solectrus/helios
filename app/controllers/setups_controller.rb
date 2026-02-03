@@ -11,7 +11,7 @@ class SetupsController < ApplicationController
     return render_error(:timezone_required) if setup_params[:timezone].blank?
 
     save_configuration
-    start_stack
+    finish_setup
     redirect_to root_path
   end
 
@@ -27,9 +27,8 @@ class SetupsController < ApplicationController
     @configuration.save!
   end
 
-  def start_stack
+  def finish_setup
     StackBuilder.new(@configuration).write!
-    Compose::Runner.up
     @configuration.complete_setup!
   end
 
