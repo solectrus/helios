@@ -90,6 +90,10 @@ module DockerHost
       status == 'running'
     end
 
+    def stoppable?
+      %w[running restarting paused].include?(status)
+    end
+
     def health_status
       container.json.dig('State', 'Health', 'Status')
     rescue Docker::Error::NotFoundError

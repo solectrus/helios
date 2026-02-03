@@ -117,11 +117,15 @@ module ServiceRow
     end
 
     def stop_disabled?
-      lazy || pending || !running?
+      lazy || pending || !stoppable?
     end
 
     def recreate_disabled?
-      lazy || pending || !running?
+      lazy || pending || !stoppable?
+    end
+
+    def stoppable?
+      container&.stoppable?
     end
 
     private
