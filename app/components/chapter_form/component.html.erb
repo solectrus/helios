@@ -1,0 +1,17 @@
+<%= helpers.turbo_frame_tag "chapter-modal-content" do %>
+  <%= form_with url: form_url,
+                method: :patch,
+                id: "chapter-form",
+                data: { turbo_frame: "_top" } do %>
+    <div
+      data-controller="survey"
+      data-survey-url-value="<%= survey_url %>"
+      data-survey-form-id-value="chapter-form"
+      data-survey-field-name-value="chapter"
+    >
+      <script type="application/json" data-survey-target="initialData"><%= chapter_data_json.html_safe %></script>
+
+      <div data-survey-target="container" class="bg-base-100 rounded-lg"></div>
+    </div>
+  <% end %>
+<% end %>

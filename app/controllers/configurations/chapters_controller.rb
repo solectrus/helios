@@ -16,7 +16,8 @@ module Configurations
     end
 
     def edit
-      @chapter_data = @configuration.chapter(chapter_name)
+      chapter_data = @configuration.chapter(chapter_name)
+      render ChapterForm::Component.new(chapter: chapter_name, chapter_data:)
     end
 
     def update
@@ -33,7 +34,8 @@ module Configurations
     def validate_chapter
       return if Chapter::NAMES.include?(chapter_name)
 
-      redirect_to configuration_path, alert: t('configurations.chapters.invalid_chapter')
+      redirect_to configuration_path,
+                  alert: t('configurations.chapters.invalid_chapter')
     end
 
     def chapter_name
