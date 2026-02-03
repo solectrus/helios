@@ -1,29 +1,17 @@
-<div
-  class="flex items-center justify-center gap-4"
-  data-controller="global-actions--component"
-  data-global-actions--component-service-row--component-outlet="[data-controller='service-row--component']"
->
-  <%= form_with url: batch_path, method: :post, data: { turbo_frame: "_top" } do %>
-    <button
-      type="submit"
-      class="btn btn-lg btn-info gap-2"
-      data-global-actions--component-target="startButton"
-      disabled
-    >
-      <i class="fa-solid fa-play"></i>
-      Start
-    </button>
+<%= helpers.turbo_frame_tag "batch-actions", class: "flex items-center justify-center gap-4",
+    data: {
+      controller: "global-actions--component",
+      global_actions__component_service_row__component_outlet: "[data-controller='service-row--component']"
+    } do %>
+  <%= button_to batch_path, method: :post, class: "btn btn-lg btn-info gap-2",
+      data: { global_actions__component_target: "startButton" }, disabled: true do %>
+    <i class="fa-solid fa-play"></i>
+    Start
   <% end %>
 
-  <%= form_with url: batch_path, method: :delete, data: { turbo_frame: "_top" } do %>
-    <button
-      type="submit"
-      class="btn btn-lg btn-info gap-2"
-      data-global-actions--component-target="stopButton"
-      disabled
-    >
-      <i class="fa-solid fa-stop"></i>
-      Stop
-    </button>
+  <%= button_to batch_path, method: :delete, class: "btn btn-lg btn-info gap-2",
+      data: { global_actions__component_target: "stopButton" }, disabled: true do %>
+    <i class="fa-solid fa-stop"></i>
+    Stop
   <% end %>
-</div>
+<% end %>
