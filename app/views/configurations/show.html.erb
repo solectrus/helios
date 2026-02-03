@@ -9,7 +9,8 @@
     <div class="grid gap-4">
       <% @chapters.each do |chapter| %>
         <%= link_to edit_configuration_chapter_path(chapter),
-                    class: "card bg-base-100 shadow-md hover:shadow-lg transition-shadow" do %>
+                    class: "card bg-base-100 shadow-md hover:shadow-lg transition-shadow",
+                    data: { turbo_frame: "chapter-modal-content" } do %>
           <div class="card-body">
             <div class="flex items-center justify-between">
               <div>
@@ -36,3 +37,5 @@
     </div>
   </div>
 </div>
+
+<%= render DialogModal::Component.new(id: "chapter-modal", turbo_frame: "chapter-modal-content") %>

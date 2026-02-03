@@ -1,0 +1,29 @@
+<% content_for :title, t('.title', chapter: t("configurations.chapters.#{chapter_name}.title")) %>
+
+<div class="container mx-auto max-w-4xl p-4">
+  <div class="mb-6">
+    <%= link_to configuration_path, class: "btn btn-ghost btn-sm gap-2" do %>
+      <i class="fa-solid fa-arrow-left"></i>
+      <%= t('common.back') %>
+    <% end %>
+  </div>
+
+  <h1 class="mb-2 text-3xl font-bold"><%= t("configurations.chapters.#{chapter_name}.title") %></h1>
+
+  <p class="text-base-content/70 mb-6"><%= t("configurations.chapters.#{chapter_name}.description") %></p>
+
+  <%= form_with url: configuration_chapter_path(chapter_name),
+                method: :patch,
+                id: "chapter-form",
+                data: { turbo: false } do |f| %>
+    <div
+      data-controller="survey"
+      data-survey-json-value="<%= survey_json.to_json %>"
+      data-survey-initial-data-value="<%= @chapter_data.to_json %>"
+      data-survey-form-id-value="chapter-form"
+      data-survey-field-name-value="chapter"
+    >
+      <div data-survey-target="container" class="bg-base-100 rounded-lg p-4 shadow-lg"></div>
+    </div>
+  <% end %>
+</div>

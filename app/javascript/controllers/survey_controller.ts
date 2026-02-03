@@ -70,7 +70,17 @@ export default class extends Controller {
       this.handleValueChanged(options);
     });
 
-    // Handle survey completion
+    // Handle survey completing (fires before DOM changes)
+    this.survey.onCompleting.add((sender, options) => {
+      // Prevent SurveyJS completion. This avoids UI changes.
+      options.allow = false;
+
+      // Submit form and close modal
+      this.submitForm(sender.data);
+      this.dispatch('formSubmitted');
+    });
+
+    // Handle survey completion (only for non-form mode)
     this.survey.onComplete.add((sender) => {
       this.handleComplete(sender.data);
     });
@@ -122,12 +132,6 @@ export default class extends Controller {
   }
 
   private handleComplete(data: Record<string, unknown>) {
-    // If form integration is enabled, submit the form with survey data
-    if (this.hasFormIdValue) {
-      this.submitForm(data);
-      return;
-    }
-
     // Show output if target exists (standalone mode)
     if (this.hasOutputTarget) {
       this.outputTarget.innerHTML = `
