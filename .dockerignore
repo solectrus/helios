@@ -11,7 +11,6 @@
 .rubocop.yml
 .vscode
 .yarnclean
-.slim-lint.yml
 .prettierignore
 .prettierrc.json
 .simplecov
@@ -28,7 +27,6 @@ tmp/*
 yarn-error.log
 config/environments/test.rb
 config/environments/development.rb
-config/rorvswild.yml
 config/brakeman.ignore
 config/bundler-audit.yml
 config/ci.rb

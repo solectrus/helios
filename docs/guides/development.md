@@ -130,7 +130,7 @@ spec/
 │   └── configuration_spec.rb
 ├── fixtures/
 │   ├── sample.env
-│   └── sample-compose.yaml
+│   └── compose.yaml
 └── support/
     └── docker_helpers.rb
 ```
