@@ -2,7 +2,7 @@ class Configuration < ApplicationRecord
   has_many :chapters, dependent: :destroy
 
   def self.current
-    first_or_create!(data: default_data)
+    includes(:chapters).first_or_create!(data: default_data)
   end
 
   def self.default_data
@@ -20,7 +20,7 @@ class Configuration < ApplicationRecord
   end
 
   def chapter_completed?(name)
-    chapters.find_by(name:)&.completed? || false
+    chapters.find { |c| c.name == name.to_s }&.completed? || false
   end
 
   # Legacy accessors for backward compatibility
