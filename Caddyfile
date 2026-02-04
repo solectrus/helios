@@ -1,0 +1,9 @@
+# Main Rails application
+https://helios.localhost {
+	reverse_proxy localhost:3001
+}
+
+# Vite dev server for HMR
+https://vite.helios.localhost {
+	reverse_proxy localhost:3036
+}

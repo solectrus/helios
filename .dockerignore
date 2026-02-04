@@ -45,7 +45,6 @@ eslint.config.mjs
 docs
 .claude
 .herb.yml
-.overmind.sock
 .ruby-lsp
 CLAUDE.md
 stack

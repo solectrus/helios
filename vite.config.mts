@@ -37,7 +37,7 @@ export default defineConfig(() => ({
   },
   server: {
     hmr: {
-      host: 'vite.helios.test',
+      host: 'vite.helios.localhost',
       clientPort: 443,
     },
   },

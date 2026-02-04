@@ -40,6 +40,7 @@ end
 
 group :development do
   gem 'amazing_print'
+  gem 'foreman'
   gem 'syntax_tree'
   gem 'web-console'
 end

@@ -1,17 +1,13 @@
 #!/usr/bin/env ruby
 
-require 'dotenv'
 require 'open3'
-
-# Load environment variables
-Dotenv.load('.env.development')
 
 # Get the default browser
 default_browser =
   `defaults read ~/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure | awk -F'\"' '/http;/{print window[(NR-1)]}{window[NR]=$2}'`.chomp
 
 # Set the application URL
-url = 'https://helios.test'
+url = 'https://helios.localhost'
 
 # Function to check if Brave is running
 def running?(browser)

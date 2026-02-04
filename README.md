@@ -21,31 +21,33 @@ Helios eliminates the need to manually edit configuration files or understand Do
 
 ## Development
 
-1. Install and set up [puma-dev](https://github.com/puma/puma-dev) to use HTTPS for development. Do this on macOS:
+1. Install [Caddy](https://caddyserver.com/) for local HTTPS:
 
 ```bash
-sudo puma-dev -setup
-puma-dev -install
-puma-dev link
-
-# Use Vite via puma-dev proxy
-# Adopted from https://github.com/puma/puma-dev#webpack-dev-server
-echo 3036 > ~/.puma-dev/vite.helios
+brew install caddy
 ```
 
-4. Setup the application to install gems and NPM packages and create the database:
+2. Add local domains to `/etc/hosts`:
+
+```bash
+echo "127.0.0.1 helios.localhost vite.helios.localhost" | sudo tee -a /etc/hosts
+```
+
+3. Setup the application to install gems and NPM packages and create the database:
 
 ```bash
 bin/setup
 ```
 
-5. Start the application locally:
+4. Start the application locally:
 
 ```bash
 bin/dev
 ```
 
-This starts the app and opens https://helios.test in your default browser (see `Procfile.dev`).
+This starts the app and opens https://helios.localhost in your default browser.
+
+On the first run, Caddy will ask for your password to install its local CA certificate.
 
 See [Development Guide](docs/guides/development.md) for details.
 
