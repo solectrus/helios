@@ -21,10 +21,31 @@ Helios eliminates the need to manually edit configuration files or understand Do
 
 ## Development
 
+1. Install and set up [puma-dev](https://github.com/puma/puma-dev) to use HTTPS for development. Do this on macOS:
+
+```bash
+sudo puma-dev -setup
+puma-dev -install
+puma-dev link
+
+# Use Vite via puma-dev proxy
+# Adopted from https://github.com/puma/puma-dev#webpack-dev-server
+echo 3036 > ~/.puma-dev/vite.helios
+```
+
+4. Setup the application to install gems and NPM packages and create the database:
+
 ```bash
 bin/setup
-bin/rails server -p 3999
 ```
+
+5. Start the application locally:
+
+```bash
+bin/dev
+```
+
+This starts the app and opens https://helios.test in your default browser (see `Procfile.dev`).
 
 See [Development Guide](docs/guides/development.md) for details.
 
