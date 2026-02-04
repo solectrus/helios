@@ -1,13 +1,47 @@
 #!/usr/bin/env ruby
 
+require 'net/http'
 require 'open3'
+
+# Set the application URL
+url = 'https://helios.localhost'
+
+# Check if server responds successfully
+def server_ready?(uri)
+  http = Net::HTTP.new(uri.host, uri.port)
+  http.use_ssl = true
+  http.open_timeout = 1
+  http.read_timeout = 1
+  http.verify_mode = OpenSSL::SSL::VERIFY_NONE # Accept self-signed certificates from Caddy
+  response = http.head('/')
+  response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPRedirection)
+rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Net::OpenTimeout, OpenSSL::SSL::SSLError
+  false
+end
+
+# Wait for the server to be ready
+def wait_for_server(url, timeout: 30)
+  uri = URI(url)
+  start_time = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+
+  loop do
+    return true if server_ready?(uri)
+
+    if Process.clock_gettime(Process::CLOCK_MONOTONIC) - start_time > timeout
+      warn "Timeout waiting for #{url}"
+      return false
+    end
+
+    sleep 0.5
+  end
+end
+
+# Wait for server before proceeding
+exit unless wait_for_server(url)
 
 # Get the default browser
 default_browser =
   `defaults read ~/Library/Preferences/com.apple.LaunchServices/com.apple.launchservices.secure | awk -F'\"' '/http;/{print window[(NR-1)]}{window[NR]=$2}'`.chomp
-
-# Set the application URL
-url = 'https://helios.localhost'
 
 # Function to check if Brave is running
 def running?(browser)
@@ -37,11 +71,12 @@ def select_tab_script_chromium(browser, url)
               if tabFound then exit repeat
           end repeat
 
-          -- If the tab with the URL was found, activate it.
+          -- If the tab with the URL was found, activate it and reload.
           if tabFound then
               set active tab index of theWindow to theTabIndex
               set index of theWindow to 1
               activate
+              reload active tab of theWindow
           else
               -- If the tab wasn't found, open a new one.
               tell window 1
@@ -50,7 +85,7 @@ def select_tab_script_chromium(browser, url)
               end tell
           end if
       end tell
-    APPLESCRIPT
+  APPLESCRIPT
 end
 
 def select_tab_script_safari(url)
@@ -75,13 +110,16 @@ def select_tab_script_safari(url)
               if tabFound then exit repeat
           end repeat
 
-          -- If the tab with the URL was found, activate it.
+          -- If the tab with the URL was found, activate it and reload.
           if tabFound then
               tell theWindow
                   set current tab to tab theTabIndex
                   set index to 1
               end tell
               activate
+              tell theWindow
+                  do JavaScript "location.reload()" in current tab
+              end tell
           else
               -- If the tab wasn't found, open a new one.
               tell window 1
@@ -91,7 +129,7 @@ def select_tab_script_safari(url)
               end tell
           end if
       end tell
-    APPLESCRIPT
+  APPLESCRIPT
 end
 
 def select_tab_script_firefox(url)
@@ -104,7 +142,7 @@ def select_tab_script_firefox(url)
           activate
           open location "#{url}"
       end tell
-    APPLESCRIPT
+  APPLESCRIPT
 end
 
 def open_url(browser, url)
@@ -121,7 +159,7 @@ def open_url(browser, url)
         raise "Unknown browser: #{browser.inspect}"
       end
 
-    Open3.popen3('osascript', '-e', script) do |stdin, stdout, stderr, wait_thr|
+    Open3.popen3('osascript', '-e', script) do |_stdin, stdout, _stderr, _wait_thr|
       stdout.read
     end
   else
