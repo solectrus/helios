@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe 'Setup Wizard', :with_admin do
   let(:tmp_dir) { Rails.root.join('tmp/test_stack') }
 

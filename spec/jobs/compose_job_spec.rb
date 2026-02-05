@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe ComposeJob do
   describe '#perform' do
     context 'when command succeeds' do

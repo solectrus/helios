@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe Compose::Runner do
   let(:stack_path) { Rails.root.join('tmp/stack').to_s }
 

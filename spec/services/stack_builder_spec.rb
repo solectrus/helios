@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe StackBuilder do
   let(:configuration) do
     Configuration.current.tap do |config|

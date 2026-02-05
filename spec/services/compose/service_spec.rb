@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe Compose::Service do
   describe '#image' do
     it 'returns the image name' do

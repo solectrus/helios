@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe Admin do
   describe '.create_admin!' do
     it 'creates admin with hashed password' do

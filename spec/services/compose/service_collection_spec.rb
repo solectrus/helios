@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe Compose::ServiceCollection do
   let(:services_hash) do
     {

@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe 'Services::Tasks', :with_admin do
   before do
     login

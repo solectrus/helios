@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe 'Services::Batches', :with_admin do
   before do
     login

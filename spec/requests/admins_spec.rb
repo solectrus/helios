@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe 'Admin Setup', :without_admin do
   describe 'GET /admin/new' do
     context 'when no admin exists' do

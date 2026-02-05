@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe Env::File do
   let(:fixture_path) { Rails.root.join('spec/fixtures/sample.env') }
   let(:tmp_path) { Rails.root.join('tmp/test.env') }

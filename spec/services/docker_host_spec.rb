@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe DockerHost do
   describe '.connected?' do
     it 'returns true when Docker is available' do

@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe 'Configurations', :with_admin do
   before { login }
 

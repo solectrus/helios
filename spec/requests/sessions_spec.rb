@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe 'Sessions', :with_admin do
   describe 'GET /session/new' do
     it 'shows login form' do

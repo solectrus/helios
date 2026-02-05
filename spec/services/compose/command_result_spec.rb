@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe Compose::CommandResult do
   let(:result) do
     described_class.new(output: 'Container started', exit_status: 0)

@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe 'Configurations::Chapters', :with_admin do
   let(:configuration) { Configuration.current }
 

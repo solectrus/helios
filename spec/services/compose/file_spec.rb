@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe Compose::File do
   let(:fixture_path) { Rails.root.join('spec/fixtures/compose.yaml') }
   let(:tmp_path) { Rails.root.join('tmp/test-compose.yaml') }

@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe Configuration do
   describe 'associations' do
     it { is_expected.to have_many(:chapters).dependent(:destroy) }

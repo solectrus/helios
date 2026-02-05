@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe DockerHost::Container do
   let(:mock_container) do
     instance_double(

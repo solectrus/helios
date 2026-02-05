@@ -1,5 +1,3 @@
-require 'rails_helper'
-
 RSpec.describe Chapter do
   subject(:chapter) do
     described_class.new(configuration:, name: 'devices', data: {})
