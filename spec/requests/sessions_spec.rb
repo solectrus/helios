@@ -1,8 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe 'Sessions' do
-  before { Admin.create_admin!(password: 'secretpassword') }
-
+RSpec.describe 'Sessions', :with_admin do
   describe 'GET /session/new' do
     it 'shows login form' do
       get new_session_path
@@ -11,7 +9,7 @@ RSpec.describe 'Sessions' do
     end
 
     it 'redirects to root if already authenticated' do
-      post session_path, params: { password: 'secretpassword' }
+      login
       get new_session_path
       expect(response).to redirect_to(root_path)
     end
@@ -19,7 +17,7 @@ RSpec.describe 'Sessions' do
 
   describe 'POST /session' do
     it 'logs in with correct password' do
-      post session_path, params: { password: 'secretpassword' }
+      post session_path, params: { password: 'test' }
       expect(response).to redirect_to(root_path)
     end
 
@@ -32,7 +30,7 @@ RSpec.describe 'Sessions' do
 
   describe 'DELETE /session' do
     it 'logs out user' do
-      post session_path, params: { password: 'secretpassword' }
+      login
       delete session_path
       expect(response).to redirect_to(new_session_path)
     end

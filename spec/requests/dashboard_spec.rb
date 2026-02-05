@@ -1,9 +1,8 @@
 require 'rails_helper'
 
-RSpec.describe 'Dashboard' do
+RSpec.describe 'Dashboard', :with_admin do
   before do
-    Admin.create_admin!(password: 'test')
-    post session_path, params: { password: 'test' }
+    login
     Configuration.current.complete_setup!
   end
 

@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-RSpec.describe 'Admin Setup' do
+RSpec.describe 'Admin Setup', :without_admin do
   describe 'GET /admin/new' do
     context 'when no admin exists' do
       it 'shows password setup form' do
@@ -11,7 +11,7 @@ RSpec.describe 'Admin Setup' do
     end
 
     context 'when admin exists' do
-      before { Admin.create_admin!(password: 'test') }
+      before { create_admin }
 
       it 'redirects to root' do
         get new_admin_path

@@ -1,11 +1,10 @@
 require 'rails_helper'
 
-RSpec.describe 'Setup Wizard' do
+RSpec.describe 'Setup Wizard', :with_admin do
   let(:tmp_dir) { Rails.root.join('tmp/test_stack') }
 
   before do
-    Admin.create_admin!(password: 'test')
-    post session_path, params: { password: 'test' }
+    login
 
     FileUtils.mkdir_p(tmp_dir)
     allow(Rails.configuration).to receive(:helios_stack_path).and_return(
