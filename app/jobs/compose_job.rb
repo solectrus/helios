@@ -18,6 +18,7 @@ class ComposeJob < ApplicationJob
     when :start then Compose::Runner.start(*Array(service_name))
     when :stop then Compose::Runner.stop(service_name)
     when :recreate then Compose::Runner.recreate(service_name)
+    else raise ArgumentError, "Unknown compose action: #{action}"
     end
   end
 
@@ -56,9 +57,12 @@ class ComposeJob < ApplicationJob
     end
   end
 
+  def compose_file
+    @compose_file ||= Compose.load
+  end
+
   def extract_service_from_image(error)
     output = error.stdout.to_s
-    compose_file = Compose.load
 
     # Find which service uses the failing image mentioned in the error
     compose_file.services.each do |service|
@@ -69,12 +73,12 @@ class ComposeJob < ApplicationJob
   end
 
   def all_services
-    Compose.load.services.reject(&:helios?)
+    compose_file.services.reject(&:helios?)
   end
 
   def broadcast_service_status(service_name, error_message: nil)
     container = DockerHost::Container.find(service_name)
-    compose_service = Compose.load.services.find(service_name)
+    compose_service = compose_file.services.find(service_name)
 
     html = ApplicationController.render(
       ServiceRow::Component.new(compose_service:, container:, error_message:, lazy: false),
@@ -104,7 +108,7 @@ class ComposeJob < ApplicationJob
     service_name = match[2]
 
     # Verify this service exists in our compose file
-    compose_service = Compose.load.services.find(service_name)
+    compose_service = compose_file.services.find(service_name)
     compose_service ? service_name : nil
   end
 end
