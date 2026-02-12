@@ -4,10 +4,11 @@
 
 ### FR-1: One-Command Installation (New Users)
 
+- **Prerequisite:** Docker and Docker Compose must be installed
 - Installation via single shell command: `curl -fsSL solectrus.de/install.sh | sh`
 - The install script shall:
-  - Detect the operating system and architecture
-  - Install Docker if not present
+  - Check that Docker and Docker Compose are available
+  - Detect the architecture (AMD64/ARM64)
   - Create a `compose.yaml` with only Helios
   - Start the Docker stack
   - Display the URL to access Helios

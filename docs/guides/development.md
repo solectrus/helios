@@ -19,9 +19,9 @@ bin/setup
 
 ```bash
 # Path where Helios manages compose.yaml and .env
-# Default: /opt/solectrus (production)
-# Development: configurable via environment variable
-HELIOS_STACK_PATH=./tmp/solectrus-stack
+# Default: ./stack (relative to Rails root)
+# Configurable via environment variable
+HELIOS_STACK_PATH=./stack
 ```
 
 **Project name derivation:**
@@ -29,19 +29,17 @@ HELIOS_STACK_PATH=./tmp/solectrus-stack
 - In production (container): Helios reads project name from its own container labels
 - In development (native): Project name is derived from the directory name of `HELIOS_STACK_PATH`
 
-Example: `HELIOS_STACK_PATH=./tmp/solectrus-stack` → project name is `solectrus-stack`
+Example: `HELIOS_STACK_PATH=./stack` → project name is `stack`
 
 This matches Docker Compose's default behavior (using directory name as project name).
 
 ## Development Workflow
 
 ```bash
-# 1. Start Rails app locally
-bin/rails server -p 3999
+# Start all processes (Rails + Vite + Caddy)
+bin/dev
 
-# 2. Helios creates/manages compose.yaml in HELIOS_STACK_PATH
-# 3. Helios runs `docker compose` commands against that directory
-# 4. Stack services run in Docker, Helios runs natively
+# URL: https://helios.localhost (via Caddy reverse proxy)
 ```
 
 **Key difference from production:**
@@ -76,7 +74,7 @@ bin/rails server -p 3999
         /\
        /  \      System tests (Capybara) – few, for critical flows
       /----\
-     /      \    Integration tests – Docker API, CLI interactions
+     /      \    Request tests – controllers, auth, integration
     /--------\
    /          \  Unit tests – majority of tests, fast, isolated
   --------------
@@ -84,15 +82,16 @@ bin/rails server -p 3999
 
 ### Test Categories
 
-| Category          | Purpose                              | Tools               | Priority |
-| ----------------- | ------------------------------------ | ------------------- | -------- |
-| Unit tests        | Service classes, models              | RSpec               | High     |
-| Integration tests | Docker API, Compose CLI interactions | RSpec + real Docker | Medium   |
-| System tests      | Full UI flows (Phase 1+)             | RSpec + Capybara    | Low      |
+| Category      | Purpose                              | Tools               | Priority |
+| ------------- | ------------------------------------ | -------------------- | -------- |
+| Unit tests    | Service classes, models, components  | RSpec                | High     |
+| Request tests | Controllers, auth, HTTP integration  | RSpec                | High     |
+| Job tests     | Background job behavior              | RSpec                | Medium   |
+| System tests  | Full UI flows                        | RSpec + Capybara     | Low      |
 
 **What we don't use:**
 
-- No JavaScript tests with Playwright, Cypress, or similar – the effort doesn't pay off for this project
+- No JavaScript tests with Playwright, Cypress, or similar
 - Capybara with Rack driver is sufficient for UI testing
 
 ### Run Tests
@@ -102,37 +101,52 @@ bin/rails server -p 3999
 bin/rspec
 
 # Run specific test file
-bin/rspec spec/services/env_file_spec.rb
+bin/rspec spec/services/compose/file_spec.rb
 
 # Run with coverage report
 COVERAGE=true bin/rspec
 ```
 
-### Phase 0 Focus
-
-- Unit tests for `Compose::File`, `Env::File` classes
-- Integration tests for `DockerHost::Container`, `Compose::Runner`
-- Tests run against real Docker (no mocking of Docker API)
-
 ### Test Structure
 
 ```
 spec/
+├── models/
+│   ├── admin_spec.rb
+│   ├── chapter_spec.rb
+│   └── configuration_spec.rb
+├── requests/
+│   ├── admins_spec.rb
+│   ├── configurations_spec.rb
+│   ├── configurations/chapters_spec.rb
+│   ├── dashboard_spec.rb
+│   ├── sessions_spec.rb
+│   ├── setups_spec.rb
+│   └── services/
+│       ├── batches_spec.rb
+│       ├── rows_spec.rb
+│       └── tasks_spec.rb
+├── jobs/
+│   └── compose_job_spec.rb
 ├── services/
 │   ├── compose/
+│   │   ├── command_result_spec.rb
 │   │   ├── file_spec.rb
-│   │   └── runner_spec.rb
+│   │   ├── runner_spec.rb
+│   │   ├── service_spec.rb
+│   │   └── service_collection_spec.rb
 │   ├── env/
 │   │   └── file_spec.rb
-│   └── docker_host/
-│       └── container_spec.rb
-├── models/
-│   └── configuration_spec.rb
+│   ├── docker_host/
+│   │   └── container_spec.rb
+│   ├── docker_host_spec.rb
+│   └── stack_builder_spec.rb
 ├── fixtures/
-│   ├── sample.env
-│   └── compose.yaml
+│   └── ...
 └── support/
-    └── docker_helpers.rb
+    ├── auth_helpers.rb
+    ├── docker_helpers.rb
+    └── vite_helpers.rb
 ```
 
 ### Writing Good Tests

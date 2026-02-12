@@ -2,7 +2,7 @@
 
 ## Project
 
-Helios is a web-based bootstrap helper for SOLECTRUS. It manages Docker Compose stacks through a web interface.
+Helios is a web-based management tool for SOLECTRUS, aimed at the admin of the Docker host. It eliminates the need to manually edit `compose.yaml` and `.env` files or run Docker commands.
 
 ## Documentation
 
@@ -56,11 +56,10 @@ https://daisyui.com/llms.txt
 
 ## Current Phase
 
-**Phase 0: Proof of Concept** - Technical validation without UI
+**Phase 1: MVP** - First usable version with web UI
 
-Goal: Validate core functionality via `rails console`:
+Phase 0 (Proof of Concept) is complete. All core functionality works:
+compose.yaml/env handling, Docker API, Compose CLI, authentication, setup wizard,
+service management with real-time updates.
 
-1. Read/write `compose.yaml`
-2. Read/write `.env` (preserving comments)
-3. Access Docker API (container status, logs)
-4. Execute Compose commands (up, down, pull, restart)
+Current focus: completing the MVP user flow (install script → setup → running stack).

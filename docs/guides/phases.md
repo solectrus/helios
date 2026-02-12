@@ -1,82 +1,32 @@
 # Development Phases
 
-## Phase 0: Proof of Concept
+## Phase 0: Proof of Concept ✅
 
-Technical validation before building UI. Rails app without frontend, all testing via `rails console`.
+**Status: Complete.**
 
-### Goals
+All core functionality validated and implemented:
 
-Validate that we can:
+- [x] Parse and regenerate compose.yaml without data loss
+- [x] Read/write .env files preserving comments
+- [x] List all containers in the stack via Docker API
+- [x] Read container health status
+- [x] Execute `docker compose up/down/pull` via CLI
+- [x] Works both in development (native) and container environment
 
-1. **Read/write compose.yaml** – parse and modify Docker Compose files
-2. **Read/write .env** – manage environment variables
-3. **Access Docker API** – list containers, read status, stream logs
-4. **Execute Compose commands** – `up`, `down`, `pull`, `restart`
-5. **Detect stack services** – find containers by Compose labels
+Additionally implemented beyond original scope:
 
-### Scope
-
-| In Scope                          | Out of Scope     |
-| --------------------------------- | ---------------- |
-| Rails app skeleton                | Web UI           |
-| Service classes for Docker access | Authentication   |
-| Console-based testing             | Database models  |
-| `docker-api` gem integration      | Background jobs  |
-| `Open3` CLI wrapper               | Configuration UI |
-| YAML parsing for compose.yaml     | Install script   |
-
-### Deliverables
-
-```ruby
-# Example console session after Phase 0:
-
-# Read compose.yaml
-compose = Compose.load
-compose.services.map(&:name)
-# => ["helios", "postgresql", "redis", "influxdb", "dashboard"]
-
-# Modify and write
-compose.add_service('watchtower', image: 'nickfedor/watchtower:latest')
-compose.save
-
-# Read/write .env
-env = Env.load
-env['POSTGRES_PASSWORD']
-# => "secretpassword123"
-env['NEW_VAR'] = 'value'
-env.save
-
-# Docker API access
-DockerHost::Container.all
-# => [#<DockerHost::Container dashboard: running (healthy)>, ...]
-
-DockerHost::Container.find('dashboard').logs(tail: 50)
-# => "2024-01-15 10:23:45 Rails started..."
-
-DockerHost::Container.find('postgresql').health_status
-# => "healthy"
-
-# Compose operations
-Compose::Runner.up           # docker compose up -d
-Compose::Runner.pull         # docker compose pull
-Compose::Runner.recreate('dashboard')
-```
-
-### Success Criteria
-
-- [ ] Can parse and regenerate compose.yaml without data loss
-- [ ] Can read/write .env files preserving comments
-- [ ] Can list all containers in the stack
-- [ ] Can read container health status
-- [ ] Can stream container logs
-- [ ] Can execute `docker compose up -d` successfully
-- [ ] Works both in development (native) and container environment
+- Authentication (admin password + sessions)
+- Setup wizard (installation date + timezone)
+- Configuration storage (chapters-based in SQLite)
+- Dashboard with service management UI
+- Real-time status updates via Turbo Streams
+- Background jobs for async compose operations
 
 ---
 
-## Phase 1: MVP
+## Phase 1: MVP ← current
 
-Minimal viable product – first milestone after successful Phase 0.
+Minimal viable product – completing the user-facing flow.
 
 ### User Flow
 
@@ -126,16 +76,17 @@ Only essential services for a working (but empty) SOLECTRUS:
 
 **Language:** English only (German added in later phase)
 
-| In Scope                   | Out of Scope                  |
-| -------------------------- | ----------------------------- |
-| Install script (`curl`)    | Existing installation support |
-| Password setup             | Multi-language UI             |
-| Timezone selection         | Configuration wizard          |
-| Auto-generate compose.yaml | System status details         |
-| Auto-generate .env         | Troubleshooting tools         |
-| Start services             | Any user-facing settings      |
-| "System running" indicator |                               |
-| Link to Dashboard          |                               |
+| Already done               | Still TODO                      |
+| -------------------------- | ------------------------------- |
+| Password setup             | Install script (`curl`)         |
+| Timezone + date selection  | Existing installation detection |
+| Auto-generate compose.yaml | Link to Dashboard               |
+| Auto-generate .env         |                                 |
+| Start/stop/recreate        |                                 |
+| Service status dashboard   |                                 |
+| Real-time updates          |                                 |
+
+**Not included in MVP:** Multi-language UI, configuration wizard, troubleshooting tools
 
 ---
 

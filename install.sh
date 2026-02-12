@@ -2,7 +2,6 @@
 set -e
 
 INSTALL_DIR="/opt/solectrus"
-HELIOS_PORT="3999"
 
 echo ""
 echo "=========================================="
@@ -40,17 +39,6 @@ esac
 echo "Detected architecture: $PLATFORM"
 echo ""
 
-# Check if installation directory exists
-if [ -d "$INSTALL_DIR" ]; then
-  echo "WARNING: $INSTALL_DIR already exists."
-  read -p "Overwrite? [y/N] " -n 1 -r
-  echo ""
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Installation cancelled."
-    exit 0
-  fi
-fi
-
 # Ask for confirmation
 read -p "Continue with installation? [y/N] " -n 1 -r
 echo ""
@@ -65,51 +53,33 @@ echo "Creating installation directory..."
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-# Create data directories
-mkdir -p helios
-
 # Create minimal compose.yaml with only Helios
 cat > compose.yaml << 'EOF'
 name: solectrus
 
 services:
   helios:
-    image: ghcr.io/solectrus/helios:latest
+    image: ghcr.io/solectrus/helios:develop
     ports:
       - "3999:3000"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/app/solectrus
       - ./helios:/app/data
-    environment:
-      - HELIOS_STACK_PATH=/app/solectrus
     restart: unless-stopped
 EOF
 
-# Pull and start Helios
-echo "Pulling Helios image..."
-docker compose pull
-
+# Start Helios
 echo "Starting Helios..."
 docker compose up -d
 
-# Wait for Helios to be ready
-echo "Waiting for Helios to start..."
-sleep 5
-
 # Get IP address
-if command -v hostname &> /dev/null; then
-  IP=$(hostname -I 2>/dev/null | awk '{print $1}' || hostname)
-else
-  IP="localhost"
-fi
+IP=$(hostname -I | awk '{print $1}')
 
 echo ""
 echo "=========================================="
 echo "  Installation complete!"
 echo ""
 echo "  Open in your browser:"
-echo "  http://${IP}:${HELIOS_PORT}"
-echo ""
-echo "  You will be asked to set an admin password."
+echo "  http://$IP:3999"
 echo "=========================================="
