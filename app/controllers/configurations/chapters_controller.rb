@@ -1,7 +1,5 @@
 module Configurations
   class ChaptersController < ApplicationController
-    skip_before_action :require_authentication # TODO: Remove after development
-
     before_action :set_configuration
     before_action :validate_chapter
 
