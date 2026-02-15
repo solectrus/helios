@@ -1,17 +1,23 @@
-<div class="min-h-screen p-8" data-controller="visibility">
+<div class="min-h-screen p-8">
   <div class="mx-auto max-w-4xl">
     <%= render Header::Component.new %>
 
-    <div class="mb-8"><%= render MainNav::Component.new(active_tab: :services) %></div>
+    <%= turbo_frame_tag "tab-content", data: { controller: "visibility" } do %>
+      <div class="mb-8"><%= render MainNav::Component.new(active_tab: :services) %></div>
 
-    <%= turbo_stream_from "services" %>
+      <%= turbo_stream_from "services" %>
 
-    <div class="mb-8 flex justify-center"><%= render GlobalActions::Component.new %></div>
+      <div class="mb-8 flex justify-center"><%= render GlobalActions::Component.new %></div>
 
-    <div class="space-y-3">
-      <% @compose_services.each do |compose_service| %>
-        <%= render ServiceRow::Component.new(compose_service:, container: nil) %>
-      <% end %>
-    </div>
+      <div class="space-y-3">
+        <% @compose_services.each do |compose_service| %>
+          <%= render ServiceRow::Component.new(
+            compose_service:,
+            container: @containers&.dig(compose_service.name),
+            lazy: @containers.nil?,
+          ) %>
+        <% end %>
+      </div>
+    <% end %>
   </div>
 </div>
