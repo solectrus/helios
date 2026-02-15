@@ -55,6 +55,7 @@ module ServiceRow
 
     def status_value
       return 'pending' if pending
+      return 'health_starting' if healthcheck_starting?
       return 'running' if running?
 
       'stopped'
