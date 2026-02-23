@@ -54,8 +54,9 @@ https://surveyjs.io/form-library/documentation/overview
 
 - 100% coverage is the goal (not enforced)
 - Focus on unit tests
-- Capybara for server-side system tests
-- Playwright for JS-heavy E2E tests (SurveyJS forms, real-time updates)
+- System tests use `capybara-playwright-driver` (Capybara DSL + Playwright browser)
+- All tests run via `bin/rspec` – no separate E2E framework
+- Use `HEADLESS=false` for debugging with visible browser
 - Real Docker for integration tests
 
 ## Current Phase

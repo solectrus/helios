@@ -8,7 +8,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
 
     env:
       RAILS_ENV: test
@@ -34,6 +34,21 @@ jobs:
       - name: Install Yarn packages
         run: bin/yarn install --immutable
 
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('./node_modules/playwright/package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: yarn playwright install --with-deps chromium
+
       - name: Lint with RuboCop
         run: bin/rubocop --parallel
 
@@ -51,6 +66,14 @@ jobs:
 
       - name: Run Ruby Tests
         run: bin/rspec
+
+      - name: Upload Playwright artifacts
+        uses: actions/upload-artifact@v6
+        if: failure()
+        with:
+          name: playwright-artifacts
+          path: tmp/capybara/
+          if-no-files-found: ignore
 
       - name: Build assets
         run: bin/rails assets:precompile

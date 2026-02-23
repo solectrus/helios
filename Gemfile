@@ -27,6 +27,8 @@ gem 'bootsnap', require: false
 group :development, :test do
   gem 'brakeman', require: false
   gem 'bundler-audit', require: false
+  gem 'capybara'
+  gem 'capybara-playwright-driver'
   gem 'debug', platforms: %i[mri windows], require: 'debug/prelude'
   gem 'rspec-rails'
   gem 'rubocop', require: false

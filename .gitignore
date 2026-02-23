@@ -54,3 +54,7 @@
 
 # Ignore ESLint cache
 .eslintcache
+
+# Playwright
+/test-results/
+/playwright-report/

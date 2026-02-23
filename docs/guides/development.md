@@ -72,54 +72,48 @@ bin/dev
 
 ```
         /\
-       /  \      E2E tests (Playwright) – few, for JS-heavy flows
+       /  \      System tests – few, for JS-heavy and UI flows
       /----\
-     /      \    System tests (Capybara) – critical server-side flows
+     /      \    Request tests – controllers, auth, integration
     /--------\
-   /          \  Request tests – controllers, auth, integration
+   /          \  Unit tests – majority of tests, fast, isolated
   /------------\
- /              \ Unit tests – majority of tests, fast, isolated
-  ----------------
 ```
 
 ### Test Categories
 
-| Category      | Purpose                              | Tools            | Priority |
-| ------------- | ------------------------------------ | ---------------- | -------- |
-| Unit tests    | Service classes, models, components  | RSpec            | High     |
-| Request tests | Controllers, auth, HTTP integration  | RSpec            | High     |
-| Job tests     | Background job behavior              | RSpec            | Medium   |
-| System tests  | Server-side UI flows                 | RSpec + Capybara | Medium   |
-| E2E tests     | JS-heavy flows (SurveyJS, real-time) | Playwright       | Medium   |
+| Category      | Purpose                             | Tools                         | Priority |
+| ------------- | ----------------------------------- | ----------------------------- | -------- |
+| Unit tests    | Service classes, models, components | RSpec                         | High     |
+| Request tests | Controllers, auth, HTTP integration | RSpec                         | High     |
+| Job tests     | Background job behavior             | RSpec                         | Medium   |
+| System tests  | UI flows, JS-heavy interactions     | RSpec + Capybara + Playwright | Medium   |
 
-**Two system test tools:**
-
-- **Capybara** (Rack driver): For server-rendered flows without heavy JavaScript (auth, setup, navigation)
-- **Playwright**: For flows that depend on JavaScript execution (SurveyJS forms, real-time updates, Stimulus controllers)
+**System tests** use `capybara-playwright-driver`: Capybara's DSL with a real Chromium browser powered by Playwright. This covers both server-rendered flows and JS-heavy interactions (SurveyJS forms, real-time updates, Stimulus controllers).
 
 ### Run Tests
 
 ```bash
-# Run all RSpec tests (unit, request, job, system)
+# Run all tests (unit, request, job, system)
 bin/rspec
 
 # Run specific test file
 bin/rspec spec/services/compose/file_spec.rb
 
+# Run only system tests
+bin/rspec spec/system/
+
+# Run system tests with visible browser (for debugging)
+HEADLESS=false bin/rspec spec/system/
+
 # Run with coverage report
 COVERAGE=true bin/rspec
-
-# Run Playwright E2E tests
-npx playwright test
-
-# Run specific Playwright test
-npx playwright test tests/configuration.spec.ts
 ```
 
 ### Test Structure
 
 ```
-spec/                              # RSpec tests
+spec/
 ├── models/
 │   ├── admin_spec.rb
 │   ├── chapter_spec.rb
@@ -150,16 +144,15 @@ spec/                              # RSpec tests
 │   │   └── container_spec.rb
 │   ├── docker_host_spec.rb
 │   └── stack_builder_spec.rb
+├── system/
+│   └── smoke_spec.rb
 ├── fixtures/
 │   └── ...
 └── support/
     ├── auth_helpers.rb
     ├── docker_helpers.rb
+    ├── system.rb
     └── vite_helpers.rb
-
-tests/                             # Playwright E2E tests
-├── configuration.spec.ts
-└── ...
 ```
 
 ### Writing Good Tests
@@ -169,4 +162,4 @@ tests/                             # Playwright E2E tests
 - Use descriptive test names: `it "preserves comments when saving"`
 - Use fixtures for file-based tests
 - Clean up Docker resources after integration tests
-- Use Playwright for anything that requires real browser JavaScript execution
+- Use system tests (`spec/system/`) for anything that requires real browser JavaScript execution
