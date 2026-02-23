@@ -23,23 +23,35 @@
 ### FR-3: Initial Setup
 
 - On first access, prompt user to set an admin password
-- Helios detects the environment at startup:
+- Helios detects the environment and guides the user through one of three scenarios:
 
-**Scenario A: Fresh Installation**
+**Scenario A: Fresh install, standalone**
 
-- No other services running yet
-- Guide user through minimal setup wizard
-- Configure basic settings (timezone, language)
-- Add required services (InfluxDB, PostgreSQL, Redis, SOLECTRUS Dashboard)
+- No other services running yet, no external smart home system
+- User defines devices through configuration wizard (inverter, battery, wallbox, heat pump, etc.)
+- Helios generates collector services to read data directly from hardware:
+  - SENEC collector (V3 local API or V4 cloud API)
+  - Shelly collector (one or more, local API)
+  - MQTT collector (generic, requires sensor-to-topic mapping)
+- Forecast-Collector and Power-Splitter are always included
+- Helios generates `compose.yaml` and `.env`, starts the stack
+
+**Scenario B: Fresh install, smart home**
+
+- No other services running yet, but user has ioBroker or Home Assistant
+- Measurement data flows into InfluxDB from the external system — no collector services needed
+- Helios only generates infrastructure services (InfluxDB, PostgreSQL, Redis, Dashboard)
+- Forecast-Collector and Power-Splitter are always included
 - User configures data source in ioBroker/Home Assistant separately
 
-**Scenario B: Existing Installation**
+**Scenario C: Existing installation**
 
-- Other SOLECTRUS services already running
-- Detect and import existing `compose.yaml` and `.env`
-- Preserve all existing configuration
-- Display overview of detected services
+- SOLECTRUS services already running with existing `compose.yaml` and `.env`
+- Helios reads existing files and reverse-maps configuration into its data model
+- Preserve all existing configuration, custom services, and unknown variables
+- Display overview of detected services and configuration
 - Helios becomes the management layer for the existing stack
+- **Note:** Reverse mapping is inherently ambiguous — Helios uses best-effort detection and lets the user verify/correct
 
 ### FR-4: Service Management
 
@@ -53,6 +65,9 @@
   - SOLECTRUS Dashboard (main application)
   - Power-Splitter (calculates derived power values)
   - Forecast-Collector (fetches solar forecast data)
+  - SENEC collector (if SENEC device configured)
+  - Shelly collector (if Shelly device configured, multiple instances possible)
+  - MQTT collector (if MQTT data source configured)
 - **Custom services:** User-added services in `compose.yaml` are preserved and not modified by Helios
 
 ### FR-5: Configuration Management
@@ -148,4 +163,3 @@
 - Multi-site management
 - API for external integrations
 - Plugin system for additional adapters
-- Hardware-specific collectors (SENEC, Shelly, etc. – data comes via ioBroker/Home Assistant)

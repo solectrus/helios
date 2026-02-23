@@ -19,10 +19,13 @@ Helios is a web-based management tool for SOLECTRUS, aimed at the admin of the D
 
 **ADRs:** [docs/adr/](docs/adr/) - All architecture decisions
 
-## daisyUI Reference
+## External References
 
 For daisyUI components, fetch the official LLM documentation:
 https://daisyui.com/llms.txt
+
+For SurveyJS form configuration (question types, visibleIf, validators, expressions), fetch:
+https://surveyjs.io/form-library/documentation/overview
 
 ## Code Quality
 
@@ -51,15 +54,21 @@ https://daisyui.com/llms.txt
 
 - 100% coverage is the goal (not enforced)
 - Focus on unit tests
-- Capybara for system tests, no Playwright/Cypress
+- Capybara for server-side system tests
+- Playwright for JS-heavy E2E tests (SurveyJS forms, real-time updates)
 - Real Docker for integration tests
 
 ## Current Phase
 
-**Phase 1: MVP** - First usable version with web UI
+**Phase 2: Configuration** - Full web-based configuration of SOLECTRUS
 
-Phase 0 (Proof of Concept) is complete. All core functionality works:
+Phase 0 (Proof of Concept) and Phase 1 (Foundation) are complete. Core functionality works:
 compose.yaml/env handling, Docker API, Compose CLI, authentication, setup wizard,
-service management with real-time updates.
+service management dashboard with real-time updates.
 
-Current focus: completing the MVP user flow (install script → setup → running stack).
+Current focus:
+
+- 2a: Survey-based configuration (add/remove devices, data sources)
+- 2b: Generate compose.yaml/.env from chapter configuration
+- 2c: Import existing configuration (reverse mapping)
+- 2d: Sensor mapping (InfluxDB measurements → SOLECTRUS sensors)

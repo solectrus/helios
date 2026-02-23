@@ -225,7 +225,7 @@ SECRET_KEY_BASE=<generated>
 
 ## Installation Scenario Detection
 
-Helios detects whether it's a fresh installation (Scenario A) or an existing installation (Scenario B) at startup.
+Helios detects the installation scenario at startup (see [requirements.md](../spec/requirements.md) FR-3 for details).
 
 **Detection method:** Check if `compose.yaml` contains services other than Helios.
 
@@ -234,17 +234,19 @@ compose = Compose.load
 services = compose.services.map(&:name)
 
 if services == ['helios']
-  # Scenario A: Fresh installation
-  # Guide user through setup wizard
+  # Scenario A or B: Fresh installation
+  # Guide user through setup wizard (standalone or smart home)
 else
-  # Scenario B: Existing installation
+  # Scenario C: Existing installation
   # Import and display existing configuration
 end
 ```
 
-**Scenario A (Fresh):** Only Helios service exists → show setup wizard.
+**Scenario A (Fresh install, standalone):** Only Helios service exists, user has no smart home system → setup wizard with device configuration, generate collector services.
 
-**Scenario B (Existing):** Other services present → import configuration, show overview.
+**Scenario B (Fresh install, smart home):** Only Helios service exists, user has ioBroker/Home Assistant → setup wizard without collectors, external data source.
+
+**Scenario C (Existing installation):** Other services present → import existing `compose.yaml` and `.env`, reverse-map configuration.
 
 ---
 

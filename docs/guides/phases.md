@@ -1,259 +1,150 @@
 # Development Phases
 
-## Phase 0: Proof of Concept ✅
+## Status Quo
 
-**Status: Complete.**
+Phase 0 (Proof of Concept) and Phase 1 (Foundation) are complete. The following is implemented and working:
 
-All core functionality validated and implemented:
-
-- [x] Parse and regenerate compose.yaml without data loss
-- [x] Read/write .env files preserving comments
-- [x] List all containers in the stack via Docker API
-- [x] Read container health status
-- [x] Execute `docker compose up/down/pull` via CLI
-- [x] Works both in development (native) and container environment
-
-Additionally implemented beyond original scope:
-
-- Authentication (admin password + sessions)
+- Authentication (admin password setup + session management)
 - Setup wizard (installation date + timezone)
-- Configuration storage (chapters-based in SQLite)
-- Dashboard with service management UI
-- Real-time status updates via Turbo Streams
+- Configuration model (chapters-based, stored as JSON in SQLite)
+- Survey-based configuration forms (SurveyJS integration)
+- Dashboard with service management UI (start/stop/recreate, batch operations)
+- Real-time status updates via Turbo Streams + Action Cable
 - Background jobs for async compose operations
+- Basic `compose.yaml` and `.env` generation (MVP services: PostgreSQL, Redis, InfluxDB, Dashboard)
+- Install script (`install.sh`)
+- Theme toggle (light/dark mode)
+- ViewComponent-based UI architecture
+- compose.yaml/env parsing with comment preservation
+- Docker API integration (container status, health) + Compose CLI
 
 ---
 
-## Phase 1: MVP ← current
+## Phase 2: Configuration ← current
 
-Minimal viable product – completing the user-facing flow.
+**Goal:** Users can fully configure their SOLECTRUS installation through the web UI — no manual file editing required.
 
-### User Flow
+**Three usage scenarios** (see [requirements.md](../spec/requirements.md) FR-3 for details):
 
-1. **Installation:** User runs `curl -fsSL solectrus.de/install.sh | sh`
-2. **Output:** Script displays URL (e.g., `http://192.168.1.100:3999`)
-3. **Browser:** User opens URL in browser
-4. **Password:** User sets admin password on first access
-5. **Setup:** Helios:
-   - Asks for installation date (when PV system was installed, format: `YYYY-MM-DD`)
-   - Asks for timezone (e.g., `Europe/Berlin`)
-   - Generates `compose.yaml` with required services
-   - Creates `.env` with necessary configuration (secrets auto-generated)
-   - Starts all services
-6. **Done:** User sees "System running" status and can open SOLECTRUS Dashboard (empty, but functional)
+| Scenario | Description | Collectors |
+| -------- | ----------- | ---------- |
+| A: Fresh install, standalone | No smart home system, direct hardware access | SENEC, Shelly, MQTT + Forecast + Power-Splitter |
+| B: Fresh install, smart home | External data source (ioBroker/HA) | Forecast + Power-Splitter only |
+| C: Existing installation | Import existing compose.yaml/.env | Detect from existing config |
 
-### Next Step (User's responsibility)
+### 2a: Survey-based configuration
 
-After MVP setup is complete, the user configures their data source:
+Define all SOLECTRUS usage options through interactive forms (Scenarios A + B):
 
-- **ioBroker:** Install SOLECTRUS adapter, configure InfluxDB connection
-- **Home Assistant:** Install SOLECTRUS integration, configure InfluxDB connection
+- **Add/remove devices:** Battery, wallbox, car, heat pump, custom consumers
+- **Multiple generators:** Support for multiple inverters/roof surfaces
+- **Data sources:** Direct hardware (SENEC, Shelly), MQTT, ioBroker, Home Assistant
+- **Forecasts:** forecast.solar, Solcast
+- **System settings:** Machine type, ports, HTTPS/domain, backup
 
-Once configured, measurement data flows into InfluxDB and appears in the Dashboard.
+| Status  | Detail                                                             |
+| ------- | ------------------------------------------------------------------ |
+| ✅ Done | Survey JSON files exist for all chapters (`config/surveys/`)       |
+| ✅ Done | SurveyJS rendering with theme support                              |
+| ✅ Done | Chapter model with JSON storage                                    |
+| 🔲 TODO | Verify/complete survey definitions for all use cases               |
+| 🔲 TODO | Add/remove logic (e.g. adding a second inverter, removing battery) |
+| 🔲 TODO | Validation and conditional dependencies between chapters           |
 
-### MVP Services
+### 2b: Generate compose.yaml and .env from configuration
 
-Only essential services for a working (but empty) SOLECTRUS:
+Transform stored chapter data into a complete, runnable Docker stack (Scenarios A + B):
 
-| Service             | Purpose                   |
-| ------------------- | ------------------------- |
-| PostgreSQL          | Relational database       |
-| Redis               | Background jobs / caching |
-| InfluxDB            | Time-series data storage  |
-| SOLECTRUS Dashboard | Main web application      |
+- Generate `compose.yaml` with all required services based on user's configuration
+- Generate `.env` with all environment variables, auto-generated secrets
+- Services: PostgreSQL, Redis, InfluxDB, Dashboard, Power-Splitter, Forecast-Collector, Watchtower, hardware collectors (SENEC, Shelly, MQTT)
+- Only include services that match the user's configuration
 
-**Not included in MVP:**
+| Status  | Detail                                                                          |
+| ------- | ------------------------------------------------------------------------------- |
+| ✅ Done | `StackBuilder` generates MVP services (4 services)                              |
+| ✅ Done | `Compose::File` and `Env::File` handle reading/writing                          |
+| 🔲 TODO | Extend `StackBuilder` for all services based on chapters                        |
+| 🔲 TODO | Conditional service inclusion (e.g. Shelly collector only if Shelly configured) |
+| 🔲 TODO | Secret generation for all required credentials                                  |
+| 🔲 TODO | Service dependency management (depends_on, healthchecks)                        |
 
-- Power-Splitter (requires sensor configuration, added in Phase 2)
-- Watchtower (automatic updates)
-- Forecast-Collector
-- Log viewer
-- Update management UI
-- Configuration editing UI
-- Sensor mapping UI (Phase 2)
+### 2c: Import existing configuration
 
-### MVP Scope
+Enable existing SOLECTRUS users to bring their installation under Helios management (Scenario C):
 
-**Language:** English only (German added in later phase)
+- Read existing `compose.yaml` and `.env` files
+- Reverse-map configuration into chapter data
+- Detect which devices/services are configured
+- Preserve custom services and unknown variables
 
-| Already done               | Still TODO                      |
-| -------------------------- | ------------------------------- |
-| Password setup             | Install script (`curl`)         |
-| Timezone + date selection  | Existing installation detection |
-| Auto-generate compose.yaml | Link to Dashboard               |
-| Auto-generate .env         |                                 |
-| Start/stop/recreate        |                                 |
-| Service status dashboard   |                                 |
-| Real-time updates          |                                 |
+| Status  | Detail                                                        |
+| ------- | ------------------------------------------------------------- |
+| ✅ Done | `Compose::File` can parse existing compose.yaml               |
+| ✅ Done | `Env::File` can parse existing .env with comment preservation |
+| 🔲 TODO | Reverse mapping: .env variables → chapter data                |
+| 🔲 TODO | Service detection: which devices are configured               |
+| 🔲 TODO | UI flow for existing installation onboarding                  |
+| 🔲 TODO | Conflict handling (manual edits vs. Helios-managed)           |
 
-**Not included in MVP:** Multi-language UI, configuration wizard, troubleshooting tools
+### 2d: Sensor mapping (advanced)
 
----
+Map SOLECTRUS sensors to InfluxDB measurements/fields (all scenarios, but especially important for Scenario C with custom data structures).
 
-## Phase 2: Sensor Configuration
+**How it works:**
 
-> **Note:** Sensor mapping UI is not part of MVP. For MVP, default/hardcoded mappings are used.
-
-### Concept
-
-SOLECTRUS defines ~30 sensors with fixed names. Each sensor must be mapped to a specific InfluxDB measurement/field combination.
-
-**Examples of SOLECTRUS sensors:**
-
-- `inverter_power` – Current inverter output (W)
-- `battery_soc` – Battery state of charge (%)
-- `grid_import_power` – Power imported from grid (W)
-- `house_power` – Total house consumption (W)
-- `wallbox_power` – EV charger power (W)
-- ... (~30 total)
-
-### User Workflow
-
-1. User connects ioBroker/Home Assistant to InfluxDB
-2. Data starts flowing into InfluxDB (various measurements/fields)
-3. User opens Helios → Sensor Configuration
+1. User connects data source (ioBroker/Home Assistant/MQTT) to InfluxDB
+2. Data flows into InfluxDB with various measurements/fields
+3. User opens Helios → Sensor Mapping
 4. Helios queries InfluxDB for available measurements and fields
-5. User maps each SOLECTRUS sensor to an InfluxDB measurement/field
-6. Helios saves mapping to configuration
+5. User maps each SOLECTRUS sensor to a measurement/field combination
+6. Helios writes mappings to `.env`
 
-### InfluxDB Discovery
-
-Helios queries InfluxDB to discover available data:
+**InfluxDB discovery:**
 
 ```flux
-// Get all measurements
 import "influxdata/influxdb/schema"
 schema.measurements(bucket: "solectrus")
-
-// Get fields for a measurement
 schema.fieldKeys(bucket: "solectrus", measurement: "pv")
 ```
 
-**Result example:**
+**Sensor registry (~40 sensors):**
 
-```
-Measurements: ["pv", "battery", "grid", "house", "wallbox"]
-Fields for "pv": ["power", "energy_today", "voltage"]
-Fields for "battery": ["soc", "power", "energy"]
-```
+| Category   | Sensors                                                                                           |
+| ---------- | ------------------------------------------------------------------------------------------------- |
+| Inverter   | `INVERTER_POWER`, `INVERTER_POWER_1`…`_5`, `GRID_IMPORT_POWER`, `GRID_EXPORT_POWER`, `GRID_EXPORT_LIMIT`, `CASE_TEMP`, `SYSTEM_STATUS`, `SYSTEM_STATUS_OK` |
+| Battery    | `BATTERY_SOC`, `BATTERY_CHARGING_POWER`, `BATTERY_DISCHARGING_POWER`                              |
+| Consumers  | `HOUSE_POWER`, `HEATPUMP_POWER`, `CUSTOM_POWER_01`…`_20`                                         |
+| Wallbox/EV | `WALLBOX_POWER`, `WALLBOX_CAR_CONNECTED`, `CAR_BATTERY_SOC`                                       |
+| Heat pump  | `HEATPUMP_HEATING_POWER`, `HEATPUMP_TANK_TEMP`, `HEATPUMP_STATUS`, `OUTDOOR_TEMP`                |
+| Forecasts  | `INVERTER_POWER_FORECAST`, `INVERTER_POWER_FORECAST_CLEARSKY`, `OUTDOOR_TEMP_FORECAST`            |
 
-### UI Concept
-
-```
-┌─────────────────────────────────────────────────────────────┐
-│  Sensor Configuration                                       │
-├─────────────────────────────────────────────────────────────┤
-│                                                             │
-│  Inverter Power                                             │
-│  ┌─────────────────────┐  ┌─────────────────────┐           │
-│  │ Measurement: [pv ▼] │  │ Field: [power    ▼] │           │
-│  └─────────────────────┘  └─────────────────────┘           │
-│                                                             │
-│  Battery SOC                                                │
-│  ┌─────────────────────┐  ┌─────────────────────┐           │
-│  │ Measurement: [bat▼] │  │ Field: [soc      ▼] │           │
-│  └─────────────────────┘  └─────────────────────┘           │
-│                                                             │
-│  Grid Import Power                                          │
-│  ┌─────────────────────┐  ┌─────────────────────┐           │
-│  │ Measurement: [gri▼] │  │ Field: [import   ▼] │           │
-│  └─────────────────────┘  └─────────────────────┘           │
-│                                                             │
-│  ... (more sensors)                                         │
-│                                                             │
-│  [Save Configuration]                                       │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Configuration Storage
-
-Sensor mappings are stored as environment variables in `.env`:
+Each sensor is mapped to a measurement + field combination and stored in `.env`:
 
 ```bash
-# Sensor mappings
 INVERTER_POWER_MEASUREMENT=pv
 INVERTER_POWER_FIELD=power
-
-BATTERY_SOC_MEASUREMENT=battery
-BATTERY_SOC_FIELD=soc
-
-GRID_IMPORT_POWER_MEASUREMENT=grid
-GRID_IMPORT_POWER_FIELD=import_power
-# ...
 ```
 
-**Principle:** Helios only writes two external files:
+| Status  | Detail                                                        |
+| ------- | ------------------------------------------------------------- |
+| 🔲 TODO | InfluxDB discovery (query available measurements/fields)      |
+| 🔲 TODO | Sensor registry with all ~40 SOLECTRUS sensors                |
+| 🔲 TODO | Mapping UI with dropdowns                                     |
+| 🔲 TODO | Store mappings in .env (e.g. `INVERTER_POWER_MEASUREMENT=pv`) |
 
-- `compose.yaml` – Docker Compose configuration
-- `.env` – Environment variables
+---
 
-All internal state (setup status, managed services, etc.) is stored in SQLite.
+## Phase 3: Polish & Operations
 
-### Sensor Registry
+**Goal:** Production-ready with operational tools and multi-language support.
 
-Complete list of SOLECTRUS sensors (from [docs.solectrus.de](https://docs.solectrus.de/referenz/dashboard/sensor-konfiguration/)):
-
-**Inverter**
-
-| Sensor                      | Description                 | Unit    |
-| --------------------------- | --------------------------- | ------- |
-| `INVERTER_POWER`            | Total PV generation         | W       |
-| `INVERTER_POWER_1` ... `_5` | Up to 5 separate generators | W       |
-| `GRID_IMPORT_POWER`         | Grid import                 | W       |
-| `GRID_EXPORT_POWER`         | Grid export                 | W       |
-| `GRID_EXPORT_LIMIT`         | Feed-in limit               | %       |
-| `CASE_TEMP`                 | Inverter case temperature   | °C      |
-| `SYSTEM_STATUS`             | System status / errors      | Text    |
-| `SYSTEM_STATUS_OK`          | Status indicator            | Boolean |
-
-**Battery**
-
-| Sensor                      | Description             | Unit |
-| --------------------------- | ----------------------- | ---- |
-| `BATTERY_SOC`               | Battery state of charge | %    |
-| `BATTERY_CHARGING_POWER`    | Charging power          | W    |
-| `BATTERY_DISCHARGING_POWER` | Discharging power       | W    |
-
-**Consumers**
-
-| Sensor                      | Description               | Unit |
-| --------------------------- | ------------------------- | ---- |
-| `HOUSE_POWER`               | House consumption         | W    |
-| `HEATPUMP_POWER`            | Heat pump power           | W    |
-| `CUSTOM_POWER_01` ... `_20` | Custom sensors (up to 20) | W    |
-
-**Wallbox & EV**
-
-| Sensor                  | Description                | Unit    |
-| ----------------------- | -------------------------- | ------- |
-| `WALLBOX_POWER`         | Wallbox charging power     | W       |
-| `WALLBOX_CAR_CONNECTED` | Car connected status       | Boolean |
-| `CAR_BATTERY_SOC`       | EV battery state of charge | %       |
-
-**Heat Pump**
-
-| Sensor                   | Description                | Unit |
-| ------------------------ | -------------------------- | ---- |
-| `HEATPUMP_HEATING_POWER` | Generated heat power       | W    |
-| `HEATPUMP_TANK_TEMP`     | Hot water tank temperature | °C   |
-| `HEATPUMP_STATUS`        | Operating status           | Text |
-| `OUTDOOR_TEMP`           | Outdoor temperature        | °C   |
-
-**Forecasts**
-
-| Sensor                             | Description              | Unit |
-| ---------------------------------- | ------------------------ | ---- |
-| `INVERTER_POWER_FORECAST`          | Forecasted PV generation | W    |
-| `INVERTER_POWER_FORECAST_CLEARSKY` | Max possible generation  | W    |
-| `OUTDOOR_TEMP_FORECAST`            | Forecasted outdoor temp  | °C   |
-
-**Total: ~40 sensors** (including custom sensors)
-
-### For Existing Users
-
-When Helios is added to an existing installation:
-
-1. Helios reads existing `.env` file
-2. Parses existing sensor mappings
-3. Displays current configuration in UI
-4. User can modify mappings if needed
+- System status: Simple health indicator ("Everything OK" / "Problem detected") with alerts (FR-6)
+- Log viewer: View, filter, search, and stream container logs (FR-7)
+- Update management: Watchtower integration, "Update now" button, changelog display (FR-8)
+- Localization: German + English UI (NFR-6)
+- Telemetry: Opt-in usage statistics via `update.solectrus.de` (NFR-7)
+- Link to running Dashboard from Helios UI
+- Existing installation detection on first access
+- Error UX: Clear messages with suggested solutions
+- Mobile-responsive refinements

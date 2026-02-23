@@ -72,32 +72,35 @@ bin/dev
 
 ```
         /\
-       /  \      System tests (Capybara) – few, for critical flows
+       /  \      E2E tests (Playwright) – few, for JS-heavy flows
       /----\
-     /      \    Request tests – controllers, auth, integration
+     /      \    System tests (Capybara) – critical server-side flows
     /--------\
-   /          \  Unit tests – majority of tests, fast, isolated
-  --------------
+   /          \  Request tests – controllers, auth, integration
+  /------------\
+ /              \ Unit tests – majority of tests, fast, isolated
+  ----------------
 ```
 
 ### Test Categories
 
-| Category      | Purpose                              | Tools               | Priority |
-| ------------- | ------------------------------------ | -------------------- | -------- |
-| Unit tests    | Service classes, models, components  | RSpec                | High     |
-| Request tests | Controllers, auth, HTTP integration  | RSpec                | High     |
-| Job tests     | Background job behavior              | RSpec                | Medium   |
-| System tests  | Full UI flows                        | RSpec + Capybara     | Low      |
+| Category      | Purpose                              | Tools            | Priority |
+| ------------- | ------------------------------------ | ---------------- | -------- |
+| Unit tests    | Service classes, models, components  | RSpec            | High     |
+| Request tests | Controllers, auth, HTTP integration  | RSpec            | High     |
+| Job tests     | Background job behavior              | RSpec            | Medium   |
+| System tests  | Server-side UI flows                 | RSpec + Capybara | Medium   |
+| E2E tests     | JS-heavy flows (SurveyJS, real-time) | Playwright       | Medium   |
 
-**What we don't use:**
+**Two system test tools:**
 
-- No JavaScript tests with Playwright, Cypress, or similar
-- Capybara with Rack driver is sufficient for UI testing
+- **Capybara** (Rack driver): For server-rendered flows without heavy JavaScript (auth, setup, navigation)
+- **Playwright**: For flows that depend on JavaScript execution (SurveyJS forms, real-time updates, Stimulus controllers)
 
 ### Run Tests
 
 ```bash
-# Run all tests
+# Run all RSpec tests (unit, request, job, system)
 bin/rspec
 
 # Run specific test file
@@ -105,12 +108,18 @@ bin/rspec spec/services/compose/file_spec.rb
 
 # Run with coverage report
 COVERAGE=true bin/rspec
+
+# Run Playwright E2E tests
+npx playwright test
+
+# Run specific Playwright test
+npx playwright test tests/configuration.spec.ts
 ```
 
 ### Test Structure
 
 ```
-spec/
+spec/                              # RSpec tests
 ├── models/
 │   ├── admin_spec.rb
 │   ├── chapter_spec.rb
@@ -147,6 +156,10 @@ spec/
     ├── auth_helpers.rb
     ├── docker_helpers.rb
     └── vite_helpers.rb
+
+tests/                             # Playwright E2E tests
+├── configuration.spec.ts
+└── ...
 ```
 
 ### Writing Good Tests
@@ -156,3 +169,4 @@ spec/
 - Use descriptive test names: `it "preserves comments when saving"`
 - Use fixtures for file-based tests
 - Clean up Docker resources after integration tests
+- Use Playwright for anything that requires real browser JavaScript execution

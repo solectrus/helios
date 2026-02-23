@@ -16,25 +16,21 @@ This technical barrier prevents many users from adopting SOLECTRUS.
 
 Helios provides a web-based interface that handles all aspects of SOLECTRUS installation, configuration, and operation. It eliminates the need for users to manually edit configuration files or understand Docker internals.
 
-## Target Users
+## Usage Scenarios
 
-1. **New users:** Fresh SOLECTRUS installation via Helios
-2. **Existing users:** Already have SOLECTRUS running, add Helios for easier management
+### Scenario A: Fresh install, standalone
 
-## Data Integration
+New installation without smart home system. Helios guides through device configuration and generates collector services (SENEC, Shelly, MQTT) to read data directly from hardware. Forecast-Collector and Power-Splitter are always included.
 
-Measurement data flows into SOLECTRUS via:
+### Scenario B: Fresh install, smart home
 
-- **ioBroker** (ioBroker adapter pushes to InfluxDB)
-- **Home Assistant** (Home Assistant integration pushes to InfluxDB)
+New installation with ioBroker or Home Assistant. The smart home system pushes data to InfluxDB — no collector services needed. Helios generates only infrastructure services plus Forecast-Collector and Power-Splitter.
 
-This means:
+### Scenario C: Existing installation
 
-- No hardware-specific collectors required (SENEC, Shelly, etc.)
-- Minimal environment configuration needed
-- Simpler setup wizard for new users
+Existing SOLECTRUS installation with `compose.yaml` and `.env`. Helios reads the files, reverse-maps the configuration, and becomes the management layer. Best-effort detection — user verifies and corrects.
 
-**Note:** Power-Splitter and Forecast-Collector are SOLECTRUS-specific services that cannot be replaced by ioBroker/Home Assistant. These are managed by Helios.
+**Note:** Scenarios A and B can coexist (e.g. SENEC collector for inverter + ioBroker for other sensors).
 
 ## Documentation
 
@@ -45,4 +41,4 @@ This means:
 | [architecture/docker.md](architecture/docker.md)     | Docker integration, compose.yaml, health checks |
 | [adr/](adr/README.md)                                | Architecture Decision Records                   |
 | [guides/development.md](guides/development.md)       | Local setup, testing                            |
-| [guides/phases.md](guides/phases.md)                 | Phase 0, MVP, roadmap                           |
+| [guides/phases.md](guides/phases.md)                 | Development phases and current scope             |

@@ -2,7 +2,7 @@
 
 Web-based bootstrap helper and management interface for [SOLECTRUS](https://solectrus.de).
 
-**Status:** In planning – see [docs/](docs/) for specifications.
+**Status:** Active development (Phase 2: Configuration) – see [docs/guides/phases.md](docs/guides/phases.md) for details.
 
 ## What is Helios?
 
