@@ -5,7 +5,7 @@ RSpec.describe ComposeJob do
   end
 
   after do
-    Compose::ErrorStore.clear_all
+    Compose::ServiceStore.clear_all
   end
 
   describe '#perform' do
@@ -23,13 +23,13 @@ RSpec.describe ComposeJob do
       end
 
       it 'clears stored error for the started service only' do
-        Compose::ErrorStore.set('redis', 'old error')
-        Compose::ErrorStore.set('influxdb', 'other error')
+        Compose::ServiceStore.set('redis', 'old error')
+        Compose::ServiceStore.set('influxdb', 'other error')
 
         described_class.perform_now(:start, 'redis')
 
-        expect(Compose::ErrorStore.get('redis')).to be_nil
-        expect(Compose::ErrorStore.get('influxdb')).to eq('other error')
+        expect(Compose::ServiceStore.get('redis')).to be_nil
+        expect(Compose::ServiceStore.get('influxdb')).to eq('other error')
       end
     end
 
@@ -80,10 +80,10 @@ RSpec.describe ComposeJob do
         )
       end
 
-      it 'stores error in ErrorStore' do
+      it 'stores error in ServiceStore' do
         described_class.perform_now(:start, 'broken-service')
 
-        expect(Compose::ErrorStore.get('broken-service')).to eq('Error: manifest unknown')
+        expect(Compose::ServiceStore.get('broken-service')).to eq('Error: manifest unknown')
       end
     end
   end
@@ -181,12 +181,12 @@ RSpec.describe ComposeJob do
         )
       end
 
-      it 'stores error for affected service in ErrorStore' do
+      it 'stores error for affected service in ServiceStore' do
         perform_with_error(
           'Error response from daemon: Conflict. The container name "/solectrus-influxdb-1" is already in use',
         )
 
-        expect(Compose::ErrorStore.get('influxdb')).to include('already in use')
+        expect(Compose::ServiceStore.get('influxdb')).to include('already in use')
       end
     end
 
@@ -264,7 +264,7 @@ RSpec.describe ComposeJob do
         'Error: container /solectrus-influxdb-1 port is already allocated',
       )
 
-      expect(Compose::ErrorStore.get('influxdb')).to include('port is already allocated')
+      expect(Compose::ServiceStore.get('influxdb')).to include('port is already allocated')
     end
 
     it 'stores dependency error for services that depend on the failed one' do
@@ -272,7 +272,7 @@ RSpec.describe ComposeJob do
         'Error: container /solectrus-influxdb-1 port is already allocated',
       )
 
-      expect(Compose::ErrorStore.get('dashboard')).to eq('Blocked: InfluxDB failed to start')
+      expect(Compose::ServiceStore.get('dashboard')).to eq('Blocked: InfluxDB failed to start')
     end
 
     it 'does not store error for unrelated services' do
@@ -280,7 +280,7 @@ RSpec.describe ComposeJob do
         'Error: container /solectrus-influxdb-1 port is already allocated',
       )
 
-      expect(Compose::ErrorStore.get('redis')).to be_nil
+      expect(Compose::ServiceStore.get('redis')).to be_nil
     end
 
     it 'broadcasts dependency error to dependent services' do

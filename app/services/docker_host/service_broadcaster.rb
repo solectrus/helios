@@ -25,27 +25,30 @@ module DockerHost
 
     def resolve_error(service_name, container)
       if container&.running?
-        Compose::ErrorStore.clear(service_name)
+        Compose::ServiceStore.clear(service_name)
         nil
       else
-        Compose::ErrorStore.get(service_name)
+        Compose::ServiceStore.get(service_name)
       end
     end
 
     def broadcast_service_row(service_name, container, compose_service, error_message: nil)
+      pending = Compose::ServiceStore.pending?(service_name)
+
       Turbo::StreamsChannel.broadcast_replace_to(
         'services',
         target: "service-#{service_name}",
-        html: render_service_row(container, compose_service, error_message:),
+        html: render_service_row(container, compose_service, error_message:, pending:),
       )
     end
 
-    def render_service_row(container, compose_service, error_message: nil)
+    def render_service_row(container, compose_service, error_message: nil, pending: false)
       ApplicationController.render(
         ServiceRow::Component.new(
           compose_service:,
           container:,
           error_message:,
+          pending:,
           lazy: false,
         ),
         layout: false,

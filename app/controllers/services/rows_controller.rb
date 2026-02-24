@@ -4,7 +4,8 @@ module Services
       render ServiceRow::Component.new(
         compose_service:,
         container:,
-        error_message: Compose::ErrorStore.get(service_name),
+        error_message: Compose::ServiceStore.get(service_name),
+        pending: Compose::ServiceStore.pending?(service_name),
         lazy: false,
       )
     end
