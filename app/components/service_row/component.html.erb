@@ -67,17 +67,23 @@
           </a>
         <% end %>
         <div class="join">
-          <%= button_to service_task_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square join-item", title: "Start", data: { service_row__component_target: "startButton" } do %>
-            <i class="fa-solid fa-play"></i>
-          <% end %>
+          <div class="tooltip tooltip-info join-item" data-tip="Start">
+            <%= button_to service_task_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "startButton" } do %>
+              <i class="fa-solid fa-play"></i>
+            <% end %>
+          </div>
 
-          <%= button_to service_task_path(service_name), method: :delete, disabled: stop_disabled?, class: "btn btn-ghost btn-sm btn-square join-item", title: "Stop", data: { service_row__component_target: "stopButton" } do %>
-            <i class="fa-solid fa-stop"></i>
-          <% end %>
+          <div class="tooltip tooltip-info join-item" data-tip="Stop">
+            <%= button_to service_task_path(service_name), method: :delete, disabled: stop_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "stopButton" } do %>
+              <i class="fa-solid fa-stop"></i>
+            <% end %>
+          </div>
 
-          <%= button_to service_task_path(service_name), method: :patch, disabled: recreate_disabled?, class: "btn btn-ghost btn-sm btn-square join-item", title: "Recreate", data: { service_row__component_target: "recreateButton" } do %>
-            <i class="fa-solid fa-arrows-rotate"></i>
-          <% end %>
+          <div class="tooltip tooltip-info join-item" data-tip="Recreate">
+            <%= button_to service_task_path(service_name), method: :patch, disabled: recreate_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "recreateButton" } do %>
+              <i class="fa-solid fa-arrows-rotate"></i>
+            <% end %>
+          </div>
         </div>
       <% end %>
     </div>
