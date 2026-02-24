@@ -190,6 +190,30 @@ RSpec.describe ComposeJob do
       end
     end
 
+    context 'when error output contains progress lines with other service names' do
+      before do
+        allow(services_collection).to receive(:find).with('dashboard').and_return(requested_service)
+        allow(services_collection).to receive(:each)
+          .and_yield(affected_service)
+          .and_yield(requested_service)
+      end
+
+      it 'ignores progress lines and attributes error to the correct service' do
+        # Docker Compose outputs progress lines for dependencies before the actual error
+        perform_with_error(
+          " Container solectrus-influxdb-1  Running\n " \
+          "Container solectrus-dashboard-1  Recreating\n" \
+          'Error response from daemon: Conflict. The container name "/solectrus-dashboard-1" is already in use',
+        )
+
+        expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
+          'services',
+          target: 'service-dashboard',
+          html: '<div>error</div>',
+        )
+      end
+    end
+
     context 'when error does not contain container name' do
       before do
         allow(services_collection).to receive(:find).with('dashboard').and_return(requested_service)

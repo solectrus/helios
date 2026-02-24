@@ -40,9 +40,10 @@ module Compose
 
       def recreate(service)
         pull(service:)
-        args = %w[up --no-build -d --force-recreate]
-        args << service
-        run_compose(*args)
+        # Remove old container explicitly to avoid naming conflicts
+        # when rebuild_stack changes compose.yaml (different config hash)
+        run_compose('down', service.to_s)
+        run_compose('up', '--no-build', '-d', service.to_s)
       end
 
       def start(*services)

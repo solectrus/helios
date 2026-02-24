@@ -151,7 +151,15 @@ class ComposeJob < ApplicationJob
   # Find which service is affected by checking for known service names
   # in the container name pattern: <project>-<service>-<instance>
   def extract_affected_service(error)
-    output = error.stdout.to_s
+    # Filter out Docker Compose progress lines to avoid false matches.
+    # Progress lines look like: " Container solectrus-redis-1  Running"
+    output =
+      error
+      .stdout
+      .to_s
+      .lines
+      .grep_v(/^\s+(?:Container|Network)\s/)
+      .join
 
     compose_file.services.each do |service|
       return service.name if output.include?("-#{service.name}-")
