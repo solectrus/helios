@@ -31,6 +31,7 @@ RSpec.describe 'Services::Rows', :with_admin do
       version: '1.0.0',
       public_port: nil,
       stoppable?: running,
+      image: "#{service_name}:latest",
     )
   end
 

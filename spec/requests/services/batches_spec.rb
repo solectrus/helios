@@ -37,6 +37,7 @@ RSpec.describe 'Services::Batches', :with_admin do
         version: '1.0.0',
         public_port: nil,
         stoppable?: running,
+        image: "#{name}:latest",
       )
     end
     allow(DockerHost::Container).to receive(:all).and_return(containers)

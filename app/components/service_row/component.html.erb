@@ -32,11 +32,22 @@
             <%= compose_service.display_name %>
 
             <% if version %>
-              <span class="text-base-content/50 ml-1"><%= version %></span>
+              <span class="text-base-content/50 ml-1 font-normal"><%= version %></span>
             <% end %>
           </div>
 
-          <div class="text-base-content/50 text-xs"><span class="truncate"><%= compose_service.image %></span></div>
+          <div class="text-base-content/50 text-xs">
+            <span class="truncate"><%= compose_service.image %></span>
+
+            <% if image_mismatch? %>
+              <span
+                class="tooltip tooltip-right tooltip-warning"
+                data-tip="Container uses <%= container.image %> — recreate to apply"
+              >
+                <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+              </span>
+            <% end %>
+          </div>
         </div>
       <% end %>
     </div>

@@ -113,6 +113,12 @@ module ServiceRow
       health.nil? || health == 'healthy'
     end
 
+    def image_mismatch?
+      return false unless container&.running?
+
+      compose_service.image != container.image
+    end
+
     def start_disabled?
       lazy || pending || running?
     end

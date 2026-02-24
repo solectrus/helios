@@ -39,6 +39,7 @@ module Compose
       end
 
       def recreate(service)
+        pull(service:)
         args = %w[up --no-build -d --force-recreate]
         args << service
         run_compose(*args)
