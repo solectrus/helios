@@ -113,6 +113,7 @@ RSpec.describe StackBuilder do
       expect(env['INFLUX_PASSWORD']).to be_present
       expect(env['INFLUX_TOKEN']).to be_present
       expect(env['SECRET_KEY_BASE']).to be_present
+      expect(env['ADMIN_PASSWORD']).to be_present
     end
 
     it 'generates secrets with correct lengths' do
@@ -120,6 +121,7 @@ RSpec.describe StackBuilder do
       expect(env['POSTGRES_PASSWORD'].length).to eq(32)
       expect(env['SECRET_KEY_BASE'].length).to eq(64)
       expect(env['INFLUX_TOKEN'].length).to eq(64)
+      expect(env['ADMIN_PASSWORD'].length).to eq(32)
     end
 
     it 'sets InfluxDB configuration' do

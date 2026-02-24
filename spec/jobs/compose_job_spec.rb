@@ -1,4 +1,9 @@
 RSpec.describe ComposeJob do
+  before do
+    allow(StackBuilder).to receive(:new)
+      .and_return(instance_double(StackBuilder, write!: nil))
+  end
+
   after do
     Compose::ErrorStore.clear_all
   end

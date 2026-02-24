@@ -5,7 +5,7 @@ RSpec.describe DockerHost::Container do
       id: 'abc123def456',
       info: {
         'Names' => ['/solectrus-dashboard-1'],
-        'Image' => 'ghcr.io/solectrus/solectrus:latest',
+        'Image' => 'ghcr.io/solectrus/solectrus:develop',
         'State' => 'running',
         'Created' => '2024-01-15T10:00:00.000000000Z',
         'Ports' => [{ 'PrivatePort' => 3000, 'PublicPort' => 3000 }],
@@ -90,7 +90,7 @@ RSpec.describe DockerHost::Container do
 
   describe '#image' do
     it 'returns the image name' do
-      expect(container.image).to eq('ghcr.io/solectrus/solectrus:latest')
+      expect(container.image).to eq('ghcr.io/solectrus/solectrus:develop')
     end
   end
 

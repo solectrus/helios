@@ -107,7 +107,7 @@ class StackBuilder
 
   def dashboard_config
     {
-      image: 'ghcr.io/solectrus/solectrus:latest',
+      image: 'ghcr.io/solectrus/solectrus:develop',
       ports: ['3000:3000'],
       environment: dashboard_environment,
       depends_on: healthy_depends_on(%i[postgresql redis influxdb]),
@@ -128,6 +128,7 @@ class StackBuilder
       .merge(
         'DB_DATABASE' => 'solectrus',
         'SECRET_KEY_BASE' => '${SECRET_KEY_BASE}',
+        'ADMIN_PASSWORD' => '${ADMIN_PASSWORD}',
       )
   end
 
@@ -181,6 +182,7 @@ class StackBuilder
   def apply_secrets
     env['POSTGRES_PASSWORD'] ||= generate_secret
     env['SECRET_KEY_BASE'] ||= generate_secret(64)
+    env['ADMIN_PASSWORD'] ||= generate_secret
   end
 
   def apply_influxdb_configuration

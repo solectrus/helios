@@ -3,7 +3,7 @@ RSpec.describe Compose::ServiceCollection do
     {
       'postgresql' => { 'image' => 'postgres:18-alpine' },
       'redis' => { 'image' => 'redis:8-alpine' },
-      'dashboard' => { 'image' => 'solectrus/solectrus:latest' },
+      'dashboard' => { 'image' => 'solectrus/solectrus:develop' },
     }
   end
 
@@ -94,7 +94,7 @@ RSpec.describe Compose::ServiceCollection do
         'redis' => { 'image' => 'redis:8-alpine' },
         'postgresql' => { 'image' => 'postgres:18-alpine' },
         'whoami' => { 'image' => 'traefik/whoami:latest' },
-        'dashboard' => { 'image' => 'solectrus/solectrus:latest' },
+        'dashboard' => { 'image' => 'solectrus/solectrus:develop' },
         'influxdb' => { 'image' => 'influxdb:2-alpine' },
       }
     end
@@ -111,7 +111,7 @@ RSpec.describe Compose::ServiceCollection do
     context 'with helios service' do
       let(:services_hash) do
         {
-          'dashboard' => { 'image' => 'solectrus/solectrus:latest' },
+          'dashboard' => { 'image' => 'solectrus/solectrus:develop' },
           'helios' => { 'image' => 'helios:latest' },
           'redis' => { 'image' => 'redis:8-alpine' },
         }

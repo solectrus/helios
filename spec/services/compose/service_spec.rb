@@ -55,7 +55,7 @@ RSpec.describe Compose::Service do
       service =
         described_class.new(
           'dashboard',
-          { 'image' => 'ghcr.io/solectrus/solectrus:latest' },
+          { 'image' => 'ghcr.io/solectrus/solectrus:develop' },
         )
       expect(service.display_name).to eq('SOLECTRUS')
     end

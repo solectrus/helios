@@ -2,6 +2,7 @@ class ComposeJob < ApplicationJob
   queue_as :default
 
   def perform(action, service_name = nil)
+    rebuild_stack
     remove_errored_containers if action.to_sym == :up
     clear_errors(action, service_name)
     execute_action(action.to_sym, service_name)
@@ -13,6 +14,10 @@ class ComposeJob < ApplicationJob
   end
 
   private
+
+  def rebuild_stack
+    StackBuilder.new(Configuration.current).write!
+  end
 
   def execute_action(action, service_name)
     case action
