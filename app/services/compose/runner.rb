@@ -45,7 +45,9 @@ module Compose
       end
 
       def start(*services)
-        # Use 'up -d' instead of 'start' to also create containers if they don't exist
+        # Use 'up -d' instead of 'start' to also create containers if they don't exist.
+        # Broken containers (e.g. stuck in "Created" from a port conflict) are cleaned up
+        # by ComposeJob#remove_errored_containers before this method is called.
         args = %w[up --no-build -d]
         args.concat(services.flatten.compact)
         run_compose(*args)

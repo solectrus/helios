@@ -12,7 +12,8 @@ module DockerHost
 
         return false unless compose_service
 
-        broadcast_service_row(service_name, container, compose_service)
+        error_message = resolve_error(service_name, container)
+        broadcast_service_row(service_name, container, compose_service, error_message:)
         true
       end
     rescue StandardError => e
@@ -22,19 +23,29 @@ module DockerHost
 
     private
 
-    def broadcast_service_row(service_name, container, compose_service)
+    def resolve_error(service_name, container)
+      if container&.running?
+        Compose::ErrorStore.clear(service_name)
+        nil
+      else
+        Compose::ErrorStore.get(service_name)
+      end
+    end
+
+    def broadcast_service_row(service_name, container, compose_service, error_message: nil)
       Turbo::StreamsChannel.broadcast_replace_to(
         'services',
         target: "service-#{service_name}",
-        html: render_service_row(container, compose_service),
+        html: render_service_row(container, compose_service, error_message:),
       )
     end
 
-    def render_service_row(container, compose_service)
+    def render_service_row(container, compose_service, error_message: nil)
       ApplicationController.render(
         ServiceRow::Component.new(
           compose_service:,
           container:,
+          error_message:,
           lazy: false,
         ),
         layout: false,

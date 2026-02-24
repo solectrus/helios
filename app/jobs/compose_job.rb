@@ -2,6 +2,8 @@ class ComposeJob < ApplicationJob
   queue_as :default
 
   def perform(action, service_name = nil)
+    remove_errored_containers if action.to_sym == :up
+    clear_errors(action, service_name)
     execute_action(action.to_sym, service_name)
     # No broadcast on success — the EventsListener picks up Docker events
     # and broadcasts status updates via ServiceBroadcaster.
@@ -29,6 +31,7 @@ class ComposeJob < ApplicationJob
     elsif service_name
       error_message = extract_error_details(error)
       affected_service = extract_affected_service(error) || service_name
+      Compose::ErrorStore.set(affected_service, error_message)
       broadcast_service_status(affected_service, error_message:)
     end
   end
@@ -37,16 +40,43 @@ class ComposeJob < ApplicationJob
     %i[up down].include?(action.to_sym)
   end
 
+  # Remove containers that previously failed, so Docker Compose creates fresh ones.
+  # Without this, 'docker compose up dashboard' would silently restart a broken
+  # influxdb dependency from "Created" state — without port binding.
+  def remove_errored_containers
+    Compose::ErrorStore.each_key do |service_name|
+      Compose::Runner.stop(service_name)
+    rescue Compose::Runner::CommandError
+      # Ignore — container may already be gone
+    end
+  end
+
+  def clear_errors(action, service_name)
+    if batch_action?(action)
+      Compose::ErrorStore.clear_all
+    elsif service_name
+      Compose::ErrorStore.clear(service_name)
+    end
+  end
+
   def broadcast_all_services_error(error)
     error_message = extract_error_details(error)
     affected_service_name = extract_affected_service(error) || extract_service_from_image(error)
 
     all_services.each do |compose_service|
-      # Show error on affected service, or on ALL services if we can't identify the culprit
-      service_error = if affected_service_name.nil? || compose_service.name == affected_service_name
-                        error_message
-                      end
+      service_error = service_error_for(compose_service, affected_service_name, error_message)
+
+      Compose::ErrorStore.set(compose_service.name, service_error) if service_error
       broadcast_service_status(compose_service.name, error_message: service_error)
+    end
+  end
+
+  def service_error_for(compose_service, affected_service_name, error_message)
+    # Show error on affected service, or on ALL services if we can't identify the culprit
+    if affected_service_name.nil? || compose_service.name == affected_service_name
+      error_message
+    elsif compose_service.depends_on.key?(affected_service_name)
+      dependency_error_message(affected_service_name)
     end
   end
 
@@ -89,19 +119,20 @@ class ComposeJob < ApplicationJob
     error.stdout.to_s.lines.last&.strip.presence || 'Unknown error'
   end
 
-  # Extract service name from container name in error message
-  # Container names follow the pattern: <project>-<service>-<instance>
-  # Example: "/solectrus-influxdb-1" -> "influxdb"
+  def dependency_error_message(dependency_name)
+    display_name = compose_file.services.find(dependency_name)&.display_name || dependency_name
+    "Blocked: #{display_name} failed to start"
+  end
+
+  # Find which service is affected by checking for known service names
+  # in the container name pattern: <project>-<service>-<instance>
   def extract_affected_service(error)
     output = error.stdout.to_s
 
-    # Match container name pattern in quotes: "/<project>-<service>-<number>"
-    return unless (match = output.match(%r{"/([^"]+)-(\w+)-\d+"}).presence)
+    compose_file.services.each do |service|
+      return service.name if output.include?("-#{service.name}-")
+    end
 
-    service_name = match[2]
-
-    # Verify this service exists in our compose file
-    compose_service = compose_file.services.find(service_name)
-    compose_service ? service_name : nil
+    nil
   end
 end

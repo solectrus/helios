@@ -90,7 +90,7 @@ module ServiceRow
 
     def tooltip_class
       base = 'tooltip tooltip-left before:text-left before:text-xs'
-      error? ? "#{base} tooltip-error" : "#{base} tooltip-info"
+      error? ? "#{base} tooltip-error before:max-w-sm before:break-words" : "#{base} tooltip-info"
     end
 
     delegate :helios?, to: :compose_service
