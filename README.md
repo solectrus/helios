@@ -21,25 +21,19 @@ Helios eliminates the need to manually edit configuration files or understand Do
 
 ## Development
 
-1. Install [Caddy](https://caddyserver.com/) for local HTTPS:
+1. Install dependencies from the [Brewfile](Brewfile):
 
 ```bash
-brew install caddy
+brew bundle
 ```
 
-2. Add local domains to `/etc/hosts`:
-
-```bash
-echo "127.0.0.1 helios.localhost vite.helios.localhost" | sudo tee -a /etc/hosts
-```
-
-3. Setup the application to install gems and NPM packages and create the database:
+2. Setup the application to install gems and NPM packages and create the database:
 
 ```bash
 bin/setup
 ```
 
-4. Start the application locally:
+3. Start the application locally:
 
 ```bash
 bin/dev
