@@ -5,6 +5,6 @@
 @import 'daisyui/theme/aqua.css';
 
 @source '../../**/*.{erb,rb}';
-@source '../../javascript/**/*.{js,ts}';
+@source '../../frontend/**/*.{js,ts}';
 
 @plugin '@tailwindcss/typography';
