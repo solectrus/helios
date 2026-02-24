@@ -7,7 +7,8 @@ module DockerHost
     Dir[File.join(__dir__, 'version_extractor', '*.rb')].each { |f| require f }
 
     def self.extract(container)
-      from_specific_extractor(container) || from_oci_label(container) || from_env(container)
+      version = from_specific_extractor(container) || from_oci_label(container) || from_env(container)
+      version&.delete_prefix('v')
     end
 
     def self.from_specific_extractor(container)
