@@ -950,12 +950,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^25.3.1":
-  version: 25.3.1
-  resolution: "@types/node@npm:25.3.1"
+"@types/node@npm:^25.3.3":
+  version: 25.3.3
+  resolution: "@types/node@npm:25.3.3"
   dependencies:
     undici-types: "npm:~7.18.0"
-  checksum: 10c0/f4714e3f2c393434cdefbf207f3fe470bcf4d6c5717298c3fc9239e362a57cd25e59603c60e9c956e7d5d0dfb97cf2e037b37cf6dc2f3876f6a963146f7adc6d
+  checksum: 10c0/63e1d3816a9f4a706ab5d588d18cb98aa824b97748ff585537d327528e9438f58f69f45c7762e7cd3a1ab32c1619f551aabe8075d13172f9273cf10f6d83ab91
   languageName: node
   linkType: hard
 
@@ -1146,11 +1146,11 @@ __metadata:
   linkType: hard
 
 "brace-expansion@npm:^5.0.2":
-  version: 5.0.3
-  resolution: "brace-expansion@npm:5.0.3"
+  version: 5.0.4
+  resolution: "brace-expansion@npm:5.0.4"
   dependencies:
     balanced-match: "npm:^4.0.2"
-  checksum: 10c0/e474d300e581ec56851b3863ff1cf18573170c6d06deb199ccbd03b2119c36975f6ce2abc7b770f5bebddc1ab022661a9fea9b4d56f33315d7bef54d8793869e
+  checksum: 10c0/359cbcfa80b2eb914ca1f3440e92313fbfe7919ee6b274c35db55bec555aded69dac5ee78f102cec90c35f98c20fa43d10936d0cd9978158823c249257e1643a
   languageName: node
   linkType: hard
 
@@ -1267,12 +1267,12 @@ __metadata:
   linkType: hard
 
 "enhanced-resolve@npm:^5.19.0":
-  version: 5.19.0
-  resolution: "enhanced-resolve@npm:5.19.0"
+  version: 5.20.0
+  resolution: "enhanced-resolve@npm:5.20.0"
   dependencies:
     graceful-fs: "npm:^4.2.4"
     tapable: "npm:^2.3.0"
-  checksum: 10c0/966b1dffb82d5f6a4d6a86e904e812104a999066aa29f9223040aaa751e7c453b462a3f5ef91f8bd4408131ff6f7f90651dd1c804bdcb7944e2099a9c2e45ee2
+  checksum: 10c0/4ed5f38406fc9ad74c58a3d63b8215862243ab0ed6b0efc51ccdb72cdcedd3ac8638abe298680b279d7a83c3cb140e5eea7a5f8bd99696c74588f07ad89a95a7
   languageName: node
   linkType: hard
 
@@ -1757,7 +1757,7 @@ __metadata:
     "@size-limit/file": "npm:^12.0.0"
     "@tailwindcss/typography": "npm:^0.5.19"
     "@tailwindcss/vite": "npm:^4.2.1"
-    "@types/node": "npm:^25.3.1"
+    "@types/node": "npm:^25.3.3"
     daisyui: "npm:^5.5.19"
     eslint: "npm:^10.0.2"
     eslint-config-prettier: "npm:^10.1.8"
@@ -1767,8 +1767,8 @@ __metadata:
     prettier-plugin-tailwindcss: "npm:^0.7.2"
     rollup: "npm:^4.59.0"
     size-limit: "npm:^12.0.0"
-    survey-core: "npm:^2.5.12"
-    survey-js-ui: "npm:^2.5.12"
+    survey-core: "npm:^2.5.13"
+    survey-js-ui: "npm:^2.5.13"
     tailwindcss: "npm:^4.2.1"
     typescript: "npm:^5.9.3"
     typescript-eslint: "npm:^8.56.1"
@@ -2836,21 +2836,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"survey-core@npm:^2.5.12":
-  version: 2.5.12
-  resolution: "survey-core@npm:2.5.12"
-  checksum: 10c0/2912b3ee8ceb2f533dfcb513a447cc9cea0f5fb250633273edd0f404fb6fece4f61bf7414c01528505572850571d4966b9cad1aa92e05342413755c84d8fad43
+"survey-core@npm:^2.5.13":
+  version: 2.5.13
+  resolution: "survey-core@npm:2.5.13"
+  checksum: 10c0/a3c51418d586e06941907a3ae6d3358518d05797e15a9706054b3305b098ec34293bebdb2a4cdc4ab9c8f6644e7b41338205bb7cbe7e2dc61cdb23234c3decf2
   languageName: node
   linkType: hard
 
-"survey-js-ui@npm:^2.5.12":
-  version: 2.5.12
-  resolution: "survey-js-ui@npm:2.5.12"
+"survey-js-ui@npm:^2.5.13":
+  version: 2.5.13
+  resolution: "survey-js-ui@npm:2.5.13"
   peerDependencies:
     "@types/react": "*"
     "@types/react-dom": "*"
-    survey-core: 2.5.12
-  checksum: 10c0/1fa553dbb47d227af35b77d6612a16d75ee8a20f1703022daad156301cab941cb68dcbd3cb49315c11edc09d079a5a65cab34531acfe33ff6b2786c8178d5df1
+    survey-core: 2.5.13
+  checksum: 10c0/511064a3508b01591ac507c5d0f3fb4b0d4fd04ccb82b8ab268ab49534a5338e69760c2ac00ca8debc5535006ef39f8ec656bbcc261b754bfa527dc46c4e2b13
   languageName: node
   linkType: hard
 
