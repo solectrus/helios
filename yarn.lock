@@ -1639,9 +1639,9 @@ __metadata:
   linkType: hard
 
 "flatted@npm:^3.2.9":
-  version: 3.3.3
-  resolution: "flatted@npm:3.3.3"
-  checksum: 10c0/e957a1c6b0254aa15b8cce8533e24165abd98fadc98575db082b786b5da1b7d72062b81bfdcd1da2f4d46b6ed93bec2434e62333e9b4261d79ef2e75a10dd538
+  version: 3.3.4
+  resolution: "flatted@npm:3.3.4"
+  checksum: 10c0/d1f33426e9714063a65a90940acdb2897eceb810230a58e496d90334dcecfa81a90135bbc660df6827939865d57cb4a2afab14dcd3d505e16a8484fd73bf9642
   languageName: node
   linkType: hard
 
@@ -1767,8 +1767,8 @@ __metadata:
     prettier-plugin-tailwindcss: "npm:^0.7.2"
     rollup: "npm:^4.59.0"
     size-limit: "npm:^12.0.0"
-    survey-core: "npm:^2.5.13"
-    survey-js-ui: "npm:^2.5.13"
+    survey-core: "npm:^2.5.14"
+    survey-js-ui: "npm:^2.5.14"
     tailwindcss: "npm:^4.2.1"
     typescript: "npm:^5.9.3"
     typescript-eslint: "npm:^8.56.1"
@@ -2448,13 +2448,13 @@ __metadata:
   linkType: hard
 
 "postcss@npm:^8.5.6":
-  version: 8.5.6
-  resolution: "postcss@npm:8.5.6"
+  version: 8.5.8
+  resolution: "postcss@npm:8.5.8"
   dependencies:
     nanoid: "npm:^3.3.11"
     picocolors: "npm:^1.1.1"
     source-map-js: "npm:^1.2.1"
-  checksum: 10c0/5127cc7c91ed7a133a1b7318012d8bfa112da9ef092dddf369ae699a1f10ebbd89b1b9f25f3228795b84585c72aabd5ced5fc11f2ba467eedf7b081a66fad024
+  checksum: 10c0/dd918f7127ee7c60a0295bae2e72b3787892296e1d1c3c564d7a2a00c68d8df83cadc3178491259daa19ccc54804fb71ed8c937c6787e08d8bd4bedf8d17044c
   languageName: node
   linkType: hard
 
@@ -2836,21 +2836,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"survey-core@npm:^2.5.13":
-  version: 2.5.13
-  resolution: "survey-core@npm:2.5.13"
-  checksum: 10c0/a3c51418d586e06941907a3ae6d3358518d05797e15a9706054b3305b098ec34293bebdb2a4cdc4ab9c8f6644e7b41338205bb7cbe7e2dc61cdb23234c3decf2
+"survey-core@npm:^2.5.14":
+  version: 2.5.14
+  resolution: "survey-core@npm:2.5.14"
+  checksum: 10c0/70a74cde3224d0b650f12680481191e0ec8e826370c1221117eca6e780f5971f29133e304cc1d65263d5abb665f7d22ab54d4a9bc8b5788d9705b4fc2f482f8e
   languageName: node
   linkType: hard
 
-"survey-js-ui@npm:^2.5.13":
-  version: 2.5.13
-  resolution: "survey-js-ui@npm:2.5.13"
+"survey-js-ui@npm:^2.5.14":
+  version: 2.5.14
+  resolution: "survey-js-ui@npm:2.5.14"
   peerDependencies:
     "@types/react": "*"
     "@types/react-dom": "*"
-    survey-core: 2.5.13
-  checksum: 10c0/511064a3508b01591ac507c5d0f3fb4b0d4fd04ccb82b8ab268ab49534a5338e69760c2ac00ca8debc5535006ef39f8ec656bbcc261b754bfa527dc46c4e2b13
+    survey-core: 2.5.14
+  checksum: 10c0/1b6665d7ed98df3645faadd28e6b2f022f39fde74dc7fdb6f04813a8e97459f19cb7f5b22ef9ec9cc4e0fd6bdae8bf45007c84e262963c325daecec57bd957db
   languageName: node
   linkType: hard
 
