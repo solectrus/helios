@@ -20,15 +20,28 @@ RSpec.describe Configuration do
   describe '#chapter' do
     it 'returns empty hash for non-existent chapter' do
       config = described_class.current
-      expect(config.chapter('devices')).to eq({})
+      expect(config.chapter('system')).to eq({})
     end
 
-    it 'returns chapter data when chapter exists' do
+    it 'returns chapter data for singleton' do
       config = described_class.current
-      config.update_chapter('devices', { 'devices' => %w[inverter battery] })
+      config.update_chapter('system', { 'timezone' => 'Europe/Berlin' })
 
-      expect(config.chapter('devices')).to eq(
-        { 'devices' => %w[inverter battery] },
+      expect(config.chapter('system')).to eq(
+        { 'timezone' => 'Europe/Berlin' },
+      )
+    end
+
+    it 'returns chapter data for device with name' do
+      config = described_class.current
+      config.update_chapter(
+        'inverter',
+        { 'data_source' => 'senec_local' },
+        name: 'Dach Süd',
+      )
+
+      expect(config.chapter('inverter', 'Dach Süd')).to eq(
+        { 'data_source' => 'senec_local' },
       )
     end
   end
@@ -38,52 +51,214 @@ RSpec.describe Configuration do
       config = described_class.current
 
       expect do
-        config.update_chapter('inverter', { 'type' => 'senec' })
+        config.update_chapter(
+          'inverter',
+          { 'data_source' => 'senec_local' },
+          name: 'Dach Süd',
+        )
       end.to change(Chapter, :count).by(1)
 
-      expect(config.chapter('inverter')).to eq({ 'type' => 'senec' })
+      expect(config.chapter('inverter', 'Dach Süd')).to eq(
+        { 'data_source' => 'senec_local' },
+      )
     end
 
     it 'updates existing chapter data' do
       config = described_class.current
-      config.update_chapter('inverter', { 'type' => 'senec' })
+      config.update_chapter('system', { 'timezone' => 'UTC' })
       config.update_chapter(
-        'inverter',
-        { 'type' => 'fronius', 'host' => '1.2.3.4' },
+        'system',
+        { 'timezone' => 'Europe/Berlin', 'mqtt_host' => '192.168.1.44' },
       )
 
-      expect(config.chapter('inverter')).to eq(
-        { 'type' => 'fronius', 'host' => '1.2.3.4' },
+      expect(config.chapter('system')).to eq(
+        { 'timezone' => 'Europe/Berlin', 'mqtt_host' => '192.168.1.44' },
       )
+    end
+
+    it 'defaults name to kind for singletons' do
+      config = described_class.current
+      config.update_chapter('system', { 'timezone' => 'UTC' })
+
+      chapter = config.chapters.find_by(kind: 'system')
+      expect(chapter.name).to eq('system')
     end
 
     it 'does not create duplicate chapters' do
       config = described_class.current
-      config.update_chapter('devices', { 'v1' => true })
-      config.update_chapter('devices', { 'v2' => true })
+      config.update_chapter('system', { 'v1' => true })
+      config.update_chapter('system', { 'v2' => true })
 
-      expect(config.chapters.where(name: 'devices').count).to eq(1)
+      expect(config.chapters.where(kind: 'system').count).to eq(1)
     end
   end
 
   describe '#chapter_completed?' do
     it 'returns false for non-existent chapter' do
       config = described_class.current
-      expect(config.chapter_completed?('devices')).to be false
+      expect(config.chapter_completed?('system')).to be false
     end
 
     it 'returns false for chapter with empty data' do
       config = described_class.current
-      config.chapters.create!(name: 'devices', data: {})
+      config.chapters.create!(kind: 'system', name: 'system', data: {})
 
-      expect(config.chapter_completed?('devices')).to be false
+      expect(config.chapter_completed?('system')).to be false
     end
 
     it 'returns true for chapter with data' do
       config = described_class.current
-      config.update_chapter('devices', { 'devices' => ['inverter'] })
+      config.update_chapter('system', { 'timezone' => 'UTC' })
 
-      expect(config.chapter_completed?('devices')).to be true
+      expect(config.chapter_completed?('system')).to be true
+    end
+  end
+
+  describe '#chapters_of_kind' do
+    it 'returns all chapters of a given kind' do
+      config = described_class.current
+      config.add_device('inverter', 'Dach Süd', { 'data_source' => 'senec_local' })
+      config.add_device('inverter', 'BKW', { 'data_source' => 'mqtt' })
+      config.add_device('wallbox', 'Garage')
+
+      expect(config.chapters_of_kind('inverter').count).to eq(2)
+    end
+  end
+
+  describe '#add_device' do
+    it 'creates a device chapter' do
+      config = described_class.current
+
+      expect do
+        config.add_device('inverter', 'Dach Süd', { 'data_source' => 'senec_local' })
+      end.to change(Chapter, :count).by(1)
+
+      chapter = config.chapters.find_by(kind: 'inverter', name: 'Dach Süd')
+      expect(chapter.data).to eq({ 'data_source' => 'senec_local' })
+    end
+
+    it 'raises error for non-device kinds' do
+      config = described_class.current
+
+      expect do
+        config.add_device('system', 'test')
+      end.to raise_error(ArgumentError, /not a device kind/)
+    end
+  end
+
+  describe '#remove_device' do
+    it 'removes a device chapter' do
+      config = described_class.current
+      config.add_device('inverter', 'Dach Süd')
+
+      expect do
+        config.remove_device('inverter', 'Dach Süd')
+      end.to change(Chapter, :count).by(-1)
+    end
+
+    it 'raises error if device not found' do
+      config = described_class.current
+
+      expect do
+        config.remove_device('inverter', 'nonexistent')
+      end.to raise_error(ActiveRecord::RecordNotFound)
+    end
+  end
+
+  describe '#mqtt_required?' do
+    it 'returns false when no devices use MQTT' do
+      config = described_class.current
+      config.add_device('inverter', 'PV', { 'data_source' => 'senec_local' })
+
+      expect(config.mqtt_required?).to be false
+    end
+
+    it 'returns true when a device uses MQTT as data_source' do
+      config = described_class.current
+      config.add_device('inverter', 'PV', { 'data_source' => 'mqtt' })
+
+      expect(config.mqtt_required?).to be true
+    end
+
+    it 'returns true when heatpump uses MQTT as power_source' do
+      config = described_class.current
+      config.add_device('heatpump', 'HP', { 'power_source' => 'mqtt' })
+
+      expect(config.mqtt_required?).to be true
+    end
+
+    it 'returns true when heatpump uses MQTT as details_source' do
+      config = described_class.current
+      config.add_device('heatpump', 'HP', { 'details_source' => 'mqtt' })
+
+      expect(config.mqtt_required?).to be true
+    end
+  end
+
+  describe '#ingest_required?' do
+    it 'returns false with single inverter that knows house power' do
+      config = described_class.current
+      config.add_device('inverter', 'PV', { 'house_power_known' => true })
+
+      expect(config.ingest_required?).to be false
+    end
+
+    it 'returns true with single inverter that does not know house power' do
+      config = described_class.current
+      config.add_device('inverter', 'PV', { 'house_power_known' => false })
+
+      expect(config.ingest_required?).to be true
+    end
+
+    it 'returns true with multiple inverters' do
+      config = described_class.current
+      config.add_device('inverter', 'Dach', { 'house_power_known' => true })
+      config.add_device('inverter', 'BKW', { 'house_power_known' => true })
+
+      expect(config.ingest_required?).to be true
+    end
+
+    it 'returns false with no inverters' do
+      config = described_class.current
+
+      expect(config.ingest_required?).to be false
+    end
+  end
+
+  describe '#senec_hosts' do
+    it 'returns deduplicated SENEC hosts' do
+      config = described_class.current
+      config.add_device(
+        'inverter', 'PV',
+        { 'data_source' => 'senec_local', 'senec_host' => '192.168.1.42' }
+      )
+      config.add_device(
+        'battery', 'Akku',
+        { 'data_source' => 'senec_local', 'senec_host' => '192.168.1.42' }
+      )
+
+      expect(config.senec_hosts).to eq(['192.168.1.42'])
+    end
+
+    it 'returns empty array when no SENEC devices' do
+      config = described_class.current
+      config.add_device('inverter', 'PV', { 'data_source' => 'mqtt' })
+
+      expect(config.senec_hosts).to eq([])
+    end
+  end
+
+  describe '#effective_sensor_mappings' do
+    it 'merges computed mappings with overrides' do
+      config = described_class.current
+      config.update_chapter(
+        'sensors',
+        { 'inverter_power' => 'custom:power' },
+      )
+
+      expect(config.effective_sensor_mappings).to include(
+        'inverter_power' => 'custom:power',
+      )
     end
   end
 

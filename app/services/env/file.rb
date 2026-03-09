@@ -53,6 +53,14 @@ module Env
       @lines.delete_at(index) if index
     end
 
+    def add_comment(text)
+      @lines << "# #{text}"
+    end
+
+    def add_blank_line
+      @lines << ''
+    end
+
     def save
       ::File.write(path, to_s)
     end

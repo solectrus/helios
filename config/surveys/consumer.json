@@ -1,16 +1,16 @@
 {
   "locale": "de",
   "title": {
-    "de": "Wallbox",
-    "default": "Wallbox"
+    "de": "Verbraucher",
+    "default": "Consumer"
   },
   "description": {
-    "de": "Konfiguration deiner Wallbox",
-    "default": "Configuration of your wallbox"
+    "de": "Konfiguration eines Custom-Verbrauchers",
+    "default": "Configuration of a custom consumer"
   },
   "pages": [
     {
-      "name": "p_wallbox",
+      "name": "p_consumer",
       "title": {
         "de": "Datenquelle",
         "default": "Data source"
@@ -18,20 +18,13 @@
       "elements": [
         {
           "type": "radiogroup",
-          "name": "wallbox_vendor",
+          "name": "data_source",
           "title": {
-            "de": "Woher kommen die Ladedaten deiner Wallbox?",
-            "default": "Where does your wallbox charging data come from?"
+            "de": "Woher kommen die Messdaten dieses Verbrauchers?",
+            "default": "Where does this consumer's measurement data come from?"
           },
           "isRequired": true,
           "choices": [
-            {
-              "value": "senec",
-              "text": {
-                "de": "SENEC (gesteuert vom Stromspeicher)",
-                "default": "SENEC (controlled by the battery)"
-              }
-            },
             {
               "value": "shelly",
               "text": {
@@ -59,7 +52,7 @@
     },
     {
       "name": "p_shelly",
-      "visibleIf": "{wallbox_vendor} = 'shelly'",
+      "visibleIf": "{data_source} = 'shelly'",
       "title": {
         "de": "Shelly-Konfiguration",
         "default": "Shelly Configuration"
@@ -74,8 +67,8 @@
           },
           "isRequired": true,
           "placeholder": {
-            "de": "z.B. 192.168.178.44",
-            "default": "e.g. 192.168.178.44"
+            "de": "z.B. 192.168.178.43",
+            "default": "e.g. 192.168.178.43"
           }
         },
         {
@@ -106,7 +99,7 @@
     },
     {
       "name": "p_smart_home",
-      "visibleIf": "{wallbox_vendor} = 'smart_home'",
+      "visibleIf": "{data_source} = 'smart_home'",
       "title": {
         "de": "Smart-Home-System",
         "default": "Smart home system"
@@ -135,7 +128,7 @@
     },
     {
       "name": "p_mqtt",
-      "visibleIf": "{wallbox_vendor} = 'mqtt'",
+      "visibleIf": "{data_source} = 'mqtt'",
       "title": {
         "de": "MQTT-Konfiguration",
         "default": "MQTT Configuration"
@@ -145,17 +138,17 @@
           "type": "text",
           "name": "mqtt_topic",
           "title": {
-            "de": "MQTT-Topic für die Ladeleistung (in Watt)",
-            "default": "MQTT topic for charging power (in watts)"
+            "de": "MQTT-Topic für die Leistung (in Watt)",
+            "default": "MQTT topic for power (in watts)"
           },
           "description": {
-            "de": "Das Topic, auf dem die aktuelle Ladeleistung veröffentlicht wird",
-            "default": "The topic where current charging power is published"
+            "de": "Das Topic, auf dem der aktuelle Verbrauch veröffentlicht wird",
+            "default": "The topic where current consumption is published"
           },
           "isRequired": true,
           "placeholder": {
-            "de": "z.B. sensors/wallbox/power",
-            "default": "e.g. sensors/wallbox/power"
+            "de": "z.B. sensors/consumer/power",
+            "default": "e.g. sensors/consumer/power"
           }
         }
       ]

@@ -1,0 +1,33 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Sensor-Mapping",
+    "default": "Sensor mapping"
+  },
+  "description": {
+    "de": "Zuordnung der Sensoren zu InfluxDB-Feldern",
+    "default": "Map sensors to InfluxDB fields"
+  },
+  "pages": [
+    {
+      "name": "p_sensors",
+      "elements": [
+        {
+          "type": "comment",
+          "name": "info",
+          "title": {
+            "de": "Die Sensor-Zuordnung wird automatisch aus der Gerätekonfiguration abgeleitet. Hier kannst du einzelne Zuordnungen überschreiben.",
+            "default": "Sensor mapping is automatically derived from device configuration. You can override individual mappings here."
+          },
+          "readOnly": true
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

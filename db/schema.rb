@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_02_02_144828) do
+ActiveRecord::Schema[8.1].define(version: 2026_02_26_174638) do
   create_table "admins", force: :cascade do |t|
     t.datetime "created_at", null: false
     t.string "password_digest", null: false
@@ -21,9 +21,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_02_02_144828) do
     t.integer "configuration_id", null: false
     t.datetime "created_at", null: false
     t.json "data", default: {}, null: false
+    t.string "kind", null: false
     t.string "name", null: false
     t.datetime "updated_at", null: false
-    t.index ["configuration_id", "name"], name: "index_chapters_on_configuration_id_and_name", unique: true
+    t.index ["configuration_id", "kind", "name"], name: "index_chapters_on_configuration_id_and_kind_and_name", unique: true
     t.index ["configuration_id"], name: "index_chapters_on_configuration_id"
   end
 

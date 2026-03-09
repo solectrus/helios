@@ -1,0 +1,87 @@
+<div class="card bg-base-100 shadow-md">
+  <div class="card-body flex-row items-start gap-4 p-5">
+    <%# Icon spanning full height %>
+    <div class="text-primary flex items-center self-stretch px-2 text-5xl"><i class="fa-solid <%= icon %>"></i></div>
+
+    <%# Content area %>
+    <div class="min-w-0 flex-1">
+      <%# Header: Title + Add button %>
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold"><%= title %></h2>
+
+        <% if device? %>
+          <%= link_to add_path,
+                      class: "btn btn-ghost btn-sm btn-square",
+                      data: { turbo_frame: "chapter-modal-content" } do %>
+            <i class="fa-solid fa-plus"></i>
+          <% end %>
+        <% end %>
+      </div>
+
+      <%# List of chapters or empty state %>
+      <% if device? %>
+        <% if chapters.any? %>
+          <div class="divide-base-200 divide-y">
+            <% chapters.each do |chapter| %>
+              <div class="flex items-center justify-between py-2">
+                <div class="flex items-center gap-2">
+                  <% if chapter.completed? %>
+                    <i class="fa-solid fa-check text-success text-xs"></i>
+                  <% else %>
+                    <i class="fa-solid fa-circle text-base-content/20 text-xs"></i>
+                  <% end %>
+
+                  <span class="font-medium"><%= chapter.name %></span>
+                </div>
+
+                <div class="flex items-center gap-1">
+                  <%= link_to helpers.edit_configuration_chapter_path(chapter),
+                              class: "btn btn-ghost btn-sm btn-square",
+                              data: { turbo_frame: "chapter-modal-content" } do %>
+                    <i class="fa-solid fa-pen-to-square"></i>
+                  <% end %>
+
+                  <%= button_to helpers.configuration_chapter_path(chapter),
+                                method: :delete,
+                                class: "btn btn-ghost btn-sm btn-square text-error",
+                                data: { turbo_confirm: t('configurations.chapters.delete_confirm') } do %>
+                    <i class="fa-solid fa-trash"></i>
+                  <% end %>
+                </div>
+              </div>
+            <% end %>
+          </div>
+        <% else %>
+          <p class="text-base-content/50 py-2 text-sm"><%= t('configurations.chapters.no_devices') %></p>
+        <% end %>
+      <% else %>
+        <%# Singleton %>
+        <div class="flex items-center justify-between py-2">
+          <% if singleton_configured? %>
+            <div class="flex items-center gap-2">
+              <i class="fa-solid fa-check text-success text-xs"></i>
+              <span class="text-base-content/70 text-sm"><%= t('configurations.show.configured') %></span>
+            </div>
+          <% else %>
+            <span class="text-base-content/50 text-sm"><%= t('configurations.chapters.not_configured') %></span>
+          <% end %>
+
+          <% if singleton_chapter %>
+            <%= link_to helpers.edit_configuration_chapter_path(singleton_chapter),
+                        class: "btn btn-ghost btn-sm btn-square",
+                        data: { turbo_frame: "chapter-modal-content" } do %>
+              <i class="fa-solid fa-pen-to-square"></i>
+            <% end %>
+          <% else %>
+            <%= button_to helpers.configuration_chapters_path,
+                          class: "btn btn-ghost btn-sm btn-square",
+                          params: { kind: kind },
+                          data: { turbo_frame: "chapter-modal-content" } do %>
+              <i class="fa-solid fa-pen-to-square"></i>
+            <% end %>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

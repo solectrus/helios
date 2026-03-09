@@ -46,28 +46,47 @@ en:
       configured: "Configured"
       pending: "Pending"
     chapters:
-      devices:
-        title: "Devices"
-        description: "Which devices do you want to monitor?"
       inverter:
-        title: "Inverter & Battery"
-        description: "Configuration of your inverter and battery storage"
+        title: "Inverter"
+        description: "Configuration of your inverter"
+      battery:
+        title: "Battery"
+        description: "Configuration of your battery storage"
       wallbox:
         title: "Wallbox"
         description: "Configuration of your wallbox"
+      car:
+        title: "Electric car"
+        description: "Configuration of your electric car"
       heatpump:
         title: "Heat pump"
         description: "Configuration of your heat pump"
-      mqtt:
-        title: "MQTT"
-        description: "Connection to your MQTT broker"
+      consumer:
+        title: "Consumer"
+        description: "Configuration of a custom consumer"
       forecast:
         title: "Yield forecast"
         description: "Forecast of your PV yield"
       system:
         title: "System"
         description: "Basic settings for SOLECTRUS"
+      backup:
+        title: "Backup"
+        description: "Configuration of S3 data backup"
+      sensors:
+        title: "Sensor mapping"
+        description: "Map sensors to InfluxDB fields"
       invalid_chapter: "Unknown chapter"
+      add: "Add"
+      edit: "Edit"
+      delete: "Delete"
+      delete_confirm: "Are you sure?"
+      discard_confirm: "Discard unsaved changes?"
+      discard_cancel: "Keep editing"
+      discard_discard: "Discard"
+      configure: "Configure"
+      not_configured: "Not configured yet"
+      no_devices: "No devices added yet"
 
   flash:
     admin:

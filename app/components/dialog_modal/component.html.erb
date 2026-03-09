@@ -12,4 +12,20 @@
   <form method="dialog" class="modal-backdrop">
     <button>close</button>
   </form>
+
+  <dialog class="modal" data-dialog-modal-target="confirm">
+    <div class="modal-box max-w-sm">
+      <p class="text-base"><%= t('configurations.chapters.discard_confirm') %></p>
+
+      <div class="modal-action">
+        <button class="btn" data-action="dialog-modal#confirmCancel">
+          <%= t('configurations.chapters.discard_cancel') %>
+        </button>
+
+        <button class="btn btn-error" data-action="dialog-modal#confirmDiscard">
+          <%= t('configurations.chapters.discard_discard') %>
+        </button>
+      </div>
+    </div>
+  </dialog>
 </dialog>

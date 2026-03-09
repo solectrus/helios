@@ -144,6 +144,27 @@ RSpec.describe Env::File do
     end
   end
 
+  describe '#add_comment' do
+    it 'adds a comment line' do
+      env = described_class.new(tmp_path)
+      env.add_comment('General')
+      env['TZ'] = 'Europe/Berlin'
+
+      expect(env.to_s).to eq("# General\nTZ=Europe/Berlin\n")
+    end
+  end
+
+  describe '#add_blank_line' do
+    it 'adds an empty line' do
+      env = described_class.new(tmp_path)
+      env['TZ'] = 'Europe/Berlin'
+      env.add_blank_line
+      env['DEBUG'] = 'true'
+
+      expect(env.to_s).to eq("TZ=Europe/Berlin\n\nDEBUG=true\n")
+    end
+  end
+
   describe '#to_s' do
     it 'returns the content as string' do
       env = described_class.load(fixture_path)

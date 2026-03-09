@@ -1,0 +1,104 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Stromspeicher",
+    "default": "Battery"
+  },
+  "description": {
+    "de": "Konfiguration deines Stromspeichers",
+    "default": "Configuration of your battery storage"
+  },
+  "pages": [
+    {
+      "name": "p_battery",
+      "title": {
+        "de": "Datenquelle",
+        "default": "Data source"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "data_source",
+          "title": {
+            "de": "Woher kommen die Daten deines Stromspeichers?",
+            "default": "Where does your battery data come from?"
+          },
+          "isRequired": true,
+          "choices": [
+            {
+              "value": "senec_local",
+              "text": {
+                "de": "SENEC (lokaler Zugriff)",
+                "default": "SENEC (local access)"
+              }
+            },
+            {
+              "value": "senec_cloud",
+              "text": {
+                "de": "SENEC (Cloud-API)",
+                "default": "SENEC (Cloud API)"
+              }
+            },
+            {
+              "value": "smart_home",
+              "text": {
+                "de": "Smart-Home-System (ioBroker, Home Assistant)",
+                "default": "Smart home system (ioBroker, Home Assistant)"
+              }
+            },
+            {
+              "value": "mqtt",
+              "text": {
+                "de": "Direkt per MQTT",
+                "default": "Directly via MQTT"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_smart_home",
+      "visibleIf": "{data_source} = 'smart_home'",
+      "title": {
+        "de": "Smart-Home-System",
+        "default": "Smart home system"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "smart_home_system",
+          "title": {
+            "de": "Welches Smart-Home-System nutzt du?",
+            "default": "Which smart home system do you use?"
+          },
+          "isRequired": true,
+          "choices": [
+            {
+              "value": "iobroker",
+              "text": "ioBroker"
+            },
+            {
+              "value": "home_assistant",
+              "text": "Home Assistant"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  },
+  "showCompletePage": false
+}

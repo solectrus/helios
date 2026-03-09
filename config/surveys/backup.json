@@ -1,0 +1,84 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Backup",
+    "default": "Backup"
+  },
+  "description": {
+    "de": "Konfiguration der S3-Datensicherung",
+    "default": "Configuration of S3 data backup"
+  },
+  "pages": [
+    {
+      "name": "p_backup",
+      "title": {
+        "de": "Automatisches Backup",
+        "default": "Automatic backup"
+      },
+      "elements": [
+        {
+          "type": "boolean",
+          "name": "enabled",
+          "title": {
+            "de": "Soll ein automatisches Backup auf Amazon S3 eingerichtet werden?",
+            "default": "Do you want to set up automatic backup to Amazon S3?"
+          },
+          "isRequired": true,
+          "defaultValue": false
+        }
+      ]
+    },
+    {
+      "name": "p_aws",
+      "visibleIf": "{enabled} = true",
+      "title": {
+        "de": "AWS-Zugangsdaten",
+        "default": "AWS Credentials"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "aws_access_key_id",
+          "title": "AWS Access Key ID",
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "aws_secret_access_key",
+          "title": "AWS Secret Access Key",
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "aws_region",
+          "title": "AWS Region",
+          "isRequired": true,
+          "placeholder": {
+            "de": "z.B. eu-central-1",
+            "default": "e.g. eu-central-1"
+          }
+        },
+        {
+          "type": "text",
+          "name": "aws_bucket",
+          "title": "S3 Bucket",
+          "isRequired": true
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  },
+  "showCompletePage": false
+}

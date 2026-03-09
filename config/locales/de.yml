@@ -17,25 +17,44 @@ de:
       configured: "Konfiguriert"
       pending: "Offen"
     chapters:
-      devices:
-        title: "Geräte"
-        description: "Welche Geräte möchtest du überwachen?"
       inverter:
-        title: "Wechselrichter & Stromspeicher"
-        description: "Konfiguration deines Wechselrichters und Stromspeichers"
+        title: "Wechselrichter"
+        description: "Konfiguration deines Wechselrichters"
+      battery:
+        title: "Stromspeicher"
+        description: "Konfiguration deines Stromspeichers"
       wallbox:
         title: "Wallbox"
         description: "Konfiguration deiner Wallbox"
+      car:
+        title: "Elektroauto"
+        description: "Konfiguration deines Elektroautos"
       heatpump:
         title: "Wärmepumpe"
         description: "Konfiguration deiner Wärmepumpe"
-      mqtt:
-        title: "MQTT"
-        description: "Verbindung zu deinem MQTT-Broker"
+      consumer:
+        title: "Verbraucher"
+        description: "Konfiguration eines Custom-Verbrauchers"
       forecast:
         title: "Ertragsprognose"
         description: "Prognose deines PV-Ertrags"
       system:
         title: "System"
         description: "Grundeinstellungen für SOLECTRUS"
+      backup:
+        title: "Backup"
+        description: "Konfiguration der S3-Datensicherung"
+      sensors:
+        title: "Sensor-Mapping"
+        description: "Zuordnung der Sensoren zu InfluxDB-Feldern"
       invalid_chapter: "Unbekanntes Kapitel"
+      add: "Hinzufügen"
+      edit: "Bearbeiten"
+      delete: "Löschen"
+      delete_confirm: "Wirklich löschen?"
+      discard_confirm: "Ungespeicherte Änderungen verwerfen?"
+      discard_cancel: "Weiter bearbeiten"
+      discard_discard: "Verwerfen"
+      configure: "Konfigurieren"
+      not_configured: "Noch nicht konfiguriert"
+      no_devices: "Noch keine Geräte angelegt"

@@ -3,62 +3,123 @@ RSpec.describe 'Configurations::Chapters', :with_admin do
 
   before { login }
 
-  describe 'GET /configuration/chapters/:id (show)' do
-    it 'returns JSON for a valid chapter' do
-      get configuration_chapter_path(id: 'devices')
+  describe 'GET /configuration/chapters/new' do
+    it 'renders the survey form for a valid device kind' do
+      get new_configuration_chapter_path(kind: 'inverter')
 
       expect(response).to have_http_status(:ok)
-      expect(response.media_type).to eq('application/json')
-
-      json = response.parsed_body
-      expect(json).to be_a(Hash)
+      expect(response.body).to include('survey')
     end
 
-    it 'returns 404 for non-existent chapter' do
-      get configuration_chapter_path(id: 'nonexistent')
+    it 'redirects for invalid kind' do
+      get new_configuration_chapter_path(kind: 'nonexistent')
 
       expect(response).to redirect_to(configuration_path)
     end
+  end
 
-    Chapter::NAMES.each do |chapter_name|
-      it "returns JSON for #{chapter_name} chapter" do
-        get configuration_chapter_path(id: chapter_name)
+  describe 'POST /configuration/chapters' do
+    it 'creates a device chapter with name from survey data' do
+      chapter_data = {
+        'name' => 'Dach Süd',
+        'data_source' => 'senec_local',
+        'senec_host' => '192.168.1.42',
+      }
 
-        expect(response).to have_http_status(:ok)
-        expect(response.media_type).to eq('application/json')
-      end
+      expect do
+        post configuration_chapters_path,
+             params: { kind: 'inverter', chapter: chapter_data.to_json }
+      end.to change(Chapter, :count).by(1)
+
+      chapter = Chapter.last
+      expect(chapter.kind).to eq('inverter')
+      expect(chapter.name).to eq('Dach Süd')
+      expect(chapter.data).to eq(
+        'data_source' => 'senec_local',
+        'senec_host' => '192.168.1.42',
+      )
+      expect(response).to redirect_to(configuration_path)
+    end
+
+    it 'creates a singleton chapter with kind as name' do
+      expect do
+        post configuration_chapters_path,
+             params: { kind: 'system' }
+      end.to change(Chapter, :count).by(1)
+
+      chapter = Chapter.last
+      expect(chapter.kind).to eq('system')
+      expect(chapter.name).to eq('system')
+      expect(response).to redirect_to(edit_configuration_chapter_path(chapter))
     end
   end
 
   describe 'GET /configuration/chapters/:id/edit' do
-    it 'renders the chapter form' do
-      get edit_configuration_chapter_path(id: 'devices')
+    it 'renders the survey form for an existing chapter' do
+      chapter = configuration.chapters.create!(
+        kind: 'inverter', name: 'Dach Süd', data: {},
+      )
+
+      get edit_configuration_chapter_path(chapter)
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include('devices')
     end
 
-    it 'redirects for invalid chapter' do
-      get edit_configuration_chapter_path(id: 'invalid')
+    it 'returns 404 for non-existent chapter' do
+      get edit_configuration_chapter_path(id: 999_999)
 
-      expect(response).to redirect_to(configuration_path)
+      expect(response).to have_http_status(:not_found)
     end
   end
 
   describe 'PATCH /configuration/chapters/:id' do
-    it 'updates the chapter data' do
-      chapter_data = { 'field1' => 'value1', 'field2' => 'value2' }
+    it 'updates a device chapter including name' do
+      chapter = configuration.chapters.create!(
+        kind: 'inverter', name: 'Dach Süd', data: {},
+      )
+      chapter_data = {
+        'name' => 'Dach Nord',
+        'data_source' => 'senec_local',
+        'senec_host' => '192.168.1.42',
+      }
 
-      patch configuration_chapter_path(id: 'devices'),
+      patch configuration_chapter_path(chapter),
             params: { chapter: chapter_data.to_json }
 
       expect(response).to redirect_to(configuration_path)
-      expect(configuration.reload.chapter('devices')).to eq(chapter_data)
+      chapter.reload
+      expect(chapter.name).to eq('Dach Nord')
+      expect(chapter.data).to eq(
+        'data_source' => 'senec_local',
+        'senec_host' => '192.168.1.42',
+      )
     end
 
-    it 'redirects for invalid chapter' do
-      patch configuration_chapter_path(id: 'invalid'),
-            params: { chapter: { foo: 'bar' }.to_json }
+    it 'updates a singleton chapter without changing name' do
+      chapter = configuration.chapters.create!(
+        kind: 'system', name: 'system', data: {},
+      )
+      chapter_data = { 'app_host' => 'example.com' }
+
+      patch configuration_chapter_path(chapter),
+            params: { chapter: chapter_data.to_json }
+
+      expect(response).to redirect_to(configuration_path)
+      chapter.reload
+      expect(chapter.name).to eq('system')
+      expect(chapter.data).to eq('app_host' => 'example.com')
+    end
+  end
+
+  describe 'DELETE /configuration/chapters/:id' do
+    it 'deletes the chapter' do
+      chapter = configuration.chapters.create!(
+        kind: 'inverter', name: 'Dach Süd', data: {},
+      )
+
+      expect do
+        delete configuration_chapter_path(chapter)
+      end.to change(Chapter, :count).by(-1)
 
       expect(response).to redirect_to(configuration_path)
     end

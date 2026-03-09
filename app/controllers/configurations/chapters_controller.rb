@@ -1,25 +1,60 @@
 module Configurations
   class ChaptersController < ApplicationController
     before_action :set_configuration
-    before_action :validate_chapter
 
-    def show
-      path = Rails.root.join("config/surveys/#{chapter_name}.json")
+    def new
+      kind = params[:kind]
 
-      if path.exist?
-        render json: JSON.parse(path.read)
-      else
-        head :not_found
+      unless Chapter.valid_kind?(kind)
+        return redirect_to configuration_path
       end
+
+      render ChapterForm::Component.new(kind:)
     end
 
     def edit
-      chapter_data = @configuration.chapter(chapter_name)
-      render ChapterForm::Component.new(chapter: chapter_name, chapter_data:)
+      chapter = find_chapter
+      render ChapterForm::Component.new(chapter:)
+    end
+
+    def create
+      kind = params[:kind]
+
+      unless Chapter.valid_kind?(kind)
+        return redirect_to configuration_path
+      end
+
+      if Chapter.singleton_kind?(kind)
+        chapter = @configuration.chapters.create!(kind:, name: kind, data: {})
+        redirect_to edit_configuration_chapter_path(chapter)
+      else
+        data = chapter_params
+        return unless data
+
+        name = data.delete('name')
+        @configuration.chapters.create!(kind:, name:, data:)
+        redirect_to configuration_path
+      end
     end
 
     def update
-      @configuration.update_chapter(chapter_name, chapter_params)
+      chapter = find_chapter
+      data = chapter_params
+      return unless data
+
+      if chapter.device?
+        name = data.delete('name')
+        chapter.update!(name:, data:)
+      else
+        chapter.update!(data:)
+      end
+
+      redirect_to configuration_path
+    end
+
+    def destroy
+      chapter = find_chapter
+      chapter.destroy!
       redirect_to configuration_path
     end
 
@@ -29,21 +64,15 @@ module Configurations
       @configuration = Configuration.current
     end
 
-    def validate_chapter
-      return if Chapter::NAMES.include?(chapter_name)
-
-      redirect_to configuration_path,
-                  alert: t('configurations.chapters.invalid_chapter')
-    end
-
-    def chapter_name
-      params[:id]
+    def find_chapter
+      @configuration.chapters.find(params[:id])
     end
 
     def chapter_params
       JSON.parse(params.require(:chapter))
+    rescue JSON::ParserError
+      head(:bad_request)
+      nil
     end
-
-    helper_method :chapter_name
   end
 end

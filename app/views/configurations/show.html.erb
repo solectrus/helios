@@ -7,8 +7,13 @@
     <%= turbo_frame_tag "tab-content" do %>
       <div class="mb-8"><%= render MainNav::Component.new(active_tab: :configuration) %></div>
 
-      <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <%= render ChapterCard::Component.with_collection(@chapters, configuration: @configuration) %>
+      <div class="space-y-4">
+        <% Chapter::KINDS.each do |kind| %>
+          <%= render KindSection::Component.new(
+                kind:,
+                chapters: @configuration.chapters_of_kind(kind)
+              ) %>
+        <% end %>
       </div>
 
       <%= render DialogModal::Component.new(id: "chapter-modal", turbo_frame: "chapter-modal-content") %>

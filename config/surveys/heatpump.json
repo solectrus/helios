@@ -12,8 +12,8 @@
     {
       "name": "p_heatpump_access",
       "title": {
-        "de": "Messmethode",
-        "default": "Measurement method"
+        "de": "Datenquelle",
+        "default": "Data source"
       },
       "elements": [
         {
@@ -28,15 +28,22 @@
             {
               "value": "shelly",
               "text": {
-                "de": "Über einen Shelly Stromzähler",
-                "default": "Using Shelly energy monitor"
+                "de": "Shelly Energiemesser",
+                "default": "Shelly energy meter"
+              }
+            },
+            {
+              "value": "smart_home",
+              "text": {
+                "de": "Smart-Home-System (ioBroker, Home Assistant)",
+                "default": "Smart home system (ioBroker, Home Assistant)"
               }
             },
             {
               "value": "mqtt",
               "text": {
-                "de": "Über MQTT",
-                "default": "Via MQTT"
+                "de": "Direkt per MQTT",
+                "default": "Directly via MQTT"
               }
             }
           ]
@@ -47,7 +54,7 @@
       "name": "p_shelly",
       "visibleIf": "{heatpump_access} = 'shelly'",
       "title": {
-        "de": "Shelly Konfiguration",
+        "de": "Shelly-Konfiguration",
         "default": "Shelly Configuration"
       },
       "elements": [
@@ -73,7 +80,76 @@
           },
           "defaultValue": 5,
           "isRequired": true,
-          "inputType": "number"
+          "inputType": "number",
+          "min": 1
+        },
+        {
+          "type": "text",
+          "name": "shelly_password",
+          "title": {
+            "de": "Passwort (optional)",
+            "default": "Password (optional)"
+          },
+          "description": {
+            "de": "Nur erforderlich, falls ein Passwort für den Shelly konfiguriert ist",
+            "default": "Only required if a password is configured for the Shelly"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_smart_home",
+      "visibleIf": "{heatpump_access} = 'smart_home'",
+      "title": {
+        "de": "Smart-Home-System",
+        "default": "Smart home system"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "smart_home_system",
+          "title": {
+            "de": "Welches Smart-Home-System nutzt du?",
+            "default": "Which smart home system do you use?"
+          },
+          "isRequired": true,
+          "choices": [
+            {
+              "value": "iobroker",
+              "text": "ioBroker"
+            },
+            {
+              "value": "home_assistant",
+              "text": "Home Assistant"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_mqtt",
+      "visibleIf": "{heatpump_access} = 'mqtt'",
+      "title": {
+        "de": "MQTT-Konfiguration",
+        "default": "MQTT Configuration"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "mqtt_topic",
+          "title": {
+            "de": "MQTT-Topic für die Leistung (in Watt)",
+            "default": "MQTT topic for power (in watts)"
+          },
+          "description": {
+            "de": "Das Topic, auf dem der aktuelle Verbrauch veröffentlicht wird",
+            "default": "The topic where current consumption is published"
+          },
+          "isRequired": true,
+          "placeholder": {
+            "de": "z.B. sensors/heatpump/power",
+            "default": "e.g. sensors/heatpump/power"
+          }
         }
       ]
     }
