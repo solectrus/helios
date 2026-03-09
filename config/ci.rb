@@ -4,7 +4,7 @@ CI.run do
   step 'Setup', 'bin/setup --skip-server'
 
   step 'Style: Ruby', 'bin/rubocop'
-  step 'Style: ERB', 'yarn erb:check'
+  step 'Style: ERB', 'bin/yarn erb:check'
   step 'Style: JavaScript', 'bin/yarn lint'
   step 'Style: TypeScript', 'bin/yarn tsc'
 

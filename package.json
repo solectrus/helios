@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "erb:format": "herb-format",
-    "erb:check": "herb-format --check",
+    "erb:check": "herb-format --check .",
     "lint": "eslint --cache .",
     "format": "prettier . --write --plugin=prettier-plugin-tailwindcss",
     "tsc": "tsc --noEmit"
