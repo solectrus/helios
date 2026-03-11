@@ -1946,8 +1946,8 @@ __metadata:
     prettier-plugin-tailwindcss: "npm:^0.7.2"
     rollup: "npm:^4.59.0"
     size-limit: "npm:^12.0.1"
-    survey-core: "npm:^2.5.14"
-    survey-js-ui: "npm:^2.5.14"
+    survey-core: "npm:^2.5.15"
+    survey-js-ui: "npm:^2.5.15"
     tailwindcss: "npm:^4.2.1"
     typescript: "npm:^5.9.3"
     typescript-eslint: "npm:^8.57.0"
@@ -3051,21 +3051,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"survey-core@npm:^2.5.14":
-  version: 2.5.14
-  resolution: "survey-core@npm:2.5.14"
-  checksum: 10c0/70a74cde3224d0b650f12680481191e0ec8e826370c1221117eca6e780f5971f29133e304cc1d65263d5abb665f7d22ab54d4a9bc8b5788d9705b4fc2f482f8e
+"survey-core@npm:^2.5.15":
+  version: 2.5.15
+  resolution: "survey-core@npm:2.5.15"
+  checksum: 10c0/8b8fd5ac7e97bf669007c0fabb039f99b4426690a453de527468a4767a215a89de6ef553a550776f6cc8c668a04d1fa209126d0024275ceee571d82597789ff0
   languageName: node
   linkType: hard
 
-"survey-js-ui@npm:^2.5.14":
-  version: 2.5.14
-  resolution: "survey-js-ui@npm:2.5.14"
+"survey-js-ui@npm:^2.5.15":
+  version: 2.5.15
+  resolution: "survey-js-ui@npm:2.5.15"
   peerDependencies:
     "@types/react": "*"
     "@types/react-dom": "*"
-    survey-core: 2.5.14
-  checksum: 10c0/1b6665d7ed98df3645faadd28e6b2f022f39fde74dc7fdb6f04813a8e97459f19cb7f5b22ef9ec9cc4e0fd6bdae8bf45007c84e262963c325daecec57bd957db
+    survey-core: 2.5.15
+  checksum: 10c0/609371181d644a0bc17b2d9472a8843079bf0c3d07b1e95220580ba4a64c11450d61e431dfaf9993ca9e37c6bf65b580560b708bde2bb436772f71e9cef0944f
   languageName: node
   linkType: hard
 
