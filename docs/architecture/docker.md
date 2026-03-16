@@ -242,11 +242,9 @@ else
 end
 ```
 
-**Scenario A (Fresh install, standalone):** Only Helios service exists, user has no smart home system → setup wizard with device configuration, generate collector services.
+**Scenario A/B (Fresh install):** Only Helios service exists → setup wizard. User configures devices and selects a data source per device (SENEC/Shelly/MQTT or ioBroker/HA). Collector services are generated only for devices with direct hardware data sources. The distinction between standalone and smart home setups is implicit — no separate wizard question.
 
-**Scenario B (Fresh install, smart home):** Only Helios service exists, user has ioBroker/Home Assistant → setup wizard without collectors, external data source.
-
-**Scenario C (Existing installation):** Other services present → import existing `compose.yaml` and `.env`, reverse-map configuration.
+**Scenario C (Existing installation):** Other services present → Helios automatically imports `compose.yaml` and `.env` on first access, reverse-maps configuration into internal chapter data (best-effort), and shows the result to the user for review.
 
 ---
 

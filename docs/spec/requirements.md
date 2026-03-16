@@ -25,33 +25,28 @@
 - On first access, prompt user to set an admin password
 - Helios detects the environment and guides the user through one of three scenarios:
 
-**Scenario A: Fresh install, standalone**
+**Scenario A/B: Fresh install**
 
-- No other services running yet, no external smart home system
+- No other services running yet (only Helios service in `compose.yaml`)
 - User defines devices through configuration wizard (inverter, battery, wallbox, heat pump, etc.)
-- Helios generates collector services to read data directly from hardware:
+- For each device, user selects the data source (e.g. SENEC direct, Shelly, MQTT, ioBroker, Home Assistant)
+- Helios generates collector services only for devices with direct hardware data sources:
   - SENEC collector (V3 local API or V4 cloud API)
   - Shelly collector (one or more, local API)
   - MQTT collector (generic, requires sensor-to-topic mapping)
+- If all data flows via an external smart home system (ioBroker/HA), no collector services are generated
 - Forecast-Collector and Power-Splitter are always included
+- Sensor mappings are pre-filled with service defaults; user can adjust after the stack is running
 - Helios generates `compose.yaml` and `.env`, starts the stack
-
-**Scenario B: Fresh install, smart home**
-
-- No other services running yet, but user has ioBroker or Home Assistant
-- Measurement data flows into InfluxDB from the external system — no collector services needed
-- Helios only generates infrastructure services (InfluxDB, PostgreSQL, Redis, Dashboard)
-- Forecast-Collector and Power-Splitter are always included
-- User configures data source in ioBroker/Home Assistant separately
 
 **Scenario C: Existing installation**
 
 - SOLECTRUS services already running with existing `compose.yaml` and `.env`
-- Helios reads existing files and reverse-maps configuration into its data model
-- Preserve all existing configuration, custom services, and unknown variables
-- Display overview of detected services and configuration
-- Helios becomes the management layer for the existing stack
-- **Note:** Reverse mapping is inherently ambiguous — Helios uses best-effort detection and lets the user verify/correct
+- On first access, Helios automatically reads and imports the existing files
+- Configuration is reverse-mapped into internal chapter data (best-effort)
+- Sensor mappings are read from existing `.env` variables and pre-filled in the mapping UI
+- Unknown services and variables are preserved as "unmanaged" — not modified by Helios
+- User sees the detected configuration and can correct or complete it
 
 ### FR-4: Service Management
 
@@ -75,6 +70,8 @@
 - Web-based editing of environment variables (`.env`)
 - Guided configuration forms with validation
 - No direct file editing required by users
+- `compose.yaml` and `.env` are regenerated automatically after each configuration change
+- Services are **not** restarted automatically — user triggers restart explicitly via service management
 
 ### FR-6: System Status
 

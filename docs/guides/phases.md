@@ -24,21 +24,20 @@ Phase 0 (Proof of Concept) and Phase 1 (Foundation) are complete. The following 
 
 **Goal:** Users can fully configure their SOLECTRUS installation through the web UI — no manual file editing required.
 
-**Three usage scenarios** (see [requirements.md](../spec/requirements.md) FR-3 for details):
+**Two usage scenarios** (see [requirements.md](../spec/requirements.md) FR-3 for details):
 
 | Scenario | Description | Collectors |
 | -------- | ----------- | ---------- |
-| A: Fresh install, standalone | No smart home system, direct hardware access | SENEC, Shelly, MQTT + Forecast + Power-Splitter |
-| B: Fresh install, smart home | External data source (ioBroker/HA) | Forecast + Power-Splitter only |
-| C: Existing installation | Import existing compose.yaml/.env | Detect from existing config |
+| A/B: Fresh install | Data source selected per device; standalone or smart home | Derived from device data sources |
+| C: Existing installation | Auto-import of existing compose.yaml/.env | Detected from existing config |
 
 ### 2a: Survey-based configuration
 
-Define all SOLECTRUS usage options through interactive forms (Scenarios A + B):
+Define all SOLECTRUS usage options through interactive forms (Scenarios A/B + C):
 
 - **Add/remove devices:** Battery, wallbox, car, heat pump, custom consumers
 - **Multiple generators:** Support for multiple inverters/roof surfaces
-- **Data sources:** Direct hardware (SENEC, Shelly), MQTT, ioBroker, Home Assistant
+- **Data sources per device:** Direct hardware (SENEC, Shelly), MQTT, ioBroker, Home Assistant — determines which collector services are generated
 - **Forecasts:** forecast.solar, Solcast
 - **System settings:** Machine type, ports, HTTPS/domain, backup
 
@@ -68,37 +67,39 @@ Transform stored chapter data into a complete, runnable Docker stack (Scenarios 
 | 🔲 TODO | Conditional service inclusion (e.g. Shelly collector only if Shelly configured) |
 | 🔲 TODO | Secret generation for all required credentials                                  |
 | 🔲 TODO | Service dependency management (depends_on, healthchecks)                        |
+| 🔲 TODO | Auto-regenerate `compose.yaml`/`.env` after each configuration change (no auto-restart) |
 
 ### 2c: Import existing configuration
 
 Enable existing SOLECTRUS users to bring their installation under Helios management (Scenario C):
 
-- Read existing `compose.yaml` and `.env` files
-- Reverse-map configuration into chapter data
+- On first access, Helios automatically reads existing `compose.yaml` and `.env`
+- Reverse-map configuration into chapter data (best-effort)
 - Detect which devices/services are configured
-- Preserve custom services and unknown variables
+- Unknown services and variables are preserved as "unmanaged" — not modified by Helios
+- Sensor mappings are read from existing `.env` variables
 
-| Status  | Detail                                                        |
-| ------- | ------------------------------------------------------------- |
-| ✅ Done | `Compose::File` can parse existing compose.yaml               |
-| ✅ Done | `Env::File` can parse existing .env with comment preservation |
-| 🔲 TODO | Reverse mapping: .env variables → chapter data                |
-| 🔲 TODO | Service detection: which devices are configured               |
-| 🔲 TODO | UI flow for existing installation onboarding                  |
-| 🔲 TODO | Conflict handling (manual edits vs. Helios-managed)           |
+| Status  | Detail                                                                          |
+| ------- | ------------------------------------------------------------------------------- |
+| ✅ Done | `Compose::File` can parse existing compose.yaml                                 |
+| ✅ Done | `Env::File` can parse existing .env with comment preservation                   |
+| 🔲 TODO | Auto-import on first access; show summary/review view to user                   |
+| 🔲 TODO | Reverse mapping: .env variables → chapter data                                  |
+| 🔲 TODO | Service detection: which devices are configured                                 |
+| 🔲 TODO | Mark unrecognized services/variables as "unmanaged"; preserve them on write     |
+| 🔲 TODO | Read existing sensor mappings from .env and pre-fill mapping UI                 |
 
 ### 2d: Sensor mapping (advanced)
 
-Map SOLECTRUS sensors to InfluxDB measurements/fields (all scenarios, but especially important for Scenario C with custom data structures).
+Map SOLECTRUS sensors to InfluxDB measurements/fields (all scenarios, but especially important for Scenario C and smart home setups with custom data structures).
 
 **How it works:**
 
-1. User connects data source (ioBroker/Home Assistant/MQTT) to InfluxDB
-2. Data flows into InfluxDB with various measurements/fields
-3. User opens Helios → Sensor Mapping
-4. Helios queries InfluxDB for available measurements and fields
-5. User maps each SOLECTRUS sensor to a measurement/field combination
-6. Helios writes mappings to `.env`
+1. **Fresh install with direct collector (Scenario A):** Sensor mappings are pre-filled with service defaults (e.g. `INVERTER_POWER_MEASUREMENT=pv`). User can view and adjust them after the stack is running. No sensor mapping required before first start.
+2. **Existing installation (Scenario C):** Helios reads existing mappings from `.env` and pre-fills the mapping UI.
+3. When the user opens the Sensor Mapping page, Helios automatically queries InfluxDB for available measurements and fields.
+4. User maps each SOLECTRUS sensor to a measurement/field combination.
+5. Helios writes mappings to `.env`.
 
 **InfluxDB discovery:**
 
@@ -126,12 +127,14 @@ INVERTER_POWER_MEASUREMENT=pv
 INVERTER_POWER_FIELD=power
 ```
 
-| Status  | Detail                                                        |
-| ------- | ------------------------------------------------------------- |
-| 🔲 TODO | InfluxDB discovery (query available measurements/fields)      |
-| 🔲 TODO | Sensor registry with all ~40 SOLECTRUS sensors                |
-| 🔲 TODO | Mapping UI with dropdowns                                     |
-| 🔲 TODO | Store mappings in .env (e.g. `INVERTER_POWER_MEASUREMENT=pv`) |
+| Status  | Detail                                                                              |
+| ------- | ----------------------------------------------------------------------------------- |
+| 🔲 TODO | Sensor registry with all ~40 SOLECTRUS sensors and their default mappings           |
+| 🔲 TODO | Pre-fill defaults for fresh installs; read from `.env` for existing installations   |
+| 🔲 TODO | Sensor mapping not required before first stack start (skipped in wizard)            |
+| 🔲 TODO | InfluxDB discovery: auto-query measurements/fields when mapping page is opened      |
+| 🔲 TODO | Mapping UI with dropdowns                                                           |
+| 🔲 TODO | Store mappings in .env (e.g. `INVERTER_POWER_MEASUREMENT=pv`)                       |
 
 ---
 
