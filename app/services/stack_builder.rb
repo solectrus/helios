@@ -25,6 +25,10 @@ class StackBuilder
     Rails.configuration.helios_stack_path
   end
 
+  def system_chapter
+    @system_chapter ||= @configuration.chapter('system')
+  end
+
   def create_data_directories!
     DATA_DIRECTORIES.each do |dir|
       path = File.join(stack_path, dir)
@@ -63,7 +67,7 @@ class StackBuilder
 
   def postgresql_config
     {
-      image: 'postgres:18-alpine',
+      image: system_chapter['postgresql_image'] || 'postgres:18-alpine',
       environment: {
         'POSTGRES_PASSWORD' => '${POSTGRES_PASSWORD}',
         'POSTGRES_DB' => 'solectrus',
@@ -76,7 +80,7 @@ class StackBuilder
 
   def redis_config
     {
-      image: 'redis:8-alpine',
+      image: system_chapter['redis_image'] || 'redis:8-alpine',
       volumes: ['./redis:/data'],
       restart: 'unless-stopped',
       healthcheck: healthcheck_config('CMD', 'redis-cli', 'ping'),
@@ -85,7 +89,7 @@ class StackBuilder
 
   def influxdb_config
     {
-      image: 'influxdb:2-alpine',
+      image: system_chapter['influxdb_image'] || 'influxdb:2-alpine',
       ports: ['8086:8086'],
       environment: influxdb_environment,
       volumes: ['./influxdb:/var/lib/influxdb2'],
@@ -107,7 +111,7 @@ class StackBuilder
 
   def dashboard_config
     {
-      image: 'ghcr.io/solectrus/solectrus:develop',
+      image: system_chapter['dashboard_image'] || 'ghcr.io/solectrus/solectrus:latest',
       ports: ['3000:3000'],
       environment: dashboard_environment,
       depends_on: healthy_depends_on(%i[postgresql redis influxdb]),

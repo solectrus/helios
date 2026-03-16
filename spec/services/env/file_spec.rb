@@ -1,5 +1,5 @@
 RSpec.describe Env::File do
-  let(:fixture_path) { Rails.root.join('spec/fixtures/sample.env') }
+  let(:fixture_path) { Rails.root.join('spec/fixtures/scenarios/minimal/.env') }
   let(:tmp_path) { Rails.root.join('tmp/test.env') }
 
   after { FileUtils.rm_f(tmp_path) }

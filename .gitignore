@@ -26,6 +26,7 @@
 # dotenv
 .env
 .env.*.local
+!spec/fixtures/**/.env
 
 # Vite Ruby
 /public/vite*
