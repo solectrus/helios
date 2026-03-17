@@ -1,10 +1,10 @@
-<label class="label cursor-pointer gap-2" data-controller="expert-mode-toggle--component">
-  <span class="label text-xs">Expert</span>
-
+<label class="btn btn-ghost btn-xs swap" data-controller="expert-mode-toggle--component">
   <input
     type="checkbox"
-    class="toggle toggle-xs"
     data-expert-mode-toggle--component-target="checkbox"
     data-action="change->expert-mode-toggle--component#toggle"
   >
+
+  <span class="swap-on">Expert <span class="badge badge-xs badge-primary">ON</span></span>
+  <span class="swap-off">Expert <span class="badge badge-xs badge-neutral">OFF</span></span>
 </label>
