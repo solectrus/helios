@@ -64,6 +64,8 @@ RSpec.describe StackBuilder do
         'redis',
         'influxdb',
         'dashboard',
+        'watchtower',
+        'helios',
       )
     end
 

@@ -146,6 +146,8 @@ class ConfigurationImporter
       'redis_image' => @reader.service('redis')&.dig('image'),
       'influxdb_image' => @reader.service('influxdb')&.dig('image'),
       'dashboard_image' => @reader.service('dashboard')&.dig('image'),
+      'helios_image' => @reader.service('helios')&.dig('image'),
+      'watchtower_image' => @reader.service('watchtower')&.dig('image'),
     }
   end
 

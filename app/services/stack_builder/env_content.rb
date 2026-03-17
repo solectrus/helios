@@ -2,9 +2,10 @@ class StackBuilder
   class EnvContent
     SEPARATOR = "# #{'=' * 60}".freeze
 
-    def initialize(system_chapter, unmanaged = {})
+    def initialize(system_chapter, unmanaged = {}, host_stack_path: nil)
       @c = system_chapter
       @unmanaged = unmanaged
+      @host_stack_path = host_stack_path
     end
 
     def to_s
@@ -14,6 +15,7 @@ class StackBuilder
         *security_section_lines,
         *postgresql_section_lines,
         *influxdb_section_lines,
+        *helios_section_lines,
       ]
       sections.push(*unmanaged_section_lines) if unmanaged_env_vars.any?
       sections.join("\n")
@@ -72,6 +74,16 @@ class StackBuilder
                'Bucket (database) name for time-series data'),
         *entry('INFLUX_TOKEN', @c['influx_token'],
                'API token with full access — auto-generated, do not change after first start'),
+      ]
+    end
+
+    def helios_section_lines
+      [
+        '# --- Helios ---',
+        *entry('HELIOS_HOST_STACK_PATH', @host_stack_path,
+               'Path on the Docker host where stack files are stored'),
+        *entry('HELIOS_SECRET_KEY_BASE', @c['helios_secret_key_base'],
+               'Helios session secret key — auto-generated, do not change'),
       ]
     end
 

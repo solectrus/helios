@@ -11,6 +11,7 @@ class StackBuilder
     'influx_org' => -> { 'solectrus' },
     'influx_bucket' => -> { 'solectrus' },
     'influx_token' => -> { SecureRandom.hex(32) },
+    'helios_secret_key_base' => -> { SecureRandom.hex(64) },
   }.freeze
 
   def initialize(configuration)
@@ -38,7 +39,11 @@ class StackBuilder
 
   def env_content
     ensure_secrets!
-    EnvContent.new(system_chapter, unmanaged).to_s
+    EnvContent.new(
+      system_chapter,
+      unmanaged,
+      host_stack_path: Rails.configuration.helios_host_stack_path,
+    ).to_s
   end
 
   private
@@ -80,6 +85,8 @@ class StackBuilder
     compose.add_service('redis', redis_config)
     compose.add_service('influxdb', influxdb_config)
     compose.add_service('dashboard', dashboard_config)
+    compose.add_service('watchtower', watchtower_config)
+    compose.add_service('helios', helios_config)
   end
 
   def compose_header_comment
@@ -188,6 +195,36 @@ class StackBuilder
       'DB_HOST' => 'postgresql',
       'DB_USER' => 'postgres',
       'DB_PASSWORD' => '${POSTGRES_PASSWORD}',
+    }
+  end
+
+  def watchtower_config
+    {
+      image: system_chapter['watchtower_image'] || 'nickfedor/watchtower',
+      environment: ['TZ'],
+      volumes: ['/var/run/docker.sock:/var/run/docker.sock'],
+      command: '--scope solectrus --cleanup',
+      restart: 'unless-stopped',
+      logging: { options: { 'max-size' => '10m', 'max-file' => '3' } },
+      labels: ['com.centurylinklabs.watchtower.scope=solectrus'],
+    }
+  end
+
+  def helios_config
+    {
+      image: system_chapter['helios_image'] || 'ghcr.io/solectrus/helios:develop',
+      user: 'root',
+      environment: {
+        'SECRET_KEY_BASE' => '${HELIOS_SECRET_KEY_BASE}',
+        'HELIOS_STACK_PATH' => '/opt/solectrus',
+        'HELIOS_HOST_STACK_PATH' => '${HELIOS_HOST_STACK_PATH}',
+      },
+      volumes: [
+        '${HELIOS_HOST_STACK_PATH}:/opt/solectrus',
+        '/var/run/docker.sock:/var/run/docker.sock',
+      ],
+      ports: ['3999:3000'],
+      restart: 'unless-stopped',
     }
   end
 
