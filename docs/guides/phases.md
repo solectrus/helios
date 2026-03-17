@@ -83,11 +83,14 @@ Enable existing SOLECTRUS users to bring their installation under Helios managem
 | ------- | ------------------------------------------------------------------------------- |
 | ✅ Done | `Compose::File` can parse existing compose.yaml                                 |
 | ✅ Done | `Env::File` can parse existing .env with comment preservation                   |
+| ✅ Done | `StackReader` reads resolved config (`docker compose config`) and raw YAML      |
+| ✅ Done | `ConfigurationImporter` extracts chapter data from stack (system, devices, sensors) |
+| ✅ Done | Reverse mapping: .env variables → chapter data (per-service env access)         |
+| ✅ Done | Service detection: SENEC collector detected, mapped to inverter device          |
+| ✅ Done | Unmanaged services/env vars preserved in `Configuration#data` and restored on write |
 | 🔲 TODO | Auto-import on first access; show summary/review view to user                   |
-| 🔲 TODO | Reverse mapping: .env variables → chapter data                                  |
-| 🔲 TODO | Service detection: which devices are configured                                 |
-| 🔲 TODO | Mark unrecognized services/variables as "unmanaged"; preserve them on write     |
-| 🔲 TODO | Read existing sensor mappings from .env and pre-fill mapping UI                 |
+| 🔲 TODO | Web-based editor for unmanaged services and env vars (power-user feature)        |
+| 🔲 TODO | Extend detection for Shelly, MQTT, forecast collectors                           |
 
 ### 2d: Sensor mapping (advanced)
 

@@ -44,7 +44,7 @@ Helios uses SQLite for its own data:
 | Table            | Purpose                                                              |
 | ---------------- | -------------------------------------------------------------------- |
 | `admins`         | Admin password hash (authentication)                                 |
-| `configurations` | Setup state and flags (JSON blob)                                    |
+| `configurations` | Setup state, flags, and unmanaged services/env vars (JSON blob)      |
 | `chapters`       | Configuration sections: system, devices, inverter, etc. (JSON blobs) |
 
 **Location:** `/app/data/helios.sqlite3` (inside container, persisted via bind mount to `./helios/`)

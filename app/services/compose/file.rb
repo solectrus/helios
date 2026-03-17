@@ -10,6 +10,7 @@ module Compose
     end
 
     attr_reader :path
+    attr_writer :header_comment
 
     def initialize(path)
       @path = path
@@ -61,7 +62,8 @@ module Compose
     end
 
     def to_yaml
-      YAML.dump(@data)
+      base = YAML.dump(@data)
+      @header_comment ? "#{@header_comment}\n#{base}" : base
     end
 
     def to_h

@@ -1,11 +1,4 @@
-require 'open3'
-require 'tmpdir'
-require 'fileutils'
-require 'yaml'
-
 class ConfigurationImporter
-  class Error < StandardError; end
-
   MANAGED_SERVICES = %w[
     helios
     dashboard
@@ -87,121 +80,148 @@ class ConfigurationImporter
     PVNODE_
   ].freeze
 
-  def initialize(compose_path:, env_path:)
-    @compose_path = compose_path
-    @env_path = env_path
+  def initialize(stack_reader)
+    @reader = stack_reader
   end
 
+  # Extracted chapter data as plain hashes (no DB access)
   def result
-    @result ||= build_configuration
+    @result ||= build_chapters
+  end
+
+  # Persist extracted chapters into the database
+  def import!
+    config = Configuration.current
+
+    config.update_chapter('system', result[:system])
+    config.update_chapter('sensors', result[:sensors])
+    config.unmanaged = result[:unmanaged]
+
+    result[:devices].each do |device|
+      config.add_device(device[:kind], device[:name], device[:data])
+    end
+
+    config
   end
 
   def unmanaged_services
-    @unmanaged_services ||= service_names - MANAGED_SERVICES
+    @unmanaged_services ||= @reader.services.keys - MANAGED_SERVICES
   end
 
   def unmanaged_env_vars
-    @unmanaged_env_vars ||= merged_env.keys.reject { |key| known_env_var?(key) }
+    @unmanaged_env_vars ||= @reader.raw_env.keys.reject { |key| known_env_var?(key) }
   end
 
   private
 
-  def resolved_config
-    @resolved_config ||= run_compose_config
+  def build_chapters
+    chapters = {
+      system: system_chapter_data,
+      sensors: sensors_chapter_data,
+      devices: [],
+      unmanaged: unmanaged_chapter_data,
+    }
+
+    chapters[:devices] << senec_device_data if senec_collector?
+
+    chapters
   end
 
-  def run_compose_config
-    Dir.mktmpdir do |tmpdir|
-      FileUtils.cp(@compose_path, File.join(tmpdir, 'compose.yaml'))
-      FileUtils.cp(@env_path, File.join(tmpdir, '.env'))
-
-      stdout, stderr, status = Open3.capture3('docker', 'compose', 'config', chdir: tmpdir)
-      raise Error, "docker compose config failed: #{stderr.presence || stdout}" unless status.success?
-
-      YAML.safe_load(stdout, permitted_classes: [Symbol]) || {}
-    end
+  # Environment of a specific service
+  def service_env(name)
+    @reader.service(name)&.dig('environment') || {}
   end
 
-  def service_names
-    @service_names ||= resolved_config['services']&.keys || []
+  def system_chapter_data
+    system_general_data.merge(system_secrets_data).compact
   end
 
-  def merged_env
-    @merged_env ||=
-      resolved_config['services']
-      &.values
-      &.flat_map { |s| (s['environment'] || {}).to_a }
-      .to_h
+  def system_general_data
+    dashboard_env = service_env('dashboard')
+
+    {
+      'timezone' => dashboard_env['TZ'],
+      'installation_date' => dashboard_env['INSTALLATION_DATE'],
+      'postgresql_image' => @reader.service('postgresql')&.dig('image'),
+      'redis_image' => @reader.service('redis')&.dig('image'),
+      'influxdb_image' => @reader.service('influxdb')&.dig('image'),
+      'dashboard_image' => @reader.service('dashboard')&.dig('image'),
+    }
   end
 
-  def build_configuration
-    config = Configuration.current
-    import_system_chapter(config)
-    import_inverter_chapter(config) if senec_collector?
-    import_sensors_chapter(config)
-    config
-  end
-
-  def import_system_chapter(config)
-    config.update_chapter(
-      'system',
-      {
-        'timezone' => merged_env['TZ'],
-        'installation_date' => merged_env['INSTALLATION_DATE'],
-        'postgresql_image' => service_image('postgresql'),
-        'redis_image' => service_image('redis'),
-        'influxdb_image' => service_image('influxdb'),
-        'dashboard_image' => service_image('dashboard'),
-      }.compact,
-    )
-  end
-
-  def service_image(name)
-    resolved_config.dig('services', name, 'image')
+  def system_secrets_data
+    {
+      'postgres_password' => @reader.raw_env['POSTGRES_PASSWORD'],
+      'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],
+      'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
+      'influx_password' => @reader.raw_env['INFLUX_PASSWORD'],
+      'influx_org' => @reader.raw_env['INFLUX_ORG'],
+      'influx_bucket' => @reader.raw_env['INFLUX_BUCKET'],
+      'influx_token' => @reader.raw_env['INFLUX_TOKEN'],
+    }
   end
 
   def senec_collector?
-    service_names.include?('senec-collector')
+    @reader.services.key?('senec-collector')
   end
 
-  def import_inverter_chapter(config)
+  def senec_device_data
+    senec_env = service_env('senec-collector')
+
     data =
-      { 'battery_vendor' => senec_vendor }
-      .merge(merged_env['SENEC_ADAPTER'] == 'cloud' ? senec_cloud_settings : senec_local_settings)
-      .merge('senec_interval' => merged_env['SENEC_INTERVAL'])
+      { 'battery_vendor' => senec_vendor(senec_env) }
+      .merge(senec_env['SENEC_ADAPTER'] == 'cloud' ? senec_cloud_settings(senec_env) : senec_local_settings(senec_env))
+      .merge('senec_interval' => senec_env['SENEC_INTERVAL'])
       .compact
 
-    config.add_device('inverter', 'SENEC', data)
+    { kind: 'inverter', name: 'SENEC', data: }
   end
 
-  def senec_vendor
-    merged_env['SENEC_ADAPTER'] == 'cloud' ? 'senec4' : 'senec3'
+  def senec_vendor(senec_env)
+    senec_env['SENEC_ADAPTER'] == 'cloud' ? 'senec4' : 'senec3'
   end
 
-  def senec_local_settings
+  def senec_local_settings(senec_env)
     {
-      'senec_host' => merged_env['SENEC_HOST'],
-      'senec_schema' => merged_env['SENEC_SCHEMA'],
-      'senec_language' => merged_env['SENEC_LANGUAGE'],
+      'senec_host' => senec_env['SENEC_HOST'],
+      'senec_schema' => senec_env['SENEC_SCHEMA'],
+      'senec_language' => senec_env['SENEC_LANGUAGE'],
     }
   end
 
-  def senec_cloud_settings
+  def senec_cloud_settings(senec_env)
     {
-      'senec_username' => merged_env['SENEC_USERNAME'],
-      'senec_password' => merged_env['SENEC_PASSWORD'],
-      'senec_totp_uri' => merged_env['SENEC_TOTP_URI'],
-      'senec_system_id' => merged_env['SENEC_SYSTEM_ID'],
+      'senec_username' => senec_env['SENEC_USERNAME'],
+      'senec_password' => senec_env['SENEC_PASSWORD'],
+      'senec_totp_uri' => senec_env['SENEC_TOTP_URI'],
+      'senec_system_id' => senec_env['SENEC_SYSTEM_ID'],
     }
   end
 
-  def import_sensors_chapter(config)
-    mappings =
-      merged_env
+  def sensors_chapter_data
+    dashboard_env = service_env('dashboard')
+
+    dashboard_env
       .select { |k, _| k.start_with?('INFLUX_SENSOR_') }
       .compact_blank
+  end
 
-    config.update_chapter('sensors', mappings)
+  def unmanaged_chapter_data
+    {
+      'services' => unmanaged_service_configs,
+      'env_vars' => unmanaged_env_var_values,
+    }
+  end
+
+  # Raw service configs from compose.yaml (preserving ${VAR} references)
+  def unmanaged_service_configs
+    raw_services = @reader.raw_compose['services'] || {}
+    raw_services.slice(*unmanaged_services)
+  end
+
+  # Raw values from .env for unmanaged env vars
+  def unmanaged_env_var_values
+    unmanaged_env_vars.index_with { |key| @reader.raw_env[key] }.compact
   end
 
   def known_env_var?(key)

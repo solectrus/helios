@@ -329,17 +329,19 @@ When Helios needs to modify `compose.yaml` (e.g., adding a service), it may enco
 - Services it created (e.g., `dashboard`, `postgresql`, `influxdb`)
 - Expected configuration for each service
 
-**What Helios ignores:**
+**What Helios preserves:**
 
-- Services it doesn't know (user-added, e.g., `traefik`)
-- These are preserved as-is
+- Services it doesn't manage (user-added, e.g., `traefik`, `dozzle`) are stored as "unmanaged" in `Configuration#data`
+- Unmanaged services are written back to `compose.yaml` verbatim (with `${VAR}` references intact)
+- Unknown `.env` variables referenced by unmanaged services are preserved in a dedicated section
+- A future web-based editor will allow power-users to modify unmanaged services directly in Helios
 
 **Example conflict scenarios:**
 
 | Scenario                         | Helios behavior                                          |
 | -------------------------------- | -------------------------------------------------------- |
 | User changed port of `dashboard` | Warning: "Port was modified. Keep your change or reset?" |
-| User added `traefik` service     | No warning, service is preserved                         |
+| User added `traefik` service     | No warning, service is preserved as unmanaged            |
 | User removed `redis`             | Warning: "Required service missing. Re-add?"             |
 
 ---
