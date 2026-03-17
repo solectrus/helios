@@ -73,20 +73,7 @@ module Compose
     private
 
     def stringify_keys(hash)
-      return hash unless hash.is_a?(Hash)
-
-      hash
-        .transform_keys(&:to_s)
-        .transform_values do |value|
-          case value
-          when Hash
-            stringify_keys(value)
-          when Array
-            value.map { |v| v.is_a?(Hash) ? stringify_keys(v) : v }
-          else
-            value
-          end
-        end
+      hash.deep_stringify_keys
     end
   end
 end

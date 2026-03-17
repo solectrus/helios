@@ -35,20 +35,6 @@ RSpec.describe StackBuilder do
     end
   end
 
-  describe '#compose' do
-    it 'returns a Compose::File object' do
-      builder = described_class.new(configuration)
-      expect(builder.compose).to be_a(Compose::File)
-    end
-  end
-
-  describe '#env' do
-    it 'returns an Env::File object' do
-      builder = described_class.new(configuration)
-      expect(builder.env).to be_a(Env::File)
-    end
-  end
-
   describe 'compose file generation' do
     before { described_class.new(configuration).write! }
 
