@@ -1,5 +1,13 @@
 module MainNav
   class Component < ViewComponent::Base
+    TAB_DEFINITIONS = [
+      { id: :services, path_helper: :root_path, icon: 'fa-solid fa-cubes' },
+      { id: :configuration, path_helper: :configuration_path, icon: 'fa-solid fa-gear' },
+      { id: :generated_files, path_helper: :generated_files_path, icon: 'fa-solid fa-file-code', expert_only: true },
+    ].freeze
+
+    delegate :expert_mode?, to: :helpers
+
     def initialize(active_tab:)
       super()
       @active_tab = active_tab
@@ -10,20 +18,9 @@ module MainNav
     attr_reader :active_tab
 
     def tabs
-      [
-        {
-          id: :services,
-          path: root_path,
-          icon: 'fa-solid fa-cubes',
-          label: t('.services'),
-        },
-        {
-          id: :configuration,
-          path: configuration_path,
-          icon: 'fa-solid fa-gear',
-          label: t('.configuration'),
-        },
-      ]
+      TAB_DEFINITIONS
+        .reject { |tab| tab[:expert_only] && !expert_mode? }
+        .map { |tab| tab.merge(path: send(tab[:path_helper]), label: t(".#{tab[:id]}")) }
     end
 
     def tab_classes(tab)

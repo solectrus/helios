@@ -39,6 +39,7 @@ en:
     component:
       services: "Docker Services"
       configuration: "Configuration"
+      generated_files: "Generated Files"
 
   configurations:
     show:
@@ -87,6 +88,10 @@ en:
       configure: "Configure"
       not_configured: "Not configured yet"
       no_devices: "No devices added yet"
+
+  generated_files:
+    show:
+      title: "Generated Files - Helios"
 
   flash:
     admin:

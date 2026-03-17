@@ -8,3 +8,10 @@
 @source '../../frontend/**/*.{js,ts}';
 
 @plugin '@tailwindcss/typography';
+
+@import 'highlight.js/styles/a11y-dark.css' layer(base);
+
+/* Let hljs inherit background from daisyUI container */
+.hljs {
+  background: transparent;
+}

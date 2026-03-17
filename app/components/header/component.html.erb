@@ -11,6 +11,7 @@
   </h1>
 
   <div class="flex items-center gap-2">
+    <%= render ExpertModeToggle::Component.new %>
     <%= render ThemeToggle::Component.new %>
     <%= button_to t('.logout'), session_path, method: :delete, class: "btn btn-ghost btn-sm" %>
   </div>

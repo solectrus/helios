@@ -5,7 +5,7 @@ class ApplicationController < ActionController::Base
   before_action :require_setup
   before_action :require_authentication
 
-  helper_method :authenticated?
+  helper_method :authenticated?, :expert_mode?
 
   private
 
@@ -38,5 +38,13 @@ class ApplicationController < ActionController::Base
 
   def sessions_controller?
     is_a?(SessionsController)
+  end
+
+  def expert_mode?
+    cookies[:expert_mode] == 'true'
+  end
+
+  def require_expert_mode
+    redirect_to root_path unless expert_mode?
   end
 end

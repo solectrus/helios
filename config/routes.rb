@@ -9,6 +9,9 @@ Rails.application.routes.draw do
   # Setup wizard
   resource :setup, only: %i[new create]
 
+  # Generated files preview
+  resource :generated_files, only: :show
+
   # Configuration with chapters and surveys
   resource :configuration, only: :show do
     resources :chapters, only: %i[new create edit update destroy], module: :configurations

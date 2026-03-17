@@ -1,0 +1,11 @@
+<div class="space-y-4" data-controller="stack-preview">
+  <% files.each do |file| %>
+    <div class="card bg-base-100 shadow-md">
+      <div class="card-body p-5">
+        <h2 class="text-lg font-semibold"><%= file[:label] %></h2>
+
+        <pre class="overflow-x-auto text-xs leading-relaxed"><code class="<%= file[:language_class] %>" data-stack-preview-target="code"><%= file[:content] %></code></pre>
+      </div>
+    </div>
+  <% end %>
+</div>
