@@ -65,11 +65,6 @@ export default class extends Controller {
       }
     }
 
-    // Handle value changes
-    this.survey.onValueChanged.add((_sender, options) => {
-      this.handleValueChanged(options);
-    });
-
     // Handle survey completing (fires before DOM changes)
     this.survey.onCompleting.add((sender, options) => {
       // Prevent SurveyJS completion. This avoids UI changes.
@@ -87,6 +82,12 @@ export default class extends Controller {
 
     // Render survey into container
     this.survey.render(this.containerTarget);
+
+    // Handle value changes (registered after render to avoid
+    // triggering dirty state from initialization/default values)
+    this.survey.onValueChanged.add((_sender, options) => {
+      this.handleValueChanged(options);
+    });
   }
 
   private applyTheme() {

@@ -256,6 +256,20 @@ describe('DialogModalController', () => {
     });
   });
 
+  describe('ESC from outside dialog', () => {
+    it('closes modal even when focus is outside the dialog', () => {
+      dom.modal.showModal();
+
+      // Simulate focus on an element outside the dialog (e.g. SurveyJS popup)
+      const outsideElement = document.createElement('div');
+      document.body.appendChild(outsideElement);
+      pressEscape(outsideElement);
+
+      expect(isModalOpen()).toBe(false);
+      outsideElement.remove();
+    });
+  });
+
   describe('ESC preventDefault', () => {
     it('prevents default on ESC keydown', () => {
       dom.modal.showModal();

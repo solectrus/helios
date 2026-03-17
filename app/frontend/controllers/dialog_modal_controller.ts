@@ -21,9 +21,13 @@ export default class extends Controller<HTMLDialogElement> {
       this.handleValueChanged,
     );
     this.element.addEventListener('input', this.handleInput);
-    this.element.addEventListener('keydown', this.handleKeyDown);
     this.element.addEventListener('cancel', this.handleCancel);
     this.element.addEventListener('submit', this.handleDialogFormSubmit);
+
+    // Listen on document (capture phase) so ESC is caught regardless of
+    // focus location — SurveyJS may render popups on document.body that
+    // move focus outside the <dialog>.
+    document.addEventListener('keydown', this.handleKeyDown, true);
 
     if (this.hasFrameTarget) {
       this.frameTarget.addEventListener(
@@ -43,9 +47,10 @@ export default class extends Controller<HTMLDialogElement> {
       this.handleValueChanged,
     );
     this.element.removeEventListener('input', this.handleInput);
-    this.element.removeEventListener('keydown', this.handleKeyDown);
     this.element.removeEventListener('cancel', this.handleCancel);
     this.element.removeEventListener('submit', this.handleDialogFormSubmit);
+
+    document.removeEventListener('keydown', this.handleKeyDown, true);
 
     if (this.hasFrameTarget) {
       this.frameTarget.removeEventListener(
@@ -108,9 +113,12 @@ export default class extends Controller<HTMLDialogElement> {
     });
   }
 
-  // Intercept Escape at keydown level, before the browser fires cancel
+  // Intercept Escape via document-level capture, before any other handler
   private handleKeyDown = (event: KeyboardEvent) => {
     if (event.key !== 'Escape') return;
+
+    // Only act when our dialog is open
+    if (!this.element.open) return;
 
     // Stop the browser from generating a cancel event
     event.preventDefault();
