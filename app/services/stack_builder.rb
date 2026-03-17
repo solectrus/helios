@@ -27,7 +27,14 @@ class StackBuilder
   end
 
   def compose_content
-    build_compose
+    compose = Compose::File.new(Compose.path)
+    compose.header_comment = compose_header_comment
+    compose.name = 'solectrus'
+
+    MANAGED_SERVICES.each do |name|
+      compose.add_service(name, service_configs.public_send(name))
+    end
+
     compose.to_yaml
   end
 
@@ -40,10 +47,6 @@ class StackBuilder
   end
 
   private
-
-  def compose
-    @compose ||= Compose::File.new(Compose.path)
-  end
 
   def stack_path
     Rails.configuration.helios_stack_path
@@ -64,17 +67,8 @@ class StackBuilder
   end
 
   def write_compose!
-    backup_if_not_generated!(compose.path)
-    ::File.write(compose.path, compose_content)
-  end
-
-  def build_compose
-    compose.header_comment = compose_header_comment
-    compose.name = 'solectrus'
-
-    MANAGED_SERVICES.each do |name|
-      compose.add_service(name, service_configs.public_send(name))
-    end
+    backup_if_not_generated!(Compose.path)
+    ::File.write(Compose.path, compose_content)
   end
 
   def compose_header_comment
