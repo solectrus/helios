@@ -41,7 +41,6 @@ class StackBuilder
     ensure_secrets!
     EnvContent.new(
       system_chapter,
-      unmanaged,
       host_stack_path: Rails.configuration.helios_host_stack_path,
     ).to_s
   end
@@ -54,10 +53,6 @@ class StackBuilder
 
   def system_chapter
     @system_chapter ||= @configuration.chapter('system')
-  end
-
-  def unmanaged
-    @unmanaged ||= @configuration.unmanaged
   end
 
   def create_data_directories!
@@ -77,7 +72,6 @@ class StackBuilder
     compose.name = 'solectrus'
 
     add_managed_services
-    unmanaged['services']&.each { |name, config| compose.add_service(name, config) }
   end
 
   def add_managed_services

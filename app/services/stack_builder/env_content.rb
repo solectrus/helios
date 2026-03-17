@@ -2,23 +2,20 @@ class StackBuilder
   class EnvContent
     SEPARATOR = "# #{'=' * 60}".freeze
 
-    def initialize(system_chapter, unmanaged = {}, host_stack_path: nil)
+    def initialize(system_chapter, host_stack_path: nil)
       @c = system_chapter
-      @unmanaged = unmanaged
       @host_stack_path = host_stack_path
     end
 
     def to_s
-      sections = [
+      [
         *file_header_lines,
         *general_section_lines,
         *security_section_lines,
         *postgresql_section_lines,
         *influxdb_section_lines,
         *helios_section_lines,
-      ]
-      sections.push(*unmanaged_section_lines) if unmanaged_env_vars.any?
-      sections.join("\n")
+      ].join("\n")
     end
 
     private
@@ -85,17 +82,6 @@ class StackBuilder
         *entry('HELIOS_SECRET_KEY_BASE', @c['helios_secret_key_base'],
                'Helios session secret key — auto-generated, do not change'),
       ]
-    end
-
-    def unmanaged_section_lines
-      [
-        '# --- Additional variables (not managed by Helios) ---',
-        *unmanaged_env_vars.flat_map { |key, value| ["#{key}=#{value}", ''] },
-      ]
-    end
-
-    def unmanaged_env_vars
-      @unmanaged['env_vars'] || {}
     end
 
     # Returns three lines: a comment, the key=value assignment, and a blank line.

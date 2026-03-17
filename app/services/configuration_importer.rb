@@ -1,85 +1,4 @@
 class ConfigurationImporter
-  MANAGED_SERVICES = %w[
-    helios
-    dashboard
-    postgresql
-    redis
-    influxdb
-    senec-collector
-    shelly-collector
-    mqtt-collector
-    power-splitter
-    forecast-collector
-    watchtower
-  ].freeze
-
-  KNOWN_ENV_VARS = %w[
-    TZ
-    APP_HOST
-    INSTALLATION_DATE
-    ADMIN_PASSWORD
-    INFLUX_POLL_INTERVAL
-    FORCE_SSL
-    SECRET_KEY_BASE
-    WEB_CONCURRENCY
-    FRAME_ANCESTORS
-    UI_THEME
-    CO2_EMISSION_FACTOR
-    POSTGRES_PASSWORD
-    INFLUX_EXCLUDE_FROM_HOUSE_POWER
-    SENEC_ADAPTER
-    SENEC_HOST
-    SENEC_SCHEMA
-    SENEC_LANGUAGE
-    SENEC_INTERVAL
-    SENEC_USERNAME
-    SENEC_PASSWORD
-    SENEC_TOTP_URI
-    SENEC_SYSTEM_ID
-    SENEC_IGNORE
-    INFLUX_HOST
-    INFLUX_SCHEMA
-    INFLUX_PORT
-    INFLUX_VOLUME_PATH
-    INFLUX_ORG
-    INFLUX_BUCKET
-    INFLUX_USERNAME
-    INFLUX_PASSWORD
-    INFLUX_ADMIN_TOKEN
-    INFLUX_TOKEN_WRITE
-    INFLUX_TOKEN_READ
-    INFLUX_TOKEN
-    INFLUX_MEASUREMENT
-    SHELLY_HOST
-    SHELLY_PASSWORD
-    SHELLY_INTERVAL
-    SHELLY_INVERT_POWER
-    SHELLY_CLOUD_SERVER
-    SHELLY_AUTH_KEY
-    SHELLY_DEVICE_ID
-    MQTT_HOST
-    MQTT_PORT
-    MQTT_SSL
-    MQTT_USERNAME
-    MQTT_PASSWORD
-    DB_HOST
-    DB_USER
-    DB_PASSWORD
-    DB_VOLUME_PATH
-    REDIS_VOLUME_PATH
-    REDIS_URL
-  ].freeze
-
-  KNOWN_ENV_VAR_PREFIXES = %w[
-    INFLUX_SENSOR_
-    INFLUX_MEASUREMENT_
-    DOCKER_INFLUXDB_INIT_
-    MAPPING_
-    FORECAST_
-    SOLCAST_
-    PVNODE_
-  ].freeze
-
   def initialize(stack_reader)
     @reader = stack_reader
   end
@@ -95,21 +14,12 @@ class ConfigurationImporter
 
     config.update_chapter('system', result[:system])
     config.update_chapter('sensors', result[:sensors])
-    config.unmanaged = result[:unmanaged]
 
     result[:devices].each do |device|
       config.add_device(device[:kind], device[:name], device[:data])
     end
 
     config
-  end
-
-  def unmanaged_services
-    @unmanaged_services ||= @reader.services.keys - MANAGED_SERVICES
-  end
-
-  def unmanaged_env_vars
-    @unmanaged_env_vars ||= @reader.raw_env.keys.reject { |key| known_env_var?(key) }
   end
 
   private
@@ -119,7 +29,6 @@ class ConfigurationImporter
       system: system_chapter_data,
       sensors: sensors_chapter_data,
       devices: [],
-      unmanaged: unmanaged_chapter_data,
     }
 
     chapters[:devices] << senec_device_data if senec_collector?
@@ -206,28 +115,5 @@ class ConfigurationImporter
     dashboard_env
       .select { |k, _| k.start_with?('INFLUX_SENSOR_') }
       .compact_blank
-  end
-
-  def unmanaged_chapter_data
-    {
-      'services' => unmanaged_service_configs,
-      'env_vars' => unmanaged_env_var_values,
-    }
-  end
-
-  # Raw service configs from compose.yaml (preserving ${VAR} references)
-  def unmanaged_service_configs
-    raw_services = @reader.raw_compose['services'] || {}
-    raw_services.slice(*unmanaged_services)
-  end
-
-  # Raw values from .env for unmanaged env vars
-  def unmanaged_env_var_values
-    unmanaged_env_vars.index_with { |key| @reader.raw_env[key] }.compact
-  end
-
-  def known_env_var?(key)
-    KNOWN_ENV_VARS.include?(key) ||
-      KNOWN_ENV_VAR_PREFIXES.any? { |prefix| key.start_with?(prefix) }
   end
 end

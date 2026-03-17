@@ -113,69 +113,20 @@ RSpec.describe ConfigurationImporter do
         expect(config.chapter('sensors')).to include('INFLUX_SENSOR_INVERTER_POWER' => 'SENEC:inverter_power')
       end
     end
-
-    describe '#unmanaged_services' do
-      subject { importer.unmanaged_services }
-
-      it { is_expected.to be_empty }
-    end
-
-    describe '#unmanaged_env_vars' do
-      subject { importer.unmanaged_env_vars }
-
-      it { is_expected.to be_empty }
-    end
   end
 
-  context 'with with_unmanaged scenario' do
-    let(:scenario) { 'with_unmanaged' }
-
-    describe 'unmanaged services' do
-      it 'detects dozzle and nginx as unmanaged' do
-        expect(importer.unmanaged_services).to contain_exactly('dozzle', 'nginx')
-      end
-
-      it 'preserves raw service configs' do
-        services = importer.result[:unmanaged]['services']
-
-        expect(services['dozzle']).to include(
-          'image' => 'amir20/dozzle:latest',
-          'restart' => 'unless-stopped',
-        )
-        expect(services['dozzle']['ports']).to include('8082:8080')
-      end
-
-      it 'preserves ${VAR} references in service configs' do
-        nginx_env = importer.result[:unmanaged]['services']['nginx']['environment']
-        expect(nginx_env).to include('NGINX_CUSTOM_SETTING=${MY_CUSTOM_VAR}')
-      end
-
-      it 'does not include managed services' do
-        services = importer.result[:unmanaged]['services']
-        expect(services.keys).not_to include('dashboard', 'postgresql', 'redis', 'influxdb', 'watchtower')
-      end
-    end
-
-    describe 'unmanaged env vars' do
-      it 'detects MY_CUSTOM_VAR as unmanaged' do
-        expect(importer.unmanaged_env_vars).to eq(%w[MY_CUSTOM_VAR])
-      end
-
-      it 'preserves the raw value' do
-        expect(importer.result[:unmanaged]['env_vars']).to eq('MY_CUSTOM_VAR' => 'custom-value')
-      end
-    end
+  context 'with with_unknown scenario' do
+    let(:scenario) { 'with_unknown' }
 
     describe '#import!' do
       subject(:config) { importer.import! }
 
-      it 'persists unmanaged services' do
-        expect(config.unmanaged['services']).to have_key('dozzle')
-        expect(config.unmanaged['services']).to have_key('nginx')
+      it 'ignores unknown services and env vars' do
+        expect(config.data).not_to have_key('unmanaged')
       end
 
-      it 'persists unmanaged env vars' do
-        expect(config.unmanaged['env_vars']).to eq('MY_CUSTOM_VAR' => 'custom-value')
+      it 'still imports managed data' do
+        expect(config.chapter('system')).to include('timezone' => 'Europe/Berlin')
       end
     end
   end

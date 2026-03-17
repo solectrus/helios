@@ -109,17 +109,6 @@ class Configuration < ApplicationRecord
     update_chapter('system', current.merge('timezone' => value))
   end
 
-  # Unmanaged services and env vars from the original compose/env files.
-  # Stored in `data` (not as a chapter) because these are not user-configurable.
-  def unmanaged
-    data['unmanaged'] || {}
-  end
-
-  def unmanaged=(value)
-    data['unmanaged'] = value
-    save!
-  end
-
   def setup_completed?
     data['setup_completed'] == true
   end
