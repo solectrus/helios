@@ -15,6 +15,7 @@ module Compose
     def initialize(path)
       @path = path
       @data = {}
+      @service_comments = {}
     end
 
     def load
@@ -47,9 +48,10 @@ module Compose
       @data['name'] = value
     end
 
-    def add_service(name, config)
+    def add_service(name, config, comment: nil)
       @services = nil # Reset memoized collection
       (@data['services'] ||= {})[name.to_s] = stringify_keys(config)
+      @service_comments[name.to_s] = comment if comment
     end
 
     def remove_service(name)
@@ -63,6 +65,7 @@ module Compose
 
     def to_yaml
       base = YAML.dump(@data)
+      base = insert_blank_lines_between_services(base)
       @header_comment ? "#{@header_comment}\n#{base}" : base
     end
 
@@ -74,6 +77,25 @@ module Compose
 
     def stringify_keys(hash)
       hash.deep_stringify_keys
+    end
+
+    # Insert blank lines between top-level sections and comments before services
+    def insert_blank_lines_between_services(yaml)
+      lines = yaml.lines
+      result = [lines.first]
+
+      lines.drop(1).each do |line|
+        if line.match?(/\A {2}\w/)
+          result << "\n"
+          # Add service comment if this is a service definition
+          match = line.match(/\A {2}([\w-]+):/)
+          comment = match && @service_comments[match[1]]
+          result << "  # #{comment}\n" if comment
+        end
+        result << line
+      end
+
+      result.join
     end
   end
 end

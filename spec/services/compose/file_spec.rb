@@ -69,8 +69,8 @@ RSpec.describe Compose::File do
     it 'adds a new service with hash config' do
       compose.add_service(
         'watchtower',
-        image: 'nickfedor/watchtower:latest',
-        restart: 'unless-stopped',
+        { image: 'nickfedor/watchtower:latest',
+          restart: 'unless-stopped' },
       )
 
       expect(compose.services.exists?('watchtower')).to be true
@@ -97,7 +97,7 @@ RSpec.describe Compose::File do
     end
 
     it 'accepts symbol keys and converts them to strings' do
-      compose.add_service(:newservice, image: 'alpine')
+      compose.add_service(:newservice, { image: 'alpine' })
       expect(compose.services.exists?('newservice')).to be true
     end
   end
@@ -119,7 +119,7 @@ RSpec.describe Compose::File do
     it 'writes to file' do
       compose = described_class.new(tmp_path)
       compose.name = 'testproject'
-      compose.add_service('test', image: 'alpine')
+      compose.add_service('test', { image: 'alpine' })
       compose.save
 
       content = File.read(tmp_path)
@@ -131,7 +131,7 @@ RSpec.describe Compose::File do
     it 'preserves existing services when modifying' do
       FileUtils.cp(fixture_path, tmp_path)
       compose = described_class.load(tmp_path)
-      compose.add_service('watchtower', image: 'watchtower:latest')
+      compose.add_service('watchtower', { image: 'watchtower:latest' })
       compose.save
 
       reloaded = described_class.load(tmp_path)

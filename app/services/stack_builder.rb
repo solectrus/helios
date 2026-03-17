@@ -14,7 +14,14 @@ class StackBuilder
     'helios_secret_key_base' => -> { SecureRandom.hex(64) },
   }.freeze
 
-  MANAGED_SERVICES = %i[postgresql redis influxdb dashboard watchtower helios].freeze
+  MANAGED_SERVICES = {
+    dashboard: 'SOLECTRUS web application',
+    influxdb: 'Time-series database for sensor measurements',
+    postgresql: 'Relational database for daily summaries, electricity prices, and settings',
+    redis: 'In-memory store for caching',
+    watchtower: 'Automatic Docker image updates',
+    helios: 'Configuration management UI',
+  }.freeze
 
   def initialize(configuration)
     @configuration = configuration
@@ -31,8 +38,8 @@ class StackBuilder
     compose.header_comment = compose_header_comment
     compose.name = 'solectrus'
 
-    MANAGED_SERVICES.each do |name|
-      compose.add_service(name, service_configs.public_send(name))
+    MANAGED_SERVICES.each do |name, comment|
+      compose.add_service(name, service_configs.public_send(name), comment:)
     end
 
     compose.to_yaml
