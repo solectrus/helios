@@ -1,19 +1,18 @@
 import { defineConfig } from 'vite';
-import ViteRails from 'vite-plugin-rails';
+import RailsVite from 'rails-vite-plugin';
 import tailwindcss from '@tailwindcss/vite';
 export default defineConfig(() => ({
   plugins: [
     tailwindcss(),
-    ViteRails({
-      fullReload: {
-        additionalPaths: [
-          'config/routes.rb',
-          'app/views/**/*',
-          'app/components/**/*',
-          'app/**/*.rb',
-          'config/locales/**/*.yml',
-        ],
-      },
+    RailsVite({
+      sourceDir: 'app/frontend',
+      refresh: [
+        'config/routes.rb',
+        'app/views/**/*',
+        'app/components/**/*',
+        'app/**/*.rb',
+        'config/locales/**/*.yml',
+      ],
     }),
   ],
   build: {
@@ -29,9 +28,11 @@ export default defineConfig(() => ({
     chunkSizeWarningLimit: 620,
   },
   server: {
+    port: 3036,
     hmr: {
       host: 'vite.helios.localhost',
       clientPort: 443,
+      protocol: 'wss',
     },
   },
 }));

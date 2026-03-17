@@ -28,7 +28,7 @@
 .env.*.local
 !spec/fixtures/**/.env
 
-# Vite Ruby
+# Vite
 /public/vite*
 
 # https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored

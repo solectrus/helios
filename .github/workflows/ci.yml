@@ -64,11 +64,16 @@ jobs:
       - name: Run JavaScript Tests
         run: bin/yarn test
 
+      - name: Build Vite assets for test
+        run: yarn vite build --mode test
+
       - name: Setup Database
         run: bin/rails db:setup
 
       - name: Run Ruby Tests
         run: bin/rspec
+        env:
+          SKIP_VITE_BUILD: 1
 
       - name: Upload Playwright artifacts
         uses: actions/upload-artifact@v7
@@ -78,11 +83,10 @@ jobs:
           path: tmp/capybara/
           if-no-files-found: ignore
 
-      - name: Build assets
-        run: bin/rails assets:precompile
-
       - name: Check JS size limit
-        run: yarn size-limit
+        run: |
+          yarn vite build
+          yarn size-limit
 
   build:
     runs-on: ${{ matrix.runner }}

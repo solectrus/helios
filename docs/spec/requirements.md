@@ -111,7 +111,7 @@
 - **Framework:** Ruby on Rails 8.1+
 - **Frontend:** Hotwire (Turbo + Stimulus)
 - **CSS:** TailwindCSS 4 + DaisyUI
-- **Asset Bundler:** Vite (via vite_ruby)
+- **Asset Bundler:** Vite (via rails_vite)
 - **Database:** SQLite (for Helios internal data)
 - **Testing:** RSpec
 - **Containerization:** Docker, managed via Docker Compose

@@ -23,7 +23,7 @@ Helios needs a technology stack for building a web-based Docker management inter
 | Frontend      | Hotwire (Turbo + Stimulus) | SPA-like UX without heavy JS, Rails-native        |
 | CSS Framework | TailwindCSS 4              | Utility-first, small bundle, rapid prototyping    |
 | UI Components | DaisyUI                    | Pre-built components on top of Tailwind           |
-| Asset Bundler | Vite (via vite_ruby)       | Fast builds, modern tooling                       |
+| Asset Bundler | Vite (via rails_vite)      | Fast builds, modern tooling                       |
 | Database      | SQLite                     | No extra container, single file, easy backup      |
 | Testing       | RSpec                      | Expressive, widely used in Ruby community         |
 

@@ -13,10 +13,10 @@ gem 'docker-api'
 gem 'bcrypt'
 
 # Frontend
+gem 'rails_vite'
 gem 'stimulus-rails'
 gem 'turbo-rails'
 gem 'view_component'
-gem 'vite_rails'
 
 # Windows does not include zoneinfo files, so bundle the tzinfo-data gem
 gem 'tzinfo-data', platforms: %i[windows jruby]
