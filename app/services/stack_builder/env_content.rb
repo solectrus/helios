@@ -3,7 +3,7 @@ class StackBuilder
     SEPARATOR = "# #{'=' * 60}".freeze
 
     def initialize(system_chapter, host_stack_path: nil)
-      @c = system_chapter
+      @system_chapter = system_chapter
       @host_stack_path = host_stack_path
     end
 
@@ -20,6 +20,8 @@ class StackBuilder
 
     private
 
+    attr_reader :system_chapter, :host_stack_path
+
     def file_header_lines
       [
         SEPARATOR,
@@ -35,9 +37,9 @@ class StackBuilder
     def general_section_lines
       [
         '# --- General settings ---',
-        *entry('TZ', @c['timezone'],
+        *entry('TZ', system_chapter['timezone'],
                'Timezone for all services (IANA format, e.g. Europe/Berlin)'),
-        *entry('INSTALLATION_DATE', @c['installation_date'],
+        *entry('INSTALLATION_DATE', system_chapter['installation_date'],
                'Date of first solar installation (YYYY-MM-DD) — used for statistics and charts'),
       ]
     end
@@ -45,9 +47,9 @@ class StackBuilder
     def security_section_lines
       [
         '# --- Security ---',
-        *entry('ADMIN_PASSWORD', @c['admin_password'],
+        *entry('ADMIN_PASSWORD', system_chapter['admin_password'],
                'Admin password for the SOLECTRUS web interface'),
-        *entry('SECRET_KEY_BASE', @c['secret_key_base'],
+        *entry('SECRET_KEY_BASE', system_chapter['secret_key_base'],
                'Rails session secret key — keep this confidential, never share it!'),
       ]
     end
@@ -55,7 +57,7 @@ class StackBuilder
     def postgresql_section_lines
       [
         '# --- PostgreSQL database ---',
-        *entry('POSTGRES_PASSWORD', @c['postgres_password'],
+        *entry('POSTGRES_PASSWORD', system_chapter['postgres_password'],
                'Database password — auto-generated, do not change after first start'),
         '',
       ]
@@ -64,12 +66,12 @@ class StackBuilder
     def influxdb_section_lines
       [
         '# --- InfluxDB time-series database ---',
-        *entry('INFLUX_PASSWORD', @c['influx_password'],
+        *entry('INFLUX_PASSWORD', system_chapter['influx_password'],
                'Admin password — auto-generated, do not change after first start'),
-        *entry('INFLUX_ORG', @c['influx_org'], 'Organization name'),
-        *entry('INFLUX_BUCKET', @c['influx_bucket'],
+        *entry('INFLUX_ORG', system_chapter['influx_org'], 'Organization name'),
+        *entry('INFLUX_BUCKET', system_chapter['influx_bucket'],
                'Bucket (database) name for time-series data'),
-        *entry('INFLUX_TOKEN', @c['influx_token'],
+        *entry('INFLUX_TOKEN', system_chapter['influx_token'],
                'API token with full access — auto-generated, do not change after first start'),
       ]
     end
@@ -77,9 +79,9 @@ class StackBuilder
     def helios_section_lines
       [
         '# --- Helios ---',
-        *entry('HELIOS_HOST_STACK_PATH', @host_stack_path,
+        *entry('HELIOS_HOST_STACK_PATH', host_stack_path,
                'Path on the Docker host where stack files are stored'),
-        *entry('HELIOS_SECRET_KEY_BASE', @c['helios_secret_key_base'],
+        *entry('HELIOS_SECRET_KEY_BASE', system_chapter['helios_secret_key_base'],
                'Helios session secret key — auto-generated, do not change'),
       ]
     end

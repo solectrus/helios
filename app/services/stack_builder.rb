@@ -14,6 +14,8 @@ class StackBuilder
     'helios_secret_key_base' => -> { SecureRandom.hex(64) },
   }.freeze
 
+  MANAGED_SERVICES = %i[postgresql redis influxdb dashboard watchtower helios].freeze
+
   def initialize(configuration)
     @configuration = configuration
   end
@@ -55,6 +57,10 @@ class StackBuilder
     @system_chapter ||= @configuration.chapter('system')
   end
 
+  def service_configs
+    @service_configs ||= ComposeContent.new(system_chapter)
+  end
+
   def create_data_directories!
     DATA_DIRECTORIES.each do |dir|
       path = File.join(stack_path, dir)
@@ -63,7 +69,7 @@ class StackBuilder
   end
 
   def write_compose!
-    backup_if_unmanaged!(compose.path)
+    backup_if_not_generated!(compose.path)
     ::File.write(compose.path, compose_content)
   end
 
@@ -71,16 +77,9 @@ class StackBuilder
     compose.header_comment = compose_header_comment
     compose.name = 'solectrus'
 
-    add_managed_services
-  end
-
-  def add_managed_services
-    compose.add_service('postgresql', postgresql_config)
-    compose.add_service('redis', redis_config)
-    compose.add_service('influxdb', influxdb_config)
-    compose.add_service('dashboard', dashboard_config)
-    compose.add_service('watchtower', watchtower_config)
-    compose.add_service('helios', helios_config)
+    MANAGED_SERVICES.each do |name|
+      compose.add_service(name, service_configs.public_send(name))
+    end
   end
 
   def compose_header_comment
@@ -96,146 +95,12 @@ class StackBuilder
     ].join("\n")
   end
 
-  def postgresql_config
-    {
-      image: system_chapter['postgresql_image'] || 'postgres:18-alpine',
-      environment: {
-        'POSTGRES_PASSWORD' => '${POSTGRES_PASSWORD}',
-        'POSTGRES_DB' => 'solectrus',
-      },
-      volumes: ['./postgresql:/var/lib/postgresql'],
-      restart: 'unless-stopped',
-      healthcheck: healthcheck_config('CMD-SHELL', 'pg_isready -U postgres'),
-    }
-  end
-
-  def redis_config
-    {
-      image: system_chapter['redis_image'] || 'redis:8-alpine',
-      volumes: ['./redis:/data'],
-      restart: 'unless-stopped',
-      healthcheck: healthcheck_config('CMD', 'redis-cli', 'ping'),
-    }
-  end
-
-  def influxdb_config
-    {
-      image: system_chapter['influxdb_image'] || 'influxdb:2-alpine',
-      ports: ['8086:8086'],
-      environment: influxdb_environment,
-      volumes: ['./influxdb:/var/lib/influxdb2'],
-      restart: 'unless-stopped',
-      healthcheck: healthcheck_config('CMD', 'influx', 'ping'),
-    }
-  end
-
-  def influxdb_environment
-    {
-      'DOCKER_INFLUXDB_INIT_MODE' => 'setup',
-      'DOCKER_INFLUXDB_INIT_USERNAME' => 'admin',
-      'DOCKER_INFLUXDB_INIT_PASSWORD' => '${INFLUX_PASSWORD}',
-      'DOCKER_INFLUXDB_INIT_ORG' => '${INFLUX_ORG}',
-      'DOCKER_INFLUXDB_INIT_BUCKET' => '${INFLUX_BUCKET}',
-      'DOCKER_INFLUXDB_INIT_ADMIN_TOKEN' => '${INFLUX_TOKEN}',
-    }
-  end
-
-  def dashboard_config
-    {
-      image: system_chapter['dashboard_image'] || 'ghcr.io/solectrus/solectrus:latest',
-      ports: ['3000:3000'],
-      environment: dashboard_environment,
-      depends_on: healthy_depends_on(%i[postgresql redis influxdb]),
-      restart: 'unless-stopped',
-      healthcheck: {
-        test: ['CMD-SHELL', 'nc -z 127.0.0.1 3000 || exit 1'],
-        interval: '10s',
-        timeout: '5s',
-        retries: 3,
-      },
-    }
-  end
-
-  def dashboard_environment
-    common_environment
-      .merge(influx_client_environment)
-      .merge(database_environment)
-      .merge(
-        'DB_DATABASE' => 'solectrus',
-        'SECRET_KEY_BASE' => '${SECRET_KEY_BASE}',
-        'ADMIN_PASSWORD' => '${ADMIN_PASSWORD}',
-      )
-  end
-
-  def common_environment
-    {
-      'TZ' => '${TZ}',
-      'INSTALLATION_DATE' => '${INSTALLATION_DATE}',
-      'REDIS_URL' => 'redis://redis:6379',
-    }
-  end
-
-  def influx_client_environment
-    {
-      'INFLUX_HOST' => 'influxdb',
-      'INFLUX_TOKEN' => '${INFLUX_TOKEN}',
-      'INFLUX_ORG' => '${INFLUX_ORG}',
-      'INFLUX_BUCKET' => '${INFLUX_BUCKET}',
-    }
-  end
-
-  def database_environment
-    {
-      'DB_HOST' => 'postgresql',
-      'DB_USER' => 'postgres',
-      'DB_PASSWORD' => '${POSTGRES_PASSWORD}',
-    }
-  end
-
-  def watchtower_config
-    {
-      image: system_chapter['watchtower_image'] || 'nickfedor/watchtower',
-      environment: ['TZ'],
-      volumes: ['/var/run/docker.sock:/var/run/docker.sock'],
-      command: '--scope solectrus --cleanup',
-      restart: 'unless-stopped',
-      logging: { options: { 'max-size' => '10m', 'max-file' => '3' } },
-      labels: ['com.centurylinklabs.watchtower.scope=solectrus'],
-    }
-  end
-
-  def helios_config
-    {
-      image: system_chapter['helios_image'] || 'ghcr.io/solectrus/helios:develop',
-      user: 'root',
-      environment: {
-        'SECRET_KEY_BASE' => '${HELIOS_SECRET_KEY_BASE}',
-        'HELIOS_STACK_PATH' => '/opt/solectrus',
-        'HELIOS_HOST_STACK_PATH' => '${HELIOS_HOST_STACK_PATH}',
-      },
-      volumes: [
-        '${HELIOS_HOST_STACK_PATH}:/opt/solectrus',
-        '/var/run/docker.sock:/var/run/docker.sock',
-      ],
-      ports: ['3999:3000'],
-      restart: 'unless-stopped',
-    }
-  end
-
-  def healthcheck_config(*test_cmd)
-    { test: test_cmd, interval: '10s', timeout: '5s', retries: 5 }
-  end
-
-  def healthy_depends_on(services)
-    services.index_with { { condition: 'service_healthy' } }
-  end
-
   def write_env!
-    backup_if_unmanaged!(Env.path)
+    backup_if_not_generated!(Env.path)
     ::File.write(Env.path, env_content)
   end
 
-  def backup_if_unmanaged!(path)
+  def backup_if_not_generated!(path)
     return unless ::File.exist?(path)
     return if ::File.read(path).include?(HELIOS_MARKER)
 
