@@ -6,7 +6,6 @@ module Compose
       'influxdb' => 'InfluxDB',
       'ghcr.io/solectrus/solectrus' => 'SOLECTRUS',
       'nickfedor/watchtower' => 'Watchtower',
-      'amir20/dozzle' => 'Dozzle',
     }.freeze
 
     attr_reader :name, :config
