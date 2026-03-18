@@ -1,21 +1,21 @@
 module Configurations
   class SurveysController < ApplicationController
     def show
-      unless Chapter.valid_kind?(survey_kind)
+      unless Configuration.valid?(survey_setting)
         return head(:not_found)
       end
 
-      path = Rails.root.join("config/surveys/#{survey_kind}.json")
+      path = Rails.root.join("config/surveys/#{survey_setting}.json")
       return head(:not_found) unless path.exist?
 
       survey = JSON.parse(path.read)
-      inject_device_questions!(survey) if Chapter.device_kind?(survey_kind)
+      inject_device_questions!(survey) if Configuration.device?(survey_setting)
       render json: survey
     end
 
     private
 
-    def survey_kind
+    def survey_setting
       params[:id]
     end
 

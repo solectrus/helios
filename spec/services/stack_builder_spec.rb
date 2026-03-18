@@ -1,24 +1,15 @@
 RSpec.describe StackBuilder do
+  before { with_config_yaml }
+
+  let(:tmp_dir) { Rails.configuration.helios_stack_path }
+  let(:compose_path) { File.join(tmp_dir, 'compose.yaml') }
+  let(:env_path) { File.join(tmp_dir, '.env') }
+
   let(:configuration) do
-    Configuration.current.tap do |config|
-      config.installation_date = '2024-01-15'
-      config.timezone = 'Europe/Berlin'
-      config.save!
-    end
+    config = Configuration.current
+    config.update('system', { 'installation_date' => '2024-01-15', 'timezone' => 'Europe/Berlin' })
+    config
   end
-
-  let(:tmp_dir) { Rails.root.join('tmp/test_stack') }
-  let(:compose_path) { tmp_dir.join('compose.yaml') }
-  let(:env_path) { tmp_dir.join('.env') }
-
-  before do
-    FileUtils.mkdir_p(tmp_dir)
-    allow(Rails.configuration).to receive(:helios_stack_path).and_return(
-      tmp_dir.to_s,
-    )
-  end
-
-  after { FileUtils.rm_rf(tmp_dir) }
 
   describe '#write!' do
     before { described_class.new(configuration).write! }
@@ -29,9 +20,9 @@ RSpec.describe StackBuilder do
     end
 
     it 'creates data directories' do
-      expect(Dir.exist?(tmp_dir.join('postgresql'))).to be true
-      expect(Dir.exist?(tmp_dir.join('redis'))).to be true
-      expect(Dir.exist?(tmp_dir.join('influxdb'))).to be true
+      expect(Dir.exist?(File.join(tmp_dir, 'postgresql'))).to be true
+      expect(Dir.exist?(File.join(tmp_dir, 'redis'))).to be true
+      expect(Dir.exist?(File.join(tmp_dir, 'influxdb'))).to be true
     end
   end
 
@@ -136,11 +127,11 @@ RSpec.describe StackBuilder do
       end
 
       it 'backs up compose.yaml' do
-        expect(File.exist?(tmp_dir.join('compose.yaml.bak'))).to be true
+        expect(File.exist?(File.join(tmp_dir, 'compose.yaml.bak'))).to be true
       end
 
       it 'backs up .env' do
-        expect(File.exist?(tmp_dir.join('.env.bak'))).to be true
+        expect(File.exist?(File.join(tmp_dir, '.env.bak'))).to be true
       end
 
       it 'still writes the new files' do
@@ -156,11 +147,11 @@ RSpec.describe StackBuilder do
       end
 
       it 'does not create a backup for compose.yaml' do
-        expect(File.exist?(tmp_dir.join('compose.yaml.bak'))).to be false
+        expect(File.exist?(File.join(tmp_dir, 'compose.yaml.bak'))).to be false
       end
 
       it 'does not create a backup for .env' do
-        expect(File.exist?(tmp_dir.join('.env.bak'))).to be false
+        expect(File.exist?(File.join(tmp_dir, '.env.bak'))).to be false
       end
     end
 
@@ -168,21 +159,21 @@ RSpec.describe StackBuilder do
       before { described_class.new(configuration).write! }
 
       it 'does not create a backup for compose.yaml' do
-        expect(File.exist?(tmp_dir.join('compose.yaml.bak'))).to be false
+        expect(File.exist?(File.join(tmp_dir, 'compose.yaml.bak'))).to be false
       end
 
       it 'does not create a backup for .env' do
-        expect(File.exist?(tmp_dir.join('.env.bak'))).to be false
+        expect(File.exist?(File.join(tmp_dir, '.env.bak'))).to be false
       end
     end
   end
 
-  describe 'with reverse_proxy chapter' do
+  describe 'with reverse_proxy configured' do
     before do
-      configuration.update_chapter('reverse_proxy', {
-                                     'enabled' => true,
-                                     'app_domain' => 'solar.example.com',
-                                   })
+      configuration.update('reverse_proxy', {
+                             'enabled' => true,
+                             'app_domain' => 'solar.example.com',
+                           })
       described_class.new(configuration).write!
     end
 
@@ -230,11 +221,11 @@ RSpec.describe StackBuilder do
     end
 
     it 'creates traefik data directory' do
-      expect(Dir.exist?(tmp_dir.join('traefik'))).to be true
+      expect(Dir.exist?(File.join(tmp_dir, 'traefik'))).to be true
     end
   end
 
-  describe 'without reverse_proxy chapter' do
+  describe 'without reverse_proxy configured' do
     before { described_class.new(configuration).write! }
 
     it 'does not include traefik service' do
@@ -254,15 +245,15 @@ RSpec.describe StackBuilder do
     end
   end
 
-  describe 'with backup chapter' do
+  describe 'with backup configured' do
     before do
-      configuration.update_chapter('backup', {
-                                     'enabled' => true,
-                                     'aws_access_key_id' => 'AKIAEXAMPLE',
-                                     'aws_secret_access_key' => 'secret123',
-                                     'aws_region' => 'eu-central-1',
-                                     'aws_bucket' => 'my-bucket',
-                                   })
+      configuration.update('backup', {
+                             'enabled' => true,
+                             'aws_access_key_id' => 'AKIAEXAMPLE',
+                             'aws_secret_access_key' => 'secret123',
+                             'aws_region' => 'eu-central-1',
+                             'aws_bucket' => 'my-bucket',
+                           })
       described_class.new(configuration).write!
     end
 
@@ -308,7 +299,7 @@ RSpec.describe StackBuilder do
     end
   end
 
-  describe 'without backup chapter' do
+  describe 'without backup configured' do
     before { described_class.new(configuration).write! }
 
     it 'does not include backup services' do
@@ -323,34 +314,37 @@ RSpec.describe StackBuilder do
   end
 
   describe 'secret persistence' do
-    it 'persists generated secrets to the system chapter in SQLite' do
+    it 'persists generated secrets to config.yaml' do
       described_class.new(configuration).write!
 
-      chapter = configuration.chapter('system')
-      expect(chapter['postgres_password']).to be_present
-      expect(chapter['secret_key_base']).to be_present
-      expect(chapter['admin_password']).to be_present
-      expect(chapter['influx_password']).to be_present
-      expect(chapter['influx_token']).to be_present
+      reloaded = Configuration.current
+      system_data = reloaded.system
+      expect(system_data.postgres_password).to be_present
+      expect(system_data.secret_key_base).to be_present
+      expect(system_data.admin_password).to be_present
+      expect(system_data.influx_password).to be_present
+      expect(system_data.influx_token).to be_present
     end
 
     it 'preserves secrets across multiple writes' do
       described_class.new(configuration).write!
-      first_password = configuration.chapter('system')['postgres_password']
+      first_password = Configuration.current.system.postgres_password
 
-      described_class.new(configuration).write!
-      second_password = configuration.chapter('system')['postgres_password']
+      # Reload configuration from disk for second write
+      config2 = Configuration.current
+      described_class.new(config2).write!
+      second_password = Configuration.current.system.postgres_password
 
       expect(second_password).to eq(first_password)
     end
 
-    it 'uses existing secrets from SQLite instead of generating new ones' do
-      configuration.update_chapter(
+    it 'uses existing secrets instead of generating new ones' do
+      configuration.update(
         'system',
-        configuration.chapter('system').merge('postgres_password' => 'my-existing-secret'),
+        configuration.system.merge('postgres_password' => 'my-existing-secret'),
       )
 
-      described_class.new(configuration).write!
+      described_class.new(Configuration.current).write!
 
       env = Env.load
       expect(env['POSTGRES_PASSWORD']).to eq('my-existing-secret')

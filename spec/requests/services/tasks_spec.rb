@@ -1,7 +1,7 @@
 RSpec.describe 'Services::Tasks', :with_admin do
   before do
     login
-    Configuration.current.complete_setup!
+    with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
     allow(ComposeJob).to receive(:perform_later)
   end
 

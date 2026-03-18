@@ -10,7 +10,7 @@ class StackBuilder
       end
 
       def self.enabled?(configuration)
-        configuration.chapter('backup')['enabled'] == true
+        configuration.backup.enabled == true
       end
 
       def to_h

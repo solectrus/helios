@@ -17,10 +17,18 @@ Rails.application.routes.draw do
     resources :readings, only: :index, module: :sensors
   end
 
-  # Configuration with chapters and surveys
+  # Configuration with settings and surveys
   resource :configuration, only: :show do
-    resources :chapters, only: %i[new create edit update destroy], module: :configurations
+    resources :settings, only: %i[new create], module: :configurations
     resources :surveys, only: :show, module: :configurations
+  end
+
+  scope 'configuration/:setting/:name',
+        module: :configurations,
+        constraints: { name: %r{[^/]+} } do
+    get 'edit', to: 'settings#edit', as: :edit_configuration_setting
+    patch '/', to: 'settings#update', as: :configuration_setting
+    delete '/', to: 'settings#destroy'
   end
 
   # Dashboard

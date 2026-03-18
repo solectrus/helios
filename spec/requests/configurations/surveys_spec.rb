@@ -2,24 +2,24 @@ RSpec.describe 'Configurations::Surveys', :with_admin do
   before { login }
 
   describe 'GET /configuration/surveys/:id' do
-    Chapter::KINDS.each do |kind|
-      it "returns JSON for #{kind} survey" do
-        get configuration_survey_path(id: kind)
+    Configuration::ALL.each do |setting|
+      it "returns JSON for #{setting} survey" do
+        get configuration_survey_path(id: setting)
 
         expect(response).to have_http_status(:ok)
         expect(response.media_type).to eq('application/json')
       end
     end
 
-    it 'returns 404 for invalid kind' do
+    it 'returns 404 for invalid setting' do
       get configuration_survey_path(id: 'nonexistent')
 
       expect(response).to have_http_status(:not_found)
     end
 
-    Chapter::DEVICE_KINDS.each do |kind|
-      it "injects name question for #{kind} survey" do
-        get configuration_survey_path(id: kind)
+    Configuration::DEVICES.each do |setting|
+      it "injects name question for #{setting} survey" do
+        get configuration_survey_path(id: setting)
 
         survey = response.parsed_body
         first_element = survey['pages'].first['elements'].first
@@ -30,9 +30,9 @@ RSpec.describe 'Configurations::Surveys', :with_admin do
       end
     end
 
-    Chapter::SINGLETON_KINDS.each do |kind|
-      it "does not inject name question for #{kind} survey" do
-        get configuration_survey_path(id: kind)
+    Configuration::SINGLETONS.each do |setting|
+      it "does not inject name question for #{setting} survey" do
+        get configuration_survey_path(id: setting)
 
         survey = response.parsed_body
         first_element = survey['pages'].first['elements'].first

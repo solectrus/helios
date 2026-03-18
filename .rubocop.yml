@@ -64,6 +64,7 @@ Style/IfUnlessModifier:
 Metrics/BlockLength:
   Exclude:
     - config/environments/*.rb
+    - config/routes.rb
 
 # RSpec settings - allow more flexibility
 RSpec/MultipleExpectations:

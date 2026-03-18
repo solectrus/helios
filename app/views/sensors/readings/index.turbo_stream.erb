@@ -1,12 +1,11 @@
-<% @sensor_mappings.each do |var_name, _mapping| %>
-  <% reading = @readings[var_name] %>
-  <% name = var_name.delete_prefix('INFLUX_SENSOR_') %>
+<% @sensor_mappings.each do |name, _mapping| %>
+  <% reading = @readings[name] %>
 
   <%= turbo_stream.replace "sensor-value-#{name.parameterize}" do %>
-    <%= sensor_value_cell(var_name, reading) %>
+    <%= sensor_value_cell(name, reading) %>
   <% end %>
 
   <%= turbo_stream.replace "sensor-time-#{name.parameterize}" do %>
-    <%= sensor_time_cell(var_name, reading) %>
+    <%= sensor_time_cell(name, reading) %>
   <% end %>
 <% end %>

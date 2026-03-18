@@ -47,7 +47,7 @@ en:
       title: "Configuration - Helios"
       configured: "Configured"
       pending: "Pending"
-    chapters:
+    settings:
       inverter:
         title: "Inverter"
         description: "Configuration of your inverter"
@@ -81,7 +81,7 @@ en:
       sensors:
         title: "Sensor mapping"
         description: "Map sensors to InfluxDB fields"
-      invalid_chapter: "Unknown chapter"
+      invalid_setting: "Unknown setting"
       add: "Add"
       edit: "Edit"
       delete: "Delete"

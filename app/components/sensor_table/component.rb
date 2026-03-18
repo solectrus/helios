@@ -38,18 +38,16 @@ module SensorTable
     private
 
     def sensor_rows
-      sensor_mappings.map { |var_name, mapping| build_row(var_name, mapping) }
+      sensor_mappings.map { |name, mapping| build_row(name, mapping) }
     end
 
-    def build_row(var_name, mapping)
-      reading = readings[var_name]
-      name = var_name.delete_prefix('INFLUX_SENSOR_')
+    def build_row(name, mapping)
+      reading = readings[name]
       measurement, field = mapping.split(':', 2)
 
       {
-        var_name:,
         name:,
-        device_name: device_names[var_name],
+        device_name: device_names[name],
         measurement:,
         field:,
         time: reading&.dig(:time),

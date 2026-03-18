@@ -65,13 +65,13 @@ class StackBuilder
   end
 
   def ensure_secrets!
-    system_chapter = @configuration.chapter('system')
-    missing = SECRET_DEFAULTS.reject { |key, _| system_chapter.key?(key) }
+    current_system = @configuration.system
+    missing = SECRET_DEFAULTS.reject { |key, _| current_system[key] }
     updates = missing.transform_values(&:call)
 
     return if updates.empty?
 
-    @configuration.update_chapter('system', system_chapter.merge(updates))
+    @configuration.update('system', current_system.merge(updates))
     @compose_builder = nil
   end
 end

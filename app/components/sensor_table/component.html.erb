@@ -46,8 +46,8 @@
               <td class="text-base-content/70 font-mono text-sm"><%= row[:measurement] %></td>
               <td class="text-base-content/70 font-mono text-sm"><%= row[:field] %></td>
 
-              <%= helpers.sensor_value_cell(row[:var_name], readings[row[:var_name]]) %>
-              <%= helpers.sensor_time_cell(row[:var_name], readings[row[:var_name]]) %>
+              <%= helpers.sensor_value_cell(row[:name], readings[row[:name]]) %>
+              <%= helpers.sensor_time_cell(row[:name], readings[row[:name]]) %>
 
               <td class="text-base-content/50 text-right font-mono text-sm"><%= row[:count] %></td>
               <td class="text-base-content/50 text-sm"><%= format_span(row) %></td>

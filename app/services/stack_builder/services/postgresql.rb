@@ -15,7 +15,7 @@ class StackBuilder
 
       def to_h
         {
-          image: system_chapter['postgresql_image'] || 'postgres:18-alpine',
+          image: system_data.postgresql_image || 'postgres:18-alpine',
           environment: {
             'POSTGRES_PASSWORD' => '${POSTGRES_PASSWORD}',
             'POSTGRES_DB' => 'solectrus',

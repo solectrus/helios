@@ -1,7 +1,7 @@
 RSpec.describe 'Services::Rows', :with_admin do
   before do
     login
-    Configuration.current.complete_setup!
+    with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
   end
 
   def mock_compose_service(name)

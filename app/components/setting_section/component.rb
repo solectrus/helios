@@ -1,4 +1,4 @@
-module KindSection
+module SettingSection
   class Component < ViewComponent::Base
     ICONS = {
       'inverter' => 'fa-solar-panel',
@@ -14,40 +14,44 @@ module KindSection
       'sensors' => 'fa-gauge',
     }.freeze
 
-    attr_reader :kind, :chapters
+    attr_reader :setting, :configuration
 
-    def initialize(kind:, chapters:)
+    def initialize(setting:, configuration:)
       super()
-      @kind = kind
-      @chapters = chapters
+      @setting = setting
+      @configuration = configuration
     end
 
     def device?
-      Chapter.device_kind?(kind)
+      Configuration.device?(setting)
     end
 
     def singleton?
-      Chapter.singleton_kind?(kind)
+      Configuration.singleton?(setting)
     end
 
     def icon
-      ICONS[kind] || 'fa-circle-question'
+      ICONS[setting] || 'fa-circle-question'
     end
 
     def title
-      I18n.t("configurations.chapters.#{kind}.title")
+      I18n.t("configurations.settings.#{setting}.title")
     end
 
     def add_path
-      helpers.new_configuration_chapter_path(kind:)
+      helpers.new_configuration_setting_path(setting:)
     end
 
-    def singleton_chapter
-      chapters.first
+    def devices
+      @devices ||= configuration.devices_of(setting)
+    end
+
+    def singleton_data
+      @singleton_data ||= configuration.setting_data(setting)
     end
 
     def singleton_configured?
-      singleton_chapter&.completed? || false
+      singleton_data.present?
     end
   end
 end

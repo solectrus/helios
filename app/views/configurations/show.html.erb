@@ -8,15 +8,15 @@
       <div class="mb-8"><%= render MainNav::Component.new(active_tab: :configuration) %></div>
 
       <div class="space-y-4">
-        <% (Chapter::KINDS - %w[sensors]).each do |kind| %>
-          <%= render KindSection::Component.new(
-                kind:,
-                chapters: @configuration.chapters_of_kind(kind)
+        <% (Configuration::ALL - %w[sensors]).each do |setting| %>
+          <%= render SettingSection::Component.new(
+                setting:,
+                configuration: @configuration
               ) %>
         <% end %>
       </div>
 
-      <%= render DialogModal::Component.new(id: "chapter-modal", turbo_frame: "chapter-modal-content") %>
+      <%= render DialogModal::Component.new(id: "setting-modal", turbo_frame: "setting-modal-content") %>
     <% end %>
   </div>
 </div>

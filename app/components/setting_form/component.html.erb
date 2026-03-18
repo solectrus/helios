@@ -1,0 +1,21 @@
+<%= helpers.turbo_frame_tag "setting-modal-content" do %>
+  <%= form_with url: form_url,
+                method: form_method,
+                id: "setting-form",
+                data: { turbo_frame: "_top" } do |f| %>
+    <% if new_record? %>
+      <%= f.hidden_field :setting, value: setting %>
+    <% end %>
+
+    <div
+      data-controller="survey"
+      data-survey-url-value="<%= survey_url %>"
+      data-survey-form-id-value="setting-form"
+      data-survey-field-name-value="data"
+    >
+      <script type="application/json" data-survey-target="initialData"><%= ERB::Util.json_escape(setting_data_json).html_safe %></script>
+
+      <div data-survey-target="container" class="bg-base-100 rounded-lg"></div>
+    </div>
+  <% end %>
+<% end %>

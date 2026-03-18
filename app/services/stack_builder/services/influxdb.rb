@@ -15,7 +15,7 @@ class StackBuilder
 
       def to_h
         {
-          image: system_chapter['influxdb_image'] || 'influxdb:2-alpine',
+          image: system_data.influxdb_image || 'influxdb:2-alpine',
           ports: ['8086:8086'],
           environment: influxdb_environment,
           volumes: ['./influxdb:/var/lib/influxdb2'],

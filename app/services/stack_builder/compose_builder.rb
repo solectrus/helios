@@ -49,8 +49,8 @@ class StackBuilder
     end
 
     def add_collector_services(compose)
-      Services::ShellyCollector.chapters_for(configuration).each do |chapter|
-        collector = Services::ShellyCollector.new(configuration, chapter:)
+      Services::ShellyCollector.devices_for(configuration).each do |device|
+        collector = Services::ShellyCollector.new(configuration, device:)
         compose.add_service(collector.service_name, collector.to_h, comment: collector.comment)
       end
     end

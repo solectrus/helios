@@ -1,123 +1,195 @@
-class Configuration < ApplicationRecord
-  has_many :chapters, dependent: :destroy
+class Configuration
+  YAML_FILENAME = 'config.yaml'.freeze
+
+  # Devices can exist multiple times (e.g. two inverters)
+  DEVICES = %w[inverter battery wallbox car heatpump consumer].freeze
+
+  # Singletons exist at most once per configuration
+  SINGLETONS = %w[forecast system reverse_proxy backup sensors].freeze
+
+  # All valid setting names
+  ALL = (DEVICES + SINGLETONS).freeze
+
+  # Mapping setting name → YAML key (devices are pluralized)
+  YAML_KEYS = {
+    'inverter' => 'inverters',
+    'battery' => 'batteries',
+    'wallbox' => 'wallboxes',
+    'car' => 'cars',
+    'heatpump' => 'heatpumps',
+    'consumer' => 'consumers',
+    'system' => 'system',
+    'forecast' => 'forecast',
+    'sensors' => 'sensors',
+    'reverse_proxy' => 'reverse_proxy',
+    'backup' => 'backup',
+  }.freeze
+
+  # Hash wrapper that allows method-style access: config.system.timezone
+  class Data < Hash
+    def self.wrap(hash)
+      new.merge!(hash || {})
+    end
+
+    def method_missing(name, ...)
+      self[name.to_s]
+    end
+
+    def respond_to_missing?(...)
+      true
+    end
+  end
+
+  Device = Struct.new(:type, :name, :data)
 
   def self.current
-    includes(:chapters).first_or_create!(data: default_data)
+    path = File.join(Rails.configuration.helios_stack_path, YAML_FILENAME)
+    new(path)
   end
 
-  def self.default_data
-    { 'setup_completed' => false }
+  def self.device?(setting)
+    setting.to_s.in?(DEVICES)
   end
 
-  # Look up chapter data by kind (and optionally name for devices)
-  # Uses in-memory search when chapters are preloaded to avoid extra DB queries
-  def chapter(kind, name = nil)
-    record = chapters.find do |c|
-      c.kind == kind.to_s && (name.nil? || c.name == name.to_s)
+  def self.singleton?(setting)
+    setting.to_s.in?(SINGLETONS)
+  end
+
+  def self.valid?(setting)
+    setting.to_s.in?(ALL)
+  end
+
+  def initialize(path)
+    @path = path
+    @data = File.exist?(path) ? YAML.safe_load_file(path, permitted_classes: [Date]) || {} : {}
+  end
+
+  # Dynamic singleton accessors: config.system, config.forecast, etc.
+  SINGLETONS.each do |setting|
+    define_method(setting) do
+      Data.wrap(@data[YAML_KEYS[setting]] || {})
     end
-    record&.data || {}
   end
 
-  # Create or update a chapter. For singletons, name defaults to kind.
-  def update_chapter(kind, chapter_data, name: kind)
-    record = chapters.find_or_initialize_by(kind:, name:)
-    record.data = chapter_data
-    record.save!
-    chapters.reload
+  # Dynamic device accessors: config.inverter('SMA'), config.battery('Speicher'), etc.
+  DEVICES.each do |setting|
+    define_method(setting) do |device_name|
+      Data.wrap(@data.dig(YAML_KEYS[setting], device_name.to_s) || {})
+    end
   end
 
-  def chapter_completed?(kind, name = nil)
-    found =
-      if name
-        chapters.find { |c| c.kind == kind.to_s && c.name == name.to_s }
-      else
-        chapters.find { |c| c.kind == kind.to_s }
-      end
-    found&.completed? || false
+  # Generic lookup for dynamic dispatch (when the setting name is a variable)
+  def setting_data(setting, device_name = nil)
+    yaml_key = YAML_KEYS[setting.to_s]
+    return Data.wrap({}) unless yaml_key
+
+    raw = if self.class.device?(setting)
+            device_name ? (@data.dig(yaml_key, device_name.to_s) || {}) : {}
+          else
+            @data[yaml_key] || {}
+          end
+    Data.wrap(raw)
   end
 
-  # All chapters of a given kind (useful for device kinds)
-  def chapters_of_kind(kind)
-    chapters.select { |c| c.kind == kind.to_s }
+  # All devices of a given type
+  def devices_of(setting)
+    yaml_key = YAML_KEYS[setting.to_s]
+    (@data[yaml_key] || {}).map do |name, data|
+      Device.new(type: setting.to_s, name:, data: Data.wrap(data || {}))
+    end
   end
 
-  # Add a new device chapter
-  def add_device(kind, name, data = {})
-    unless kind.to_s.in?(Chapter::DEVICE_KINDS)
-      raise ArgumentError, "#{kind} is not a device kind"
+  # All devices across all types
+  def all_devices
+    @all_devices ||= DEVICES.flat_map { |setting| devices_of(setting) }
+  end
+
+  # Create or update. For singletons, name defaults to setting.
+  def update(setting, data, name: setting)
+    yaml_key = YAML_KEYS[setting.to_s]
+    raw = data.is_a?(Data) ? data.to_h : data
+    if self.class.device?(setting)
+      @data[yaml_key] ||= {}
+      @data[yaml_key][name.to_s] = raw
+    else
+      @data[yaml_key] = raw
+    end
+    save!
+  end
+
+  def configured?(setting, name = nil)
+    setting_data(setting, name).present?
+  end
+
+  # Add a new device
+  def add(setting, name, data = {})
+    unless self.class.device?(setting)
+      raise ArgumentError, "#{setting} is not a device"
     end
 
-    chapters.create!(kind:, name:, data:)
+    update(setting, data, name:)
   end
 
-  # Remove a device chapter
-  def remove_device(kind, name)
-    chapters.find_by!(kind:, name:).destroy!
+  # Remove a device
+  def remove(setting, name)
+    yaml_key = YAML_KEYS[setting.to_s]
+    @data[yaml_key]&.delete(name.to_s)
+    save!
   end
 
   # Check if any device uses MQTT as data source
   def mqtt_required?
-    chapters.any? do |c|
-      c.data['data_source'] == 'mqtt' ||
-        c.data['power_source'] == 'mqtt' ||
-        c.data['details_source'] == 'mqtt'
+    all_devices.any? do |d|
+      d.data.data_source == 'mqtt' ||
+        d.data.power_source == 'mqtt' ||
+        d.data.details_source == 'mqtt'
     end
   end
 
   # Check if Ingest service is needed
   def ingest_required?
-    inverters = chapters_of_kind('inverter')
+    inverters = devices_of('inverter')
     inverters.size > 1 ||
-      inverters.any? { |c| c.data['house_power_known'] == false }
+      inverters.any? { |d| d.data.house_power_known == false }
   end
 
-  # Deduplicated SENEC hosts across all chapters
+  # Deduplicated SENEC hosts across all devices
   def senec_hosts
-    chapters.filter_map do |c|
-      c.data['senec_host'] if c.data['data_source']&.start_with?('senec')
+    all_devices.filter_map do |d|
+      d.data.senec_host if d.data.data_source&.start_with?('senec')
     end.uniq
   end
 
-  # Default sensor mappings derived from device chapters
-  def computed_sensor_mappings
-    SensorDefaults.for_chapters(chapters)
-  end
-
-  # Effective sensor mappings (computed + overrides from sensors chapter)
-  def effective_sensor_mappings
-    computed_sensor_mappings.merge(chapter('sensors'))
-  end
-
-  # Device names for each sensor (e.g. 'INFLUX_SENSOR_CUSTOM_POWER_01' => 'Geschirrspüler')
+  # Device names for each sensor
   def sensor_device_names
-    SensorDefaults.device_names_for_chapters(chapters)
+    sensor_defaults.device_names
   end
 
-  # Legacy accessors for backward compatibility
-  def installation_date
-    chapter('system')['installation_date']
+  # Default sensor mappings derived from device configuration
+  def computed_sensor_mappings
+    sensor_defaults.mappings
   end
 
-  def installation_date=(value)
-    current = chapter('system')
-    update_chapter('system', current.merge('installation_date' => value))
-  end
-
-  def timezone
-    chapter('system')['timezone']
-  end
-
-  def timezone=(value)
-    current = chapter('system')
-    update_chapter('system', current.merge('timezone' => value))
+  # Effective sensor mappings (computed + overrides from sensors section)
+  def effective_sensor_mappings
+    computed_sensor_mappings.merge(sensors)
   end
 
   def setup_completed?
-    data['setup_completed'] == true
+    File.exist?(@path) && system.timezone.present?
   end
 
-  def complete_setup!
-    data['setup_completed'] = true
-    save!
+  def save!
+    dir = File.dirname(@path)
+    FileUtils.mkdir_p(dir) unless File.directory?(dir)
+    File.write(@path, YAML.dump(@data))
+    @all_devices = nil
+    @sensor_defaults = nil
+  end
+
+  private
+
+  def sensor_defaults
+    @sensor_defaults ||= SensorDefaults.build(all_devices)
   end
 end

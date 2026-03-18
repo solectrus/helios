@@ -15,7 +15,7 @@
               type="date"
               name="installation_date"
               class="input input-bordered"
-              value="<%= @configuration.installation_date || Date.today %>"
+              value="<%= @configuration.system.installation_date || Date.today %>"
               required
               autocomplete="off"
             >
@@ -28,7 +28,7 @@
 
             <select name="timezone" class="select select-bordered w-full" required>
               <option value="">Select timezone...</option>
-              <%= options_for_select(timezone_options, @configuration.timezone || 'Europe/Berlin') %>
+              <%= options_for_select(timezone_options, @configuration.system.timezone || 'Europe/Berlin') %>
             </select>
           </div>
 

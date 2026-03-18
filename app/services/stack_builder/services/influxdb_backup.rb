@@ -10,12 +10,12 @@ class StackBuilder
       end
 
       def self.enabled?(configuration)
-        configuration.chapter('backup')['enabled'] == true
+        configuration.backup.enabled == true
       end
 
       def to_h
         {
-          image: system_chapter['influxdb_backup_image'] || 'ghcr.io/solectrus/influxdb2-s3-backup:latest',
+          image: system_data.influxdb_backup_image || 'ghcr.io/solectrus/influxdb2-s3-backup:latest',
           environment: influxdb_backup_environment,
           depends_on: healthy_depends_on(%i[influxdb]),
           restart: 'unless-stopped',

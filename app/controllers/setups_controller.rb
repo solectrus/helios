@@ -22,14 +22,14 @@ class SetupsController < ApplicationController
   end
 
   def save_configuration
-    @configuration.installation_date = setup_params[:installation_date]
-    @configuration.timezone = setup_params[:timezone]
-    @configuration.save!
+    @configuration.update('system', @configuration.system.merge(
+                                      'installation_date' => setup_params[:installation_date],
+                                      'timezone' => setup_params[:timezone],
+                                    ))
   end
 
   def finish_setup
     StackBuilder.new(@configuration).write!
-    @configuration.complete_setup!
   end
 
   def render_error(key)

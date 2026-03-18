@@ -1,16 +1,10 @@
 RSpec.describe 'Setup Wizard', :with_admin do
-  let(:tmp_dir) { Rails.root.join('tmp/test_stack') }
+  let(:tmp_dir) { Rails.configuration.helios_stack_path }
 
   before do
+    with_config_yaml
     login
-
-    FileUtils.mkdir_p(tmp_dir)
-    allow(Rails.configuration).to receive(:helios_stack_path).and_return(
-      tmp_dir.to_s,
-    )
   end
-
-  after { FileUtils.rm_rf(tmp_dir) }
 
   describe 'GET /setup/new' do
     it 'shows setup form when authenticated' do
@@ -20,7 +14,10 @@ RSpec.describe 'Setup Wizard', :with_admin do
     end
 
     context 'when setup already completed' do
-      before { Configuration.current.complete_setup! }
+      before do
+        config = Configuration.current
+        config.update('system', { 'timezone' => 'Europe/Berlin' })
+      end
 
       it 'redirects to dashboard' do
         get new_setup_path
@@ -38,15 +35,15 @@ RSpec.describe 'Setup Wizard', :with_admin do
       post setup_path, params: valid_params
 
       config = Configuration.current
-      expect(config.installation_date).to eq('2024-01-15')
-      expect(config.timezone).to eq('Europe/Berlin')
+      expect(config.system.installation_date).to eq('2024-01-15')
+      expect(config.system.timezone).to eq('Europe/Berlin')
     end
 
     it 'generates compose.yaml and .env' do
       post setup_path, params: valid_params
 
-      expect(File.exist?(tmp_dir.join('compose.yaml'))).to be true
-      expect(File.exist?(tmp_dir.join('.env'))).to be true
+      expect(File.exist?(File.join(tmp_dir, 'compose.yaml'))).to be true
+      expect(File.exist?(File.join(tmp_dir, '.env'))).to be true
     end
 
     it 'marks setup as completed' do

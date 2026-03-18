@@ -3,16 +3,16 @@ class ConfigurationImporter
     @reader = stack_reader
   end
 
-  # Extracted chapter data as plain hashes (no DB access)
+  # Extracted data as plain hashes (no DB access)
   def result
-    @result ||= build_chapters
+    @result ||= build_result
   end
 
-  # Persist extracted chapters into the database
+  # Persist extracted data into config.yaml
   def import!
     config = Configuration.current
 
-    persist_chapters!(config)
+    persist_singletons!(config)
     persist_devices!(config)
 
     config
@@ -20,30 +20,30 @@ class ConfigurationImporter
 
   private
 
-  def build_chapters
-    chapters = {
-      system: system_chapter_data,
-      sensors: sensors_chapter_data,
-      reverse_proxy: reverse_proxy_chapter_data,
-      backup: backup_chapter_data,
+  def build_result
+    data = {
+      system: system_data,
+      sensors: sensors_data,
+      reverse_proxy: reverse_proxy_data,
+      backup: backup_data,
       devices: [],
     }
 
-    chapters[:devices] << senec_device_data if senec_collector?
+    data[:devices] << senec_device_data if senec_collector?
 
-    chapters
+    data
   end
 
-  def persist_chapters!(config)
-    config.update_chapter('system', result[:system])
-    config.update_chapter('sensors', result[:sensors])
-    config.update_chapter('reverse_proxy', result[:reverse_proxy]) if result[:reverse_proxy]
-    config.update_chapter('backup', result[:backup]) if result[:backup]
+  def persist_singletons!(config)
+    config.update('system', result[:system])
+    config.update('sensors', result[:sensors])
+    config.update('reverse_proxy', result[:reverse_proxy]) if result[:reverse_proxy]
+    config.update('backup', result[:backup]) if result[:backup]
   end
 
   def persist_devices!(config)
     result[:devices].each do |device|
-      config.add_device(device[:kind], device[:name], device[:data])
+      config.add(device[:type], device[:name], device[:data])
     end
   end
 
@@ -52,7 +52,7 @@ class ConfigurationImporter
     @reader.service(name)&.dig('environment') || {}
   end
 
-  def system_chapter_data
+  def system_data
     system_general_data.merge(system_secrets_data).compact
   end
 
@@ -96,7 +96,7 @@ class ConfigurationImporter
       .merge('senec_interval' => senec_env['SENEC_INTERVAL'])
       .compact
 
-    { kind: 'inverter', name: 'SENEC', data: }
+    { type: 'inverter', name: 'SENEC', data: }
   end
 
   def senec_vendor(senec_env)
@@ -120,15 +120,16 @@ class ConfigurationImporter
     }
   end
 
-  def sensors_chapter_data
+  def sensors_data
     dashboard_env = service_env('dashboard')
 
     dashboard_env
       .select { |k, _| k.start_with?('INFLUX_SENSOR_') }
       .compact_blank
+      .transform_keys { |k| k.delete_prefix('INFLUX_SENSOR_').downcase }
   end
 
-  def reverse_proxy_chapter_data
+  def reverse_proxy_data
     return unless @reader.services.key?('traefik')
 
     domain = extract_domain_from_dashboard_labels
@@ -153,7 +154,7 @@ class ConfigurationImporter
     end
   end
 
-  def backup_chapter_data
+  def backup_data
     return unless @reader.services.key?('postgresql-backup')
 
     {

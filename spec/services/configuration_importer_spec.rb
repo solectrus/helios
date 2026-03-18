@@ -6,10 +6,12 @@ RSpec.describe ConfigurationImporter do
   let(:compose_path) { scenario_path.join('compose.yaml') }
   let(:env_path) { scenario_path.join('.env') }
 
+  before { with_config_yaml }
+
   context 'with senec3 scenario' do
     let(:scenario) { 'senec3' }
 
-    it 'returns a hash with chapter data' do
+    it 'returns a hash with setting data' do
       expect(importer.result).to include(:system, :sensors, :devices)
     end
 
@@ -54,40 +56,40 @@ RSpec.describe ConfigurationImporter do
         )
       end
 
-      it 'sets kind and name' do
-        expect(devices.first).to include(kind: 'inverter', name: 'SENEC')
+      it 'sets type and name' do
+        expect(devices.first).to include(type: 'inverter', name: 'SENEC')
       end
     end
 
     describe 'sensor data' do
       subject(:sensors) { importer.result[:sensors] }
 
-      it 'includes non-empty sensor mappings' do
+      it 'includes non-empty sensor mappings with lowercase keys' do
         expect(sensors).to include(
-          'INFLUX_SENSOR_INVERTER_POWER' => 'SENEC:inverter_power',
-          'INFLUX_SENSOR_INVERTER_POWER_1' => 'SENEC:mpp1_power',
-          'INFLUX_SENSOR_INVERTER_POWER_2' => 'SENEC:mpp2_power',
-          'INFLUX_SENSOR_INVERTER_POWER_3' => 'SENEC:mpp3_power',
-          'INFLUX_SENSOR_HOUSE_POWER' => 'SENEC:house_power',
-          'INFLUX_SENSOR_GRID_IMPORT_POWER' => 'SENEC:grid_power_plus',
-          'INFLUX_SENSOR_GRID_EXPORT_POWER' => 'SENEC:grid_power_minus',
-          'INFLUX_SENSOR_BATTERY_CHARGING_POWER' => 'SENEC:bat_power_plus',
-          'INFLUX_SENSOR_BATTERY_DISCHARGING_POWER' => 'SENEC:bat_power_minus',
-          'INFLUX_SENSOR_BATTERY_SOC' => 'SENEC:bat_fuel_charge',
-          'INFLUX_SENSOR_CASE_TEMP' => 'SENEC:case_temp',
-          'INFLUX_SENSOR_SYSTEM_STATUS' => 'SENEC:current_state',
-          'INFLUX_SENSOR_SYSTEM_STATUS_OK' => 'SENEC:current_state_ok',
-          'INFLUX_SENSOR_GRID_EXPORT_LIMIT' => 'SENEC:power_ratio',
+          'inverter_power' => 'SENEC:inverter_power',
+          'inverter_power_1' => 'SENEC:mpp1_power',
+          'inverter_power_2' => 'SENEC:mpp2_power',
+          'inverter_power_3' => 'SENEC:mpp3_power',
+          'house_power' => 'SENEC:house_power',
+          'grid_import_power' => 'SENEC:grid_power_plus',
+          'grid_export_power' => 'SENEC:grid_power_minus',
+          'battery_charging_power' => 'SENEC:bat_power_plus',
+          'battery_discharging_power' => 'SENEC:bat_power_minus',
+          'battery_soc' => 'SENEC:bat_fuel_charge',
+          'case_temp' => 'SENEC:case_temp',
+          'system_status' => 'SENEC:current_state',
+          'system_status_ok' => 'SENEC:current_state_ok',
+          'grid_export_limit' => 'SENEC:power_ratio',
         )
       end
 
       it 'excludes empty sensor mappings' do
         expect(sensors.keys).not_to include(
-          'INFLUX_SENSOR_WALLBOX_POWER',
-          'INFLUX_SENSOR_INVERTER_POWER_4',
-          'INFLUX_SENSOR_INVERTER_POWER_5',
-          'INFLUX_SENSOR_HEATPUMP_POWER',
-          'INFLUX_SENSOR_CAR_BATTERY_SOC',
+          'wallbox_power',
+          'inverter_power_4',
+          'inverter_power_5',
+          'heatpump_power',
+          'car_battery_soc',
         )
       end
     end
@@ -99,18 +101,18 @@ RSpec.describe ConfigurationImporter do
         expect(config).to be_a(Configuration)
       end
 
-      it 'persists the system chapter' do
-        expect(config.chapter('system')).to include('timezone' => 'Europe/Berlin')
+      it 'persists system settings' do
+        expect(config.system).to include('timezone' => 'Europe/Berlin')
       end
 
       it 'persists the inverter device' do
-        inverters = config.chapters_of_kind('inverter')
+        inverters = config.devices_of('inverter')
         expect(inverters.size).to eq(1)
         expect(inverters.first.data).to include('battery_vendor' => 'senec3')
       end
 
-      it 'persists the sensors chapter' do
-        expect(config.chapter('sensors')).to include('INFLUX_SENSOR_INVERTER_POWER' => 'SENEC:inverter_power')
+      it 'persists sensor settings' do
+        expect(config.sensors).to include('inverter_power' => 'SENEC:inverter_power')
       end
     end
   end
@@ -122,7 +124,7 @@ RSpec.describe ConfigurationImporter do
       subject(:config) { importer.import! }
 
       it 'still imports managed data' do
-        expect(config.chapter('system')).to include('timezone' => 'Europe/Berlin')
+        expect(config.system).to include('timezone' => 'Europe/Berlin')
       end
     end
   end
@@ -158,15 +160,15 @@ RSpec.describe ConfigurationImporter do
     describe '#import!' do
       subject(:config) { importer.import! }
 
-      it 'persists the reverse_proxy chapter' do
-        expect(config.chapter('reverse_proxy')).to include(
+      it 'persists reverse_proxy settings' do
+        expect(config.reverse_proxy).to include(
           'enabled' => true,
           'app_domain' => 'solar.example.com',
         )
       end
 
-      it 'persists the backup chapter' do
-        expect(config.chapter('backup')).to include(
+      it 'persists backup settings' do
+        expect(config.backup).to include(
           'enabled' => true,
           'aws_bucket' => 'my-backup-bucket',
         )

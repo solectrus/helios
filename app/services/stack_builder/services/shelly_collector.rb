@@ -1,11 +1,11 @@
 class StackBuilder
   module Services
     class ShellyCollector < Base
-      attr_reader :chapter
+      attr_reader :device
 
-      def initialize(configuration, chapter:)
+      def initialize(configuration, device:)
         super(configuration)
-        @chapter = chapter
+        @device = device
       end
 
       def service_name
@@ -13,7 +13,7 @@ class StackBuilder
       end
 
       def comment
-        "Shelly collector for #{chapter.name}"
+        "Shelly collector for #{device.data.name || device.name}"
       end
 
       def to_h
@@ -25,17 +25,23 @@ class StackBuilder
         }
       end
 
-      # Find all chapters that use Shelly as data source
-      def self.chapters_for(configuration)
-        configuration.chapters.select(&:shelly?)
+      # Find all devices that use Shelly as data source
+      def self.devices_for(configuration)
+        configuration.all_devices.select { |d| shelly?(d.data) }
+      end
+
+      def self.shelly?(data)
+        data.data_source == 'shelly' ||
+          data.wallbox_vendor == 'shelly' ||
+          data.heatpump_access == 'shelly'
       end
 
       private
 
       def shelly_environment
         env = {
-          'SHELLY_HOST' => chapter.data['shelly_host'],
-          'SHELLY_INTERVAL' => chapter.data['shelly_interval'] || '5',
+          'SHELLY_HOST' => device.data.shelly_host,
+          'SHELLY_INTERVAL' => device.data.shelly_interval || '5',
           'INFLUX_HOST' => 'influxdb',
           'INFLUX_TOKEN' => '${INFLUX_TOKEN}',
           'INFLUX_ORG' => '${INFLUX_ORG}',
@@ -43,14 +49,14 @@ class StackBuilder
           'INFLUX_MEASUREMENT' => measurement_name,
         }
 
-        password = chapter.data['shelly_password']
+        password = device.data.shelly_password
         env['SHELLY_PASSWORD'] = password if password.present?
 
         env
       end
 
       def identifier
-        chapter.data['identifier']
+        device.name
       end
 
       alias measurement_name identifier

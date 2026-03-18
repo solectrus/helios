@@ -17,7 +17,7 @@ de:
       title: "Konfiguration - Helios"
       configured: "Konfiguriert"
       pending: "Offen"
-    chapters:
+    settings:
       inverter:
         title: "Wechselrichter"
         description: "Konfiguration deines Wechselrichters"
@@ -51,7 +51,7 @@ de:
       sensors:
         title: "Sensor-Mapping"
         description: "Zuordnung der Sensoren zu InfluxDB-Feldern"
-      invalid_chapter: "Unbekanntes Kapitel"
+      invalid_setting: "Unbekannte Einstellung"
       add: "Hinzufügen"
       edit: "Bearbeiten"
       delete: "Löschen"

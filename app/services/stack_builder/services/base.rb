@@ -25,16 +25,16 @@ class StackBuilder
 
       attr_reader :configuration
 
-      def system_chapter
-        configuration.chapter('system')
+      def system_data
+        configuration.system
       end
 
-      def reverse_proxy_chapter
-        configuration.chapter('reverse_proxy')
+      def reverse_proxy_data
+        configuration.reverse_proxy
       end
 
-      def backup_chapter
-        configuration.chapter('backup')
+      def backup_data
+        configuration.backup
       end
 
       def healthcheck(*test_cmd)

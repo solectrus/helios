@@ -12,39 +12,39 @@
         <% if device? %>
           <%= link_to add_path,
                       class: "btn btn-ghost btn-sm btn-square",
-                      data: { turbo_frame: "chapter-modal-content" } do %>
+                      data: { turbo_frame: "setting-modal-content" } do %>
             <i class="fa-solid fa-plus"></i>
           <% end %>
         <% end %>
       </div>
 
-      <%# List of chapters or empty state %>
+      <%# List of devices or empty state %>
       <% if device? %>
-        <% if chapters.any? %>
+        <% if devices.any? %>
           <div class="divide-base-200 divide-y">
-            <% chapters.each do |chapter| %>
+            <% devices.each do |device| %>
               <div class="flex items-center justify-between py-2">
                 <div class="flex items-center gap-2">
-                  <% if chapter.completed? %>
+                  <% if device.data.present? %>
                     <i class="fa-solid fa-check text-success text-xs"></i>
                   <% else %>
                     <i class="fa-solid fa-circle text-base-content/20 text-xs"></i>
                   <% end %>
 
-                  <span class="font-medium"><%= chapter.name %></span>
+                  <span class="font-medium"><%= device.data.name || device.name %></span>
                 </div>
 
                 <div class="flex items-center gap-1">
-                  <%= link_to helpers.edit_configuration_chapter_path(chapter),
+                  <%= link_to helpers.edit_configuration_setting_path(setting: device.type, name: device.name),
                               class: "btn btn-ghost btn-sm btn-square",
-                              data: { turbo_frame: "chapter-modal-content" } do %>
+                              data: { turbo_frame: "setting-modal-content" } do %>
                     <i class="fa-solid fa-pen-to-square"></i>
                   <% end %>
 
-                  <%= button_to helpers.configuration_chapter_path(chapter),
+                  <%= button_to helpers.configuration_setting_path(setting: device.type, name: device.name),
                                 method: :delete,
                                 class: "btn btn-ghost btn-sm btn-square text-error",
-                                data: { turbo_confirm: t('configurations.chapters.delete_confirm') } do %>
+                                data: { turbo_confirm: t('configurations.settings.delete_confirm') } do %>
                     <i class="fa-solid fa-trash"></i>
                   <% end %>
                 </div>
@@ -52,7 +52,7 @@
             <% end %>
           </div>
         <% else %>
-          <p class="text-base-content/50 py-2 text-sm"><%= t('configurations.chapters.no_devices') %></p>
+          <p class="text-base-content/50 py-2 text-sm"><%= t('configurations.settings.no_devices') %></p>
         <% end %>
       <% else %>
         <%# Singleton %>
@@ -63,20 +63,20 @@
               <span class="text-base-content/70 text-sm"><%= t('configurations.show.configured') %></span>
             </div>
           <% else %>
-            <span class="text-base-content/50 text-sm"><%= t('configurations.chapters.not_configured') %></span>
+            <span class="text-base-content/50 text-sm"><%= t('configurations.settings.not_configured') %></span>
           <% end %>
 
-          <% if singleton_chapter %>
-            <%= link_to helpers.edit_configuration_chapter_path(singleton_chapter),
+          <% if singleton_configured? %>
+            <%= link_to helpers.edit_configuration_setting_path(setting:, name: setting),
                         class: "btn btn-ghost btn-sm btn-square",
-                        data: { turbo_frame: "chapter-modal-content" } do %>
+                        data: { turbo_frame: "setting-modal-content" } do %>
               <i class="fa-solid fa-pen-to-square"></i>
             <% end %>
           <% else %>
-            <%= button_to helpers.configuration_chapters_path,
+            <%= button_to helpers.configuration_settings_path,
                           class: "btn btn-ghost btn-sm btn-square",
-                          params: { kind: kind },
-                          data: { turbo_frame: "chapter-modal-content" } do %>
+                          params: { setting: setting },
+                          data: { turbo_frame: "setting-modal-content" } do %>
               <i class="fa-solid fa-pen-to-square"></i>
             <% end %>
           <% end %>

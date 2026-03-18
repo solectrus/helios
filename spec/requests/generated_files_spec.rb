@@ -1,15 +1,8 @@
 RSpec.describe 'GeneratedFiles', :with_admin do
-  let(:tmp_dir) { Rails.root.join('tmp/test_stack') }
-
   before do
-    FileUtils.mkdir_p(tmp_dir)
-    allow(Rails.configuration).to receive(:helios_stack_path).and_return(
-      tmp_dir.to_s,
-    )
+    with_config_yaml
     login
   end
-
-  after { FileUtils.rm_rf(tmp_dir) }
 
   describe 'GET /generated_files' do
     context 'with expert mode enabled' do

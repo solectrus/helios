@@ -1,7 +1,7 @@
 RSpec.describe 'Dashboard', :with_admin do
   before do
+    with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
     login
-    Configuration.current.complete_setup!
   end
 
   def mock_compose_services(*names)
@@ -71,9 +71,7 @@ RSpec.describe 'Dashboard', :with_admin do
     end
 
     context 'when setup not completed' do
-      before do
-        Configuration.current.update!(data: { 'setup_completed' => false })
-      end
+      before { with_config_yaml }
 
       it 'redirects to setup' do
         get root_path

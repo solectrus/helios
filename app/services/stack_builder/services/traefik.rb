@@ -10,12 +10,12 @@ class StackBuilder
       end
 
       def self.enabled?(configuration)
-        chapter = configuration.chapter('reverse_proxy')
-        chapter['enabled'] == true && chapter['app_domain'].present?
+        rp = configuration.reverse_proxy
+        rp.enabled == true && rp.app_domain.present?
       end
 
       def self.letsencrypt_email(configuration)
-        "webmaster@#{configuration.chapter('reverse_proxy')['app_domain']}"
+        "webmaster@#{configuration.reverse_proxy.app_domain}"
       end
 
       def self.data_directories

@@ -1,195 +1,228 @@
 RSpec.describe Configuration do
-  describe 'associations' do
-    it { is_expected.to have_many(:chapters).dependent(:destroy) }
-  end
+  before { with_config_yaml }
 
   describe '.current' do
-    it 'returns singleton instance' do
-      config1 = described_class.current
-      config2 = described_class.current
-      expect(config1.id).to eq(config2.id)
+    it 'returns a Configuration instance' do
+      config = described_class.current
+      expect(config).to be_a(described_class)
     end
 
-    it 'creates with default data if none exists' do
+    it 'reads from config.yaml if it exists' do
+      with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
       config = described_class.current
-      expect(config.data).to include('setup_completed')
-      expect(config.setup_completed?).to be false
-    end
-  end
 
-  describe '#chapter' do
-    it 'returns empty hash for non-existent chapter' do
-      config = described_class.current
-      expect(config.chapter('system')).to eq({})
+      expect(config.system).to eq({ 'timezone' => 'Europe/Berlin' })
     end
 
-    it 'returns chapter data for singleton' do
+    it 'returns empty config when file does not exist' do
       config = described_class.current
-      config.update_chapter('system', { 'timezone' => 'Europe/Berlin' })
-
-      expect(config.chapter('system')).to eq(
-        { 'timezone' => 'Europe/Berlin' },
-      )
-    end
-
-    it 'returns chapter data for device with name' do
-      config = described_class.current
-      config.update_chapter(
-        'inverter',
-        { 'data_source' => 'senec_local' },
-        name: 'Dach Süd',
-      )
-
-      expect(config.chapter('inverter', 'Dach Süd')).to eq(
-        { 'data_source' => 'senec_local' },
-      )
+      expect(config.system).to eq({})
     end
   end
 
-  describe '#update_chapter' do
-    it 'creates a new chapter if it does not exist' do
+  describe '.device?' do
+    it 'returns true for device types' do
+      expect(described_class.device?('inverter')).to be true
+      expect(described_class.device?('battery')).to be true
+    end
+
+    it 'returns false for singleton types' do
+      expect(described_class.device?('system')).to be false
+    end
+  end
+
+  describe '.singleton?' do
+    it 'returns true for singleton types' do
+      expect(described_class.singleton?('system')).to be true
+      expect(described_class.singleton?('forecast')).to be true
+    end
+
+    it 'returns false for device types' do
+      expect(described_class.singleton?('inverter')).to be false
+    end
+  end
+
+  describe '.valid?' do
+    it 'returns true for valid settings' do
+      expect(described_class.valid?('inverter')).to be true
+      expect(described_class.valid?('system')).to be true
+    end
+
+    it 'returns false for invalid settings' do
+      expect(described_class.valid?('unknown')).to be false
+    end
+  end
+
+  describe 'singleton accessors' do
+    it 'returns empty hash for non-existent singleton' do
       config = described_class.current
+      expect(config.system).to eq({})
+    end
 
-      expect do
-        config.update_chapter(
-          'inverter',
-          { 'data_source' => 'senec_local' },
-          name: 'Dach Süd',
-        )
-      end.to change(Chapter, :count).by(1)
+    it 'returns data for singleton' do
+      config = described_class.current
+      config.update('system', { 'timezone' => 'Europe/Berlin' })
 
-      expect(config.chapter('inverter', 'Dach Süd')).to eq(
+      expect(config.system).to eq({ 'timezone' => 'Europe/Berlin' })
+    end
+  end
+
+  describe 'device accessors' do
+    it 'returns data for device with name' do
+      config = described_class.current
+      config.add('inverter', 'Dach Süd', { 'data_source' => 'senec_local' })
+
+      expect(config.inverter('Dach Süd')).to eq(
         { 'data_source' => 'senec_local' },
       )
     end
 
-    it 'updates existing chapter data' do
+    it 'returns empty hash for non-existent device name' do
       config = described_class.current
-      config.update_chapter('system', { 'timezone' => 'UTC' })
-      config.update_chapter(
-        'system',
+      expect(config.inverter('missing')).to eq({})
+    end
+  end
+
+  describe '#setting_data' do
+    it 'returns data for singleton' do
+      config = described_class.current
+      config.update('system', { 'timezone' => 'Europe/Berlin' })
+
+      expect(config.setting_data('system')).to eq({ 'timezone' => 'Europe/Berlin' })
+    end
+
+    it 'returns data for device with name' do
+      config = described_class.current
+      config.add('inverter', 'Dach Süd', { 'data_source' => 'senec_local' })
+
+      expect(config.setting_data('inverter', 'Dach Süd')).to eq(
+        { 'data_source' => 'senec_local' },
+      )
+    end
+  end
+
+  describe '#update' do
+    it 'creates a new singleton entry' do
+      config = described_class.current
+      config.update('system', { 'timezone' => 'Europe/Berlin' })
+
+      expect(config.system).to eq({ 'timezone' => 'Europe/Berlin' })
+    end
+
+    it 'updates existing singleton data' do
+      config = described_class.current
+      config.update('system', { 'timezone' => 'UTC' })
+      config.update('system', { 'timezone' => 'Europe/Berlin', 'mqtt_host' => '192.168.1.44' })
+
+      expect(config.system).to eq(
         { 'timezone' => 'Europe/Berlin', 'mqtt_host' => '192.168.1.44' },
       )
+    end
 
-      expect(config.chapter('system')).to eq(
-        { 'timezone' => 'Europe/Berlin', 'mqtt_host' => '192.168.1.44' },
+    it 'creates a device entry with name' do
+      config = described_class.current
+      config.update('inverter', { 'data_source' => 'senec_local' }, name: 'Dach Süd')
+
+      expect(config.inverter('Dach Süd')).to eq(
+        { 'data_source' => 'senec_local' },
       )
     end
 
-    it 'defaults name to kind for singletons' do
+    it 'persists to YAML file' do
       config = described_class.current
-      config.update_chapter('system', { 'timezone' => 'UTC' })
+      config.update('system', { 'timezone' => 'UTC' })
 
-      chapter = config.chapters.find_by(kind: 'system')
-      expect(chapter.name).to eq('system')
-    end
-
-    it 'does not create duplicate chapters' do
-      config = described_class.current
-      config.update_chapter('system', { 'v1' => true })
-      config.update_chapter('system', { 'v2' => true })
-
-      expect(config.chapters.where(kind: 'system').count).to eq(1)
+      reloaded = described_class.current
+      expect(reloaded.system).to eq({ 'timezone' => 'UTC' })
     end
   end
 
-  describe '#chapter_completed?' do
-    it 'returns false for non-existent chapter' do
+  describe '#configured?' do
+    it 'returns false for non-existent setting' do
       config = described_class.current
-      expect(config.chapter_completed?('system')).to be false
+      expect(config.configured?('system')).to be false
     end
 
-    it 'returns false for chapter with empty data' do
+    it 'returns true for setting with data' do
       config = described_class.current
-      config.chapters.create!(kind: 'system', name: 'system', data: {})
+      config.update('system', { 'timezone' => 'UTC' })
 
-      expect(config.chapter_completed?('system')).to be false
-    end
-
-    it 'returns true for chapter with data' do
-      config = described_class.current
-      config.update_chapter('system', { 'timezone' => 'UTC' })
-
-      expect(config.chapter_completed?('system')).to be true
+      expect(config.configured?('system')).to be true
     end
   end
 
-  describe '#chapters_of_kind' do
-    it 'returns all chapters of a given kind' do
+  describe '#devices_of' do
+    it 'returns all devices of a given type' do
       config = described_class.current
-      config.add_device('inverter', 'Dach Süd', { 'data_source' => 'senec_local' })
-      config.add_device('inverter', 'BKW', { 'data_source' => 'mqtt' })
-      config.add_device('wallbox', 'Garage')
+      config.add('inverter', 'Dach Süd', { 'data_source' => 'senec_local' })
+      config.add('inverter', 'BKW', { 'data_source' => 'mqtt' })
+      config.add('wallbox', 'Garage')
 
-      expect(config.chapters_of_kind('inverter').count).to eq(2)
+      devices = config.devices_of('inverter')
+      expect(devices.size).to eq(2)
+      expect(devices.map(&:name)).to contain_exactly('Dach Süd', 'BKW')
+    end
+
+    it 'returns empty array for no devices' do
+      config = described_class.current
+      expect(config.devices_of('inverter')).to eq([])
     end
   end
 
-  describe '#add_device' do
-    it 'creates a device chapter' do
+  describe '#add' do
+    it 'creates a device entry' do
       config = described_class.current
+      config.add('inverter', 'Dach Süd', { 'data_source' => 'senec_local' })
 
-      expect do
-        config.add_device('inverter', 'Dach Süd', { 'data_source' => 'senec_local' })
-      end.to change(Chapter, :count).by(1)
-
-      chapter = config.chapters.find_by(kind: 'inverter', name: 'Dach Süd')
-      expect(chapter.data).to eq({ 'data_source' => 'senec_local' })
+      expect(config.inverter('Dach Süd')).to eq(
+        { 'data_source' => 'senec_local' },
+      )
     end
 
-    it 'raises error for non-device kinds' do
+    it 'raises error for non-device types' do
       config = described_class.current
 
       expect do
-        config.add_device('system', 'test')
-      end.to raise_error(ArgumentError, /not a device kind/)
+        config.add('system', 'test')
+      end.to raise_error(ArgumentError, /not a device/)
     end
   end
 
-  describe '#remove_device' do
-    it 'removes a device chapter' do
+  describe '#remove' do
+    it 'removes a device entry' do
       config = described_class.current
-      config.add_device('inverter', 'Dach Süd')
+      config.add('inverter', 'Dach Süd')
+      config.remove('inverter', 'Dach Süd')
 
-      expect do
-        config.remove_device('inverter', 'Dach Süd')
-      end.to change(Chapter, :count).by(-1)
-    end
-
-    it 'raises error if device not found' do
-      config = described_class.current
-
-      expect do
-        config.remove_device('inverter', 'nonexistent')
-      end.to raise_error(ActiveRecord::RecordNotFound)
+      expect(config.inverter('Dach Süd')).to eq({})
     end
   end
 
   describe '#mqtt_required?' do
     it 'returns false when no devices use MQTT' do
       config = described_class.current
-      config.add_device('inverter', 'PV', { 'data_source' => 'senec_local' })
+      config.add('inverter', 'PV', { 'data_source' => 'senec_local' })
 
       expect(config.mqtt_required?).to be false
     end
 
     it 'returns true when a device uses MQTT as data_source' do
       config = described_class.current
-      config.add_device('inverter', 'PV', { 'data_source' => 'mqtt' })
+      config.add('inverter', 'PV', { 'data_source' => 'mqtt' })
 
       expect(config.mqtt_required?).to be true
     end
 
     it 'returns true when heatpump uses MQTT as power_source' do
       config = described_class.current
-      config.add_device('heatpump', 'HP', { 'power_source' => 'mqtt' })
+      config.add('heatpump', 'HP', { 'power_source' => 'mqtt' })
 
       expect(config.mqtt_required?).to be true
     end
 
     it 'returns true when heatpump uses MQTT as details_source' do
       config = described_class.current
-      config.add_device('heatpump', 'HP', { 'details_source' => 'mqtt' })
+      config.add('heatpump', 'HP', { 'details_source' => 'mqtt' })
 
       expect(config.mqtt_required?).to be true
     end
@@ -198,22 +231,22 @@ RSpec.describe Configuration do
   describe '#ingest_required?' do
     it 'returns false with single inverter that knows house power' do
       config = described_class.current
-      config.add_device('inverter', 'PV', { 'house_power_known' => true })
+      config.add('inverter', 'PV', { 'house_power_known' => true })
 
       expect(config.ingest_required?).to be false
     end
 
     it 'returns true with single inverter that does not know house power' do
       config = described_class.current
-      config.add_device('inverter', 'PV', { 'house_power_known' => false })
+      config.add('inverter', 'PV', { 'house_power_known' => false })
 
       expect(config.ingest_required?).to be true
     end
 
     it 'returns true with multiple inverters' do
       config = described_class.current
-      config.add_device('inverter', 'Dach', { 'house_power_known' => true })
-      config.add_device('inverter', 'BKW', { 'house_power_known' => true })
+      config.add('inverter', 'Dach', { 'house_power_known' => true })
+      config.add('inverter', 'BKW', { 'house_power_known' => true })
 
       expect(config.ingest_required?).to be true
     end
@@ -228,11 +261,11 @@ RSpec.describe Configuration do
   describe '#senec_hosts' do
     it 'returns deduplicated SENEC hosts' do
       config = described_class.current
-      config.add_device(
+      config.add(
         'inverter', 'PV',
         { 'data_source' => 'senec_local', 'senec_host' => '192.168.1.42' }
       )
-      config.add_device(
+      config.add(
         'battery', 'Akku',
         { 'data_source' => 'senec_local', 'senec_host' => '192.168.1.42' }
       )
@@ -242,7 +275,7 @@ RSpec.describe Configuration do
 
     it 'returns empty array when no SENEC devices' do
       config = described_class.current
-      config.add_device('inverter', 'PV', { 'data_source' => 'mqtt' })
+      config.add('inverter', 'PV', { 'data_source' => 'mqtt' })
 
       expect(config.senec_hosts).to eq([])
     end
@@ -251,7 +284,7 @@ RSpec.describe Configuration do
   describe '#effective_sensor_mappings' do
     it 'merges computed mappings with overrides' do
       config = described_class.current
-      config.update_chapter(
+      config.update(
         'sensors',
         { 'inverter_power' => 'custom:power' },
       )
@@ -262,46 +295,18 @@ RSpec.describe Configuration do
     end
   end
 
-  describe '#installation_date' do
-    it 'gets and sets installation date' do
-      config = described_class.current
-      config.installation_date = '2024-01-15'
-      config.reload
-
-      expect(config.installation_date).to eq('2024-01-15')
-    end
-
-    it 'returns nil when not set' do
-      config = described_class.current
-      expect(config.installation_date).to be_nil
-    end
-  end
-
-  describe '#timezone' do
-    it 'gets and sets timezone' do
-      config = described_class.current
-      config.timezone = 'Europe/Berlin'
-      config.reload
-
-      expect(config.timezone).to eq('Europe/Berlin')
-    end
-
-    it 'returns nil when not set' do
-      config = described_class.current
-      expect(config.timezone).to be_nil
-    end
-  end
-
   describe '#setup_completed?' do
-    it 'returns false by default' do
+    it 'returns false when no config.yaml exists' do
       config = described_class.current
       expect(config.setup_completed?).to be false
     end
 
-    it 'returns true after complete_setup!' do
+    it 'returns true when system timezone is set' do
       config = described_class.current
-      config.complete_setup!
-      expect(config.setup_completed?).to be true
+      config.update('system', { 'timezone' => 'Europe/Berlin' })
+
+      reloaded = described_class.current
+      expect(reloaded.setup_completed?).to be true
     end
   end
 end

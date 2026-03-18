@@ -9,8 +9,7 @@ module SensorsHelper
     [365 * 86_400, :months, 30 * 86_400],
   ].freeze
 
-  def sensor_value_cell(var_name, reading)
-    name = var_name.delete_prefix('INFLUX_SENSOR_')
+  def sensor_value_cell(name, reading)
     value = reading&.dig(:value)
     time = reading&.dig(:time)
     unit = SensorRegistry.unit_for(name)
@@ -25,12 +24,11 @@ module SensorsHelper
     end
   end
 
-  def sensor_time_cell(var_name, reading)
-    name = var_name.delete_prefix('INFLUX_SENSOR_')
+  def sensor_time_cell(name, reading)
     time = reading&.dig(:time)
     dom_id = "sensor-time-#{name.parameterize}"
 
-    content_tag(:td, sensor_formatted_time(time), id: dom_id, class: 'text-base-content/50 text-sm')
+    content_tag(:td, sensor_formatted_time(time), id: dom_id, class: 'text-base-content/50 text-sm whitespace-nowrap')
   end
 
   def sensor_formatted_value(value)
