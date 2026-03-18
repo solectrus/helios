@@ -1,0 +1,73 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Reverse Proxy",
+    "default": "Reverse Proxy"
+  },
+  "description": {
+    "de": "Domain & HTTPS mit Traefik",
+    "default": "Domain & HTTPS with Traefik"
+  },
+  "pages": [
+    {
+      "name": "p_reverse_proxy",
+      "title": {
+        "de": "Domain & HTTPS",
+        "default": "Domain & HTTPS"
+      },
+      "elements": [
+        {
+          "type": "boolean",
+          "name": "enabled",
+          "title": {
+            "de": "Eigene Domain mit HTTPS nutzen?",
+            "default": "Use custom domain with HTTPS?"
+          },
+          "description": {
+            "de": "Aktiviert Traefik als Reverse Proxy mit automatischem Let's Encrypt-Zertifikat",
+            "default": "Enables Traefik as reverse proxy with automatic Let's Encrypt certificate"
+          },
+          "isRequired": true,
+          "defaultValue": false
+        }
+      ]
+    },
+    {
+      "name": "p_domain",
+      "visibleIf": "{enabled} = true",
+      "title": {
+        "de": "Domain-Konfiguration",
+        "default": "Domain configuration"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "app_domain",
+          "title": {
+            "de": "Domain oder Subdomain",
+            "default": "Domain or subdomain"
+          },
+          "description": {
+            "de": "z.B. solectrus.meine-domain.de — muss auf diesen Server zeigen",
+            "default": "e.g. solectrus.my-domain.com — must point to this server"
+          },
+          "isRequired": true
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  },
+  "showCompletePage": false
+}

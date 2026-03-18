@@ -3,7 +3,7 @@ class Chapter < ApplicationRecord
   DEVICE_KINDS = %w[inverter battery wallbox car heatpump consumer].freeze
 
   # Singletons exist at most once per configuration
-  SINGLETON_KINDS = %w[forecast system backup sensors].freeze
+  SINGLETON_KINDS = %w[forecast system reverse_proxy backup sensors].freeze
 
   # All valid chapter kinds (used for DB validation)
   KINDS = (DEVICE_KINDS + SINGLETON_KINDS).freeze

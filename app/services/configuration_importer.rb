@@ -12,12 +12,8 @@ class ConfigurationImporter
   def import!
     config = Configuration.current
 
-    config.update_chapter('system', result[:system])
-    config.update_chapter('sensors', result[:sensors])
-
-    result[:devices].each do |device|
-      config.add_device(device[:kind], device[:name], device[:data])
-    end
+    persist_chapters!(config)
+    persist_devices!(config)
 
     config
   end
@@ -28,12 +24,27 @@ class ConfigurationImporter
     chapters = {
       system: system_chapter_data,
       sensors: sensors_chapter_data,
+      reverse_proxy: reverse_proxy_chapter_data,
+      backup: backup_chapter_data,
       devices: [],
     }
 
     chapters[:devices] << senec_device_data if senec_collector?
 
     chapters
+  end
+
+  def persist_chapters!(config)
+    config.update_chapter('system', result[:system])
+    config.update_chapter('sensors', result[:sensors])
+    config.update_chapter('reverse_proxy', result[:reverse_proxy]) if result[:reverse_proxy]
+    config.update_chapter('backup', result[:backup]) if result[:backup]
+  end
+
+  def persist_devices!(config)
+    result[:devices].each do |device|
+      config.add_device(device[:kind], device[:name], device[:data])
+    end
   end
 
   # Environment of a specific service
@@ -115,5 +126,42 @@ class ConfigurationImporter
     dashboard_env
       .select { |k, _| k.start_with?('INFLUX_SENSOR_') }
       .compact_blank
+  end
+
+  def reverse_proxy_chapter_data
+    return unless @reader.services.key?('traefik')
+
+    domain = extract_domain_from_dashboard_labels
+    return unless domain
+
+    { 'enabled' => true, 'app_domain' => domain }
+  end
+
+  def extract_domain_from_dashboard_labels
+    rule_value = find_traefik_rule_label
+    match = rule_value&.match(/Host\(`([^`]+)`\)/)
+    match && match[1]
+  end
+
+  def find_traefik_rule_label
+    labels = @reader.service('dashboard')&.dig('labels') || {}
+
+    if labels.is_a?(Hash)
+      labels.find { |k, _| k.include?('routers.dashboard.rule') }&.last
+    else
+      labels.find { |v| v.to_s.include?('routers.dashboard.rule') }
+    end
+  end
+
+  def backup_chapter_data
+    return unless @reader.services.key?('postgresql-backup')
+
+    {
+      'enabled' => true,
+      'aws_access_key_id' => @reader.raw_env['AWS_ACCESS_KEY_ID'],
+      'aws_secret_access_key' => @reader.raw_env['AWS_SECRET_ACCESS_KEY'],
+      'aws_region' => @reader.raw_env['AWS_REGION'],
+      'aws_bucket' => @reader.raw_env['AWS_BUCKET'],
+    }.compact
   end
 end

@@ -2,25 +2,43 @@ class StackBuilder
   class EnvContent
     SEPARATOR = "# #{'=' * 60}".freeze
 
-    def initialize(system_chapter, host_stack_path: nil)
-      @system_chapter = system_chapter
-      @host_stack_path = host_stack_path
+    def initialize(configuration)
+      @configuration = configuration
     end
 
     def to_s
-      [
+      sections = [
         *file_header_lines,
         *general_section_lines,
         *security_section_lines,
         *postgresql_section_lines,
         *influxdb_section_lines,
         *helios_section_lines,
-      ].join("\n")
+      ]
+      sections.concat(reverse_proxy_section_lines) if Services::Traefik.enabled?(configuration)
+      sections.concat(backup_section_lines) if Services::PostgresqlBackup.enabled?(configuration)
+      sections.join("\n")
     end
 
     private
 
-    attr_reader :system_chapter, :host_stack_path
+    attr_reader :configuration
+
+    def system_chapter
+      configuration.chapter('system')
+    end
+
+    def reverse_proxy_chapter
+      configuration.chapter('reverse_proxy')
+    end
+
+    def backup_chapter
+      configuration.chapter('backup')
+    end
+
+    def host_stack_path
+      Rails.configuration.helios_host_stack_path
+    end
 
     def file_header_lines
       [
@@ -83,6 +101,30 @@ class StackBuilder
                'Path on the Docker host where stack files are stored'),
         *entry('HELIOS_SECRET_KEY_BASE', system_chapter['helios_secret_key_base'],
                'Helios session secret key — auto-generated, do not change'),
+      ]
+    end
+
+    def reverse_proxy_section_lines
+      [
+        '# --- Reverse Proxy (Traefik) ---',
+        *entry('APP_DOMAIN', reverse_proxy_chapter['app_domain'],
+               'Domain for HTTPS access via Traefik'),
+        *entry('LETSENCRYPT_EMAIL', Services::Traefik.letsencrypt_email(configuration),
+               "Email for Let's Encrypt certificate notifications"),
+      ]
+    end
+
+    def backup_section_lines
+      [
+        '# --- S3 Backup ---',
+        *entry('AWS_ACCESS_KEY_ID', backup_chapter['aws_access_key_id'],
+               'AWS access key for S3 backup'),
+        *entry('AWS_SECRET_ACCESS_KEY', backup_chapter['aws_secret_access_key'],
+               'AWS secret key — keep this confidential!'),
+        *entry('AWS_REGION', backup_chapter['aws_region'],
+               'AWS region for S3 bucket'),
+        *entry('AWS_BUCKET', backup_chapter['aws_bucket'],
+               'S3 bucket name for backups'),
       ]
     end
 

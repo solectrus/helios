@@ -1,0 +1,41 @@
+class StackBuilder
+  module Services
+    class InfluxdbBackup < Base
+      def self.service_name
+        'influxdb-backup'
+      end
+
+      def self.comment
+        'Automated InfluxDB backup to S3'
+      end
+
+      def self.enabled?(configuration)
+        configuration.chapter('backup')['enabled'] == true
+      end
+
+      def to_h
+        {
+          image: system_chapter['influxdb_backup_image'] || 'ghcr.io/solectrus/influxdb2-s3-backup:latest',
+          environment: influxdb_backup_environment,
+          depends_on: healthy_depends_on(%i[influxdb]),
+          restart: 'unless-stopped',
+        }
+      end
+
+      private
+
+      def influxdb_backup_environment
+        {
+          'INFLUXDB_HOST' => 'influxdb',
+          'INFLUXDB_ORG' => '${INFLUX_ORG}',
+          'INFLUXDB_TOKEN' => '${INFLUX_TOKEN}',
+          'AWS_ACCESS_KEY_ID' => '${AWS_ACCESS_KEY_ID}',
+          'AWS_SECRET_ACCESS_KEY' => '${AWS_SECRET_ACCESS_KEY}',
+          'S3_BUCKET' => '${AWS_BUCKET}',
+          'S3_PREFIX' => 'influxdb_backup',
+          'CRON' => '0 0 * * 0',
+        }
+      end
+    end
+  end
+end

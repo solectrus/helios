@@ -177,6 +177,151 @@ RSpec.describe StackBuilder do
     end
   end
 
+  describe 'with reverse_proxy chapter' do
+    before do
+      configuration.update_chapter('reverse_proxy', {
+                                     'enabled' => true,
+                                     'app_domain' => 'solar.example.com',
+                                   })
+      described_class.new(configuration).write!
+    end
+
+    it 'includes traefik service in compose.yaml' do
+      compose = Compose.load
+      expect(compose.services.names).to include('traefik')
+    end
+
+    it 'configures traefik with correct image' do
+      compose = Compose.load
+      traefik = compose.services.find('traefik')
+      expect(traefik.image).to eq('traefik:v3')
+    end
+
+    it 'removes dashboard ports' do
+      compose = Compose.load
+      dashboard = compose.services.find('dashboard')
+      expect(dashboard.ports).to be_blank
+    end
+
+    it 'adds traefik labels to dashboard' do
+      compose = Compose.load
+      dashboard = compose.services.find('dashboard')
+      labels = dashboard.config['labels']
+      expect(labels).to include('traefik.enable=true')
+      expect(labels).to include(
+        'traefik.http.routers.dashboard.rule=Host(`solar.example.com`)',
+      )
+    end
+
+    it 'sets FORCE_SSL on dashboard' do
+      compose = Compose.load
+      dashboard = compose.services.find('dashboard')
+      expect(dashboard.environment).to include('FORCE_SSL' => 'true')
+    end
+
+    it 'includes APP_DOMAIN in .env' do
+      env = Env.load
+      expect(env['APP_DOMAIN']).to eq('solar.example.com')
+    end
+
+    it 'includes LETSENCRYPT_EMAIL in .env' do
+      env = Env.load
+      expect(env['LETSENCRYPT_EMAIL']).to eq('webmaster@solar.example.com')
+    end
+
+    it 'creates traefik data directory' do
+      expect(Dir.exist?(tmp_dir.join('traefik'))).to be true
+    end
+  end
+
+  describe 'without reverse_proxy chapter' do
+    before { described_class.new(configuration).write! }
+
+    it 'does not include traefik service' do
+      compose = Compose.load
+      expect(compose.services.names).not_to include('traefik')
+    end
+
+    it 'includes dashboard ports' do
+      compose = Compose.load
+      dashboard = compose.services.find('dashboard')
+      expect(dashboard.ports).to include('3000:3000')
+    end
+
+    it 'does not include APP_DOMAIN in .env' do
+      content = File.read(env_path)
+      expect(content).not_to include('APP_DOMAIN')
+    end
+  end
+
+  describe 'with backup chapter' do
+    before do
+      configuration.update_chapter('backup', {
+                                     'enabled' => true,
+                                     'aws_access_key_id' => 'AKIAEXAMPLE',
+                                     'aws_secret_access_key' => 'secret123',
+                                     'aws_region' => 'eu-central-1',
+                                     'aws_bucket' => 'my-bucket',
+                                   })
+      described_class.new(configuration).write!
+    end
+
+    it 'includes postgresql-backup service' do
+      compose = Compose.load
+      expect(compose.services.names).to include('postgresql-backup')
+    end
+
+    it 'includes influxdb-backup service' do
+      compose = Compose.load
+      expect(compose.services.names).to include('influxdb-backup')
+    end
+
+    it 'uses unless-stopped restart policies for backup services' do
+      compose = Compose.load
+
+      expect(compose.services.find('postgresql-backup').restart).to eq('unless-stopped')
+      expect(compose.services.find('influxdb-backup').restart).to eq('unless-stopped')
+    end
+
+    it 'configures influxdb-backup with required environment' do
+      compose = Compose.load
+      influxdb_backup = compose.services.find('influxdb-backup')
+
+      expect(influxdb_backup.environment).to include(
+        'INFLUXDB_HOST' => 'influxdb',
+        'INFLUXDB_ORG' => '${INFLUX_ORG}',
+        'INFLUXDB_TOKEN' => '${INFLUX_TOKEN}',
+        'S3_BUCKET' => '${AWS_BUCKET}',
+        'S3_PREFIX' => 'influxdb_backup',
+        'CRON' => '0 0 * * 0',
+      )
+      expect(influxdb_backup.environment).not_to include('AWS_REGION' => '${AWS_REGION}')
+      expect(influxdb_backup.environment).not_to include('AWS_BUCKET' => '${AWS_BUCKET}')
+    end
+
+    it 'includes AWS credentials in .env' do
+      env = Env.load
+      expect(env['AWS_ACCESS_KEY_ID']).to eq('AKIAEXAMPLE')
+      expect(env['AWS_SECRET_ACCESS_KEY']).to eq('secret123')
+      expect(env['AWS_REGION']).to eq('eu-central-1')
+      expect(env['AWS_BUCKET']).to eq('my-bucket')
+    end
+  end
+
+  describe 'without backup chapter' do
+    before { described_class.new(configuration).write! }
+
+    it 'does not include backup services' do
+      compose = Compose.load
+      expect(compose.services.names).not_to include('postgresql-backup', 'influxdb-backup')
+    end
+
+    it 'does not include AWS credentials in .env' do
+      content = File.read(env_path)
+      expect(content).not_to include('AWS_ACCESS_KEY_ID')
+    end
+  end
+
   describe 'secret persistence' do
     it 'persists generated secrets to the system chapter in SQLite' do
       described_class.new(configuration).write!

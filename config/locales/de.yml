@@ -41,6 +41,9 @@ de:
       system:
         title: "System"
         description: "Grundeinstellungen für SOLECTRUS"
+      reverse_proxy:
+        title: "Reverse Proxy"
+        description: "Domain & HTTPS mit Traefik"
       backup:
         title: "Backup"
         description: "Konfiguration der S3-Datensicherung"

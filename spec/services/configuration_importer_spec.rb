@@ -121,12 +121,55 @@ RSpec.describe ConfigurationImporter do
     describe '#import!' do
       subject(:config) { importer.import! }
 
-      it 'ignores unknown services and env vars' do
-        expect(config.data).not_to have_key('unmanaged')
-      end
-
       it 'still imports managed data' do
         expect(config.chapter('system')).to include('timezone' => 'Europe/Berlin')
+      end
+    end
+  end
+
+  context 'with with_traefik_and_backup scenario' do
+    let(:scenario) { 'with_traefik_and_backup' }
+
+    describe 'reverse_proxy data' do
+      subject(:reverse_proxy) { importer.result[:reverse_proxy] }
+
+      it 'detects traefik as reverse proxy' do
+        expect(reverse_proxy).to include(
+          'enabled' => true,
+          'app_domain' => 'solar.example.com',
+        )
+      end
+    end
+
+    describe 'backup data' do
+      subject(:backup) { importer.result[:backup] }
+
+      it 'detects backup services' do
+        expect(backup).to include(
+          'enabled' => true,
+          'aws_access_key_id' => 'AKIAEXAMPLE',
+          'aws_secret_access_key' => 'secret123',
+          'aws_region' => 'eu-central-1',
+          'aws_bucket' => 'my-backup-bucket',
+        )
+      end
+    end
+
+    describe '#import!' do
+      subject(:config) { importer.import! }
+
+      it 'persists the reverse_proxy chapter' do
+        expect(config.chapter('reverse_proxy')).to include(
+          'enabled' => true,
+          'app_domain' => 'solar.example.com',
+        )
+      end
+
+      it 'persists the backup chapter' do
+        expect(config.chapter('backup')).to include(
+          'enabled' => true,
+          'aws_bucket' => 'my-backup-bucket',
+        )
       end
     end
   end

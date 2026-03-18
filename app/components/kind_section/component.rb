@@ -9,6 +9,7 @@ module KindSection
       'consumer' => 'fa-plug',
       'forecast' => 'fa-cloud-sun',
       'system' => 'fa-gear',
+      'reverse_proxy' => 'fa-shield-halved',
       'backup' => 'fa-cloud-arrow-up',
       'sensors' => 'fa-gauge',
     }.freeze

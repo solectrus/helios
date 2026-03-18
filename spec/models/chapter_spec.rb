@@ -10,7 +10,7 @@ RSpec.describe Chapter do
       expect(described_class::KINDS).to eq(
         %w[
           inverter battery wallbox car heatpump consumer
-          forecast system backup sensors
+          forecast system reverse_proxy backup sensors
         ],
       )
     end
@@ -27,7 +27,7 @@ RSpec.describe Chapter do
   describe 'SINGLETON_KINDS constant' do
     it 'contains all singleton kinds' do
       expect(described_class::SINGLETON_KINDS).to eq(
-        %w[forecast system backup sensors],
+        %w[forecast system reverse_proxy backup sensors],
       )
     end
   end
