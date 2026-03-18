@@ -39,6 +39,7 @@ en:
     component:
       services: "Docker Services"
       configuration: "Configuration"
+      sensors: "Sensors"
       generated_files: "Generated Files"
 
   configurations:
@@ -91,6 +92,62 @@ en:
       configure: "Configure"
       not_configured: "Not configured yet"
       no_devices: "No devices added yet"
+
+  sensors:
+    show:
+      title: "Sensors - Helios"
+
+  sensor_table:
+    component:
+      sensor: "Sensor"
+      measurement: "Measurement"
+      field: "Field"
+      value: "Current Value"
+      timestamp: "Last Value"
+      count: "Count"
+      span: "Time Span"
+      influxdb_not_running: "InfluxDB is not running. Sensor values cannot be queried."
+      influxdb_error: "InfluxDB error: %{message}"
+      time_ago:
+        seconds:
+          one: "1 second ago"
+          other: "%{count} seconds ago"
+        minutes:
+          one: "1 minute ago"
+          other: "%{count} minutes ago"
+        hours:
+          one: "1 hour ago"
+          other: "%{count} hours ago"
+        days:
+          one: "1 day ago"
+          other: "%{count} days ago"
+        months:
+          one: "1 month ago"
+          other: "%{count} months ago"
+        years:
+          one: "1 year ago"
+          other: "%{count} years ago"
+      duration:
+        seconds:
+          one: "1 second"
+          other: "%{count} seconds"
+        minutes:
+          one: "1 minute"
+          other: "%{count} minutes"
+        hours:
+          one: "1 hour"
+          other: "%{count} hours"
+        days:
+          one: "1 day"
+          other: "%{count} days"
+        months:
+          one: "1 month"
+          other: "%{count} months"
+        years:
+          one: "1 year"
+          other: "%{count} years"
+      unknown_device: "Other"
+      no_sensors: "No sensors configured yet. Add sensor mappings in the Configuration tab."
 
   generated_files:
     show:

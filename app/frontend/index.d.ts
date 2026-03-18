@@ -17,6 +17,7 @@ declare module '@hotwired/turbo' {
   }
 
   export function visit(url: string, options?): void;
+  export function renderStreamMessage(html: string): void;
 
   export const StreamActions: {
     [key: string]: (this: Element) => void;

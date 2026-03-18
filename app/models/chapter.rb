@@ -41,4 +41,10 @@ class Chapter < ApplicationRecord
   def device?
     kind.in?(DEVICE_KINDS)
   end
+
+  def shelly?
+    data['data_source'] == 'shelly' ||
+      data['wallbox_vendor'] == 'shelly' ||
+      data['heatpump_access'] == 'shelly'
+  end
 end

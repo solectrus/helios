@@ -10,6 +10,7 @@ de:
     component:
       services: "Docker-Services"
       configuration: "Konfiguration"
+      sensors: "Sensoren"
 
   configurations:
     show:
@@ -61,3 +62,59 @@ de:
       configure: "Konfigurieren"
       not_configured: "Noch nicht konfiguriert"
       no_devices: "Noch keine Geräte angelegt"
+
+  sensors:
+    show:
+      title: "Sensoren - Helios"
+
+  sensor_table:
+    component:
+      sensor: "Sensor"
+      measurement: "Measurement"
+      field: "Field"
+      value: "Aktueller Wert"
+      timestamp: "Letzter Wert"
+      count: "Anzahl"
+      span: "Zeitspanne"
+      influxdb_not_running: "InfluxDB läuft nicht. Sensorwerte können nicht abgefragt werden."
+      influxdb_error: "InfluxDB-Fehler: %{message}"
+      time_ago:
+        seconds:
+          one: "vor 1 Sekunde"
+          other: "vor %{count} Sekunden"
+        minutes:
+          one: "vor 1 Minute"
+          other: "vor %{count} Minuten"
+        hours:
+          one: "vor 1 Stunde"
+          other: "vor %{count} Stunden"
+        days:
+          one: "vor 1 Tag"
+          other: "vor %{count} Tagen"
+        months:
+          one: "vor 1 Monat"
+          other: "vor %{count} Monaten"
+        years:
+          one: "vor 1 Jahr"
+          other: "vor %{count} Jahren"
+      duration:
+        seconds:
+          one: "1 Sekunde"
+          other: "%{count} Sekunden"
+        minutes:
+          one: "1 Minute"
+          other: "%{count} Minuten"
+        hours:
+          one: "1 Stunde"
+          other: "%{count} Stunden"
+        days:
+          one: "1 Tag"
+          other: "%{count} Tage"
+        months:
+          one: "1 Monat"
+          other: "%{count} Monate"
+        years:
+          one: "1 Jahr"
+          other: "%{count} Jahre"
+      unknown_device: "Sonstige"
+      no_sensors: "Noch keine Sensoren konfiguriert. Sensor-Zuordnungen im Konfigurations-Tab hinzufügen."

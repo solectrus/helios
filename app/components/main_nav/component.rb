@@ -3,6 +3,7 @@ module MainNav
     TAB_DEFINITIONS = [
       { id: :services, path_helper: :root_path, icon: 'fa-solid fa-cubes' },
       { id: :configuration, path_helper: :configuration_path, icon: 'fa-solid fa-gear' },
+      { id: :sensors, path_helper: :sensors_path, icon: 'fa-solid fa-gauge' },
       { id: :generated_files, path_helper: :generated_files_path, icon: 'fa-solid fa-file-code', expert_only: true },
     ].freeze
 

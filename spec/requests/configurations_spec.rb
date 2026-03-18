@@ -8,10 +8,10 @@ RSpec.describe 'Configurations', :with_admin do
       expect(response).to have_http_status(:ok)
     end
 
-    it 'displays all chapter kind titles' do
+    it 'displays all chapter kind titles except sensors' do
       get configuration_path
 
-      Chapter::KINDS.each do |kind|
+      (Chapter::KINDS - %w[sensors]).each do |kind|
         title = I18n.t("configurations.chapters.#{kind}.title")
         expect(response.body).to include(title)
       end

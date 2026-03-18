@@ -24,13 +24,8 @@ class StackBuilder
       compose.header_comment = compose_header_comment
       compose.name = 'solectrus'
 
-      active_service_classes.each do |service_class|
-        compose.add_service(
-          service_class.service_name,
-          service_class.new(configuration).to_h,
-          comment: service_class.comment,
-        )
-      end
+      add_class_based_services(compose)
+      add_collector_services(compose)
 
       compose.to_yaml
     end
@@ -42,6 +37,23 @@ class StackBuilder
     private
 
     attr_reader :configuration
+
+    def add_class_based_services(compose)
+      active_service_classes.each do |service_class|
+        compose.add_service(
+          service_class.service_name,
+          service_class.new(configuration).to_h,
+          comment: service_class.comment,
+        )
+      end
+    end
+
+    def add_collector_services(compose)
+      Services::ShellyCollector.chapters_for(configuration).each do |chapter|
+        collector = Services::ShellyCollector.new(configuration, chapter:)
+        compose.add_service(collector.service_name, collector.to_h, comment: collector.comment)
+      end
+    end
 
     def active_service_classes
       @active_service_classes ||= [

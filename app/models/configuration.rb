@@ -10,13 +10,11 @@ class Configuration < ApplicationRecord
   end
 
   # Look up chapter data by kind (and optionally name for devices)
+  # Uses in-memory search when chapters are preloaded to avoid extra DB queries
   def chapter(kind, name = nil)
-    record =
-      if name
-        chapters.find_by(kind:, name:)
-      else
-        chapters.find_by(kind:)
-      end
+    record = chapters.find do |c|
+      c.kind == kind.to_s && (name.nil? || c.name == name.to_s)
+    end
     record&.data || {}
   end
 
@@ -25,6 +23,7 @@ class Configuration < ApplicationRecord
     record = chapters.find_or_initialize_by(kind:, name:)
     record.data = chapter_data
     record.save!
+    chapters.reload
   end
 
   def chapter_completed?(kind, name = nil)
@@ -81,13 +80,17 @@ class Configuration < ApplicationRecord
 
   # Default sensor mappings derived from device chapters
   def computed_sensor_mappings
-    # TODO: Derive defaults from device chapters
-    {}
+    SensorDefaults.for_chapters(chapters)
   end
 
   # Effective sensor mappings (computed + overrides from sensors chapter)
   def effective_sensor_mappings
     computed_sensor_mappings.merge(chapter('sensors'))
+  end
+
+  # Device names for each sensor (e.g. 'INFLUX_SENSOR_CUSTOM_POWER_01' => 'Geschirrspüler')
+  def sensor_device_names
+    SensorDefaults.device_names_for_chapters(chapters)
   end
 
   # Legacy accessors for backward compatibility
