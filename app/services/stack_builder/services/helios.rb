@@ -11,7 +11,7 @@ class StackBuilder
 
       def to_h
         {
-          image: configuration.system.helios_image,
+          image: configuration.helios.image,
           user: 'root',
           environment: {
             'SECRET_KEY_BASE' => '${SECRET_KEY_BASE}',

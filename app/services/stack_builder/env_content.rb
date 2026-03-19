@@ -53,9 +53,9 @@ class StackBuilder
     def security_section_lines
       [
         '# --- Security ---',
-        *entry('ADMIN_PASSWORD', configuration.system.admin_password,
+        *entry('ADMIN_PASSWORD', configuration.dashboard.admin_password,
                'Admin password for the SOLECTRUS web interface'),
-        *entry('SECRET_KEY_BASE', configuration.system.secret_key_base,
+        *entry('SECRET_KEY_BASE', configuration.dashboard.secret_key_base,
                'Secret key for Rails sessions — shared by Dashboard and Helios'),
       ]
     end

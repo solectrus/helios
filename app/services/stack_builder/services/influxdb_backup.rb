@@ -15,7 +15,7 @@ class StackBuilder
 
       def to_h
         {
-          image: configuration.system.influxdb_backup_image,
+          image: configuration.influxdb.backup_image,
           environment: influxdb_backup_environment,
           depends_on: healthy_depends_on(%i[influxdb]),
           restart: 'unless-stopped',

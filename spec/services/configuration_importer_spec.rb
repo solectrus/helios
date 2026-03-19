@@ -12,7 +12,8 @@ RSpec.describe ConfigurationImporter do
     let(:scenario) { 'senec3' }
 
     it 'returns a hash with setting data' do
-      expect(importer.result).to include(:system, :postgresql, :influxdb, :sensors, :devices)
+      expect(importer.result).to include(:system, :dashboard, :postgresql, :influxdb, :redis, :helios, :watchtower,
+                                         :sensors, :devices)
     end
 
     describe 'system data' do
@@ -20,12 +21,18 @@ RSpec.describe ConfigurationImporter do
 
       it { is_expected.to include('timezone' => 'Europe/Berlin') }
       it { is_expected.to include('installation_date' => '2020-01-01') }
+
+      it 'does not include dashboard fields' do
+        expect(system.keys).not_to include('admin_password', 'secret_key_base')
+      end
+    end
+
+    describe 'dashboard data' do
+      subject(:dashboard) { importer.result[:dashboard] }
+
       it { is_expected.to include('admin_password' => 'secret') }
       it { is_expected.to include('secret_key_base') }
-
-      it 'does not include postgresql or influxdb fields' do
-        expect(system.keys).not_to include('postgres_password', 'password', 'influx_password', 'influx_org')
-      end
+      it { is_expected.to include('image') }
     end
 
     describe 'postgresql data' do
@@ -33,6 +40,10 @@ RSpec.describe ConfigurationImporter do
 
       it 'includes password' do
         expect(postgresql).to include('password' => 'my-secret-db-password')
+      end
+
+      it 'includes image' do
+        expect(postgresql).to include('image')
       end
     end
 
@@ -49,6 +60,10 @@ RSpec.describe ConfigurationImporter do
 
       it 'excludes absent influxdb fields' do
         expect(influxdb).not_to have_key('token')
+      end
+
+      it 'includes image' do
+        expect(influxdb).to include('image')
       end
     end
 

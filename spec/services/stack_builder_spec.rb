@@ -318,8 +318,8 @@ RSpec.describe StackBuilder do
       described_class.new(configuration).write!
 
       reloaded = Configuration.current
-      expect(reloaded.system.admin_password).to be_present
-      expect(reloaded.system.secret_key_base).to be_present
+      expect(reloaded.dashboard.admin_password).to be_present
+      expect(reloaded.dashboard.secret_key_base).to be_present
       expect(reloaded.postgresql.password).to be_present
       expect(reloaded.influxdb.password).to be_present
       expect(reloaded.influxdb.token).to be_present

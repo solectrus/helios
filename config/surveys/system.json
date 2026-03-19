@@ -41,28 +41,6 @@
               }
             }
           ]
-        },
-        {
-          "type": "text",
-          "name": "app_host",
-          "title": {
-            "de": "IP-Adresse oder Hostname",
-            "default": "IP address or host name"
-          },
-          "isRequired": true
-        },
-        {
-          "type": "text",
-          "name": "app_port",
-          "title": {
-            "de": "Port",
-            "default": "Port"
-          },
-          "defaultValue": "3000",
-          "isRequired": true,
-          "inputType": "number",
-          "min": 1024,
-          "max": 65535
         }
       ]
     },
@@ -106,19 +84,6 @@
             { "value": "Asia/Tokyo", "text": "Asia/Tokyo" },
             { "value": "Australia/Sydney", "text": "Australia/Sydney" }
           ]
-        },
-        {
-          "type": "text",
-          "name": "admin_password",
-          "title": {
-            "de": "Administrator-Passwort",
-            "default": "Administrator password"
-          },
-          "description": {
-            "de": "Nur der Admin kann Einstellungen und Strompreise bearbeiten",
-            "default": "Only the admin can edit settings and electricity prices"
-          },
-          "isRequired": true
         }
       ]
     }

@@ -4,36 +4,29 @@ class ConfigSchema
     timezone
     installation_date
     linux_machine
+  ].freeze
+
+  # --- Dashboard ---
+
+  DASHBOARD_FIELDS = %w[
     app_host
     app_port
     admin_password
-    secret_key_base
   ].freeze
 
-  # Auto-generated defaults for system fields
-  SYSTEM_DEFAULTS = {
+  DASHBOARD_DEFAULTS = {
+    'image' => -> { 'ghcr.io/solectrus/solectrus:latest' },
     'admin_password' => -> { SecureRandom.alphanumeric(32) },
     'secret_key_base' => -> { SecureRandom.hex(64) },
   }.freeze
 
-  # Default Docker images, pinned at configuration creation time
-  SYSTEM_IMAGE_DEFAULTS = {
-    'dashboard_image' => -> { 'ghcr.io/solectrus/solectrus:latest' },
-    'postgresql_image' => -> { 'postgres:18-alpine' },
-    'postgresql_backup_image' => -> { 'ghcr.io/solectrus/postgres-s3-backup:18' },
-    'redis_image' => -> { 'redis:8-alpine' },
-    'influxdb_image' => -> { 'influxdb:2-alpine' },
-    'influxdb_backup_image' => -> { 'ghcr.io/solectrus/influxdb2-s3-backup:latest' },
-    'helios_image' => -> { 'ghcr.io/solectrus/helios:develop' },
-    'watchtower_image' => -> { 'nickfedor/watchtower' },
-  }.freeze
-
-  # All valid system fields
-  SYSTEM_ALL = (SYSTEM_FIELDS + SYSTEM_IMAGE_DEFAULTS.keys).freeze
+  DASHBOARD_ALL = (DASHBOARD_FIELDS + DASHBOARD_DEFAULTS.keys).uniq.freeze
 
   # --- PostgreSQL ---
 
   POSTGRESQL_DEFAULTS = {
+    'image' => -> { 'postgres:18-alpine' },
+    'backup_image' => -> { 'ghcr.io/solectrus/postgres-s3-backup:18' },
     'password' => -> { SecureRandom.alphanumeric(32) },
   }.freeze
 
@@ -42,6 +35,8 @@ class ConfigSchema
   # --- InfluxDB ---
 
   INFLUXDB_DEFAULTS = {
+    'image' => -> { 'influxdb:2-alpine' },
+    'backup_image' => -> { 'ghcr.io/solectrus/influxdb2-s3-backup:latest' },
     'org' => -> { 'solectrus' },
     'bucket' => -> { 'solectrus' },
     'password' => -> { SecureRandom.alphanumeric(32) },
@@ -50,11 +45,38 @@ class ConfigSchema
 
   INFLUXDB_ALL = INFLUXDB_DEFAULTS.keys.freeze
 
+  # --- Redis ---
+
+  REDIS_DEFAULTS = {
+    'image' => -> { 'redis:8-alpine' },
+  }.freeze
+
+  REDIS_ALL = REDIS_DEFAULTS.keys.freeze
+
+  # --- Helios ---
+
+  HELIOS_DEFAULTS = {
+    'image' => -> { 'ghcr.io/solectrus/helios:develop' },
+  }.freeze
+
+  HELIOS_ALL = HELIOS_DEFAULTS.keys.freeze
+
+  # --- Watchtower ---
+
+  WATCHTOWER_DEFAULTS = {
+    'image' => -> { 'nickfedor/watchtower:latest' },
+  }.freeze
+
+  WATCHTOWER_ALL = WATCHTOWER_DEFAULTS.keys.freeze
+
   # Combined auto-generated defaults keyed by section
   AUTO_GENERATED = {
-    'system' => SYSTEM_DEFAULTS.merge(SYSTEM_IMAGE_DEFAULTS),
+    'dashboard' => DASHBOARD_DEFAULTS,
     'postgresql' => POSTGRESQL_DEFAULTS,
     'influxdb' => INFLUXDB_DEFAULTS,
+    'redis' => REDIS_DEFAULTS,
+    'helios' => HELIOS_DEFAULTS,
+    'watchtower' => WATCHTOWER_DEFAULTS,
   }.freeze
 
   # --- Device fields ---
@@ -155,9 +177,13 @@ class ConfigSchema
   # --- Registry ---
 
   FIELDS = {
-    'system' => SYSTEM_ALL,
+    'system' => SYSTEM_FIELDS,
+    'dashboard' => DASHBOARD_ALL,
     'postgresql' => POSTGRESQL_ALL,
     'influxdb' => INFLUXDB_ALL,
+    'redis' => REDIS_ALL,
+    'helios' => HELIOS_ALL,
+    'watchtower' => WATCHTOWER_ALL,
     'inverter' => INVERTER_FIELDS,
     'battery' => BATTERY_FIELDS,
     'wallbox' => WALLBOX_FIELDS,

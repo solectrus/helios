@@ -23,8 +23,12 @@ class ConfigurationImporter
   def build_result
     data = {
       system: system_data,
+      dashboard: dashboard_data,
       postgresql: postgresql_data,
       influxdb: influxdb_data,
+      redis: redis_data,
+      helios: helios_data,
+      watchtower: watchtower_data,
       sensors: sensors_data,
       reverse_proxy: reverse_proxy_data,
       backup: backup_data,
@@ -37,7 +41,7 @@ class ConfigurationImporter
   end
 
   def persist_singletons!(config)
-    %i[system postgresql influxdb sensors reverse_proxy backup].each do |key|
+    %i[system dashboard postgresql influxdb redis helios watchtower sensors reverse_proxy backup].each do |key|
       config.update(key.to_s, result[key]) if result[key]
     end
   end
@@ -54,35 +58,51 @@ class ConfigurationImporter
   end
 
   def system_data
-    system_env_data.merge(system_image_data).compact
-  end
-
-  def system_env_data
     dashboard_env = service_env('dashboard')
 
     {
       'timezone' => dashboard_env['TZ'],
       'installation_date' => dashboard_env['INSTALLATION_DATE'],
-      'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
-      'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],
-    }
+    }.compact
   end
 
-  def system_image_data
-    ConfigSchema::SYSTEM_IMAGE_DEFAULTS.to_h do |key, _|
-      service_name = key.delete_suffix('_image').tr('_', '-')
-      [key, @reader.service(service_name)&.dig('image')]
-    end
+  def dashboard_data
+    {
+      'image' => @reader.service('dashboard')&.dig('image'),
+      'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
+      'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],
+    }.compact
+  end
+
+  def redis_data
+    image_data_for('redis')
+  end
+
+  def helios_data
+    image_data_for('helios')
+  end
+
+  def watchtower_data
+    image_data_for('watchtower')
+  end
+
+  def image_data_for(service_name)
+    image = @reader.service(service_name)&.dig('image')
+    { 'image' => image }.compact
   end
 
   def postgresql_data
     {
+      'image' => @reader.service('postgresql')&.dig('image'),
+      'backup_image' => @reader.service('postgresql-backup')&.dig('image'),
       'password' => @reader.raw_env['POSTGRES_PASSWORD'],
     }.compact
   end
 
   def influxdb_data
     {
+      'image' => @reader.service('influxdb')&.dig('image'),
+      'backup_image' => @reader.service('influxdb-backup')&.dig('image'),
       'password' => @reader.raw_env['INFLUX_PASSWORD'],
       'org' => @reader.raw_env['INFLUX_ORG'],
       'bucket' => @reader.raw_env['INFLUX_BUCKET'],

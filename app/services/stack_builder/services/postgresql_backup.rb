@@ -15,7 +15,7 @@ class StackBuilder
 
       def to_h
         {
-          image: configuration.system.postgresql_backup_image,
+          image: configuration.postgresql.backup_image,
           environment: postgresql_backup_environment,
           depends_on: healthy_depends_on(%i[postgresql]),
           restart: 'unless-stopped',

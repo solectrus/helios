@@ -15,7 +15,7 @@ class StackBuilder
 
       def to_h
         {
-          image: configuration.system.postgresql_image,
+          image: configuration.postgresql.image,
           environment: {
             'POSTGRES_PASSWORD' => '${POSTGRES_PASSWORD}',
             'POSTGRES_DB' => 'solectrus',
