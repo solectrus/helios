@@ -11,7 +11,7 @@ class StackBuilder
 
       def to_h
         config = {
-          image: system_data.dashboard_image || 'ghcr.io/solectrus/solectrus:latest',
+          image: configuration.system.dashboard_image || 'ghcr.io/solectrus/solectrus:latest',
           environment: dashboard_environment,
           depends_on: healthy_depends_on(%i[postgresql redis influxdb]),
           restart: 'unless-stopped',
@@ -49,7 +49,7 @@ class StackBuilder
       end
 
       def traefik_dashboard_labels
-        domain = reverse_proxy_data.app_domain
+        domain = configuration.reverse_proxy.app_domain
 
         [
           'traefik.enable=true',

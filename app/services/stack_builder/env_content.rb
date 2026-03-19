@@ -24,26 +24,6 @@ class StackBuilder
 
     attr_reader :configuration
 
-    def system_data
-      configuration.system
-    end
-
-    def postgresql_data
-      configuration.postgresql
-    end
-
-    def influxdb_data
-      configuration.influxdb
-    end
-
-    def reverse_proxy_data
-      configuration.reverse_proxy
-    end
-
-    def backup_data
-      configuration.backup
-    end
-
     def host_stack_path
       Rails.configuration.helios_host_stack_path
     end
@@ -63,9 +43,9 @@ class StackBuilder
     def general_section_lines
       [
         '# --- General settings ---',
-        *entry('TZ', system_data.timezone,
+        *entry('TZ', configuration.system.timezone,
                'Timezone for all services (IANA format, e.g. Europe/Berlin)'),
-        *entry('INSTALLATION_DATE', system_data.installation_date,
+        *entry('INSTALLATION_DATE', configuration.system.installation_date,
                'Date of first solar installation (YYYY-MM-DD) — used for statistics and charts'),
       ]
     end
@@ -73,9 +53,9 @@ class StackBuilder
     def security_section_lines
       [
         '# --- Security ---',
-        *entry('ADMIN_PASSWORD', system_data.admin_password,
+        *entry('ADMIN_PASSWORD', configuration.system.admin_password,
                'Admin password for the SOLECTRUS web interface'),
-        *entry('SECRET_KEY_BASE', system_data.secret_key_base,
+        *entry('SECRET_KEY_BASE', configuration.system.secret_key_base,
                'Secret key for Rails sessions — shared by Dashboard and Helios'),
       ]
     end
@@ -83,7 +63,7 @@ class StackBuilder
     def postgresql_section_lines
       [
         '# --- PostgreSQL database ---',
-        *entry('POSTGRES_PASSWORD', postgresql_data.password,
+        *entry('POSTGRES_PASSWORD', configuration.postgresql.password,
                'Database password — auto-generated, do not change after first start'),
         '',
       ]
@@ -92,12 +72,12 @@ class StackBuilder
     def influxdb_section_lines
       [
         '# --- InfluxDB time-series database ---',
-        *entry('INFLUX_PASSWORD', influxdb_data.password,
+        *entry('INFLUX_PASSWORD', configuration.influxdb.password,
                'Admin password — auto-generated, do not change after first start'),
-        *entry('INFLUX_ORG', influxdb_data.org, 'Organization name'),
-        *entry('INFLUX_BUCKET', influxdb_data.bucket,
+        *entry('INFLUX_ORG', configuration.influxdb.org, 'Organization name'),
+        *entry('INFLUX_BUCKET', configuration.influxdb.bucket,
                'Bucket (database) name for time-series data'),
-        *entry('INFLUX_TOKEN', influxdb_data.token,
+        *entry('INFLUX_TOKEN', configuration.influxdb.token,
                'API token with full access — auto-generated, do not change after first start'),
       ]
     end
@@ -113,7 +93,7 @@ class StackBuilder
     def reverse_proxy_section_lines
       [
         '# --- Reverse Proxy (Traefik) ---',
-        *entry('APP_DOMAIN', reverse_proxy_data.app_domain,
+        *entry('APP_DOMAIN', configuration.reverse_proxy.app_domain,
                'Domain for HTTPS access via Traefik'),
         *entry('LETSENCRYPT_EMAIL', Services::Traefik.letsencrypt_email(configuration),
                "Email for Let's Encrypt certificate notifications"),
@@ -123,13 +103,13 @@ class StackBuilder
     def backup_section_lines
       [
         '# --- S3 Backup ---',
-        *entry('AWS_ACCESS_KEY_ID', backup_data.aws_access_key_id,
+        *entry('AWS_ACCESS_KEY_ID', configuration.backup.aws_access_key_id,
                'AWS access key for S3 backup'),
-        *entry('AWS_SECRET_ACCESS_KEY', backup_data.aws_secret_access_key,
+        *entry('AWS_SECRET_ACCESS_KEY', configuration.backup.aws_secret_access_key,
                'AWS secret key — keep this confidential!'),
-        *entry('AWS_REGION', backup_data.aws_region,
+        *entry('AWS_REGION', configuration.backup.aws_region,
                'AWS region for S3 bucket'),
-        *entry('AWS_BUCKET', backup_data.aws_bucket,
+        *entry('AWS_BUCKET', configuration.backup.aws_bucket,
                'S3 bucket name for backups'),
       ]
     end

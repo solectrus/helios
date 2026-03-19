@@ -11,7 +11,7 @@ class StackBuilder
 
       def to_h
         {
-          image: system_data.watchtower_image || 'nickfedor/watchtower',
+          image: configuration.system.watchtower_image || 'nickfedor/watchtower',
           environment: ['TZ'],
           volumes: ['/var/run/docker.sock:/var/run/docker.sock'],
           command: '--scope solectrus --cleanup',

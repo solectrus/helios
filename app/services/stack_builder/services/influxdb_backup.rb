@@ -15,7 +15,7 @@ class StackBuilder
 
       def to_h
         {
-          image: system_data.influxdb_backup_image || 'ghcr.io/solectrus/influxdb2-s3-backup:latest',
+          image: configuration.system.influxdb_backup_image || 'ghcr.io/solectrus/influxdb2-s3-backup:latest',
           environment: influxdb_backup_environment,
           depends_on: healthy_depends_on(%i[influxdb]),
           restart: 'unless-stopped',

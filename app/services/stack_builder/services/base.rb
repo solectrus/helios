@@ -25,18 +25,6 @@ class StackBuilder
 
       attr_reader :configuration
 
-      def system_data
-        configuration.system
-      end
-
-      def reverse_proxy_data
-        configuration.reverse_proxy
-      end
-
-      def backup_data
-        configuration.backup
-      end
-
       def healthcheck(*test_cmd)
         { test: test_cmd, interval: '10s', timeout: '5s', retries: 5 }
       end
