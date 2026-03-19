@@ -6,8 +6,8 @@ class Configuration
 
   # Singletons exist at most once per configuration
   SINGLETONS = %w[
-    forecast system dashboard postgresql influxdb
-    redis helios watchtower reverse_proxy backup sensors
+    system dashboard postgresql influxdb redis
+    helios watchtower forecast reverse_proxy backup sensors
   ].freeze
 
   # Sections hidden from the configuration UI (auto-managed)
@@ -15,6 +15,9 @@ class Configuration
 
   # All valid setting names
   ALL = (DEVICES + SINGLETONS).freeze
+
+  # Canonical order for config.yaml output
+  YAML_ORDER = (SINGLETONS + DEVICES).freeze
 
   # Mapping setting name → YAML key (identity mapping, kept for indirection)
   YAML_KEYS = ALL.index_with(&:itself).freeze
@@ -176,9 +179,15 @@ class Configuration
   def save!
     dir = File.dirname(@path)
     FileUtils.mkdir_p(dir) unless File.directory?(dir)
-    File.write(@path, YAML.dump(@data))
+    File.write(@path, YAML.dump(ordered_data))
     @all_devices = nil
     @sensor_defaults = nil
+  end
+
+  def ordered_data
+    YAML_ORDER.each_with_object({}) do |key, hash|
+      hash[key] = @data[key] if @data.key?(key)
+    end
   end
 
   private
