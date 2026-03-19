@@ -90,6 +90,19 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     'outdoor_temp' => 'inverter',
   }.freeze
 
+  # Maps sensor names to the mqtt_topic_* field they should be stored in.
+  # The primary sensor for each device type maps to plain 'mqtt_topic'.
+  SENSOR_TOPIC_FIELDS = {
+    'heatpump_power' => 'mqtt_topic',
+    'heatpump_heating_power' => 'mqtt_topic_heating_power',
+    'heatpump_tank_temp' => 'mqtt_topic_tank_temp',
+    'heatpump_status' => 'mqtt_topic_heatpump_status',
+    'outdoor_temp' => 'mqtt_topic_outdoor_temp',
+    'wallbox_power' => 'mqtt_topic',
+    'wallbox_car_connected' => 'mqtt_topic_car_connected',
+    'car_battery_soc' => 'mqtt_topic',
+  }.freeze
+
   def initialize(stack_reader)
     @reader = stack_reader
   end
@@ -585,15 +598,32 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
       device_type = infer_mqtt_device_type(measurement, device_mappings)
       next unless device_type
 
-      # Use the topic from the first (primary) mapping
-      topic = device_mappings.first[:topic]
       field = DATA_SOURCE_FIELDS.fetch(device_type, 'data_source')
-
       data = { field => 'mqtt' }
-      data['mqtt_topic'] = topic if topic.present?
+      assign_mqtt_topics(data, measurement, device_mappings)
 
       { type: device_type, name: measurement, data: }
     end
+  end
+
+  def assign_mqtt_topics(data, measurement, device_mappings)
+    sensors = sensors_data
+
+    device_mappings.each do |mapping|
+      topic = mapping[:topic]
+      next if topic.blank?
+
+      candidate = "#{measurement}:#{mapping[:field]}"
+      sensor_name = find_sensor_for_candidate(sensors, candidate)
+      topic_field = sensor_name ? SENSOR_TOPIC_FIELDS[sensor_name] : nil
+
+      # Use specific topic field if known, otherwise set generic mqtt_topic
+      data[topic_field || 'mqtt_topic'] ||= topic
+    end
+  end
+
+  def find_sensor_for_candidate(sensors, candidate)
+    sensors.find { |_, value| value == candidate }&.first
   end
 
   def infer_mqtt_device_type(measurement, device_mappings)

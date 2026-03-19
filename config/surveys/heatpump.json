@@ -236,6 +236,70 @@
             "de": "z.B. sensors/heatpump/power",
             "default": "e.g. sensors/heatpump/power"
           }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_topic_heating_power",
+          "title": {
+            "de": "MQTT-Topic für die Heizleistung (in Watt)",
+            "default": "MQTT topic for heating power (in watts)"
+          },
+          "description": {
+            "de": "Das Topic, auf dem die thermische Leistung veröffentlicht wird (optional)",
+            "default": "The topic where thermal output is published (optional)"
+          },
+          "placeholder": {
+            "de": "z.B. sensors/heatpump/heating_power",
+            "default": "e.g. sensors/heatpump/heating_power"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_topic_tank_temp",
+          "title": {
+            "de": "MQTT-Topic für die Speichertemperatur (in °C)",
+            "default": "MQTT topic for tank temperature (in °C)"
+          },
+          "description": {
+            "de": "Das Topic, auf dem die Warmwasser-Speichertemperatur veröffentlicht wird (optional)",
+            "default": "The topic where hot water tank temperature is published (optional)"
+          },
+          "placeholder": {
+            "de": "z.B. sensors/heatpump/tank_temp",
+            "default": "e.g. sensors/heatpump/tank_temp"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_topic_heatpump_status",
+          "title": {
+            "de": "MQTT-Topic für den Betriebsstatus",
+            "default": "MQTT topic for operating status"
+          },
+          "description": {
+            "de": "Das Topic, auf dem der aktuelle Betriebsstatus veröffentlicht wird (optional)",
+            "default": "The topic where current operating status is published (optional)"
+          },
+          "placeholder": {
+            "de": "z.B. sensors/heatpump/status",
+            "default": "e.g. sensors/heatpump/status"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_topic_outdoor_temp",
+          "title": {
+            "de": "MQTT-Topic für die Außentemperatur (in °C)",
+            "default": "MQTT topic for outdoor temperature (in °C)"
+          },
+          "description": {
+            "de": "Das Topic, auf dem die Außentemperatur veröffentlicht wird (optional)",
+            "default": "The topic where outdoor temperature is published (optional)"
+          },
+          "placeholder": {
+            "de": "z.B. sensors/heatpump/outdoor_temp",
+            "default": "e.g. sensors/heatpump/outdoor_temp"
+          }
         }
       ]
     },

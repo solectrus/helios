@@ -98,12 +98,15 @@ class ConfigSchema
 
   WALLBOX_FIELDS = (%w[
     wallbox_vendor exclude_from_house_power smart_home_system mqtt_topic
+    mqtt_topic_car_connected
   ] + SHELLY_FIELDS).freeze
 
   CAR_FIELDS = %w[data_source smart_home_system mqtt_topic].freeze
 
   HEATPUMP_FIELDS = (%w[
     heatpump_access exclude_from_house_power smart_home_system mqtt_topic
+    mqtt_topic_heating_power mqtt_topic_tank_temp mqtt_topic_heatpump_status
+    mqtt_topic_outdoor_temp
   ] + SHELLY_FIELDS).freeze
 
   CONSUMER_FIELDS = (%w[

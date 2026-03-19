@@ -263,23 +263,27 @@ RSpec.describe ConfigurationImporter do
         expect(devices.size).to eq(4)
       end
 
-      it 'infers wallbox from sensor mapping' do
+      it 'infers wallbox from sensor mapping with per-sensor topics' do
         wb = devices.find { |d| d[:type] == 'wallbox' }
         expect(wb).to be_present
         expect(wb[:name]).to eq('go-eCharger')
         expect(wb[:data]).to include(
           'wallbox_vendor' => 'mqtt',
           'mqtt_topic' => 'go-eCharger/123456/nrg',
+          'mqtt_topic_car_connected' => 'go-eCharger/123456/car',
         )
       end
 
-      it 'infers heatpump from sensor mapping' do
+      it 'infers heatpump from ALTHERMA sensor mappings' do
         hp = devices.find { |d| d[:type] == 'heatpump' }
         expect(hp).to be_present
-        expect(hp[:name]).to eq('Heatpump')
+        expect(hp[:name]).to eq('ALTHERMA')
         expect(hp[:data]).to include(
           'heatpump_access' => 'mqtt',
-          'mqtt_topic' => 'heatpump/status',
+          'mqtt_topic_tank_temp' => 'espaltherma/ATTR',
+          'mqtt_topic_outdoor_temp' => 'espaltherma/ATTR',
+          'mqtt_topic_heating_power' => 'espaltherma/ATTR',
+          'mqtt_topic_heatpump_status' => 'espaltherma/ATTR',
         )
       end
 
@@ -306,7 +310,7 @@ RSpec.describe ConfigurationImporter do
         env_vars = unmanaged&.dig('env_vars') || {}
         expect(env_vars.keys).not_to include(
           'MQTT_HOST', 'MQTT_PORT', 'MQTT_USERNAME', 'MQTT_PASSWORD',
-          'MAPPING_0_TOPIC', 'MAPPING_0_MEASUREMENT', 'MAPPING_0_FIELD'
+          'MAPPING_0_TOPIC', 'MAPPING_5_JSON_KEY', 'MAPPING_23_JSON_FORMULA'
         )
       end
 

@@ -243,6 +243,22 @@
             "de": "z.B. sensors/wallbox/power",
             "default": "e.g. sensors/wallbox/power"
           }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_topic_car_connected",
+          "title": {
+            "de": "MQTT-Topic für den Fahrzeug-Verbindungsstatus",
+            "default": "MQTT topic for vehicle connection status"
+          },
+          "description": {
+            "de": "Das Topic, auf dem der Verbindungsstatus des Fahrzeugs veröffentlicht wird (optional)",
+            "default": "The topic where vehicle connection status is published (optional)"
+          },
+          "placeholder": {
+            "de": "z.B. sensors/wallbox/car_connected",
+            "default": "e.g. sensors/wallbox/car_connected"
+          }
         }
       ]
     },
