@@ -10,20 +10,8 @@ class Configuration
   # All valid setting names
   ALL = (DEVICES + SINGLETONS).freeze
 
-  # Mapping setting name → YAML key (devices are pluralized)
-  YAML_KEYS = {
-    'inverter' => 'inverters',
-    'battery' => 'batteries',
-    'wallbox' => 'wallboxes',
-    'car' => 'cars',
-    'heatpump' => 'heatpumps',
-    'consumer' => 'consumers',
-    'system' => 'system',
-    'forecast' => 'forecast',
-    'sensors' => 'sensors',
-    'reverse_proxy' => 'reverse_proxy',
-    'backup' => 'backup',
-  }.freeze
+  # Mapping setting name → YAML key (identity mapping, kept for indirection)
+  YAML_KEYS = ALL.index_with(&:itself).freeze
 
   # Hash wrapper that allows method-style access: config.system.timezone
   class Data < Hash
