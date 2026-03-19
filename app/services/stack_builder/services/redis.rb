@@ -15,7 +15,7 @@ class StackBuilder
 
       def to_h
         {
-          image: configuration.system.redis_image || 'redis:8-alpine',
+          image: configuration.system.redis_image,
           volumes: ['./redis:/data'],
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD', 'redis-cli', 'ping'),

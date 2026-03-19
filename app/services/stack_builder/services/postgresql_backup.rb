@@ -15,7 +15,7 @@ class StackBuilder
 
       def to_h
         {
-          image: 'ghcr.io/solectrus/postgres-s3-backup:18',
+          image: configuration.system.postgresql_backup_image,
           environment: postgresql_backup_environment,
           depends_on: healthy_depends_on(%i[postgresql]),
           restart: 'unless-stopped',

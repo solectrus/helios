@@ -6,6 +6,7 @@ class StackBuilder
   end
 
   def write!
+    ensure_defaults!
     create_data_directories!
     write_compose!
     write_env!
@@ -16,7 +17,6 @@ class StackBuilder
   end
 
   def env_content
-    ensure_secrets!
     EnvContent.new(@configuration).to_s
   end
 
@@ -53,7 +53,7 @@ class StackBuilder
     ::FileUtils.cp(path, "#{path}.bak")
   end
 
-  def ensure_secrets!
+  def ensure_defaults!
     missing = ConfigSchema.missing_auto_generated(@configuration)
     return if missing.empty?
 
@@ -62,6 +62,5 @@ class StackBuilder
       updates = defaults.transform_values(&:call)
       @configuration.update(section, current.merge(updates))
     end
-    @compose_builder = nil
   end
 end

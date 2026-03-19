@@ -93,7 +93,9 @@ RSpec.describe ConfigSchema do
       missing = described_class.missing_auto_generated(config)
 
       expect(missing.keys).to match_array(%w[system postgresql influxdb])
-      expect(missing['system'].keys).to match_array(%w[admin_password secret_key_base])
+      expect(missing['system'].keys).to match_array(
+        %w[admin_password secret_key_base] + ConfigSchema::SYSTEM_IMAGE_DEFAULTS.keys,
+      )
       expect(missing['postgresql'].keys).to match_array(%w[password])
       expect(missing['influxdb'].keys).to match_array(%w[org bucket password token])
     end
@@ -106,7 +108,8 @@ RSpec.describe ConfigSchema do
 
       missing = described_class.missing_auto_generated(config)
 
-      expect(missing['system'].keys).to eq(%w[secret_key_base])
+      expect(missing['system'].keys).to include('secret_key_base')
+      expect(missing['system'].keys).not_to include('admin_password')
       expect(missing).not_to have_key('postgresql')
       expect(missing['influxdb'].keys).not_to include('org')
       expect(missing['influxdb'].keys).to include('password')
@@ -114,7 +117,10 @@ RSpec.describe ConfigSchema do
 
     it 'returns empty hash when all values present' do
       config = Configuration.current
-      config.update('system', { 'admin_password' => 'a', 'secret_key_base' => 's' })
+      config.update('system', {
+        'admin_password' => 'a',
+        'secret_key_base' => 's',
+      }.merge(ConfigSchema::SYSTEM_IMAGE_DEFAULTS.transform_values(&:call)))
       config.update('postgresql', { 'password' => 'p' })
       config.update('influxdb', {
                       'org' => 'o',

@@ -69,14 +69,10 @@ class ConfigurationImporter
   end
 
   def system_image_data
-    {
-      'postgresql_image' => @reader.service('postgresql')&.dig('image'),
-      'redis_image' => @reader.service('redis')&.dig('image'),
-      'influxdb_image' => @reader.service('influxdb')&.dig('image'),
-      'dashboard_image' => @reader.service('dashboard')&.dig('image'),
-      'helios_image' => @reader.service('helios')&.dig('image'),
-      'watchtower_image' => @reader.service('watchtower')&.dig('image'),
-    }
+    ConfigSchema::SYSTEM_IMAGE_DEFAULTS.to_h do |key, _|
+      service_name = key.delete_suffix('_image').tr('_', '-')
+      [key, @reader.service(service_name)&.dig('image')]
+    end
   end
 
   def postgresql_data

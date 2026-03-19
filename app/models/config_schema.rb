@@ -16,19 +16,20 @@ class ConfigSchema
     'secret_key_base' => -> { SecureRandom.hex(64) },
   }.freeze
 
-  # Optional Docker image overrides (set by importer, not by surveys)
-  SYSTEM_IMAGE_OVERRIDES = %w[
-    dashboard_image
-    postgresql_image
-    redis_image
-    influxdb_image
-    influxdb_backup_image
-    helios_image
-    watchtower_image
-  ].freeze
+  # Default Docker images, pinned at configuration creation time
+  SYSTEM_IMAGE_DEFAULTS = {
+    'dashboard_image' => -> { 'ghcr.io/solectrus/solectrus:latest' },
+    'postgresql_image' => -> { 'postgres:18-alpine' },
+    'postgresql_backup_image' => -> { 'ghcr.io/solectrus/postgres-s3-backup:18' },
+    'redis_image' => -> { 'redis:8-alpine' },
+    'influxdb_image' => -> { 'influxdb:2-alpine' },
+    'influxdb_backup_image' => -> { 'ghcr.io/solectrus/influxdb2-s3-backup:latest' },
+    'helios_image' => -> { 'ghcr.io/solectrus/helios:develop' },
+    'watchtower_image' => -> { 'nickfedor/watchtower' },
+  }.freeze
 
   # All valid system fields
-  SYSTEM_ALL = (SYSTEM_FIELDS + SYSTEM_IMAGE_OVERRIDES).freeze
+  SYSTEM_ALL = (SYSTEM_FIELDS + SYSTEM_IMAGE_DEFAULTS.keys).freeze
 
   # --- PostgreSQL ---
 
@@ -51,7 +52,7 @@ class ConfigSchema
 
   # Combined auto-generated defaults keyed by section
   AUTO_GENERATED = {
-    'system' => SYSTEM_DEFAULTS,
+    'system' => SYSTEM_DEFAULTS.merge(SYSTEM_IMAGE_DEFAULTS),
     'postgresql' => POSTGRESQL_DEFAULTS,
     'influxdb' => INFLUXDB_DEFAULTS,
   }.freeze
