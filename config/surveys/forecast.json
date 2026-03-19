@@ -38,6 +38,10 @@
               "text": "solcast.com"
             },
             {
+              "value": "forecast_pvnode",
+              "text": "pvnode.com"
+            },
+            {
               "value": "forecast_none",
               "text": {
                 "de": "Keine Prognose",
@@ -49,7 +53,7 @@
         {
           "type": "radiogroup",
           "name": "forecast_roofs",
-          "visibleIf": "{forecast} anyof ['forecast_forecast_solar', 'forecast_solcast']",
+          "visibleIf": "{forecast} anyof ['forecast_forecast_solar', 'forecast_solcast', 'forecast_pvnode']",
           "title": {
             "de": "Anzahl Dachflächen mit Solarmodulen",
             "default": "Number of roof surfaces with solar modules"
@@ -66,7 +70,7 @@
     },
     {
       "name": "p_forecast_solar_location",
-      "visibleIf": "{forecast} = 'forecast_forecast_solar'",
+      "visibleIf": "{forecast} anyof ['forecast_forecast_solar', 'forecast_pvnode']",
       "title": {
         "de": "Standort",
         "default": "Location"
@@ -108,7 +112,7 @@
     },
     {
       "name": "p_forecast_solar_roofs",
-      "visibleIf": "{forecast} = 'forecast_forecast_solar'",
+      "visibleIf": "{forecast} anyof ['forecast_forecast_solar', 'forecast_pvnode']",
       "title": {
         "de": "Dachflächen-Konfiguration",
         "default": "Roof configuration"
@@ -312,6 +316,124 @@
             "default": "Resource ID 2nd roof"
           },
           "isRequired": true
+        }
+      ]
+    },
+    {
+      "name": "p_pvnode",
+      "visibleIf": "{forecast} = 'forecast_pvnode'",
+      "title": {
+        "de": "pvnode API",
+        "default": "pvnode API"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "forecast_pvnode_apikey",
+          "title": {
+            "de": "API-Key",
+            "default": "API key"
+          },
+          "description": {
+            "de": "Von https://pvnode.com/api-keys",
+            "default": "From https://pvnode.com/api-keys"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "boolean",
+          "name": "forecast_pvnode_paid",
+          "title": {
+            "de": "Bezahltes pvnode-Konto",
+            "default": "Paid pvnode account"
+          },
+          "description": {
+            "de": "Aktiviert Funktionen für bezahlte Konten",
+            "default": "Enables features for paid accounts"
+          },
+          "defaultValue": false
+        }
+      ]
+    },
+    {
+      "name": "p_forecast_advanced",
+      "visibleIf": "{forecast} anyof ['forecast_forecast_solar', 'forecast_solcast']",
+      "title": {
+        "de": "Erweiterte Einstellungen",
+        "default": "Advanced settings"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "forecast_interval",
+          "visibleIf": "{forecast} anyof ['forecast_forecast_solar', 'forecast_solcast']",
+          "title": {
+            "de": "Abfrageintervall (Sekunden)",
+            "default": "Query interval (seconds)"
+          },
+          "description": {
+            "de": "Wie oft die Prognose aktualisiert wird",
+            "default": "How often the forecast is updated"
+          },
+          "defaultValue": "900",
+          "inputType": "number",
+          "min": 60
+        },
+        {
+          "type": "text",
+          "name": "forecast_damping_morning",
+          "visibleIf": "{forecast} = 'forecast_forecast_solar'",
+          "title": {
+            "de": "Dämpfungsfaktor morgens (optional)",
+            "default": "Damping factor morning (optional)"
+          },
+          "description": {
+            "de": "Wert zwischen 0 und 1",
+            "default": "Value between 0 and 1"
+          },
+          "inputType": "number",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "type": "text",
+          "name": "forecast_damping_evening",
+          "visibleIf": "{forecast} = 'forecast_forecast_solar'",
+          "title": {
+            "de": "Dämpfungsfaktor abends (optional)",
+            "default": "Damping factor evening (optional)"
+          },
+          "description": {
+            "de": "Wert zwischen 0 und 1",
+            "default": "Value between 0 and 1"
+          },
+          "inputType": "number",
+          "min": 0,
+          "max": 1
+        },
+        {
+          "type": "text",
+          "name": "forecast_horizon",
+          "visibleIf": "{forecast} = 'forecast_forecast_solar'",
+          "title": {
+            "de": "Horizontprofil (optional)",
+            "default": "Horizon profile (optional)"
+          },
+          "description": {
+            "de": "Kommaseparierte Erhebungswinkel",
+            "default": "Comma-separated elevation angles"
+          }
+        },
+        {
+          "type": "text",
+          "name": "forecast_inverter",
+          "visibleIf": "{forecast} = 'forecast_forecast_solar'",
+          "title": {
+            "de": "Maximale Wechselrichterleistung in Watt (optional)",
+            "default": "Maximum inverter power in watts (optional)"
+          },
+          "inputType": "number",
+          "min": 0
         }
       ]
     }

@@ -182,6 +182,19 @@ class Configuration
     computed_sensor_mappings.merge(sensors)
   end
 
+  # Sensor names excluded from house power calculation, derived from device flags
+  def excluded_from_house_power
+    consumer_index = 0
+
+    all_devices.filter_map do |device|
+      sensor = SensorDefaults.shelly_sensor_name(device, consumer_index)
+      consumer_index += 1 if device.type == 'consumer'
+      next unless sensor
+
+      sensor.upcase if device.data.exclude_from_house_power == true
+    end
+  end
+
   # Access unmanaged services and env vars
   def unmanaged
     Data.wrap(@data[UNMANAGED_KEY] || {})

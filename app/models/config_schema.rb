@@ -13,7 +13,6 @@ class ConfigSchema
     web_concurrency
     frame_ancestors
     ui_theme
-    influx_exclude_from_house_power
     lockup_codeword
     trusted_proxy_ranges
     power_splitter_interval
@@ -83,70 +82,34 @@ class ConfigSchema
 
   # --- Device fields ---
 
-  INVERTER_FIELDS = %w[
-    battery_vendor
-    house_power_known
-    senec_host
-    senec_interval
-    senec_schema
-    senec_language
-    senec_username
-    senec_password
-    senec_totp_uri
-    senec_system_id
-    senec_ignore
-    smart_home_system
+  # Shared Shelly fields used by multiple device types
+  SHELLY_FIELDS = %w[
+    shelly_connection shelly_host shelly_interval shelly_password
+    shelly_cloud_server shelly_auth_key shelly_device_id
   ].freeze
 
-  BATTERY_FIELDS = %w[
-    data_source
-    smart_home_system
-  ].freeze
+  INVERTER_FIELDS = (%w[
+    battery_vendor house_power_known
+    senec_host senec_interval senec_schema senec_language
+    senec_username senec_password senec_totp_uri senec_system_id senec_ignore
+    shelly_invert_power smart_home_system
+  ] + SHELLY_FIELDS).freeze
 
-  WALLBOX_FIELDS = %w[
-    wallbox_vendor
-    shelly_host
-    shelly_interval
-    shelly_password
-    shelly_cloud_server
-    shelly_auth_key
-    shelly_device_id
-    shelly_invert_power
-    smart_home_system
-    mqtt_topic
-  ].freeze
+  BATTERY_FIELDS = %w[data_source smart_home_system].freeze
 
-  CAR_FIELDS = %w[
-    data_source
-    smart_home_system
-    mqtt_topic
-  ].freeze
+  WALLBOX_FIELDS = (%w[
+    wallbox_vendor exclude_from_house_power smart_home_system mqtt_topic
+  ] + SHELLY_FIELDS).freeze
 
-  HEATPUMP_FIELDS = %w[
-    heatpump_access
-    shelly_host
-    shelly_interval
-    shelly_password
-    shelly_cloud_server
-    shelly_auth_key
-    shelly_device_id
-    shelly_invert_power
-    smart_home_system
-    mqtt_topic
-  ].freeze
+  CAR_FIELDS = %w[data_source smart_home_system mqtt_topic].freeze
 
-  CONSUMER_FIELDS = %w[
-    data_source
-    shelly_host
-    shelly_interval
-    shelly_password
-    shelly_cloud_server
-    shelly_auth_key
-    shelly_device_id
-    shelly_invert_power
-    smart_home_system
-    mqtt_topic
-  ].freeze
+  HEATPUMP_FIELDS = (%w[
+    heatpump_access exclude_from_house_power smart_home_system mqtt_topic
+  ] + SHELLY_FIELDS).freeze
+
+  CONSUMER_FIELDS = (%w[
+    data_source exclude_from_house_power smart_home_system mqtt_topic
+  ] + SHELLY_FIELDS).freeze
 
   # --- Singleton fields ---
 

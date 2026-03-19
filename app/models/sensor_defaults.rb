@@ -82,5 +82,5 @@ class SensorDefaults
   end
 
   private_class_method :process_inverter_devices,
-                       :process_shelly_devices, :shelly_sensor_name
+                       :process_shelly_devices
 end

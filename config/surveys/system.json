@@ -140,6 +140,140 @@
             "default": "Only the admin can edit settings and electricity prices"
           },
           "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "lockup_codeword",
+          "title": {
+            "de": "Zugangscode für die Weboberfläche (optional)",
+            "default": "Access code for the web interface (optional)"
+          },
+          "description": {
+            "de": "Sperrt die gesamte Weboberfläche mit einem Codewort",
+            "default": "Locks the entire web interface with a codeword"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_advanced",
+      "title": {
+        "de": "Erweitert",
+        "default": "Advanced"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "co2_emission_factor",
+          "title": {
+            "de": "CO₂-Emissionsfaktor (g/kWh)",
+            "default": "CO₂ emission factor (g/kWh)"
+          },
+          "description": {
+            "de": "Faktor zur Berechnung der CO₂-Einsparung",
+            "default": "Factor for calculating CO₂ savings"
+          },
+          "defaultValue": "401",
+          "inputType": "number",
+          "min": 0
+        },
+        {
+          "type": "dropdown",
+          "name": "ui_theme",
+          "title": {
+            "de": "Farbschema",
+            "default": "Color theme"
+          },
+          "description": {
+            "de": "Leer = Benutzer kann selbst wählen",
+            "default": "Empty = user can choose"
+          },
+          "choices": [
+            { "value": "light", "text": { "de": "Hell", "default": "Light" } },
+            { "value": "dark", "text": { "de": "Dunkel", "default": "Dark" } }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "web_concurrency",
+          "title": {
+            "de": "Web-Worker-Prozesse",
+            "default": "Web worker processes"
+          },
+          "description": {
+            "de": "0 = Einzelmodus (empfohlen für Raspberry Pi)",
+            "default": "0 = single mode (recommended for Raspberry Pi)"
+          },
+          "defaultValue": "0",
+          "inputType": "number",
+          "min": 0
+        },
+        {
+          "type": "boolean",
+          "name": "force_ssl",
+          "title": {
+            "de": "HTTPS-Weiterleitung erzwingen",
+            "default": "Force HTTPS redirect"
+          },
+          "description": {
+            "de": "Nur aktivieren, wenn ein gültiges SSL-Zertifikat vorhanden ist",
+            "default": "Only enable if a valid SSL certificate is in place"
+          },
+          "defaultValue": false
+        },
+        {
+          "type": "text",
+          "name": "frame_ancestors",
+          "title": {
+            "de": "iFrame-Einbettung erlauben (optional)",
+            "default": "Allow iFrame embedding (optional)"
+          },
+          "description": {
+            "de": "URL der übergeordneten Webseite, z.B. https://example.com",
+            "default": "URL of the parent website, e.g. https://example.com"
+          }
+        },
+        {
+          "type": "text",
+          "name": "trusted_proxy_ranges",
+          "title": {
+            "de": "Vertrauenswürdige Proxy-Bereiche (optional)",
+            "default": "Trusted proxy ranges (optional)"
+          },
+          "description": {
+            "de": "Kommaseparierte IP-Bereiche in CIDR-Notation, z.B. für Cloudflare",
+            "default": "Comma-separated IP ranges in CIDR notation, e.g. for Cloudflare"
+          }
+        },
+        {
+          "type": "text",
+          "name": "influx_poll_interval",
+          "title": {
+            "de": "InfluxDB-Abfrageintervall (Sekunden)",
+            "default": "InfluxDB poll interval (seconds)"
+          },
+          "description": {
+            "de": "Intervall für die Abfrage aktueller Messwerte",
+            "default": "Interval for fetching current measurements"
+          },
+          "defaultValue": "5",
+          "inputType": "number",
+          "min": 1
+        },
+        {
+          "type": "text",
+          "name": "power_splitter_interval",
+          "title": {
+            "de": "Power-Splitter-Intervall (Sekunden)",
+            "default": "Power splitter interval (seconds)"
+          },
+          "description": {
+            "de": "Berechnungsfrequenz für abgeleitete Leistungswerte",
+            "default": "Calculation frequency for derived power values"
+          },
+          "defaultValue": "3600",
+          "inputType": "number",
+          "min": 300
         }
       ]
     }

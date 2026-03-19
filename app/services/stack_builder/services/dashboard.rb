@@ -65,7 +65,8 @@ class StackBuilder
         add_optional(env, 'UI_THEME', sys.ui_theme)
         add_optional(env, 'LOCKUP_CODEWORD', sys.lockup_codeword)
         add_optional(env, 'TRUSTED_PROXY_RANGES', sys.trusted_proxy_ranges)
-        add_optional(env, 'INFLUX_EXCLUDE_FROM_HOUSE_POWER', sys.influx_exclude_from_house_power)
+        excluded = configuration.excluded_from_house_power.join(',').presence
+        add_optional(env, 'INFLUX_EXCLUDE_FROM_HOUSE_POWER', excluded)
         env
       end
 

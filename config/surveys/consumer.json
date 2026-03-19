@@ -51,19 +51,55 @@
       ]
     },
     {
-      "name": "p_shelly",
+      "name": "p_shelly_connection",
       "visibleIf": "{data_source} = 'shelly'",
       "title": {
-        "de": "Shelly-Konfiguration",
-        "default": "Shelly Configuration"
+        "de": "Shelly-Verbindung",
+        "default": "Shelly Connection"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "shelly_connection",
+          "title": {
+            "de": "Wie ist der Shelly erreichbar?",
+            "default": "How is the Shelly accessed?"
+          },
+          "isRequired": true,
+          "defaultValue": "local",
+          "choices": [
+            {
+              "value": "local",
+              "text": {
+                "de": "Lokal (im Heimnetzwerk)",
+                "default": "Local (in home network)"
+              }
+            },
+            {
+              "value": "cloud",
+              "text": {
+                "de": "Über Shelly Cloud",
+                "default": "Via Shelly Cloud"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_shelly_local",
+      "visibleIf": "{data_source} = 'shelly' and {shelly_connection} = 'local'",
+      "title": {
+        "de": "Shelly — Lokaler Zugriff",
+        "default": "Shelly — Local Access"
       },
       "elements": [
         {
           "type": "text",
           "name": "shelly_host",
           "title": {
-            "de": "Lokale IP-Adresse oder Hostname",
-            "default": "Local IP address or host name"
+            "de": "IP-Adresse oder Hostname",
+            "default": "IP address or host name"
           },
           "isRequired": true,
           "placeholder": {
@@ -94,6 +130,56 @@
             "de": "Nur erforderlich, falls ein Passwort für den Shelly konfiguriert ist",
             "default": "Only required if a password is configured for the Shelly"
           }
+        }
+      ]
+    },
+    {
+      "name": "p_shelly_cloud",
+      "visibleIf": "{data_source} = 'shelly' and {shelly_connection} = 'cloud'",
+      "title": {
+        "de": "Shelly — Cloud-Zugriff",
+        "default": "Shelly — Cloud Access"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "shelly_cloud_server",
+          "title": {
+            "de": "Cloud-Server-URL",
+            "default": "Cloud server URL"
+          },
+          "isRequired": true,
+          "placeholder": "https://shelly-42-eu.shelly.cloud"
+        },
+        {
+          "type": "text",
+          "name": "shelly_auth_key",
+          "title": {
+            "de": "Authentifizierungsschlüssel",
+            "default": "Authentication key"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "shelly_device_id",
+          "title": {
+            "de": "Geräte-ID",
+            "default": "Device ID"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "shelly_interval",
+          "title": {
+            "de": "Abfrage-Intervall (in Sekunden)",
+            "default": "Query interval (in seconds)"
+          },
+          "defaultValue": 5,
+          "isRequired": true,
+          "inputType": "number",
+          "min": 1
         }
       ]
     },
@@ -150,6 +236,28 @@
             "de": "z.B. sensors/consumer/power",
             "default": "e.g. sensors/consumer/power"
           }
+        }
+      ]
+    },
+    {
+      "name": "p_house_power",
+      "title": {
+        "de": "Hausverbrauch",
+        "default": "House power"
+      },
+      "elements": [
+        {
+          "type": "boolean",
+          "name": "exclude_from_house_power",
+          "title": {
+            "de": "Aus Hausverbrauch herausrechnen",
+            "default": "Deduct from house power"
+          },
+          "description": {
+            "de": "Korrigiert den Hausverbrauch, indem der Verbrauch dieses Geräts abgezogen wird",
+            "default": "Corrects house power by deducting this device's consumption"
+          },
+          "defaultValue": false
         }
       ]
     }

@@ -43,6 +43,7 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
   ].freeze
 
   SHELLY_DATA_SOURCE_FIELDS = {
+    'inverter' => 'battery_vendor',
     'wallbox' => 'wallbox_vendor',
     'heatpump' => 'heatpump_access',
   }.freeze
@@ -77,8 +78,8 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
 
   private
 
-  def build_result # rubocop:disable Metrics/MethodLength
-    data = {
+  def build_result
+    {
       system: system_data,
       postgresql: postgresql_data,
       influxdb: influxdb_data,
@@ -88,14 +89,17 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
       forecast: forecast_data,
       reverse_proxy: reverse_proxy_data,
       backup: backup_data,
-      devices: [],
+      devices: build_devices,
       unmanaged: unmanaged_data,
     }
+  end
 
-    data[:devices] << senec_device_data if senec_collector?
-    data[:devices].concat(shelly_device_data) if shelly_collector?
-
-    data
+  def build_devices
+    devices = []
+    devices << senec_device_data if senec_collector?
+    devices.concat(shelly_device_data) if shelly_collector?
+    distribute_house_power_exclusions(devices)
+    devices
   end
 
   def persist_singletons!(config)
@@ -150,7 +154,6 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
       'web_concurrency' => dashboard_env['WEB_CONCURRENCY'],
       'frame_ancestors' => dashboard_env['FRAME_ANCESTORS'],
       'ui_theme' => dashboard_env['UI_THEME'],
-      'influx_exclude_from_house_power' => dashboard_env['INFLUX_EXCLUDE_FROM_HOUSE_POWER'],
       'lockup_codeword' => dashboard_env['LOCKUP_CODEWORD'],
       'trusted_proxy_ranges' => dashboard_env['TRUSTED_PROXY_RANGES'],
     }
@@ -297,10 +300,18 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
   def infer_shelly_device_type(measurement_name)
     mapping = "#{measurement_name}:power"
     sensors = sensors_data
+    return 'inverter' if inverter_sensor?(sensors, mapping)
     return 'heatpump' if sensors['heatpump_power'] == mapping
     return 'wallbox' if sensors['wallbox_power'] == mapping
 
     'consumer'
+  end
+
+  def inverter_sensor?(sensors, mapping)
+    %w[inverter_power inverter_power_1 inverter_power_2
+       inverter_power_3 inverter_power_4 inverter_power_5].any? do |key|
+      sensors[key] == mapping
+    end
   end
 
   # --- Forecast ---
@@ -418,6 +429,38 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
       labels.find { |k, _| k.include?('routers.dashboard.rule') }&.last
     else
       labels.find { |v| v.to_s.include?('routers.dashboard.rule') }
+    end
+  end
+
+  # --- House power exclusions ---
+
+  def distribute_house_power_exclusions(devices)
+    excluded = excluded_sensor_names
+    return if excluded.empty?
+
+    consumer_index = 0
+    devices.each do |device|
+      sensor = sensor_name_for_device(device, consumer_index)
+      consumer_index += 1 if device[:type] == 'consumer'
+      next unless sensor
+
+      device[:data]['exclude_from_house_power'] = true if excluded.include?(sensor.upcase)
+    end
+  end
+
+  def excluded_sensor_names
+    dashboard_env = service_env('dashboard')
+    value = dashboard_env['INFLUX_EXCLUDE_FROM_HOUSE_POWER']
+    return [] if value.blank?
+
+    value.split(',').map(&:strip)
+  end
+
+  def sensor_name_for_device(device, consumer_index)
+    case device[:type]
+    when 'heatpump' then 'HEATPUMP_POWER'
+    when 'wallbox' then 'WALLBOX_POWER'
+    when 'consumer' then format('CUSTOM_POWER_%02d', consumer_index + 1)
     end
   end
 

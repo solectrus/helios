@@ -30,7 +30,8 @@ class StackBuilder
       def self.shelly?(data)
         data.data_source == 'shelly' ||
           data.wallbox_vendor == 'shelly' ||
-          data.heatpump_access == 'shelly'
+          data.heatpump_access == 'shelly' ||
+          data.battery_vendor == 'shelly'
       end
 
       private
