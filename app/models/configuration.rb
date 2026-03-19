@@ -36,8 +36,8 @@ class Configuration
       self[name.to_s]
     end
 
-    def respond_to_missing?(...)
-      true
+    def respond_to_missing?(name, include_private = false)
+      key?(name.to_s) || super
     end
   end
 
@@ -183,7 +183,12 @@ class Configuration
   def save!
     dir = File.dirname(@path)
     FileUtils.mkdir_p(dir) unless File.directory?(dir)
-    File.write(@path, YAML.dump(ordered_data))
+
+    # Atomic write: write to temp file, then rename (safe on same filesystem)
+    tmp_path = "#{@path}.tmp"
+    File.write(tmp_path, YAML.dump(ordered_data))
+    File.rename(tmp_path, @path)
+
     @all_devices = nil
     @sensor_defaults = nil
   end

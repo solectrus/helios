@@ -1,6 +1,6 @@
 module AuthHelpers
   def create_admin
-    Admin.create_admin!(password: 'test') unless Admin.exists?
+    Admin.create_admin!(password: 'test') unless Admin.setup_completed?
   end
 
   def delete_admin

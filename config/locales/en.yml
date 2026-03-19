@@ -69,6 +69,9 @@ en:
       forecast:
         title: "Yield forecast"
         description: "Forecast of your PV yield"
+      dashboard:
+        title: "Dashboard"
+        description: "Settings for the SOLECTRUS dashboard"
       system:
         title: "System"
         description: "Basic settings for SOLECTRUS"

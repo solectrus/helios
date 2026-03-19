@@ -27,6 +27,6 @@ class AdminsController < ApplicationController
   end
 
   def redirect_if_admin_exists
-    redirect_to root_path if Admin.exists?
+    redirect_to root_path if Admin.setup_completed?
   end
 end

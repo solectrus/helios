@@ -26,14 +26,14 @@ RSpec.describe 'Admin Setup', :without_admin do
              password_confirmation: 'secretpassword',
            }
 
-      expect(Admin.exists?).to be true
+      expect(Admin.setup_completed?).to be true
       expect(response).to redirect_to(root_path)
     end
 
     it 'shows error for blank password' do
       post admin_path, params: { password: '', password_confirmation: '' }
 
-      expect(Admin.exists?).to be false
+      expect(Admin.setup_completed?).to be false
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('Password cannot be blank')
     end
@@ -45,7 +45,7 @@ RSpec.describe 'Admin Setup', :without_admin do
              password_confirmation: 'password2',
            }
 
-      expect(Admin.exists?).to be false
+      expect(Admin.setup_completed?).to be false
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('Passwords do not match')
     end

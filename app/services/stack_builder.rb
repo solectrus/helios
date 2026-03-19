@@ -38,19 +38,28 @@ class StackBuilder
 
   def write_compose!
     backup_if_not_generated!(Compose.path)
-    ::File.write(Compose.path, compose_content)
+    atomic_write(Compose.path, compose_content)
   end
 
   def write_env!
     backup_if_not_generated!(Env.path)
-    ::File.write(Env.path, env_content)
+    atomic_write(Env.path, env_content)
+  end
+
+  def atomic_write(path, content)
+    tmp_path = "#{path}.tmp"
+    ::File.write(tmp_path, content)
+    ::File.rename(tmp_path, path)
   end
 
   def backup_if_not_generated!(path)
-    return unless ::File.exist?(path)
-    return if ::File.read(path).include?(HELIOS_MARKER)
+    content = ::File.read(path)
+    return if content.include?(HELIOS_MARKER)
 
     ::FileUtils.cp(path, "#{path}.bak")
+  rescue Errno::ENOENT
+    # File doesn't exist yet, no backup needed
+    nil
   end
 
   def ensure_defaults!

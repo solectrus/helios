@@ -1,6 +1,6 @@
 class DashboardController < ApplicationController
   def show
-    redirect_to configuration_path unless Configuration.current.setup_completed?
+    return redirect_to configuration_path unless Configuration.current.setup_completed?
 
     @compose_services = Compose.load.services.sorted
 

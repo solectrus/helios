@@ -25,7 +25,7 @@ class ApplicationController < ActionController::Base
   end
 
   def admin_setup_completed?
-    @admin_setup_completed ||= Admin.exists?
+    @admin_setup_completed ||= Admin.setup_completed?
   end
 
   def authenticated?

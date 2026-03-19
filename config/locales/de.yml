@@ -39,6 +39,9 @@ de:
       forecast:
         title: "Ertragsprognose"
         description: "Prognose deines PV-Ertrags"
+      dashboard:
+        title: "Dashboard"
+        description: "Einstellungen für das SOLECTRUS-Dashboard"
       system:
         title: "System"
         description: "Grundeinstellungen für SOLECTRUS"

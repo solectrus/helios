@@ -5,12 +5,12 @@ class Admin < ApplicationRecord
     first
   end
 
-  def self.exists?
+  def self.setup_completed?
     any?
   end
 
   def self.create_admin!(password:)
-    raise 'Admin already exists' if exists?
+    raise 'Admin already exists' if setup_completed?
 
     create!(password:)
   end
