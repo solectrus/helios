@@ -13,6 +13,7 @@ class StackBuilder
       Services::Traefik,
       Services::PostgresqlBackup,
       Services::InfluxdbBackup,
+      Services::ShellyCollector,
     ].freeze
 
     def initialize(configuration)
@@ -25,7 +26,6 @@ class StackBuilder
       compose.name = 'solectrus'
 
       add_class_based_services(compose)
-      add_collector_services(compose)
 
       compose.to_yaml
     end
@@ -45,13 +45,6 @@ class StackBuilder
           service_class.new(configuration).to_h,
           comment: service_class.comment,
         )
-      end
-    end
-
-    def add_collector_services(compose)
-      Services::ShellyCollector.devices_for(configuration).each do |device|
-        collector = Services::ShellyCollector.new(configuration, device:)
-        compose.add_service(collector.service_name, collector.to_h, comment: collector.comment)
       end
     end
 

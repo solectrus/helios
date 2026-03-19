@@ -1,24 +1,21 @@
 class StackBuilder
   module Services
     class ShellyCollector < Base
-      attr_reader :device
-
-      def initialize(configuration, device:)
-        super(configuration)
-        @device = device
+      def self.service_name
+        'shelly-collector'
       end
 
-      def service_name
-        "shelly-#{identifier}"
+      def self.comment
+        'Shelly collector'
       end
 
-      def comment
-        "Shelly collector for #{device.data.name || device.name}"
+      def self.enabled?(configuration)
+        devices_for(configuration).any?
       end
 
       def to_h
         {
-          image: 'ghcr.io/solectrus/shelly-collector:latest',
+          image: 'ghcr.io/solectrus/shelly-collector:develop',
           environment: shelly_environment,
           depends_on: healthy_depends_on(%i[influxdb]),
           restart: 'unless-stopped',
@@ -38,28 +35,41 @@ class StackBuilder
 
       private
 
+      def devices
+        self.class.devices_for(configuration)
+      end
+
       def shelly_environment
-        env = {
-          'SHELLY_HOST' => device.data.shelly_host,
-          'SHELLY_INTERVAL' => device.data.shelly_interval || '5',
+        influx_environment.merge(device_environment)
+      end
+
+      def influx_environment
+        {
           'INFLUX_HOST' => 'influxdb',
           'INFLUX_TOKEN' => '${INFLUX_TOKEN}',
           'INFLUX_ORG' => '${INFLUX_ORG}',
           'INFLUX_BUCKET' => '${INFLUX_BUCKET}',
-          'INFLUX_MEASUREMENT' => measurement_name,
         }
-
-        password = device.data.shelly_password
-        env['SHELLY_PASSWORD'] = password if password.present?
-
-        env
       end
 
-      def identifier
-        device.name
+      def device_environment
+        {
+          'SHELLY_HOST' => csv_from { |d| d.data.shelly_host },
+          'SHELLY_INTERVAL' => csv_from { |d| d.data.shelly_interval || '5' },
+          'INFLUX_MEASUREMENT' => csv_from(&:name),
+        }.merge(password_environment)
       end
 
-      alias measurement_name identifier
+      def password_environment
+        passwords = devices.map { |d| d.data.shelly_password.presence || '' }
+        return {} unless passwords.any?(&:present?)
+
+        { 'SHELLY_PASSWORD' => passwords.join(',') }
+      end
+
+      def csv_from(&)
+        devices.map(&).join(',')
+      end
     end
   end
 end
