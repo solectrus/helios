@@ -12,7 +12,7 @@ RSpec.describe ConfigurationImporter do
     let(:scenario) { 'senec3' }
 
     it 'returns a hash with setting data' do
-      expect(importer.result).to include(:system, :dashboard, :postgresql, :influxdb, :redis, :helios, :watchtower,
+      expect(importer.result).to include(:system, :dashboard, :postgresql, :influxdb, :redis, :watchtower,
                                          :sensors, :devices)
     end
 

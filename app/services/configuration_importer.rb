@@ -27,7 +27,6 @@ class ConfigurationImporter
       postgresql: postgresql_data,
       influxdb: influxdb_data,
       redis: redis_data,
-      helios: helios_data,
       watchtower: watchtower_data,
       sensors: sensors_data,
       reverse_proxy: reverse_proxy_data,
@@ -41,7 +40,7 @@ class ConfigurationImporter
   end
 
   def persist_singletons!(config)
-    %i[system dashboard postgresql influxdb redis helios watchtower sensors reverse_proxy backup].each do |key|
+    %i[system dashboard postgresql influxdb redis watchtower sensors reverse_proxy backup].each do |key|
       config.update(key.to_s, result[key]) if result[key]
     end
   end
@@ -78,10 +77,6 @@ class ConfigurationImporter
     image_data_for('redis')
   end
 
-  def helios_data
-    image_data_for('helios')
-  end
-
   def watchtower_data
     image_data_for('watchtower')
   end
@@ -94,7 +89,6 @@ class ConfigurationImporter
   def postgresql_data
     {
       'image' => @reader.service('postgresql')&.dig('image'),
-      'backup_image' => @reader.service('postgresql-backup')&.dig('image'),
       'password' => @reader.raw_env['POSTGRES_PASSWORD'],
     }.compact
   end
@@ -102,7 +96,6 @@ class ConfigurationImporter
   def influxdb_data
     {
       'image' => @reader.service('influxdb')&.dig('image'),
-      'backup_image' => @reader.service('influxdb-backup')&.dig('image'),
       'password' => @reader.raw_env['INFLUX_PASSWORD'],
       'org' => @reader.raw_env['INFLUX_ORG'],
       'bucket' => @reader.raw_env['INFLUX_BUCKET'],
@@ -182,14 +175,30 @@ class ConfigurationImporter
   end
 
   def backup_data
-    return unless @reader.services.key?('postgresql-backup')
+    data = backup_images
 
+    if @reader.services.key?('postgresql-backup')
+      data.merge!(
+        'enabled' => true,
+        'aws_access_key_id' => @reader.raw_env['AWS_ACCESS_KEY_ID'],
+        'aws_secret_access_key' => @reader.raw_env['AWS_SECRET_ACCESS_KEY'],
+        'aws_region' => @reader.raw_env['AWS_REGION'],
+        'aws_bucket' => @reader.raw_env['AWS_BUCKET'],
+      )
+    end
+
+    data.compact.presence
+  end
+
+  def backup_images
     {
-      'enabled' => true,
-      'aws_access_key_id' => @reader.raw_env['AWS_ACCESS_KEY_ID'],
-      'aws_secret_access_key' => @reader.raw_env['AWS_SECRET_ACCESS_KEY'],
-      'aws_region' => @reader.raw_env['AWS_REGION'],
-      'aws_bucket' => @reader.raw_env['AWS_BUCKET'],
+      'postgresql' => image_hash_for('postgresql-backup'),
+      'influxdb' => image_hash_for('influxdb-backup'),
     }.compact
+  end
+
+  def image_hash_for(service_name)
+    image = @reader.service(service_name)&.dig('image')
+    { 'image' => image } if image
   end
 end

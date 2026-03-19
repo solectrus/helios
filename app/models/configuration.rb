@@ -7,11 +7,11 @@ class Configuration
   # Singletons exist at most once per configuration
   SINGLETONS = %w[
     system dashboard postgresql influxdb redis
-    helios watchtower forecast reverse_proxy backup sensors
+    watchtower forecast reverse_proxy backup sensors
   ].freeze
 
   # Sections hidden from the configuration UI (auto-managed)
-  HIDDEN = %w[postgresql influxdb redis helios watchtower sensors].freeze
+  HIDDEN = %w[postgresql influxdb redis watchtower sensors].freeze
 
   # All valid setting names
   ALL = (DEVICES + SINGLETONS).freeze
@@ -25,7 +25,11 @@ class Configuration
   # Hash wrapper that allows method-style access: config.system.timezone
   class Data < Hash
     def self.wrap(hash)
-      new.merge!(hash || {})
+      wrapped = new
+      (hash || {}).each do |k, v|
+        wrapped[k.to_s] = v.is_a?(Hash) ? wrap(v) : v
+      end
+      wrapped
     end
 
     def method_missing(name, ...)

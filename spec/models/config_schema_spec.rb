@@ -17,12 +17,17 @@ RSpec.describe ConfigSchema do
 
     it 'returns fields for postgresql' do
       fields = described_class.fields_for('postgresql')
-      expect(fields).to include('image', 'backup_image', 'password')
+      expect(fields).to include('image', 'password')
     end
 
     it 'returns fields for influxdb' do
       fields = described_class.fields_for('influxdb')
-      expect(fields).to include('image', 'backup_image', 'org', 'bucket', 'password', 'token')
+      expect(fields).to include('image', 'org', 'bucket', 'password', 'token')
+    end
+
+    it 'returns fields for backup' do
+      fields = described_class.fields_for('backup')
+      expect(fields).to include('enabled', 'aws_access_key_id', 'influxdb', 'postgresql')
     end
 
     it 'returns fields for redis' do
@@ -30,9 +35,8 @@ RSpec.describe ConfigSchema do
       expect(fields).to include('image')
     end
 
-    it 'returns fields for helios' do
-      fields = described_class.fields_for('helios')
-      expect(fields).to include('image')
+    it 'returns nil for helios (not a config section)' do
+      expect(described_class.fields_for('helios')).to be_nil
     end
 
     it 'returns fields for watchtower' do
@@ -80,8 +84,8 @@ RSpec.describe ConfigSchema do
       expect(described_class.valid_field?('postgresql', 'image')).to be true
     end
 
-    it 'returns true for backup_image in postgresql' do
-      expect(described_class.valid_field?('postgresql', 'backup_image')).to be true
+    it 'returns true for postgresql in backup' do
+      expect(described_class.valid_field?('backup', 'postgresql')).to be true
     end
 
     it 'returns false for unknown system field' do
@@ -120,7 +124,7 @@ RSpec.describe ConfigSchema do
       config = Configuration.current
       missing = described_class.missing_auto_generated(config)
 
-      expect(missing.keys).to match_array(%w[dashboard postgresql influxdb redis helios watchtower])
+      expect(missing.keys).to match_array(%w[dashboard postgresql influxdb redis watchtower backup])
     end
 
     it 'returns all dashboard defaults when empty' do
@@ -130,18 +134,23 @@ RSpec.describe ConfigSchema do
 
     it 'returns all postgresql defaults when empty' do
       missing = described_class.missing_auto_generated(Configuration.current)
-      expect(missing['postgresql'].keys).to match_array(%w[image backup_image password])
+      expect(missing['postgresql'].keys).to match_array(%w[image password])
     end
 
     it 'returns all influxdb defaults when empty' do
       missing = described_class.missing_auto_generated(Configuration.current)
-      expect(missing['influxdb'].keys).to match_array(%w[image backup_image org bucket password token])
+      expect(missing['influxdb'].keys).to match_array(%w[image org bucket password token])
+    end
+
+    it 'returns all backup defaults when empty' do
+      missing = described_class.missing_auto_generated(Configuration.current)
+      expect(missing['backup'].keys).to match_array(%w[influxdb postgresql])
     end
 
     it 'returns image defaults for image-only sections when empty' do
       missing = described_class.missing_auto_generated(Configuration.current)
 
-      %w[redis helios watchtower].each do |section|
+      %w[redis watchtower].each do |section|
         expect(missing[section].keys).to match_array(%w[image])
       end
     end

@@ -1,6 +1,8 @@
 class StackBuilder
   module Services
     class Helios < Base
+      IMAGE = 'ghcr.io/solectrus/helios:develop'.freeze
+
       def self.service_name
         'helios'
       end
@@ -11,7 +13,7 @@ class StackBuilder
 
       def to_h
         {
-          image: configuration.helios.image,
+          image: IMAGE,
           user: 'root',
           environment: {
             'SECRET_KEY_BASE' => '${SECRET_KEY_BASE}',

@@ -26,7 +26,6 @@ class ConfigSchema
 
   POSTGRESQL_DEFAULTS = {
     'image' => -> { 'postgres:18-alpine' },
-    'backup_image' => -> { 'ghcr.io/solectrus/postgres-s3-backup:18' },
     'password' => -> { SecureRandom.alphanumeric(32) },
   }.freeze
 
@@ -36,7 +35,6 @@ class ConfigSchema
 
   INFLUXDB_DEFAULTS = {
     'image' => -> { 'influxdb:2-alpine' },
-    'backup_image' => -> { 'ghcr.io/solectrus/influxdb2-s3-backup:latest' },
     'org' => -> { 'solectrus' },
     'bucket' => -> { 'solectrus' },
     'password' => -> { SecureRandom.alphanumeric(32) },
@@ -53,14 +51,6 @@ class ConfigSchema
 
   REDIS_ALL = REDIS_DEFAULTS.keys.freeze
 
-  # --- Helios ---
-
-  HELIOS_DEFAULTS = {
-    'image' => -> { 'ghcr.io/solectrus/helios:develop' },
-  }.freeze
-
-  HELIOS_ALL = HELIOS_DEFAULTS.keys.freeze
-
   # --- Watchtower ---
 
   WATCHTOWER_DEFAULTS = {
@@ -69,14 +59,21 @@ class ConfigSchema
 
   WATCHTOWER_ALL = WATCHTOWER_DEFAULTS.keys.freeze
 
+  # --- Backup image defaults ---
+
+  BACKUP_DEFAULTS = {
+    'influxdb' => -> { { 'image' => 'ghcr.io/solectrus/influxdb2-s3-backup:latest' } },
+    'postgresql' => -> { { 'image' => 'ghcr.io/solectrus/postgres-s3-backup:18' } },
+  }.freeze
+
   # Combined auto-generated defaults keyed by section
   AUTO_GENERATED = {
     'dashboard' => DASHBOARD_DEFAULTS,
     'postgresql' => POSTGRESQL_DEFAULTS,
     'influxdb' => INFLUXDB_DEFAULTS,
     'redis' => REDIS_DEFAULTS,
-    'helios' => HELIOS_DEFAULTS,
     'watchtower' => WATCHTOWER_DEFAULTS,
+    'backup' => BACKUP_DEFAULTS,
   }.freeze
 
   # --- Device fields ---
@@ -170,6 +167,8 @@ class ConfigSchema
     aws_bucket
   ].freeze
 
+  BACKUP_ALL = (BACKUP_FIELDS + BACKUP_DEFAULTS.keys).uniq.freeze
+
   # Sensors is a dynamic mapping (sensor_name => influx_field),
   # validated via SensorRegistry instead of a fixed field list.
   SENSORS_FIELDS = :dynamic
@@ -182,7 +181,6 @@ class ConfigSchema
     'postgresql' => POSTGRESQL_ALL,
     'influxdb' => INFLUXDB_ALL,
     'redis' => REDIS_ALL,
-    'helios' => HELIOS_ALL,
     'watchtower' => WATCHTOWER_ALL,
     'inverter' => INVERTER_FIELDS,
     'battery' => BATTERY_FIELDS,
@@ -192,7 +190,7 @@ class ConfigSchema
     'consumer' => CONSUMER_FIELDS,
     'forecast' => FORECAST_FIELDS,
     'reverse_proxy' => REVERSE_PROXY_FIELDS,
-    'backup' => BACKUP_FIELDS,
+    'backup' => BACKUP_ALL,
     'sensors' => SENSORS_FIELDS,
   }.freeze
 
