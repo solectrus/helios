@@ -20,32 +20,22 @@ RSpec.describe Configuration do
     end
   end
 
-  describe '.device?' do
-    it 'returns true for device types' do
-      expect(described_class.device?('inverter')).to be true
-      expect(described_class.device?('battery')).to be true
-    end
-
-    it 'returns false for singleton types' do
-      expect(described_class.device?('system')).to be false
-    end
-  end
-
   describe '.singleton?' do
     it 'returns true for singleton types' do
       expect(described_class.singleton?('system')).to be true
       expect(described_class.singleton?('forecast')).to be true
+      expect(described_class.singleton?('senec')).to be true
     end
 
-    it 'returns false for device types' do
-      expect(described_class.singleton?('inverter')).to be false
+    it 'returns false for unknown types' do
+      expect(described_class.singleton?('unknown')).to be false
     end
   end
 
   describe '.valid?' do
     it 'returns true for valid settings' do
-      expect(described_class.valid?('inverter')).to be true
       expect(described_class.valid?('system')).to be true
+      expect(described_class.valid?('senec')).to be true
     end
 
     it 'returns false for invalid settings' do
@@ -67,37 +57,12 @@ RSpec.describe Configuration do
     end
   end
 
-  describe 'device accessors' do
-    it 'returns data for device with name' do
-      config = described_class.current
-      config.add('inverter', 'Dach Süd', { 'data_source' => 'senec_local' })
-
-      expect(config.inverter('Dach Süd')).to eq(
-        { 'data_source' => 'senec_local' },
-      )
-    end
-
-    it 'returns empty hash for non-existent device name' do
-      config = described_class.current
-      expect(config.inverter('missing')).to eq({})
-    end
-  end
-
   describe '#setting_data' do
     it 'returns data for singleton' do
       config = described_class.current
       config.update('system', { 'timezone' => 'Europe/Berlin' })
 
       expect(config.setting_data('system')).to eq({ 'timezone' => 'Europe/Berlin' })
-    end
-
-    it 'returns data for device with name' do
-      config = described_class.current
-      config.add('inverter', 'Dach Süd', { 'data_source' => 'senec_local' })
-
-      expect(config.setting_data('inverter', 'Dach Süd')).to eq(
-        { 'data_source' => 'senec_local' },
-      )
     end
   end
 
@@ -116,15 +81,6 @@ RSpec.describe Configuration do
 
       expect(config.system).to eq(
         { 'timezone' => 'Europe/Berlin', 'mqtt_host' => '192.168.1.44' },
-      )
-    end
-
-    it 'creates a device entry with name' do
-      config = described_class.current
-      config.update('inverter', { 'data_source' => 'senec_local' }, name: 'Dach Süd')
-
-      expect(config.inverter('Dach Süd')).to eq(
-        { 'data_source' => 'senec_local' },
       )
     end
 
@@ -151,162 +107,148 @@ RSpec.describe Configuration do
     end
   end
 
-  describe '#devices_of' do
-    it 'returns all devices of a given type' do
-      config = described_class.current
-      config.add('inverter', 'Dach Süd', { 'data_source' => 'senec_local' })
-      config.add('inverter', 'BKW', { 'data_source' => 'mqtt' })
-      config.add('wallbox', 'Garage')
+  describe 'sensor management' do
+    describe '#update_sensor' do
+      it 'adds a sensor with config' do
+        config = described_class.current
+        config.update_sensor('inverter_power', { 'source' => 'senec' })
 
-      devices = config.devices_of('inverter')
-      expect(devices.size).to eq(2)
-      expect(devices.map(&:name)).to contain_exactly('Dach Süd', 'BKW')
+        expect(config.sensor_enabled?('inverter_power')).to be true
+        expect(config.sensor_config('inverter_power').source).to eq('senec')
+      end
     end
 
-    it 'returns empty array for no devices' do
-      config = described_class.current
-      expect(config.devices_of('inverter')).to eq([])
-    end
-  end
+    describe '#remove_sensor' do
+      it 'removes a sensor' do
+        config = described_class.current
+        config.update_sensor('inverter_power', { 'source' => 'senec' })
+        config.remove_sensor('inverter_power')
 
-  describe '#add' do
-    it 'creates a device entry' do
-      config = described_class.current
-      config.add('inverter', 'Dach Süd', { 'data_source' => 'senec_local' })
-
-      expect(config.inverter('Dach Süd')).to eq(
-        { 'data_source' => 'senec_local' },
-      )
+        expect(config.sensor_enabled?('inverter_power')).to be false
+      end
     end
 
-    it 'raises error for non-device types' do
-      config = described_class.current
+    describe '#enabled_sensors' do
+      it 'returns only valid sensor names' do
+        config = described_class.current
+        config.update_sensor('inverter_power', { 'source' => 'senec' })
+        config.update_sensor('house_power', { 'source' => 'senec' })
 
-      expect do
-        config.add('system', 'test')
-      end.to raise_error(ArgumentError, /not a device/)
+        expect(config.enabled_sensors).to contain_exactly('inverter_power', 'house_power')
+      end
     end
-  end
 
-  describe '#remove' do
-    it 'removes a device entry' do
-      config = described_class.current
-      config.add('inverter', 'Dach Süd')
-      config.remove('inverter', 'Dach Süd')
+    describe '#sensors_with_source' do
+      it 'filters sensors by source' do
+        config = described_class.current
+        config.update_sensor('inverter_power', { 'source' => 'senec' })
+        config.update_sensor('heatpump_power', { 'source' => 'shelly', 'shelly_host' => '1.2.3.4' })
 
-      expect(config.inverter('Dach Süd')).to eq({})
+        senec_sensors = config.sensors_with_source('senec')
+        expect(senec_sensors.keys).to eq(['inverter_power'])
+      end
     end
   end
 
   describe '#mqtt_required?' do
-    it 'returns false when no devices use MQTT' do
+    it 'returns false when no sensors use MQTT' do
       config = described_class.current
-      config.add('inverter', 'PV', { 'data_source' => 'senec_local' })
+      config.update_sensor('inverter_power', { 'source' => 'senec' })
 
       expect(config.mqtt_required?).to be false
     end
 
-    it 'returns true when a device uses MQTT as data_source' do
+    it 'returns true when a sensor uses MQTT' do
       config = described_class.current
-      config.add('inverter', 'PV', { 'data_source' => 'mqtt' })
+      config.update_sensor('car_battery_soc', { 'source' => 'mqtt', 'mqtt_topic' => 'car/soc' })
 
       expect(config.mqtt_required?).to be true
     end
+  end
 
-    it 'returns true when heatpump uses MQTT as power_source' do
+  describe '#senec_required?' do
+    it 'returns true when a sensor uses SENEC' do
       config = described_class.current
-      config.add('heatpump', 'HP', { 'power_source' => 'mqtt' })
+      config.update_sensor('inverter_power', { 'source' => 'senec' })
 
-      expect(config.mqtt_required?).to be true
+      expect(config.senec_required?).to be true
     end
 
-    it 'returns true when heatpump uses MQTT as details_source' do
+    it 'returns false when no sensors use SENEC' do
       config = described_class.current
-      config.add('heatpump', 'HP', { 'details_source' => 'mqtt' })
+      config.update_sensor('heatpump_power', { 'source' => 'shelly' })
 
-      expect(config.mqtt_required?).to be true
+      expect(config.senec_required?).to be false
+    end
+  end
+
+  describe '#shelly_required?' do
+    it 'returns true when a sensor uses Shelly' do
+      config = described_class.current
+      config.update_sensor('heatpump_power', { 'source' => 'shelly', 'shelly_host' => '1.2.3.4' })
+
+      expect(config.shelly_required?).to be true
     end
   end
 
   describe '#ingest_required?' do
-    it 'returns false with single inverter that knows house power' do
+    it 'returns false with single inverter power sensor' do
       config = described_class.current
-      config.add('inverter', 'PV', { 'house_power_known' => true })
+      config.update_sensor('inverter_power_1', { 'source' => 'senec' })
 
       expect(config.ingest_required?).to be false
     end
 
-    it 'returns true with single inverter that does not know house power' do
+    it 'returns true with multiple inverter power sensors' do
       config = described_class.current
-      config.add('inverter', 'PV', { 'house_power_known' => false })
+      config.update_sensor('inverter_power_1', { 'source' => 'senec' })
+      config.update_sensor('inverter_power_2', { 'source' => 'mqtt' })
 
       expect(config.ingest_required?).to be true
     end
 
-    it 'returns true with multiple inverters' do
-      config = described_class.current
-      config.add('inverter', 'Dach', { 'house_power_known' => true })
-      config.add('inverter', 'BKW', { 'house_power_known' => true })
-
-      expect(config.ingest_required?).to be true
-    end
-
-    it 'returns false with no inverters' do
+    it 'returns false with no inverter sensors' do
       config = described_class.current
 
       expect(config.ingest_required?).to be false
-    end
-  end
-
-  describe '#senec_hosts' do
-    it 'returns deduplicated SENEC hosts' do
-      config = described_class.current
-      config.add(
-        'inverter', 'PV',
-        { 'data_source' => 'senec_local', 'senec_host' => '192.168.1.42' }
-      )
-      config.add(
-        'battery', 'Akku',
-        { 'data_source' => 'senec_local', 'senec_host' => '192.168.1.42' }
-      )
-
-      expect(config.senec_hosts).to eq(['192.168.1.42'])
-    end
-
-    it 'returns empty array when no SENEC devices' do
-      config = described_class.current
-      config.add('inverter', 'PV', { 'data_source' => 'mqtt' })
-
-      expect(config.senec_hosts).to eq([])
     end
   end
 
   describe '#effective_sensor_mappings' do
-    it 'merges computed mappings with overrides' do
+    it 'returns mappings for enabled sensors' do
       config = described_class.current
-      config.update(
-        'sensors',
-        { 'inverter_power' => 'custom:power' },
-      )
+      config.update_sensor('inverter_power', { 'source' => 'senec' })
 
       expect(config.effective_sensor_mappings).to include(
-        'inverter_power' => 'custom:power',
+        'inverter_power' => 'SENEC:inverter_power',
       )
     end
   end
 
+  describe '#excluded_from_house_power' do
+    it 'returns sensor names flagged for exclusion' do
+      config = described_class.current
+      config.update_sensor('custom_power_01', {
+                             'source' => 'shelly',
+                             'shelly_host' => '1.2.3.4',
+                             'exclude_from_house_power' => true,
+                           })
+
+      expect(config.excluded_from_house_power).to eq(['CUSTOM_POWER_01'])
+    end
+  end
+
   describe '#setup_completed?' do
-    it 'returns false when no devices are configured' do
+    it 'returns false when no sensors are configured' do
       config = described_class.current
       expect(config.setup_completed?).to be false
     end
 
-    it 'returns true when at least one device is configured' do
+    it 'returns true when at least one sensor is configured' do
       config = described_class.current
-      config.add('inverter', 'MyInverter', { 'data_source' => 'senec' })
+      config.update_sensor('inverter_power', { 'source' => 'senec' })
 
-      reloaded = described_class.current
-      expect(reloaded.setup_completed?).to be true
+      expect(config.setup_completed?).to be true
     end
   end
 end

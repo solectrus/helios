@@ -7,14 +7,53 @@
     <%= turbo_frame_tag "tab-content" do %>
       <div class="mb-8"><%= render MainNav::Component.new(active_tab: :configuration) %></div>
 
-      <%# Devices section %>
-      <h3 class="text-base-content/50 mb-3 text-sm font-semibold tracking-wide uppercase"><%= t('.devices') %></h3>
+      <%# Sensors section %>
+      <h3 class="text-base-content/50 mb-3 text-sm font-semibold tracking-wide uppercase"><%= t('.sensors') %></h3>
 
-      <div class="mb-8 space-y-4">
-        <% Configuration::DEVICES.each do |setting| %>
-          <%= render SettingSection::Component.new(setting:, configuration: @configuration) %>
-        <% end %>
+      <div
+        class="card bg-base-100 mb-8 shadow-md"
+        data-controller="sensors-polling"
+        data-sensors-polling-url-value="<%= configuration_readings_path %>"
+      >
+        <div class="card-body p-0">
+          <div class="overflow-x-auto">
+            <table class="table-sm table">
+              <% SensorRegistry::GROUPS.each do |group, sensor_names| %>
+                <tbody>
+                  <tr class="bg-base-200/30">
+                    <td colspan="4" class="text-primary pt-6 pb-3 pl-3 font-bold tracking-wide uppercase">
+                      <i class="fa-solid mr-2 align-middle text-2xl <%= sensor_group_icon(group) %>"></i>
+                      <span class="align-middle text-xs"><%= t("sensor_groups.#{group}") %></span>
+                    </td>
+                  </tr>
+
+                  <% sensor_names.each do |sensor_name| %>
+                    <%= render SensorRow::Component.new(
+                          sensor_name: sensor_name,
+                          configuration: @configuration,
+                          reading: @readings[sensor_name],
+                        ) %>
+                  <% end %>
+                </tbody>
+              <% end %>
+            </table>
+          </div>
+        </div>
       </div>
+
+      <%# Source settings section (shown when sources are in use) %>
+      <% active_sources = Configuration::SOURCE_CONFIGS.select { |s| @configuration.configured?(s) || @configuration.sensors_with_source(s).any? } %>
+
+      <% if active_sources.any? %>
+        <h3 class="text-base-content/50 mb-3 text-sm font-semibold tracking-wide uppercase">
+          <%= t('.source_settings') %>
+        </h3>
+        <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <% active_sources.each do |setting| %>
+            <%= render SettingSection::Component.new(setting:, configuration: @configuration) %>
+          <% end %>
+        </div>
+      <% end %>
 
       <%# Settings section %>
       <h3 class="text-base-content/50 mb-3 text-sm font-semibold tracking-wide uppercase"><%= t('.settings') %></h3>

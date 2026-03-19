@@ -117,7 +117,8 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     config = Configuration.current
 
     persist_singletons!(config)
-    persist_devices!(config)
+    persist_sensors_from_devices!(config)
+    persist_source_configs!(config)
     persist_unmanaged!(config)
 
     config
@@ -157,9 +158,111 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     end
   end
 
-  def persist_devices!(config)
-    result[:devices].each do |device|
-      config.add(device[:type], device[:name], device[:data])
+  def persist_sensors_from_devices!(config)
+    # Convert device-based import to sensor-centric config
+    sensors = result[:sensors] || {}
+    devices = result[:devices] || []
+
+    # For each sensor mapping, determine source from devices
+    sensors.each_key do |sensor_name|
+      source = infer_source_for_sensor(sensor_name, devices)
+      next unless source
+
+      sensor_data = build_sensor_data(sensor_name, source, devices)
+      config.update_sensor(sensor_name, sensor_data)
+    end
+  end
+
+  def persist_source_configs!(config)
+    return unless senec_collector?
+
+    senec_env = service_env('senec-collector')
+    senec_data = senec_base_import_data(senec_env).merge(senec_connection_import_data(senec_env))
+    config.update('senec', senec_data.compact)
+  end
+
+  def senec_base_import_data(senec_env)
+    {
+      'adapter' => senec_env['SENEC_ADAPTER'] || 'local',
+      'interval' => senec_env['SENEC_INTERVAL'],
+      'ignore' => senec_env['SENEC_IGNORE'],
+    }
+  end
+
+  def senec_connection_import_data(senec_env)
+    if senec_env['SENEC_ADAPTER'] == 'cloud'
+      { 'username' => senec_env['SENEC_USERNAME'], 'password' => senec_env['SENEC_PASSWORD'],
+        'totp_uri' => senec_env['SENEC_TOTP_URI'], 'system_id' => senec_env['SENEC_SYSTEM_ID'] }
+    else
+      { 'host' => senec_env['SENEC_HOST'], 'schema' => senec_env['SENEC_SCHEMA'],
+        'language' => senec_env['SENEC_LANGUAGE'] }
+    end
+  end
+
+  def infer_source_for_sensor(sensor_name, devices)
+    return 'senec' if SensorMappings::SENEC_DEFAULTS.key?(sensor_name) && senec_collector?
+    return 'forecast' if SensorMappings::FORECAST_DEFAULTS.key?(sensor_name)
+    return 'shelly' if device_provides_sensor?(devices, sensor_name, 'shelly')
+    return 'mqtt' if device_provides_sensor?(devices, sensor_name, 'mqtt')
+
+    'smart_home'
+  end
+
+  def device_provides_sensor?(devices, sensor_name, source_type)
+    source_fields = %w[data_source wallbox_vendor heatpump_access battery_vendor]
+
+    devices.any? do |device|
+      next unless device[:data].values_at(*source_fields).include?(source_type)
+
+      sensor_mapping = result[:sensors][sensor_name]
+      next unless sensor_mapping
+
+      sensor_mapping.start_with?("#{device[:name]}:")
+    end
+  end
+
+  def build_sensor_data(sensor_name, source, devices)
+    data = { 'source' => source }
+
+    case source
+    when 'shelly' then merge_shelly_sensor_data!(data, sensor_name, devices)
+    when 'mqtt' then merge_mqtt_sensor_data!(data, sensor_name, devices)
+    end
+
+    data.compact
+  end
+
+  def merge_shelly_sensor_data!(data, sensor_name, devices)
+    device = find_device_for_sensor(sensor_name, devices, 'shelly')
+    return unless device
+
+    device_data = device[:data]
+    data['shelly_host'] = device_data['shelly_host']
+    data['shelly_interval'] = device_data['shelly_interval']
+    data['name'] = device_data['name'] || device[:name]
+    return unless device_data['exclude_from_house_power']
+
+    data['exclude_from_house_power'] =
+      device_data['exclude_from_house_power']
+  end
+
+  def merge_mqtt_sensor_data!(data, sensor_name, devices)
+    device = find_device_for_sensor(sensor_name, devices, 'mqtt')
+    return unless device
+
+    data['mqtt_topic'] = device[:data]['mqtt_topic']
+    data['name'] = device[:data]['name'] || device[:name]
+  end
+
+  def find_device_for_sensor(sensor_name, devices, source_type)
+    mapping = result[:sensors][sensor_name]
+    return nil unless mapping
+
+    devices.find do |device|
+      data = device[:data]
+      is_source = data.values_at('data_source', 'wallbox_vendor', 'heatpump_access',
+                                 'battery_vendor').include?(source_type)
+      is_source && "#{device[:name]}:power" == mapping
     end
   end
 

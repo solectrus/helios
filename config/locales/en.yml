@@ -30,6 +30,7 @@
 en:
   common:
     back: "Back"
+    cancel: "Cancel"
 
   header:
     component:
@@ -39,7 +40,6 @@ en:
     component:
       services: "Docker Services"
       configuration: "Configuration"
-      sensors: "Sensors"
       generated_files: "Generated Files"
 
   configurations:
@@ -47,30 +47,25 @@ en:
       title: "Configuration - Helios"
       configured: "Configured"
       pending: "Pending"
-      devices: "Devices"
+      sensors: "Sensors"
       settings: "Settings"
+      source_settings: "Data Sources"
+      sensor_name: "Sensor"
+      source: "Source"
+      live_value: "Value"
     settings:
-      inverter:
-        title: "Inverter"
-        description: "Configuration of your inverter"
-      battery:
-        title: "Battery"
-        description: "Configuration of your battery storage"
-      wallbox:
-        title: "Wallbox"
-        description: "Configuration of your wallbox"
-      car:
-        title: "Electric car"
-        description: "Configuration of your electric car"
-      heatpump:
-        title: "Heat pump"
-        description: "Configuration of your heat pump"
-      consumer:
-        title: "Consumer"
-        description: "Configuration of a custom consumer"
+      senec:
+        title: "SENEC-Collector"
+        description: "Connection settings for your SENEC system"
+      mqtt:
+        title: "MQTT-Collector"
+        description: "Connection settings for the MQTT broker"
+      shelly:
+        title: "Shelly-Collector"
+        description: "General settings for Shelly sensors"
       forecast:
-        title: "Yield forecast"
-        description: "Forecast of your PV yield"
+        title: "Forecast-Collector"
+        description: "Solar forecast data collector"
       system:
         title: "System"
         description: "General settings for SOLECTRUS"
@@ -80,76 +75,76 @@ en:
       backup:
         title: "Backup"
         description: "Configuration of S3 data backup"
-      sensors:
-        title: "Sensor mapping"
-        description: "Map sensors to InfluxDB fields"
       invalid_setting: "Unknown setting"
       add: "Add"
       edit: "Edit"
       delete: "Delete"
-      delete_confirm: "Are you sure?"
+      delete_confirm: "Really deactivate this sensor?"
+      delete_confirm_yes: "Deactivate"
       discard_confirm: "Discard unsaved changes?"
       discard_cancel: "Keep editing"
       discard_discard: "Discard"
       configure: "Configure"
       not_configured: "Not configured yet"
-      no_devices: "No devices added yet"
 
   sensors:
-    show:
-      title: "Sensors - Helios"
+    inverter_power: "Total PV generation"
+    inverter_power_1: "PV generation string 1"
+    inverter_power_2: "PV generation string 2"
+    inverter_power_3: "PV generation string 3"
+    inverter_power_4: "PV generation string 4"
+    inverter_power_5: "PV generation string 5"
+    case_temp: "Inverter housing temperature"
+    system_status: "Inverter operating state"
+    system_status_ok: "Inverter error-free"
+    grid_import_power: "Power drawn from the grid"
+    grid_export_power: "Power fed into the grid"
+    grid_export_limit: "Max. feed-in as % of system capacity"
+    house_power: "Total household consumption"
+    battery_charging_power: "Current charging power"
+    battery_discharging_power: "Current discharging power"
+    battery_soc: "Charge level in percent"
+    wallbox_power: "Current charging power"
+    wallbox_car_connected: "Vehicle connected?"
+    car_battery_soc: "Vehicle battery level"
+    heatpump_power: "Heat pump power consumption"
+    heatpump_heating_power: "Thermal output"
+    heatpump_tank_temp: "Hot water tank temperature"
+    heatpump_status: "Operating mode"
+    outdoor_temp: "Measured outdoor temperature"
+    inverter_power_forecast: "Expected PV generation per weather"
+    inverter_power_forecast_clearsky: "Max. PV generation under clear sky"
+    outdoor_temp_forecast: "Expected outdoor temperature per weather"
+    custom_power_01: "Custom consumer 1"
+    custom_power_02: "Custom consumer 2"
+    custom_power_03: "Custom consumer 3"
+    custom_power_04: "Custom consumer 4"
+    custom_power_05: "Custom consumer 5"
+    custom_power_06: "Custom consumer 6"
+    custom_power_07: "Custom consumer 7"
+    custom_power_08: "Custom consumer 8"
+    custom_power_09: "Custom consumer 9"
+    custom_power_10: "Custom consumer 10"
+    custom_power_11: "Custom consumer 11"
+    custom_power_12: "Custom consumer 12"
+    custom_power_13: "Custom consumer 13"
+    custom_power_14: "Custom consumer 14"
+    custom_power_15: "Custom consumer 15"
+    custom_power_16: "Custom consumer 16"
+    custom_power_17: "Custom consumer 17"
+    custom_power_18: "Custom consumer 18"
+    custom_power_19: "Custom consumer 19"
+    custom_power_20: "Custom consumer 20"
 
-  sensor_table:
-    component:
-      sensor: "Sensor"
-      measurement: "Measurement"
-      field: "Field"
-      value: "Current Value"
-      timestamp: "Last Value"
-      count: "Count"
-      span: "Time Span"
-      influxdb_not_running: "InfluxDB is not running. Sensor values cannot be queried."
-      influxdb_error: "InfluxDB error: %{message}"
-      time_ago:
-        seconds:
-          one: "1 second ago"
-          other: "%{count} seconds ago"
-        minutes:
-          one: "1 minute ago"
-          other: "%{count} minutes ago"
-        hours:
-          one: "1 hour ago"
-          other: "%{count} hours ago"
-        days:
-          one: "1 day ago"
-          other: "%{count} days ago"
-        months:
-          one: "1 month ago"
-          other: "%{count} months ago"
-        years:
-          one: "1 year ago"
-          other: "%{count} years ago"
-      duration:
-        seconds:
-          one: "1 second"
-          other: "%{count} seconds"
-        minutes:
-          one: "1 minute"
-          other: "%{count} minutes"
-        hours:
-          one: "1 hour"
-          other: "%{count} hours"
-        days:
-          one: "1 day"
-          other: "%{count} days"
-        months:
-          one: "1 month"
-          other: "%{count} months"
-        years:
-          one: "1 year"
-          other: "%{count} years"
-      unknown_device: "Other"
-      no_sensors: "No sensors configured yet. Add sensor mappings in the Configuration tab."
+  sensor_groups:
+    inverter: "Inverter"
+    grid: "Grid"
+    battery: "Battery"
+    wallbox: "Wallbox"
+    car: "Electric Car"
+    heatpump: "Heat Pump"
+    forecast: "Forecast"
+    custom: "Custom Consumer"
 
   generated_files:
     show:

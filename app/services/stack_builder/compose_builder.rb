@@ -15,6 +15,7 @@ class StackBuilder
       Services::InfluxdbBackup,
       Services::SenecCollector,
       Services::ShellyCollector,
+      Services::MqttCollector,
       Services::ForecastCollector,
       Services::PowerSplitter,
     ].freeze

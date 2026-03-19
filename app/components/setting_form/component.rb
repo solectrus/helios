@@ -1,23 +1,33 @@
 module SettingForm
   class Component < ViewComponent::Base
-    attr_reader :setting, :name, :data
+    attr_reader :setting, :sensor_name, :data
 
-    def initialize(setting:, name: nil, data: nil)
+    def initialize(setting:, sensor_name: nil, data: nil)
       super()
       @setting = setting
-      @name = name
+      @sensor_name = sensor_name
       @data = data
     end
 
     def new_record?
-      name.nil?
+      sensor_setting? ? data.blank? : false
+    end
+
+    def sensor_setting?
+      setting == 'sensor'
     end
 
     def form_url
-      if new_record?
+      if sensor_setting?
+        if new_record?
+          helpers.configuration_settings_path
+        else
+          helpers.configuration_setting_path(setting: 'sensor', name: sensor_name)
+        end
+      elsif new_record?
         helpers.configuration_settings_path
       else
-        helpers.configuration_setting_path(setting:, name:)
+        helpers.configuration_setting_path(setting:, name: setting)
       end
     end
 
@@ -26,16 +36,25 @@ module SettingForm
     end
 
     def survey_url
-      helpers.configuration_survey_path(setting, format: :json)
+      if sensor_setting?
+        helpers.configuration_survey_path('sensor', format: :json, sensor: sensor_name)
+      else
+        helpers.configuration_survey_path(setting, format: :json)
+      end
     end
 
     def setting_data_json
       return '{}' if new_record? || data.blank?
 
-      json_data = data.dup
-      # Inject identifier (= YAML key) back into form data for editing
-      json_data['identifier'] = name if Configuration.device?(setting)
-      json_data.to_json
+      data.to_json
+    end
+
+    def hidden_setting_value
+      sensor_setting? ? 'sensor' : setting
+    end
+
+    def hidden_name_value
+      sensor_name
     end
   end
 end

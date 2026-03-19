@@ -207,7 +207,7 @@ RSpec.describe StackBuilder do
     it 'sets FORCE_SSL on dashboard' do
       compose = Compose.load
       dashboard = compose.services.find('dashboard')
-      expect(dashboard.environment).to include('FORCE_SSL' => 'true')
+      expect(dashboard.environment).to include('FORCE_SSL=true')
     end
 
     it 'includes APP_DOMAIN in .env' do
@@ -279,14 +279,14 @@ RSpec.describe StackBuilder do
       influxdb_backup = compose.services.find('influxdb-backup')
 
       expect(influxdb_backup.environment).to include(
-        'INFLUXDB_HOST' => 'influxdb',
-        'INFLUXDB_ORG' => '${INFLUX_ORG}',
-        'INFLUXDB_TOKEN' => '${INFLUX_TOKEN}',
-        'S3_BUCKET' => '${AWS_BUCKET}',
-        'S3_PREFIX' => 'influxdb_backup',
-        'CRON' => '0 0 * * 0',
+        'INFLUXDB_HOST=influxdb',
+        'INFLUXDB_ORG=${INFLUX_ORG}',
+        'INFLUXDB_TOKEN=${INFLUX_TOKEN}',
+        'S3_BUCKET=${AWS_BUCKET}',
+        'S3_PREFIX=influxdb_backup',
+        'CRON=0 0 * * 0',
       )
-      expect(influxdb_backup.environment).not_to include('AWS_REGION' => '${AWS_REGION}')
+      expect(influxdb_backup.environment).not_to include('AWS_REGION')
       expect(influxdb_backup.environment).not_to include('AWS_BUCKET' => '${AWS_BUCKET}')
     end
 

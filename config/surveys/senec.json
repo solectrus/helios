@@ -1,0 +1,197 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "SENEC-Verbindung",
+    "default": "SENEC Connection"
+  },
+  "description": {
+    "de": "Konfiguration der Verbindung zu deinem SENEC-System",
+    "default": "Configuration of the connection to your SENEC system"
+  },
+  "pages": [
+    {
+      "name": "p_adapter",
+      "title": {
+        "de": "SENEC-Typ",
+        "default": "SENEC type"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "adapter",
+          "title": {
+            "de": "Welches SENEC-System hast du?",
+            "default": "Which SENEC system do you have?"
+          },
+          "isRequired": true,
+          "choices": [
+            {
+              "value": "local",
+              "text": {
+                "de": "SENEC.Home V3 oder V2.1 (lokaler Zugriff)",
+                "default": "SENEC.Home V3 or V2.1 (local access)"
+              }
+            },
+            {
+              "value": "cloud",
+              "text": {
+                "de": "SENEC.Home 4 (Cloud-Zugriff)",
+                "default": "SENEC.Home 4 (cloud access)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_local",
+      "visibleIf": "{adapter} = 'local'",
+      "title": {
+        "de": "Lokaler Zugriff",
+        "default": "Local access"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "host",
+          "title": {
+            "de": "Lokale IP-Adresse oder Hostname",
+            "default": "Local IP address or host name"
+          },
+          "isRequired": true,
+          "placeholder": {
+            "de": "z.B. 192.168.178.42",
+            "default": "e.g. 192.168.178.42"
+          }
+        },
+        {
+          "type": "radiogroup",
+          "name": "schema",
+          "title": {
+            "de": "Zugriffsprotokoll",
+            "default": "Protocol"
+          },
+          "defaultValue": "https",
+          "isRequired": true,
+          "choices": ["https", "http"]
+        },
+        {
+          "type": "radiogroup",
+          "name": "language",
+          "title": {
+            "de": "Sprache des SENEC-Geräts",
+            "default": "Language of SENEC device"
+          },
+          "defaultValue": "de",
+          "isRequired": true,
+          "choices": [
+            { "value": "de", "text": { "de": "Deutsch", "default": "German" } },
+            { "value": "en", "text": { "de": "Englisch", "default": "English" } },
+            { "value": "it", "text": { "de": "Italienisch", "default": "Italian" } }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_cloud",
+      "visibleIf": "{adapter} = 'cloud'",
+      "title": {
+        "de": "Cloud-Zugriff",
+        "default": "Cloud access"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "username",
+          "title": {
+            "de": "E-Mail-Adresse",
+            "default": "Email address"
+          },
+          "isRequired": true,
+          "inputType": "email"
+        },
+        {
+          "type": "text",
+          "name": "password",
+          "title": {
+            "de": "Passwort",
+            "default": "Password"
+          },
+          "isRequired": true,
+          "inputType": "password"
+        },
+        {
+          "type": "text",
+          "name": "totp_uri",
+          "title": {
+            "de": "TOTP-URI (optional)",
+            "default": "TOTP URI (optional)"
+          },
+          "description": {
+            "de": "Nur erforderlich bei aktivierter Zwei-Faktor-Authentifizierung",
+            "default": "Only required when two-factor authentication is enabled"
+          }
+        },
+        {
+          "type": "text",
+          "name": "system_id",
+          "title": {
+            "de": "System-ID (optional)",
+            "default": "System ID (optional)"
+          },
+          "description": {
+            "de": "Nur erforderlich, wenn mehrere Systeme mit dem Konto verknüpft sind",
+            "default": "Only required when multiple systems are linked to the account"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_common",
+      "title": {
+        "de": "Allgemein",
+        "default": "General"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "interval",
+          "title": {
+            "de": "Abfrage-Intervall (in Sekunden)",
+            "default": "Query interval (in seconds)"
+          },
+          "defaultValue": 5,
+          "isRequired": true,
+          "inputType": "number",
+          "min": 5
+        },
+        {
+          "type": "text",
+          "name": "ignore",
+          "title": {
+            "de": "Felder ignorieren (optional)",
+            "default": "Ignore fields (optional)"
+          },
+          "description": {
+            "de": "Kommaseparierte Liste von Messfeldern, die nicht an InfluxDB gesendet werden sollen",
+            "default": "Comma-separated list of measurement fields to exclude from InfluxDB"
+          }
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  },
+  "showCompletePage": false
+}

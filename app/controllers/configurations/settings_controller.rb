@@ -4,23 +4,31 @@ module Configurations
     before_action :validate_setting
 
     def new
-      render SettingForm::Component.new(setting:)
+      if sensor_setting?
+        render SettingForm::Component.new(setting: 'sensor', sensor_name:)
+      else
+        render SettingForm::Component.new(setting:)
+      end
     end
 
     def edit
-      data = @configuration.setting_data(setting, name)
-      render SettingForm::Component.new(setting:, name:, data:)
+      if sensor_setting?
+        data = @configuration.sensor_config(sensor_name)
+        render SettingForm::Component.new(setting: 'sensor', sensor_name:, data:)
+      else
+        data = @configuration.setting_data(setting)
+        render SettingForm::Component.new(setting:, data:)
+      end
     end
 
     def create
       data = setting_params
       return unless data
 
-      if Configuration.singleton?(setting)
-        @configuration.update(setting, data)
+      if sensor_setting?
+        @configuration.update_sensor(sensor_name, data)
       else
-        identifier = data.delete('identifier')
-        @configuration.add(setting, identifier, data)
+        @configuration.update(setting, data)
       end
 
       redirect_to configuration_path
@@ -30,8 +38,8 @@ module Configurations
       data = setting_params
       return unless data
 
-      if Configuration.device?(setting)
-        update_device(data)
+      if sensor_setting?
+        @configuration.update_sensor(sensor_name, data)
       else
         @configuration.update(setting, data)
       end
@@ -40,7 +48,10 @@ module Configurations
     end
 
     def destroy
-      @configuration.remove(setting, name)
+      if sensor_setting?
+        @configuration.remove_sensor(sensor_name)
+      end
+
       redirect_to configuration_path
     end
 
@@ -50,18 +61,12 @@ module Configurations
       params[:setting]
     end
 
-    def name
+    def sensor_name
       params[:name]
     end
 
-    def update_device(data)
-      new_identifier = data.delete('identifier')
-      if new_identifier == name
-        @configuration.update(setting, data, name:)
-      else
-        @configuration.remove(setting, name)
-        @configuration.add(setting, new_identifier, data)
-      end
+    def sensor_setting?
+      setting == 'sensor'
     end
 
     def set_configuration
@@ -69,7 +74,10 @@ module Configurations
     end
 
     def validate_setting
-      redirect_to configuration_path unless Configuration.valid?(setting)
+      return if sensor_setting? && sensor_name.present? && SensorRegistry.valid?(sensor_name)
+      return if Configuration.valid?(setting)
+
+      redirect_to configuration_path
     end
 
     def setting_params

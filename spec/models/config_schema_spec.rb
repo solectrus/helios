@@ -37,14 +37,19 @@ RSpec.describe ConfigSchema do
       expect(fields).to include('image')
     end
 
-    it 'returns fields for inverter' do
-      fields = described_class.fields_for('inverter')
-      expect(fields).to include('battery_vendor', 'senec_host', 'senec_interval')
+    it 'returns fields for senec' do
+      fields = described_class.fields_for('senec')
+      expect(fields).to include('host', 'schema', 'interval', 'adapter')
     end
 
-    it 'returns fields for consumer' do
-      fields = described_class.fields_for('consumer')
-      expect(fields).to include('data_source', 'shelly_host', 'shelly_interval')
+    it 'returns fields for mqtt' do
+      fields = described_class.fields_for('mqtt')
+      expect(fields).to include('mqtt_host', 'mqtt_port')
+    end
+
+    it 'returns fields for shelly' do
+      fields = described_class.fields_for('shelly')
+      expect(fields).to include('connection', 'interval')
     end
 
     it 'returns :dynamic for sensors' do
@@ -93,12 +98,12 @@ RSpec.describe ConfigSchema do
       expect(described_class.valid_field?('influxdb', 'token')).to be true
     end
 
-    it 'returns true for known inverter fields' do
-      expect(described_class.valid_field?('inverter', 'battery_vendor')).to be true
+    it 'returns true for known senec fields' do
+      expect(described_class.valid_field?('senec', 'host')).to be true
     end
 
-    it 'returns false for unknown inverter field' do
-      expect(described_class.valid_field?('inverter', 'nonsense')).to be false
+    it 'returns false for unknown senec field' do
+      expect(described_class.valid_field?('senec', 'nonsense')).to be false
     end
 
     it 'returns true for any sensor field (dynamic)' do

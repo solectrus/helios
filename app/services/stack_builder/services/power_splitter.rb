@@ -25,36 +25,33 @@ class StackBuilder
       private
 
       def power_splitter_environment
-        base_environment.merge(optional_environment).merge(sensor_environment)
+        passthrough_vars + explicit_vars + optional_vars + sensor_environment
       end
 
-      def base_environment
-        {
-          'TZ' => '${TZ}',
-          'INSTALLATION_DATE' => '${INSTALLATION_DATE}',
-          'INFLUX_HOST' => 'influxdb',
-          'INFLUX_TOKEN' => '${INFLUX_TOKEN}',
-          'INFLUX_ORG' => '${INFLUX_ORG}',
-          'INFLUX_BUCKET' => '${INFLUX_BUCKET}',
-          'REDIS_URL' => 'redis://redis:6379/1',
-          'DB_HOST' => 'postgresql',
-          'DB_USER' => 'postgres',
-          'DB_PASSWORD' => '${POSTGRES_PASSWORD}',
-        }
+      # Variables passed through from .env (name only)
+      def passthrough_vars
+        %w[TZ INSTALLATION_DATE INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET POSTGRES_PASSWORD]
       end
 
-      def optional_environment
-        env = {}
+      # Variables with service-specific values
+      def explicit_vars
+        %w[
+          INFLUX_HOST=influxdb
+          REDIS_URL=redis://redis:6379/1
+          DB_HOST=postgresql
+          DB_USER=postgres
+          DB_PASSWORD=${POSTGRES_PASSWORD}
+        ]
+      end
+
+      def optional_vars
         interval = configuration.system.power_splitter_interval
-        env['POWER_SPLITTER_INTERVAL'] = interval if interval.present?
-        env
+        interval.present? ? ["POWER_SPLITTER_INTERVAL=#{interval}"] : []
       end
 
       def sensor_environment
-        configuration.effective_sensor_mappings.each_with_object({}) do |(sensor, mapping), env|
-          next if mapping.blank?
-
-          env["INFLUX_SENSOR_#{sensor.upcase}"] = "${INFLUX_SENSOR_#{sensor.upcase}}"
+        configuration.effective_sensor_mappings.filter_map do |sensor, mapping|
+          "INFLUX_SENSOR_#{sensor.upcase}" if mapping.present?
         end
       end
     end

@@ -16,7 +16,7 @@ class StackBuilder
       def to_h
         {
           image: configuration.backup.postgresql.image,
-          environment: postgresql_backup_environment,
+          environment: backup_environment,
           depends_on: healthy_depends_on(%i[postgresql]),
           restart: 'unless-stopped',
         }
@@ -24,19 +24,19 @@ class StackBuilder
 
       private
 
-      def postgresql_backup_environment
-        {
-          'POSTGRES_HOST' => 'postgresql',
-          'POSTGRES_DATABASE' => 'solectrus',
-          'POSTGRES_USER' => 'postgres',
-          'POSTGRES_PASSWORD' => '${POSTGRES_PASSWORD}',
-          'S3_ACCESS_KEY_ID' => '${AWS_ACCESS_KEY_ID}',
-          'S3_SECRET_ACCESS_KEY' => '${AWS_SECRET_ACCESS_KEY}',
-          'S3_REGION' => '${AWS_REGION}',
-          'S3_BUCKET' => '${AWS_BUCKET}',
-          'S3_PREFIX' => 'postgresql',
-          'SCHEDULE' => '@daily',
-        }
+      def backup_environment
+        [
+          'POSTGRES_HOST=postgresql',
+          'POSTGRES_DATABASE=solectrus',
+          'POSTGRES_USER=postgres',
+          'POSTGRES_PASSWORD',
+          'S3_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}',
+          'S3_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}',
+          'S3_REGION=${AWS_REGION}',
+          'S3_BUCKET=${AWS_BUCKET}',
+          'S3_PREFIX=postgresql',
+          'SCHEDULE=@daily',
+        ]
       end
     end
   end

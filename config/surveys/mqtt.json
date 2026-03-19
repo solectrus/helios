@@ -1,0 +1,80 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "MQTT-Broker",
+    "default": "MQTT Broker"
+  },
+  "description": {
+    "de": "Verbindungsdaten des MQTT-Brokers",
+    "default": "MQTT broker connection details"
+  },
+  "pages": [
+    {
+      "name": "p_mqtt",
+      "title": {
+        "de": "MQTT-Broker",
+        "default": "MQTT broker"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "mqtt_host",
+          "title": {
+            "de": "Hostname oder IP-Adresse",
+            "default": "Hostname or IP address"
+          },
+          "isRequired": true,
+          "placeholder": {
+            "de": "z.B. mqtt.fritz.box",
+            "default": "e.g. mqtt.fritz.box"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_port",
+          "title": {
+            "de": "Port (optional)",
+            "default": "Port (optional)"
+          },
+          "description": {
+            "de": "Standard: 1883 (oder 8883 bei SSL)",
+            "default": "Default: 1883 (or 8883 with SSL)"
+          },
+          "inputType": "number"
+        },
+        {
+          "type": "boolean",
+          "name": "mqtt_ssl",
+          "title": {
+            "de": "SSL/TLS verwenden",
+            "default": "Use SSL/TLS"
+          },
+          "defaultValue": false
+        },
+        {
+          "type": "text",
+          "name": "mqtt_username",
+          "title": {
+            "de": "Benutzername (optional)",
+            "default": "Username (optional)"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_password",
+          "title": {
+            "de": "Passwort (optional)",
+            "default": "Password (optional)"
+          },
+          "inputType": "password"
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

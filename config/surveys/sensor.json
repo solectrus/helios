@@ -1,0 +1,306 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Sensor konfigurieren",
+    "default": "Configure sensor"
+  },
+  "pages": [
+    {
+      "name": "p_source",
+      "title": {
+        "de": "Datenquelle",
+        "default": "Data source"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "source",
+          "title": {
+            "de": "Woher kommen die Messdaten?",
+            "default": "Where does the measurement data come from?"
+          },
+          "isRequired": true,
+          "choices": []
+        }
+      ]
+    },
+    {
+      "name": "p_shelly_connection",
+      "visibleIf": "{source} = 'shelly'",
+      "title": {
+        "de": "Shelly-Verbindung",
+        "default": "Shelly Connection"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "shelly_connection",
+          "title": {
+            "de": "Wie ist der Shelly erreichbar?",
+            "default": "How is the Shelly accessed?"
+          },
+          "isRequired": true,
+          "defaultValue": "local",
+          "choices": [
+            {
+              "value": "local",
+              "text": {
+                "de": "Lokal (im Heimnetzwerk)",
+                "default": "Local (in home network)"
+              }
+            },
+            {
+              "value": "cloud",
+              "text": {
+                "de": "Über Shelly Cloud",
+                "default": "Via Shelly Cloud"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_shelly_local",
+      "visibleIf": "{source} = 'shelly' and {shelly_connection} = 'local'",
+      "title": {
+        "de": "Shelly — Lokaler Zugriff",
+        "default": "Shelly — Local Access"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "shelly_host",
+          "title": {
+            "de": "IP-Adresse oder Hostname",
+            "default": "IP address or host name"
+          },
+          "isRequired": true,
+          "placeholder": {
+            "de": "z.B. 192.168.178.43",
+            "default": "e.g. 192.168.178.43"
+          }
+        },
+        {
+          "type": "text",
+          "name": "shelly_interval",
+          "title": {
+            "de": "Abfrage-Intervall (in Sekunden)",
+            "default": "Query interval (in seconds)"
+          },
+          "defaultValue": 5,
+          "isRequired": true,
+          "inputType": "number",
+          "min": 1
+        },
+        {
+          "type": "text",
+          "name": "shelly_password",
+          "title": {
+            "de": "Passwort (optional)",
+            "default": "Password (optional)"
+          },
+          "description": {
+            "de": "Nur erforderlich, falls ein Passwort für den Shelly konfiguriert ist",
+            "default": "Only required if a password is configured for the Shelly"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_shelly_cloud",
+      "visibleIf": "{source} = 'shelly' and {shelly_connection} = 'cloud'",
+      "title": {
+        "de": "Shelly — Cloud-Zugriff",
+        "default": "Shelly — Cloud Access"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "shelly_cloud_server",
+          "title": {
+            "de": "Cloud-Server-URL",
+            "default": "Cloud server URL"
+          },
+          "isRequired": true,
+          "placeholder": "https://shelly-42-eu.shelly.cloud"
+        },
+        {
+          "type": "text",
+          "name": "shelly_auth_key",
+          "title": {
+            "de": "Authentifizierungsschlüssel",
+            "default": "Authentication key"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "shelly_device_id",
+          "title": {
+            "de": "Geräte-ID",
+            "default": "Device ID"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "shelly_interval",
+          "title": {
+            "de": "Abfrage-Intervall (in Sekunden)",
+            "default": "Query interval (in seconds)"
+          },
+          "defaultValue": 5,
+          "isRequired": true,
+          "inputType": "number",
+          "min": 1
+        }
+      ]
+    },
+    {
+      "name": "p_mqtt",
+      "visibleIf": "{source} = 'mqtt'",
+      "title": {
+        "de": "MQTT-Konfiguration",
+        "default": "MQTT Configuration"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "mqtt_topic",
+          "title": {
+            "de": "MQTT-Topic",
+            "default": "MQTT topic"
+          },
+          "description": {
+            "de": "Das Topic, auf dem der Messwert veröffentlicht wird",
+            "default": "The topic where the measurement value is published"
+          },
+          "isRequired": true,
+          "placeholder": {
+            "de": "z.B. sensors/power",
+            "default": "e.g. sensors/power"
+          }
+        },
+        {
+          "type": "dropdown",
+          "name": "mqtt_payload_type",
+          "title": {
+            "de": "Datentyp",
+            "default": "Data type"
+          },
+          "description": {
+            "de": "Der Datentyp des empfangenen Messwerts",
+            "default": "The data type of the received measurement value"
+          },
+          "isRequired": true,
+          "defaultValue": "float",
+          "choices": [
+            {
+              "value": "float",
+              "text": {
+                "de": "Gleitkommazahl (float)",
+                "default": "Floating point (float)"
+              }
+            },
+            {
+              "value": "integer",
+              "text": {
+                "de": "Ganzzahl (integer)",
+                "default": "Integer"
+              }
+            },
+            {
+              "value": "string",
+              "text": {
+                "de": "Zeichenkette (string)",
+                "default": "String"
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "mqtt_json_key",
+          "title": {
+            "de": "JSON-Key",
+            "default": "JSON key"
+          },
+          "description": {
+            "de": "Wenn die MQTT-Nachricht ein JSON-Objekt ist: der Schlüssel, aus dem der Wert extrahiert wird",
+            "default": "If the MQTT message is a JSON object: the key to extract the value from"
+          },
+          "placeholder": {
+            "de": "z.B. power oder DHW tank temp. (R5T)",
+            "default": "e.g. power or DHW tank temp. (R5T)"
+          }
+        },
+        {
+          "type": "text",
+          "name": "mqtt_formula",
+          "title": {
+            "de": "Formel",
+            "default": "Formula"
+          },
+          "description": {
+            "de": "Optionale Formel zur Berechnung des Werts, z.B. IF({Operation Mode} = 'Heating', 1, 0)",
+            "default": "Optional formula to calculate the value, e.g. IF({Operation Mode} = 'Heating', 1, 0)"
+          },
+          "placeholder": {
+            "de": "z.B. IF({Operation Mode} = 'Heating', 1, 0)",
+            "default": "e.g. IF({Operation Mode} = 'Heating', 1, 0)"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_mapping",
+      "title": {
+        "de": "InfluxDB-Zuordnung",
+        "default": "InfluxDB Mapping"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "measurement",
+          "title": {
+            "de": "Measurement",
+            "default": "Measurement"
+          },
+          "description": {
+            "de": "Name des InfluxDB-Measurements, in das der Sensor schreibt",
+            "default": "Name of the InfluxDB measurement the sensor writes to"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "field",
+          "title": {
+            "de": "Field",
+            "default": "Field"
+          },
+          "description": {
+            "de": "Name des InfluxDB-Fields innerhalb des Measurements",
+            "default": "Name of the InfluxDB field within the measurement"
+          },
+          "isRequired": true
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  },
+  "showCompletePage": false
+}

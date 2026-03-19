@@ -2,7 +2,7 @@ RSpec.describe 'Dashboard', :with_admin do
   before do
     with_config_yaml(
       'system' => { 'timezone' => 'Europe/Berlin' },
-      'inverter' => { 'MyInverter' => { 'data_source' => 'senec' } },
+      'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
     )
     login
   end

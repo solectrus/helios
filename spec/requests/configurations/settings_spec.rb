@@ -5,8 +5,15 @@ RSpec.describe 'Configurations::Settings', :with_admin do
   end
 
   describe 'GET /configuration/settings/new' do
-    it 'renders the survey form for a valid device type' do
-      get new_configuration_setting_path(setting: 'inverter')
+    it 'renders the survey form for a sensor' do
+      get new_configuration_setting_path(setting: 'sensor', name: 'inverter_power')
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('survey')
+    end
+
+    it 'renders the survey form for a singleton' do
+      get new_configuration_setting_path(setting: 'system')
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('survey')
@@ -20,25 +27,16 @@ RSpec.describe 'Configurations::Settings', :with_admin do
   end
 
   describe 'POST /configuration/settings' do
-    it 'creates a device with identifier as YAML key' do
-      setting_data = {
-        'name' => 'Dach Süd',
-        'identifier' => 'dach-sued',
-        'data_source' => 'senec_local',
-        'senec_host' => '192.168.1.42',
-      }
+    it 'creates a sensor' do
+      sensor_data = { 'source' => 'senec' }
 
       post configuration_settings_path,
-           params: { setting: 'inverter', data: setting_data.to_json }
+           params: { setting: 'sensor', name: 'inverter_power', data: sensor_data.to_json }
 
       expect(response).to redirect_to(configuration_path)
 
       config = Configuration.current
-      expect(config.inverter('dach-sued')).to eq(
-        'name' => 'Dach Süd',
-        'data_source' => 'senec_local',
-        'senec_host' => '192.168.1.42',
-      )
+      expect(config.sensor_config('inverter_power').source).to eq('senec')
     end
 
     it 'creates a singleton and redirects to configuration' do
@@ -53,11 +51,11 @@ RSpec.describe 'Configurations::Settings', :with_admin do
   end
 
   describe 'GET /configuration/:setting/:name/edit' do
-    it 'renders the survey form for an existing device' do
+    it 'renders the survey form for an existing sensor' do
       config = Configuration.current
-      config.add('inverter', 'dach-sued', { 'name' => 'Dach Süd' })
+      config.update_sensor('inverter_power', { 'source' => 'senec' })
 
-      get edit_configuration_setting_path(setting: 'inverter', name: 'dach-sued')
+      get edit_configuration_setting_path(setting: 'sensor', name: 'inverter_power')
 
       expect(response).to have_http_status(:ok)
     end
@@ -73,29 +71,19 @@ RSpec.describe 'Configurations::Settings', :with_admin do
   end
 
   describe 'PATCH /configuration/:setting/:name' do
-    it 'updates a device including identifier change' do
+    it 'updates a sensor' do
       config = Configuration.current
-      config.add('inverter', 'dach-sued', { 'name' => 'Dach Süd' })
+      config.update_sensor('inverter_power', { 'source' => 'senec' })
 
-      setting_data = {
-        'name' => 'Dach Nord',
-        'identifier' => 'dach-nord',
-        'data_source' => 'senec_local',
-        'senec_host' => '192.168.1.42',
-      }
+      sensor_data = { 'source' => 'mqtt', 'mqtt_topic' => 'pv/power' }
 
-      patch configuration_setting_path(setting: 'inverter', name: 'dach-sued'),
-            params: { data: setting_data.to_json }
+      patch configuration_setting_path(setting: 'sensor', name: 'inverter_power'),
+            params: { data: sensor_data.to_json }
 
       expect(response).to redirect_to(configuration_path)
 
       config = Configuration.current
-      expect(config.inverter('dach-nord')).to eq(
-        'name' => 'Dach Nord',
-        'data_source' => 'senec_local',
-        'senec_host' => '192.168.1.42',
-      )
-      expect(config.inverter('dach-sued')).to eq({})
+      expect(config.sensor_config('inverter_power').source).to eq('mqtt')
     end
 
     it 'updates a singleton without changing name' do
@@ -112,14 +100,14 @@ RSpec.describe 'Configurations::Settings', :with_admin do
   end
 
   describe 'DELETE /configuration/:setting/:name' do
-    it 'deletes the device' do
+    it 'deletes a sensor' do
       config = Configuration.current
-      config.add('inverter', 'dach-sued', { 'name' => 'Dach Süd' })
+      config.update_sensor('inverter_power', { 'source' => 'senec' })
 
-      delete configuration_setting_path(setting: 'inverter', name: 'dach-sued')
+      delete configuration_setting_path(setting: 'sensor', name: 'inverter_power')
 
       expect(response).to redirect_to(configuration_path)
-      expect(Configuration.current.inverter('dach-sued')).to eq({})
+      expect(Configuration.current.sensor_enabled?('inverter_power')).to be false
     end
   end
 end

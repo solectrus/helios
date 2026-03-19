@@ -11,22 +11,31 @@ RSpec.describe 'Configurations', :with_admin do
       expect(response).to have_http_status(:ok)
     end
 
-    it 'displays all visible setting titles' do
+    it 'displays sensor group headers' do
       get configuration_path
 
-      (Configuration::ALL - Configuration::HIDDEN).each do |setting|
+      SensorRegistry::GROUPS.each_key do |group|
+        title = I18n.t("sensor_groups.#{group}")
+        expect(response.body).to include(title)
+      end
+    end
+
+    it 'displays setting section titles' do
+      get configuration_path
+
+      Configuration::SETTINGS.each do |setting|
         title = I18n.t("configurations.settings.#{setting}.title")
         expect(response.body).to include(title)
       end
     end
 
-    it 'displays existing devices' do
+    it 'displays enabled sensors' do
       config = Configuration.current
-      config.add('inverter', 'dach-sued', { 'name' => 'Dach Süd' })
+      config.update_sensor('inverter_power', { 'source' => 'senec' })
 
       get configuration_path
 
-      expect(response.body).to include('Dach Süd')
+      expect(response.body).to include('inverter_power')
     end
   end
 end

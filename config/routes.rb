@@ -9,15 +9,11 @@ Rails.application.routes.draw do
   # Generated files preview
   resource :generated_files, only: :show
 
-  # Sensors live view
-  resource :sensors, only: :show do
-    resources :readings, only: :index, module: :sensors
-  end
-
   # Configuration with settings and surveys
   resource :configuration, only: :show do
     resources :settings, only: %i[new create], module: :configurations
     resources :surveys, only: :show, module: :configurations
+    resources :readings, only: :index, module: :configurations
   end
 
   scope 'configuration/:setting/:name',

@@ -1,0 +1,66 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Shelly-Standardeinstellungen",
+    "default": "Shelly default settings"
+  },
+  "description": {
+    "de": "Allgemeine Einstellungen für alle Shelly-Sensoren",
+    "default": "General settings for all Shelly sensors"
+  },
+  "pages": [
+    {
+      "name": "p_shelly",
+      "title": {
+        "de": "Shelly-Einstellungen",
+        "default": "Shelly settings"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "connection",
+          "title": {
+            "de": "Standard-Verbindungsart",
+            "default": "Default connection type"
+          },
+          "defaultValue": "local",
+          "isRequired": true,
+          "choices": [
+            {
+              "value": "local",
+              "text": {
+                "de": "Lokal (im Heimnetzwerk)",
+                "default": "Local (in home network)"
+              }
+            },
+            {
+              "value": "cloud",
+              "text": {
+                "de": "Über Shelly Cloud",
+                "default": "Via Shelly Cloud"
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "interval",
+          "title": {
+            "de": "Standard-Abfrage-Intervall (in Sekunden)",
+            "default": "Default query interval (in seconds)"
+          },
+          "defaultValue": 5,
+          "isRequired": true,
+          "inputType": "number",
+          "min": 1
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

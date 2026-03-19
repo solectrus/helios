@@ -16,10 +16,10 @@ class StackBuilder
       def to_h
         {
           image: configuration.postgresql.image,
-          environment: {
-            'POSTGRES_PASSWORD' => '${POSTGRES_PASSWORD}',
-            'POSTGRES_DB' => 'solectrus',
-          },
+          environment: [
+            'POSTGRES_PASSWORD',
+            'POSTGRES_DB=solectrus',
+          ],
           volumes: ['./postgresql:/var/lib/postgresql'],
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD-SHELL', 'pg_isready -U postgres'),

@@ -10,7 +10,7 @@ class StackBuilder
       end
 
       def self.enabled?(configuration)
-        devices_for(configuration).any?
+        configuration.shelly_required?
       end
 
       def to_h
@@ -22,64 +22,49 @@ class StackBuilder
         }
       end
 
-      # Find all devices that use Shelly as data source
-      def self.devices_for(configuration)
-        configuration.all_devices.select { |d| shelly?(d.data) }
-      end
-
-      def self.shelly?(data)
-        data.data_source == 'shelly' ||
-          data.wallbox_vendor == 'shelly' ||
-          data.heatpump_access == 'shelly' ||
-          data.battery_vendor == 'shelly'
-      end
-
       private
 
-      def devices
-        self.class.devices_for(configuration)
+      def shelly_sensors
+        @shelly_sensors ||= configuration.sensors_with_source('shelly')
+      end
+
+      def shelly_defaults
+        configuration.shelly
       end
 
       def shelly_environment
-        influx_environment.merge(device_environment)
+        passthrough_vars + explicit_vars + device_vars + optional_vars
       end
 
-      def influx_environment
-        {
-          'INFLUX_HOST' => 'influxdb',
-          'INFLUX_TOKEN' => '${INFLUX_TOKEN}',
-          'INFLUX_ORG' => '${INFLUX_ORG}',
-          'INFLUX_BUCKET' => '${INFLUX_BUCKET}',
-        }
+      def passthrough_vars
+        %w[INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET]
       end
 
-      def device_environment
-        {
-          'SHELLY_HOST' => csv_from { |d| d.data.shelly_host },
-          'SHELLY_INTERVAL' => csv_from { |d| d.data.shelly_interval || '5' },
-          'INFLUX_MEASUREMENT' => csv_from(&:name),
-        }.merge(optional_csv_environment)
+      def explicit_vars
+        [
+          'INFLUX_HOST=influxdb',
+          "SHELLY_HOST=#{csv_from { |_, config| config['shelly_host'] }}",
+          "SHELLY_INTERVAL=#{csv_from { |_, config| config['shelly_interval'] || shelly_defaults.interval || '5' }}",
+          "INFLUX_MEASUREMENT=#{csv_from { |_, config| config['measurement'] }}",
+        ]
       end
 
-      def optional_csv_environment
+      def device_vars
+        []
+      end
+
+      def optional_vars
         %w[
           shelly_password shelly_cloud_server shelly_auth_key
           shelly_device_id shelly_invert_power
-        ].each_with_object({}) do |field, env|
-          env_key = field.upcase
-          env.merge!(csv_env(env_key) { |d| d.data.send(field) })
+        ].each_with_object([]) do |field, vars|
+          values = shelly_sensors.map { |_, config| config[field].presence || '' }
+          vars << "#{field.upcase}=#{values.join(',')}" if values.any?(&:present?)
         end
       end
 
-      def csv_env(key, &)
-        values = devices.map { |d| yield(d).presence || '' }
-        return {} unless values.any?(&:present?)
-
-        { key => values.join(',') }
-      end
-
       def csv_from(&)
-        devices.map(&).join(',')
+        shelly_sensors.map(&).join(',')
       end
     end
   end

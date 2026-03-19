@@ -3,6 +3,8 @@ RSpec.describe 'Configurations::Surveys', :with_admin do
 
   describe 'GET /configuration/surveys/:id' do
     (Configuration::ALL - Configuration::HIDDEN).each do |setting|
+      next if setting == 'sensors' # sensors is dynamic, no survey file
+
       it "returns JSON for #{setting} survey" do
         get configuration_survey_path(id: setting)
 
@@ -17,28 +19,28 @@ RSpec.describe 'Configurations::Surveys', :with_admin do
       expect(response).to have_http_status(:not_found)
     end
 
-    Configuration::DEVICES.each do |setting|
-      it "injects name question for #{setting} survey" do
-        get configuration_survey_path(id: setting)
+    it 'returns sensor survey with dynamic source choices' do
+      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power' })
 
-        survey = response.parsed_body
-        first_element = survey['pages'].first['elements'].first
+      expect(response).to have_http_status(:ok)
+      survey = response.parsed_body
+      source_page = survey['pages'].first
+      source_element = source_page['elements'].find { |e| e['name'] == 'source' }
 
-        expect(first_element['name']).to eq('name')
-        expect(first_element['type']).to eq('text')
-        expect(first_element['isRequired']).to be(true)
-      end
+      expect(source_element['choices']).to be_present
+      expect(source_element['choices'].pluck('value')).to include('senec')
     end
 
-    (Configuration::SINGLETONS - Configuration::HIDDEN).each do |setting|
-      it "does not inject name question for #{setting} survey" do
-        get configuration_survey_path(id: setting)
+    it 'returns 404 for sensor survey without sensor param' do
+      get configuration_survey_path(id: 'sensor')
 
-        survey = response.parsed_body
-        first_element = survey['pages'].first['elements'].first
+      expect(response).to have_http_status(:not_found)
+    end
 
-        expect(first_element['name']).not_to eq('name')
-      end
+    it 'returns 404 for sensor survey with invalid sensor' do
+      get configuration_survey_path(id: 'sensor', params: { sensor: 'invalid_sensor' })
+
+      expect(response).to have_http_status(:not_found)
     end
   end
 end

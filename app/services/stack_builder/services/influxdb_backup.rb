@@ -16,24 +16,18 @@ class StackBuilder
       def to_h
         {
           image: configuration.backup.influxdb.image,
-          environment: influxdb_backup_environment,
+          environment: [
+            'INFLUXDB_HOST=influxdb',
+            'INFLUXDB_ORG=${INFLUX_ORG}',
+            'INFLUXDB_TOKEN=${INFLUX_TOKEN}',
+            'AWS_ACCESS_KEY_ID',
+            'AWS_SECRET_ACCESS_KEY',
+            'S3_BUCKET=${AWS_BUCKET}',
+            'S3_PREFIX=influxdb_backup',
+            'CRON=0 0 * * 0',
+          ],
           depends_on: healthy_depends_on(%i[influxdb]),
           restart: 'unless-stopped',
-        }
-      end
-
-      private
-
-      def influxdb_backup_environment
-        {
-          'INFLUXDB_HOST' => 'influxdb',
-          'INFLUXDB_ORG' => '${INFLUX_ORG}',
-          'INFLUXDB_TOKEN' => '${INFLUX_TOKEN}',
-          'AWS_ACCESS_KEY_ID' => '${AWS_ACCESS_KEY_ID}',
-          'AWS_SECRET_ACCESS_KEY' => '${AWS_SECRET_ACCESS_KEY}',
-          'S3_BUCKET' => '${AWS_BUCKET}',
-          'S3_PREFIX' => 'influxdb_backup',
-          'CRON' => '0 0 * * 0',
         }
       end
     end

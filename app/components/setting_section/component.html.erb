@@ -5,82 +5,36 @@
 
     <%# Content area %>
     <div class="min-w-0 flex-1">
-      <%# Header: Title + Add button %>
+      <%# Header: Title %>
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold"><%= title %></h2>
+      </div>
 
-        <% if device? %>
-          <%= link_to add_path,
+      <%# Singleton status %>
+      <div class="flex items-center justify-between py-2">
+        <% if singleton_configured? %>
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-check text-success text-xs"></i>
+            <span class="text-base-content/70 text-sm"><%= t('configurations.show.configured') %></span>
+          </div>
+        <% else %>
+          <span class="text-base-content/50 text-sm"><%= t('configurations.settings.not_configured') %></span>
+        <% end %>
+
+        <% if singleton_configured? %>
+          <%= link_to helpers.edit_configuration_setting_path(setting:, name: setting),
                       class: "btn btn-ghost btn-sm btn-square",
                       data: { turbo_frame: "setting-modal-content" } do %>
-            <i class="fa-solid fa-plus"></i>
+            <i class="fa-solid fa-pen-to-square"></i>
+          <% end %>
+        <% else %>
+          <%= link_to helpers.new_configuration_setting_path(setting:),
+                      class: "btn btn-ghost btn-sm btn-square",
+                      data: { turbo_frame: "setting-modal-content" } do %>
+            <i class="fa-solid fa-pen-to-square"></i>
           <% end %>
         <% end %>
       </div>
-
-      <%# List of devices or empty state %>
-      <% if device? %>
-        <% if devices.any? %>
-          <div class="divide-base-200 divide-y">
-            <% devices.each do |device| %>
-              <div class="flex items-center justify-between py-2">
-                <div class="flex items-center gap-2">
-                  <% if device.data.present? %>
-                    <i class="fa-solid fa-check text-success text-xs"></i>
-                  <% else %>
-                    <i class="fa-solid fa-circle text-base-content/20 text-xs"></i>
-                  <% end %>
-
-                  <span class="font-medium"><%= device.data.name || device.name %></span>
-                </div>
-
-                <div class="flex items-center gap-1">
-                  <%= link_to helpers.edit_configuration_setting_path(setting: device.type, name: device.name),
-                              class: "btn btn-ghost btn-sm btn-square",
-                              data: { turbo_frame: "setting-modal-content" } do %>
-                    <i class="fa-solid fa-pen-to-square"></i>
-                  <% end %>
-
-                  <%= button_to helpers.configuration_setting_path(setting: device.type, name: device.name),
-                                method: :delete,
-                                class: "btn btn-ghost btn-sm btn-square text-error",
-                                data: { turbo_confirm: t('configurations.settings.delete_confirm') } do %>
-                    <i class="fa-solid fa-trash"></i>
-                  <% end %>
-                </div>
-              </div>
-            <% end %>
-          </div>
-        <% else %>
-          <p class="text-base-content/50 py-2 text-sm"><%= t('configurations.settings.no_devices') %></p>
-        <% end %>
-      <% else %>
-        <%# Singleton %>
-        <div class="flex items-center justify-between py-2">
-          <% if singleton_configured? %>
-            <div class="flex items-center gap-2">
-              <i class="fa-solid fa-check text-success text-xs"></i>
-              <span class="text-base-content/70 text-sm"><%= t('configurations.show.configured') %></span>
-            </div>
-          <% else %>
-            <span class="text-base-content/50 text-sm"><%= t('configurations.settings.not_configured') %></span>
-          <% end %>
-
-          <% if singleton_configured? %>
-            <%= link_to helpers.edit_configuration_setting_path(setting:, name: setting),
-                        class: "btn btn-ghost btn-sm btn-square",
-                        data: { turbo_frame: "setting-modal-content" } do %>
-              <i class="fa-solid fa-pen-to-square"></i>
-            <% end %>
-          <% else %>
-            <%= link_to helpers.new_configuration_setting_path(setting:),
-                        class: "btn btn-ghost btn-sm btn-square",
-                        data: { turbo_frame: "setting-modal-content" } do %>
-              <i class="fa-solid fa-pen-to-square"></i>
-            <% end %>
-          <% end %>
-        </div>
-      <% end %>
     </div>
   </div>
 </div>

@@ -79,41 +79,13 @@ class ConfigSchema
     'backup' => BACKUP_DEFAULTS,
   }.freeze
 
-  # --- Device fields ---
+  # --- Source configuration fields ---
 
-  # Shared Shelly fields used by multiple device types
-  SHELLY_FIELDS = %w[
-    shelly_connection shelly_host shelly_interval shelly_password
-    shelly_cloud_server shelly_auth_key shelly_device_id
+  SENEC_FIELDS = %w[
+    host schema interval language
+    username password totp_uri system_id ignore
+    adapter
   ].freeze
-
-  INVERTER_FIELDS = (%w[
-    battery_vendor house_power_known
-    senec_host senec_interval senec_schema senec_language
-    senec_username senec_password senec_totp_uri senec_system_id senec_ignore
-    shelly_invert_power smart_home_system
-  ] + SHELLY_FIELDS).freeze
-
-  BATTERY_FIELDS = %w[data_source smart_home_system].freeze
-
-  WALLBOX_FIELDS = (%w[
-    wallbox_vendor exclude_from_house_power smart_home_system mqtt_topic
-    mqtt_topic_car_connected
-  ] + SHELLY_FIELDS).freeze
-
-  CAR_FIELDS = %w[data_source smart_home_system mqtt_topic].freeze
-
-  HEATPUMP_FIELDS = (%w[
-    heatpump_access exclude_from_house_power smart_home_system mqtt_topic
-    mqtt_topic_heating_power mqtt_topic_tank_temp mqtt_topic_heatpump_status
-    mqtt_topic_outdoor_temp
-  ] + SHELLY_FIELDS).freeze
-
-  CONSUMER_FIELDS = (%w[
-    data_source exclude_from_house_power smart_home_system mqtt_topic
-  ] + SHELLY_FIELDS).freeze
-
-  # --- MQTT broker settings ---
 
   MQTT_FIELDS = %w[
     mqtt_host
@@ -122,6 +94,29 @@ class ConfigSchema
     mqtt_username
     mqtt_password
   ].freeze
+
+  SHELLY_FIELDS = %w[
+    connection
+    interval
+  ].freeze
+
+  # --- Per-sensor fields (vary by source) ---
+
+  SENSOR_SHELLY_FIELDS = %w[
+    source name shelly_host shelly_password shelly_interval
+    shelly_cloud_server shelly_auth_key shelly_device_id
+    shelly_invert_power shelly_connection
+    exclude_from_house_power
+  ].freeze
+
+  SENSOR_MQTT_FIELDS = %w[
+    source name mqtt_topic mqtt_payload_type mqtt_json_key mqtt_formula
+    exclude_from_house_power
+  ].freeze
+
+  SENSOR_SENEC_FIELDS = %w[source].freeze
+  SENSOR_FORECAST_FIELDS = %w[source].freeze
+  SENSOR_SMART_HOME_FIELDS = %w[source name exclude_from_house_power].freeze
 
   # --- Singleton fields ---
 
@@ -172,7 +167,7 @@ class ConfigSchema
 
   BACKUP_ALL = (BACKUP_FIELDS + BACKUP_DEFAULTS.keys).uniq.freeze
 
-  # Sensors is a dynamic mapping (sensor_name => influx_field),
+  # Sensors is a dynamic mapping (sensor_name => config hash),
   # validated via SensorRegistry instead of a fixed field list.
   SENSORS_FIELDS = :dynamic
 
@@ -184,14 +179,10 @@ class ConfigSchema
     'influxdb' => INFLUXDB_ALL,
     'redis' => REDIS_ALL,
     'watchtower' => WATCHTOWER_ALL,
-    'inverter' => INVERTER_FIELDS,
-    'battery' => BATTERY_FIELDS,
-    'wallbox' => WALLBOX_FIELDS,
-    'car' => CAR_FIELDS,
-    'heatpump' => HEATPUMP_FIELDS,
-    'consumer' => CONSUMER_FIELDS,
-    'forecast' => FORECAST_FIELDS,
+    'senec' => SENEC_FIELDS,
     'mqtt' => MQTT_FIELDS,
+    'shelly' => SHELLY_FIELDS,
+    'forecast' => FORECAST_FIELDS,
     'reverse_proxy' => REVERSE_PROXY_FIELDS,
     'backup' => BACKUP_ALL,
     'sensors' => SENSORS_FIELDS,

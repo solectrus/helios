@@ -20,7 +20,7 @@ class StackBuilder
 
         if Traefik.enabled?(configuration)
           config[:labels] = traefik_dashboard_labels
-          config[:environment]['FORCE_SSL'] = 'true'
+          config[:environment] << 'FORCE_SSL=true'
         else
           config[:ports] = ['3000:3000']
         end
@@ -31,54 +31,51 @@ class StackBuilder
       private
 
       def dashboard_environment
-        base_dashboard_environment
-          .merge(optional_dashboard_environment)
-          .merge(sensor_environment)
+        passthrough_vars + explicit_vars + optional_vars + sensor_environment
       end
 
-      def base_dashboard_environment # rubocop:disable Metrics/MethodLength
-        {
-          'TZ' => '${TZ}',
-          'INSTALLATION_DATE' => '${INSTALLATION_DATE}',
-          'APP_HOST' => configuration.system.app_host.presence || 'localhost',
-          'WEB_CONCURRENCY' => configuration.system.web_concurrency.presence || '0',
-          'REDIS_URL' => 'redis://redis:6379',
-          'INFLUX_HOST' => 'influxdb',
-          'INFLUX_TOKEN' => '${INFLUX_TOKEN}',
-          'INFLUX_ORG' => '${INFLUX_ORG}',
-          'INFLUX_BUCKET' => '${INFLUX_BUCKET}',
-          'INFLUX_POLL_INTERVAL' => configuration.system.influx_poll_interval.presence || '5',
-          'DB_HOST' => 'postgresql',
-          'DB_USER' => 'postgres',
-          'DB_PASSWORD' => '${POSTGRES_PASSWORD}',
-          'DB_DATABASE' => 'solectrus',
-          'SECRET_KEY_BASE' => '${SECRET_KEY_BASE}',
-          'ADMIN_PASSWORD' => '${ADMIN_PASSWORD}',
-        }
+      # Variables passed through from .env (name only)
+      def passthrough_vars
+        %w[TZ INSTALLATION_DATE INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SECRET_KEY_BASE ADMIN_PASSWORD]
       end
 
-      def optional_dashboard_environment
+      # Variables with service-specific values
+      def explicit_vars
         sys = configuration.system
-        env = {}
-        add_optional(env, 'CO2_EMISSION_FACTOR', sys.co2_emission_factor)
-        add_optional(env, 'FRAME_ANCESTORS', sys.frame_ancestors)
-        add_optional(env, 'UI_THEME', sys.ui_theme)
-        add_optional(env, 'LOCKUP_CODEWORD', sys.lockup_codeword)
-        add_optional(env, 'TRUSTED_PROXY_RANGES', sys.trusted_proxy_ranges)
-        excluded = configuration.excluded_from_house_power.join(',').presence
-        add_optional(env, 'INFLUX_EXCLUDE_FROM_HOUSE_POWER', excluded)
-        env
+
+        [
+          "APP_HOST=#{sys.app_host.presence || 'localhost'}",
+          "WEB_CONCURRENCY=#{sys.web_concurrency.presence || '0'}",
+          'REDIS_URL=redis://redis:6379',
+          'INFLUX_HOST=influxdb',
+          "INFLUX_POLL_INTERVAL=#{sys.influx_poll_interval.presence || '5'}",
+          'DB_HOST=postgresql',
+          'DB_USER=postgres',
+          'DB_PASSWORD=${POSTGRES_PASSWORD}',
+          'DB_DATABASE=solectrus',
+        ]
       end
 
-      def add_optional(env, key, value)
-        env[key] = value if value.present?
+      def optional_vars
+        sys = configuration.system
+        vars = []
+        add_optional(vars, 'CO2_EMISSION_FACTOR', sys.co2_emission_factor)
+        add_optional(vars, 'FRAME_ANCESTORS', sys.frame_ancestors)
+        add_optional(vars, 'UI_THEME', sys.ui_theme)
+        add_optional(vars, 'LOCKUP_CODEWORD', sys.lockup_codeword)
+        add_optional(vars, 'TRUSTED_PROXY_RANGES', sys.trusted_proxy_ranges)
+        excluded = configuration.excluded_from_house_power.join(',').presence
+        add_optional(vars, 'INFLUX_EXCLUDE_FROM_HOUSE_POWER', excluded)
+        vars
+      end
+
+      def add_optional(vars, key, value)
+        vars << "#{key}=#{value}" if value.present?
       end
 
       def sensor_environment
-        configuration.effective_sensor_mappings.each_with_object({}) do |(sensor, mapping), env|
-          next if mapping.blank?
-
-          env["INFLUX_SENSOR_#{sensor.upcase}"] = "${INFLUX_SENSOR_#{sensor.upcase}}"
+        configuration.effective_sensor_mappings.filter_map do |sensor, mapping|
+          "INFLUX_SENSOR_#{sensor.upcase}" if mapping.present?
         end
       end
 

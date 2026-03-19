@@ -1,6 +1,7 @@
 de:
   common:
     back: "Zurück"
+    cancel: "Abbrechen"
 
   header:
     component:
@@ -10,37 +11,31 @@ de:
     component:
       services: "Docker-Services"
       configuration: "Konfiguration"
-      sensors: "Sensoren"
 
   configurations:
     show:
       title: "Konfiguration - Helios"
       configured: "Konfiguriert"
       pending: "Offen"
-      devices: "Geräte"
+      sensors: "Sensoren"
       settings: "Einstellungen"
+      source_settings: "Datenquellen"
+      sensor_name: "Sensor"
+      source: "Quelle"
+      live_value: "Wert"
     settings:
-      inverter:
-        title: "Wechselrichter"
-        description: "Konfiguration deines Wechselrichters"
-      battery:
-        title: "Stromspeicher"
-        description: "Konfiguration deines Stromspeichers"
-      wallbox:
-        title: "Wallbox"
-        description: "Konfiguration deiner Wallbox"
-      car:
-        title: "Elektroauto"
-        description: "Konfiguration deines Elektroautos"
-      heatpump:
-        title: "Wärmepumpe"
-        description: "Konfiguration deiner Wärmepumpe"
-      consumer:
-        title: "Verbraucher"
-        description: "Konfiguration eines Custom-Verbrauchers"
+      senec:
+        title: "SENEC-Collector"
+        description: "Verbindungseinstellungen für deinen SENEC"
+      mqtt:
+        title: "MQTT-Collector"
+        description: "Verbindungseinstellungen für den MQTT-Broker"
+      shelly:
+        title: "Shelly-Collector"
+        description: "Allgemeine Einstellungen für Shelly-Sensoren"
       forecast:
-        title: "Ertragsprognose"
-        description: "Prognose deines PV-Ertrags"
+        title: "Forecast-Collector"
+        description: "Ertragsprognose für deine PV-Anlage"
       system:
         title: "System"
         description: "Allgemeine Einstellungen für SOLECTRUS"
@@ -50,73 +45,74 @@ de:
       backup:
         title: "Backup"
         description: "Konfiguration der S3-Datensicherung"
-      sensors:
-        title: "Sensor-Mapping"
-        description: "Zuordnung der Sensoren zu InfluxDB-Feldern"
       invalid_setting: "Unbekannte Einstellung"
       add: "Hinzufügen"
       edit: "Bearbeiten"
       delete: "Löschen"
-      delete_confirm: "Wirklich löschen?"
+      delete_confirm: "Sensor wirklich deaktivieren?"
+      delete_confirm_yes: "Deaktivieren"
       discard_confirm: "Ungespeicherte Änderungen verwerfen?"
       discard_cancel: "Weiter bearbeiten"
       discard_discard: "Verwerfen"
       configure: "Konfigurieren"
       not_configured: "Noch nicht konfiguriert"
-      no_devices: "Noch keine Geräte angelegt"
 
   sensors:
-    show:
-      title: "Sensoren - Helios"
+    inverter_power: "PV-Erzeugung gesamt"
+    inverter_power_1: "PV-Erzeugung String 1"
+    inverter_power_2: "PV-Erzeugung String 2"
+    inverter_power_3: "PV-Erzeugung String 3"
+    inverter_power_4: "PV-Erzeugung String 4"
+    inverter_power_5: "PV-Erzeugung String 5"
+    case_temp: "Temperatur im Gehäuse"
+    system_status: "Betriebszustand des Wechselrichters"
+    system_status_ok: "Wechselrichter fehlerfrei"
+    grid_import_power: "Bezug aus dem Netz"
+    grid_export_power: "Einspeisung ins Netz"
+    grid_export_limit: "Max. Einspeisung in % der Anlagenleistung"
+    house_power: "Gesamtverbrauch Haushalt"
+    battery_charging_power: "Aktuelle Ladeleistung"
+    battery_discharging_power: "Aktuelle Entladeleistung"
+    battery_soc: "Füllstand in Prozent"
+    wallbox_power: "Aktuelle Ladeleistung"
+    wallbox_car_connected: "Fahrzeug angeschlossen?"
+    car_battery_soc: "Füllstand Fahrzeugbatterie"
+    heatpump_power: "Stromverbrauch Wärmepumpe"
+    heatpump_heating_power: "Abgegebene Heizleistung"
+    heatpump_tank_temp: "Temperatur Warmwasserspeicher"
+    heatpump_status: "Betriebsmodus"
+    outdoor_temp: "Gemessene Außentemperatur"
+    inverter_power_forecast: "Erwartete PV-Erzeugung laut Wetter"
+    inverter_power_forecast_clearsky: "Max. PV-Erzeugung bei wolkenlosem Himmel"
+    outdoor_temp_forecast: "Erwartete Außentemperatur laut Wetter"
+    custom_power_01: "Eigener Verbraucher 1"
+    custom_power_02: "Eigener Verbraucher 2"
+    custom_power_03: "Eigener Verbraucher 3"
+    custom_power_04: "Eigener Verbraucher 4"
+    custom_power_05: "Eigener Verbraucher 5"
+    custom_power_06: "Eigener Verbraucher 6"
+    custom_power_07: "Eigener Verbraucher 7"
+    custom_power_08: "Eigener Verbraucher 8"
+    custom_power_09: "Eigener Verbraucher 9"
+    custom_power_10: "Eigener Verbraucher 10"
+    custom_power_11: "Eigener Verbraucher 11"
+    custom_power_12: "Eigener Verbraucher 12"
+    custom_power_13: "Eigener Verbraucher 13"
+    custom_power_14: "Eigener Verbraucher 14"
+    custom_power_15: "Eigener Verbraucher 15"
+    custom_power_16: "Eigener Verbraucher 16"
+    custom_power_17: "Eigener Verbraucher 17"
+    custom_power_18: "Eigener Verbraucher 18"
+    custom_power_19: "Eigener Verbraucher 19"
+    custom_power_20: "Eigener Verbraucher 20"
 
-  sensor_table:
-    component:
-      sensor: "Sensor"
-      measurement: "Measurement"
-      field: "Field"
-      value: "Aktueller Wert"
-      timestamp: "Letzter Wert"
-      count: "Anzahl"
-      span: "Zeitspanne"
-      influxdb_not_running: "InfluxDB läuft nicht. Sensorwerte können nicht abgefragt werden."
-      influxdb_error: "InfluxDB-Fehler: %{message}"
-      time_ago:
-        seconds:
-          one: "vor 1 Sekunde"
-          other: "vor %{count} Sekunden"
-        minutes:
-          one: "vor 1 Minute"
-          other: "vor %{count} Minuten"
-        hours:
-          one: "vor 1 Stunde"
-          other: "vor %{count} Stunden"
-        days:
-          one: "vor 1 Tag"
-          other: "vor %{count} Tagen"
-        months:
-          one: "vor 1 Monat"
-          other: "vor %{count} Monaten"
-        years:
-          one: "vor 1 Jahr"
-          other: "vor %{count} Jahren"
-      duration:
-        seconds:
-          one: "1 Sekunde"
-          other: "%{count} Sekunden"
-        minutes:
-          one: "1 Minute"
-          other: "%{count} Minuten"
-        hours:
-          one: "1 Stunde"
-          other: "%{count} Stunden"
-        days:
-          one: "1 Tag"
-          other: "%{count} Tage"
-        months:
-          one: "1 Monat"
-          other: "%{count} Monate"
-        years:
-          one: "1 Jahr"
-          other: "%{count} Jahre"
-      unknown_device: "Sonstige"
-      no_sensors: "Noch keine Sensoren konfiguriert. Sensor-Zuordnungen im Konfigurations-Tab hinzufügen."
+  sensor_groups:
+    inverter: "Wechselrichter"
+    grid: "Stromnetz"
+    battery: "Batterie"
+    wallbox: "Wallbox"
+    car: "Elektroauto"
+    heatpump: "Wärmepumpe"
+    forecast: "Prognose"
+    custom: "Custom-Verbraucher"
+

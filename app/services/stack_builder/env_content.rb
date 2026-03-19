@@ -39,7 +39,7 @@ class StackBuilder
     def append_conditional_sections(sections) # rubocop:disable Metrics/AbcSize
       sections.concat(reverse_proxy_section_lines) if Services::Traefik.enabled?(configuration)
       sections.concat(backup_section_lines) if Services::PostgresqlBackup.enabled?(configuration)
-      sections.concat(senec_section_lines) if Services::SenecCollector.enabled?(configuration)
+      sections.concat(senec_section_lines) if configuration.senec_required?
       sections.concat(forecast_section_lines) if Services::ForecastCollector.enabled?(configuration)
       sections.concat(mqtt_section_lines) if configuration.mqtt_required?
     end
@@ -135,52 +135,47 @@ class StackBuilder
     end
 
     def senec_section_lines
-      device = Services::SenecCollector.senec_device(configuration)
-      return [] unless device
+      senec = configuration.senec
+      return [] if senec.blank?
 
-      data = device.data
       lines = ['# --- SENEC collector ---']
-      lines.concat(senec_adapter_lines(data))
-      lines.concat(senec_connection_lines(data))
-      lines.concat(entry('SENEC_INTERVAL', data.senec_interval || '5', 'Polling interval in seconds'))
-      if data.senec_ignore.present?
-        lines.concat(entry('SENEC_IGNORE', data.senec_ignore,
+      lines.concat(senec_adapter_lines(senec))
+      lines.concat(senec_connection_lines(senec))
+      lines.concat(entry('SENEC_INTERVAL', senec.interval || '5', 'Polling interval in seconds'))
+      if senec.ignore.present?
+        lines.concat(entry('SENEC_IGNORE', senec.ignore,
                            'Comma-separated fields to exclude from InfluxDB'))
       end
       lines.concat(entry('INFLUX_MEASUREMENT_SENEC', 'SENEC', 'InfluxDB measurement name for SENEC'))
       lines
     end
 
-    def senec_adapter_lines(data)
-      entry('SENEC_ADAPTER', data.battery_vendor&.start_with?('senec4') ? 'cloud' : 'local',
-            'SENEC adapter type (local or cloud)')
+    def senec_adapter_lines(senec)
+      entry('SENEC_ADAPTER', senec.adapter || 'local', 'SENEC adapter type (local or cloud)')
     end
 
-    def senec_connection_lines(data)
-      if data.battery_vendor&.start_with?('senec4')
-        senec_cloud_lines(data)
+    def senec_connection_lines(senec)
+      if senec.adapter == 'cloud'
+        senec_cloud_lines(senec)
       else
-        senec_local_lines(data)
+        senec_local_lines(senec)
       end
     end
 
-    def senec_cloud_lines(data)
+    def senec_cloud_lines(senec)
       lines = []
-      lines.concat(entry('SENEC_USERNAME', data.senec_username, 'SENEC cloud username'))
-      lines.concat(entry('SENEC_PASSWORD', data.senec_password, 'SENEC cloud password'))
-      if data.senec_totp_uri.present?
-        lines.concat(entry('SENEC_TOTP_URI', data.senec_totp_uri,
-                           'SENEC TOTP URI for MFA'))
-      end
-      lines.concat(entry('SENEC_SYSTEM_ID', data.senec_system_id, 'SENEC system ID')) if data.senec_system_id.present?
+      lines.concat(entry('SENEC_USERNAME', senec.username, 'SENEC cloud username'))
+      lines.concat(entry('SENEC_PASSWORD', senec.password, 'SENEC cloud password'))
+      lines.concat(entry('SENEC_TOTP_URI', senec.totp_uri, 'SENEC TOTP URI for MFA')) if senec.totp_uri.present?
+      lines.concat(entry('SENEC_SYSTEM_ID', senec.system_id, 'SENEC system ID')) if senec.system_id.present?
       lines
     end
 
-    def senec_local_lines(data)
+    def senec_local_lines(senec)
       lines = []
-      lines.concat(entry('SENEC_HOST', data.senec_host, 'SENEC device IP or hostname'))
-      lines.concat(entry('SENEC_SCHEMA', data.senec_schema || 'https', 'Connection protocol'))
-      lines.concat(entry('SENEC_LANGUAGE', data.senec_language || 'de', 'Status text language'))
+      lines.concat(entry('SENEC_HOST', senec.host, 'SENEC device IP or hostname'))
+      lines.concat(entry('SENEC_SCHEMA', senec.schema || 'https', 'Connection protocol'))
+      lines.concat(entry('SENEC_LANGUAGE', senec.language || 'de', 'Status text language'))
       lines
     end
 

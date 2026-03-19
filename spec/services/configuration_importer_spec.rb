@@ -143,14 +143,13 @@ RSpec.describe ConfigurationImporter do
         expect(config.system).to include('timezone' => 'Europe/Berlin')
       end
 
-      it 'persists the inverter device' do
-        inverters = config.devices_of('inverter')
-        expect(inverters.size).to eq(1)
-        expect(inverters.first.data).to include('battery_vendor' => 'senec3')
+      it 'persists SENEC sensors' do
+        expect(config.sensor_enabled?('inverter_power')).to be true
+        expect(config.sensor_config('inverter_power').source).to eq('senec')
       end
 
-      it 'persists sensor settings' do
-        expect(config.sensors).to include('inverter_power' => 'SENEC:inverter_power')
+      it 'persists SENEC shared config' do
+        expect(config.senec).to be_present
       end
     end
   end
@@ -327,22 +326,10 @@ RSpec.describe ConfigurationImporter do
         expect(config.mqtt).to include('mqtt_host' => 'mqtt-broker.local')
       end
 
-      it 'persists MQTT wallbox device' do
-        wallboxes = config.devices_of('wallbox')
-        expect(wallboxes.size).to eq(1)
-        expect(wallboxes.first.data).to include('wallbox_vendor' => 'mqtt')
-      end
-
-      it 'persists MQTT heatpump device' do
-        heatpumps = config.devices_of('heatpump')
-        expect(heatpumps.size).to eq(1)
-        expect(heatpumps.first.data).to include('heatpump_access' => 'mqtt')
-      end
-
-      it 'persists MQTT car device' do
-        cars = config.devices_of('car')
-        expect(cars.size).to eq(1)
-        expect(cars.first.data).to include('data_source' => 'mqtt')
+      it 'persists MQTT sensors' do
+        # The import should create sensor entries for MQTT-sourced data
+        mqtt_sensors = config.sensors_with_source('mqtt')
+        expect(mqtt_sensors).to be_present
       end
     end
   end
@@ -459,15 +446,13 @@ RSpec.describe ConfigurationImporter do
         )
       end
 
-      it 'persists shelly devices' do
-        heatpumps = config.devices_of('heatpump')
-        expect(heatpumps.size).to eq(1)
-        expect(heatpumps.first.data).to include('heatpump_access' => 'shelly')
+      it 'persists shelly sensors' do
+        shelly_sensors = config.sensors_with_source('shelly')
+        expect(shelly_sensors).to be_present
       end
 
-      it 'persists SENEC device with senec_ignore' do
-        inverters = config.devices_of('inverter')
-        expect(inverters.first.data).to include('senec_ignore' => 'wallbox_charge_power,grid_power_minus')
+      it 'persists SENEC shared config with senec_ignore' do
+        expect(config.senec.ignore).to eq('wallbox_charge_power,grid_power_minus')
       end
     end
   end
