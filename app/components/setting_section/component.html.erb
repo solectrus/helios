@@ -73,10 +73,9 @@
               <i class="fa-solid fa-pen-to-square"></i>
             <% end %>
           <% else %>
-            <%= button_to helpers.configuration_settings_path,
-                          class: "btn btn-ghost btn-sm btn-square",
-                          params: { setting: setting },
-                          data: { turbo_frame: "setting-modal-content" } do %>
+            <%= link_to helpers.new_configuration_setting_path(setting:),
+                        class: "btn btn-ghost btn-sm btn-square",
+                        data: { turbo_frame: "setting-modal-content" } do %>
               <i class="fa-solid fa-pen-to-square"></i>
             <% end %>
           <% end %>

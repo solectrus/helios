@@ -13,17 +13,17 @@ module Configurations
     end
 
     def create
-      if Configuration.singleton?(setting)
-        @configuration.update(setting, {})
-        redirect_to edit_configuration_setting_path(setting:, name: setting)
-      else
-        data = setting_params
-        return unless data
+      data = setting_params
+      return unless data
 
+      if Configuration.singleton?(setting)
+        @configuration.update(setting, data)
+      else
         identifier = data.delete('identifier')
         @configuration.add(setting, identifier, data)
-        redirect_to configuration_path
       end
+
+      redirect_to configuration_path
     end
 
     def update

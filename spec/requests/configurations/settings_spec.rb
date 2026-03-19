@@ -41,13 +41,14 @@ RSpec.describe 'Configurations::Settings', :with_admin do
       )
     end
 
-    it 'creates a singleton and redirects to edit' do
+    it 'creates a singleton and redirects to configuration' do
       post configuration_settings_path,
-           params: { setting: 'system' }
+           params: { setting: 'system', data: { timezone: 'Europe/Berlin' }.to_json }
 
-      expect(response).to redirect_to(
-        edit_configuration_setting_path(setting: 'system', name: 'system'),
-      )
+      expect(response).to redirect_to(configuration_path)
+
+      config = Configuration.current
+      expect(config.system.timezone).to eq('Europe/Berlin')
     end
   end
 
