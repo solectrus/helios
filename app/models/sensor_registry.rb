@@ -9,6 +9,7 @@ class SensorRegistry
     'inverter_power_forecast' => { unit: 'W' },
     'inverter_power_forecast_clearsky' => { unit: 'W' },
     'house_power' => { unit: 'W' },
+    'house_power_calculated' => { unit: 'W' },
     'grid_import_power' => { unit: 'W' },
     'grid_export_power' => { unit: 'W' },
     'grid_export_limit' => { unit: '%' },

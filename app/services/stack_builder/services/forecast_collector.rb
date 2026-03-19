@@ -106,6 +106,10 @@ class StackBuilder
       def pvnode_environment
         env = { 'PVNODE_APIKEY' => '${PVNODE_APIKEY}' }
         env['PVNODE_PAID'] = '${PVNODE_PAID}' if configuration.forecast.forecast_pvnode_paid.present?
+        if configuration.forecast.forecast_pvnode_extra_params.present?
+          env['PVNODE_EXTRA_PARAMS'] =
+            '${PVNODE_EXTRA_PARAMS}'
+        end
         env
       end
     end

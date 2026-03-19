@@ -2,6 +2,13 @@ class StackBuilder
   class EnvContent # rubocop:disable Metrics/ClassLength
     SEPARATOR = "# #{'=' * 60}".freeze
 
+    MQTT_OPTIONAL_ENTRIES = {
+      'mqtt_port' => ['MQTT_PORT', 'MQTT broker port'],
+      'mqtt_ssl' => ['MQTT_SSL', 'Enable SSL for MQTT connection'],
+      'mqtt_username' => ['MQTT_USERNAME', 'MQTT broker username'],
+      'mqtt_password' => ['MQTT_PASSWORD', 'MQTT broker password'],
+    }.freeze
+
     def initialize(configuration)
       @configuration = configuration
     end
@@ -29,11 +36,12 @@ class StackBuilder
       sections
     end
 
-    def append_conditional_sections(sections)
+    def append_conditional_sections(sections) # rubocop:disable Metrics/AbcSize
       sections.concat(reverse_proxy_section_lines) if Services::Traefik.enabled?(configuration)
       sections.concat(backup_section_lines) if Services::PostgresqlBackup.enabled?(configuration)
       sections.concat(senec_section_lines) if Services::SenecCollector.enabled?(configuration)
       sections.concat(forecast_section_lines) if Services::ForecastCollector.enabled?(configuration)
+      sections.concat(mqtt_section_lines) if configuration.mqtt_required?
     end
 
     def host_stack_path
@@ -292,7 +300,26 @@ class StackBuilder
         lines.concat(entry('PVNODE_PAID', fcast.forecast_pvnode_paid,
                            'pvnode paid account'))
       end
+      if fcast.forecast_pvnode_extra_params.present?
+        lines.concat(entry('PVNODE_EXTRA_PARAMS', fcast.forecast_pvnode_extra_params,
+                           'Additional pvnode parameters'))
+      end
       lines
+    end
+
+    def mqtt_section_lines
+      mqtt = configuration.mqtt
+      lines = ['# --- MQTT broker ---']
+      lines.concat(entry('MQTT_HOST', mqtt.mqtt_host, 'MQTT broker hostname'))
+      lines.concat(mqtt_optional_lines(mqtt))
+      lines
+    end
+
+    def mqtt_optional_lines(mqtt)
+      MQTT_OPTIONAL_ENTRIES.each_with_object([]) do |(field, (key, comment)), lines|
+        value = mqtt.send(field)
+        lines.concat(entry(key, value, comment)) if value.present?
+      end
     end
 
     def sensor_section_lines

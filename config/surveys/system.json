@@ -105,19 +105,6 @@
             "default": "IP address or host name"
           },
           "isRequired": true
-        },
-        {
-          "type": "text",
-          "name": "app_port",
-          "title": {
-            "de": "Port",
-            "default": "Port"
-          },
-          "defaultValue": "3000",
-          "isRequired": true,
-          "inputType": "number",
-          "min": 1024,
-          "max": 65535
         }
       ]
     },

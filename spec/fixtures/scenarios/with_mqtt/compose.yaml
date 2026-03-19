@@ -1,0 +1,133 @@
+services:
+  dashboard:
+    image: ghcr.io/solectrus/solectrus:latest
+    ports:
+      - 3000:3000
+    environment:
+      - TZ
+      - INSTALLATION_DATE
+      - SECRET_KEY_BASE
+      - ADMIN_PASSWORD
+      - APP_HOST=myhost
+      - WEB_CONCURRENCY=0
+      - INFLUX_POLL_INTERVAL=5
+      - CO2_EMISSION_FACTOR=401
+      - DB_HOST=postgresql
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_USER=postgres
+      - REDIS_URL=redis://redis:6379
+      - INFLUX_HOST=influxdb
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_SENSOR_INVERTER_POWER=SENEC:inverter_power
+      - INFLUX_SENSOR_HOUSE_POWER=SENEC:house_power
+      - INFLUX_SENSOR_GRID_IMPORT_POWER=SENEC:grid_power_plus
+      - INFLUX_SENSOR_GRID_EXPORT_POWER=SENEC:grid_power_minus
+      - INFLUX_SENSOR_BATTERY_CHARGING_POWER=SENEC:bat_power_plus
+      - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER=SENEC:bat_power_minus
+      - INFLUX_SENSOR_BATTERY_SOC=SENEC:bat_fuel_charge
+      - INFLUX_SENSOR_WALLBOX_POWER=go-eCharger:power
+      - INFLUX_SENSOR_WALLBOX_CAR_CONNECTED=go-eCharger:car_connected
+      - INFLUX_SENSOR_HEATPUMP_POWER=Heatpump:power
+      - INFLUX_SENSOR_HEATPUMP_TANK_TEMP=Heatpump:tank_temp
+      - INFLUX_SENSOR_CAR_BATTERY_SOC=MyTesla:soc
+      - INFLUX_EXCLUDE_FROM_HOUSE_POWER=WALLBOX_POWER
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+  influxdb:
+    image: influxdb:2-alpine
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
+    volumes:
+      - ./influxdb:/var/lib/influxdb2
+    restart: unless-stopped
+  postgresql:
+    image: postgres:18-alpine
+    environment:
+      - POSTGRES_PASSWORD
+    volumes:
+      - ./postgresql:/var/lib/postgresql
+    restart: unless-stopped
+  redis:
+    image: redis:8-alpine
+    volumes:
+      - ./redis:/data
+    restart: unless-stopped
+  watchtower:
+    image: nickfedor/watchtower
+    environment:
+      - TZ
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --scope solectrus --cleanup
+    restart: unless-stopped
+  senec-collector:
+    image: ghcr.io/solectrus/senec-collector:latest
+    environment:
+      - TZ
+      - SENEC_ADAPTER
+      - SENEC_HOST
+      - SENEC_SCHEMA
+      - SENEC_INTERVAL
+      - SENEC_LANGUAGE
+      - INFLUX_HOST=influxdb
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_SENEC}
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+  mqtt-collector:
+    image: ghcr.io/solectrus/mqtt-collector:latest
+    environment:
+      - TZ
+      - MQTT_HOST
+      - MQTT_PORT
+      - MQTT_USERNAME
+      - MQTT_PASSWORD
+      - INFLUX_HOST=influxdb
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - MAPPING_0_TOPIC=go-eCharger/123456/nrg
+      - MAPPING_0_JSON_KEY=p
+      - MAPPING_0_MEASUREMENT=go-eCharger
+      - MAPPING_0_FIELD=power
+      - MAPPING_0_TYPE=float
+      - MAPPING_1_TOPIC=go-eCharger/123456/car
+      - MAPPING_1_MEASUREMENT=go-eCharger
+      - MAPPING_1_FIELD=car_connected
+      - MAPPING_1_TYPE=integer
+      - MAPPING_2_TOPIC=heatpump/status
+      - MAPPING_2_JSON_KEY=power
+      - MAPPING_2_MEASUREMENT=Heatpump
+      - MAPPING_2_FIELD=power
+      - MAPPING_2_TYPE=float
+      - MAPPING_3_TOPIC=heatpump/tank
+      - MAPPING_3_JSON_KEY=temp
+      - MAPPING_3_MEASUREMENT=Heatpump
+      - MAPPING_3_FIELD=tank_temp
+      - MAPPING_3_TYPE=float
+      - MAPPING_4_TOPIC=tesla/battery
+      - MAPPING_4_JSON_KEY=soc
+      - MAPPING_4_MEASUREMENT=MyTesla
+      - MAPPING_4_FIELD=soc
+      - MAPPING_4_TYPE=float
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped

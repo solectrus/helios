@@ -3,7 +3,7 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
   MANAGED_SERVICES = %w[
     dashboard postgresql redis influxdb watchtower helios
     traefik postgresql-backup influxdb-backup
-    senec-collector shelly-collector forecast-collector power-splitter
+    senec-collector shelly-collector mqtt-collector forecast-collector power-splitter
   ].freeze
 
   # All .env variable keys that Helios manages (generates in .env)
@@ -18,6 +18,8 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     INFLUX_PASSWORD INFLUX_ORG INFLUX_BUCKET INFLUX_TOKEN
     INFLUX_ADMIN_TOKEN INFLUX_TOKEN_READ INFLUX_TOKEN_WRITE
     INFLUX_MEASUREMENT INFLUX_MEASUREMENT_SENEC INFLUX_MEASUREMENT_FORECAST
+    INFLUX_MEASUREMENT_SHELLY INFLUX_MEASUREMENT_MQTT
+    INFLUX_MODE INFLUX_POWER_DATA_TYPE
     HELIOS_HOST_STACK_PATH
     APP_DOMAIN LETSENCRYPT_EMAIL
     AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION AWS_BUCKET
@@ -29,9 +31,10 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     FORECAST_DAMPING_MORNING FORECAST_DAMPING_EVENING
     FORECAST_HORIZON FORECAST_INVERTER
     FORECAST_SOLAR_APIKEY SOLCAST_APIKEY SOLCAST_SITE
-    PVNODE_APIKEY PVNODE_PAID
+    PVNODE_APIKEY PVNODE_PAID PVNODE_EXTRA_PARAMS
     SHELLY_HOST SHELLY_INTERVAL SHELLY_PASSWORD
     SHELLY_CLOUD_SERVER SHELLY_AUTH_KEY SHELLY_DEVICE_ID SHELLY_INVERT_POWER
+    MQTT_HOST MQTT_PORT MQTT_SSL MQTT_USERNAME MQTT_PASSWORD
   ].freeze
 
   # Infrastructure .env keys that Helios doesn't generate but are well-known
@@ -42,11 +45,18 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     REDIS_URL REDIS_VOLUME_PATH
   ].freeze
 
-  SHELLY_DATA_SOURCE_FIELDS = {
+  # Maps device type to the field name that holds the data source identifier
+  DATA_SOURCE_FIELDS = {
     'inverter' => 'battery_vendor',
     'wallbox' => 'wallbox_vendor',
     'heatpump' => 'heatpump_access',
   }.freeze
+
+  MQTT_MAPPING_FIELDS = %i[
+    topic measurement field json_key json_path json_formula
+    measurement_positive measurement_negative field_positive field_negative
+    type min max null_to_zero
+  ].freeze
 
   SHELLY_OPTIONAL_FIELDS = {
     passwords: 'shelly_password',
@@ -54,6 +64,30 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     auth_keys: 'shelly_auth_key',
     device_ids: 'shelly_device_id',
     invert_powers: 'shelly_invert_power',
+  }.freeze
+
+  # Maps sensor names to the device type they indicate.
+  # Sensors not listed here are either shared (forecast)
+  # or handled via pattern matching (inverter_power_*, custom_power_*).
+  SENSOR_DEVICE_TYPE = {
+    'wallbox_power' => 'wallbox',
+    'wallbox_car_connected' => 'wallbox',
+    'car_battery_soc' => 'car',
+    'heatpump_power' => 'heatpump',
+    'heatpump_heating_power' => 'heatpump',
+    'heatpump_status' => 'heatpump',
+    'heatpump_tank_temp' => 'heatpump',
+    'battery_soc' => 'battery',
+    'battery_charging_power' => 'battery',
+    'battery_discharging_power' => 'battery',
+    'case_temp' => 'inverter',
+    'system_status' => 'inverter',
+    'system_status_ok' => 'inverter',
+    'grid_export_limit' => 'inverter',
+    'house_power' => 'inverter',
+    'grid_import_power' => 'inverter',
+    'grid_export_power' => 'inverter',
+    'outdoor_temp' => 'inverter',
   }.freeze
 
   def initialize(stack_reader)
@@ -87,6 +121,7 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
       watchtower: watchtower_data,
       sensors: sensors_data,
       forecast: forecast_data,
+      mqtt: mqtt_broker_data,
       reverse_proxy: reverse_proxy_data,
       backup: backup_data,
       devices: build_devices,
@@ -98,12 +133,13 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     devices = []
     devices << senec_device_data if senec_collector?
     devices.concat(shelly_device_data) if shelly_collector?
+    devices.concat(mqtt_device_data) if mqtt_collector?
     distribute_house_power_exclusions(devices)
     devices
   end
 
   def persist_singletons!(config)
-    %i[system postgresql influxdb redis watchtower sensors forecast reverse_proxy backup].each do |key|
+    %i[system postgresql influxdb redis watchtower sensors forecast mqtt reverse_proxy backup].each do |key|
       config.update(key.to_s, result[key]) if result[key]
     end
   end
@@ -276,7 +312,7 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
   end
 
   def shelly_device_config(device_type, index, parsed)
-    field = SHELLY_DATA_SOURCE_FIELDS.fetch(device_type, 'data_source')
+    field = DATA_SOURCE_FIELDS.fetch(device_type, 'data_source')
     data = {
       field => 'shelly',
       'shelly_host' => parsed[:hosts][index],
@@ -383,6 +419,7 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
       {
         'forecast_pvnode_apikey' => fc_env['PVNODE_APIKEY'],
         'forecast_pvnode_paid' => fc_env['PVNODE_PAID'],
+        'forecast_pvnode_extra_params' => fc_env['PVNODE_EXTRA_PARAMS'],
       }
     else
       {}
@@ -501,6 +538,94 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     ps_env['POWER_SPLITTER_INTERVAL']
   end
 
+  # --- MQTT ---
+
+  def mqtt_collector?
+    @reader.services.key?('mqtt-collector')
+  end
+
+  def mqtt_broker_data
+    return unless mqtt_collector?
+
+    mqtt_env = service_env('mqtt-collector')
+    {
+      'mqtt_host' => mqtt_env['MQTT_HOST'],
+      'mqtt_port' => mqtt_env['MQTT_PORT'],
+      'mqtt_ssl' => mqtt_env['MQTT_SSL'],
+      'mqtt_username' => mqtt_env['MQTT_USERNAME'],
+      'mqtt_password' => mqtt_env['MQTT_PASSWORD'],
+    }.compact.presence
+  end
+
+  def mqtt_device_data
+    mqtt_env = service_env('mqtt-collector')
+    mappings = parse_mqtt_mappings(mqtt_env)
+    build_mqtt_devices(mappings)
+  end
+
+  def parse_mqtt_mappings(mqtt_env)
+    mqtt_mapping_indices(mqtt_env).map do |i|
+      MQTT_MAPPING_FIELDS.index_with { |f| mqtt_env["MAPPING_#{i}_#{f.upcase}"] }.compact
+    end
+  end
+
+  def mqtt_mapping_indices(mqtt_env)
+    mqtt_env.keys
+            .filter_map { |k| k[/\AMAPPING_(\d+)_/, 1]&.to_i }
+            .uniq
+            .sort
+  end
+
+  def build_mqtt_devices(mappings)
+    # Group mappings by measurement name (one measurement = one device)
+    grouped = mappings.group_by { |m| m[:measurement].presence }
+    grouped.delete(nil) # skip mappings without measurement
+
+    grouped.filter_map do |measurement, device_mappings|
+      device_type = infer_mqtt_device_type(measurement, device_mappings)
+      next unless device_type
+
+      # Use the topic from the first (primary) mapping
+      topic = device_mappings.first[:topic]
+      field = DATA_SOURCE_FIELDS.fetch(device_type, 'data_source')
+
+      data = { field => 'mqtt' }
+      data['mqtt_topic'] = topic if topic.present?
+
+      { type: device_type, name: measurement, data: }
+    end
+  end
+
+  def infer_mqtt_device_type(measurement, device_mappings)
+    sensors = sensors_data
+
+    device_mappings.each do |mapping|
+      candidate = "#{measurement}:#{mapping[:field]}"
+      type = find_device_type_for_candidate(sensors, candidate)
+      return type if type
+    end
+
+    # Fallback: consumer
+    'consumer'
+  end
+
+  def find_device_type_for_candidate(sensors, candidate)
+    sensors.each do |sensor_name, sensor_value|
+      next unless sensor_value == candidate
+
+      # Inverter power sensors (inverter_power, inverter_power_1..5)
+      return 'inverter' if sensor_name.match?(/\Ainverter_power(_\d)?\z/)
+
+      # Custom power sensors → consumer
+      return 'consumer' if sensor_name.match?(/\Acustom_power_\d{2}\z/)
+
+      # Direct lookup for all other sensors
+      return SENSOR_DEVICE_TYPE[sensor_name] if SENSOR_DEVICE_TYPE.key?(sensor_name)
+    end
+
+    nil
+  end
+
   # --- Unmanaged ---
 
   def unmanaged_data
@@ -529,12 +654,23 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     MANAGED_ENV_KEYS +
       INFRASTRUCTURE_ENV_KEYS +
       SensorRegistry::SENSORS.keys.map { |s| "INFLUX_SENSOR_#{s.upcase}" } +
-      forecast_indexed_env_keys
+      forecast_indexed_env_keys +
+      pvnode_indexed_env_keys +
+      mqtt_mapping_env_keys
   end
 
   def forecast_indexed_env_keys
     (0..3).flat_map do |i|
       ["FORECAST_#{i}_DECLINATION", "FORECAST_#{i}_AZIMUTH", "FORECAST_#{i}_KWP", "SOLCAST_#{i}_SITE"]
     end
+  end
+
+  def pvnode_indexed_env_keys
+    (0..3).map { |i| "PVNODE_#{i}_EXTRA_PARAMS" }
+  end
+
+  def mqtt_mapping_env_keys
+    # Detect all MAPPING_N_* keys from the raw .env
+    @reader.raw_env.to_h.keys.grep(/\AMAPPING_\d+_/)
   end
 end

@@ -5,7 +5,6 @@ class ConfigSchema
     installation_date
     linux_machine
     app_host
-    app_port
     admin_password
     influx_poll_interval
     co2_emission_factor
@@ -111,6 +110,16 @@ class ConfigSchema
     data_source exclude_from_house_power smart_home_system mqtt_topic
   ] + SHELLY_FIELDS).freeze
 
+  # --- MQTT broker settings ---
+
+  MQTT_FIELDS = %w[
+    mqtt_host
+    mqtt_port
+    mqtt_ssl
+    mqtt_username
+    mqtt_password
+  ].freeze
+
   # --- Singleton fields ---
 
   FORECAST_FIELDS = %w[
@@ -141,6 +150,7 @@ class ConfigSchema
     forecast_solcast_id2
     forecast_pvnode_apikey
     forecast_pvnode_paid
+    forecast_pvnode_extra_params
   ].freeze
 
   REVERSE_PROXY_FIELDS = %w[
@@ -178,6 +188,7 @@ class ConfigSchema
     'heatpump' => HEATPUMP_FIELDS,
     'consumer' => CONSUMER_FIELDS,
     'forecast' => FORECAST_FIELDS,
+    'mqtt' => MQTT_FIELDS,
     'reverse_proxy' => REVERSE_PROXY_FIELDS,
     'backup' => BACKUP_ALL,
     'sensors' => SENSORS_FIELDS,

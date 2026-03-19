@@ -7,11 +7,11 @@ class Configuration
   # Singletons exist at most once per configuration
   SINGLETONS = %w[
     system postgresql influxdb redis
-    watchtower forecast reverse_proxy backup sensors
+    watchtower forecast mqtt reverse_proxy backup sensors
   ].freeze
 
   # Sections hidden from the configuration UI (auto-managed)
-  HIDDEN = %w[postgresql influxdb redis watchtower sensors].freeze
+  HIDDEN = %w[postgresql influxdb redis watchtower mqtt sensors].freeze
 
   # Settings shown below the device list (non-device, non-hidden singletons)
   SETTINGS = %w[system forecast reverse_proxy backup].freeze
@@ -148,6 +148,9 @@ class Configuration
   def mqtt_required?
     all_devices.any? do |d|
       d.data.data_source == 'mqtt' ||
+        d.data.wallbox_vendor == 'mqtt' ||
+        d.data.heatpump_access == 'mqtt' ||
+        d.data.battery_vendor == 'mqtt' ||
         d.data.power_source == 'mqtt' ||
         d.data.details_source == 'mqtt'
     end

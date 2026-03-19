@@ -240,6 +240,109 @@ RSpec.describe ConfigurationImporter do
     end
   end
 
+  context 'with with_mqtt scenario' do
+    let(:scenario) { 'with_mqtt' }
+
+    describe 'mqtt broker data' do
+      subject(:mqtt) { importer.result[:mqtt] }
+
+      it 'imports MQTT broker settings' do
+        expect(mqtt).to include(
+          'mqtt_host' => 'mqtt-broker.local',
+          'mqtt_port' => '1883',
+          'mqtt_username' => 'mqttuser',
+          'mqtt_password' => 'mqttpass',
+        )
+      end
+    end
+
+    describe 'device data' do
+      subject(:devices) { importer.result[:devices] }
+
+      it 'detects SENEC inverter plus three MQTT devices' do
+        expect(devices.size).to eq(4)
+      end
+
+      it 'infers wallbox from sensor mapping' do
+        wb = devices.find { |d| d[:type] == 'wallbox' }
+        expect(wb).to be_present
+        expect(wb[:name]).to eq('go-eCharger')
+        expect(wb[:data]).to include(
+          'wallbox_vendor' => 'mqtt',
+          'mqtt_topic' => 'go-eCharger/123456/nrg',
+        )
+      end
+
+      it 'infers heatpump from sensor mapping' do
+        hp = devices.find { |d| d[:type] == 'heatpump' }
+        expect(hp).to be_present
+        expect(hp[:name]).to eq('Heatpump')
+        expect(hp[:data]).to include(
+          'heatpump_access' => 'mqtt',
+          'mqtt_topic' => 'heatpump/status',
+        )
+      end
+
+      it 'infers car from sensor mapping' do
+        car = devices.find { |d| d[:type] == 'car' }
+        expect(car).to be_present
+        expect(car[:name]).to eq('MyTesla')
+        expect(car[:data]).to include(
+          'data_source' => 'mqtt',
+          'mqtt_topic' => 'tesla/battery',
+        )
+      end
+
+      it 'applies house power exclusion to wallbox' do
+        wb = devices.find { |d| d[:type] == 'wallbox' }
+        expect(wb[:data]['exclude_from_house_power']).to be true
+      end
+    end
+
+    describe 'unmanaged data' do
+      subject(:unmanaged) { importer.result[:unmanaged] }
+
+      it 'does not classify MQTT env vars as unmanaged' do
+        env_vars = unmanaged&.dig('env_vars') || {}
+        expect(env_vars.keys).not_to include(
+          'MQTT_HOST', 'MQTT_PORT', 'MQTT_USERNAME', 'MQTT_PASSWORD',
+          'MAPPING_0_TOPIC', 'MAPPING_0_MEASUREMENT', 'MAPPING_0_FIELD'
+        )
+      end
+
+      it 'does not classify mqtt-collector as unmanaged service' do
+        services = unmanaged&.dig('services') || {}
+        expect(services.keys).not_to include('mqtt-collector')
+      end
+    end
+
+    describe '#import!' do
+      subject(:config) { importer.import! }
+
+      it 'persists MQTT broker settings' do
+        expect(config.mqtt).to include('mqtt_host' => 'mqtt-broker.local')
+      end
+
+      it 'persists MQTT wallbox device' do
+        wallboxes = config.devices_of('wallbox')
+        expect(wallboxes.size).to eq(1)
+        expect(wallboxes.first.data).to include('wallbox_vendor' => 'mqtt')
+      end
+
+      it 'persists MQTT heatpump device' do
+        heatpumps = config.devices_of('heatpump')
+        expect(heatpumps.size).to eq(1)
+        expect(heatpumps.first.data).to include('heatpump_access' => 'mqtt')
+      end
+
+      it 'persists MQTT car device' do
+        cars = config.devices_of('car')
+        expect(cars.size).to eq(1)
+        expect(cars.first.data).to include('data_source' => 'mqtt')
+      end
+    end
+  end
+
   context 'with with_forecast_and_shelly scenario' do
     let(:scenario) { 'with_forecast_and_shelly' }
 
