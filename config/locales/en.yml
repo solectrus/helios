@@ -47,6 +47,8 @@ en:
       title: "Configuration - Helios"
       configured: "Configured"
       pending: "Pending"
+      devices: "Devices"
+      settings: "Settings"
     settings:
       inverter:
         title: "Inverter"
@@ -69,12 +71,9 @@ en:
       forecast:
         title: "Yield forecast"
         description: "Forecast of your PV yield"
-      dashboard:
-        title: "Dashboard"
-        description: "Settings for the SOLECTRUS dashboard"
       system:
         title: "System"
-        description: "Basic settings for SOLECTRUS"
+        description: "General settings for SOLECTRUS"
       reverse_proxy:
         title: "Reverse Proxy"
         description: "Domain & HTTPS with Traefik"

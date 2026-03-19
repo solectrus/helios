@@ -2,17 +2,10 @@ RSpec.describe ConfigSchema do
   describe '.fields_for' do
     it 'returns fields for system' do
       fields = described_class.fields_for('system')
-      expect(fields).to include('timezone', 'installation_date', 'linux_machine')
-    end
-
-    it 'does not include moved fields in system' do
-      fields = described_class.fields_for('system')
-      expect(fields).not_to include('admin_password', 'secret_key_base', 'app_host', 'app_port')
-    end
-
-    it 'returns fields for dashboard' do
-      fields = described_class.fields_for('dashboard')
-      expect(fields).to include('app_host', 'app_port', 'admin_password', 'image', 'secret_key_base')
+      expect(fields).to include(
+        'timezone', 'installation_date', 'linux_machine',
+        'app_host', 'app_port', 'admin_password', 'image', 'secret_key_base'
+      )
     end
 
     it 'returns fields for postgresql' do
@@ -68,16 +61,16 @@ RSpec.describe ConfigSchema do
       expect(described_class.valid_field?('system', 'timezone')).to be true
     end
 
-    it 'returns true for admin_password in dashboard' do
-      expect(described_class.valid_field?('dashboard', 'admin_password')).to be true
+    it 'returns true for admin_password in system' do
+      expect(described_class.valid_field?('system', 'admin_password')).to be true
     end
 
-    it 'returns true for secret_key_base in dashboard' do
-      expect(described_class.valid_field?('dashboard', 'secret_key_base')).to be true
+    it 'returns true for secret_key_base in system' do
+      expect(described_class.valid_field?('system', 'secret_key_base')).to be true
     end
 
-    it 'returns true for image in dashboard' do
-      expect(described_class.valid_field?('dashboard', 'image')).to be true
+    it 'returns true for image in system' do
+      expect(described_class.valid_field?('system', 'image')).to be true
     end
 
     it 'returns true for image in postgresql' do
@@ -124,12 +117,12 @@ RSpec.describe ConfigSchema do
       config = Configuration.current
       missing = described_class.missing_auto_generated(config)
 
-      expect(missing.keys).to match_array(%w[dashboard postgresql influxdb redis watchtower backup])
+      expect(missing.keys).to match_array(%w[system postgresql influxdb redis watchtower backup])
     end
 
-    it 'returns all dashboard defaults when empty' do
+    it 'returns all system defaults when empty' do
       missing = described_class.missing_auto_generated(Configuration.current)
-      expect(missing['dashboard'].keys).to match_array(%w[image admin_password secret_key_base])
+      expect(missing['system'].keys).to match_array(%w[image admin_password secret_key_base])
     end
 
     it 'returns all postgresql defaults when empty' do
@@ -157,14 +150,14 @@ RSpec.describe ConfigSchema do
 
     it 'returns only missing defaults' do
       config = Configuration.current
-      config.update('dashboard', { 'admin_password' => 'set' })
+      config.update('system', { 'admin_password' => 'set' })
       config.update('postgresql', { 'password' => 'exists' })
       config.update('influxdb', { 'org' => 'myorg' })
 
       missing = described_class.missing_auto_generated(config)
 
-      expect(missing['dashboard'].keys).to include('secret_key_base')
-      expect(missing['dashboard'].keys).not_to include('admin_password')
+      expect(missing['system'].keys).to include('secret_key_base')
+      expect(missing['system'].keys).not_to include('admin_password')
       expect(missing['postgresql'].keys).not_to include('password')
       expect(missing['influxdb'].keys).not_to include('org')
       expect(missing['influxdb'].keys).to include('password')

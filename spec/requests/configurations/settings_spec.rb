@@ -99,18 +99,15 @@ RSpec.describe 'Configurations::Settings', :with_admin do
     end
 
     it 'updates a singleton without changing name' do
-      config = Configuration.current
-      config.update('dashboard', {})
-
       setting_data = { 'app_host' => 'example.com' }
 
-      patch configuration_setting_path(setting: 'dashboard', name: 'dashboard'),
+      patch configuration_setting_path(setting: 'system', name: 'system'),
             params: { data: setting_data.to_json }
 
       expect(response).to redirect_to(configuration_path)
 
       config = Configuration.current
-      expect(config.dashboard).to eq('app_host' => 'example.com')
+      expect(config.system.app_host).to eq('example.com')
     end
   end
 

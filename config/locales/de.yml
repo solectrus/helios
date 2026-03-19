@@ -17,6 +17,8 @@ de:
       title: "Konfiguration - Helios"
       configured: "Konfiguriert"
       pending: "Offen"
+      devices: "Geräte"
+      settings: "Einstellungen"
     settings:
       inverter:
         title: "Wechselrichter"
@@ -39,12 +41,9 @@ de:
       forecast:
         title: "Ertragsprognose"
         description: "Prognose deines PV-Ertrags"
-      dashboard:
-        title: "Dashboard"
-        description: "Einstellungen für das SOLECTRUS-Dashboard"
       system:
         title: "System"
-        description: "Grundeinstellungen für SOLECTRUS"
+        description: "Allgemeine Einstellungen für SOLECTRUS"
       reverse_proxy:
         title: "Reverse Proxy"
         description: "Domain & HTTPS mit Traefik"

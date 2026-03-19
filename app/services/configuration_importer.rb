@@ -23,7 +23,6 @@ class ConfigurationImporter
   def build_result
     data = {
       system: system_data,
-      dashboard: dashboard_data,
       postgresql: postgresql_data,
       influxdb: influxdb_data,
       redis: redis_data,
@@ -40,7 +39,7 @@ class ConfigurationImporter
   end
 
   def persist_singletons!(config)
-    %i[system dashboard postgresql influxdb redis watchtower sensors reverse_proxy backup].each do |key|
+    %i[system postgresql influxdb redis watchtower sensors reverse_proxy backup].each do |key|
       config.update(key.to_s, result[key]) if result[key]
     end
   end
@@ -62,11 +61,6 @@ class ConfigurationImporter
     {
       'timezone' => dashboard_env['TZ'],
       'installation_date' => dashboard_env['INSTALLATION_DATE'],
-    }.compact
-  end
-
-  def dashboard_data
-    {
       'image' => @reader.service('dashboard')&.dig('image'),
       'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
       'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],

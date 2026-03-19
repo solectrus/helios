@@ -11,7 +11,7 @@ class StackBuilder
 
       def to_h
         config = {
-          image: configuration.dashboard.image,
+          image: configuration.system.image,
           environment: dashboard_environment,
           depends_on: healthy_depends_on(%i[postgresql redis influxdb]),
           restart: 'unless-stopped',

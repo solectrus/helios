@@ -4,23 +4,18 @@ class ConfigSchema
     timezone
     installation_date
     linux_machine
-  ].freeze
-
-  # --- Dashboard ---
-
-  DASHBOARD_FIELDS = %w[
     app_host
     app_port
     admin_password
   ].freeze
 
-  DASHBOARD_DEFAULTS = {
+  SYSTEM_DEFAULTS = {
     'image' => -> { 'ghcr.io/solectrus/solectrus:latest' },
     'admin_password' => -> { SecureRandom.alphanumeric(32) },
     'secret_key_base' => -> { SecureRandom.hex(64) },
   }.freeze
 
-  DASHBOARD_ALL = (DASHBOARD_FIELDS + DASHBOARD_DEFAULTS.keys).uniq.freeze
+  SYSTEM_ALL = (SYSTEM_FIELDS + SYSTEM_DEFAULTS.keys).uniq.freeze
 
   # --- PostgreSQL ---
 
@@ -68,7 +63,7 @@ class ConfigSchema
 
   # Combined auto-generated defaults keyed by section
   AUTO_GENERATED = {
-    'dashboard' => DASHBOARD_DEFAULTS,
+    'system' => SYSTEM_DEFAULTS,
     'postgresql' => POSTGRESQL_DEFAULTS,
     'influxdb' => INFLUXDB_DEFAULTS,
     'redis' => REDIS_DEFAULTS,
@@ -176,8 +171,7 @@ class ConfigSchema
   # --- Registry ---
 
   FIELDS = {
-    'system' => SYSTEM_FIELDS,
-    'dashboard' => DASHBOARD_ALL,
+    'system' => SYSTEM_ALL,
     'postgresql' => POSTGRESQL_ALL,
     'influxdb' => INFLUXDB_ALL,
     'redis' => REDIS_ALL,

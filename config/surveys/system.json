@@ -45,8 +45,11 @@
       ]
     },
     {
-      "name": "p_dashboard",
-      "title": "Dashboard",
+      "name": "p_general",
+      "title": {
+        "de": "Allgemein",
+        "default": "General"
+      },
       "elements": [
         {
           "type": "text",
@@ -84,6 +87,59 @@
             { "value": "Asia/Tokyo", "text": "Asia/Tokyo" },
             { "value": "Australia/Sydney", "text": "Australia/Sydney" }
           ]
+        }
+      ]
+    },
+    {
+      "name": "p_network",
+      "title": {
+        "de": "Netzwerk",
+        "default": "Network"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "app_host",
+          "title": {
+            "de": "IP-Adresse oder Hostname",
+            "default": "IP address or host name"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "app_port",
+          "title": {
+            "de": "Port",
+            "default": "Port"
+          },
+          "defaultValue": "3000",
+          "isRequired": true,
+          "inputType": "number",
+          "min": 1024,
+          "max": 65535
+        }
+      ]
+    },
+    {
+      "name": "p_security",
+      "title": {
+        "de": "Sicherheit",
+        "default": "Security"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "admin_password",
+          "title": {
+            "de": "Administrator-Passwort",
+            "default": "Administrator password"
+          },
+          "description": {
+            "de": "Nur der Admin kann Einstellungen und Strompreise bearbeiten",
+            "default": "Only the admin can edit settings and electricity prices"
+          },
+          "isRequired": true
         }
       ]
     }

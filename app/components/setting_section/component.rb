@@ -11,7 +11,6 @@ module SettingSection
       'system' => 'fa-gear',
       'reverse_proxy' => 'fa-shield-halved',
       'backup' => 'fa-cloud-arrow-up',
-      'dashboard' => 'fa-gauge-high',
       'sensors' => 'fa-gauge',
     }.freeze
 
