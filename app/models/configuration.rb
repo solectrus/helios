@@ -5,7 +5,10 @@ class Configuration
   DEVICES = %w[inverter battery wallbox car heatpump consumer].freeze
 
   # Singletons exist at most once per configuration
-  SINGLETONS = %w[forecast system reverse_proxy backup sensors].freeze
+  SINGLETONS = %w[forecast system postgresql influxdb reverse_proxy backup sensors].freeze
+
+  # Sections hidden from the configuration UI (auto-managed)
+  HIDDEN = %w[postgresql influxdb sensors].freeze
 
   # All valid setting names
   ALL = (DEVICES + SINGLETONS).freeze

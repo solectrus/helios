@@ -12,7 +12,7 @@ RSpec.describe ConfigurationImporter do
     let(:scenario) { 'senec3' }
 
     it 'returns a hash with setting data' do
-      expect(importer.result).to include(:system, :sensors, :devices)
+      expect(importer.result).to include(:system, :postgresql, :influxdb, :sensors, :devices)
     end
 
     describe 'system data' do
@@ -20,19 +20,35 @@ RSpec.describe ConfigurationImporter do
 
       it { is_expected.to include('timezone' => 'Europe/Berlin') }
       it { is_expected.to include('installation_date' => '2020-01-01') }
+      it { is_expected.to include('admin_password' => 'secret') }
+      it { is_expected.to include('secret_key_base') }
 
-      it 'includes secrets' do
-        expect(system).to include(
-          'postgres_password' => 'my-secret-db-password',
-          'admin_password' => 'secret',
-          'influx_password' => 'ExAmPl3PA55W0rD',
-          'influx_org' => 'solectrus',
-          'influx_bucket' => 'solectrus',
+      it 'does not include postgresql or influxdb fields' do
+        expect(system.keys).not_to include('postgres_password', 'password', 'influx_password', 'influx_org')
+      end
+    end
+
+    describe 'postgresql data' do
+      subject(:postgresql) { importer.result[:postgresql] }
+
+      it 'includes password' do
+        expect(postgresql).to include('password' => 'my-secret-db-password')
+      end
+    end
+
+    describe 'influxdb data' do
+      subject(:influxdb) { importer.result[:influxdb] }
+
+      it 'includes influxdb settings without prefix' do
+        expect(influxdb).to include(
+          'password' => 'ExAmPl3PA55W0rD',
+          'org' => 'solectrus',
+          'bucket' => 'solectrus',
         )
       end
 
-      it 'excludes absent secrets' do
-        expect(system).not_to have_key('influx_token')
+      it 'excludes absent influxdb fields' do
+        expect(influxdb).not_to have_key('token')
       end
     end
 

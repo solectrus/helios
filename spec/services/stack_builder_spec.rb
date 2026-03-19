@@ -93,7 +93,7 @@ RSpec.describe StackBuilder do
     it 'generates secrets with correct lengths' do
       env = Env.load
       expect(env['POSTGRES_PASSWORD'].length).to eq(32)
-      expect(env['SECRET_KEY_BASE'].length).to eq(64)
+      expect(env['SECRET_KEY_BASE'].length).to eq(128)
       expect(env['INFLUX_TOKEN'].length).to eq(64)
       expect(env['ADMIN_PASSWORD'].length).to eq(32)
     end
@@ -318,30 +318,29 @@ RSpec.describe StackBuilder do
       described_class.new(configuration).write!
 
       reloaded = Configuration.current
-      system_data = reloaded.system
-      expect(system_data.postgres_password).to be_present
-      expect(system_data.secret_key_base).to be_present
-      expect(system_data.admin_password).to be_present
-      expect(system_data.influx_password).to be_present
-      expect(system_data.influx_token).to be_present
+      expect(reloaded.system.admin_password).to be_present
+      expect(reloaded.system.secret_key_base).to be_present
+      expect(reloaded.postgresql.password).to be_present
+      expect(reloaded.influxdb.password).to be_present
+      expect(reloaded.influxdb.token).to be_present
     end
 
     it 'preserves secrets across multiple writes' do
       described_class.new(configuration).write!
-      first_password = Configuration.current.system.postgres_password
+      first_password = Configuration.current.postgresql.password
 
       # Reload configuration from disk for second write
       config2 = Configuration.current
       described_class.new(config2).write!
-      second_password = Configuration.current.system.postgres_password
+      second_password = Configuration.current.postgresql.password
 
       expect(second_password).to eq(first_password)
     end
 
     it 'uses existing secrets instead of generating new ones' do
       configuration.update(
-        'system',
-        configuration.system.merge('postgres_password' => 'my-existing-secret'),
+        'postgresql',
+        configuration.postgresql.merge('password' => 'my-existing-secret'),
       )
 
       described_class.new(Configuration.current).write!

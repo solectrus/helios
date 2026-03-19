@@ -2,7 +2,7 @@ RSpec.describe 'Configurations::Surveys', :with_admin do
   before { login }
 
   describe 'GET /configuration/surveys/:id' do
-    Configuration::ALL.each do |setting|
+    (Configuration::ALL - Configuration::HIDDEN).each do |setting|
       it "returns JSON for #{setting} survey" do
         get configuration_survey_path(id: setting)
 
@@ -30,7 +30,7 @@ RSpec.describe 'Configurations::Surveys', :with_admin do
       end
     end
 
-    Configuration::SINGLETONS.each do |setting|
+    (Configuration::SINGLETONS - Configuration::HIDDEN).each do |setting|
       it "does not inject name question for #{setting} survey" do
         get configuration_survey_path(id: setting)
 

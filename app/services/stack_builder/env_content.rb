@@ -28,6 +28,14 @@ class StackBuilder
       configuration.system
     end
 
+    def postgresql_data
+      configuration.postgresql
+    end
+
+    def influxdb_data
+      configuration.influxdb
+    end
+
     def reverse_proxy_data
       configuration.reverse_proxy
     end
@@ -68,14 +76,14 @@ class StackBuilder
         *entry('ADMIN_PASSWORD', system_data.admin_password,
                'Admin password for the SOLECTRUS web interface'),
         *entry('SECRET_KEY_BASE', system_data.secret_key_base,
-               'Rails session secret key — keep this confidential, never share it!'),
+               'Secret key for Rails sessions — shared by Dashboard and Helios'),
       ]
     end
 
     def postgresql_section_lines
       [
         '# --- PostgreSQL database ---',
-        *entry('POSTGRES_PASSWORD', system_data.postgres_password,
+        *entry('POSTGRES_PASSWORD', postgresql_data.password,
                'Database password — auto-generated, do not change after first start'),
         '',
       ]
@@ -84,12 +92,12 @@ class StackBuilder
     def influxdb_section_lines
       [
         '# --- InfluxDB time-series database ---',
-        *entry('INFLUX_PASSWORD', system_data.influx_password,
+        *entry('INFLUX_PASSWORD', influxdb_data.password,
                'Admin password — auto-generated, do not change after first start'),
-        *entry('INFLUX_ORG', system_data.influx_org, 'Organization name'),
-        *entry('INFLUX_BUCKET', system_data.influx_bucket,
+        *entry('INFLUX_ORG', influxdb_data.org, 'Organization name'),
+        *entry('INFLUX_BUCKET', influxdb_data.bucket,
                'Bucket (database) name for time-series data'),
-        *entry('INFLUX_TOKEN', system_data.influx_token,
+        *entry('INFLUX_TOKEN', influxdb_data.token,
                'API token with full access — auto-generated, do not change after first start'),
       ]
     end
@@ -99,8 +107,6 @@ class StackBuilder
         '# --- Helios ---',
         *entry('HELIOS_HOST_STACK_PATH', host_stack_path,
                'Path on the Docker host where stack files are stored'),
-        *entry('HELIOS_SECRET_KEY_BASE', system_data.helios_secret_key_base,
-               'Helios session secret key — auto-generated, do not change'),
       ]
     end
 

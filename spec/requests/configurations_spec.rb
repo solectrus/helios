@@ -11,10 +11,10 @@ RSpec.describe 'Configurations', :with_admin do
       expect(response).to have_http_status(:ok)
     end
 
-    it 'displays all setting titles except sensors' do
+    it 'displays all visible setting titles' do
       get configuration_path
 
-      (Configuration::ALL - %w[sensors]).each do |setting|
+      (Configuration::ALL - Configuration::HIDDEN).each do |setting|
         title = I18n.t("configurations.settings.#{setting}.title")
         expect(response.body).to include(title)
       end

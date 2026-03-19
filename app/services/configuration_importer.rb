@@ -23,6 +23,8 @@ class ConfigurationImporter
   def build_result
     data = {
       system: system_data,
+      postgresql: postgresql_data,
+      influxdb: influxdb_data,
       sensors: sensors_data,
       reverse_proxy: reverse_proxy_data,
       backup: backup_data,
@@ -35,10 +37,9 @@ class ConfigurationImporter
   end
 
   def persist_singletons!(config)
-    config.update('system', result[:system])
-    config.update('sensors', result[:sensors])
-    config.update('reverse_proxy', result[:reverse_proxy]) if result[:reverse_proxy]
-    config.update('backup', result[:backup]) if result[:backup]
+    %i[system postgresql influxdb sensors reverse_proxy backup].each do |key|
+      config.update(key.to_s, result[key]) if result[key]
+    end
   end
 
   def persist_devices!(config)
@@ -53,15 +54,22 @@ class ConfigurationImporter
   end
 
   def system_data
-    system_general_data.merge(system_secrets_data).compact
+    system_env_data.merge(system_image_data).compact
   end
 
-  def system_general_data
+  def system_env_data
     dashboard_env = service_env('dashboard')
 
     {
       'timezone' => dashboard_env['TZ'],
       'installation_date' => dashboard_env['INSTALLATION_DATE'],
+      'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
+      'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],
+    }
+  end
+
+  def system_image_data
+    {
       'postgresql_image' => @reader.service('postgresql')&.dig('image'),
       'redis_image' => @reader.service('redis')&.dig('image'),
       'influxdb_image' => @reader.service('influxdb')&.dig('image'),
@@ -71,16 +79,19 @@ class ConfigurationImporter
     }
   end
 
-  def system_secrets_data
+  def postgresql_data
     {
-      'postgres_password' => @reader.raw_env['POSTGRES_PASSWORD'],
-      'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],
-      'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
-      'influx_password' => @reader.raw_env['INFLUX_PASSWORD'],
-      'influx_org' => @reader.raw_env['INFLUX_ORG'],
-      'influx_bucket' => @reader.raw_env['INFLUX_BUCKET'],
-      'influx_token' => @reader.raw_env['INFLUX_TOKEN'],
-    }
+      'password' => @reader.raw_env['POSTGRES_PASSWORD'],
+    }.compact
+  end
+
+  def influxdb_data
+    {
+      'password' => @reader.raw_env['INFLUX_PASSWORD'],
+      'org' => @reader.raw_env['INFLUX_ORG'],
+      'bucket' => @reader.raw_env['INFLUX_BUCKET'],
+      'token' => @reader.raw_env['INFLUX_TOKEN'],
+    }.compact
   end
 
   def senec_collector?

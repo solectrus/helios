@@ -14,7 +14,7 @@ class StackBuilder
           image: system_data.helios_image || 'ghcr.io/solectrus/helios:develop',
           user: 'root',
           environment: {
-            'SECRET_KEY_BASE' => '${HELIOS_SECRET_KEY_BASE}',
+            'SECRET_KEY_BASE' => '${SECRET_KEY_BASE}',
             'HELIOS_STACK_PATH' => '/opt/solectrus',
             'HELIOS_HOST_STACK_PATH' => '${HELIOS_HOST_STACK_PATH}',
           },

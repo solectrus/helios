@@ -8,7 +8,7 @@
       <div class="mb-8"><%= render MainNav::Component.new(active_tab: :configuration) %></div>
 
       <div class="space-y-4">
-        <% (Configuration::ALL - %w[sensors]).each do |setting| %>
+        <% (Configuration::ALL - Configuration::HIDDEN).each do |setting| %>
           <%= render SettingSection::Component.new(
                 setting:,
                 configuration: @configuration

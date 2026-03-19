@@ -14,12 +14,12 @@ module InfluxDb
     end
 
     def self.from_configuration(configuration = Configuration.current)
-      sys = configuration.system
+      influx = configuration.influxdb
 
       new(
-        token: sys.influx_token,
-        org: sys.influx_org,
-        bucket: sys.influx_bucket,
+        token: influx.token,
+        org: influx.org,
+        bucket: influx.bucket,
       )
     end
 

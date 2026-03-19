@@ -54,13 +54,14 @@ class StackBuilder
   end
 
   def ensure_secrets!
-    current_system = @configuration.system
-    missing = ConfigSchema.missing_secrets(current_system)
-    updates = missing.transform_values(&:call)
+    missing = ConfigSchema.missing_auto_generated(@configuration)
+    return if missing.empty?
 
-    return if updates.empty?
-
-    @configuration.update('system', current_system.merge(updates))
+    missing.each do |section, defaults|
+      current = @configuration.send(section)
+      updates = defaults.transform_values(&:call)
+      @configuration.update(section, current.merge(updates))
+    end
     @compose_builder = nil
   end
 end

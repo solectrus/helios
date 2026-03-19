@@ -2,7 +2,22 @@ RSpec.describe ConfigSchema do
   describe '.fields_for' do
     it 'returns fields for system' do
       fields = described_class.fields_for('system')
-      expect(fields).to include('timezone', 'installation_date', 'postgres_password', 'dashboard_image')
+      expect(fields).to include('timezone', 'installation_date', 'admin_password', 'secret_key_base', 'dashboard_image')
+    end
+
+    it 'does not include postgresql or influxdb fields in system' do
+      fields = described_class.fields_for('system')
+      expect(fields).not_to include('password', 'org', 'token')
+    end
+
+    it 'returns fields for postgresql' do
+      fields = described_class.fields_for('postgresql')
+      expect(fields).to include('password')
+    end
+
+    it 'returns fields for influxdb' do
+      fields = described_class.fields_for('influxdb')
+      expect(fields).to include('org', 'bucket', 'password', 'token')
     end
 
     it 'returns fields for inverter' do
@@ -29,8 +44,12 @@ RSpec.describe ConfigSchema do
       expect(described_class.valid_field?('system', 'timezone')).to be true
     end
 
-    it 'returns true for system secrets' do
-      expect(described_class.valid_field?('system', 'postgres_password')).to be true
+    it 'returns true for admin_password in system' do
+      expect(described_class.valid_field?('system', 'admin_password')).to be true
+    end
+
+    it 'returns true for secret_key_base in system' do
+      expect(described_class.valid_field?('system', 'secret_key_base')).to be true
     end
 
     it 'returns true for image overrides' do
@@ -39,6 +58,14 @@ RSpec.describe ConfigSchema do
 
     it 'returns false for unknown system field' do
       expect(described_class.valid_field?('system', 'nonsense')).to be false
+    end
+
+    it 'returns true for postgresql fields' do
+      expect(described_class.valid_field?('postgresql', 'password')).to be true
+    end
+
+    it 'returns true for influxdb fields' do
+      expect(described_class.valid_field?('influxdb', 'token')).to be true
     end
 
     it 'returns true for known inverter fields' do
@@ -58,42 +85,51 @@ RSpec.describe ConfigSchema do
     end
   end
 
-  describe '.generate_secrets' do
-    it 'generates all secrets' do
-      secrets = described_class.generate_secrets
-      expect(secrets.keys).to match_array(described_class::SYSTEM_SECRETS.keys)
-      expect(secrets.values).to all(be_present)
+  describe '.missing_auto_generated' do
+    before { with_config_yaml }
+
+    it 'returns all defaults when configuration is empty' do
+      config = Configuration.current
+      missing = described_class.missing_auto_generated(config)
+
+      expect(missing.keys).to match_array(%w[system postgresql influxdb])
+      expect(missing['system'].keys).to match_array(%w[admin_password secret_key_base])
+      expect(missing['postgresql'].keys).to match_array(%w[password])
+      expect(missing['influxdb'].keys).to match_array(%w[org bucket password token])
     end
 
-    it 'generates unique values on each call' do
-      secrets1 = described_class.generate_secrets
-      secrets2 = described_class.generate_secrets
-      expect(secrets1['postgres_password']).not_to eq(secrets2['postgres_password'])
-    end
-  end
+    it 'returns only missing defaults' do
+      config = Configuration.current
+      config.update('system', { 'admin_password' => 'set' })
+      config.update('postgresql', { 'password' => 'exists' })
+      config.update('influxdb', { 'org' => 'myorg' })
 
-  describe '.missing_secrets' do
-    it 'returns all secrets when system data is empty' do
-      missing = described_class.missing_secrets({})
-      expect(missing.keys).to match_array(described_class::SYSTEM_SECRETS.keys)
-    end
+      missing = described_class.missing_auto_generated(config)
 
-    it 'returns only missing secrets' do
-      existing = { 'postgres_password' => 'exists', 'influx_org' => 'org' }
-      missing = described_class.missing_secrets(existing)
-      expect(missing.keys).not_to include('postgres_password', 'influx_org')
-      expect(missing.keys).to include('secret_key_base', 'influx_password')
+      expect(missing['system'].keys).to eq(%w[secret_key_base])
+      expect(missing).not_to have_key('postgresql')
+      expect(missing['influxdb'].keys).not_to include('org')
+      expect(missing['influxdb'].keys).to include('password')
     end
 
-    it 'returns empty hash when all secrets present' do
-      all_present = described_class::SYSTEM_SECRETS.transform_values { 'present' }
-      missing = described_class.missing_secrets(all_present)
+    it 'returns empty hash when all values present' do
+      config = Configuration.current
+      config.update('system', { 'admin_password' => 'a', 'secret_key_base' => 's' })
+      config.update('postgresql', { 'password' => 'p' })
+      config.update('influxdb', {
+                      'org' => 'o',
+                      'bucket' => 'b',
+                      'password' => 'p',
+                      'token' => 't',
+                    })
+
+      missing = described_class.missing_auto_generated(config)
       expect(missing).to be_empty
     end
   end
 
   describe 'consistency with surveys' do
-    survey_settings = Configuration::ALL.reject { |s| s == 'sensors' }
+    survey_settings = (Configuration::ALL - Configuration::HIDDEN)
     survey_settings.select { |s| Rails.root.join("config/surveys/#{s}.json").exist? }.each do |setting|
       it "#{setting}.json fields are all in described_class" do
         survey = JSON.parse(Rails.root.join("config/surveys/#{setting}.json").read)

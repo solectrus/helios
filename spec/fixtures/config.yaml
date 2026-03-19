@@ -1,6 +1,7 @@
 ---
 system:
-  timezone: Europe/Berlin
+  admin_password: present
+  secret_key_base: s
 reverse_proxy:
   enabled: true
   app_domain: solar.example.com
@@ -10,3 +11,10 @@ backup:
   aws_secret_access_key: secret123
   aws_region: eu-central-1
   aws_bucket: my-bucket
+postgresql:
+  password: p
+influxdb:
+  org: o
+  bucket: b
+  password: p
+  token: t

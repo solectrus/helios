@@ -6,18 +6,14 @@ class ConfigSchema
     linux_machine
     app_host
     app_port
+    admin_password
+    secret_key_base
   ].freeze
 
-  # Auto-generated secrets and defaults (lambdas produce values when missing)
-  SYSTEM_SECRETS = {
-    'postgres_password' => -> { SecureRandom.alphanumeric(32) },
-    'secret_key_base' => -> { SecureRandom.alphanumeric(64) },
+  # Auto-generated defaults for system fields
+  SYSTEM_DEFAULTS = {
     'admin_password' => -> { SecureRandom.alphanumeric(32) },
-    'influx_password' => -> { SecureRandom.alphanumeric(32) },
-    'influx_org' => -> { 'solectrus' },
-    'influx_bucket' => -> { 'solectrus' },
-    'influx_token' => -> { SecureRandom.hex(32) },
-    'helios_secret_key_base' => -> { SecureRandom.hex(64) },
+    'secret_key_base' => -> { SecureRandom.hex(64) },
   }.freeze
 
   # Optional Docker image overrides (set by importer, not by surveys)
@@ -32,7 +28,33 @@ class ConfigSchema
   ].freeze
 
   # All valid system fields
-  SYSTEM_ALL = (SYSTEM_FIELDS + SYSTEM_SECRETS.keys + SYSTEM_IMAGE_OVERRIDES).freeze
+  SYSTEM_ALL = (SYSTEM_FIELDS + SYSTEM_IMAGE_OVERRIDES).freeze
+
+  # --- PostgreSQL ---
+
+  POSTGRESQL_DEFAULTS = {
+    'password' => -> { SecureRandom.alphanumeric(32) },
+  }.freeze
+
+  POSTGRESQL_ALL = POSTGRESQL_DEFAULTS.keys.freeze
+
+  # --- InfluxDB ---
+
+  INFLUXDB_DEFAULTS = {
+    'org' => -> { 'solectrus' },
+    'bucket' => -> { 'solectrus' },
+    'password' => -> { SecureRandom.alphanumeric(32) },
+    'token' => -> { SecureRandom.hex(32) },
+  }.freeze
+
+  INFLUXDB_ALL = INFLUXDB_DEFAULTS.keys.freeze
+
+  # Combined auto-generated defaults keyed by section
+  AUTO_GENERATED = {
+    'system' => SYSTEM_DEFAULTS,
+    'postgresql' => POSTGRESQL_DEFAULTS,
+    'influxdb' => INFLUXDB_DEFAULTS,
+  }.freeze
 
   # --- Device fields ---
 
@@ -133,6 +155,8 @@ class ConfigSchema
 
   FIELDS = {
     'system' => SYSTEM_ALL,
+    'postgresql' => POSTGRESQL_ALL,
+    'influxdb' => INFLUXDB_ALL,
     'inverter' => INVERTER_FIELDS,
     'battery' => BATTERY_FIELDS,
     'wallbox' => WALLBOX_FIELDS,
@@ -157,11 +181,12 @@ class ConfigSchema
     field.to_s.in?(fields)
   end
 
-  def self.generate_secrets
-    SYSTEM_SECRETS.transform_values(&:call)
-  end
-
-  def self.missing_secrets(system_data)
-    SYSTEM_SECRETS.reject { |key, _| system_data[key] }
+  # Returns { section => { key => lambda } } for all missing auto-generated values
+  def self.missing_auto_generated(configuration)
+    AUTO_GENERATED.each_with_object({}) do |(section, defaults), result|
+      section_data = configuration.respond_to?(section) ? configuration.send(section) : {}
+      missing = defaults.reject { |key, _| section_data[key] }
+      result[section] = missing unless missing.empty?
+    end
   end
 end
