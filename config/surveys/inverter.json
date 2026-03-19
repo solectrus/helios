@@ -182,7 +182,7 @@
         },
         {
           "type": "text",
-          "name": "senec_interval_cloud",
+          "name": "senec_interval",
           "title": {
             "de": "Abfrageintervall (in Sekunden)",
             "default": "Query interval (in seconds)"
