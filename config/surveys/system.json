@@ -85,6 +85,29 @@
           "inputType": "date"
         },
         {
+          "type": "dropdown",
+          "name": "timezone",
+          "title": {
+            "de": "Zeitzone",
+            "default": "Timezone"
+          },
+          "isRequired": true,
+          "defaultValue": "Europe/Berlin",
+          "choices": [
+            { "value": "Europe/Berlin", "text": "Europe/Berlin" },
+            { "value": "Europe/Vienna", "text": "Europe/Vienna" },
+            { "value": "Europe/Zurich", "text": "Europe/Zurich" },
+            { "value": "Europe/Amsterdam", "text": "Europe/Amsterdam" },
+            { "value": "Europe/Paris", "text": "Europe/Paris" },
+            { "value": "Europe/Rome", "text": "Europe/Rome" },
+            { "value": "Europe/London", "text": "Europe/London" },
+            { "value": "America/New_York", "text": "America/New_York" },
+            { "value": "America/Los_Angeles", "text": "America/Los_Angeles" },
+            { "value": "Asia/Tokyo", "text": "Asia/Tokyo" },
+            { "value": "Australia/Sydney", "text": "Australia/Sydney" }
+          ]
+        },
+        {
           "type": "text",
           "name": "admin_password",
           "title": {

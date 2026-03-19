@@ -176,7 +176,7 @@ class Configuration
   end
 
   def setup_completed?
-    File.exist?(@path) && system.timezone.present?
+    all_devices.any?
   end
 
   def save!

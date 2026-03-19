@@ -12,7 +12,7 @@ class AdminsController < ApplicationController
 
     Admin.create_admin!(password: params[:password])
     session[:authenticated] = true
-    redirect_to new_setup_path
+    redirect_to root_path
   end
 
   private

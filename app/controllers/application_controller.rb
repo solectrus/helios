@@ -11,7 +11,7 @@ class ApplicationController < ActionController::Base
 
   def require_setup
     return if admin_setup_completed?
-    return if setup_controller?
+    return if is_a?(AdminsController)
 
     redirect_to new_admin_path
   end
@@ -30,10 +30,6 @@ class ApplicationController < ActionController::Base
 
   def authenticated?
     session[:authenticated] == true
-  end
-
-  def setup_controller?
-    is_a?(AdminsController)
   end
 
   def sessions_controller?

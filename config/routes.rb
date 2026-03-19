@@ -6,9 +6,6 @@ Rails.application.routes.draw do
   resource :admin, only: %i[new create]
   resource :session, only: %i[new create destroy]
 
-  # Setup wizard
-  resource :setup, only: %i[new create]
-
   # Generated files preview
   resource :generated_files, only: :show
 

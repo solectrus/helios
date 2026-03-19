@@ -27,7 +27,7 @@ RSpec.describe 'Admin Setup', :without_admin do
            }
 
       expect(Admin.exists?).to be true
-      expect(response).to redirect_to(new_setup_path)
+      expect(response).to redirect_to(root_path)
     end
 
     it 'shows error for blank password' do

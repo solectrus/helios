@@ -296,14 +296,14 @@ RSpec.describe Configuration do
   end
 
   describe '#setup_completed?' do
-    it 'returns false when no config.yaml exists' do
+    it 'returns false when no devices are configured' do
       config = described_class.current
       expect(config.setup_completed?).to be false
     end
 
-    it 'returns true when system timezone is set' do
+    it 'returns true when at least one device is configured' do
       config = described_class.current
-      config.update('system', { 'timezone' => 'Europe/Berlin' })
+      config.add('inverter', 'MyInverter', { 'data_source' => 'senec' })
 
       reloaded = described_class.current
       expect(reloaded.setup_completed?).to be true

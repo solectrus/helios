@@ -1,6 +1,9 @@
 RSpec.describe 'Dashboard', :with_admin do
   before do
-    with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
+    with_config_yaml(
+      'system' => { 'timezone' => 'Europe/Berlin' },
+      'inverters' => { 'MyInverter' => { 'data_source' => 'senec' } },
+    )
     login
   end
 
@@ -73,9 +76,9 @@ RSpec.describe 'Dashboard', :with_admin do
     context 'when setup not completed' do
       before { with_config_yaml }
 
-      it 'redirects to setup' do
+      it 'redirects to configuration' do
         get root_path
-        expect(response).to redirect_to(new_setup_path)
+        expect(response).to redirect_to(configuration_path)
       end
     end
   end
