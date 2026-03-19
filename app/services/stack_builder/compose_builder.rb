@@ -13,7 +13,10 @@ class StackBuilder
       Services::Traefik,
       Services::PostgresqlBackup,
       Services::InfluxdbBackup,
+      Services::SenecCollector,
       Services::ShellyCollector,
+      Services::ForecastCollector,
+      Services::PowerSplitter,
     ].freeze
 
     def initialize(configuration)
@@ -26,6 +29,7 @@ class StackBuilder
       compose.name = 'solectrus'
 
       add_class_based_services(compose)
+      add_unmanaged_services(compose)
 
       compose.to_yaml
     end
@@ -53,6 +57,17 @@ class StackBuilder
         *BASE_SERVICES,
         *CONDITIONAL_SERVICES.select { |service_class| service_class.enabled?(configuration) },
       ]
+    end
+
+    def add_unmanaged_services(compose)
+      unmanaged = configuration.unmanaged
+      return if unmanaged.services.blank?
+
+      unmanaged.services.each do |name, config|
+        next if config.blank?
+
+        compose.add_service(name, config.to_h, comment: 'Unmanaged service (preserved from existing installation)')
+      end
     end
 
     def compose_header_comment

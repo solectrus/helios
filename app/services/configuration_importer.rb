@@ -1,4 +1,60 @@
-class ConfigurationImporter
+class ConfigurationImporter # rubocop:disable Metrics/ClassLength
+  # All service names that Helios manages (generates in compose.yaml)
+  MANAGED_SERVICES = %w[
+    dashboard postgresql redis influxdb watchtower helios
+    traefik postgresql-backup influxdb-backup
+    senec-collector shelly-collector forecast-collector power-splitter
+  ].freeze
+
+  # All .env variable keys that Helios manages (generates in .env)
+  MANAGED_ENV_KEYS = %w[
+    TZ INSTALLATION_DATE ADMIN_PASSWORD SECRET_KEY_BASE
+    APP_HOST INFLUX_POLL_INTERVAL CO2_EMISSION_FACTOR
+    FORCE_SSL WEB_CONCURRENCY FRAME_ANCESTORS UI_THEME
+    INFLUX_EXCLUDE_FROM_HOUSE_POWER
+    LOCKUP_CODEWORD TRUSTED_PROXY_RANGES
+    POWER_SPLITTER_INTERVAL
+    POSTGRES_PASSWORD
+    INFLUX_PASSWORD INFLUX_ORG INFLUX_BUCKET INFLUX_TOKEN
+    INFLUX_ADMIN_TOKEN INFLUX_TOKEN_READ INFLUX_TOKEN_WRITE
+    INFLUX_MEASUREMENT INFLUX_MEASUREMENT_SENEC INFLUX_MEASUREMENT_FORECAST
+    HELIOS_HOST_STACK_PATH
+    APP_DOMAIN LETSENCRYPT_EMAIL
+    AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION AWS_BUCKET
+    SENEC_ADAPTER SENEC_HOST SENEC_SCHEMA SENEC_LANGUAGE SENEC_INTERVAL
+    SENEC_USERNAME SENEC_PASSWORD SENEC_TOTP_URI SENEC_SYSTEM_ID SENEC_IGNORE
+    FORECAST_PROVIDER FORECAST_LATITUDE FORECAST_LONGITUDE
+    FORECAST_DECLINATION FORECAST_AZIMUTH FORECAST_KWP
+    FORECAST_CONFIGURATIONS FORECAST_INTERVAL
+    FORECAST_DAMPING_MORNING FORECAST_DAMPING_EVENING
+    FORECAST_HORIZON FORECAST_INVERTER
+    FORECAST_SOLAR_APIKEY SOLCAST_APIKEY SOLCAST_SITE
+    PVNODE_APIKEY PVNODE_PAID
+    SHELLY_HOST SHELLY_INTERVAL SHELLY_PASSWORD
+    SHELLY_CLOUD_SERVER SHELLY_AUTH_KEY SHELLY_DEVICE_ID SHELLY_INVERT_POWER
+  ].freeze
+
+  # Infrastructure .env keys that Helios doesn't generate but are well-known
+  # SOLECTRUS vars. These are suppressed from unmanaged to avoid noise.
+  INFRASTRUCTURE_ENV_KEYS = %w[
+    INFLUX_HOST INFLUX_SCHEMA INFLUX_PORT INFLUX_VOLUME_PATH INFLUX_USERNAME
+    DB_HOST DB_USER DB_PASSWORD DB_VOLUME_PATH DB_DATABASE
+    REDIS_URL REDIS_VOLUME_PATH
+  ].freeze
+
+  SHELLY_DATA_SOURCE_FIELDS = {
+    'wallbox' => 'wallbox_vendor',
+    'heatpump' => 'heatpump_access',
+  }.freeze
+
+  SHELLY_OPTIONAL_FIELDS = {
+    passwords: 'shelly_password',
+    cloud_servers: 'shelly_cloud_server',
+    auth_keys: 'shelly_auth_key',
+    device_ids: 'shelly_device_id',
+    invert_powers: 'shelly_invert_power',
+  }.freeze
+
   def initialize(stack_reader)
     @reader = stack_reader
   end
@@ -14,13 +70,14 @@ class ConfigurationImporter
 
     persist_singletons!(config)
     persist_devices!(config)
+    persist_unmanaged!(config)
 
     config
   end
 
   private
 
-  def build_result
+  def build_result # rubocop:disable Metrics/MethodLength
     data = {
       system: system_data,
       postgresql: postgresql_data,
@@ -28,18 +85,21 @@ class ConfigurationImporter
       redis: redis_data,
       watchtower: watchtower_data,
       sensors: sensors_data,
+      forecast: forecast_data,
       reverse_proxy: reverse_proxy_data,
       backup: backup_data,
       devices: [],
+      unmanaged: unmanaged_data,
     }
 
     data[:devices] << senec_device_data if senec_collector?
+    data[:devices].concat(shelly_device_data) if shelly_collector?
 
     data
   end
 
   def persist_singletons!(config)
-    %i[system postgresql influxdb redis watchtower sensors reverse_proxy backup].each do |key|
+    %i[system postgresql influxdb redis watchtower sensors forecast reverse_proxy backup].each do |key|
       config.update(key.to_s, result[key]) if result[key]
     end
   end
@@ -50,12 +110,24 @@ class ConfigurationImporter
     end
   end
 
+  def persist_unmanaged!(config)
+    unmanaged = result[:unmanaged]
+    config.update_unmanaged(unmanaged) if unmanaged.present?
+  end
+
   # Environment of a specific service
   def service_env(name)
     @reader.service(name)&.dig('environment') || {}
   end
 
   def system_data
+    system_core_data
+      .merge(system_dashboard_data)
+      .merge('power_splitter_interval' => power_splitter_interval)
+      .compact
+  end
+
+  def system_core_data
     dashboard_env = service_env('dashboard')
 
     {
@@ -64,7 +136,24 @@ class ConfigurationImporter
       'image' => @reader.service('dashboard')&.dig('image'),
       'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
       'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],
-    }.compact
+    }
+  end
+
+  def system_dashboard_data
+    dashboard_env = service_env('dashboard')
+
+    {
+      'app_host' => dashboard_env['APP_HOST'],
+      'influx_poll_interval' => dashboard_env['INFLUX_POLL_INTERVAL'],
+      'co2_emission_factor' => dashboard_env['CO2_EMISSION_FACTOR'],
+      'force_ssl' => dashboard_env['FORCE_SSL'],
+      'web_concurrency' => dashboard_env['WEB_CONCURRENCY'],
+      'frame_ancestors' => dashboard_env['FRAME_ANCESTORS'],
+      'ui_theme' => dashboard_env['UI_THEME'],
+      'influx_exclude_from_house_power' => dashboard_env['INFLUX_EXCLUDE_FROM_HOUSE_POWER'],
+      'lockup_codeword' => dashboard_env['LOCKUP_CODEWORD'],
+      'trusted_proxy_ranges' => dashboard_env['TRUSTED_PROXY_RANGES'],
+    }
   end
 
   def redis_data
@@ -88,14 +177,21 @@ class ConfigurationImporter
   end
 
   def influxdb_data
+    # Support token aliasing: prefer INFLUX_TOKEN, fallback to INFLUX_ADMIN_TOKEN or INFLUX_TOKEN_WRITE
+    token = @reader.raw_env['INFLUX_TOKEN'].presence ||
+            @reader.raw_env['INFLUX_ADMIN_TOKEN'].presence ||
+            @reader.raw_env['INFLUX_TOKEN_WRITE']
+
     {
       'image' => @reader.service('influxdb')&.dig('image'),
       'password' => @reader.raw_env['INFLUX_PASSWORD'],
       'org' => @reader.raw_env['INFLUX_ORG'],
       'bucket' => @reader.raw_env['INFLUX_BUCKET'],
-      'token' => @reader.raw_env['INFLUX_TOKEN'],
+      'token' => token,
     }.compact
   end
+
+  # --- SENEC ---
 
   def senec_collector?
     @reader.services.key?('senec-collector')
@@ -108,6 +204,7 @@ class ConfigurationImporter
       { 'battery_vendor' => senec_vendor(senec_env) }
       .merge(senec_env['SENEC_ADAPTER'] == 'cloud' ? senec_cloud_settings(senec_env) : senec_local_settings(senec_env))
       .merge('senec_interval' => senec_env['SENEC_INTERVAL'])
+      .merge('senec_ignore' => senec_env['SENEC_IGNORE'])
       .compact
 
     { type: 'inverter', name: 'SENEC', data: }
@@ -134,14 +231,166 @@ class ConfigurationImporter
     }
   end
 
-  def sensors_data
-    dashboard_env = service_env('dashboard')
+  # --- Shelly ---
 
-    dashboard_env
-      .select { |k, _| k.start_with?('INFLUX_SENSOR_') }
-      .compact_blank
-      .transform_keys { |k| k.delete_prefix('INFLUX_SENSOR_').downcase }
+  def shelly_collector?
+    @reader.services.key?('shelly-collector')
   end
+
+  def shelly_device_data
+    parsed = parse_shelly_csv_fields
+    build_shelly_devices(parsed)
+  end
+
+  def parse_shelly_csv_fields
+    shelly_env = service_env('shelly-collector')
+    {
+      hosts: csv_split(shelly_env['SHELLY_HOST']),
+      intervals: csv_split(shelly_env['SHELLY_INTERVAL']),
+      measurements: csv_split(shelly_env['INFLUX_MEASUREMENT']),
+      passwords: csv_split(shelly_env['SHELLY_PASSWORD']),
+      cloud_servers: csv_split(shelly_env['SHELLY_CLOUD_SERVER']),
+      auth_keys: csv_split(shelly_env['SHELLY_AUTH_KEY']),
+      device_ids: csv_split(shelly_env['SHELLY_DEVICE_ID']),
+      invert_powers: csv_split(shelly_env['SHELLY_INVERT_POWER']),
+    }
+  end
+
+  def build_shelly_devices(parsed)
+    parsed[:hosts].each_with_index.filter_map do |host, i|
+      next if host.blank?
+
+      build_single_shelly_device(host, i, parsed)
+    end
+  end
+
+  def build_single_shelly_device(_host, index, parsed)
+    name = parsed[:measurements][index].presence || "Shelly#{index + 1}"
+    device_type = infer_shelly_device_type(name)
+    data = shelly_device_config(device_type, index, parsed)
+
+    { type: device_type, name:, data: }
+  end
+
+  def shelly_device_config(device_type, index, parsed)
+    field = SHELLY_DATA_SOURCE_FIELDS.fetch(device_type, 'data_source')
+    data = {
+      field => 'shelly',
+      'shelly_host' => parsed[:hosts][index],
+      'shelly_interval' => parsed[:intervals][index].presence || '5',
+    }
+    shelly_optional_fields(data, index, parsed)
+    data
+  end
+
+  def shelly_optional_fields(data, index, parsed)
+    SHELLY_OPTIONAL_FIELDS.each do |key, field|
+      value = parsed[key][index]
+      data[field] = value if value.present?
+    end
+  end
+
+  def csv_split(value)
+    value.to_s.split(',').map(&:strip)
+  end
+
+  def infer_shelly_device_type(measurement_name)
+    mapping = "#{measurement_name}:power"
+    sensors = sensors_data
+    return 'heatpump' if sensors['heatpump_power'] == mapping
+    return 'wallbox' if sensors['wallbox_power'] == mapping
+
+    'consumer'
+  end
+
+  # --- Forecast ---
+
+  def forecast_collector?
+    @reader.services.key?('forecast-collector')
+  end
+
+  def forecast_data
+    return unless forecast_collector?
+
+    fc_env = service_env('forecast-collector')
+    data = forecast_base_data(fc_env)
+    data.merge!(forecast_roof_data(fc_env))
+    data.merge!(forecast_provider_data(fc_env))
+    data.compact.presence
+  end
+
+  def forecast_base_data(fc_env)
+    {
+      'forecast' => fc_env['FORECAST_PROVIDER'],
+      'forecast_latitude' => fc_env['FORECAST_LATITUDE'],
+      'forecast_longitude' => fc_env['FORECAST_LONGITUDE'],
+      'forecast_interval' => fc_env['FORECAST_INTERVAL'],
+      'forecast_damping_morning' => fc_env['FORECAST_DAMPING_MORNING'],
+      'forecast_damping_evening' => fc_env['FORECAST_DAMPING_EVENING'],
+      'forecast_horizon' => fc_env['FORECAST_HORIZON'],
+      'forecast_inverter' => fc_env['FORECAST_INVERTER'],
+    }
+  end
+
+  def forecast_roof_data(fc_env)
+    configs = fc_env['FORECAST_CONFIGURATIONS']&.to_i
+    return forecast_single_roof_data(fc_env) unless configs && configs > 1
+
+    forecast_multi_roof_data(fc_env, configs)
+  end
+
+  def forecast_single_roof_data(fc_env)
+    {
+      'forecast_roofs' => '1',
+      'forecast_declination1' => fc_env['FORECAST_DECLINATION'],
+      'forecast_azimuth1' => fc_env['FORECAST_AZIMUTH'],
+      'forecast_kwp1' => fc_env['FORECAST_KWP'],
+    }
+  end
+
+  def forecast_multi_roof_data(fc_env, configs)
+    data = { 'forecast_roofs' => configs.to_s }
+    configs.times do |i|
+      data["forecast_declination#{i + 1}"] = fc_env["FORECAST_#{i}_DECLINATION"]
+      data["forecast_azimuth#{i + 1}"] = fc_env["FORECAST_#{i}_AZIMUTH"]
+      data["forecast_kwp#{i + 1}"] = fc_env["FORECAST_#{i}_KWP"]
+    end
+    data
+  end
+
+  def forecast_provider_data(fc_env) # rubocop:disable Metrics/MethodLength
+    case fc_env['FORECAST_PROVIDER']
+    when 'forecast.solar'
+      { 'forecast_solar_apikey' => fc_env['FORECAST_SOLAR_APIKEY'] }
+    when 'solcast'
+      {
+        'forecast_solcast_api_key' => fc_env['SOLCAST_APIKEY'],
+        'forecast_solcast_id1' => fc_env['SOLCAST_SITE'] || fc_env['SOLCAST_0_SITE'],
+        'forecast_solcast_id2' => fc_env['SOLCAST_1_SITE'],
+      }
+    when 'pvnode'
+      {
+        'forecast_pvnode_apikey' => fc_env['PVNODE_APIKEY'],
+        'forecast_pvnode_paid' => fc_env['PVNODE_PAID'],
+      }
+    else
+      {}
+    end
+  end
+
+  # --- Sensors ---
+
+  def sensors_data
+    @sensors_data ||= begin
+      dashboard_env = service_env('dashboard')
+      dashboard_env
+        .select { |k, _| k.start_with?('INFLUX_SENSOR_') }
+        .compact_blank
+        .transform_keys { |k| k.delete_prefix('INFLUX_SENSOR_').downcase }
+    end
+  end
+
+  # --- Reverse Proxy ---
 
   def reverse_proxy_data
     return unless @reader.services.key?('traefik')
@@ -149,7 +398,11 @@ class ConfigurationImporter
     domain = extract_domain_from_dashboard_labels
     return unless domain
 
-    { 'enabled' => true, 'app_domain' => domain }
+    {
+      'enabled' => true,
+      'app_domain' => domain,
+      'letsencrypt_email' => @reader.raw_env['LETSENCRYPT_EMAIL'],
+    }.compact
   end
 
   def extract_domain_from_dashboard_labels
@@ -167,6 +420,8 @@ class ConfigurationImporter
       labels.find { |v| v.to_s.include?('routers.dashboard.rule') }
     end
   end
+
+  # --- Backup ---
 
   def backup_data
     data = backup_images
@@ -194,5 +449,49 @@ class ConfigurationImporter
   def image_hash_for(service_name)
     image = @reader.service(service_name)&.dig('image')
     { 'image' => image } if image
+  end
+
+  # --- Power-Splitter ---
+
+  def power_splitter_interval
+    ps_env = service_env('power-splitter')
+    ps_env['POWER_SPLITTER_INTERVAL']
+  end
+
+  # --- Unmanaged ---
+
+  def unmanaged_data
+    data = {}
+
+    unmanaged_services = detect_unmanaged_services
+    data['services'] = unmanaged_services if unmanaged_services.present?
+
+    unmanaged_env = detect_unmanaged_env_vars
+    data['env_vars'] = unmanaged_env if unmanaged_env.present?
+
+    data.presence
+  end
+
+  def detect_unmanaged_services
+    raw_services = @reader.raw_compose['services'] || {}
+    raw_services.except(*MANAGED_SERVICES).presence
+  end
+
+  def detect_unmanaged_env_vars
+    all_managed = all_managed_env_keys
+    @reader.raw_env.to_h.except(*all_managed).presence
+  end
+
+  def all_managed_env_keys
+    MANAGED_ENV_KEYS +
+      INFRASTRUCTURE_ENV_KEYS +
+      SensorRegistry::SENSORS.keys.map { |s| "INFLUX_SENSOR_#{s.upcase}" } +
+      forecast_indexed_env_keys
+  end
+
+  def forecast_indexed_env_keys
+    (0..3).flat_map do |i|
+      ["FORECAST_#{i}_DECLINATION", "FORECAST_#{i}_AZIMUTH", "FORECAST_#{i}_KWP", "SOLCAST_#{i}_SITE"]
+    end
   end
 end

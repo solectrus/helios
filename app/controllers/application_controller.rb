@@ -3,6 +3,7 @@ class ApplicationController < ActionController::Base
   allow_browser versions: :modern
 
   before_action :require_setup
+  before_action :auto_import_existing_config
   before_action :require_authentication
 
   helper_method :authenticated?, :expert_mode?
@@ -14,6 +15,27 @@ class ApplicationController < ActionController::Base
     return if is_a?(AdminsController)
 
     redirect_to new_admin_path
+  end
+
+  def auto_import_existing_config
+    return if is_a?(AdminsController)
+    return if config_yaml_exists?
+    return unless existing_stack_files?
+
+    reader = StackReader.new(compose_path: Compose.path, env_path: Env.path)
+    ConfigurationImporter.new(reader).import!
+  rescue StackReader::Error
+    # If docker compose config fails (e.g., invalid YAML), skip auto-import
+    nil
+  end
+
+  def config_yaml_exists?
+    stack_path = Rails.configuration.helios_stack_path
+    File.exist?(File.join(stack_path, Configuration::YAML_FILENAME))
+  end
+
+  def existing_stack_files?
+    File.exist?(Compose.path) && File.exist?(Env.path)
   end
 
   def require_authentication

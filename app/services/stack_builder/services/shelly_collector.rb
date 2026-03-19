@@ -57,14 +57,24 @@ class StackBuilder
           'SHELLY_HOST' => csv_from { |d| d.data.shelly_host },
           'SHELLY_INTERVAL' => csv_from { |d| d.data.shelly_interval || '5' },
           'INFLUX_MEASUREMENT' => csv_from(&:name),
-        }.merge(password_environment)
+        }.merge(optional_csv_environment)
       end
 
-      def password_environment
-        passwords = devices.map { |d| d.data.shelly_password.presence || '' }
-        return {} unless passwords.any?(&:present?)
+      def optional_csv_environment
+        %w[
+          shelly_password shelly_cloud_server shelly_auth_key
+          shelly_device_id shelly_invert_power
+        ].each_with_object({}) do |field, env|
+          env_key = field.upcase
+          env.merge!(csv_env(env_key) { |d| d.data.send(field) })
+        end
+      end
 
-        { 'SHELLY_PASSWORD' => passwords.join(',') }
+      def csv_env(key, &)
+        values = devices.map { |d| yield(d).presence || '' }
+        return {} unless values.any?(&:present?)
+
+        { key => values.join(',') }
       end
 
       def csv_from(&)

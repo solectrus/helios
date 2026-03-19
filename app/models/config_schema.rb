@@ -7,6 +7,16 @@ class ConfigSchema
     app_host
     app_port
     admin_password
+    influx_poll_interval
+    co2_emission_factor
+    force_ssl
+    web_concurrency
+    frame_ancestors
+    ui_theme
+    influx_exclude_from_house_power
+    lockup_codeword
+    trusted_proxy_ranges
+    power_splitter_interval
   ].freeze
 
   SYSTEM_DEFAULTS = {
@@ -84,6 +94,7 @@ class ConfigSchema
     senec_password
     senec_totp_uri
     senec_system_id
+    senec_ignore
     smart_home_system
   ].freeze
 
@@ -97,6 +108,10 @@ class ConfigSchema
     shelly_host
     shelly_interval
     shelly_password
+    shelly_cloud_server
+    shelly_auth_key
+    shelly_device_id
+    shelly_invert_power
     smart_home_system
     mqtt_topic
   ].freeze
@@ -112,6 +127,10 @@ class ConfigSchema
     shelly_host
     shelly_interval
     shelly_password
+    shelly_cloud_server
+    shelly_auth_key
+    shelly_device_id
+    shelly_invert_power
     smart_home_system
     mqtt_topic
   ].freeze
@@ -121,6 +140,10 @@ class ConfigSchema
     shelly_host
     shelly_interval
     shelly_password
+    shelly_cloud_server
+    shelly_auth_key
+    shelly_device_id
+    shelly_invert_power
     smart_home_system
     mqtt_topic
   ].freeze
@@ -144,14 +167,23 @@ class ConfigSchema
     forecast_azimuth4
     forecast_declination4
     forecast_kwp4
+    forecast_interval
+    forecast_damping_morning
+    forecast_damping_evening
+    forecast_horizon
+    forecast_inverter
+    forecast_solar_apikey
     forecast_solcast_api_key
     forecast_solcast_id1
     forecast_solcast_id2
+    forecast_pvnode_apikey
+    forecast_pvnode_paid
   ].freeze
 
   REVERSE_PROXY_FIELDS = %w[
     enabled
     app_domain
+    letsencrypt_email
   ].freeze
 
   BACKUP_FIELDS = %w[

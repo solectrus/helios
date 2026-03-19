@@ -15,7 +15,8 @@ class StackBuilder
       end
 
       def self.letsencrypt_email(configuration)
-        "webmaster@#{configuration.reverse_proxy.app_domain}"
+        configuration.reverse_proxy.letsencrypt_email.presence ||
+          "webmaster@#{configuration.reverse_proxy.app_domain}"
       end
 
       def self.data_directories

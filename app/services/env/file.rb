@@ -43,7 +43,7 @@ module Env
       @variables.key?(key.to_s)
     end
 
-    delegate :keys, to: :@variables
+    delegate :keys, :to_h, to: :@variables
 
     def delete(key)
       key = key.to_s

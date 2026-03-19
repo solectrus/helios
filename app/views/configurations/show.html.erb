@@ -8,7 +8,8 @@
       <div class="mb-8"><%= render MainNav::Component.new(active_tab: :configuration) %></div>
 
       <%# Devices section %>
-      <h3 class="text-base-content/50 mb-3 text-sm font-semibold uppercase tracking-wide"><%= t('.devices') %></h3>
+      <h3 class="text-base-content/50 mb-3 text-sm font-semibold tracking-wide uppercase"><%= t('.devices') %></h3>
+
       <div class="mb-8 space-y-4">
         <% Configuration::DEVICES.each do |setting| %>
           <%= render SettingSection::Component.new(setting:, configuration: @configuration) %>
@@ -16,7 +17,8 @@
       </div>
 
       <%# Settings section %>
-      <h3 class="text-base-content/50 mb-3 text-sm font-semibold uppercase tracking-wide"><%= t('.settings') %></h3>
+      <h3 class="text-base-content/50 mb-3 text-sm font-semibold tracking-wide uppercase"><%= t('.settings') %></h3>
+
       <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <% Configuration::SETTINGS.each do |setting| %>
           <%= render SettingSection::Component.new(setting:, configuration: @configuration) %>

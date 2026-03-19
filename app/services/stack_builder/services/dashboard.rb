@@ -31,14 +31,23 @@ class StackBuilder
       private
 
       def dashboard_environment
+        base_dashboard_environment
+          .merge(optional_dashboard_environment)
+          .merge(sensor_environment)
+      end
+
+      def base_dashboard_environment # rubocop:disable Metrics/MethodLength
         {
           'TZ' => '${TZ}',
           'INSTALLATION_DATE' => '${INSTALLATION_DATE}',
+          'APP_HOST' => configuration.system.app_host.presence || 'localhost',
+          'WEB_CONCURRENCY' => configuration.system.web_concurrency.presence || '0',
           'REDIS_URL' => 'redis://redis:6379',
           'INFLUX_HOST' => 'influxdb',
           'INFLUX_TOKEN' => '${INFLUX_TOKEN}',
           'INFLUX_ORG' => '${INFLUX_ORG}',
           'INFLUX_BUCKET' => '${INFLUX_BUCKET}',
+          'INFLUX_POLL_INTERVAL' => configuration.system.influx_poll_interval.presence || '5',
           'DB_HOST' => 'postgresql',
           'DB_USER' => 'postgres',
           'DB_PASSWORD' => '${POSTGRES_PASSWORD}',
@@ -46,6 +55,30 @@ class StackBuilder
           'SECRET_KEY_BASE' => '${SECRET_KEY_BASE}',
           'ADMIN_PASSWORD' => '${ADMIN_PASSWORD}',
         }
+      end
+
+      def optional_dashboard_environment
+        sys = configuration.system
+        env = {}
+        add_optional(env, 'CO2_EMISSION_FACTOR', sys.co2_emission_factor)
+        add_optional(env, 'FRAME_ANCESTORS', sys.frame_ancestors)
+        add_optional(env, 'UI_THEME', sys.ui_theme)
+        add_optional(env, 'LOCKUP_CODEWORD', sys.lockup_codeword)
+        add_optional(env, 'TRUSTED_PROXY_RANGES', sys.trusted_proxy_ranges)
+        add_optional(env, 'INFLUX_EXCLUDE_FROM_HOUSE_POWER', sys.influx_exclude_from_house_power)
+        env
+      end
+
+      def add_optional(env, key, value)
+        env[key] = value if value.present?
+      end
+
+      def sensor_environment
+        configuration.effective_sensor_mappings.each_with_object({}) do |(sensor, mapping), env|
+          next if mapping.blank?
+
+          env["INFLUX_SENSOR_#{sensor.upcase}"] = "${INFLUX_SENSOR_#{sensor.upcase}}"
+        end
       end
 
       def traefik_dashboard_labels

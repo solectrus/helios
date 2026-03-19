@@ -1,5 +1,5 @@
 class StackBuilder
-  class EnvContent
+  class EnvContent # rubocop:disable Metrics/ClassLength
     SEPARATOR = "# #{'=' * 60}".freeze
 
     def initialize(configuration)
@@ -7,6 +7,14 @@ class StackBuilder
     end
 
     def to_s
+      all_sections.join("\n")
+    end
+
+    private
+
+    attr_reader :configuration
+
+    def all_sections
       sections = [
         *file_header_lines,
         *general_section_lines,
@@ -15,14 +23,18 @@ class StackBuilder
         *influxdb_section_lines,
         *helios_section_lines,
       ]
-      sections.concat(reverse_proxy_section_lines) if Services::Traefik.enabled?(configuration)
-      sections.concat(backup_section_lines) if Services::PostgresqlBackup.enabled?(configuration)
-      sections.join("\n")
+      append_conditional_sections(sections)
+      sections.concat(sensor_section_lines)
+      sections.concat(unmanaged_section_lines)
+      sections
     end
 
-    private
-
-    attr_reader :configuration
+    def append_conditional_sections(sections)
+      sections.concat(reverse_proxy_section_lines) if Services::Traefik.enabled?(configuration)
+      sections.concat(backup_section_lines) if Services::PostgresqlBackup.enabled?(configuration)
+      sections.concat(senec_section_lines) if Services::SenecCollector.enabled?(configuration)
+      sections.concat(forecast_section_lines) if Services::ForecastCollector.enabled?(configuration)
+    end
 
     def host_stack_path
       Rails.configuration.helios_host_stack_path
@@ -112,6 +124,201 @@ class StackBuilder
         *entry('AWS_BUCKET', configuration.backup.aws_bucket,
                'S3 bucket name for backups'),
       ]
+    end
+
+    def senec_section_lines
+      device = Services::SenecCollector.senec_device(configuration)
+      return [] unless device
+
+      data = device.data
+      lines = ['# --- SENEC collector ---']
+      lines.concat(senec_adapter_lines(data))
+      lines.concat(senec_connection_lines(data))
+      lines.concat(entry('SENEC_INTERVAL', data.senec_interval || '5', 'Polling interval in seconds'))
+      if data.senec_ignore.present?
+        lines.concat(entry('SENEC_IGNORE', data.senec_ignore,
+                           'Comma-separated fields to exclude from InfluxDB'))
+      end
+      lines.concat(entry('INFLUX_MEASUREMENT_SENEC', 'SENEC', 'InfluxDB measurement name for SENEC'))
+      lines
+    end
+
+    def senec_adapter_lines(data)
+      entry('SENEC_ADAPTER', data.battery_vendor&.start_with?('senec4') ? 'cloud' : 'local',
+            'SENEC adapter type (local or cloud)')
+    end
+
+    def senec_connection_lines(data)
+      if data.battery_vendor&.start_with?('senec4')
+        senec_cloud_lines(data)
+      else
+        senec_local_lines(data)
+      end
+    end
+
+    def senec_cloud_lines(data)
+      lines = []
+      lines.concat(entry('SENEC_USERNAME', data.senec_username, 'SENEC cloud username'))
+      lines.concat(entry('SENEC_PASSWORD', data.senec_password, 'SENEC cloud password'))
+      if data.senec_totp_uri.present?
+        lines.concat(entry('SENEC_TOTP_URI', data.senec_totp_uri,
+                           'SENEC TOTP URI for MFA'))
+      end
+      lines.concat(entry('SENEC_SYSTEM_ID', data.senec_system_id, 'SENEC system ID')) if data.senec_system_id.present?
+      lines
+    end
+
+    def senec_local_lines(data)
+      lines = []
+      lines.concat(entry('SENEC_HOST', data.senec_host, 'SENEC device IP or hostname'))
+      lines.concat(entry('SENEC_SCHEMA', data.senec_schema || 'https', 'Connection protocol'))
+      lines.concat(entry('SENEC_LANGUAGE', data.senec_language || 'de', 'Status text language'))
+      lines
+    end
+
+    def forecast_section_lines
+      fcast = configuration.forecast
+      return [] if fcast.forecast.blank?
+
+      lines = ['# --- Forecast ---']
+      lines.concat(forecast_base_lines(fcast))
+      lines.concat(forecast_roof_lines(fcast))
+      lines.concat(forecast_provider_lines(fcast))
+      lines.concat(entry('INFLUX_MEASUREMENT_FORECAST', 'Forecast', 'InfluxDB measurement name for forecasts'))
+      lines
+    end
+
+    def forecast_base_lines(fcast)
+      lines = [
+        *entry('FORECAST_PROVIDER', fcast.forecast, 'Forecast provider'),
+        *entry('FORECAST_LATITUDE', fcast.forecast_latitude, 'Solar panel latitude'),
+        *entry('FORECAST_LONGITUDE', fcast.forecast_longitude, 'Solar panel longitude'),
+        *entry('FORECAST_INTERVAL', fcast.forecast_interval || '900', 'Forecast update interval in seconds'),
+      ]
+      lines.concat(forecast_optional_lines(fcast))
+      lines
+    end
+
+    def forecast_optional_lines(fcast)
+      lines = []
+      lines.concat(forecast_damping_lines(fcast))
+      lines.concat(forecast_extra_lines(fcast))
+      lines
+    end
+
+    def forecast_damping_lines(fcast)
+      lines = []
+      if fcast.forecast_damping_morning.present?
+        lines.concat(entry('FORECAST_DAMPING_MORNING', fcast.forecast_damping_morning,
+                           'Damping factor for morning hours'))
+      end
+      if fcast.forecast_damping_evening.present?
+        lines.concat(entry('FORECAST_DAMPING_EVENING', fcast.forecast_damping_evening,
+                           'Damping factor for evening hours'))
+      end
+      lines
+    end
+
+    def forecast_extra_lines(fcast)
+      lines = []
+      if fcast.forecast_horizon.present?
+        lines.concat(entry('FORECAST_HORIZON', fcast.forecast_horizon,
+                           'Forecast horizon in hours'))
+      end
+      if fcast.forecast_inverter.present?
+        lines.concat(entry('FORECAST_INVERTER', fcast.forecast_inverter,
+                           'Inverter efficiency factor'))
+      end
+      lines
+    end
+
+    def forecast_roof_lines(fcast)
+      roofs = (fcast.forecast_roofs || 1).to_i
+      return forecast_single_roof_lines(fcast) unless roofs > 1
+
+      forecast_multi_roof_lines(fcast, roofs)
+    end
+
+    def forecast_single_roof_lines(fcast)
+      [
+        *entry('FORECAST_DECLINATION', fcast.forecast_declination1, 'Roof tilt angle'),
+        *entry('FORECAST_AZIMUTH', fcast.forecast_azimuth1, 'Roof orientation'),
+        *entry('FORECAST_KWP', fcast.forecast_kwp1, 'System capacity in kWp'),
+      ]
+    end
+
+    def forecast_multi_roof_lines(fcast, roofs)
+      lines = entry('FORECAST_CONFIGURATIONS', roofs.to_s, 'Number of roof surfaces')
+      roofs.times do |i|
+        lines.concat(entry("FORECAST_#{i}_DECLINATION", fcast.send("forecast_declination#{i + 1}"),
+                           "Roof surface #{i + 1} tilt angle"))
+        lines.concat(entry("FORECAST_#{i}_AZIMUTH", fcast.send("forecast_azimuth#{i + 1}"),
+                           "Roof surface #{i + 1} orientation"))
+        lines.concat(entry("FORECAST_#{i}_KWP", fcast.send("forecast_kwp#{i + 1}"),
+                           "Roof surface #{i + 1} capacity in kWp"))
+      end
+      lines
+    end
+
+    def forecast_provider_lines(fcast)
+      case fcast.forecast
+      when 'forecast.solar' then forecast_solar_lines(fcast)
+      when 'solcast' then solcast_lines(fcast)
+      when 'pvnode' then pvnode_lines(fcast)
+      else []
+      end
+    end
+
+    def forecast_solar_lines(fcast)
+      return [] if fcast.forecast_solar_apikey.blank?
+
+      entry('FORECAST_SOLAR_APIKEY', fcast.forecast_solar_apikey, 'Forecast.Solar API key')
+    end
+
+    def solcast_lines(fcast)
+      roofs = (fcast.forecast_roofs || 1).to_i
+      lines = []
+      lines.concat(entry('SOLCAST_APIKEY', fcast.forecast_solcast_api_key, 'Solcast API key'))
+      lines.concat(entry('SOLCAST_SITE', fcast.forecast_solcast_id1, 'Solcast site ID'))
+      lines.concat(entry('SOLCAST_0_SITE', fcast.forecast_solcast_id1, 'Solcast site 1 ID')) if roofs > 1
+      lines.concat(entry('SOLCAST_1_SITE', fcast.forecast_solcast_id2, 'Solcast site 2 ID')) if roofs > 1
+      lines
+    end
+
+    def pvnode_lines(fcast)
+      lines = []
+      lines.concat(entry('PVNODE_APIKEY', fcast.forecast_pvnode_apikey, 'pvnode API key'))
+      if fcast.forecast_pvnode_paid.present?
+        lines.concat(entry('PVNODE_PAID', fcast.forecast_pvnode_paid,
+                           'pvnode paid account'))
+      end
+      lines
+    end
+
+    def sensor_section_lines
+      mappings = configuration.effective_sensor_mappings
+      return [] if mappings.blank?
+
+      lines = ['# --- Sensor mappings ---']
+      SensorRegistry::SENSORS.each_key do |sensor|
+        value = mappings[sensor]
+        next if value.blank?
+
+        lines.concat(entry("INFLUX_SENSOR_#{sensor.upcase}", value, "Sensor: #{sensor}"))
+      end
+      lines
+    end
+
+    def unmanaged_section_lines
+      unmanaged = configuration.unmanaged
+      return [] if unmanaged.env_vars.blank?
+
+      lines = ['# --- Unmanaged variables (preserved from existing installation) ---']
+      unmanaged.env_vars.each do |key, value|
+        lines << "#{key}=#{value}"
+        lines << ''
+      end
+      lines
     end
 
     # Returns three lines: a comment, the key=value assignment, and a blank line.

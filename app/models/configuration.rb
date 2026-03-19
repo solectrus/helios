@@ -19,6 +19,9 @@ class Configuration
   # All valid setting names
   ALL = (DEVICES + SINGLETONS).freeze
 
+  # Key for unmanaged services and env vars (preserved from existing installations)
+  UNMANAGED_KEY = '_unmanaged'.freeze
+
   # Canonical order for config.yaml output
   YAML_ORDER = (SINGLETONS + DEVICES).freeze
 
@@ -179,6 +182,17 @@ class Configuration
     computed_sensor_mappings.merge(sensors)
   end
 
+  # Access unmanaged services and env vars
+  def unmanaged
+    Data.wrap(@data[UNMANAGED_KEY] || {})
+  end
+
+  # Store unmanaged services and env vars
+  def update_unmanaged(data)
+    @data[UNMANAGED_KEY] = data.presence
+    save!
+  end
+
   def setup_completed?
     all_devices.any?
   end
@@ -197,9 +211,11 @@ class Configuration
   end
 
   def ordered_data
-    YAML_ORDER.each_with_object({}) do |key, hash|
+    result = YAML_ORDER.each_with_object({}) do |key, hash|
       hash[key] = @data[key] if @data.key?(key)
     end
+    result[UNMANAGED_KEY] = @data[UNMANAGED_KEY] if @data.key?(UNMANAGED_KEY)
+    result
   end
 
   private
