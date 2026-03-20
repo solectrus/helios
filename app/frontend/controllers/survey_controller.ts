@@ -1,6 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 import { Model } from 'survey-core';
 import { BorderlessLight, BorderlessDark } from 'survey-core/themes';
+import { isDarkMode, onThemeChange } from '../utils/theme';
 
 // Import Survey.JS UI (side-effect: registers UI components)
 import 'survey-js-ui';
@@ -27,15 +28,15 @@ export default class extends Controller {
   declare fieldNameValue: string;
 
   private survey: Model | null = null;
-  private themeObserver: MutationObserver | null = null;
+  private unsubscribeTheme: (() => void) | null = null;
 
   async connect() {
     await this.initSurvey();
-    this.observeThemeChanges();
+    this.unsubscribeTheme = onThemeChange(() => this.applyTheme());
   }
 
   disconnect() {
-    this.themeObserver?.disconnect();
+    this.unsubscribeTheme?.();
     this.survey = null;
   }
 
@@ -93,32 +94,7 @@ export default class extends Controller {
   private applyTheme() {
     if (!this.survey) return;
 
-    const isDark = this.isDarkMode();
-    this.survey.applyTheme(isDark ? BorderlessDark : BorderlessLight);
-  }
-
-  private isDarkMode(): boolean {
-    const theme = document.documentElement.getAttribute('data-theme');
-    // daisyUI dark themes
-    return ['aqua', 'dark', 'night'].includes(theme ?? '');
-  }
-
-  private observeThemeChanges() {
-    this.themeObserver = new MutationObserver((mutations) => {
-      for (const mutation of mutations) {
-        if (
-          mutation.type === 'attributes' &&
-          mutation.attributeName === 'data-theme'
-        ) {
-          this.applyTheme();
-        }
-      }
-    });
-
-    this.themeObserver.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ['data-theme'],
-    });
+    this.survey.applyTheme(isDarkMode() ? BorderlessDark : BorderlessLight);
   }
 
   private handleValueChanged(options: { name: string; value: unknown }) {

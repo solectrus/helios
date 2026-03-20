@@ -9,9 +9,7 @@
 
 @plugin '@tailwindcss/typography';
 
-@import 'highlight.js/styles/a11y-dark.css' layer(base);
-
-/* Let hljs inherit background from daisyUI container */
+/* hljs theme is applied dynamically by stack_preview_controller */
 .hljs {
-  background: transparent;
+  background: transparent !important;
 }
