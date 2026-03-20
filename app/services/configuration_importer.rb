@@ -1,4 +1,11 @@
 class ConfigurationImporter # rubocop:disable Metrics/ClassLength
+  # Dashboard defaults that are always set in compose.yaml regardless of config.
+  # Only store values that differ from these defaults.
+  DASHBOARD_DEFAULTS = {
+    'INFLUX_POLL_INTERVAL' => '5',
+    'WEB_CONCURRENCY' => '0',
+  }.freeze
+
   # All service names that Helios manages (generates in compose.yaml)
   MANAGED_SERVICES = %w[
     dashboard postgresql redis influxdb watchtower helios
@@ -118,7 +125,6 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
 
     persist_singletons!(config)
     persist_sensors_from_devices!(config)
-    persist_source_configs!(config)
     persist_unmanaged!(config)
 
     config
@@ -126,7 +132,7 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
 
   private
 
-  def build_result
+  def build_result # rubocop:disable Metrics/MethodLength
     {
       system: system_data,
       postgresql: postgresql_data,
@@ -135,7 +141,9 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
       watchtower: watchtower_data,
       sensors: sensors_data,
       forecast: forecast_data,
+      senec: senec_data,
       mqtt: mqtt_broker_data,
+      shelly: shelly_section_data,
       reverse_proxy: reverse_proxy_data,
       backup: backup_data,
       devices: build_devices,
@@ -153,7 +161,8 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
   end
 
   def persist_singletons!(config)
-    %i[system postgresql influxdb redis watchtower sensors forecast mqtt reverse_proxy backup].each do |key|
+    %i[system postgresql influxdb redis watchtower sensors forecast senec mqtt shelly reverse_proxy
+       backup].each do |key|
       config.update(key.to_s, result[key]) if result[key]
     end
   end
@@ -170,32 +179,6 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
 
       sensor_data = build_sensor_data(sensor_name, source, devices)
       config.update_sensor(sensor_name, sensor_data)
-    end
-  end
-
-  def persist_source_configs!(config)
-    return unless senec_collector?
-
-    senec_env = service_env('senec-collector')
-    senec_data = senec_base_import_data(senec_env).merge(senec_connection_import_data(senec_env))
-    config.update('senec', senec_data.compact)
-  end
-
-  def senec_base_import_data(senec_env)
-    {
-      'adapter' => senec_env['SENEC_ADAPTER'] || 'local',
-      'interval' => senec_env['SENEC_INTERVAL'],
-      'ignore' => senec_env['SENEC_IGNORE'],
-    }
-  end
-
-  def senec_connection_import_data(senec_env)
-    if senec_env['SENEC_ADAPTER'] == 'cloud'
-      { 'username' => senec_env['SENEC_USERNAME'], 'password' => senec_env['SENEC_PASSWORD'],
-        'totp_uri' => senec_env['SENEC_TOTP_URI'], 'system_id' => senec_env['SENEC_SYSTEM_ID'] }
-    else
-      { 'host' => senec_env['SENEC_HOST'], 'schema' => senec_env['SENEC_SCHEMA'],
-        'language' => senec_env['SENEC_LANGUAGE'] }
     end
   end
 
@@ -225,44 +208,117 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     data = { 'source' => source }
 
     case source
+    when 'senec' then merge_senec_sensor_overrides!(data, sensor_name)
+    when 'forecast' then merge_forecast_sensor_overrides!(data, sensor_name)
     when 'shelly' then merge_shelly_sensor_data!(data, sensor_name, devices)
-    when 'mqtt' then merge_mqtt_sensor_data!(data, sensor_name, devices)
+    when 'mqtt' then merge_mqtt_sensor_data!(data, sensor_name)
     end
 
     data.compact
   end
 
+  def merge_senec_sensor_overrides!(data, sensor_name)
+    merge_sensor_overrides!(data, sensor_name, SensorMappings::SENEC_DEFAULTS)
+  end
+
+  def merge_forecast_sensor_overrides!(data, sensor_name)
+    merge_sensor_overrides!(data, sensor_name, SensorMappings::FORECAST_DEFAULTS)
+  end
+
+  def merge_sensor_overrides!(data, sensor_name, defaults_hash)
+    mapping = result[:sensors][sensor_name]
+    return unless mapping
+
+    defaults = defaults_hash[sensor_name]
+    return unless defaults
+
+    measurement, field = mapping.split(':', 2)
+    default_mapping = "#{defaults[:measurement]}:#{defaults[:field]}"
+    return if mapping == default_mapping
+
+    data['measurement'] = measurement
+    data['field'] = field
+  end
+
   def merge_shelly_sensor_data!(data, sensor_name, devices)
-    device = find_device_for_sensor(sensor_name, devices, 'shelly')
+    device = find_shelly_device_for_sensor(sensor_name, devices)
     return unless device
 
+    merge_shelly_mapping!(data, sensor_name)
+    merge_shelly_device_fields!(data, device)
+  end
+
+  def merge_shelly_mapping!(data, sensor_name)
+    mapping = result[:sensors][sensor_name]
+    return unless mapping
+
+    measurement, field = mapping.split(':', 2)
+    data['measurement'] = measurement
+    data['field'] = field
+  end
+
+  def merge_shelly_device_fields!(data, device)
     device_data = device[:data]
+    data['name'] = device_data['name'] || device[:name]
+    data['shelly_connection'] = infer_shelly_connection(device_data)
     data['shelly_host'] = device_data['shelly_host']
     data['shelly_interval'] = device_data['shelly_interval']
-    data['name'] = device_data['name'] || device[:name]
-    return unless device_data['exclude_from_house_power']
-
-    data['exclude_from_house_power'] =
-      device_data['exclude_from_house_power']
+    data['shelly_password'] = device_data['shelly_password']
+    data['exclude_from_house_power'] = true if device_data['exclude_from_house_power']
   end
 
-  def merge_mqtt_sensor_data!(data, sensor_name, devices)
-    device = find_device_for_sensor(sensor_name, devices, 'mqtt')
-    return unless device
-
-    data['mqtt_topic'] = device[:data]['mqtt_topic']
-    data['name'] = device[:data]['name'] || device[:name]
+  def infer_shelly_connection(device_data)
+    device_data['shelly_cloud_server'].present? ? 'cloud' : 'local'
   end
 
-  def find_device_for_sensor(sensor_name, devices, source_type)
+  def merge_mqtt_sensor_data!(data, sensor_name)
+    details = mqtt_mapping_details[sensor_name]
+    return unless details
+
+    data.merge!(details)
+  end
+
+  # Build a per-sensor lookup of MQTT mapping details from the mqtt-collector env
+  def mqtt_mapping_details
+    @mqtt_mapping_details ||= build_mqtt_mapping_details
+  end
+
+  def build_mqtt_mapping_details
+    return {} unless mqtt_collector?
+
+    mqtt_mappings.each_with_object({}) do |mapping, details|
+      sensor_name = find_sensor_for_mqtt_mapping(mapping)
+      next unless sensor_name
+
+      details[sensor_name] = mqtt_mapping_to_sensor_data(mapping)
+    end
+  end
+
+  def find_sensor_for_mqtt_mapping(mapping)
+    candidate = "#{mapping[:measurement]}:#{mapping[:field]}"
+    find_sensor_for_candidate(sensors_data, candidate)
+  end
+
+  def mqtt_mapping_to_sensor_data(mapping)
+    {
+      'measurement' => mapping[:measurement],
+      'field' => mapping[:field],
+      'mqtt_topic' => mapping[:topic],
+      'mqtt_payload_type' => mapping[:type],
+      'mqtt_json_key' => mapping[:json_key],
+      'mqtt_formula' => mapping[:json_formula],
+    }.compact
+  end
+
+  def find_shelly_device_for_sensor(sensor_name, devices)
     mapping = result[:sensors][sensor_name]
     return nil unless mapping
 
     devices.find do |device|
       data = device[:data]
-      is_source = data.values_at('data_source', 'wallbox_vendor', 'heatpump_access',
-                                 'battery_vendor').include?(source_type)
-      is_source && "#{device[:name]}:power" == mapping
+      is_shelly = data.values_at('data_source', 'wallbox_vendor', 'heatpump_access',
+                                 'battery_vendor').include?('shelly')
+      is_shelly && mapping.start_with?("#{device[:name]}:")
     end
   end
 
@@ -271,9 +327,10 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     config.update_unmanaged(unmanaged) if unmanaged.present?
   end
 
-  # Environment of a specific service
+  # Environment of a specific service (memoized per service name)
   def service_env(name)
-    @reader.service(name)&.dig('environment') || {}
+    @service_envs ||= {}
+    @service_envs[name] ||= @reader.service(name)&.dig('environment') || {}
   end
 
   def system_data
@@ -298,17 +355,27 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
   def system_dashboard_data
     dashboard_env = service_env('dashboard')
 
+    system_optional_dashboard_data(dashboard_env)
+      .merge(system_non_default_dashboard_data(dashboard_env))
+  end
+
+  def system_optional_dashboard_data(dashboard_env)
     {
       'app_host' => dashboard_env['APP_HOST'],
-      'influx_poll_interval' => dashboard_env['INFLUX_POLL_INTERVAL'],
       'co2_emission_factor' => dashboard_env['CO2_EMISSION_FACTOR'],
       'force_ssl' => dashboard_env['FORCE_SSL'],
-      'web_concurrency' => dashboard_env['WEB_CONCURRENCY'],
       'frame_ancestors' => dashboard_env['FRAME_ANCESTORS'],
       'ui_theme' => dashboard_env['UI_THEME'],
       'lockup_codeword' => dashboard_env['LOCKUP_CODEWORD'],
       'trusted_proxy_ranges' => dashboard_env['TRUSTED_PROXY_RANGES'],
     }
+  end
+
+  def system_non_default_dashboard_data(dashboard_env)
+    DASHBOARD_DEFAULTS.each_with_object({}) do |(env_key, default), data|
+      value = dashboard_env[env_key]
+      data[env_key.downcase] = value if value.present? && value.to_s != default
+    end
   end
 
   def redis_data
@@ -352,6 +419,27 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     @reader.services.key?('senec-collector')
   end
 
+  def senec_data
+    return unless senec_collector?
+
+    senec_env = service_env('senec-collector')
+    data = {
+      'adapter' => senec_env['SENEC_ADAPTER'] || 'local',
+      'interval' => senec_env['SENEC_INTERVAL'],
+      'ignore' => senec_env['SENEC_IGNORE'],
+    }
+
+    if senec_env['SENEC_ADAPTER'] == 'cloud'
+      data.merge!('username' => senec_env['SENEC_USERNAME'], 'password' => senec_env['SENEC_PASSWORD'],
+                  'totp_uri' => senec_env['SENEC_TOTP_URI'], 'system_id' => senec_env['SENEC_SYSTEM_ID'])
+    else
+      data.merge!('host' => senec_env['SENEC_HOST'], 'schema' => senec_env['SENEC_SCHEMA'],
+                  'language' => senec_env['SENEC_LANGUAGE'])
+    end
+
+    data.compact.presence
+  end
+
   def senec_device_data
     senec_env = service_env('senec-collector')
 
@@ -390,6 +478,20 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
 
   def shelly_collector?
     @reader.services.key?('shelly-collector')
+  end
+
+  def shelly_section_data
+    return unless shelly_collector?
+
+    shelly_env = service_env('shelly-collector')
+    connection = shelly_env['SHELLY_CLOUD_SERVER'].present? ? 'cloud' : 'local'
+    intervals = csv_split(shelly_env['SHELLY_INTERVAL'])
+    interval = intervals.first.presence || '5'
+
+    {
+      'connection' => connection,
+      'interval' => interval,
+    }
   end
 
   def shelly_device_data
@@ -563,7 +665,6 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     return unless domain
 
     {
-      'enabled' => true,
       'app_domain' => domain,
       'letsencrypt_email' => @reader.raw_env['LETSENCRYPT_EMAIL'],
     }.compact
@@ -606,7 +707,7 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     value = dashboard_env['INFLUX_EXCLUDE_FROM_HOUSE_POWER']
     return [] if value.blank?
 
-    value.split(',').map(&:strip)
+    csv_split(value)
   end
 
   def sensor_name_for_device(device, consumer_index)
@@ -620,25 +721,15 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
   # --- Backup ---
 
   def backup_data
-    data = backup_images
+    return unless @reader.services.key?('postgresql-backup')
 
-    if @reader.services.key?('postgresql-backup')
-      data.merge!(
-        'enabled' => true,
-        'aws_access_key_id' => @reader.raw_env['AWS_ACCESS_KEY_ID'],
-        'aws_secret_access_key' => @reader.raw_env['AWS_SECRET_ACCESS_KEY'],
-        'aws_region' => @reader.raw_env['AWS_REGION'],
-        'aws_bucket' => @reader.raw_env['AWS_BUCKET'],
-      )
-    end
-
-    data.compact.presence
-  end
-
-  def backup_images
     {
       'postgresql' => image_hash_for('postgresql-backup'),
       'influxdb' => image_hash_for('influxdb-backup'),
+      'aws_access_key_id' => @reader.raw_env['AWS_ACCESS_KEY_ID'],
+      'aws_secret_access_key' => @reader.raw_env['AWS_SECRET_ACCESS_KEY'],
+      'aws_region' => @reader.raw_env['AWS_REGION'],
+      'aws_bucket' => @reader.raw_env['AWS_BUCKET'],
     }.compact
   end
 
@@ -674,9 +765,11 @@ class ConfigurationImporter # rubocop:disable Metrics/ClassLength
   end
 
   def mqtt_device_data
-    mqtt_env = service_env('mqtt-collector')
-    mappings = parse_mqtt_mappings(mqtt_env)
-    build_mqtt_devices(mappings)
+    build_mqtt_devices(mqtt_mappings)
+  end
+
+  def mqtt_mappings
+    @mqtt_mappings ||= parse_mqtt_mappings(service_env('mqtt-collector'))
   end
 
   def parse_mqtt_mappings(mqtt_env)

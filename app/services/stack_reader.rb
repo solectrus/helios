@@ -2,6 +2,7 @@ require 'open3'
 require 'tmpdir'
 require 'fileutils'
 require 'yaml'
+require 'json'
 
 class StackReader
   class Error < StandardError; end
@@ -37,15 +38,20 @@ class StackReader
     @resolved_config ||= run_compose_config
   end
 
+  # Use JSON format to avoid YAML 1.1 type coercion issues where values like
+  # "5,5,5" are misinterpreted as integers (commas as thousands separators).
   def run_compose_config
     Dir.mktmpdir do |tmpdir|
       FileUtils.cp(@compose_path, File.join(tmpdir, 'compose.yaml'))
       FileUtils.cp(@env_path, File.join(tmpdir, '.env'))
 
-      stdout, stderr, status = Open3.capture3('docker', 'compose', 'config', chdir: tmpdir)
+      stdout, stderr, status = Open3.capture3(
+        'docker', 'compose', 'config', '--format', 'json',
+        chdir: tmpdir
+      )
       raise Error, "docker compose config failed: #{stderr.presence || stdout}" unless status.success?
 
-      YAML.safe_load(stdout, permitted_classes: [Symbol]) || {}
+      JSON.parse(stdout)
     end
   end
 end

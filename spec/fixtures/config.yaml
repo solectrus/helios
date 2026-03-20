@@ -3,10 +3,8 @@ system:
   admin_password: present
   secret_key_base: s
 reverse_proxy:
-  enabled: true
   app_domain: solar.example.com
 backup:
-  enabled: true
   aws_access_key_id: AKIAEXAMPLE
   aws_secret_access_key: secret123
   aws_region: eu-central-1

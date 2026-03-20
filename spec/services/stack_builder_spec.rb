@@ -171,7 +171,6 @@ RSpec.describe StackBuilder do
   describe 'with reverse_proxy configured' do
     before do
       configuration.update('reverse_proxy', {
-                             'enabled' => true,
                              'app_domain' => 'solar.example.com',
                            })
       described_class.new(configuration).write!
@@ -248,7 +247,6 @@ RSpec.describe StackBuilder do
   describe 'with backup configured' do
     before do
       configuration.update('backup', {
-                             'enabled' => true,
                              'aws_access_key_id' => 'AKIAEXAMPLE',
                              'aws_secret_access_key' => 'secret123',
                              'aws_region' => 'eu-central-1',

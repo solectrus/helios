@@ -10,7 +10,7 @@ class StackBuilder
       end
 
       def self.enabled?(configuration)
-        configuration.backup.enabled == true
+        configuration.configured?(:backup)
       end
 
       def to_h

@@ -20,7 +20,7 @@ RSpec.describe ConfigSchema do
 
     it 'returns fields for backup' do
       fields = described_class.fields_for('backup')
-      expect(fields).to include('enabled', 'aws_access_key_id', 'influxdb', 'postgresql')
+      expect(fields).to include('aws_access_key_id', 'influxdb', 'postgresql')
     end
 
     it 'returns fields for redis' do
@@ -190,7 +190,7 @@ RSpec.describe ConfigSchema do
         schema_fields = described_class.fields_for(setting)
         next if schema_fields == :dynamic
 
-        survey_fields.each do |field|
+        survey_fields.reject { |f| f == 'enabled' }.each do |field|
           expect(schema_fields).to include(field),
                                    "Survey field '#{field}' from #{setting}.json " \
                                    "is not in ConfigSchema::FIELDS['#{setting}']"

@@ -1,0 +1,220 @@
+---
+system:
+  timezone: Europe/Berlin
+  installation_date: '2026-03-18'
+  image: ghcr.io/solectrus/solectrus:latest
+  admin_password: secret_admin_password
+  secret_key_base: very_secret_key_base
+  app_host: localhost
+  ui_theme: light
+  lockup_codeword: secret
+postgresql:
+  image: postgres:18-alpine
+  password: secret_postgres_password
+influxdb:
+  image: influxdb:2-alpine
+  password: secret_influx_password
+  org: solectrus
+  bucket: solectrus
+  token: secret_influx_token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: pvnode
+  forecast_latitude: '50.12345'
+  forecast_longitude: '6.12345'
+  forecast_interval: '900'
+  forecast_roofs: '1'
+  forecast_declination1: '27'
+  forecast_azimuth1: '0'
+  forecast_kwp1: '9.24'
+  forecast_pvnode_apikey: pvn_secret_1234567890abcdef
+senec:
+  adapter: local
+  interval: '60'
+  host: senec.fritz.box
+  schema: https
+  language: de
+mqtt:
+  mqtt_host: iobroker.fritz.box
+  mqtt_port: '1883'
+  mqtt_username: admin
+  mqtt_password: secret_mqtt_password
+shelly:
+  connection: local
+  interval: '5'
+sensors:
+  inverter_power:
+    source: senec
+  inverter_power_1:
+    source: senec
+  inverter_power_2:
+    source: senec
+  inverter_power_3:
+    source: senec
+  case_temp:
+    source: senec
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  grid_import_power:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_export_limit:
+    source: senec
+  house_power:
+    source: senec
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  wallbox_power:
+    source: senec
+  wallbox_car_connected:
+    source: senec
+  car_battery_soc:
+    source: mqtt
+    measurement: renault
+    field: soc
+    mqtt_topic: renault/0/secret_number/battery-status/batteryLevel
+    mqtt_payload_type: integer
+  heatpump_power:
+    source: shelly
+    measurement: Consumer
+    field: power
+    name: Consumer
+    shelly_connection: local
+    shelly_host: shelly-heatpump.fritz.box
+    shelly_interval: '5'
+    exclude_from_house_power: true
+  heatpump_heating_power:
+    source: mqtt
+    measurement: ALTHERMA
+    field: heat
+    mqtt_topic: espaltherma/ATTR
+    mqtt_payload_type: float
+    mqtt_formula:
+      IF({Operation Mode} = 'Heating' AND {Freeze Protection} = 'OFF'
+      AND {Leaving water temp. after BUH (R2T)} > {Inlet water temp.(R4T)}, {Flow
+      sensor (l/min)} * 60.0 * 1.163 * ({Leaving water temp. after BUH (R2T)} - {Inlet
+      water temp.(R4T)}), 0)
+  heatpump_tank_temp:
+    source: mqtt
+    measurement: ALTHERMA
+    field: tank_temp
+    mqtt_topic: espaltherma/ATTR
+    mqtt_payload_type: float
+    mqtt_json_key: DHW tank temp. (R5T)
+  heatpump_status:
+    source: mqtt
+    measurement: ALTHERMA
+    field: current_state
+    mqtt_topic: espaltherma/ATTR
+    mqtt_payload_type: string
+    mqtt_formula:
+      IF({Freeze Protection} == 'ON', 'Frostschutz', IF({Defrost Operation}
+      == 'ON', 'Abtauen', IF({[HPSU] Tank valve position (0:Bypass 100:Tank)} > 50,
+      'Warmwasser', IF({[HPSU] Bypass valve position (0:Bypass 100:Emitter)} > 50
+      AND {INV frequency (rps)} > 0, 'Heizen', 'Warten'))))
+  outdoor_temp:
+    source: mqtt
+    measurement: ALTHERMA
+    field: outdoor_temp
+    mqtt_topic: espaltherma/ATTR
+    mqtt_payload_type: float
+    mqtt_json_key: R1T-Outdoor air temp.
+  inverter_power_forecast:
+    source: forecast
+  inverter_power_forecast_clearsky:
+    source: forecast
+  outdoor_temp_forecast:
+    source: forecast
+    measurement: Forecast
+    field: temp
+  custom_power_01:
+    source: shelly
+    measurement: Fridge
+    field: power
+    name: Fridge
+    shelly_connection: local
+    shelly_host: shelly-fridge.fritz.box
+    shelly_interval: '5'
+  custom_power_02:
+    source: shelly
+    measurement: Dishwasher
+    field: power
+    name: Dishwasher
+    shelly_connection: local
+    shelly_host: shelly-dishwasher.fritz.box
+    shelly_interval: '5'
+  custom_power_03:
+    source: shelly
+    measurement: Washer
+    field: power
+    name: Washer
+    shelly_connection: local
+    shelly_host: shelly-washer.fritz.box
+    shelly_interval: '5'
+  custom_power_04:
+    source: shelly
+    measurement: KabelFritz
+    field: power
+    name: KabelFritz
+    shelly_connection: local
+    shelly_host: shelly-kabelfritz.fritz.box
+    shelly_interval: '5'
+  custom_power_05:
+    source: shelly
+    measurement: iMac
+    field: power
+    name: iMac
+    shelly_connection: local
+    shelly_host: shelly-imac.fritz.box
+    shelly_interval: '5'
+  custom_power_06:
+    source: shelly
+    measurement: TV
+    field: power
+    name: TV
+    shelly_connection: local
+    shelly_host: shelly-tv.fritz.box
+    shelly_interval: '5'
+    shelly_password: secret
+  custom_power_07:
+    source: shelly
+    measurement: Synology
+    field: power
+    name: Synology
+    shelly_connection: local
+    shelly_host: shelly-synology.fritz.box
+    shelly_interval: '5'
+  custom_power_08:
+    source: shelly
+    measurement: Mini-PC-1
+    field: power
+    name: Mini-PC-1
+    shelly_connection: local
+    shelly_host: shelly-mini-pc-1.fritz.box
+    shelly_interval: '5'
+  custom_power_09:
+    source: shelly
+    measurement: Mac-Studio
+    field: power
+    name: Mac-Studio
+    shelly_connection: local
+    shelly_host: shelly-macstudio.fritz.box
+    shelly_interval: '5'
+  custom_power_10:
+    source: shelly
+    measurement: Studio-Display
+    field: power
+    name: Studio-Display
+    shelly_connection: local
+    shelly_host: shelly-studiodisplay.fritz.box
+    shelly_interval: '5'

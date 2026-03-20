@@ -152,13 +152,11 @@ class ConfigSchema
   ].freeze
 
   REVERSE_PROXY_FIELDS = %w[
-    enabled
     app_domain
     letsencrypt_email
   ].freeze
 
   BACKUP_FIELDS = %w[
-    enabled
     aws_access_key_id
     aws_secret_access_key
     aws_region

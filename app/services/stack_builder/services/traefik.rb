@@ -10,8 +10,7 @@ class StackBuilder
       end
 
       def self.enabled?(configuration)
-        rp = configuration.reverse_proxy
-        rp.enabled == true && rp.app_domain.present?
+        configuration.reverse_proxy.app_domain.present?
       end
 
       def self.letsencrypt_email(configuration)

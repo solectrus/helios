@@ -210,8 +210,6 @@ class Configuration
     result
   end
 
-  # Remove redundant/irrelevant fields from sensor data
-  SENSOR_ALWAYS_REMOVE = %w[enabled].freeze
   SENSOR_FIELDS_BY_SOURCE = {
     'senec' => %w[source measurement field],
     'forecast' => %w[source measurement field],
@@ -231,8 +229,6 @@ class Configuration
 
   def sanitize_sensor_data(data)
     return data unless data.is_a?(Hash)
-
-    data = data.except(*SENSOR_ALWAYS_REMOVE)
 
     source = data['source']
     allowed = SENSOR_FIELDS_BY_SOURCE[source]

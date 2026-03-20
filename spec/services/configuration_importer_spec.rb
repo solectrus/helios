@@ -25,7 +25,7 @@ RSpec.describe ConfigurationImporter do
       it { is_expected.to include('secret_key_base') }
       it { is_expected.to include('image') }
       it { is_expected.to include('app_host' => 'pi') }
-      it { is_expected.to include('influx_poll_interval' => '5') }
+      it { is_expected.not_to include('influx_poll_interval') } # default value, not stored
       it { is_expected.to include('co2_emission_factor' => '500') }
     end
 
@@ -194,7 +194,6 @@ RSpec.describe ConfigurationImporter do
 
       it 'detects traefik as reverse proxy' do
         expect(reverse_proxy).to include(
-          'enabled' => true,
           'app_domain' => 'solar.example.com',
         )
       end
@@ -211,7 +210,6 @@ RSpec.describe ConfigurationImporter do
 
       it 'detects backup services' do
         expect(backup).to include(
-          'enabled' => true,
           'aws_access_key_id' => 'AKIAEXAMPLE',
           'aws_secret_access_key' => 'secret123',
           'aws_region' => 'eu-central-1',
@@ -225,14 +223,12 @@ RSpec.describe ConfigurationImporter do
 
       it 'persists reverse_proxy settings' do
         expect(config.reverse_proxy).to include(
-          'enabled' => true,
           'app_domain' => 'solar.example.com',
         )
       end
 
       it 'persists backup settings' do
         expect(config.backup).to include(
-          'enabled' => true,
           'aws_bucket' => 'my-backup-bucket',
         )
       end
@@ -343,10 +339,10 @@ RSpec.describe ConfigurationImporter do
       it 'imports dashboard-specific settings' do
         expect(system).to include(
           'app_host' => 'myhost',
-          'web_concurrency' => '0',
-          'influx_poll_interval' => '5',
           'co2_emission_factor' => '500',
         )
+        # Default values (web_concurrency='0', influx_poll_interval='5') are not stored
+        expect(system).not_to include('web_concurrency', 'influx_poll_interval')
       end
     end
 
@@ -454,6 +450,25 @@ RSpec.describe ConfigurationImporter do
       it 'persists SENEC shared config with senec_ignore' do
         expect(config.senec.ignore).to eq('wallbox_charge_power,grid_power_minus')
       end
+    end
+  end
+
+  context 'with full_stack scenario (round-trip)' do
+    let(:scenario) { 'full_stack' }
+
+    it 'produces a config.yaml matching the expected configuration' do
+      importer.import!
+
+      imported_data = YAML.safe_load_file(
+        File.join(Rails.configuration.helios_stack_path, Configuration::YAML_FILENAME),
+        permitted_classes: [Date],
+      )
+      expected_config = YAML.safe_load_file(
+        scenario_path.join('expected_config.yaml'),
+        permitted_classes: [Date],
+      )
+
+      expect(imported_data).to eq(expected_config)
     end
   end
 end

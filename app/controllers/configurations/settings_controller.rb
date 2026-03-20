@@ -22,29 +22,13 @@ module Configurations
     end
 
     def create
-      data = setting_params
-      return unless data
-
-      if sensor_setting?
-        @configuration.update_sensor(sensor_name, data)
-      else
-        @configuration.update(setting, data)
-      end
-
+      save_setting
       DockerHost::StackStatus.mark_config_changed!
       redirect_to configuration_path
     end
 
     def update
-      data = setting_params
-      return unless data
-
-      if sensor_setting?
-        @configuration.update_sensor(sensor_name, data)
-      else
-        @configuration.update(setting, data)
-      end
-
+      save_setting
       DockerHost::StackStatus.mark_config_changed!
       redirect_to configuration_path
     end
@@ -81,6 +65,28 @@ module Configurations
       return if Configuration.valid?(setting)
 
       redirect_to configuration_path
+    end
+
+    def save_setting
+      data = setting_params
+      return unless data
+
+      if sensor_setting?
+        @configuration.update_sensor(sensor_name, data)
+      else
+        persist_setting(data)
+      end
+    end
+
+    # Handle the `enabled` UI flag: when false, remove the section entirely;
+    # when true, strip the flag and save the remaining data.
+    def persist_setting(data)
+      if data.key?('enabled') && data.delete('enabled') == false
+        @configuration.update(setting, {})
+        return
+      end
+
+      @configuration.update(setting, data)
     end
 
     def setting_params
