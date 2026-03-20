@@ -5,6 +5,7 @@ interface Preferences {
   theme?: string;
   expert_mode?: boolean;
   show_all_sensors?: boolean;
+  locale?: string;
   [key: string]: string | boolean | undefined;
 }
 
@@ -19,6 +20,10 @@ function readPreferences(): Preferences {
   } catch {
     return {};
   }
+}
+
+export function readLocale(): string {
+  return readPreferences().locale ?? 'en';
 }
 
 export function updatePreferences(updates: Partial<Preferences>) {

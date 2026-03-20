@@ -35,8 +35,7 @@ en:
   expert_mode_toggle:
     component:
       expert: "Expert"
-      "on": "ON"
-      "off": "OFF"
+      simple: "Simple"
 
   header:
     component:
@@ -44,6 +43,10 @@ en:
       services: "Services"
       configuration: "Configuration"
       generated_files: "Files"
+
+  services:
+    index:
+      title: "Services - Helios"
 
   configurations:
     show:

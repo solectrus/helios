@@ -5,6 +5,7 @@ class ApplicationController < ActionController::Base
   before_action :require_setup
   before_action :auto_import_existing_config
   before_action :require_authentication
+  before_action :set_locale
 
   helper_method :authenticated?, :preferences
 
@@ -60,6 +61,10 @@ class ApplicationController < ActionController::Base
 
   def preferences
     Current.preferences ||= UserPreferences.new(cookies)
+  end
+
+  def set_locale
+    I18n.locale = preferences.locale.to_sym
   end
 
   def require_expert_mode

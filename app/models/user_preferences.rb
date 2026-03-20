@@ -5,6 +5,7 @@ class UserPreferences
     'theme' => 'light',
     'expert_mode' => false,
     'show_all_sensors' => false,
+    'locale' => 'en',
   }.freeze
 
   def initialize(cookies)
@@ -26,6 +27,10 @@ class UserPreferences
 
   def show_all_sensors?
     @data.fetch('show_all_sensors', DEFAULTS['show_all_sensors'])
+  end
+
+  def locale
+    @data.fetch('locale', DEFAULTS['locale'])
   end
 
   private

@@ -2,6 +2,7 @@ import { Controller } from '@hotwired/stimulus';
 import { Model } from 'survey-core';
 import { BorderlessLight, BorderlessDark } from 'survey-core/themes';
 import { isDarkMode, onThemeChange } from '../utils/theme';
+import { readLocale } from '../utils/preferences_cookie';
 
 // Import Survey.JS UI (side-effect: registers UI components)
 import 'survey-js-ui';
@@ -52,7 +53,7 @@ export default class extends Controller {
     this.applyTheme();
 
     // Configure survey
-    this.survey.locale = 'en';
+    this.survey.locale = readLocale();
     this.survey.showProgressBar = 'top';
     this.survey.progressBarType = 'pages';
 

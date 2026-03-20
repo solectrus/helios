@@ -1,0 +1,30 @@
+<div class="dropdown dropdown-end" data-controller="language-select--component">
+  <div tabindex="0" role="button" class="btn btn-ghost btn-sm">
+    <i class="fa-solid fa-globe"></i>
+    <i class="fa-solid fa-chevron-down fa-2xs"></i>
+  </div>
+
+  <ul tabindex="0" class="dropdown-content menu bg-base-100 rounded-box z-10 w-32 p-2 shadow">
+    <li>
+      <button
+        type="button"
+        class="justify-end <%= 'active font-bold' if preferences.locale == 'en' %>"
+        data-action="click->language-select--component#select"
+        data-language-select--component-locale-param="en"
+      >
+        English
+      </button>
+    </li>
+
+    <li>
+      <button
+        type="button"
+        class="justify-end <%= 'active font-bold' if preferences.locale == 'de' %>"
+        data-action="click->language-select--component#select"
+        data-language-select--component-locale-param="de"
+      >
+        Deutsch
+      </button>
+    </li>
+  </ul>
+</div>

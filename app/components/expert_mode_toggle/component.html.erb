@@ -1,5 +1,5 @@
 <label
-  class="btn btn-ghost btn-xs swap"
+  class="swap"
   data-controller="preference-toggle"
   data-preference-toggle-key-value="expert_mode"
 >
@@ -12,6 +12,6 @@
     <% end %>
   >
 
-  <span class="swap-on"><%= t(".expert") %> <span class="badge badge-xs badge-info"><%= t(".on") %></span></span>
-  <span class="swap-off"><%= t(".expert") %> <span class="badge badge-xs badge-neutral"><%= t(".off") %></span></span>
+  <span class="swap-on badge badge-sm badge-info cursor-pointer"><%= t(".expert") %></span>
+  <span class="swap-off badge badge-sm badge-neutral cursor-pointer"><%= t(".simple") %></span>
 </label>
