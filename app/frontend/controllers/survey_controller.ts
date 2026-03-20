@@ -54,7 +54,7 @@ export default class extends Controller {
     // Configure survey
     this.survey.locale = 'en';
     this.survey.showProgressBar = 'top';
-    this.survey.progressBarType = 'questions';
+    this.survey.progressBarType = 'pages';
 
     // Load initial data if provided
     if (this.hasInitialDataTarget) {
