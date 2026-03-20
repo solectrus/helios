@@ -50,16 +50,17 @@ module Configurations
       sensor_name&.start_with?('battery_') || sensor_name == 'inverter_power'
     end
 
+    def exclude_from_house_power_relevant?
+      sensor_name.in?(%w[heatpump_power wallbox_power]) || custom_power_sensor?
+    end
+
     def customize_sensor_survey!(survey)
       inject_sensor_title!(survey)
       inject_source_choices!(survey)
       inject_mapping_defaults!(survey)
-      if custom_power_sensor?
-        inject_name_page!(survey)
-        inject_house_power_page!(survey)
-      elsif invert_power_relevant?
-        inject_shelly_invert_power!(survey)
-      end
+      inject_name_page!(survey) if custom_power_sensor?
+      inject_shelly_invert_power!(survey) if invert_power_relevant?
+      inject_house_power_page!(survey) if exclude_from_house_power_relevant?
     end
 
     def inject_sensor_title!(survey)
