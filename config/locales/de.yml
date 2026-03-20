@@ -81,6 +81,7 @@ de:
     grid_export_power: "Leistung, die ins Stromnetz eingespeist wird"
     grid_export_limit: "Maximale Einspeisung in Prozent der Anlagenleistung (Abregelung)"
     house_power: "Stromverbrauch des gesamten Haushalts"
+    house_power_exclusion_hint: "In SOLECTRUS wird %{sensors} herausgerechnet"
     battery_charging_power: "Ladeleistung der Batterie"
     battery_discharging_power: "Entladeleistung der Batterie"
     battery_soc: "Ladestand der Batterie in Prozent"

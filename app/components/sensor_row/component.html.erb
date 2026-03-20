@@ -17,6 +17,12 @@
         </span>
       <% end %>
     <% end %>
+
+    <% if house_power_exclusions? %>
+      <span class="tooltip tooltip-right before:text-xs before:normal-case" data-tip="<%= house_power_exclusion_tooltip %>">
+        <i class="fa-solid fa-calculator text-info text-xs"></i>
+      </span>
+    <% end %>
   </td>
 
   <%# Source badge %>

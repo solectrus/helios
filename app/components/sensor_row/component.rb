@@ -89,6 +89,22 @@ module SensorRow
       'text-success'
     end
 
+    # Sensors excluded from house power in SOLECTRUS
+    def house_power_exclusions?
+      sensor_name == 'house_power' && excluded_power_sensors.any?
+    end
+
+    def excluded_power_sensors
+      @excluded_power_sensors ||= configuration.enabled_sensors.select do |name|
+        configuration.sensor_config(name).exclude_from_house_power == true
+      end
+    end
+
+    def house_power_exclusion_tooltip
+      names = excluded_power_sensors.map(&:upcase).join(', ')
+      I18n.t('sensors.house_power_exclusion_hint', sensors: names)
+    end
+
     private
 
     def raw_value
