@@ -141,8 +141,8 @@ module Configurations
           'default' => 'Name for this consumer',
         },
         'description' => {
-          'de' => 'Wird als InfluxDB-Measurement und im Dashboard angezeigt',
-          'default' => 'Used as InfluxDB measurement and displayed in the dashboard',
+          'de' => 'Wird im Dashboard als Bezeichnung angezeigt',
+          'default' => 'Displayed as label in the dashboard',
         },
         'isRequired' => true,
         'placeholder' => { 'de' => 'z.B. Kühlschrank', 'default' => 'e.g. Fridge' },
