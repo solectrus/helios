@@ -32,15 +32,18 @@ en:
     back: "Back"
     cancel: "Cancel"
 
+  expert_mode_toggle:
+    component:
+      expert: "Expert"
+      "on": "ON"
+      "off": "OFF"
+
   header:
     component:
       logout: "Logout"
-
-  main_nav:
-    component:
-      services: "Docker Services"
+      services: "Services"
       configuration: "Configuration"
-      generated_files: "Generated Files"
+      generated_files: "Files"
 
   configurations:
     show:

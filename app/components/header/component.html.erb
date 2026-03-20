@@ -1,18 +1,27 @@
-<div class="mb-8 flex items-center justify-between">
+<nav class="navbar rounded-box bg-base-200 mb-8 gap-8 sticky top-0 z-50">
   <h1>
     <img
       src="/logo.svg"
       alt="HELIOS Logo"
-      class="h-8"
+      class="h-6"
       aria-hidden="true"
     >
 
     <span class="sr-only">HELIOS</span>
   </h1>
 
-  <div class="flex items-center gap-2">
+  <div class="flex gap-1">
+    <% tabs.each do |tab| %>
+      <%= link_to tab[:path], class: tab_classes(tab), data: { turbo_frame: "tab-content", turbo_action: "advance" } do %>
+        <i class="mr-1 <%= tab[:icon] %>"></i>
+        <%= tab[:label] %>
+      <% end %>
+    <% end %>
+  </div>
+
+  <div class="ml-auto flex items-center gap-1">
     <%= render ExpertModeToggle::Component.new %>
     <%= render ThemeToggle::Component.new %>
     <%= button_to t('.logout'), session_path, method: :delete, class: "btn btn-ghost btn-sm" %>
   </div>
-</div>
+</nav>

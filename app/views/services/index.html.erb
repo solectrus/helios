@@ -1,9 +1,7 @@
 <div class="min-h-screen p-8">
   <div class="mx-auto max-w-4xl">
-    <%= render Header::Component.new %>
-
     <%= turbo_frame_tag "tab-content", data: { controller: "visibility" } do %>
-      <div class="mb-8"><%= render MainNav::Component.new(active_tab: :services) %></div>
+      <%= render Header::Component.new(active_tab: :services) %>
 
       <%= turbo_stream_from "services" %>
 

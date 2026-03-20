@@ -2,10 +2,8 @@
 
 <div class="min-h-screen p-8">
   <div class="mx-auto max-w-4xl">
-    <%= render Header::Component.new %>
-
     <%= turbo_frame_tag "tab-content" do %>
-      <div class="mb-8"><%= render MainNav::Component.new(active_tab: :configuration) %></div>
+      <%= render Header::Component.new(active_tab: :configuration) %>
 
       <%# Sensors section %>
       <div class="mb-3 flex items-center justify-between">

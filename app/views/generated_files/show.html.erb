@@ -2,10 +2,8 @@
 
 <div class="min-h-screen p-8">
   <div class="mx-auto max-w-4xl">
-    <%= render Header::Component.new %>
-
     <%= turbo_frame_tag "tab-content" do %>
-      <div class="mb-8"><%= render MainNav::Component.new(active_tab: :generated_files) %></div>
+      <%= render Header::Component.new(active_tab: :generated_files) %>
 
       <%= render StackPreview::Component.new(
             compose_content: @stack_builder.compose_content,

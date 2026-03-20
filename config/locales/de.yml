@@ -3,14 +3,18 @@ de:
     back: "Zurück"
     cancel: "Abbrechen"
 
+  expert_mode_toggle:
+    component:
+      expert: "Experte"
+      "on": "AN"
+      "off": "AUS"
+
   header:
     component:
       logout: "Abmelden"
-
-  main_nav:
-    component:
-      services: "Docker-Services"
+      services: "Dienste"
       configuration: "Konfiguration"
+      generated_files: "Dateien"
 
   configurations:
     show:
