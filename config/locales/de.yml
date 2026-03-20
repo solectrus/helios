@@ -2,6 +2,8 @@ de:
   common:
     back: "Zurück"
     cancel: "Abbrechen"
+    boolean_yes: "JA"
+    boolean_no: "NEIN"
 
   expert_mode_toggle:
     component:

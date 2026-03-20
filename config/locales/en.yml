@@ -31,6 +31,8 @@ en:
   common:
     back: "Back"
     cancel: "Cancel"
+    boolean_yes: "YES"
+    boolean_no: "NO"
 
   expert_mode_toggle:
     component:

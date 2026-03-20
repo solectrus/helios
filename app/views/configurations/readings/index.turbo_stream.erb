@@ -11,9 +11,13 @@
       class="text-right font-mono text-sm <%= component.freshness_class %>"
     >
       <% if component.enabled? %>
-        <%= component.formatted_value %>
-        <% if @readings[name]&.dig(:value) && component.unit.present? %>
-          <span class="text-base-content/50"><%= component.unit %></span>
+        <% if component.boolean_value? %>
+          <span class="badge badge-sm badge-outline"><%= component.boolean_label %></span>
+        <% else %>
+          <%= component.formatted_value %>
+          <% if component.value? && component.unit.present? %>
+            <span class="text-base-content/50"><%= component.unit %></span>
+          <% end %>
         <% end %>
       <% end %>
     </td>

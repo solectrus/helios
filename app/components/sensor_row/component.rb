@@ -59,24 +59,40 @@ module SensorRow
       helpers.configuration_setting_path(setting: 'sensor', name: sensor_name)
     end
 
-    def formatted_value
-      value = reading&.dig(:value)
-      return '—' if value.nil?
+    def boolean_value?
+      raw_value.is_a?(String) && raw_value.match?(/\A(?:true|false)\z/i)
+    end
 
-      if value.is_a?(Numeric)
-        value == value.to_i ? value.to_i.to_s : format('%.1f', value)
-      else
-        value.to_s
-      end
+    def boolean_label
+      raw_value&.casecmp('true')&.zero? ? I18n.t('common.boolean_yes') : I18n.t('common.boolean_no')
+    end
+
+    def value?
+      raw_value.present?
+    end
+
+    def formatted_value
+      @formatted_value ||=
+        if raw_value.nil?
+          '—'
+        elsif raw_value.is_a?(Numeric)
+          raw_value == raw_value.to_i ? raw_value.to_i.to_s : format('%.1f', raw_value)
+        else
+          raw_value.to_s
+        end
     end
 
     def freshness_class
-      value = reading&.dig(:value)
-      time = reading&.dig(:time)
-      return 'text-base-content/30' if value.nil?
-      return 'text-warning' if time && time < 1.hour.ago
+      return 'text-base-content/30' if raw_value.nil?
+      return 'text-warning' if reading&.dig(:time)&.< 1.hour.ago
 
       'text-success'
+    end
+
+    private
+
+    def raw_value
+      reading&.dig(:value)
     end
   end
 end
