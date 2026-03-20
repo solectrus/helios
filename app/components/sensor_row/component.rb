@@ -39,6 +39,10 @@ module SensorRow
       I18n.t("sensors.#{sensor_name}")
     end
 
+    def custom_sensor?
+      sensor_name.start_with?('custom_power_')
+    end
+
     def custom_name
       sensor_config.name.presence
     end
