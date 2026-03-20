@@ -9,9 +9,7 @@ RSpec.describe 'Services', :with_admin do
 
   def mock_compose_services(*names)
     services = names.map { |name| mock_service(name) }
-    collection = instance_double(Compose::ServiceCollection)
-    allow(collection).to receive(:each) { |&block| services.each(&block) }
-    allow(collection).to receive(:sorted).and_return(services)
+    collection = mock_service_collection(services)
     allow(Compose).to receive(:load).and_return(
       instance_double(Compose::File, services: collection),
     )

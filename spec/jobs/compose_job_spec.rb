@@ -6,6 +6,7 @@ RSpec.describe ComposeJob do
 
   after do
     Compose::ServiceStore.clear_all
+    DockerHost::StackStatus.reset!
   end
 
   describe '#perform' do
@@ -51,10 +52,11 @@ RSpec.describe ComposeJob do
         allow(Compose::Runner).to receive(:start).and_raise(error)
         allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
         allow(ApplicationController).to receive(:render).and_return('<div>html</div>')
-        allow(DockerHost::Container).to receive(:find).and_return(nil)
+        allow(DockerHost::Container).to receive_messages(find: nil, all: [])
         allow(Compose).to receive(:load).and_return(compose_file)
-        allow(services_collection).to receive(:find).and_return(compose_service)
         allow(services_collection).to receive(:each).and_yield(compose_service)
+        allow(services_collection).to receive_messages(find: compose_service, reject: [compose_service], empty?: false,
+                                                       all?: false)
       end
 
       it 'broadcasts service status update' do
@@ -95,10 +97,11 @@ RSpec.describe ComposeJob do
 
     before do
       allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
-      allow(DockerHost::Container).to receive(:find).and_return(nil)
+      allow(DockerHost::Container).to receive_messages(find: nil, all: [])
       allow(Compose).to receive(:load).and_return(compose_file)
-      allow(services_collection).to receive(:find).and_return(compose_service)
       allow(services_collection).to receive(:each).and_yield(compose_service)
+      allow(services_collection).to receive_messages(find: compose_service, reject: [compose_service], empty?: false,
+                                                     all?: false)
     end
 
     def perform_with_error(stdout_message)
@@ -144,9 +147,11 @@ RSpec.describe ComposeJob do
 
     before do
       allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
-      allow(DockerHost::Container).to receive(:find).and_return(nil)
+      allow(DockerHost::Container).to receive_messages(find: nil, all: [])
       allow(Compose).to receive(:load).and_return(compose_file)
       allow(ApplicationController).to receive(:render).and_return('<div>error</div>')
+      allow(services_collection).to receive_messages(reject: [requested_service, affected_service], empty?: false,
+                                                     all?: false)
     end
 
     def perform_with_error(stdout_message)
@@ -169,14 +174,14 @@ RSpec.describe ComposeJob do
           .and_yield(requested_service)
       end
 
-      it 'broadcasts to the affected service instead of requested service' do
+      it 'broadcasts the requested service with current state' do
         perform_with_error(
           'Error response from daemon: Conflict. The container name "/solectrus-influxdb-1" is already in use',
         )
 
         expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
           'services',
-          target: 'service-influxdb',
+          target: 'service-dashboard',
           html: '<div>error</div>',
         )
       end

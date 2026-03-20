@@ -3,19 +3,15 @@ module DockerHost
     class NotFoundError < StandardError
     end
 
-    CONTAINER_CACHE_TTL = 3.seconds
+    CACHE_TTL = 3.seconds
 
     class << self
-      def invalidate_cache
-        Rails.cache.delete('docker_containers')
-      end
-
       def all(project: nil)
-        DockerHost.configure!
+        DockerHost::Connection.configure!
         project ||= DockerHost.default_project
         return [] unless project
 
-        docker_containers
+        fetch_all_containers
           .select { |c| c.info.dig('Labels', COMPOSE_PROJECT_LABEL) == project }
           .map { |c| new(c) }
       rescue Excon::Error::Socket, Docker::Error::TimeoutError => e
@@ -23,50 +19,52 @@ module DockerHost
       end
 
       def find(service_name, project: nil)
-        DockerHost.configure!
+        DockerHost::Connection.configure!
         project ||= DockerHost.default_project
         return nil unless project
 
-        container =
-          docker_containers.find do |c|
+        raw =
+          fetch_all_containers.find do |c|
             c.info.dig('Labels', COMPOSE_PROJECT_LABEL) == project &&
               c.info.dig('Labels', COMPOSE_SERVICE_LABEL) == service_name.to_s
           end
 
-        container ? new(container) : nil
+        raw ? new(raw) : nil
       rescue Excon::Error::Socket, Docker::Error::TimeoutError => e
         raise ConnectionError, "Cannot connect to Docker: #{e.message}"
       end
 
+      def invalidate_cache
+        Rails.cache.delete('docker_containers')
+      end
+
       private
 
-      def docker_containers
+      def fetch_all_containers
         Rails
           .cache
-          .fetch('docker_containers', expires_in: CONTAINER_CACHE_TTL) do
+          .fetch('docker_containers', expires_in: CACHE_TTL) do
             Docker::Container.all(all: true)
           end
       end
     end
 
-    attr_reader :container
-
-    def initialize(container)
-      @container = container
+    def initialize(raw_container)
+      @raw_container = raw_container
     end
 
-    delegate :id, to: :container
+    delegate :id, to: :raw_container
 
     def name
-      container.info['Names']&.first&.delete_prefix('/')
+      raw_container.info['Names']&.first&.delete_prefix('/')
     end
 
     def service_name
-      container.info.dig('Labels', COMPOSE_SERVICE_LABEL)
+      raw_container.info.dig('Labels', COMPOSE_SERVICE_LABEL)
     end
 
     def image
-      container.info['Image']
+      raw_container.info['Image']
     end
 
     def image_tag
@@ -77,13 +75,13 @@ module DockerHost
     end
 
     def version
-      @version ||= VersionExtractor.extract(container)
+      @version ||= VersionExtractor.extract(raw_container)
     rescue Docker::Error::NotFoundError
       nil
     end
 
     def status
-      container.info['State']
+      raw_container.info['State']
     end
 
     def running?
@@ -94,10 +92,23 @@ module DockerHost
       %w[running restarting paused].include?(status)
     end
 
+    def effective_status
+      return :stopped unless running?
+
+      hs = health_status
+      return :starting if hs == 'starting'
+      return :error if hs && hs != 'healthy'
+      return :starting if hs.nil? && healthcheck_configured?
+
+      :ok
+    end
+
     def health_status
-      container.json.dig('State', 'Health', 'Status')
-    rescue Docker::Error::NotFoundError
-      nil
+      inspect_data&.dig('State', 'Health', 'Status')
+    end
+
+    def healthcheck_configured?
+      inspect_data&.dig('State', 'Health').present?
     end
 
     def healthy?
@@ -105,18 +116,22 @@ module DockerHost
     end
 
     def logs(tail: 100, timestamps: false)
-      opts = { stdout: true, stderr: true, tail: tail, timestamps: timestamps }
-      container.logs(opts)
+      raw_container.logs(
+        stdout: true,
+        stderr: true,
+        tail: tail,
+        timestamps: timestamps,
+      )
     rescue Docker::Error::NotFoundError
       nil
     end
 
     def created_at
-      Time.zone.parse(container.info['Created'])
+      Time.zone.parse(raw_container.info['Created'])
     end
 
     def ports
-      container.info['Ports'] || []
+      raw_container.info['Ports'] || []
     end
 
     def public_port
@@ -125,11 +140,9 @@ module DockerHost
       return port_info['PublicPort'] if port_info
 
       # Fallback to configured port bindings (works for stopped containers)
-      port_bindings = container.json.dig('HostConfig', 'PortBindings') || {}
+      port_bindings = inspect_data&.dig('HostConfig', 'PortBindings') || {}
       first_binding = port_bindings.values.flatten.first
       first_binding&.dig('HostPort')&.to_i
-    rescue Docker::Error::NotFoundError
-      nil
     end
 
     def to_h
@@ -146,6 +159,22 @@ module DockerHost
     def inspect
       health = health_status ? " (#{health_status})" : ''
       "#<DockerHost::Container #{service_name}: #{status}#{health}>"
+    end
+
+    private
+
+    attr_reader :raw_container
+
+    # Cache inspect data per instance — avoids multiple Docker API calls
+    # for health_status, public_port, etc. within a single operation.
+    # Catches all Docker/network errors to prevent cascade failures
+    # when a single container is temporarily unreachable.
+    def inspect_data
+      return @inspect_data if instance_variable_defined?(:@inspect_data)
+
+      @inspect_data = raw_container.json
+    rescue Docker::Error::DockerError, Excon::Error
+      @inspect_data = nil
     end
   end
 end

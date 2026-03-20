@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 
-<html data-theme="<%= preferences.theme %>">
+<html lang="<%= I18n.locale %>" data-theme="<%= preferences.theme %>">
   <head>
     <title><%= content_for(:title) || "HELIOS" %></title>
 
@@ -22,7 +22,7 @@
     <%= vite_stylesheet_tag 'application.css', media: 'all' %>
   </head>
 
-  <body class="bg-base-200 min-h-screen">
+  <body class="bg-base-200 min-h-screen pb-10">
     <% if flash[:alert] %>
       <div class="toast toast-top toast-center z-50">
         <div class="alert alert-error"><span><%= flash[:alert] %></span></div>
@@ -36,5 +36,9 @@
     <% end %>
 
     <%= yield %>
+
+    <% if authenticated? %>
+      <%= render StatusBar::Component.new %>
+    <% end %>
   </body>
 </html>

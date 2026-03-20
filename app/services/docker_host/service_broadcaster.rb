@@ -12,8 +12,8 @@ module DockerHost
 
         return false unless compose_service
 
-        error_message = resolve_error(service_name, container)
-        broadcast_service_row(service_name, container, compose_service, error_message:)
+        broadcast_service_row(service_name, container, compose_service)
+        update_stack_status(service_name, container)
         true
       end
     rescue StandardError => e
@@ -22,6 +22,21 @@ module DockerHost
     end
 
     private
+
+    def broadcast_service_row(service_name, container, compose_service)
+      error_message = resolve_error(service_name, container)
+
+      Turbo::StreamsChannel.broadcast_replace_to(
+        'services',
+        target: "service-#{service_name}",
+        html: render_service_row(container, compose_service, error_message:),
+      )
+    end
+
+    def update_stack_status(service_name, container)
+      status = container&.effective_status || :stopped
+      DockerHost::StackStatus.update(service_name, status)
+    end
 
     def resolve_error(service_name, container)
       if container&.running?
@@ -32,23 +47,12 @@ module DockerHost
       end
     end
 
-    def broadcast_service_row(service_name, container, compose_service, error_message: nil)
-      pending = Compose::ServiceStore.pending?(service_name)
-
-      Turbo::StreamsChannel.broadcast_replace_to(
-        'services',
-        target: "service-#{service_name}",
-        html: render_service_row(container, compose_service, error_message:, pending:),
-      )
-    end
-
-    def render_service_row(container, compose_service, error_message: nil, pending: false)
+    def render_service_row(container, compose_service, error_message: nil)
       ApplicationController.render(
         ServiceRow::Component.new(
           compose_service:,
           container:,
           error_message:,
-          pending:,
           lazy: false,
         ),
         layout: false,
@@ -57,7 +61,7 @@ module DockerHost
 
     def log_error(service_name, error)
       prefix = @listener_id ? "[#{@listener_id}] " : ''
-      EventsListener::Logging.logger.error(
+      DockerHost::EventsListener::Logging.logger.error(
         "#{prefix}Broadcast error for #{service_name}: #{error.class}: #{error.message}",
       )
     end

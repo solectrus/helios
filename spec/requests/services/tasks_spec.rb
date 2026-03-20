@@ -14,7 +14,7 @@ RSpec.describe 'Services::Tasks', :with_admin do
       public_port: nil,
       helios?: name == 'helios',
     )
-    collection = instance_double(Compose::ServiceCollection)
+    collection = mock_service_collection([service])
     allow(collection).to receive(:find).with(name).and_return(service)
     allow(Compose).to receive(:load).and_return(
       instance_double(Compose::File, services: collection),

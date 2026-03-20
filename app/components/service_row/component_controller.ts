@@ -1,5 +1,11 @@
 import { Controller } from '@hotwired/stimulus';
 
+// Polls the server for fresh status when a service is in a transient state
+// (pending or health_starting). Uses setInterval to keep polling until the
+// status resolves — a single setTimeout would stop after one attempt because
+// Stimulus only fires statusValueChanged when the value actually changes.
+const POLLING_INTERVAL_MS = 5000;
+
 export default class extends Controller {
   static targets = ['startButton', 'stopButton', 'recreateButton'];
   static values = {
@@ -16,22 +22,20 @@ export default class extends Controller {
   declare nameValue: string;
   declare statusValue: string;
 
-  private pendingTimeout?: number;
+  private pollingInterval?: number;
 
   disconnect() {
-    this.#clearPendingTimeout();
+    this.#stopPolling();
   }
 
   statusValueChanged() {
-    // If status changes to pending or health_starting, start a timeout to reload the frame.
-    // This handles the edge case where ActionCable broadcast is missed.
     if (
       this.statusValue === 'pending' ||
       this.statusValue === 'health_starting'
     ) {
-      this.#startPendingTimeout();
+      this.#startPolling();
     } else {
-      this.#clearPendingTimeout();
+      this.#stopPolling();
     }
   }
 
@@ -79,20 +83,18 @@ export default class extends Controller {
     });
   }
 
-  #startPendingTimeout() {
-    this.#clearPendingTimeout();
+  #startPolling() {
+    if (this.pollingInterval) return;
 
-    // After 3 seconds, reload the frame if still pending
-    // This ensures we catch the real state even if the ActionCable broadcast was missed
-    this.pendingTimeout = window.setTimeout(() => {
+    this.pollingInterval = window.setInterval(() => {
       this.#reloadFrame();
-    }, 3000);
+    }, POLLING_INTERVAL_MS);
   }
 
-  #clearPendingTimeout() {
-    if (this.pendingTimeout) {
-      window.clearTimeout(this.pendingTimeout);
-      this.pendingTimeout = undefined;
+  #stopPolling() {
+    if (this.pollingInterval) {
+      window.clearInterval(this.pollingInterval);
+      this.pollingInterval = undefined;
     }
   }
 

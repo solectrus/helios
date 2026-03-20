@@ -5,6 +5,15 @@ de:
     boolean_yes: "JA"
     boolean_no: "NEIN"
 
+  status_bar:
+    component:
+      ok: "Alle Dienste laufen"
+      starting: "Dienste werden gestartet…"
+      partial: "Einige Dienste sind nicht gestartet"
+      error: "Einige Dienste haben Probleme"
+      stopped: "Alle Dienste gestoppt"
+      restart_required: "Konfiguration geändert – Neustart erforderlich"
+
   expert_mode_toggle:
     component:
       expert: "Experte"

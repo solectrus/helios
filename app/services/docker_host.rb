@@ -7,23 +7,8 @@ module DockerHost
   COMPOSE_PROJECT_LABEL = 'com.docker.compose.project'.freeze
   COMPOSE_SERVICE_LABEL = 'com.docker.compose.service'.freeze
 
-  SOCKET_PATHS = [
-    '/var/run/docker.sock',
-    ::File.expand_path('~/.docker/run/docker.sock'),
-  ].freeze
-
   class << self
-    def configure!
-      socket = SOCKET_PATHS.find { |path| ::File.exist?(path) }
-      Docker.url = "unix://#{socket}" if socket
-    end
-
-    def connected?
-      configure!
-      Docker.ping == 'OK'
-    rescue StandardError
-      false
-    end
+    delegate :configure!, :connected?, to: 'DockerHost::Connection'
 
     def default_project
       ENV.fetch('COMPOSE_PROJECT_NAME', nil) || project_from_stack_path

@@ -31,6 +31,7 @@ module Configurations
         @configuration.update(setting, data)
       end
 
+      DockerHost::StackStatus.mark_config_changed!
       redirect_to configuration_path
     end
 
@@ -44,6 +45,7 @@ module Configurations
         @configuration.update(setting, data)
       end
 
+      DockerHost::StackStatus.mark_config_changed!
       redirect_to configuration_path
     end
 
@@ -52,6 +54,7 @@ module Configurations
         @configuration.remove_sensor(sensor_name)
       end
 
+      DockerHost::StackStatus.mark_config_changed!
       redirect_to configuration_path
     end
 

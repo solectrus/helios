@@ -9,6 +9,16 @@
 
 @plugin '@tailwindcss/typography';
 
+/* Status bar: show only the label matching the current locale */
+.status-bar-label {
+  display: none;
+}
+
+:root:lang(en) .status-bar-label[data-locale='en'],
+:root:lang(de) .status-bar-label[data-locale='de'] {
+  display: inline;
+}
+
 /* hljs theme is applied dynamically by stack_preview_controller */
 .hljs {
   background: transparent !important;

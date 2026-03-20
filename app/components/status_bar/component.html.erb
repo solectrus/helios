@@ -1,0 +1,11 @@
+<%= helpers.turbo_frame_tag "status-bar" do %>
+  <div class="fixed right-0 bottom-0 left-0 z-40">
+    <div class="flex items-center justify-center gap-2 py-2 text-sm font-medium <%= bar_class %>">
+      <i class="<%= icon_class %>"></i>
+
+      <% labels.each do |locale, text| %>
+        <span data-locale="<%= locale %>" class="status-bar-label"><%= text %></span>
+      <% end %>
+    </div>
+  </div>
+<% end %>

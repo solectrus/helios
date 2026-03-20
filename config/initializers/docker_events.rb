@@ -22,17 +22,11 @@ at_exit do
   end
 end
 
-# In development: restart listener after code reload to pick up changes
+# In development: restart listener after code reload so background threads
+# pick up the new code instead of running stale closures.
+# Only restart if already running — the initial start is handled above.
 if Rails.env.development?
   Rails.application.config.to_prepare do
-    # This runs after code is reloaded
-    # The listener instance survives reload (stored in Rails.config),
-    # but we restart it to pick up any code changes
-    if DockerHost::EventsListener.running?
-      DockerHost::EventsListener::Logging.logger.info(
-        'Code reloaded, restarting...',
-      )
-      DockerHost::EventsListener.restart
-    end
+    DockerHost::EventsListener.restart if DockerHost::EventsListener.running?
   end
 end

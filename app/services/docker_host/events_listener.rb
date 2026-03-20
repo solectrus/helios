@@ -10,19 +10,21 @@ module DockerHost
     # Max latency = BROADCAST_DELAY + SCHEDULER_INTERVAL (currently 1.5s)
     SCHEDULER_INTERVAL = 1.0
 
-    class << self
-      include FileLock
+    # Max retries for failed broadcasts (exponential backoff: 1s, 2s, 4s)
+    MAX_BROADCAST_RETRIES = 3
 
+    # Periodic full refresh to self-correct missed events or stale states.
+    REFRESH_INTERVAL = 30.seconds
+
+    # Delay before first periodic refresh — gives the listener time to connect
+    # and containers time to complete health checks after startup.
+    INITIAL_REFRESH_DELAY = 5.seconds
+
+    class << self
       def start
         class_mutex.synchronize do
           if instance&.running?
             Logging.logger.info("Already running (#{instance.id})")
-            return
-          end
-
-          # Acquire file lock to prevent multiple processes from running listeners
-          unless try_acquire_file_lock
-            Logging.logger.info('Another process holds the lock, skipping')
             return
           end
 
@@ -39,7 +41,6 @@ module DockerHost
 
           instance.stop
           self.instance = nil
-          release_file_lock
         end
       end
 
@@ -95,6 +96,7 @@ module DockerHost
       # rubocop:enable ThreadSafety/NewThread
 
       log_started
+      DockerHost::StackStatus.refresh!
     end
 
     def stop
@@ -103,8 +105,10 @@ module DockerHost
       log_stopping
       self.running = false
 
+      # Wake up sleeping threads so they can exit immediately
+      scheduler_thread&.wakeup rescue nil # rubocop:disable Style/RescueModifier
       listener_thread&.join(2)
-      scheduler_thread&.join(1)
+      scheduler_thread&.join(2)
 
       force_kill_threads
       log_stopped
@@ -124,9 +128,15 @@ module DockerHost
         next unless thread&.alive?
 
         thread.kill
-        logger.warn("[#{id}] Thread #{thread.name} force killed")
+        logger.debug("[#{id}] Thread #{thread.name} force killed")
       end
     end
+
+    # --- Listener thread ---
+    #
+    # Wraps each iteration in Rails.application.executor to ensure
+    # proper constant autoloading and database connection management
+    # in background threads.
 
     def listen_loop
       reconnecting = false
@@ -135,8 +145,13 @@ module DockerHost
     end
 
     def listen_once(reconnecting)
-      log_reconnect if reconnecting
-      DockerHost.configure!
+      Rails.application.executor.wrap do
+        if reconnecting
+          log_reconnect
+          DockerHost::StackStatus.refresh!
+        end
+        DockerHost.configure!
+      end
       stream_events
       false
     rescue Docker::Error::UnexpectedResponseError, Excon::Error::Socket => e
@@ -157,17 +172,10 @@ module DockerHost
       Docker::Event.stream do |raw_event|
         break unless running
 
-        process_event(DockerHost::Event.new(raw_event))
+        Rails.application.executor.wrap do
+          process_event(DockerHost::Event.new(raw_event))
+        end
       end
-    end
-
-    def scheduler_loop
-      while running
-        sleep SCHEDULER_INTERVAL
-        process_pending_broadcasts
-      end
-
-      log_loop_ended('Scheduler')
     end
 
     def process_event(event)
@@ -177,31 +185,93 @@ module DockerHost
       schedule_broadcast(event.service_name)
     end
 
+    # --- Scheduler thread ---
+
+    def scheduler_loop
+      @next_refresh = Time.current + INITIAL_REFRESH_DELAY
+
+      while running
+        sleep SCHEDULER_INTERVAL
+        run_scheduler_tick
+      end
+
+      log_loop_ended('Scheduler')
+    end
+
+    def run_scheduler_tick
+      Rails.application.executor.wrap do
+        process_pending_broadcasts
+        periodic_refresh
+      end
+    rescue StandardError => e
+      logger.error("[#{id}] Scheduler error: #{e.class}: #{e.message}")
+    end
+
+    def periodic_refresh
+      return unless Time.current >= @next_refresh
+
+      interval =
+        (
+          if DockerHost::StackStatus.services_settling?
+            DockerHost::StackStatus::ACTIVE_REFRESH_INTERVAL
+          else
+            REFRESH_INTERVAL
+          end
+        )
+      @next_refresh = Time.current + interval
+      DockerHost::StackStatus.refresh!
+    end
+
+    # --- Broadcast scheduling ---
+
     def schedule_broadcast(service_name)
       mutex.synchronize do
-        pending_broadcasts[service_name] = Time.current + BROADCAST_DELAY
+        pending_broadcasts[service_name] = {
+          due_at: Time.current + BROADCAST_DELAY,
+          retries: 0,
+        }
       end
     end
 
     def process_pending_broadcasts
-      services = collect_due_broadcasts
-      services.each { |name| execute_broadcast(name) }
+      due_broadcasts = collect_due_broadcasts
+      due_broadcasts.each do |name, entry|
+        execute_broadcast(name, retries: entry[:retries])
+      end
     end
 
     def collect_due_broadcasts
       now = Time.current
 
       mutex.synchronize do
-        due = pending_broadcasts.select { |_, time| time <= now }.keys
-        due.each { |name| pending_broadcasts.delete(name) }
+        due = pending_broadcasts.select { |_, entry| entry[:due_at] <= now }
+        due.each_key { |name| pending_broadcasts.delete(name) }
         due
       end
     end
 
-    def execute_broadcast(service_name)
-      return unless broadcaster.broadcast(service_name)
+    def execute_broadcast(service_name, retries: 0)
+      if broadcaster.broadcast(service_name)
+        log_broadcast(service_name)
+      else
+        retry_broadcast(service_name, retries:)
+      end
+    end
 
-      log_broadcast(service_name)
+    # Retry with exponential backoff (1s, 2s, 4s — max 3 retries)
+    def retry_broadcast(service_name, retries:)
+      return if retries >= MAX_BROADCAST_RETRIES
+
+      delay = BROADCAST_DELAY * (2**(retries + 1))
+      mutex.synchronize do
+        pending_broadcasts[service_name] = {
+          due_at: Time.current + delay,
+          retries: retries + 1,
+        }
+      end
+      logger.warn(
+        "[#{id}] Broadcast failed for #{service_name}, retry #{retries + 1}/#{MAX_BROADCAST_RETRIES}",
+      )
     end
   end
 end
