@@ -6,7 +6,7 @@ module MainNav
       { id: :services, path_helper: :services_path, icon: 'fa-solid fa-cubes' },
     ].freeze
 
-    delegate :expert_mode?, to: :helpers
+    delegate :preferences, to: :helpers
 
     def initialize(active_tab:)
       super()
@@ -19,7 +19,7 @@ module MainNav
 
     def tabs
       TAB_DEFINITIONS
-        .reject { |tab| tab[:expert_only] && !expert_mode? }
+        .reject { |tab| tab[:expert_only] && !preferences.expert_mode? }
         .map { |tab| tab.merge(path: send(tab[:path_helper]), label: t(".#{tab[:id]}")) }
     end
 

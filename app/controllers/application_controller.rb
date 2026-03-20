@@ -6,7 +6,7 @@ class ApplicationController < ActionController::Base
   before_action :auto_import_existing_config
   before_action :require_authentication
 
-  helper_method :authenticated?, :expert_mode?
+  helper_method :authenticated?, :preferences
 
   private
 
@@ -58,11 +58,11 @@ class ApplicationController < ActionController::Base
     is_a?(SessionsController)
   end
 
-  def expert_mode?
-    cookies[:expert_mode] == 'true'
+  def preferences
+    Current.preferences ||= UserPreferences.new(cookies)
   end
 
   def require_expert_mode
-    redirect_to services_path unless expert_mode?
+    redirect_to services_path unless preferences.expert_mode?
   end
 end

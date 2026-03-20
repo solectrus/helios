@@ -162,18 +162,18 @@ class Configuration
 
   # --- Generic singleton access ---
 
-  def setting_data(setting, _name = nil)
+  def setting_data(setting)
     Data.wrap(@data[setting.to_s] || {})
   end
 
   # Create or update a singleton setting
-  def update(setting, data, name: setting) # rubocop:disable Lint/UnusedMethodArgument
+  def update(setting, data)
     raw = data.is_a?(Data) ? data.to_h : data
     @data[setting.to_s] = raw
     save!
   end
 
-  def configured?(setting, _name = nil)
+  def configured?(setting)
     setting_data(setting).present?
   end
 

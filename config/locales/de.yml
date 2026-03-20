@@ -18,6 +18,7 @@ de:
       configured: "Konfiguriert"
       pending: "Offen"
       sensors: "Sensoren"
+      show_all_sensors: "Alle anzeigen"
       settings: "Einstellungen"
       source_settings: "Datenquellen"
       sensor_name: "Sensor"

@@ -1,14 +1,6 @@
 <!DOCTYPE html>
 
-<html data-theme="light">
-  <script>
-    (function() {
-      var theme = localStorage.getItem('theme') ||
-        (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'aqua' : 'light');
-      document.documentElement.setAttribute('data-theme', theme);
-    })();
-  </script>
-
+<html data-theme="<%= preferences.theme %>">
   <head>
     <title><%= content_for(:title) || "HELIOS" %></title>
 

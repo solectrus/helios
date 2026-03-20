@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { updatePreferences } from '../../frontend/utils/preferences_cookie';
 
 export default class extends Controller {
   static targets = ['sunIcon', 'moonIcon'];
@@ -6,17 +7,13 @@ export default class extends Controller {
   declare sunIconTarget: HTMLElement;
   declare moonIconTarget: HTMLElement;
 
-  connect() {
-    this.updateIcons();
-  }
-
   toggle() {
     const html = document.documentElement;
     const currentTheme = html.getAttribute('data-theme');
     const newTheme = currentTheme === 'aqua' ? 'light' : 'aqua';
 
     html.setAttribute('data-theme', newTheme);
-    localStorage.setItem('theme', newTheme);
+    updatePreferences({ theme: newTheme });
     this.updateIcons();
   }
 

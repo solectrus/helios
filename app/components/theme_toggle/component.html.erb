@@ -5,11 +5,11 @@
   data-controller="theme-toggle--component"
   data-action="click->theme-toggle--component#toggle"
 >
-  <span data-theme-toggle--component-target="sunIcon">
+  <span class="<%= 'hidden' if preferences.dark_theme? %>" data-theme-toggle--component-target="sunIcon">
     <i class="fa-solid fa-sun"></i>
   </span>
 
-  <span class="hidden" data-theme-toggle--component-target="moonIcon">
+  <span class="<%= 'hidden' unless preferences.dark_theme? %>" data-theme-toggle--component-target="moonIcon">
     <i class="fa-solid fa-moon"></i>
   </span>
 </button>

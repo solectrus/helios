@@ -48,13 +48,5 @@ module SettingForm
 
       data.to_json
     end
-
-    def hidden_setting_value
-      sensor_setting? ? 'sensor' : setting
-    end
-
-    def hidden_name_value
-      sensor_name
-    end
   end
 end

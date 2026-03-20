@@ -1,5 +1,13 @@
 module Configurations
   class SurveysController < ApplicationController
+    SOURCE_LABELS = {
+      'senec' => { 'de' => 'SENEC-Collector', 'default' => 'SENEC Collector' },
+      'shelly' => { 'de' => 'Shelly-Collector', 'default' => 'Shelly Collector' },
+      'mqtt' => { 'de' => 'MQTT-Collector', 'default' => 'MQTT Collector' },
+      'forecast' => { 'de' => 'Forecast-Collector', 'default' => 'Forecast Collector' },
+      'smart_home' => { 'de' => 'Extern (Smart Home)', 'default' => 'External (Smart Home)' },
+    }.freeze
+
     def show
       survey_id = resolve_survey_id
       return head(:not_found) unless survey_id
@@ -79,15 +87,7 @@ module Configurations
     end
 
     def source_choice(source)
-      labels = {
-        'senec' => { 'de' => 'SENEC-Collector', 'default' => 'SENEC Collector' },
-        'shelly' => { 'de' => 'Shelly-Collector', 'default' => 'Shelly Collector' },
-        'mqtt' => { 'de' => 'MQTT-Collector', 'default' => 'MQTT Collector' },
-        'forecast' => { 'de' => 'Forecast-Collector', 'default' => 'Forecast Collector' },
-        'smart_home' => { 'de' => 'Extern (Smart Home)', 'default' => 'External (Smart Home)' },
-      }
-
-      { 'value' => source, 'text' => labels[source] || source }
+      { 'value' => source, 'text' => SOURCE_LABELS[source] || source }
     end
 
     def inject_mapping_defaults!(survey)

@@ -12,6 +12,8 @@ RSpec.describe 'Configurations', :with_admin do
     end
 
     it 'displays sensor group headers' do
+      cookies[:preferences] = { show_all_sensors: true }.to_json
+
       get configuration_path
 
       SensorRegistry::GROUPS.each_key do |group|

@@ -3,10 +3,10 @@
                 method: form_method,
                 id: "setting-form",
                 data: { turbo_frame: "_top" } do |f| %>
-    <%= f.hidden_field :setting, value: hidden_setting_value %>
+    <%= f.hidden_field :setting, value: sensor_setting? ? 'sensor' : setting %>
 
     <% if sensor_setting? %>
-      <%= f.hidden_field :name, value: hidden_name_value %>
+      <%= f.hidden_field :name, value: sensor_name %>
     <% end %>
 
     <div

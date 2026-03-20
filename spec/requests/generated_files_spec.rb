@@ -6,7 +6,7 @@ RSpec.describe 'GeneratedFiles', :with_admin do
 
   describe 'GET /generated_files' do
     context 'with expert mode enabled' do
-      before { cookies[:expert_mode] = 'true' }
+      before { cookies[:preferences] = { expert_mode: true }.to_json }
 
       it 'renders the generated files page' do
         get generated_files_path

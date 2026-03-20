@@ -1,8 +1,15 @@
-<label class="btn btn-ghost btn-xs swap" data-controller="expert-mode-toggle--component">
+<label
+  class="btn btn-ghost btn-xs swap"
+  data-controller="preference-toggle"
+  data-preference-toggle-key-value="expert_mode"
+>
   <input
     type="checkbox"
-    data-expert-mode-toggle--component-target="checkbox"
-    data-action="change->expert-mode-toggle--component#toggle"
+    data-preference-toggle-target="checkbox"
+    data-action="change->preference-toggle#toggle"
+    <% if preferences.expert_mode? %>
+      checked
+    <% end %>
   >
 
   <span class="swap-on">Expert <span class="badge badge-xs badge-primary">ON</span></span>

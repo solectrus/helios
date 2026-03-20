@@ -48,6 +48,7 @@ en:
       configured: "Configured"
       pending: "Pending"
       sensors: "Sensors"
+      show_all_sensors: "Show all"
       settings: "Settings"
       source_settings: "Data Sources"
       sensor_name: "Sensor"
