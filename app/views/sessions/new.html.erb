@@ -1,27 +1,40 @@
-<div class="hero min-h-screen">
-  <div class="hero-content flex-col">
-    <div class="text-center">
-      <h1 class="text-5xl font-bold">SOLECTRUS</h1>
-      <p class="py-6">Please enter your password to continue.</p>
+<% content_for(:title) { t('.title') } %>
+
+<div class="hero relative min-h-screen overflow-hidden">
+  <div class="absolute top-4 right-4 z-20 flex items-center gap-1">
+    <%= render ThemeToggle::Component.new %>
+    <%= render LanguageSelect::Component.new %>
+  </div>
+
+  <img
+    src="/helios.webp"
+    class="pointer-events-none absolute inset-0 hidden h-full w-full object-contain p-16 opacity-50 select-none lg:block"
+    alt="<%= t('.hero_alt') %>"
+  >
+
+  <div class="hero-content z-10 w-full max-w-md flex-col">
+    <div class="mb-4 text-center">
+      <img src="/logo.svg" class="mx-auto mb-3 h-12" alt="HELIOS">
+      <p class="text-base-content/60 text-lg"><%= t('.subtitle') %></p>
     </div>
 
-    <div class="card bg-base-100 w-full max-w-sm shadow-2xl">
-      <div class="card-body">
+    <div class="card bg-base-100 w-full shadow-2xl">
+      <div class="card-body gap-6">
         <%= form_with url: session_path, method: :post do %>
           <fieldset class="fieldset">
-            <label class="label">Password</label>
+            <label class="label font-medium"><%= t('.password_label') %></label>
 
             <input
               type="password"
               name="password"
-              class="input"
-              placeholder="Enter password"
+              class="input input-bordered w-full"
+              placeholder="<%= t('.password_placeholder') %>"
               required
               autofocus
               autocomplete="off"
             >
 
-            <button type="submit" class="btn btn-primary mt-4">Login</button>
+            <button type="submit" class="btn btn-primary mt-6 w-full"><%= t('.login') %></button>
           </fieldset>
         <% end %>
       </div>

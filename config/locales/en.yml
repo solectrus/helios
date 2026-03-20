@@ -157,6 +157,15 @@ en:
     show:
       title: "Generated Files - Helios"
 
+  sessions:
+    new:
+      title: "Login - Helios"
+      subtitle: "Configuration for SOLECTRUS"
+      password_label: "Password"
+      password_placeholder: "Enter password"
+      login: "Login"
+      hero_alt: "Helios, the sun god in Greek mythology"
+
   flash:
     admin:
       password_blank: 'Password cannot be blank'

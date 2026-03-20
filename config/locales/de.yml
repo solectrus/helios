@@ -128,6 +128,15 @@ de:
     show:
       title: "Dateien - Helios"
 
+  sessions:
+    new:
+      title: "Anmeldung - Helios"
+      subtitle: "Konfiguration von SOLECTRUS"
+      password_label: "Passwort"
+      password_placeholder: "Passwort eingeben"
+      login: "Anmelden"
+      hero_alt: "Helios, der Sonnengott der griechischen Mythologie"
+
   flash:
     admin:
       password_blank: 'Passwort darf nicht leer sein'

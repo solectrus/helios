@@ -3,7 +3,7 @@ RSpec.describe 'Sessions', :with_admin do
     it 'shows login form' do
       get new_session_path
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include('enter your password')
+      expect(response.body).to include('HELIOS')
     end
 
     it 'redirects to root if already authenticated' do
