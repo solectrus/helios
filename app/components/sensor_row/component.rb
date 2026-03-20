@@ -60,7 +60,7 @@ module SensorRow
       return '—' if value.nil?
 
       if value.is_a?(Numeric)
-        value == value.to_i ? value.to_i.to_s : format('%.2f', value)
+        value == value.to_i ? value.to_i.to_s : format('%.1f', value)
       else
         value.to_s
       end
