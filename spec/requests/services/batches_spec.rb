@@ -52,7 +52,7 @@ RSpec.describe 'Services::Batches', :with_admin do
       post batch_path
 
       expect(ComposeJob).to have_received(:perform_later).with(:up)
-      expect(response).to redirect_to(root_path)
+      expect(response).to redirect_to(services_path)
     end
 
     it 'returns turbo_stream response when requested' do
@@ -85,7 +85,7 @@ RSpec.describe 'Services::Batches', :with_admin do
       delete batch_path
 
       expect(ComposeJob).to have_received(:perform_later).with(:down)
-      expect(response).to redirect_to(root_path)
+      expect(response).to redirect_to(services_path)
     end
 
     it 'returns turbo_stream response when requested' do

@@ -29,10 +29,10 @@ RSpec.describe 'GeneratedFiles', :with_admin do
     end
 
     context 'without expert mode' do
-      it 'redirects to root' do
+      it 'redirects to services' do
         get generated_files_path
 
-        expect(response).to redirect_to(root_path)
+        expect(response).to redirect_to(services_path)
       end
     end
   end

@@ -24,16 +24,15 @@ Rails.application.routes.draw do
     delete '/', to: 'settings#destroy'
   end
 
-  # Dashboard
-  root 'dashboard#show'
-
-  # Service management (RESTful nested resources)
-  resources :services, only: [], module: :services do
-    resource :row, only: :show
-    resource :task, only: %i[create update destroy]
+  # Service management
+  resources :services, only: :index do
+    resource :row, only: :show, module: :services
+    resource :task, only: %i[create update destroy], module: :services
 
     collection do
-      resource :batch, only: %i[create destroy]
+      resource :batch, only: %i[create destroy], module: :services
     end
   end
+
+  root to: redirect('/services')
 end

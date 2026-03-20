@@ -1,5 +1,5 @@
-class DashboardController < ApplicationController
-  def show
+class ServicesController < ApplicationController
+  def index
     return redirect_to configuration_path unless Configuration.current.setup_completed?
 
     @compose_services = Compose.load.services.sorted

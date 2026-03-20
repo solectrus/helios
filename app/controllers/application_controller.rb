@@ -63,6 +63,6 @@ class ApplicationController < ActionController::Base
   end
 
   def require_expert_mode
-    redirect_to root_path unless expert_mode?
+    redirect_to services_path unless expert_mode?
   end
 end

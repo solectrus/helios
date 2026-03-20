@@ -1,4 +1,4 @@
-RSpec.describe 'Dashboard', :with_admin do
+RSpec.describe 'Services', :with_admin do
   before do
     with_config_yaml(
       'system' => { 'timezone' => 'Europe/Berlin' },
@@ -28,12 +28,12 @@ RSpec.describe 'Dashboard', :with_admin do
     )
   end
 
-  describe 'GET /' do
-    it 'shows dashboard when authenticated and setup completed' do
+  describe 'GET /services' do
+    it 'shows services when authenticated and setup completed' do
       allow(DockerHost::Container).to receive(:all).and_return([])
       mock_compose_services
 
-      get root_path
+      get services_path
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('HELIOS')
@@ -53,7 +53,7 @@ RSpec.describe 'Dashboard', :with_admin do
       allow(DockerHost::Container).to receive(:all).and_return([container])
       mock_compose_services('dashboard')
 
-      get root_path
+      get services_path
 
       expect(response.body).to include('dashboard')
       expect(response.body).to include('loading loading-spinner') # Skeleton spinner
@@ -65,7 +65,7 @@ RSpec.describe 'Dashboard', :with_admin do
       allow(DockerHost::Container).to receive(:all).and_return([])
       mock_compose_services('redis', 'postgresql', 'dashboard')
 
-      get root_path
+      get services_path
 
       expect(response.body).to include('redis')
       expect(response.body).to include('postgresql')
@@ -77,7 +77,7 @@ RSpec.describe 'Dashboard', :with_admin do
       before { with_config_yaml }
 
       it 'redirects to configuration' do
-        get root_path
+        get services_path
         expect(response).to redirect_to(configuration_path)
       end
     end

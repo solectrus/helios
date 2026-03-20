@@ -34,7 +34,7 @@ module Services
             service_row_component,
           )
         end
-        format.html { redirect_to root_path }
+        format.html { redirect_to services_path }
       end
     end
 

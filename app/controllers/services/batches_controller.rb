@@ -19,7 +19,7 @@ module Services
         format.turbo_stream do
           render turbo_stream: turbo_stream_updates(&)
         end
-        format.html { redirect_to root_path }
+        format.html { redirect_to services_path }
       end
     end
 

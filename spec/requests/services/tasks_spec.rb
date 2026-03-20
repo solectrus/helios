@@ -43,7 +43,7 @@ RSpec.describe 'Services::Tasks', :with_admin do
       post service_task_path(service_id: 'influxdb')
 
       expect(ComposeJob).to have_received(:perform_later).with(:start, 'influxdb')
-      expect(response).to redirect_to(root_path)
+      expect(response).to redirect_to(services_path)
     end
 
     it 'returns turbo_stream response when requested' do
@@ -77,7 +77,7 @@ RSpec.describe 'Services::Tasks', :with_admin do
       patch service_task_path(service_id: 'redis')
 
       expect(ComposeJob).to have_received(:perform_later).with(:recreate, 'redis')
-      expect(response).to redirect_to(root_path)
+      expect(response).to redirect_to(services_path)
     end
 
     it 'rejects recreate on helios service' do
@@ -99,7 +99,7 @@ RSpec.describe 'Services::Tasks', :with_admin do
       delete service_task_path(service_id: 'postgresql')
 
       expect(ComposeJob).to have_received(:perform_later).with(:stop, 'postgresql')
-      expect(response).to redirect_to(root_path)
+      expect(response).to redirect_to(services_path)
     end
 
     it 'rejects stop on helios service' do
