@@ -5,9 +5,7 @@
 
     <% if custom_sensor? %>
       <% if enabled? && custom_name.present? %>
-        <span class="text-base-content/50 text-xs font-normal normal-case">
-          <%= custom_name %>
-        </span>
+        <span class="text-base-content/50 text-xs font-normal normal-case"><%= custom_name %></span>
       <% end %>
     <% else %>
       <% tip = enabled? && custom_name.present? ? custom_name : description %>
@@ -19,7 +17,10 @@
     <% end %>
 
     <% if house_power_exclusions? %>
-      <span class="tooltip tooltip-right before:text-xs before:normal-case" data-tip="<%= house_power_exclusion_tooltip %>">
+      <span
+        class="tooltip tooltip-right before:text-xs before:normal-case"
+        data-tip="<%= house_power_exclusion_tooltip %>"
+      >
         <i class="fa-solid fa-calculator text-info text-xs"></i>
       </span>
     <% end %>

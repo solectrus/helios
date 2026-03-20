@@ -10,14 +10,17 @@ module DockerHost
       def extract
         cache_key = "redis_version:#{container.id}"
 
-        Rails.cache.fetch(cache_key) do
-          stdout, _stderr, exit_code = container.exec(%w[redis-server --version])
-          next unless exit_code&.zero?
+        Rails
+          .cache
+          .fetch(cache_key) do
+            stdout, _stderr, exit_code =
+              container.exec(%w[redis-server --version])
+            next unless exit_code&.zero?
 
-          stdout.join[/v=(\d+\.\d+\.\d+)/, 1]
-        rescue StandardError
-          nil
-        end
+            stdout.join[/v=(\d+\.\d+\.\d+)/, 1]
+          rescue StandardError
+            nil
+          end
       end
     end
   end

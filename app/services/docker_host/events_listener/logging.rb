@@ -7,15 +7,15 @@ module DockerHost
         LOGGER
       end
 
-      LOGGER = ActiveSupport::Logger.new(
-        Rails.root.join(LOG_PATH),
-        5,
-        10.megabytes,
-      ).tap do |log|
-        log.formatter = proc do |severity, time, _, msg|
-          "[#{time.strftime('%Y-%m-%d %H:%M:%S')}] #{severity}: #{msg}\n"
+      LOGGER =
+        ActiveSupport::Logger
+        .new(Rails.root.join(LOG_PATH), 5, 10.megabytes)
+        .tap do |log|
+          log.formatter =
+            proc do |severity, time, _, msg|
+              "[#{time.strftime('%Y-%m-%d %H:%M:%S')}] #{severity}: #{msg}\n"
+            end
         end
-      end
       private_constant :LOGGER
 
       private
@@ -25,7 +25,9 @@ module DockerHost
       end
 
       def log_started
-        logger.info("[#{id}] Started (#{listener_thread.name}, #{scheduler_thread.name})")
+        logger.info(
+          "[#{id}] Started (#{listener_thread.name}, #{scheduler_thread.name})",
+        )
       end
 
       def log_stopping
@@ -41,7 +43,9 @@ module DockerHost
       end
 
       def log_stream_error(error, delay)
-        logger.warn("[#{id}] Stream error: #{error.class} (retry in #{delay}s)")
+        logger.warn(
+          "[#{id}] Stream error: #{error.class}: #{error.message} (retry in #{delay}s)",
+        )
       end
 
       def log_event(event)
