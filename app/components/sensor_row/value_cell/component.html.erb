@@ -1,0 +1,18 @@
+<td id="sensor-value-<%= sensor_name.parameterize %>" class="text-right font-mono text-sm <%= freshness_class %>">
+  <% if enabled? %>
+    <span
+      class="tooltip tooltip-left cursor-default before:text-xs"
+      data-controller="relative-time"
+      data-relative-time-datetime-value="<%= timestamp_iso %>"
+    >
+      <% if boolean_value? %>
+        <span class="badge badge-sm badge-outline"><%= boolean_label %></span>
+      <% else %>
+        <%= formatted_value %>
+        <% if value? && unit.present? %>
+          <span class="text-base-content/50"><%= unit %></span>
+        <% end %>
+      <% end %>
+    </span>
+  <% end %>
+</td>

@@ -1,25 +1,11 @@
 <% @configuration.effective_sensor_mappings.each do |name, _mapping| %>
-  <% component = SensorRow::Component.new(
+  <% sensor_row = SensorRow::Component.new(
        sensor_name: name,
        configuration: @configuration,
        reading: @readings[name],
      ) %>
 
   <%= turbo_stream.replace "sensor-value-#{name.parameterize}" do %>
-    <td
-      id="sensor-value-<%= name.parameterize %>"
-      class="text-right font-mono text-sm <%= component.freshness_class %>"
-    >
-      <% if component.enabled? %>
-        <% if component.boolean_value? %>
-          <span class="badge badge-sm badge-outline"><%= component.boolean_label %></span>
-        <% else %>
-          <%= component.formatted_value %>
-          <% if component.value? && component.unit.present? %>
-            <span class="text-base-content/50"><%= component.unit %></span>
-          <% end %>
-        <% end %>
-      <% end %>
-    </td>
+    <%= render SensorRow::ValueCell::Component.new(sensor_row:) %>
   <% end %>
 <% end %>

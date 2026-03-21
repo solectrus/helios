@@ -105,6 +105,14 @@ module SensorRow
       I18n.t('sensors.house_power_exclusion_hint', sensors: names)
     end
 
+    def timestamp
+      reading&.dig(:time)
+    end
+
+    def timestamp_iso
+      timestamp&.iso8601
+    end
+
     private
 
     def raw_value

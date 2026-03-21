@@ -35,18 +35,7 @@
   </td>
 
   <%# Live value %>
-  <td id="sensor-value-<%= sensor_name.parameterize %>" class="text-right font-mono text-sm <%= freshness_class %>">
-    <% if enabled? %>
-      <% if boolean_value? %>
-        <span class="badge badge-sm badge-outline"><%= boolean_label %></span>
-      <% else %>
-        <%= formatted_value %>
-        <% if value? && unit.present? %>
-          <span class="text-base-content/50"><%= unit %></span>
-        <% end %>
-      <% end %>
-    <% end %>
-  </td>
+  <%= render SensorRow::ValueCell::Component.new(sensor_row: self) %>
 
   <%# Actions %>
   <td class="text-right">
