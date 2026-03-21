@@ -23,7 +23,7 @@ RSpec.describe Orchestration::Event do
       expect(event).not_to be_relevant
     end
 
-    %w[start stop die].each do |action|
+    %w[create start stop die destroy].each do |action|
       it "returns true for '#{action}' action" do
         event = described_class.new(build_raw_event(action:))
         expect(event).to be_relevant
@@ -36,7 +36,7 @@ RSpec.describe Orchestration::Event do
     end
 
     it 'returns false for irrelevant actions' do
-      event = described_class.new(build_raw_event(action: 'create'))
+      event = described_class.new(build_raw_event(action: 'attach'))
       expect(event).not_to be_relevant
     end
   end

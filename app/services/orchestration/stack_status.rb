@@ -27,6 +27,7 @@ module Orchestration
     end
 
     def update(service_name, status)
+      refresh! unless @initialized.true?
       @service_statuses[service_name.to_s] = status
       recompute_and_broadcast
     end

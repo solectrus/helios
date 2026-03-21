@@ -1,6 +1,6 @@
 module Orchestration
   class Event
-    RELEVANT_ACTIONS = %w[start stop die].freeze
+    RELEVANT_ACTIONS = %w[create start stop die destroy].freeze
 
     def initialize(raw_event)
       @raw_event = raw_event
