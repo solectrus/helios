@@ -311,6 +311,339 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'with SENEC local configured' do
+    before do
+      configuration.update('senec', {
+                             'adapter' => 'local',
+                             'host' => '192.168.1.100',
+                             'schema' => 'https',
+                             'language' => 'de',
+                             'interval' => '5',
+                           })
+      configuration.update_sensor('inverter_power', { 'source' => 'senec' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'includes senec-collector service' do
+      compose = Compose.load
+      expect(compose.services.names).to include('senec-collector')
+    end
+
+    it 'configures senec-collector with environment' do
+      compose = Compose.load
+      senec = compose.services.find('senec-collector')
+
+      expect(senec.environment).to include('SENEC_ADAPTER', 'SENEC_HOST', 'SENEC_SCHEMA', 'SENEC_LANGUAGE')
+    end
+
+    it 'includes SENEC variables in .env' do
+      env = Env.load
+      expect(env['SENEC_ADAPTER']).to eq('local')
+      expect(env['SENEC_HOST']).to eq('192.168.1.100')
+    end
+
+    it 'includes sensor mappings in .env' do
+      content = File.read(env_path)
+      expect(content).to include('INFLUX_SENSOR_INVERTER_POWER')
+    end
+  end
+
+  describe 'with SENEC cloud configured' do
+    before do
+      configuration.update('senec', {
+                             'adapter' => 'cloud',
+                             'username' => 'user@example.com',
+                             'password' => 'secret',
+                             'totp_uri' => 'otpauth://totp/SENEC',
+                             'system_id' => '12345',
+                             'ignore' => 'wallbox',
+                           })
+      configuration.update_sensor('inverter_power', { 'source' => 'senec' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'includes cloud credentials in .env' do
+      env = Env.load
+      expect(env['SENEC_ADAPTER']).to eq('cloud')
+      expect(env['SENEC_USERNAME']).to eq('user@example.com')
+      expect(env['SENEC_PASSWORD']).to eq('secret')
+    end
+
+    it 'includes optional cloud variables in .env' do
+      env = Env.load
+      expect(env['SENEC_TOTP_URI']).to eq('otpauth://totp/SENEC')
+      expect(env['SENEC_SYSTEM_ID']).to eq('12345')
+      expect(env['SENEC_IGNORE']).to eq('wallbox')
+    end
+
+    it 'includes cloud vars in senec-collector environment' do
+      compose = Compose.load
+      senec = compose.services.find('senec-collector')
+
+      expect(senec.environment).to include('SENEC_USERNAME', 'SENEC_PASSWORD')
+      expect(senec.environment).to include('SENEC_TOTP_URI', 'SENEC_SYSTEM_ID', 'SENEC_IGNORE')
+    end
+  end
+
+  describe 'with forecast configured' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'forecast.solar',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_declination1' => '30',
+                             'forecast_azimuth1' => '180',
+                             'forecast_kwp1' => '10',
+                             'forecast_interval' => '900',
+                             'forecast_solar_apikey' => 'abc123',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'includes forecast-collector service' do
+      compose = Compose.load
+      expect(compose.services.names).to include('forecast-collector')
+    end
+
+    it 'includes forecast variables in .env' do
+      env = Env.load
+      expect(env['FORECAST_PROVIDER']).to eq('forecast.solar')
+      expect(env['FORECAST_LATITUDE']).to eq('51.3')
+      expect(env['FORECAST_DECLINATION']).to eq('30')
+      expect(env['FORECAST_KWP']).to eq('10')
+      expect(env['FORECAST_SOLAR_APIKEY']).to eq('abc123')
+    end
+
+    it 'configures forecast-collector with environment' do
+      compose = Compose.load
+      forecast = compose.services.find('forecast-collector')
+
+      expect(forecast.environment).to include(
+        'FORECAST_PROVIDER', 'FORECAST_LATITUDE', 'FORECAST_LONGITUDE',
+        'FORECAST_DECLINATION', 'FORECAST_AZIMUTH', 'FORECAST_KWP'
+      )
+    end
+  end
+
+  describe 'with multi-roof forecast configured' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'forecast.solar',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_roofs' => '2',
+                             'forecast_declination1' => '30',
+                             'forecast_azimuth1' => '180',
+                             'forecast_kwp1' => '5',
+                             'forecast_declination2' => '25',
+                             'forecast_azimuth2' => '-90',
+                             'forecast_kwp2' => '3',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'includes multi-roof configuration in .env' do
+      env = Env.load
+      expect(env['FORECAST_CONFIGURATIONS']).to eq('2')
+      expect(env['FORECAST_0_DECLINATION']).to eq('30')
+      expect(env['FORECAST_1_DECLINATION']).to eq('25')
+    end
+
+    it 'includes FORECAST_CONFIGURATIONS in compose environment' do
+      compose = Compose.load
+      forecast = compose.services.find('forecast-collector')
+
+      expect(forecast.environment).to include('FORECAST_CONFIGURATIONS')
+    end
+  end
+
+  describe 'with solcast forecast configured' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'solcast',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_declination1' => '30',
+                             'forecast_azimuth1' => '180',
+                             'forecast_kwp1' => '10',
+                             'forecast_solcast_api_key' => 'solcast-key',
+                             'forecast_solcast_id1' => 'site-123',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'includes solcast variables in .env' do
+      env = Env.load
+      expect(env['SOLCAST_APIKEY']).to eq('solcast-key')
+      expect(env['SOLCAST_SITE']).to eq('site-123')
+    end
+  end
+
+  describe 'with pvnode forecast configured' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'pvnode',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_declination1' => '30',
+                             'forecast_azimuth1' => '180',
+                             'forecast_kwp1' => '10',
+                             'forecast_pvnode_apikey' => 'pvnode-key',
+                             'forecast_pvnode_paid' => 'true',
+                             'forecast_pvnode_extra_params' => 'extra=1',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'includes pvnode variables in .env' do
+      env = Env.load
+      expect(env['PVNODE_APIKEY']).to eq('pvnode-key')
+      expect(env['PVNODE_PAID']).to eq('true')
+      expect(env['PVNODE_EXTRA_PARAMS']).to eq('extra=1')
+    end
+
+    it 'includes pvnode vars in compose environment' do
+      compose = Compose.load
+      forecast = compose.services.find('forecast-collector')
+
+      expect(forecast.environment).to include('PVNODE_APIKEY', 'PVNODE_PAID', 'PVNODE_EXTRA_PARAMS')
+    end
+  end
+
+  describe 'with forecast optional fields configured' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'forecast.solar',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_declination1' => '30',
+                             'forecast_azimuth1' => '180',
+                             'forecast_kwp1' => '10',
+                             'forecast_damping_morning' => '0.5',
+                             'forecast_damping_evening' => '0.8',
+                             'forecast_horizon' => '24',
+                             'forecast_inverter' => '0.95',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'includes optional forecast variables in .env' do
+      env = Env.load
+      expect(env['FORECAST_DAMPING_MORNING']).to eq('0.5')
+      expect(env['FORECAST_DAMPING_EVENING']).to eq('0.8')
+      expect(env['FORECAST_HORIZON']).to eq('24')
+      expect(env['FORECAST_INVERTER']).to eq('0.95')
+    end
+
+    it 'includes optional vars in compose environment' do
+      compose = Compose.load
+      forecast = compose.services.find('forecast-collector')
+
+      expect(forecast.environment).to include(
+        'FORECAST_DAMPING_MORNING', 'FORECAST_DAMPING_EVENING',
+        'FORECAST_HORIZON', 'FORECAST_INVERTER'
+      )
+    end
+  end
+
+  describe 'with shelly configured' do
+    before do
+      configuration.update('shelly', { 'interval' => '5' })
+      configuration.update_sensor('heatpump_power', {
+                                    'source' => 'shelly',
+                                    'shelly_host' => 'shelly-hp.local',
+                                    'measurement' => 'heatpump',
+                                    'shelly_interval' => '5',
+                                  })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'includes shelly-collector service' do
+      compose = Compose.load
+      expect(compose.services.names).to include('shelly-collector')
+    end
+
+    it 'configures shelly-collector with host environment' do
+      compose = Compose.load
+      shelly = compose.services.find('shelly-collector')
+
+      expect(shelly.environment).to include('SHELLY_HOST=shelly-hp.local')
+      expect(shelly.environment).to include('INFLUX_MEASUREMENT=heatpump')
+    end
+  end
+
+  describe 'with MQTT configured' do
+    before do
+      configuration.update('mqtt', {
+                             'mqtt_host' => '192.168.1.50',
+                             'mqtt_port' => '1883',
+                             'mqtt_username' => 'mqttuser',
+                             'mqtt_password' => 'mqttpass',
+                           })
+      configuration.update_sensor('inverter_power', {
+                                    'source' => 'mqtt',
+                                    'mqtt_topic' => 'solar/inverter',
+                                    'measurement' => 'PV',
+                                    'field' => 'power',
+                                    'mqtt_payload_type' => 'json',
+                                    'mqtt_json_key' => 'value',
+                                  })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'includes mqtt-collector service' do
+      compose = Compose.load
+      expect(compose.services.names).to include('mqtt-collector')
+    end
+
+    it 'includes MQTT variables in .env' do
+      env = Env.load
+      expect(env['MQTT_HOST']).to eq('192.168.1.50')
+      expect(env['MQTT_PORT']).to eq('1883')
+      expect(env['MQTT_USERNAME']).to eq('mqttuser')
+    end
+
+    it 'includes mapping variables in compose environment' do
+      compose = Compose.load
+      mqtt = compose.services.find('mqtt-collector')
+
+      expect(mqtt.environment).to include(
+        'MAPPING_0_TOPIC=solar/inverter',
+        'MAPPING_0_MEASUREMENT=PV',
+        'MAPPING_0_FIELD=power',
+        'MAPPING_0_TYPE=json',
+        'MAPPING_0_JSON_KEY=value',
+      )
+    end
+  end
+
+  describe 'with power-splitter configured' do
+    before do
+      configuration.update_sensor('inverter_power_1', { 'source' => 'senec' })
+      configuration.update_sensor('inverter_power_2', { 'source' => 'senec' })
+      configuration.update('senec', { 'adapter' => 'local', 'host' => '192.168.1.100' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'includes power-splitter service' do
+      compose = Compose.load
+      expect(compose.services.names).to include('power-splitter')
+    end
+
+    it 'configures power-splitter with sensor environment' do
+      compose = Compose.load
+      splitter = compose.services.find('power-splitter')
+
+      expect(splitter.environment).to include('INFLUX_SENSOR_INVERTER_POWER_1')
+      expect(splitter.environment).to include('INFLUX_SENSOR_INVERTER_POWER_2')
+    end
+  end
+
   describe 'secret persistence' do
     it 'persists generated secrets to config.yaml' do
       described_class.new(configuration).write!

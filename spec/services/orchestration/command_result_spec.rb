@@ -25,4 +25,15 @@ RSpec.describe Orchestration::CommandResult do
       expect(result.to_s).to eq('Container started')
     end
   end
+
+  describe '#inspect' do
+    it 'includes success status' do
+      expect(result.inspect).to include('success')
+    end
+
+    it 'includes failed status with exit code' do
+      failed = described_class.new(output: 'error', exit_status: 1)
+      expect(failed.inspect).to include('failed(1)')
+    end
+  end
 end

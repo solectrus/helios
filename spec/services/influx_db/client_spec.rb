@@ -1,0 +1,109 @@
+RSpec.describe InfluxDb::Client do
+  let(:client) do
+    described_class.new(
+      token: 'test-token',
+      org: 'test-org',
+      bucket: 'test-bucket',
+      host: 'influxdb.test',
+      port: 8086,
+    )
+  end
+
+  let(:query_url) { 'http://influxdb.test:8086/api/v2/query?org=test-org' }
+
+  describe '.from_configuration' do
+    before { with_config_yaml('influxdb' => { 'token' => 'tok', 'org' => 'org', 'bucket' => 'bkt' }) }
+
+    it 'creates client from configuration' do
+      client = described_class.from_configuration(Configuration.current)
+
+      expect(client).to be_a(described_class)
+    end
+  end
+
+  describe '#query_all_latest' do
+    it 'returns parsed sensor readings' do
+      csv = <<~CSV
+        #group,false,false
+        ,result,table,_time,_value,_field,_measurement
+        ,_result,0,2026-03-21T10:00:00Z,4200.5,inverter_power,SENEC
+      CSV
+      stub_request(:post, query_url).to_return(status: 200, body: csv)
+
+      result = client.query_all_latest('inverter_power' => 'SENEC:inverter_power')
+
+      expect(result['inverter_power'][:value]).to eq(4200.5)
+      expect(result['inverter_power'][:time]).to be_a(ActiveSupport::TimeWithZone)
+    end
+
+    it 'skips invalid mappings without field separator' do
+      result = client.query_all_latest('bad' => 'SENEC')
+
+      expect(result).to be_empty
+    end
+
+    it 'returns nil for empty response' do
+      stub_request(:post, query_url).to_return(status: 200, body: '')
+
+      result = client.query_all_latest('inverter_power' => 'SENEC:inverter_power')
+
+      expect(result['inverter_power']).to be_nil
+    end
+
+    it 'handles non-numeric values' do
+      csv = <<~CSV
+        ,result,table,_time,_value,_field,_measurement
+        ,_result,0,2026-03-21T10:00:00Z,INITIAL,current_state,SENEC
+      CSV
+      stub_request(:post, query_url).to_return(status: 200, body: csv)
+
+      result = client.query_all_latest('system_status' => 'SENEC:current_state')
+
+      expect(result['system_status'][:value]).to eq('INITIAL')
+    end
+
+    it 'returns nil and logs warning on HTTP error' do
+      stub_request(:post, query_url).to_return(status: 500, body: 'Internal Server Error')
+
+      result = client.query_all_latest('inverter_power' => 'SENEC:inverter_power')
+
+      expect(result['inverter_power']).to be_nil
+    end
+
+    it 'returns nil and logs warning on connection refused' do
+      stub_request(:post, query_url).to_raise(Errno::ECONNREFUSED)
+
+      result = client.query_all_latest('inverter_power' => 'SENEC:inverter_power')
+
+      expect(result['inverter_power']).to be_nil
+    end
+
+    it 'returns nil and logs warning on timeout' do
+      stub_request(:post, query_url).to_raise(Net::ReadTimeout)
+
+      result = client.query_all_latest('inverter_power' => 'SENEC:inverter_power')
+
+      expect(result['inverter_power']).to be_nil
+    end
+
+    it 'sends correct authorization header' do
+      stub_request(:post, query_url).to_return(status: 200, body: '')
+
+      client.query_all_latest('inverter_power' => 'SENEC:inverter_power')
+
+      expect(
+        a_request(:post, query_url).with(headers: { 'Authorization' => 'Token test-token' }),
+      ).to have_been_made
+    end
+
+    it 'sends Flux query in request body' do
+      stub_request(:post, query_url).to_return(status: 200, body: '')
+
+      client.query_all_latest('inverter_power' => 'SENEC:inverter_power')
+
+      expect(
+        a_request(:post, query_url).with(body: /from\(bucket: "test-bucket"\)/),
+      ).to have_been_made
+    end
+  end
+end

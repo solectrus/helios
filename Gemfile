@@ -40,6 +40,7 @@ group :development, :test do
   gem 'rubocop-thread_safety', require: false
   gem 'shoulda-matchers'
   gem 'simplecov', require: false
+  gem 'webmock'
 end
 
 group :development do
