@@ -89,16 +89,18 @@ module Orchestration
       end
 
       def build_compose_command(*args)
-        [
+        cmd = [
           'docker',
           'compose',
           '-f',
           ::Compose.path,
           '--project-directory',
           host_stack_path,
-          '--progress',
-          'plain',
-        ] + args.map(&:to_s)
+        ]
+        env_path = ::Env.path
+        cmd.push('--env-file', env_path) if ::File.exist?(env_path)
+        cmd.push('--progress', 'plain')
+        cmd + args.map(&:to_s)
       end
 
       def raise_command_error(subcommand, output, status)
