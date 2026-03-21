@@ -16,7 +16,6 @@ module Export
           volumes: ['/var/run/docker.sock:/var/run/docker.sock'],
           command: '--scope solectrus --cleanup',
           restart: 'unless-stopped',
-          logging: { driver: 'json-file', options: { 'max-size' => '10m', 'max-file' => '3' } },
           labels: ['com.centurylinklabs.watchtower.scope=solectrus'],
         }
       end

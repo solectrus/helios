@@ -47,7 +47,7 @@ module Export
       active_service_classes.each do |service_class|
         compose.add_service(
           service_class.service_name,
-          service_class.new(configuration).to_h,
+          service_class.new(configuration).to_h.reverse_merge(default_logging),
           comment: service_class.comment,
         )
       end
@@ -69,6 +69,10 @@ module Export
 
         compose.add_service(name, config.to_h, comment: 'Unmanaged service (preserved from existing installation)')
       end
+    end
+
+    def default_logging
+      { logging: { driver: 'json-file', options: { 'max-size' => '10m', 'max-file' => '3' } } }
     end
 
     def compose_header_comment
