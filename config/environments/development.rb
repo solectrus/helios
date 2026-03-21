@@ -33,15 +33,6 @@ Rails.application.configure do
   # Print deprecation notices to the Rails logger.
   config.active_support.deprecation = :log
 
-  # Raise an error on page load if there are pending migrations.
-  config.active_record.migration_error = :page_load
-
-  # Highlight code that triggered database queries in logs.
-  config.active_record.verbose_query_logs = true
-
-  # Append comments with runtime information tags to SQL queries in logs.
-  config.active_record.query_log_tags_enabled = true
-
   # Highlight code that enqueued background job in logs.
   config.active_job.verbose_enqueue_logs = true
 

@@ -56,12 +56,6 @@ Rails.application.configure do
   # the I18n.default_locale when a translation cannot be found).
   config.i18n.fallbacks = true
 
-  # Do not dump schema after migrations.
-  config.active_record.dump_schema_after_migration = false
-
-  # Only use :id for inspections in production.
-  config.active_record.attributes_for_inspect = [:id]
-
   # Enable DNS rebinding protection and other `Host` header attacks.
   # config.hosts = [
   #   "example.com",     # Allow requests from example.com
