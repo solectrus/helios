@@ -1,10 +1,10 @@
 module AuthHelpers
-  def create_admin
-    Admin.create_admin!(password: 'test') unless Admin.setup_completed?
+  def set_admin_password(password = 'test')
+    ENV['ADMIN_PASSWORD'] = password
   end
 
-  def delete_admin
-    Admin.delete_all
+  def clear_admin_password
+    ENV.delete('ADMIN_PASSWORD')
   end
 
   # For request tests
@@ -24,9 +24,8 @@ RSpec.configure do |config|
   config.include AuthHelpers, type: :request
   config.include AuthHelpers, type: :system
 
-  config.before(:all, :with_admin) { create_admin }
-  config.after(:all, :with_admin) { delete_admin }
+  config.before(:each, :with_admin_password) { set_admin_password }
+  config.after(:each, :with_admin_password) { clear_admin_password }
 
-  config.before(:all, :without_admin) { delete_admin }
-  config.after(:all, :without_admin) { delete_admin }
+  config.before(:each, :without_admin_password) { clear_admin_password }
 end

@@ -113,7 +113,7 @@ RSpec.describe Export::Builder do
     it 'includes inline comments for each variable' do
       content = File.read(env_path)
       expect(content).to include('# Timezone for all services')
-      expect(content).to include('# Admin password for the SOLECTRUS')
+      expect(content).to include('# Admin password')
       expect(content).to include('# Database password')
     end
   end

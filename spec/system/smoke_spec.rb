@@ -1,6 +1,6 @@
 require 'rails_helper'
 
-describe 'Smoke test', :with_admin do
+describe 'Smoke test', :with_admin_password do
   before { sign_in }
 
   it 'loads the services page' do

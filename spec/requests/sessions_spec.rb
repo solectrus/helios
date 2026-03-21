@@ -1,4 +1,4 @@
-RSpec.describe 'Sessions', :with_admin do
+RSpec.describe 'Sessions', :with_admin_password do
   describe 'GET /session/new' do
     it 'shows login form' do
       get new_session_path

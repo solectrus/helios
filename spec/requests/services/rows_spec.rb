@@ -1,4 +1,4 @@
-RSpec.describe 'Services::Rows', :with_admin do
+RSpec.describe 'Services::Rows', :with_admin_password do
   before do
     login
     with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })

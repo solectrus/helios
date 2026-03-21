@@ -156,8 +156,5 @@ en:
       hero_alt: "Helios, the sun god in Greek mythology"
 
   flash:
-    admin:
-      password_blank: 'Password cannot be blank'
-      passwords_mismatch: 'Passwords do not match'
     session:
       invalid_password: 'Invalid password'

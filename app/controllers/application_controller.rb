@@ -2,7 +2,6 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
 
-  before_action :require_setup
   before_action :auto_import_existing_config
   before_action :require_authentication
   before_action :set_locale
@@ -11,15 +10,7 @@ class ApplicationController < ActionController::Base
 
   private
 
-  def require_setup
-    return if admin_setup_completed?
-    return if is_a?(AdminsController)
-
-    redirect_to new_admin_path
-  end
-
   def auto_import_existing_config
-    return if is_a?(AdminsController)
     return if config_yaml_exists?
     return unless existing_stack_files?
 
@@ -40,15 +31,11 @@ class ApplicationController < ActionController::Base
   end
 
   def require_authentication
-    return unless admin_setup_completed?
+    return if ENV['ADMIN_PASSWORD'].blank?
     return if authenticated?
     return if sessions_controller?
 
     redirect_to new_session_path
-  end
-
-  def admin_setup_completed?
-    @admin_setup_completed ||= Admin.setup_completed?
   end
 
   def authenticated?

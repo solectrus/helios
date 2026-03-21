@@ -2,6 +2,12 @@ module Export
   module Services
     class Helios < Base
       IMAGE = 'ghcr.io/solectrus/helios:develop'.freeze
+      ENVIRONMENT = [
+        'ADMIN_PASSWORD',
+        'SECRET_KEY_BASE',
+        'HELIOS_STACK_PATH=/opt/solectrus',
+        'HELIOS_HOST_STACK_PATH',
+      ].freeze
 
       def self.service_name
         'helios'
@@ -15,11 +21,7 @@ module Export
         {
           image: IMAGE,
           user: 'root',
-          environment: [
-            'SECRET_KEY_BASE',
-            'HELIOS_STACK_PATH=/opt/solectrus',
-            'HELIOS_HOST_STACK_PATH',
-          ],
+          environment: ENVIRONMENT,
           volumes: [
             '${HELIOS_HOST_STACK_PATH}:/opt/solectrus',
             '/var/run/docker.sock:/var/run/docker.sock',

@@ -3,7 +3,6 @@ Rails.application.routes.draw do
   get 'up' => 'rails/health#show', :as => :rails_health_check
 
   # Authentication
-  resource :admin, only: %i[new create]
   resource :session, only: %i[new create destroy]
 
   # Generated files preview

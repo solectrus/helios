@@ -1,4 +1,4 @@
-RSpec.describe 'Configurations::Settings', :with_admin do
+RSpec.describe 'Configurations::Settings', :with_admin_password do
   before do
     with_config_yaml
     login

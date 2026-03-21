@@ -126,6 +126,7 @@ services:
     image: ghcr.io/solectrus/helios:develop
     user: root
     environment:
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD}"
       SECRET_KEY_BASE: "${SECRET_KEY_BASE}"
       HELIOS_STACK_PATH: "/opt/solectrus"
       HELIOS_HOST_STACK_PATH: "${HELIOS_HOST_STACK_PATH}"

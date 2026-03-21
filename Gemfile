@@ -9,9 +9,6 @@ gem 'sqlite3'
 # Docker API access
 gem 'docker-api'
 
-# Authentication
-gem 'bcrypt'
-
 # Frontend
 gem 'rails_vite'
 gem 'stimulus-rails'

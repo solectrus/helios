@@ -127,9 +127,6 @@ de:
       hero_alt: "Helios, der Sonnengott der griechischen Mythologie"
 
   flash:
-    admin:
-      password_blank: 'Passwort darf nicht leer sein'
-      passwords_mismatch: 'Passwörter stimmen nicht überein'
     session:
       invalid_password: 'Ungültiges Passwort'
 

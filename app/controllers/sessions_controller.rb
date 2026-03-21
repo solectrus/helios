@@ -6,8 +6,7 @@ class SessionsController < ApplicationController
   end
 
   def create
-    admin = Admin.current
-    if admin&.authenticate(params[:password])
+    if valid_password?(params[:password])
       session[:authenticated] = true
       redirect_to root_path
     else
@@ -19,5 +18,14 @@ class SessionsController < ApplicationController
   def destroy
     reset_session
     redirect_to new_session_path
+  end
+
+  private
+
+  def valid_password?(password)
+    ActiveSupport::SecurityUtils.secure_compare(
+      password.to_s,
+      ENV.fetch('ADMIN_PASSWORD'),
+    )
   end
 end

@@ -1,4 +1,4 @@
-RSpec.describe 'Configurations::Surveys', :with_admin do
+RSpec.describe 'Configurations::Surveys', :with_admin_password do
   before { login }
 
   describe 'GET /configuration/surveys/:id' do

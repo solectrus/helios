@@ -64,7 +64,7 @@ module Export
     def security_section(env)
       env.add_section('Security')
       entry(env, 'ADMIN_PASSWORD', configuration.system.admin_password,
-            'Admin password for the SOLECTRUS web interface')
+            'Admin password — shared by Dashboard and Helios')
       entry(env, 'SECRET_KEY_BASE', configuration.system.secret_key_base,
             'Secret key for Rails sessions — shared by Dashboard and Helios')
     end
