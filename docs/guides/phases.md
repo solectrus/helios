@@ -6,17 +6,18 @@ Phase 0 (Proof of Concept) and Phase 1 (Foundation) are complete. The following 
 
 - Authentication (admin password setup + session management)
 - Setup wizard (installation date + timezone)
-- Configuration model (chapters-based, stored as JSON in SQLite)
+- Configuration model (YAML-based, stored as `config.yaml` in stack directory)
 - Survey-based configuration forms (SurveyJS integration)
 - Dashboard with service management UI (start/stop/recreate, batch operations)
 - Real-time status updates via Turbo Streams + Action Cable
 - Background jobs for async compose operations
-- Basic `compose.yaml` and `.env` generation (MVP services: PostgreSQL, Redis, InfluxDB, Dashboard)
+- Full `compose.yaml` and `.env` generation (14 services)
 - Install script (`install.sh`)
 - Theme toggle (light/dark mode)
 - ViewComponent-based UI architecture
 - compose.yaml/env parsing with comment preservation
 - Docker API integration (container status, health) + Compose CLI
+- Localization: German + English UI
 
 ---
 
@@ -38,36 +39,38 @@ Define all SOLECTRUS usage options through interactive forms (Scenarios A/B + C)
 - **Add/remove devices:** Battery, wallbox, car, heat pump, custom consumers
 - **Multiple generators:** Support for multiple inverters/roof surfaces
 - **Data sources per device:** Direct hardware (SENEC, Shelly), MQTT, ioBroker, Home Assistant — determines which collector services are generated
-- **Forecasts:** forecast.solar, Solcast
+- **Forecasts:** forecast.solar, Solcast, pvnode
 - **System settings:** Machine type, ports, HTTPS/domain, backup
 
 | Status  | Detail                                                             |
 | ------- | ------------------------------------------------------------------ |
-| ✅ Done | Survey JSON files exist for all chapters (`config/surveys/`)       |
-| ✅ Done | SurveyJS rendering with theme support                              |
-| ✅ Done | Chapter model with JSON storage                                    |
-| 🔲 TODO | Verify/complete survey definitions for all use cases               |
-| 🔲 TODO | Add/remove logic (e.g. adding a second inverter, removing battery) |
-| 🔲 TODO | Validation and conditional dependencies between chapters           |
+| ✅ Done | Survey JSON files for all chapters (`config/surveys/`, 15 files)   |
+| ✅ Done | SurveyJS rendering with theme support and localization             |
+| ✅ Done | Configuration model with YAML storage (`config.yaml`)              |
+| ✅ Done | Add/remove sensors via UI (create/edit/delete)                     |
+| ✅ Done | Conditional dependencies via SurveyJS `visibleIf` expressions      |
+| 🔲 TODO | Validation and cross-chapter dependency checks                     |
 
 ### 2b: Generate compose.yaml and .env from configuration
 
-Transform stored chapter data into a complete, runnable Docker stack (Scenarios A + B):
+Transform stored configuration into a complete, runnable Docker stack (Scenarios A + B):
 
 - Generate `compose.yaml` with all required services based on user's configuration
 - Generate `.env` with all environment variables, auto-generated secrets
-- Services: PostgreSQL, Redis, InfluxDB, Dashboard, Power-Splitter, Forecast-Collector, Watchtower, hardware collectors (SENEC, Shelly, MQTT)
+- Services: PostgreSQL, Redis, InfluxDB, Dashboard, Power-Splitter, Forecast-Collector, Watchtower, Helios, Traefik, hardware collectors (SENEC, Shelly, MQTT), backup services
 - Only include services that match the user's configuration
 
 | Status  | Detail                                                                          |
 | ------- | ------------------------------------------------------------------------------- |
-| ✅ Done | `StackBuilder` generates MVP services (4 services)                              |
+| ✅ Done | `Export::Builder` orchestrates generation (compose.yaml + .env)                 |
 | ✅ Done | `Compose::File` and `Env::File` handle reading/writing                          |
-| 🔲 TODO | Extend `StackBuilder` for all services based on chapters                        |
-| 🔲 TODO | Conditional service inclusion (e.g. Shelly collector only if Shelly configured) |
-| 🔲 TODO | Secret generation for all required credentials                                  |
-| 🔲 TODO | Service dependency management (depends_on, healthchecks)                        |
-| 🔲 TODO | Auto-regenerate `compose.yaml`/`.env` after each configuration change (no auto-restart) |
+| ✅ Done | 14 service definitions in `Export::Services::*` with `enabled?` predicates      |
+| ✅ Done | Conditional service inclusion (e.g. Shelly collector only if Shelly configured) |
+| ✅ Done | Secret generation for all required credentials (`ConfigSchema` defaults)        |
+| ✅ Done | Service dependency management (`depends_on` with `service_healthy` conditions)  |
+| ✅ Done | Auto-regenerate compose.yaml/.env before each compose operation (`ComposeJob`)  |
+| ✅ Done | Unmanaged services preserved from existing installations                        |
+| ✅ Done | Atomic file writes (`.tmp` + rename) for crash safety                           |
 
 ### 2c: Import existing configuration
 
@@ -84,33 +87,24 @@ Enable existing SOLECTRUS users to bring their installation under Helios managem
 | ✅ Done | `Compose::File` can parse existing compose.yaml                                 |
 | ✅ Done | `Env::File` can parse existing .env with comment preservation                   |
 | ✅ Done | `StackReader` reads resolved config (`docker compose config`) and raw YAML      |
-| ✅ Done | `ConfigurationImporter` extracts chapter data from stack (system, devices, sensors) |
-| ✅ Done | Reverse mapping: .env variables → chapter data (per-service env access)         |
-| ✅ Done | Service detection: SENEC collector detected, mapped to inverter device          |
-| ✅ Done | Unmanaged services/env vars preserved in `Configuration#data` and restored on write |
-| 🔲 TODO | Auto-import on first access; show summary/review view to user                   |
+| ✅ Done | `ConfigurationImporter` extracts configuration from stack                        |
+| ✅ Done | Reverse mapping: .env variables → configuration (per-service env access)        |
+| ✅ Done | Service detection: SENEC, Shelly, MQTT, Forecast collectors detected            |
+| ✅ Done | Unmanaged services/env vars preserved in configuration and restored on write     |
+| ✅ Done | Auto-import on first access (`before_action` in `ApplicationController`)        |
+| 🔲 TODO | Summary/review view after auto-import                                           |
 | 🔲 TODO | Web-based editor for unmanaged services and env vars (power-user feature)        |
-| 🔲 TODO | Extend detection for Shelly, MQTT, forecast collectors                           |
 
-### 2d: Sensor mapping (advanced)
+### 2d: Sensor mapping
 
 Map SOLECTRUS sensors to InfluxDB measurements/fields (all scenarios, but especially important for Scenario C and smart home setups with custom data structures).
 
 **How it works:**
 
-1. **Fresh install with direct collector (Scenario A):** Sensor mappings are pre-filled with service defaults (e.g. `INVERTER_POWER_MEASUREMENT=pv`). User can view and adjust them after the stack is running. No sensor mapping required before first start.
+1. **Fresh install with direct collector (Scenario A):** Sensor mappings are pre-filled with service defaults (e.g. `SENEC:inverter_power`). User can view and adjust them after the stack is running. No sensor mapping required before first start.
 2. **Existing installation (Scenario C):** Helios reads existing mappings from `.env` and pre-fills the mapping UI.
-3. When the user opens the Sensor Mapping page, Helios automatically queries InfluxDB for available measurements and fields.
-4. User maps each SOLECTRUS sensor to a measurement/field combination.
-5. Helios writes mappings to `.env`.
-
-**InfluxDB discovery:**
-
-```flux
-import "influxdata/influxdb/schema"
-schema.measurements(bucket: "solectrus")
-schema.fieldKeys(bucket: "solectrus", measurement: "pv")
-```
+3. User maps each SOLECTRUS sensor to a measurement/field combination via survey form.
+4. Helios writes mappings to `.env`.
 
 **Sensor registry (~40 sensors):**
 
@@ -126,18 +120,18 @@ schema.fieldKeys(bucket: "solectrus", measurement: "pv")
 Each sensor is mapped to a measurement + field combination and stored in `.env`:
 
 ```bash
-INVERTER_POWER_MEASUREMENT=pv
-INVERTER_POWER_FIELD=power
+INFLUX_SENSOR_INVERTER_POWER=SENEC:inverter_power
 ```
 
 | Status  | Detail                                                                              |
 | ------- | ----------------------------------------------------------------------------------- |
-| 🔲 TODO | Sensor registry with all ~40 SOLECTRUS sensors and their default mappings           |
-| 🔲 TODO | Pre-fill defaults for fresh installs; read from `.env` for existing installations   |
-| 🔲 TODO | Sensor mapping not required before first stack start (skipped in wizard)            |
-| 🔲 TODO | InfluxDB discovery: auto-query measurements/fields when mapping page is opened      |
-| 🔲 TODO | Mapping UI with dropdowns                                                           |
-| 🔲 TODO | Store mappings in .env (e.g. `INVERTER_POWER_MEASUREMENT=pv`)                       |
+| ✅ Done | `SensorRegistry` with all sensors, sources, and units                               |
+| ✅ Done | `SensorMappings` with defaults for SENEC/Forecast/Shelly/MQTT sources               |
+| ✅ Done | Pre-fill defaults for fresh installs; read from `.env` for existing installations   |
+| ✅ Done | Sensor mapping not required before first stack start                                 |
+| ✅ Done | Mapping UI via `sensor.json` survey with dynamic source/measurement/field selection  |
+| ✅ Done | Store mappings in `.env` (format: `INFLUX_SENSOR_X=measurement:field`)              |
+| 🔲 TODO | InfluxDB discovery: auto-query available measurements/fields from running instance   |
 
 ---
 
@@ -148,9 +142,7 @@ INVERTER_POWER_FIELD=power
 - System status: Simple health indicator ("Everything OK" / "Problem detected") with alerts (FR-6)
 - Log viewer: View, filter, search, and stream container logs (FR-7)
 - Update management: Watchtower integration, "Update now" button, changelog display (FR-8)
-- Localization: German + English UI (NFR-6)
 - Telemetry: Opt-in usage statistics via `update.solectrus.de` (NFR-7)
 - Link to running Dashboard from Helios UI
-- Existing installation detection on first access
 - Error UX: Clear messages with suggested solutions
 - Mobile-responsive refinements

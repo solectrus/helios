@@ -61,15 +61,15 @@ https://surveyjs.io/form-library/documentation/overview
 
 ## Current Phase
 
-**Phase 2: Configuration** - Full web-based configuration of SOLECTRUS
+**Phase 2: Configuration** - Full web-based configuration of SOLECTRUS (nearly complete)
 
-Phase 0 (Proof of Concept) and Phase 1 (Foundation) are complete. Core functionality works:
+Phase 0, Phase 1, and most of Phase 2 are complete. Core functionality works:
 compose.yaml/env handling, Docker API, Compose CLI, authentication, setup wizard,
-service management dashboard with real-time updates.
+service management dashboard with real-time updates, survey-based configuration,
+full stack generation (14 services), import of existing installations, sensor mapping.
 
-Current focus:
+Remaining work:
 
-- 2a: Survey-based configuration (add/remove devices, data sources)
-- 2b: Generate compose.yaml/.env from chapter configuration
-- 2c: Import existing configuration (reverse mapping)
-- 2d: Sensor mapping (InfluxDB measurements → SOLECTRUS sensors)
+- 2a: Cross-chapter validation and dependency checks
+- 2c: Summary/review view after auto-import; web editor for unmanaged services
+- 2d: InfluxDB discovery (auto-query available measurements/fields)
