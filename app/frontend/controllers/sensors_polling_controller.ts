@@ -5,15 +5,19 @@ export default class extends Controller {
   static values = {
     interval: { type: Number, default: 5000 },
     url: String,
+    enabled: { type: Boolean, default: true },
   };
 
   declare intervalValue: number;
   declare urlValue: string;
+  declare enabledValue: boolean;
 
   private timer: ReturnType<typeof setInterval> | null = null;
   private boundVisibilityHandler!: () => void;
 
   connect() {
+    if (!this.enabledValue) return;
+
     this.boundVisibilityHandler = this.handleVisibilityChange.bind(this);
     document.addEventListener('visibilitychange', this.boundVisibilityHandler);
     this.startPolling();
