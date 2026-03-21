@@ -5,27 +5,6 @@ de:
     boolean_yes: "JA"
     boolean_no: "NEIN"
 
-  status_bar:
-    component:
-      ok: "Alle Dienste laufen"
-      starting: "Dienste werden gestartet…"
-      partial: "Einige Dienste sind nicht gestartet"
-      error: "Einige Dienste haben Probleme"
-      stopped: "Alle Dienste gestoppt"
-      restart_required: "Konfiguration geändert – Neustart erforderlich"
-
-  expert_mode_toggle:
-    component:
-      expert: "Experte"
-      simple: "Einfach"
-
-  header:
-    component:
-      logout: "Abmelden"
-      services: "Dienste"
-      configuration: "Konfiguration"
-      generated_files: "Dateien"
-
   services:
     index:
       title: "Dienste - Helios"

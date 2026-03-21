@@ -34,27 +34,6 @@ en:
     boolean_yes: "YES"
     boolean_no: "NO"
 
-  status_bar:
-    component:
-      ok: "All services running"
-      starting: "Services are starting…"
-      partial: "Some services are not running"
-      error: "Some services have issues"
-      stopped: "All services stopped"
-      restart_required: "Configuration changed – restart required"
-
-  expert_mode_toggle:
-    component:
-      expert: "Expert"
-      simple: "Simple"
-
-  header:
-    component:
-      logout: "Logout"
-      services: "Services"
-      configuration: "Configuration"
-      generated_files: "Files"
-
   services:
     index:
       title: "Services - Helios"

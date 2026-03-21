@@ -45,7 +45,7 @@ module StatusBar
 
     def labels
       I18n.available_locales.index_with do |locale|
-        I18n.t("status_bar.component.#{@status}", locale:)
+        t(".#{@status}", locale:)
       end
     end
   end

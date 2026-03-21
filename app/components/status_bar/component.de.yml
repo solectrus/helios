@@ -1,0 +1,7 @@
+de:
+  ok: "Alle Dienste laufen"
+  starting: "Dienste werden gestartet…"
+  partial: "Einige Dienste sind nicht gestartet"
+  error: "Einige Dienste haben Probleme"
+  stopped: "Alle Dienste gestoppt"
+  restart_required: "Konfiguration geändert – Neustart erforderlich"
