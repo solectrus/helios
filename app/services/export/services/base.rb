@@ -32,6 +32,12 @@ module Export
       def healthy_depends_on(services)
         services.index_with { { condition: 'service_healthy' } }
       end
+
+      def sensor_environment
+        configuration.effective_sensor_mappings.filter_map do |sensor, mapping|
+          "INFLUX_SENSOR_#{sensor.upcase}" if mapping.present?
+        end
+      end
     end
   end
 end

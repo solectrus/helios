@@ -39,24 +39,15 @@ module Export
       end
 
       def shelly_environment
-        passthrough_vars + explicit_vars + device_vars + optional_vars
+        passthrough_vars + explicit_vars + optional_vars
       end
 
       def passthrough_vars
-        %w[INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET]
+        %w[INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SHELLY_HOST SHELLY_INTERVAL INFLUX_MEASUREMENT]
       end
 
       def explicit_vars
-        [
-          'INFLUX_HOST=influxdb',
-          "SHELLY_HOST=#{csv_from { |_, config| config['shelly_host'] }}",
-          "SHELLY_INTERVAL=#{csv_from { |_, config| config['shelly_interval'] || shelly_defaults.interval || '5' }}",
-          "INFLUX_MEASUREMENT=#{csv_from { |_, config| config['measurement'] }}",
-        ]
-      end
-
-      def device_vars
-        []
+        ['INFLUX_HOST=influxdb']
       end
 
       def optional_vars
@@ -65,12 +56,8 @@ module Export
           shelly_device_id shelly_invert_power
         ].each_with_object([]) do |field, vars|
           values = shelly_sensors.map { |_, config| config[field].presence || '' }
-          vars << "#{field.upcase}=#{values.join(',')}" if values.any?(&:present?)
+          vars << field.upcase if values.any?(&:present?)
         end
-      end
-
-      def csv_from(&)
-        shelly_sensors.map(&).join(',')
       end
     end
   end

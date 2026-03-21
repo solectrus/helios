@@ -46,28 +46,23 @@ module Export
       end
 
       def passthrough_vars
-        %w[TZ INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET]
+        %w[TZ INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET MQTT_HOST]
       end
 
       def explicit_vars
-        [
-          'INFLUX_HOST=influxdb',
-          "MQTT_HOST=#{mqtt_config.mqtt_host}",
-        ]
+        ['INFLUX_HOST=influxdb']
       end
 
       def optional_vars
         %w[mqtt_port mqtt_ssl mqtt_username mqtt_password].filter_map do |field|
-          value = mqtt_config.send(field)
-          "#{field.upcase}=#{value}" if value.present?
+          field.upcase if mqtt_config.send(field).present?
         end
       end
 
       def mapping_vars
         mqtt_sensors.each_with_index.flat_map do |(_, config), index|
           MAPPING_FIELDS.filter_map do |config_key, env_suffix|
-            value = config[config_key]
-            "MAPPING_#{index}_#{env_suffix}=#{value}" if value.present?
+            "MAPPING_#{index}_#{env_suffix}" if config[config_key].present?
           end
         end
       end

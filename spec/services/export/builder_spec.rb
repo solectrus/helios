@@ -572,8 +572,13 @@ RSpec.describe Export::Builder do
       compose = Compose.load
       shelly = compose.services.find('shelly-collector')
 
-      expect(shelly.environment).to include('SHELLY_HOST=shelly-hp.local')
-      expect(shelly.environment).to include('INFLUX_MEASUREMENT=heatpump')
+      expect(shelly.environment).to include('SHELLY_HOST', 'INFLUX_MEASUREMENT')
+    end
+
+    it 'includes shelly variables in .env' do
+      env = Env.load
+      expect(env['SHELLY_HOST']).to eq('shelly-hp.local')
+      expect(env['INFLUX_MEASUREMENT']).to eq('heatpump')
     end
   end
 
@@ -613,12 +618,21 @@ RSpec.describe Export::Builder do
       mqtt = compose.services.find('mqtt-collector')
 
       expect(mqtt.environment).to include(
-        'MAPPING_0_TOPIC=solar/inverter',
-        'MAPPING_0_MEASUREMENT=PV',
-        'MAPPING_0_FIELD=power',
-        'MAPPING_0_TYPE=json',
-        'MAPPING_0_JSON_KEY=value',
+        'MAPPING_0_TOPIC',
+        'MAPPING_0_MEASUREMENT',
+        'MAPPING_0_FIELD',
+        'MAPPING_0_TYPE',
+        'MAPPING_0_JSON_KEY',
       )
+    end
+
+    it 'includes mapping variables in .env' do
+      env = Env.load
+      expect(env['MAPPING_0_TOPIC']).to eq('solar/inverter')
+      expect(env['MAPPING_0_MEASUREMENT']).to eq('PV')
+      expect(env['MAPPING_0_FIELD']).to eq('power')
+      expect(env['MAPPING_0_TYPE']).to eq('json')
+      expect(env['MAPPING_0_JSON_KEY']).to eq('value')
     end
   end
 

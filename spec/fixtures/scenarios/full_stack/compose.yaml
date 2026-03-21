@@ -19,18 +19,18 @@ services:
       - INFLUX_BUCKET
       - SECRET_KEY_BASE
       - ADMIN_PASSWORD
-      - APP_HOST=localhost
-      - WEB_CONCURRENCY=0
+      - APP_HOST
+      - WEB_CONCURRENCY
+      - INFLUX_POLL_INTERVAL
       - REDIS_URL=redis://redis:6379
       - INFLUX_HOST=influxdb
-      - INFLUX_POLL_INTERVAL=5
       - DB_HOST=postgresql
       - DB_USER=postgres
       - DB_PASSWORD=${POSTGRES_PASSWORD}
       - DB_DATABASE=solectrus
-      - UI_THEME=light
-      - LOCKUP_CODEWORD=secret
-      - INFLUX_EXCLUDE_FROM_HOUSE_POWER=HEATPUMP_POWER
+      - UI_THEME
+      - LOCKUP_CODEWORD
+      - INFLUX_EXCLUDE_FROM_HOUSE_POWER
       - INFLUX_SENSOR_INVERTER_POWER
       - INFLUX_SENSOR_INVERTER_POWER_1
       - INFLUX_SENSOR_INVERTER_POWER_2
@@ -198,11 +198,11 @@ services:
       - INFLUX_TOKEN
       - INFLUX_ORG
       - INFLUX_BUCKET
+      - SHELLY_HOST
+      - SHELLY_INTERVAL
+      - INFLUX_MEASUREMENT
       - INFLUX_HOST=influxdb
-      - SHELLY_HOST=shelly-heatpump.fritz.box,shelly-fridge.fritz.box,shelly-dishwasher.fritz.box,shelly-washer.fritz.box,shelly-kabelfritz.fritz.box,shelly-imac.fritz.box,shelly-tv.fritz.box,shelly-synology.fritz.box,shelly-mini-pc-1.fritz.box,shelly-macstudio.fritz.box,shelly-studiodisplay.fritz.box
-      - SHELLY_INTERVAL=5,5,5,5,5,5,5,5,5,5,5
-      - INFLUX_MEASUREMENT=Consumer,Fridge,Dishwasher,Washer,KabelFritz,iMac,TV,Synology,Mini-PC-1,Mac-Studio,Studio-Display
-      - SHELLY_PASSWORD=,,,,,,secret,,,,
+      - SHELLY_PASSWORD
     depends_on:
       influxdb:
         condition: service_healthy
@@ -216,41 +216,35 @@ services:
       - INFLUX_TOKEN
       - INFLUX_ORG
       - INFLUX_BUCKET
+      - MQTT_HOST
       - INFLUX_HOST=influxdb
-      - MQTT_HOST=iobroker.fritz.box
-      - MQTT_PORT=1883
-      - MQTT_USERNAME=admin
-      - MQTT_PASSWORD=secret_mqtt_password
-      - MAPPING_0_TOPIC=renault/0/secret_number/battery-status/batteryLevel
-      - MAPPING_0_MEASUREMENT=renault
-      - MAPPING_0_FIELD=soc
-      - MAPPING_0_TYPE=integer
-      - MAPPING_1_TOPIC=espaltherma/ATTR
-      - MAPPING_1_MEASUREMENT=ALTHERMA
-      - MAPPING_1_FIELD=heat
-      - MAPPING_1_TYPE=float
-      - MAPPING_1_JSON_FORMULA=IF({Operation Mode} = 'Heating' AND {Freeze Protection}
-        = 'OFF' AND {Leaving water temp. after BUH (R2T)} > {Inlet water temp.(R4T)},
-        {Flow sensor (l/min)} * 60.0 * 1.163 * ({Leaving water temp. after BUH (R2T)}
-        - {Inlet water temp.(R4T)}), 0)
-      - MAPPING_2_TOPIC=espaltherma/ATTR
-      - MAPPING_2_MEASUREMENT=ALTHERMA
-      - MAPPING_2_FIELD=tank_temp
-      - MAPPING_2_TYPE=float
-      - MAPPING_2_JSON_KEY=DHW tank temp. (R5T)
-      - MAPPING_3_TOPIC=espaltherma/ATTR
-      - MAPPING_3_MEASUREMENT=ALTHERMA
-      - MAPPING_3_FIELD=current_state
-      - MAPPING_3_TYPE=string
-      - MAPPING_3_JSON_FORMULA=IF({Freeze Protection} == 'ON', 'Frostschutz', IF({Defrost
-        Operation} == 'ON', 'Abtauen', IF({[HPSU] Tank valve position (0:Bypass 100:Tank)}
-        > 50, 'Warmwasser', IF({[HPSU] Bypass valve position (0:Bypass 100:Emitter)}
-        > 50 AND {INV frequency (rps)} > 0, 'Heizen', 'Warten'))))
-      - MAPPING_4_TOPIC=espaltherma/ATTR
-      - MAPPING_4_MEASUREMENT=ALTHERMA
-      - MAPPING_4_FIELD=outdoor_temp
-      - MAPPING_4_TYPE=float
-      - MAPPING_4_JSON_KEY=R1T-Outdoor air temp.
+      - MQTT_PORT
+      - MQTT_USERNAME
+      - MQTT_PASSWORD
+      - MAPPING_0_TOPIC
+      - MAPPING_0_MEASUREMENT
+      - MAPPING_0_FIELD
+      - MAPPING_0_TYPE
+      - MAPPING_1_TOPIC
+      - MAPPING_1_MEASUREMENT
+      - MAPPING_1_FIELD
+      - MAPPING_1_TYPE
+      - MAPPING_1_JSON_FORMULA
+      - MAPPING_2_TOPIC
+      - MAPPING_2_MEASUREMENT
+      - MAPPING_2_FIELD
+      - MAPPING_2_TYPE
+      - MAPPING_2_JSON_KEY
+      - MAPPING_3_TOPIC
+      - MAPPING_3_MEASUREMENT
+      - MAPPING_3_FIELD
+      - MAPPING_3_TYPE
+      - MAPPING_3_JSON_FORMULA
+      - MAPPING_4_TOPIC
+      - MAPPING_4_MEASUREMENT
+      - MAPPING_4_FIELD
+      - MAPPING_4_TYPE
+      - MAPPING_4_JSON_KEY
     depends_on:
       influxdb:
         condition: service_healthy

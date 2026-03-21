@@ -36,47 +36,40 @@ module Export
 
       # Variables passed through from .env (name only)
       def passthrough_vars
-        %w[TZ INSTALLATION_DATE INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SECRET_KEY_BASE ADMIN_PASSWORD]
+        %w[
+          TZ INSTALLATION_DATE INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SECRET_KEY_BASE ADMIN_PASSWORD
+          APP_HOST WEB_CONCURRENCY INFLUX_POLL_INTERVAL
+        ]
       end
 
-      # Variables with service-specific values
+      # Variables with service-specific values (internal Docker references, remappings)
       def explicit_vars
-        sys = configuration.system
-
-        [
-          "APP_HOST=#{sys.app_host.presence || 'localhost'}",
-          "WEB_CONCURRENCY=#{sys.web_concurrency.presence || '0'}",
-          'REDIS_URL=redis://redis:6379',
-          'INFLUX_HOST=influxdb',
-          "INFLUX_POLL_INTERVAL=#{sys.influx_poll_interval.presence || '5'}",
-          'DB_HOST=postgresql',
-          'DB_USER=postgres',
-          'DB_PASSWORD=${POSTGRES_PASSWORD}',
-          'DB_DATABASE=solectrus',
+        %w[
+          REDIS_URL=redis://redis:6379
+          INFLUX_HOST=influxdb
+          DB_HOST=postgresql
+          DB_USER=postgres
+          DB_PASSWORD=${POSTGRES_PASSWORD}
+          DB_DATABASE=solectrus
         ]
       end
 
       def optional_vars
-        sys = configuration.system
-        vars = []
-        add_optional(vars, 'CO2_EMISSION_FACTOR', sys.co2_emission_factor)
-        add_optional(vars, 'FRAME_ANCESTORS', sys.frame_ancestors)
-        add_optional(vars, 'UI_THEME', sys.ui_theme)
-        add_optional(vars, 'LOCKUP_CODEWORD', sys.lockup_codeword)
-        add_optional(vars, 'TRUSTED_PROXY_RANGES', sys.trusted_proxy_ranges)
-        excluded = configuration.excluded_from_house_power.join(',').presence
-        add_optional(vars, 'INFLUX_EXCLUDE_FROM_HOUSE_POWER', excluded)
-        vars
+        optional_system_vars + optional_house_power_vars
       end
 
-      def add_optional(vars, key, value)
-        vars << "#{key}=#{value}" if value.present?
+      def optional_system_vars
+        {
+          'CO2_EMISSION_FACTOR' => configuration.system.co2_emission_factor,
+          'FRAME_ANCESTORS' => configuration.system.frame_ancestors,
+          'UI_THEME' => configuration.system.ui_theme,
+          'LOCKUP_CODEWORD' => configuration.system.lockup_codeword,
+          'TRUSTED_PROXY_RANGES' => configuration.system.trusted_proxy_ranges,
+        }.filter_map { |key, value| key if value.present? }
       end
 
-      def sensor_environment
-        configuration.effective_sensor_mappings.filter_map do |sensor, mapping|
-          "INFLUX_SENSOR_#{sensor.upcase}" if mapping.present?
-        end
+      def optional_house_power_vars
+        configuration.excluded_from_house_power.any? ? %w[INFLUX_EXCLUDE_FROM_HOUSE_POWER] : []
       end
 
       def traefik_dashboard_labels

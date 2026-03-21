@@ -27,6 +27,7 @@ module Export
     def build(env) # rubocop:disable Metrics/AbcSize
       general_section(env)
       security_section(env)
+      dashboard_section(env)
       postgresql_section(env)
       influxdb_section(env)
       helios_section(env)
@@ -35,6 +36,8 @@ module Export
       senec_section(env) if configuration.senec_required?
       forecast_section(env) if Services::ForecastCollector.enabled?(configuration)
       mqtt_section(env) if configuration.mqtt_required?
+      shelly_section(env) if configuration.shelly_required?
+      power_splitter_section(env)
       sensor_section(env)
       unmanaged_section(env)
     end
@@ -64,6 +67,29 @@ module Export
             'Admin password for the SOLECTRUS web interface')
       entry(env, 'SECRET_KEY_BASE', configuration.system.secret_key_base,
             'Secret key for Rails sessions — shared by Dashboard and Helios')
+    end
+
+    def dashboard_section(env)
+      sys = configuration.system
+      env.add_section('Dashboard')
+      entry(env, 'APP_HOST', sys.app_host.presence || 'localhost',
+            'Hostname for the SOLECTRUS web interface')
+      entry(env, 'WEB_CONCURRENCY', sys.web_concurrency.presence || '0',
+            'Number of web server processes (0 = single process)')
+      entry(env, 'INFLUX_POLL_INTERVAL', sys.influx_poll_interval.presence || '5',
+            'InfluxDB polling interval in seconds')
+      dashboard_optional_entries(env, sys)
+    end
+
+    def dashboard_optional_entries(env, sys)
+      optional_entry(env, 'CO2_EMISSION_FACTOR', sys.co2_emission_factor, 'CO2 emission factor (g/kWh)')
+      optional_entry(env, 'FRAME_ANCESTORS', sys.frame_ancestors, 'Allowed frame ancestors for embedding')
+      optional_entry(env, 'UI_THEME', sys.ui_theme, 'UI theme (light or dark)')
+      optional_entry(env, 'LOCKUP_CODEWORD', sys.lockup_codeword, 'Codeword for lockup page protection')
+      optional_entry(env, 'TRUSTED_PROXY_RANGES', sys.trusted_proxy_ranges, 'Trusted proxy IP ranges')
+      excluded = configuration.excluded_from_house_power.join(',').presence
+      optional_entry(env, 'INFLUX_EXCLUDE_FROM_HOUSE_POWER', excluded,
+                     'Sensors excluded from house power calculation')
     end
 
     def postgresql_section(env)
@@ -240,6 +266,62 @@ module Export
         value = mqtt.send(field)
         entry(env, key, value, comment) if value.present?
       end
+      mqtt_mapping_entries(env)
+    end
+
+    def mqtt_mapping_entries(env)
+      sensors = configuration.sensors_with_source('mqtt')
+      return if sensors.blank?
+
+      sensors.each_with_index do |(_, config), index|
+        Services::MqttCollector::MAPPING_FIELDS.each do |config_key, env_suffix|
+          value = config[config_key]
+          next if value.blank?
+
+          entry(env, "MAPPING_#{index}_#{env_suffix}", value,
+                "MQTT mapping #{index}: #{env_suffix.downcase}")
+        end
+      end
+    end
+
+    def shelly_section(env)
+      sensors = configuration.sensors_with_source('shelly')
+      return if sensors.blank?
+
+      shelly = configuration.shelly
+      env.add_section('Shelly collector')
+      entry(env, 'SHELLY_HOST', shelly_csv(sensors) { |_, config| config['shelly_host'] },
+            'Shelly device hostnames (comma-separated)')
+      entry(env, 'SHELLY_INTERVAL',
+            shelly_csv(sensors) { |_, config| config['shelly_interval'] || shelly&.interval || '5' },
+            'Polling intervals in seconds (comma-separated)')
+      entry(env, 'INFLUX_MEASUREMENT', shelly_csv(sensors) { |_, config| config['measurement'] },
+            'InfluxDB measurement names (comma-separated)')
+      shelly_optional_entries(env, sensors)
+    end
+
+    def shelly_optional_entries(env, sensors)
+      %w[
+        shelly_password shelly_cloud_server shelly_auth_key
+        shelly_device_id shelly_invert_power
+      ].each do |field|
+        values = sensors.map { |_, config| config[field].presence || '' }
+        next unless values.any?(&:present?)
+
+        entry(env, field.upcase, values.join(','), "Shelly #{field.sub('shelly_', '')} (comma-separated)")
+      end
+    end
+
+    def shelly_csv(sensors, &)
+      sensors.map(&).join(',')
+    end
+
+    def power_splitter_section(env)
+      interval = configuration.system.power_splitter_interval
+      return if interval.blank?
+
+      env.add_section('Power Splitter')
+      entry(env, 'POWER_SPLITTER_INTERVAL', interval, 'Power splitter calculation interval in seconds')
     end
 
     def sensor_section(env)

@@ -36,7 +36,7 @@ module Env
       if existing_index
         update_line(existing_index, key, value)
       else
-        @lines << "#{key}=#{value}"
+        @lines << "#{key}=#{quote_value(value)}"
       end
     end
 
@@ -121,16 +121,38 @@ module Env
       @lines.find_index { |line| line.match?(/\A#{Regexp.escape(key)}=/) }
     end
 
+    def quote_value(value)
+      val = value.to_s
+      return val unless needs_quoting?(val)
+      return "\"#{val}\"" if val.include?("'")
+
+      "'#{val}'"
+    end
+
+    def needs_quoting?(value)
+      value.match?(/[\s#'"$]/)
+    end
+
     def update_line(index, key, value)
       old_line = @lines[index]
+      inline_comment = extract_inline_comment(old_line)
+      @lines[index] = "#{key}=#{quote_value(value)}#{inline_comment}"
+    end
 
-      if old_line.include?(' #')
-        comment_pos = old_line.index(' #')
-        inline_comment = old_line[comment_pos..]
-        @lines[index] = "#{key}=#{value}#{inline_comment}"
-      else
-        @lines[index] = "#{key}=#{value}"
-      end
+    def extract_inline_comment(line)
+      after_eq = line[(line.index('=') + 1)..]
+
+      # Skip past quoted value to find inline comment
+      remainder = if after_eq.start_with?("'", '"')
+                    quote = after_eq[0]
+                    end_pos = after_eq.index(quote, 1)
+                    end_pos ? after_eq[(end_pos + 1)..] : ''
+                  else
+                    after_eq
+                  end
+
+      match = remainder.match(/( #.*)/)
+      match ? match[1] : ''
     end
   end
 end

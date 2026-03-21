@@ -46,13 +46,7 @@ module Export
 
       def optional_vars
         interval = configuration.system.power_splitter_interval
-        interval.present? ? ["POWER_SPLITTER_INTERVAL=#{interval}"] : []
-      end
-
-      def sensor_environment
-        configuration.effective_sensor_mappings.filter_map do |sensor, mapping|
-          "INFLUX_SENSOR_#{sensor.upcase}" if mapping.present?
-        end
+        interval.present? ? %w[POWER_SPLITTER_INTERVAL] : []
       end
     end
   end
