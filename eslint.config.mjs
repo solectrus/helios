@@ -19,6 +19,7 @@ export default [
       'public/',
       'tmp/',
       'vendor/',
+      'coverage/',
     ],
   },
 ];

@@ -60,3 +60,6 @@
 # Playwright
 /test-results/
 /playwright-report/
+
+# SimpleCov
+/coverage/

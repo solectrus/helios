@@ -39,6 +39,7 @@ group :development, :test do
   gem 'rubocop-rspec_rails', require: false
   gem 'rubocop-thread_safety', require: false
   gem 'shoulda-matchers'
+  gem 'simplecov', require: false
 end
 
 group :development do
