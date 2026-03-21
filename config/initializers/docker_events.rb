@@ -11,14 +11,14 @@ Rails.application.config.after_initialize do
   next unless defined?(Rails::Server) || $PROGRAM_NAME.include?('puma')
   next if Rails.env.test?
 
-  DockerHost::EventsListener.start
+  Orchestration::EventsListener.start
 end
 
 # Graceful shutdown when server stops
 at_exit do
-  if DockerHost::EventsListener.running?
-    DockerHost::EventsListener::Logging.logger.info('Server shutting down...')
-    DockerHost::EventsListener.stop
+  if Orchestration::EventsListener.running?
+    Orchestration::EventsListener::Logging.logger.info('Server shutting down...')
+    Orchestration::EventsListener.stop
   end
 end
 
@@ -27,6 +27,6 @@ end
 # Only restart if already running — the initial start is handled above.
 if Rails.env.development?
   Rails.application.config.to_prepare do
-    DockerHost::EventsListener.restart if DockerHost::EventsListener.running?
+    Orchestration::EventsListener.restart if Orchestration::EventsListener.running?
   end
 end

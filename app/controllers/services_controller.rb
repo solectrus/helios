@@ -7,9 +7,9 @@ class ServicesController < ApplicationController
     # Preload containers on Turbo Frame requests (tab switches) to avoid skeleton flicker.
     # On full page loads (initial visit, refresh) use lazy loading for faster first paint.
     if turbo_frame_request?
-      @containers = DockerHost::Container.all.index_by(&:service_name)
+      @containers = Orchestration::Container.all.index_by(&:service_name)
     end
-  rescue DockerHost::ConnectionError
+  rescue Orchestration::ConnectionError
     @containers = nil
   end
 end

@@ -24,7 +24,7 @@ RSpec.describe 'Services::Tasks', :with_admin do
 
   def mock_container(service_name, running: true)
     instance_double(
-      DockerHost::Container,
+      Orchestration::Container,
       service_name: service_name,
       running?: running,
       status: running ? 'running' : 'exited',
@@ -38,7 +38,7 @@ RSpec.describe 'Services::Tasks', :with_admin do
   describe 'POST /services/:service_id/task (start)' do
     it 'enqueues a start job and returns pending status' do
       mock_compose_service('influxdb')
-      allow(DockerHost::Container).to receive(:find).with('influxdb').and_return(nil)
+      allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(nil)
 
       post service_task_path(service_id: 'influxdb')
 
@@ -48,7 +48,7 @@ RSpec.describe 'Services::Tasks', :with_admin do
 
     it 'returns turbo_stream response when requested' do
       mock_compose_service('influxdb')
-      allow(DockerHost::Container).to receive(:find).with('influxdb').and_return(nil)
+      allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(nil)
 
       post service_task_path(service_id: 'influxdb'), as: :turbo_stream
 
@@ -59,7 +59,7 @@ RSpec.describe 'Services::Tasks', :with_admin do
 
     it 'rejects start on helios service' do
       mock_compose_service('helios')
-      allow(DockerHost::Container).to receive(:find).with('helios').and_return(nil)
+      allow(Orchestration::Container).to receive(:find).with('helios').and_return(nil)
 
       post service_task_path(service_id: 'helios')
 
@@ -72,7 +72,7 @@ RSpec.describe 'Services::Tasks', :with_admin do
     it 'enqueues a recreate job' do
       mock_compose_service('redis')
       container = mock_container('redis', running: true)
-      allow(DockerHost::Container).to receive(:find).with('redis').and_return(container)
+      allow(Orchestration::Container).to receive(:find).with('redis').and_return(container)
 
       patch service_task_path(service_id: 'redis')
 
@@ -94,7 +94,7 @@ RSpec.describe 'Services::Tasks', :with_admin do
     it 'enqueues a stop job' do
       mock_compose_service('postgresql')
       container = mock_container('postgresql', running: true)
-      allow(DockerHost::Container).to receive(:find).with('postgresql').and_return(container)
+      allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(container)
 
       delete service_task_path(service_id: 'postgresql')
 

@@ -28,7 +28,7 @@ RSpec.describe 'Services', :with_admin do
 
   describe 'GET /services' do
     it 'shows services when authenticated and setup completed' do
-      allow(DockerHost::Container).to receive(:all).and_return([])
+      allow(Orchestration::Container).to receive(:all).and_return([])
       mock_compose_services
 
       get services_path
@@ -40,7 +40,7 @@ RSpec.describe 'Services', :with_admin do
     it 'shows service skeleton with lazy loading' do
       container =
         instance_double(
-          DockerHost::Container,
+          Orchestration::Container,
           service_name: 'dashboard',
           running?: true,
           status: 'running',
@@ -48,7 +48,7 @@ RSpec.describe 'Services', :with_admin do
           version: '1.0.0',
           public_port: 3001,
         )
-      allow(DockerHost::Container).to receive(:all).and_return([container])
+      allow(Orchestration::Container).to receive(:all).and_return([container])
       mock_compose_services('dashboard')
 
       get services_path
@@ -60,7 +60,7 @@ RSpec.describe 'Services', :with_admin do
     end
 
     it 'shows service skeletons for services without containers' do
-      allow(DockerHost::Container).to receive(:all).and_return([])
+      allow(Orchestration::Container).to receive(:all).and_return([])
       mock_compose_services('redis', 'postgresql', 'dashboard')
 
       get services_path

@@ -7,7 +7,7 @@ module Services
     end
 
     def container
-      @container ||= DockerHost::Container.find(service_name)
+      @container ||= Orchestration::Container.find(service_name)
     end
 
     def compose_service

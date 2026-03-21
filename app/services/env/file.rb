@@ -8,6 +8,7 @@ module Env
     end
 
     attr_reader :path
+    attr_writer :header_comment
 
     def initialize(path)
       @path = path
@@ -65,8 +66,14 @@ module Env
       ::File.write(path, to_s)
     end
 
+    def add_section(title)
+      @lines << "# --- #{title} ---"
+    end
+
     def to_s
-      "#{@lines.join("\n")}\n"
+      result = @lines.join("\n")
+      result = "#{@header_comment}\n#{result}" if @header_comment
+      "#{result}\n"
     end
 
     private

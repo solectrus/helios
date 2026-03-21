@@ -1,42 +1,42 @@
 RSpec.describe ComposeJob do
   before do
-    allow(StackBuilder).to receive(:new)
-      .and_return(instance_double(StackBuilder, write!: nil))
+    allow(Export::Builder).to receive(:new)
+      .and_return(instance_double(Export::Builder, write!: nil))
   end
 
   after do
-    Compose::ServiceStore.clear_all
-    DockerHost::StackStatus.reset!
+    Orchestration::ErrorStore.clear_all
+    Orchestration::StackStatus.reset!
   end
 
   describe '#perform' do
     context 'when command succeeds' do
       before do
-        allow(Compose::Runner).to receive(:start).and_return(
-          Compose::CommandResult.new(output: 'OK', exit_status: 0),
+        allow(Orchestration::Runner).to receive(:start).and_return(
+          Orchestration::CommandResult.new(output: 'OK', exit_status: 0),
         )
       end
 
       it 'executes start command' do
         described_class.perform_now(:start, 'redis')
 
-        expect(Compose::Runner).to have_received(:start).with('redis')
+        expect(Orchestration::Runner).to have_received(:start).with('redis')
       end
 
       it 'clears stored error for the started service only' do
-        Compose::ServiceStore.set('redis', 'old error')
-        Compose::ServiceStore.set('influxdb', 'other error')
+        Orchestration::ErrorStore.set('redis', 'old error')
+        Orchestration::ErrorStore.set('influxdb', 'other error')
 
         described_class.perform_now(:start, 'redis')
 
-        expect(Compose::ServiceStore.get('redis')).to be_nil
-        expect(Compose::ServiceStore.get('influxdb')).to eq('other error')
+        expect(Orchestration::ErrorStore.get('redis')).to be_nil
+        expect(Orchestration::ErrorStore.get('influxdb')).to eq('other error')
       end
     end
 
     context 'when command fails' do
       let(:error) do
-        Compose::Runner::CommandError.new(
+        Orchestration::Runner::CommandError.new(
           'Command failed',
           stdout: "Pulling image...\nError: manifest unknown",
           stderr: '',
@@ -49,10 +49,10 @@ RSpec.describe ComposeJob do
       let(:compose_file) { instance_double(Compose::File, services: services_collection) }
 
       before do
-        allow(Compose::Runner).to receive(:start).and_raise(error)
+        allow(Orchestration::Runner).to receive(:start).and_raise(error)
         allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
         allow(ApplicationController).to receive(:render).and_return('<div>html</div>')
-        allow(DockerHost::Container).to receive_messages(find: nil, all: [])
+        allow(Orchestration::Container).to receive_messages(find: nil, all: [])
         allow(Compose).to receive(:load).and_return(compose_file)
         allow(services_collection).to receive(:each).and_yield(compose_service)
         allow(services_collection).to receive_messages(find: compose_service, reject: [compose_service], empty?: false,
@@ -85,7 +85,7 @@ RSpec.describe ComposeJob do
       it 'stores error in ServiceStore' do
         described_class.perform_now(:start, 'broken-service')
 
-        expect(Compose::ServiceStore.get('broken-service')).to eq('Error: manifest unknown')
+        expect(Orchestration::ErrorStore.get('broken-service')).to eq('Error: manifest unknown')
       end
     end
   end
@@ -97,7 +97,7 @@ RSpec.describe ComposeJob do
 
     before do
       allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
-      allow(DockerHost::Container).to receive_messages(find: nil, all: [])
+      allow(Orchestration::Container).to receive_messages(find: nil, all: [])
       allow(Compose).to receive(:load).and_return(compose_file)
       allow(services_collection).to receive(:each).and_yield(compose_service)
       allow(services_collection).to receive_messages(find: compose_service, reject: [compose_service], empty?: false,
@@ -105,13 +105,13 @@ RSpec.describe ComposeJob do
     end
 
     def perform_with_error(stdout_message)
-      error = Compose::Runner::CommandError.new(
+      error = Orchestration::Runner::CommandError.new(
         'Command failed',
         stdout: stdout_message,
         stderr: '',
         exit_status: 1,
       )
-      allow(Compose::Runner).to receive(:start).and_raise(error)
+      allow(Orchestration::Runner).to receive(:start).and_raise(error)
       allow(ApplicationController).to receive(:render).and_return('<div>error</div>')
 
       described_class.perform_now(:start, 'test-service')
@@ -147,7 +147,7 @@ RSpec.describe ComposeJob do
 
     before do
       allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
-      allow(DockerHost::Container).to receive_messages(find: nil, all: [])
+      allow(Orchestration::Container).to receive_messages(find: nil, all: [])
       allow(Compose).to receive(:load).and_return(compose_file)
       allow(ApplicationController).to receive(:render).and_return('<div>error</div>')
       allow(services_collection).to receive_messages(reject: [requested_service, affected_service], empty?: false,
@@ -155,13 +155,13 @@ RSpec.describe ComposeJob do
     end
 
     def perform_with_error(stdout_message)
-      error = Compose::Runner::CommandError.new(
+      error = Orchestration::Runner::CommandError.new(
         'Command failed',
         stdout: stdout_message,
         stderr: '',
         exit_status: 1,
       )
-      allow(Compose::Runner).to receive(:start).and_raise(error)
+      allow(Orchestration::Runner).to receive(:start).and_raise(error)
       described_class.perform_now(:start, 'dashboard')
     end
 
@@ -191,7 +191,7 @@ RSpec.describe ComposeJob do
           'Error response from daemon: Conflict. The container name "/solectrus-influxdb-1" is already in use',
         )
 
-        expect(Compose::ServiceStore.get('influxdb')).to include('already in use')
+        expect(Orchestration::ErrorStore.get('influxdb')).to include('already in use')
       end
     end
 
@@ -264,7 +264,7 @@ RSpec.describe ComposeJob do
     before do
       allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to)
       allow(ApplicationController).to receive(:render).and_return('<div>error</div>')
-      allow(DockerHost::Container).to receive(:find).and_return(nil)
+      allow(Orchestration::Container).to receive(:find).and_return(nil)
       allow(Compose).to receive(:load).and_return(compose_file)
       allow(services_collection).to receive(:find).with('influxdb').and_return(influxdb_service)
       allow(services_collection).to receive(:find).with('dashboard').and_return(dashboard_service)
@@ -278,13 +278,13 @@ RSpec.describe ComposeJob do
     end
 
     def perform_batch_with_error(stdout_message)
-      error = Compose::Runner::CommandError.new(
+      error = Orchestration::Runner::CommandError.new(
         'Command failed',
         stdout: stdout_message,
         stderr: '',
         exit_status: 1,
       )
-      allow(Compose::Runner).to receive(:up).and_raise(error)
+      allow(Orchestration::Runner).to receive(:up).and_raise(error)
       described_class.perform_now(:up)
     end
 
@@ -293,7 +293,7 @@ RSpec.describe ComposeJob do
         'Error: container /solectrus-influxdb-1 port is already allocated',
       )
 
-      expect(Compose::ServiceStore.get('influxdb')).to include('port is already allocated')
+      expect(Orchestration::ErrorStore.get('influxdb')).to include('port is already allocated')
     end
 
     it 'stores dependency error for services that depend on the failed one' do
@@ -301,7 +301,7 @@ RSpec.describe ComposeJob do
         'Error: container /solectrus-influxdb-1 port is already allocated',
       )
 
-      expect(Compose::ServiceStore.get('dashboard')).to eq('Blocked: InfluxDB failed to start')
+      expect(Orchestration::ErrorStore.get('dashboard')).to eq('Blocked: InfluxDB failed to start')
     end
 
     it 'does not store error for unrelated services' do
@@ -309,7 +309,7 @@ RSpec.describe ComposeJob do
         'Error: container /solectrus-influxdb-1 port is already allocated',
       )
 
-      expect(Compose::ServiceStore.get('redis')).to be_nil
+      expect(Orchestration::ErrorStore.get('redis')).to be_nil
     end
 
     it 'broadcasts dependency error to dependent services' do

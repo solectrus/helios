@@ -23,13 +23,13 @@ module Configurations
 
     def create
       save_setting
-      DockerHost::StackStatus.mark_config_changed!
+      Orchestration::StackStatus.mark_config_changed!
       redirect_to configuration_path
     end
 
     def update
       save_setting
-      DockerHost::StackStatus.mark_config_changed!
+      Orchestration::StackStatus.mark_config_changed!
       redirect_to configuration_path
     end
 
@@ -38,7 +38,7 @@ module Configurations
         @configuration.remove_sensor(sensor_name)
       end
 
-      DockerHost::StackStatus.mark_config_changed!
+      Orchestration::StackStatus.mark_config_changed!
       redirect_to configuration_path
     end
 

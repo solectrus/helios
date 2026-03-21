@@ -3,7 +3,7 @@ class GeneratedFilesController < ApplicationController
 
   def show
     configuration = Configuration.current
-    @stack_builder = StackBuilder.new(configuration)
+    @stack_builder = Export::Builder.new(configuration)
     @stack_builder.write!
   end
 end

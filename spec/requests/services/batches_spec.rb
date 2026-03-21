@@ -29,7 +29,7 @@ RSpec.describe 'Services::Batches', :with_admin do
   def mock_containers(containers_data)
     containers = containers_data.map do |name, running|
       instance_double(
-        DockerHost::Container,
+        Orchestration::Container,
         service_name: name,
         running?: running,
         status: running ? 'running' : 'exited',
@@ -40,7 +40,7 @@ RSpec.describe 'Services::Batches', :with_admin do
         image: "#{name}:latest",
       )
     end
-    allow(DockerHost::Container).to receive(:all).and_return(containers)
+    allow(Orchestration::Container).to receive(:all).and_return(containers)
     containers
   end
 

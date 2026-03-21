@@ -6,7 +6,7 @@ class ComposeJob < ApplicationJob
     remove_errored_containers if action.to_sym == :up
     clear_errors(action, service_name)
     execute_action(action.to_sym, service_name)
-  rescue Compose::Runner::CommandError => e
+  rescue Orchestration::Runner::CommandError => e
     Rails.logger.error("ComposeJob failed: #{e.message}")
     store_errors(action, service_name, e)
   ensure
@@ -16,16 +16,16 @@ class ComposeJob < ApplicationJob
   private
 
   def rebuild_stack
-    StackBuilder.new(Configuration.current).write!
+    Export::Builder.new(Configuration.current).write!
   end
 
   def execute_action(action, service_name)
     case action
-    when :up then Compose::Runner.up
-    when :down then Compose::Runner.down
-    when :start then Compose::Runner.start(*Array(service_name))
-    when :stop then Compose::Runner.stop(service_name)
-    when :recreate then Compose::Runner.recreate(service_name)
+    when :up then Orchestration::Runner.up
+    when :down then Orchestration::Runner.down
+    when :start then Orchestration::Runner.start(*Array(service_name))
+    when :stop then Orchestration::Runner.stop(service_name)
+    when :recreate then Orchestration::Runner.recreate(service_name)
     else raise ArgumentError, "Unknown compose action: #{action}"
     end
   end
@@ -37,7 +37,7 @@ class ComposeJob < ApplicationJob
       store_batch_errors(error)
     elsif service_name
       affected = extract_affected_service(error) || service_name
-      Compose::ServiceStore.set(affected, extract_error_details(error))
+      Orchestration::ErrorStore.set(affected, extract_error_details(error))
     end
   end
 
@@ -47,22 +47,22 @@ class ComposeJob < ApplicationJob
 
     all_services.each do |compose_service|
       service_error = service_error_for(compose_service, affected_service_name, error_message)
-      Compose::ServiceStore.set(compose_service.name, service_error) if service_error
+      Orchestration::ErrorStore.set(compose_service.name, service_error) if service_error
     end
   end
 
   def clear_errors(action, service_name)
     if batch_action?(action)
-      Compose::ServiceStore.clear_all
+      Orchestration::ErrorStore.clear_all
     elsif service_name
-      Compose::ServiceStore.clear(service_name)
+      Orchestration::ErrorStore.clear(service_name)
     end
   end
 
   # --- Broadcasting results ---
 
   def broadcast_results(action, service_name)
-    DockerHost::Container.invalidate_cache
+    Orchestration::Container.invalidate_cache
 
     if batch_action?(action)
       all_services.each { |s| broadcast_service(s.name) }
@@ -70,15 +70,15 @@ class ComposeJob < ApplicationJob
       broadcast_service(service_name)
     end
 
-    DockerHost::StackStatus.refresh!
+    Orchestration::StackStatus.refresh!
   rescue StandardError => e
     Rails.logger.error("ComposeJob broadcast failed: #{e.class}: #{e.message}")
   end
 
   def broadcast_service(service_name)
-    container = DockerHost::Container.find(service_name)
+    container = Orchestration::Container.find(service_name)
     compose_service = compose_file.services.find(service_name)
-    error_message = Compose::ServiceStore.get(service_name)
+    error_message = Orchestration::ErrorStore.get(service_name)
 
     html = ApplicationController.render(
       ServiceRow::Component.new(compose_service:, container:, error_message:, lazy: false),
@@ -100,9 +100,9 @@ class ComposeJob < ApplicationJob
 
   # Remove containers that previously failed, so Docker Compose creates fresh ones.
   def remove_errored_containers
-    Compose::ServiceStore.each_key do |service_name|
-      Compose::Runner.stop(service_name)
-    rescue Compose::Runner::CommandError
+    Orchestration::ErrorStore.each_key do |service_name|
+      Orchestration::Runner.stop(service_name)
+    rescue Orchestration::Runner::CommandError
       nil
     end
   end

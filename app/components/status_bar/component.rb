@@ -31,7 +31,7 @@ module StatusBar
 
     def initialize(status: nil)
       super()
-      @status = status || DockerHost::StackStatus.overall
+      @status = status || Orchestration::StackStatus.overall
       @config = STATE_CONFIG.fetch(@status, DEFAULT_CONFIG)
     end
 

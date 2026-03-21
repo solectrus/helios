@@ -23,9 +23,9 @@ class ApplicationController < ActionController::Base
     return if config_yaml_exists?
     return unless existing_stack_files?
 
-    reader = StackReader.new(compose_path: Compose.path, env_path: Env.path)
-    ConfigurationImporter.new(reader).import!
-  rescue StackReader::Error
+    reader = Import::StackReader.new(compose_path: Compose.path, env_path: Env.path)
+    Import::ConfigurationImporter.new(reader).import!
+  rescue Import::StackReader::Error
     # If docker compose config fails (e.g., invalid YAML), skip auto-import
     nil
   end

@@ -43,7 +43,7 @@ module Services
     end
 
     def containers_by_service
-      @containers_by_service ||= DockerHost::Container.all.index_by(&:service_name)
+      @containers_by_service ||= Orchestration::Container.all.index_by(&:service_name)
     end
   end
 end

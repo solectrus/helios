@@ -62,7 +62,7 @@ class SensorDefaults
     consumer_index = 0
 
     devices.each do |device|
-      next unless StackBuilder::Services::ShellyCollector.shelly?(device.data)
+      next unless Export::Services::ShellyCollector.shelly?(device.data)
 
       sensor = shelly_sensor_name(device, consumer_index)
       next unless sensor

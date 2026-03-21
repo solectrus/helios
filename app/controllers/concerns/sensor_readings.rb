@@ -4,8 +4,8 @@ module SensorReadings
   private
 
   def influxdb_running?
-    DockerHost::Container.find('influxdb')&.running? || false
-  rescue DockerHost::ConnectionError
+    Orchestration::Container.find('influxdb')&.running? || false
+  rescue Orchestration::ConnectionError
     false
   end
 

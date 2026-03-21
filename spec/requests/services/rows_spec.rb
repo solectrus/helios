@@ -23,7 +23,7 @@ RSpec.describe 'Services::Rows', :with_admin do
 
   def mock_container(service_name, running: true)
     instance_double(
-      DockerHost::Container,
+      Orchestration::Container,
       service_name: service_name,
       running?: running,
       status: running ? 'running' : 'exited',
@@ -39,7 +39,7 @@ RSpec.describe 'Services::Rows', :with_admin do
     it 'renders the service row component for a running service' do
       mock_compose_service('influxdb')
       container = mock_container('influxdb', running: true)
-      allow(DockerHost::Container).to receive(:find).with('influxdb').and_return(container)
+      allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(container)
 
       get service_row_path(service_id: 'influxdb')
 
@@ -50,7 +50,7 @@ RSpec.describe 'Services::Rows', :with_admin do
     it 'renders the service row component for a stopped service' do
       mock_compose_service('redis')
       container = mock_container('redis', running: false)
-      allow(DockerHost::Container).to receive(:find).with('redis').and_return(container)
+      allow(Orchestration::Container).to receive(:find).with('redis').and_return(container)
 
       get service_row_path(service_id: 'redis')
 
@@ -60,7 +60,7 @@ RSpec.describe 'Services::Rows', :with_admin do
 
     it 'renders the service row component when no container exists' do
       mock_compose_service('postgresql')
-      allow(DockerHost::Container).to receive(:find).with('postgresql').and_return(nil)
+      allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(nil)
 
       get service_row_path(service_id: 'postgresql')
 
