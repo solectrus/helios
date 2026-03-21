@@ -52,6 +52,7 @@ module Import
         when 'forecast' then merge_sensor_overrides!(data, sensor_name, SensorMappings::FORECAST_DEFAULTS)
         when 'shelly' then merge_shelly_sensor_data!(data, sensor_name)
         when 'mqtt' then merge_mqtt_sensor_data!(data, sensor_name)
+        else merge_raw_mapping!(data, sensor_name)
         end
 
         data.compact
@@ -109,6 +110,17 @@ module Import
                                      'battery_vendor').include?('shelly')
           is_shelly && mapping.start_with?("#{device[:name]}:")
         end
+      end
+
+      def merge_raw_mapping!(data, sensor_name)
+        mapping = @sensors_data[sensor_name]
+        return unless mapping
+
+        measurement, field = mapping.split(':', 2)
+        return unless measurement.present? && field.present?
+
+        data['measurement'] = measurement
+        data['field'] = field
       end
 
       def merge_mqtt_sensor_data!(data, sensor_name)

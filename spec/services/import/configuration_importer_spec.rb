@@ -453,6 +453,76 @@ RSpec.describe Import::ConfigurationImporter do
     end
   end
 
+  context 'with with_smart_home scenario' do
+    let(:scenario) { 'with_smart_home' }
+
+    describe 'sensor data' do
+      subject(:sensors) { importer.result[:sensors] }
+
+      it 'includes sensor mappings with custom measurements' do
+        expect(sensors).to include(
+          'inverter_power' => 'inverter:power',
+          'house_power' => 'house:power',
+          'grid_import_power' => 'grid:import_power',
+          'grid_export_power' => 'grid:export_power',
+          'battery_charging_power' => 'battery:charging_power',
+          'battery_discharging_power' => 'battery:discharging_power',
+          'battery_soc' => 'battery:soc',
+        )
+      end
+    end
+
+    describe 'device data' do
+      subject(:devices) { importer.result[:devices] }
+
+      it 'detects no devices (no SENEC, no MQTT, no Shelly)' do
+        expect(devices).to be_empty
+      end
+    end
+
+    describe '#import!' do
+      subject(:config) { importer.import! }
+
+      it 'persists sensors as smart_home source' do
+        smart_home_sensors = config.sensors_with_source('smart_home')
+        expect(smart_home_sensors.keys).to include('inverter_power', 'house_power')
+      end
+
+      it 'preserves custom measurement:field mappings' do
+        expect(config.sensor_config('inverter_power').measurement).to eq('inverter')
+        expect(config.sensor_config('inverter_power').field).to eq('power')
+      end
+
+      it 'preserves forecast sensor mappings' do
+        expect(config.sensor_config('inverter_power_forecast').measurement).to eq('inverter_forecast')
+        expect(config.sensor_config('inverter_power_forecast').field).to eq('power')
+      end
+
+      it 'produces correct effective sensor mappings' do
+        mappings = config.effective_sensor_mappings
+        expect(mappings['inverter_power']).to eq('inverter:power')
+        expect(mappings['house_power']).to eq('house:power')
+        expect(mappings['battery_soc']).to eq('battery:soc')
+        expect(mappings['inverter_power_forecast']).to eq('inverter_forecast:power')
+      end
+
+      it 'produces a config.yaml matching the expected configuration' do
+        importer.import!
+
+        imported_data = YAML.safe_load_file(
+          File.join(Rails.configuration.helios_stack_path, Configuration::YAML_FILENAME),
+          permitted_classes: [Date],
+        )
+        expected_config = YAML.safe_load_file(
+          scenario_path.join('expected_config.yaml'),
+          permitted_classes: [Date],
+        )
+
+        expect(imported_data).to eq(expected_config)
+      end
+    end
+  end
+
   context 'with full_stack scenario (round-trip)' do
     let(:scenario) { 'full_stack' }
 

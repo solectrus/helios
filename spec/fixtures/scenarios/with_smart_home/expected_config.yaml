@@ -1,0 +1,142 @@
+---
+system:
+  timezone: Europe/Berlin
+  installation_date: '2025-01-01'
+  image: ghcr.io/solectrus/solectrus:develop
+  admin_password: NMbLSQHxJI04Ilp
+  secret_key_base: 31daffd9b7e9f511f210b7ed2ac38aa0853d8daa633c3832d3aec2c5b0287a6dc58070f46b212797a847d3028a7de4b0948ebb44ce30e8100d3e9ac3afc7aed6
+  app_host: 192.168.178.131
+  force_ssl: 'false'
+  influx_poll_interval: '20'
+  web_concurrency: '2'
+  power_splitter_interval: '300'
+postgresql:
+  image: postgres:18-alpine
+  password: juQrcEKQz92FVxUwRsRTKkO2kFtrbekU
+influxdb:
+  image: influxdb:2-alpine
+  password: XVmfziSoqDnVbm2GfRzZhdf18yLtFd7
+  org: solectrus
+  bucket: solectrus
+  token: NWD3vfbwdz8kKXizGk63sH1f83B25EQKytC3iW6f08WPyK1SsHlxAkI25kWANTS
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower
+sensors:
+  inverter_power:
+    source: smart_home
+    measurement: inverter
+    field: power
+  inverter_power_1:
+    source: smart_home
+    measurement: inverter_1
+    field: power
+  inverter_power_2:
+    source: smart_home
+    measurement: inverter_2
+    field: power
+  inverter_power_3:
+    source: smart_home
+    measurement: inverter_3
+    field: power
+  case_temp:
+    source: smart_home
+    measurement: case
+    field: temperature
+  system_status:
+    source: smart_home
+    measurement: system
+    field: status
+  system_status_ok:
+    source: smart_home
+    measurement: system
+    field: status_ok
+  grid_import_power:
+    source: smart_home
+    measurement: grid
+    field: import_power
+  grid_export_power:
+    source: smart_home
+    measurement: grid
+    field: export_power
+  grid_export_limit:
+    source: smart_home
+    measurement: grid
+    field: export_limit
+  house_power:
+    source: smart_home
+    measurement: house
+    field: power
+  battery_charging_power:
+    source: smart_home
+    measurement: battery
+    field: charging_power
+  battery_discharging_power:
+    source: smart_home
+    measurement: battery
+    field: discharging_power
+  battery_soc:
+    source: smart_home
+    measurement: battery
+    field: soc
+  wallbox_power:
+    source: smart_home
+    measurement: wallbox
+    field: power
+  wallbox_car_connected:
+    source: smart_home
+    measurement: wallbox
+    field: connected
+  car_battery_soc:
+    source: smart_home
+    measurement: car
+    field: battery_soc
+  heatpump_power:
+    source: smart_home
+    measurement: heatpump
+    field: power
+  heatpump_heating_power:
+    source: smart_home
+    measurement: heatpump
+    field: heating_power
+  heatpump_tank_temp:
+    source: smart_home
+    measurement: heatpump
+    field: tank_temp
+  heatpump_status:
+    source: smart_home
+    measurement: heatpump
+    field: status
+  outdoor_temp:
+    source: smart_home
+    measurement: outdoor
+    field: temperature
+  inverter_power_forecast:
+    source: forecast
+    measurement: inverter_forecast
+    field: power
+  inverter_power_forecast_clearsky:
+    source: forecast
+    measurement: inverter_forecast_clearsky
+    field: power
+  outdoor_temp_forecast:
+    source: forecast
+    measurement: outdoor_forecast
+    field: temperature
+  custom_power_01:
+    source: smart_home
+    measurement: custom_01
+    field: power
+  custom_power_02:
+    source: smart_home
+    measurement: custom_02
+    field: power
+  custom_power_03:
+    source: smart_home
+    measurement: custom_03
+    field: power
+  custom_power_04:
+    source: smart_home
+    measurement: custom_04
+    field: power
