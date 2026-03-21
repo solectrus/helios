@@ -1,4 +1,5 @@
 @import 'tailwindcss';
+@import 'survey-core/survey-core.min.css' layer(survey);
 @import '@fortawesome/fontawesome-free/css/solid.css';
 @import '@fortawesome/fontawesome-free/css/fontawesome.css';
 @plugin 'daisyui';

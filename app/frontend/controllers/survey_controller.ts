@@ -7,8 +7,7 @@ import { readLocale } from '../utils/preferences_cookie';
 // Import Survey.JS UI (side-effect: registers UI components)
 import 'survey-js-ui';
 
-// Import Survey.JS styles
-import 'survey-core/survey-core.min.css';
+// Survey.JS styles are imported in application.css for correct cascade order
 
 export default class extends Controller {
   static targets = ['container', 'output', 'initialData'];
