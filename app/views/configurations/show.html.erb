@@ -5,60 +5,10 @@
     <%= turbo_frame_tag "tab-content" do %>
       <%= render Header::Component.new(active_tab: :configuration) %>
 
-      <%# Sensors section %>
-      <div class="mb-3 flex items-center justify-between">
-        <h3 class="text-base-content/50 text-sm font-semibold tracking-wide uppercase"><%= t('.sensors') %></h3>
-      </div>
-
-      <div
-        class="card bg-base-100 mb-8 shadow-md"
-        data-controller="sensors-polling preference-toggle"
-        data-sensors-polling-url-value="<%= configuration_readings_path %>"
-        data-sensors-polling-enabled-value="<%= @influxdb_running %>"
-        data-preference-toggle-key-value="show_all_sensors"
-      >
-        <div class="card-body p-0">
-          <div class="flex items-center justify-end gap-2 px-4 pt-3">
-            <span class="text-base-content/50 text-xs"><%= t('.show_all_sensors') %></span>
-
-            <input
-              type="checkbox"
-              class="toggle toggle-xs"
-              data-preference-toggle-target="checkbox"
-              data-action="change->preference-toggle#toggle"
-              <% if preferences.show_all_sensors? %>
-                checked
-              <% end %>
-            >
-          </div>
-
-          <div class="overflow-x-auto">
-            <table class="table-sm table">
-              <% SensorRegistry::GROUPS.each do |group, sensor_names| %>
-                <% visible_sensors = preferences.show_all_sensors? ? sensor_names : sensor_names.select { |s| @configuration.sensor_enabled?(s) } %>
-                <% next if visible_sensors.empty? %>
-
-                <tbody>
-                  <tr class="bg-base-200/30">
-                    <td colspan="4" class="text-primary pt-6 pb-3 pl-3 font-bold tracking-wide uppercase">
-                      <i class="fa-solid mr-2 align-middle text-2xl <%= sensor_group_icon(group) %>"></i>
-                      <span class="align-middle text-xs"><%= t("sensor_groups.#{group}") %></span>
-                    </td>
-                  </tr>
-
-                  <% visible_sensors.each do |sensor_name| %>
-                    <%= render SensorRow::Component.new(
-                          sensor_name: sensor_name,
-                          configuration: @configuration,
-                          reading: @readings[sensor_name],
-                        ) %>
-                  <% end %>
-                </tbody>
-              <% end %>
-            </table>
-          </div>
-        </div>
-      </div>
+      <%= render SensorTable::Component.new(
+            configuration: @configuration,
+            readings: @readings,
+          ) %>
 
       <%# Source settings section (shown when sources are in use) %>
       <% active_sources = Configuration::SOURCE_CONFIGS.select { |s| @configuration.configured?(s) || @configuration.sensors_with_source(s).any? } %>

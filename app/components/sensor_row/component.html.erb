@@ -1,19 +1,20 @@
 <tr class="<%= enabled? ? '' : 'opacity-40' %>">
   <%# Sensor name %>
   <td class="pl-4 font-mono text-sm font-semibold uppercase">
-    <%= sensor_name %>
-
     <% if custom_sensor? %>
+      <i class="fa-solid fa-microchip text-base-content/70 text-xs"></i>
+      <%= sensor_name %>
       <% if enabled? && custom_name.present? %>
         <span class="text-base-content/50 text-xs font-normal normal-case"><%= custom_name %></span>
       <% end %>
     <% else %>
       <% tip = enabled? && custom_name.present? ? custom_name : description %>
       <% if tip.present? %>
-        <span class="tooltip tooltip-right before:text-xs before:normal-case" data-tip="<%= tip %>">
-          <i class="fa-solid fa-circle-info text-base-content/30 text-xs"></i>
+        <span class="tooltip tooltip-left before:text-xs before:normal-case" data-tip="<%= tip %>">
+          <i class="fa-solid fa-microchip text-base-content/70 text-xs"></i>
         </span>
       <% end %>
+      <%= sensor_name %>
     <% end %>
 
     <% if house_power_exclusions? %>

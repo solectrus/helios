@@ -28,11 +28,6 @@ module InfluxDb
       each_sensor(sensor_mappings) { |m, f| query_latest(m, f) }
     end
 
-    # Full query: latest value + stats (for initial page load)
-    def query_all_with_stats(sensor_mappings)
-      each_sensor(sensor_mappings) { |m, f| query_with_stats(m, f) }
-    end
-
     private
 
     attr_reader :token, :org, :bucket, :host, :port
@@ -57,51 +52,12 @@ module InfluxDb
       nil
     end
 
-    def query_with_stats(measurement, field)
-      rows = execute_query(flux_stats_query(measurement, field))
-      return nil if rows.empty?
-
-      build_stats_reading(rows)
-    rescue StandardError => e
-      Rails.logger.warn("InfluxDB query failed for #{measurement}:#{field}: #{e.message}")
-      nil
-    end
-
-    def build_stats_reading(rows)
-      result_map = rows.index_by { |r| r['result'] }
-
-      last = result_map['last']
-      first = result_map['first']
-      count = result_map['count']
-
-      {
-        value: last ? parse_value(last['_value']) : nil,
-        time: last ? Time.zone.parse(last['_time']) : nil,
-        first_time: first ? Time.zone.parse(first['_time']) : nil,
-        count: count ? count['_value'].to_i : 0,
-      }
-    end
-
     def flux_latest_query(measurement, field)
       <<~FLUX
         from(bucket: "#{bucket}")
           |> range(start: -24h)
           |> filter(fn: (r) => r._measurement == "#{measurement}" and r._field == "#{field}")
           |> last()
-      FLUX
-    end
-
-    def flux_stats_query(measurement, field)
-      <<~FLUX
-        data = from(bucket: "#{bucket}")
-          |> range(start: 0)
-          |> filter(fn: (r) => r._measurement == "#{measurement}" and r._field == "#{field}")
-
-        last = data |> last() |> set(key: "result", value: "last")
-        first = data |> first() |> set(key: "result", value: "first")
-        count = data |> count() |> toFloat() |> set(key: "result", value: "count")
-
-        union(tables: [last, first, count])
       FLUX
     end
 

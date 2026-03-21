@@ -14,8 +14,6 @@ de:
       title: "Konfiguration - Helios"
       configured: "Konfiguriert"
       pending: "Offen"
-      sensors: "Sensoren"
-      show_all_sensors: "Alle anzeigen"
       settings: "Einstellungen"
       source_settings: "Datenquellen"
       sensor_name: "Sensor"
@@ -56,12 +54,12 @@ de:
       not_configured: "Noch nicht konfiguriert"
 
   sensors:
-    inverter_power: "Summe aller PV-Strings"
-    inverter_power_1: "PV-String 1 am Wechselrichter"
-    inverter_power_2: "PV-String 2 am Wechselrichter"
-    inverter_power_3: "PV-String 3 am Wechselrichter"
-    inverter_power_4: "PV-String 4 am Wechselrichter"
-    inverter_power_5: "PV-String 5 am Wechselrichter"
+    inverter_power: "Summe aller PV-Erzeuger"
+    inverter_power_1: "Separater PV-Erzeuger 1"
+    inverter_power_2: "Separater PV-Erzeuger 2"
+    inverter_power_3: "Separater PV-Erzeuger 3"
+    inverter_power_4: "Separater PV-Erzeuger 4"
+    inverter_power_5: "Separater PV-Erzeuger 5"
     case_temp: "Gehäusetemperatur des Wechselrichters"
     system_status: "Betriebszustand des Wechselrichters, z.B. Einspeisen oder Standby"
     system_status_ok: "Fehlerfreier Betrieb des Wechselrichters (ja/nein)"
@@ -113,7 +111,7 @@ de:
     car: "Elektroauto"
     heatpump: "Wärmepumpe"
     forecast: "Prognose"
-    custom: "Custom-Verbraucher"
+    custom: "Selbstdefinierte Verbraucher"
 
   generated_files:
     show:
