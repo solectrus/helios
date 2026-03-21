@@ -28,6 +28,7 @@ module Orchestration
       def down(remove_volumes: false)
         args = ['down']
         args << '-v' if remove_volumes
+        args.concat(services_except_self)
         run_compose(*args)
       end
 
