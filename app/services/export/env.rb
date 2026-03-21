@@ -292,9 +292,8 @@ module Export
       env.add_section('Shelly collector')
       entry(env, 'SHELLY_HOST', shelly_csv(sensors) { |_, config| config['shelly_host'] },
             'Shelly device hostnames (comma-separated)')
-      entry(env, 'SHELLY_INTERVAL',
-            shelly_csv(sensors) { |_, config| config['shelly_interval'] || shelly&.interval || '5' },
-            'Polling intervals in seconds (comma-separated)')
+      entry(env, 'SHELLY_INTERVAL', shelly&.interval || '5',
+            'Polling interval in seconds')
       entry(env, 'INFLUX_MEASUREMENT', shelly_csv(sensors) { |_, config| config['measurement'] },
             'InfluxDB measurement names (comma-separated)')
       shelly_optional_entries(env, sensors)

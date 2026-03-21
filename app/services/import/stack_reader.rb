@@ -39,8 +39,7 @@ module Import
       @resolved_config ||= run_compose_config
     end
 
-    # Use JSON format to avoid YAML 1.1 type coercion issues where values like
-    # "5,5,5" are misinterpreted as integers (commas as thousands separators).
+    # Use JSON format to avoid YAML 1.1 type coercion issues.
     def run_compose_config
       Dir.mktmpdir do |tmpdir|
         FileUtils.cp(@compose_path, File.join(tmpdir, 'compose.yaml'))

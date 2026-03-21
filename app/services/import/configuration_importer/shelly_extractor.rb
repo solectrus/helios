@@ -25,8 +25,7 @@ module Import
 
         shelly_env = service_env('shelly-collector')
         connection = shelly_env['SHELLY_CLOUD_SERVER'].present? ? 'cloud' : 'local'
-        intervals = csv_split(shelly_env['SHELLY_INTERVAL'])
-        interval = intervals.first.presence || '5'
+        interval = shelly_env['SHELLY_INTERVAL'].presence || '5'
 
         {
           'connection' => connection,
@@ -45,7 +44,7 @@ module Import
         shelly_env = service_env('shelly-collector')
         {
           hosts: csv_split(shelly_env['SHELLY_HOST']),
-          intervals: csv_split(shelly_env['SHELLY_INTERVAL']),
+          interval: shelly_env['SHELLY_INTERVAL'].presence || '5',
           measurements: csv_split(shelly_env['INFLUX_MEASUREMENT']),
           passwords: csv_split(shelly_env['SHELLY_PASSWORD']),
           cloud_servers: csv_split(shelly_env['SHELLY_CLOUD_SERVER']),
@@ -76,7 +75,7 @@ module Import
         data = {
           field => 'shelly',
           'shelly_host' => parsed[:hosts][index],
-          'shelly_interval' => parsed[:intervals][index].presence || '5',
+          'shelly_interval' => parsed[:interval],
         }
         apply_optional_fields(data, index, parsed)
         data
