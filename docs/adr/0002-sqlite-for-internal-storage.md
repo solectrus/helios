@@ -39,4 +39,4 @@ Use SQLite for Helios internal storage.
 - Limited concurrent write performance (not an issue for Helios)
 
 **Location:**
-`/app/data/helios.sqlite3` (persisted via bind mount to `./helios/`)
+`/app/storage/` (persisted via bind mount to `./helios/`)

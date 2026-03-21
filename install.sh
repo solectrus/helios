@@ -47,14 +47,20 @@ if [[ ! $REPLY =~ ^[Yy]$ ]]; then
   exit 0
 fi
 
+# Generate SECRET_KEY_BASE
+SECRET_KEY_BASE=$(openssl rand -hex 64)
+
 # Create installation directory
 echo ""
 echo "Creating installation directory..."
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
+# Create Helios data directory
+mkdir -p helios
+
 # Create minimal compose.yaml with only Helios
-cat > compose.yaml << 'EOF'
+cat > compose.yaml << EOF
 name: solectrus
 
 services:
@@ -65,7 +71,9 @@ services:
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/app/solectrus
-      - ./helios:/app/data
+      - ./helios:/app/storage
+    environment:
+      - SECRET_KEY_BASE=${SECRET_KEY_BASE}
     restart: unless-stopped
 EOF
 

@@ -47,7 +47,7 @@ Helios uses SQLite for its own data:
 | `configurations` | Setup state, flags, and unmanaged services/env vars (JSON blob)      |
 | `chapters`       | Configuration sections: system, devices, inverter, etc. (JSON blobs) |
 
-**Location:** `/app/data/helios.sqlite3` (inside container, persisted via bind mount to `./helios/`)
+**Location:** `/app/storage/` (inside container, persisted via bind mount to `./helios/`)
 
 ---
 
@@ -57,8 +57,10 @@ Helios uses SQLite for its own data:
 /opt/solectrus/              # Installation directory (host)
 ├── compose.yaml             # Docker Compose file (managed by Helios)
 ├── .env                     # Environment variables (managed by Helios)
-├── helios/                  # Helios data (bind mount)
-│   └── helios.sqlite3       # Helios internal database
+├── helios/                  # Helios data (bind mount for /app/storage)
+│   ├── production.sqlite3   # Primary database
+│   ├── production_queue.sqlite3  # SolidQueue database
+│   └── production_cable.sqlite3  # SolidCable database
 ├── postgresql/              # PostgreSQL data (bind mount)
 ├── redis/                   # Redis data (bind mount)
 └── influxdb/                # InfluxDB data (bind mount)
