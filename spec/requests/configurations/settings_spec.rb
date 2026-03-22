@@ -39,6 +39,17 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(config.sensor_config('inverter_power').source).to eq('senec')
     end
 
+    it 'normalizes measurement and field for fixed-source sensors on save' do
+      sensor_data = { 'source' => 'senec', 'measurement' => 'WRONG', 'field' => 'wrong' }
+
+      post configuration_settings_path,
+           params: { setting: 'sensor', name: 'inverter_power', data: sensor_data.to_json }
+
+      config = Configuration.current
+      expect(config.sensor_config('inverter_power').measurement).to eq('SENEC')
+      expect(config.sensor_config('inverter_power').field).to eq('inverter_power')
+    end
+
     it 'creates a singleton and redirects to configuration' do
       post configuration_settings_path,
            params: { setting: 'system', data: { timezone: 'Europe/Berlin' }.to_json }
@@ -58,6 +69,35 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       get edit_configuration_setting_path(setting: 'sensor', name: 'inverter_power')
 
       expect(response).to have_http_status(:ok)
+    end
+
+    it 'normalizes measurement and field for fixed-source sensors' do
+      config = Configuration.current
+      config.update_sensor('inverter_power', {
+                             'source' => 'senec',
+                             'measurement' => 'WRONG',
+                             'field' => 'wrong_field',
+                           })
+
+      get edit_configuration_setting_path(setting: 'sensor', name: 'inverter_power')
+
+      expect(response.body).to include('"SENEC"')
+      expect(response.body).to include('"inverter_power"')
+      expect(response.body).not_to include('"WRONG"')
+    end
+
+    it 'uses collector measurement when configured' do
+      config = Configuration.current
+      config.update('senec', { 'measurement' => 'MySENEC', 'adapter' => 'local', 'host' => '1.2.3.4' })
+      config.update_sensor('inverter_power', {
+                             'source' => 'senec',
+                             'measurement' => 'SENEC',
+                             'field' => 'inverter_power',
+                           })
+
+      get edit_configuration_setting_path(setting: 'sensor', name: 'inverter_power')
+
+      expect(response.body).to include('"MySENEC"')
     end
 
     it 'renders the survey form for an existing singleton' do

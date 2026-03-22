@@ -84,7 +84,7 @@ class ConfigSchema
   SENEC_FIELDS = %w[
     host schema interval language
     username password totp_uri system_id ignore
-    adapter
+    adapter measurement
   ].freeze
 
   MQTT_FIELDS = %w[
@@ -146,6 +146,7 @@ class ConfigSchema
     forecast_pvnode_apikey
     forecast_pvnode_paid
     forecast_pvnode_extra_params
+    measurement
   ].freeze
 
   REVERSE_PROXY_FIELDS = %w[

@@ -1,5 +1,7 @@
 module Configurations
   class SurveysController < ApplicationController
+    include SensorMappingInjection
+
     SOURCE_LABELS = {
       'senec' => { 'de' => 'SENEC-Collector', 'default' => 'SENEC Collector' },
       'shelly' => { 'de' => 'Shelly-Collector', 'default' => 'Shelly Collector' },
@@ -89,38 +91,6 @@ module Configurations
 
     def source_choice(source)
       { 'value' => source, 'text' => SOURCE_LABELS[source] || source }
-    end
-
-    def inject_mapping_defaults!(survey)
-      mapping_page = survey['pages']&.find { |p| p['name'] == 'p_mapping' }
-      return unless mapping_page
-
-      mapping_page['elements'].each do |element|
-        case element['name']
-        when 'measurement'
-          element['defaultValueExpression'] = measurement_expression
-        when 'field'
-          element['defaultValueExpression'] = field_expression
-        end
-      end
-    end
-
-    def measurement_expression
-      sources = SensorRegistry.sources_for(sensor_name)
-      build_iif_expression(sources) { |s| SensorMappings.default_measurement(sensor_name, s) }
-    end
-
-    def field_expression
-      sources = SensorRegistry.sources_for(sensor_name)
-      build_iif_expression(sources) { |s| SensorMappings.default_field(sensor_name, s) }
-    end
-
-    # Builds nested iif() expression: iif({source}='senec','SENEC',iif({source}='shelly','x',''))
-    def build_iif_expression(sources, &)
-      values = sources.map { |s| [s, yield(s)] }
-      values.reverse.reduce("''") do |fallback, (source, value)|
-        "iif({source}='#{source}','#{value}',#{fallback})"
-      end
     end
 
     def inject_name_page!(survey)

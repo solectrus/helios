@@ -167,6 +167,20 @@
         },
         {
           "type": "text",
+          "name": "measurement",
+          "title": {
+            "de": "InfluxDB-Measurement",
+            "default": "InfluxDB measurement"
+          },
+          "description": {
+            "de": "Alle SENEC-Sensoren verwenden dasselbe Measurement. Eine nachträgliche Änderung ist kaum möglich, da bereits geschriebene Daten dauerhaft an diesen Namen gebunden sind.",
+            "default": "All SENEC sensors use the same measurement. Changing this later is very difficult, as previously written data remains permanently tied to this name."
+          },
+          "defaultValue": "SENEC",
+          "isRequired": true
+        },
+        {
+          "type": "text",
           "name": "ignore",
           "title": {
             "de": "Felder ignorieren (optional)",

@@ -14,6 +14,7 @@ module Configurations
     def edit
       if sensor_setting?
         data = @configuration.sensor_config(sensor_name)
+        normalize_fixed_source_mapping!(data)
         render SettingForm::Component.new(setting: 'sensor', sensor_name:, data:)
       else
         data = @configuration.setting_data(setting)
@@ -72,6 +73,7 @@ module Configurations
       return unless data
 
       if sensor_setting?
+        normalize_fixed_source_mapping!(data)
         @configuration.update_sensor(sensor_name, data)
       else
         persist_setting(data)
@@ -94,6 +96,20 @@ module Configurations
     rescue JSON::ParserError
       head(:bad_request)
       nil
+    end
+
+    # Ensure measurement/field match the collector config for fixed sources
+    def normalize_fixed_source_mapping!(data)
+      source = data['source'].to_s
+      return unless source.in?(SensorMappingInjection::FIXED_FIELD_SOURCES)
+
+      data['measurement'] = collector_measurement(source)
+      data['field'] = SensorMappings.default_field(sensor_name, source)
+    end
+
+    def collector_measurement(source)
+      @configuration.setting_data(source).measurement.presence ||
+        SensorMappingInjection::DEFAULT_MEASUREMENTS[source]
     end
   end
 end
