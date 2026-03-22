@@ -5,8 +5,6 @@ module Import
 
       OPTIONAL_FIELDS = {
         passwords: 'shelly_password',
-        cloud_servers: 'shelly_cloud_server',
-        auth_keys: 'shelly_auth_key',
         device_ids: 'shelly_device_id',
         invert_powers: 'shelly_invert_power',
       }.freeze
@@ -24,13 +22,7 @@ module Import
         return unless enabled?
 
         shelly_env = service_env('shelly-collector')
-        connection = shelly_env['SHELLY_CLOUD_SERVER'].present? ? 'cloud' : 'local'
-        interval = shelly_env['SHELLY_INTERVAL'].presence || '5'
-
-        {
-          'connection' => connection,
-          'interval' => interval,
-        }
+        build_section_data(shelly_env)
       end
 
       def device_data
@@ -47,11 +39,23 @@ module Import
           interval: shelly_env['SHELLY_INTERVAL'].presence || '5',
           measurements: csv_split(shelly_env['INFLUX_MEASUREMENT']),
           passwords: csv_split(shelly_env['SHELLY_PASSWORD']),
-          cloud_servers: csv_split(shelly_env['SHELLY_CLOUD_SERVER']),
-          auth_keys: csv_split(shelly_env['SHELLY_AUTH_KEY']),
           device_ids: csv_split(shelly_env['SHELLY_DEVICE_ID']),
           invert_powers: csv_split(shelly_env['SHELLY_INVERT_POWER']),
         }
+      end
+
+      def build_section_data(shelly_env)
+        connection = shelly_env['SHELLY_CLOUD_SERVER'].present? ? 'cloud' : 'local'
+
+        data = {
+          'connection' => connection,
+          'interval' => shelly_env['SHELLY_INTERVAL'].presence || '5',
+        }
+        if connection == 'cloud'
+          data['cloud_server'] = shelly_env['SHELLY_CLOUD_SERVER']&.split(',')&.first
+          data['auth_key'] = shelly_env['SHELLY_AUTH_KEY']&.split(',')&.first
+        end
+        data.compact
       end
 
       def build_devices(parsed)

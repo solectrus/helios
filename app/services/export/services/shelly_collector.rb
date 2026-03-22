@@ -51,13 +51,21 @@ module Export
       end
 
       def optional_vars
-        %w[
-          shelly_password shelly_cloud_server shelly_auth_key
-          shelly_device_id shelly_invert_power
-        ].each_with_object([]) do |field, vars|
+        per_sensor_optional_vars + global_optional_vars
+      end
+
+      def per_sensor_optional_vars
+        %w[shelly_password shelly_device_id shelly_invert_power].each_with_object([]) do |field, vars|
           values = shelly_sensors.map { |_, config| config[field].presence || '' }
           vars << field.upcase if values.any?(&:present?)
         end
+      end
+
+      def global_optional_vars
+        vars = []
+        vars << 'SHELLY_CLOUD_SERVER' if shelly_defaults&.cloud_server.present?
+        vars << 'SHELLY_AUTH_KEY' if shelly_defaults&.auth_key.present?
+        vars
       end
     end
   end

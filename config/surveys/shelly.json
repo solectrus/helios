@@ -55,6 +55,35 @@
           "min": 1
         }
       ]
+    },
+    {
+      "name": "p_cloud",
+      "visibleIf": "{connection} = 'cloud'",
+      "title": {
+        "de": "Cloud-Zugriff",
+        "default": "Cloud access"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "cloud_server",
+          "title": {
+            "de": "Cloud-Server-URL",
+            "default": "Cloud server URL"
+          },
+          "isRequired": true,
+          "placeholder": "https://shelly-42-eu.shelly.cloud"
+        },
+        {
+          "type": "text",
+          "name": "auth_key",
+          "title": {
+            "de": "Authentifizierungsschlüssel",
+            "default": "Authentication key"
+          },
+          "isRequired": true
+        }
+      ]
     }
   ],
   "showQuestionNumbers": "off",

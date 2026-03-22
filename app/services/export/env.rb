@@ -296,18 +296,30 @@ module Export
             'Polling interval in seconds')
       entry(env, 'INFLUX_MEASUREMENT', shelly_csv(sensors) { |_, config| config['measurement'] },
             'InfluxDB measurement names (comma-separated)')
-      shelly_optional_entries(env, sensors)
+      shelly_optional_entries(env, sensors, shelly)
     end
 
-    def shelly_optional_entries(env, sensors)
-      %w[
-        shelly_password shelly_cloud_server shelly_auth_key
-        shelly_device_id shelly_invert_power
-      ].each do |field|
+    def shelly_optional_entries(env, sensors, shelly)
+      shelly_per_sensor_optional_entries(env, sensors)
+      shelly_global_optional_entries(env, shelly, sensors.size)
+    end
+
+    def shelly_per_sensor_optional_entries(env, sensors)
+      %w[shelly_password shelly_device_id shelly_invert_power].each do |field|
         values = sensors.map { |_, config| config[field].presence || '' }
         next unless values.any?(&:present?)
 
         entry(env, field.upcase, values.join(','), "Shelly #{field.sub('shelly_', '')} (comma-separated)")
+      end
+    end
+
+    def shelly_global_optional_entries(env, shelly, sensor_count)
+      { 'SHELLY_CLOUD_SERVER' => shelly&.cloud_server,
+        'SHELLY_AUTH_KEY' => shelly&.auth_key }.each do |env_key, value|
+        next if value.blank?
+
+        entry(env, env_key, ([value] * sensor_count).join(','),
+              "Shelly #{env_key.sub('SHELLY_', '').downcase} (same for all devices)")
       end
     end
 

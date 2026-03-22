@@ -219,8 +219,7 @@ class Configuration
     'external' => %w[source measurement field name exclude_from_house_power],
     'shelly' => %w[
       source measurement field name shelly_connection shelly_host shelly_interval shelly_password
-      shelly_cloud_server shelly_auth_key shelly_device_id shelly_invert_power
-      exclude_from_house_power
+      shelly_device_id shelly_invert_power exclude_from_house_power
     ],
     'mqtt' => %w[
       source measurement field name mqtt_topic mqtt_payload_type mqtt_json_key mqtt_formula

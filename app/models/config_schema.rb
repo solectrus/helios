@@ -98,14 +98,15 @@ class ConfigSchema
   SHELLY_FIELDS = %w[
     connection
     interval
+    cloud_server
+    auth_key
   ].freeze
 
   # --- Per-sensor fields (vary by source) ---
 
   SENSOR_SHELLY_FIELDS = %w[
     source name shelly_host shelly_password shelly_interval
-    shelly_cloud_server shelly_auth_key shelly_device_id
-    shelly_invert_power shelly_connection
+    shelly_device_id shelly_invert_power shelly_connection
     exclude_from_house_power
   ].freeze
 

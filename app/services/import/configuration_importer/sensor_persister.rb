@@ -93,10 +93,11 @@ module Import
       def merge_shelly_device_fields!(data, device)
         device_data = device[:data]
         data['name'] = device_data['name'] || device[:name]
-        data['shelly_connection'] = device_data['shelly_cloud_server'].present? ? 'cloud' : 'local'
+        data['shelly_connection'] = device_data['shelly_device_id'].present? ? 'cloud' : 'local'
         data['shelly_host'] = device_data['shelly_host']
         data['shelly_interval'] = device_data['shelly_interval']
         data['shelly_password'] = device_data['shelly_password']
+        data['shelly_device_id'] = device_data['shelly_device_id']
         data['exclude_from_house_power'] = true if device_data['exclude_from_house_power']
       end
 

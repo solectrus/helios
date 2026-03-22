@@ -117,25 +117,6 @@
       "elements": [
         {
           "type": "text",
-          "name": "shelly_cloud_server",
-          "title": {
-            "de": "Cloud-Server-URL",
-            "default": "Cloud server URL"
-          },
-          "isRequired": true,
-          "placeholder": "https://shelly-42-eu.shelly.cloud"
-        },
-        {
-          "type": "text",
-          "name": "shelly_auth_key",
-          "title": {
-            "de": "Authentifizierungsschlüssel",
-            "default": "Authentication key"
-          },
-          "isRequired": true
-        },
-        {
-          "type": "text",
           "name": "shelly_device_id",
           "title": {
             "de": "Geräte-ID",
