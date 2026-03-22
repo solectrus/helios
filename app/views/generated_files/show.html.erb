@@ -1,14 +1,14 @@
 <% content_for :title, t('.title') %>
 
-<div class="min-h-screen p-8">
-  <div class="mx-auto max-w-4xl">
-    <%= turbo_frame_tag "tab-content" do %>
-      <%= render Header::Component.new(active_tab: :generated_files) %>
+<div class="min-h-screen">
+  <%= turbo_frame_tag "tab-content" do %>
+    <%= render Header::Component.new(active_tab: :generated_files) %>
 
+    <div class="mx-auto max-w-4xl p-8">
       <%= render StackPreview::Component.new(
             compose_content: @stack_builder.compose_content,
             env_content: @stack_builder.env_content
           ) %>
-    <% end %>
-  </div>
+    </div>
+  <% end %>
 </div>

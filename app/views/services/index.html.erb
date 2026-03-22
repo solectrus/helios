@@ -1,10 +1,10 @@
 <% content_for :title, t('.title') %>
 
-<div class="min-h-screen p-8">
-  <div class="mx-auto max-w-4xl">
-    <%= turbo_frame_tag "tab-content", data: { controller: "visibility" } do %>
-      <%= render Header::Component.new(active_tab: :services) %>
+<div class="min-h-screen">
+  <%= turbo_frame_tag "tab-content", data: { controller: "visibility" } do %>
+    <%= render Header::Component.new(active_tab: :services) %>
 
+    <div class="mx-auto max-w-4xl p-8">
       <%= turbo_stream_from "services" %>
 
       <div class="space-y-3">
@@ -16,6 +16,6 @@
           ) %>
         <% end %>
       </div>
-    <% end %>
-  </div>
+    </div>
+  <% end %>
 </div>

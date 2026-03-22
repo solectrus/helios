@@ -1,10 +1,10 @@
 <% content_for :title, t('.title') %>
 
-<div class="min-h-screen p-8">
-  <div class="mx-auto max-w-4xl">
-    <%= turbo_frame_tag "tab-content" do %>
-      <%= render Header::Component.new(active_tab: :configuration) %>
+<div class="min-h-screen">
+  <%= turbo_frame_tag "tab-content" do %>
+    <%= render Header::Component.new(active_tab: :configuration) %>
 
+    <div class="mx-auto max-w-4xl p-8">
       <%= render SensorTable::Component.new(
             configuration: @configuration,
             readings: @readings,
@@ -38,6 +38,6 @@
       </div>
 
       <%= render DialogModal::Component.new(id: "setting-modal", turbo_frame: "setting-modal-content") %>
-    <% end %>
-  </div>
+    </div>
+  <% end %>
 </div>
