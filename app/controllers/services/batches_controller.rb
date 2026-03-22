@@ -23,7 +23,11 @@ module Services
       end
     end
 
-    def turbo_stream_updates
+    def turbo_stream_updates(&)
+      service_row_updates(&) + [status_bar_update]
+    end
+
+    def service_row_updates
       services_to_update.map do |compose_service|
         container = containers_by_service[compose_service.name]
         turbo_stream.replace(
@@ -36,6 +40,13 @@ module Services
           ),
         )
       end
+    end
+
+    def status_bar_update
+      turbo_stream.replace(
+        'status-bar',
+        StatusBar::Component.new(status: :starting),
+      )
     end
 
     def services_to_update

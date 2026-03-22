@@ -7,7 +7,7 @@ module StatusBar
       },
       starting: {
         icon: 'fa-solid fa-spinner fa-spin',
-        css: 'bg-info text-info-content',
+        css: 'bg-info text-info-content animate-pulse',
       },
       partial: {
         icon: 'fa-solid fa-circle-half-stroke',
@@ -19,7 +19,7 @@ module StatusBar
       },
       stopped: {
         icon: 'fa-solid fa-circle-stop',
-        css: 'bg-base-content/30 text-base-content/70',
+        css: 'bg-base-content text-base-100',
       },
       restart_required: {
         icon: 'fa-solid fa-arrows-rotate',
@@ -47,6 +47,18 @@ module StatusBar
       I18n.available_locales.index_with do |locale|
         t(".#{@status}", locale:)
       end
+    end
+
+    def show_start?
+      @status.in?(%i[stopped partial error])
+    end
+
+    def show_stop?
+      @status.in?(%i[ok starting partial error restart_required])
+    end
+
+    def batch_path
+      '/services/batch'
     end
   end
 end

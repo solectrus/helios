@@ -31,14 +31,14 @@ export default class extends Controller {
   }
 
   updateButtons() {
-    const canStart = this.serviceRowComponentOutlets.filter(
+    const canStart = this.serviceRowComponentOutlets.some(
       (outlet) => outlet.canStart,
     );
-    const canStop = this.serviceRowComponentOutlets.filter(
+    const canStop = this.serviceRowComponentOutlets.some(
       (outlet) => outlet.canStop,
     );
 
-    this.startButtonTarget.disabled = canStart.length === 0;
-    this.stopButtonTarget.disabled = canStop.length === 0;
+    this.startButtonTarget.classList.toggle('hidden', !canStart);
+    this.stopButtonTarget.classList.toggle('hidden', !canStop);
   }
 }

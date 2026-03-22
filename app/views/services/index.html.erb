@@ -7,8 +7,6 @@
 
       <%= turbo_stream_from "services" %>
 
-      <div class="mb-8 flex justify-center"><%= render GlobalActions::Component.new %></div>
-
       <div class="space-y-3">
         <% @compose_services.each do |compose_service| %>
           <%= render ServiceRow::Component.new(

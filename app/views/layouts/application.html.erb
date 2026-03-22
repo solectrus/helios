@@ -38,6 +38,7 @@
     <%= yield %>
 
     <% if authenticated? %>
+      <%= turbo_stream_from "status_bar" %>
       <%= render StatusBar::Component.new %>
     <% end %>
   </body>

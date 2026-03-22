@@ -7,7 +7,7 @@ module Orchestration
       )
 
       Turbo::StreamsChannel.broadcast_replace_to(
-        'services',
+        'status_bar',
         target: 'status-bar',
         html:,
       )
