@@ -28,7 +28,7 @@ module Import
         return 'shelly' if device_provides_sensor?(sensor_name, 'shelly')
         return 'mqtt' if device_provides_sensor?(sensor_name, 'mqtt')
 
-        'smart_home'
+        'external'
       end
 
       def device_provides_sensor?(sensor_name, source_type)

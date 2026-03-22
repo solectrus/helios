@@ -5,7 +5,7 @@ module Configurations
       'shelly' => { 'de' => 'Shelly-Collector', 'default' => 'Shelly Collector' },
       'mqtt' => { 'de' => 'MQTT-Collector', 'default' => 'MQTT Collector' },
       'forecast' => { 'de' => 'Forecast-Collector', 'default' => 'Forecast Collector' },
-      'smart_home' => { 'de' => 'Extern (Smart Home)', 'default' => 'External (Smart Home)' },
+      'external' => { 'de' => 'Extern', 'default' => 'External' },
     }.freeze
 
     def show
@@ -171,7 +171,7 @@ module Configurations
     def inject_house_power_page!(survey)
       survey['pages'] << {
         'name' => 'p_house_power',
-        'visibleIf' => "{source} = 'shelly' or {source} = 'mqtt' or {source} = 'smart_home'",
+        'visibleIf' => "{source} = 'shelly' or {source} = 'mqtt' or {source} = 'external'",
         'title' => { 'de' => 'Hausverbrauch', 'default' => 'House power' },
         'elements' => [house_power_element],
       }

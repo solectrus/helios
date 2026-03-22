@@ -1,6 +1,6 @@
 class SensorRegistry
   # Available data sources for sensors
-  SOURCES = %w[senec shelly mqtt forecast smart_home].freeze
+  SOURCES = %w[senec shelly mqtt forecast external].freeze
 
   # Sensor groups for UI display
   GROUPS = {
@@ -71,69 +71,69 @@ class SensorRegistry
 
   SENSORS = {
     # Inverter
-    'inverter_power' => { unit: 'W', sources: %w[senec mqtt smart_home] },
-    'inverter_power_1' => { unit: 'W', sources: %w[senec mqtt smart_home] },
-    'inverter_power_2' => { unit: 'W', sources: %w[senec mqtt smart_home] },
-    'inverter_power_3' => { unit: 'W', sources: %w[senec mqtt smart_home] },
-    'inverter_power_4' => { unit: 'W', sources: %w[mqtt smart_home] },
-    'inverter_power_5' => { unit: 'W', sources: %w[mqtt smart_home] },
+    'inverter_power' => { unit: 'W', sources: %w[senec mqtt external] },
+    'inverter_power_1' => { unit: 'W', sources: %w[senec mqtt external] },
+    'inverter_power_2' => { unit: 'W', sources: %w[senec mqtt external] },
+    'inverter_power_3' => { unit: 'W', sources: %w[senec mqtt external] },
+    'inverter_power_4' => { unit: 'W', sources: %w[mqtt external] },
+    'inverter_power_5' => { unit: 'W', sources: %w[mqtt external] },
 
     # Grid
-    'grid_import_power' => { unit: 'W', sources: %w[senec mqtt smart_home] },
-    'grid_export_power' => { unit: 'W', sources: %w[senec mqtt smart_home] },
-    'grid_export_limit' => { unit: '%', sources: %w[senec mqtt smart_home] },
-    'house_power' => { unit: 'W', sources: %w[senec mqtt smart_home] },
+    'grid_import_power' => { unit: 'W', sources: %w[senec mqtt external] },
+    'grid_export_power' => { unit: 'W', sources: %w[senec mqtt external] },
+    'grid_export_limit' => { unit: '%', sources: %w[senec mqtt external] },
+    'house_power' => { unit: 'W', sources: %w[senec mqtt external] },
 
     # Battery
-    'battery_charging_power' => { unit: 'W', sources: %w[senec mqtt smart_home] },
-    'battery_discharging_power' => { unit: 'W', sources: %w[senec mqtt smart_home] },
-    'battery_soc' => { unit: '%', sources: %w[senec mqtt smart_home] },
+    'battery_charging_power' => { unit: 'W', sources: %w[senec mqtt external] },
+    'battery_discharging_power' => { unit: 'W', sources: %w[senec mqtt external] },
+    'battery_soc' => { unit: '%', sources: %w[senec mqtt external] },
 
     # Wallbox
-    'wallbox_power' => { unit: 'W', sources: %w[senec shelly mqtt smart_home] },
-    'wallbox_car_connected' => { unit: '', sources: %w[senec mqtt smart_home] },
+    'wallbox_power' => { unit: 'W', sources: %w[senec shelly mqtt external] },
+    'wallbox_car_connected' => { unit: '', sources: %w[senec mqtt external] },
 
     # Car
-    'car_battery_soc' => { unit: '%', sources: %w[mqtt smart_home] },
+    'car_battery_soc' => { unit: '%', sources: %w[mqtt external] },
 
     # Heatpump
-    'heatpump_power' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'heatpump_heating_power' => { unit: 'W', sources: %w[mqtt smart_home] },
-    'heatpump_tank_temp' => { unit: '°C', sources: %w[mqtt smart_home] },
-    'heatpump_status' => { unit: '', sources: %w[mqtt smart_home] },
+    'heatpump_power' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'heatpump_heating_power' => { unit: 'W', sources: %w[mqtt external] },
+    'heatpump_tank_temp' => { unit: '°C', sources: %w[mqtt external] },
+    'heatpump_status' => { unit: '', sources: %w[mqtt external] },
 
     # System
-    'case_temp' => { unit: '°C', sources: %w[senec mqtt smart_home] },
-    'outdoor_temp' => { unit: '°C', sources: %w[mqtt smart_home] },
-    'system_status' => { unit: '', sources: %w[senec mqtt smart_home] },
-    'system_status_ok' => { unit: '', sources: %w[senec mqtt smart_home] },
+    'case_temp' => { unit: '°C', sources: %w[senec mqtt external] },
+    'outdoor_temp' => { unit: '°C', sources: %w[mqtt external] },
+    'system_status' => { unit: '', sources: %w[senec mqtt external] },
+    'system_status_ok' => { unit: '', sources: %w[senec mqtt external] },
 
     # Forecast
-    'inverter_power_forecast' => { unit: 'W', sources: %w[forecast smart_home] },
-    'inverter_power_forecast_clearsky' => { unit: 'W', sources: %w[forecast smart_home] },
-    'outdoor_temp_forecast' => { unit: '°C', sources: %w[forecast smart_home] },
+    'inverter_power_forecast' => { unit: 'W', sources: %w[forecast external] },
+    'inverter_power_forecast_clearsky' => { unit: 'W', sources: %w[forecast external] },
+    'outdoor_temp_forecast' => { unit: '°C', sources: %w[forecast external] },
 
     # Custom
-    'custom_power_01' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_02' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_03' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_04' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_05' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_06' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_07' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_08' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_09' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_10' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_11' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_12' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_13' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_14' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_15' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_16' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_17' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_18' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_19' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
-    'custom_power_20' => { unit: 'W', sources: %w[shelly mqtt smart_home] },
+    'custom_power_01' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_02' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_03' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_04' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_05' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_06' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_07' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_08' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_09' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_10' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_11' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_12' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_13' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_14' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_15' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_16' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_17' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_18' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_19' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'custom_power_20' => { unit: 'W', sources: %w[shelly mqtt external] },
   }.freeze
 
   def self.unit_for(sensor_name)

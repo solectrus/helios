@@ -25,91 +25,91 @@ watchtower:
   image: nickfedor/watchtower
 sensors:
   inverter_power:
-    source: smart_home
+    source: external
     measurement: inverter
     field: power
   inverter_power_1:
-    source: smart_home
+    source: external
     measurement: inverter_1
     field: power
   inverter_power_2:
-    source: smart_home
+    source: external
     measurement: inverter_2
     field: power
   inverter_power_3:
-    source: smart_home
+    source: external
     measurement: inverter_3
     field: power
   case_temp:
-    source: smart_home
+    source: external
     measurement: case
     field: temperature
   system_status:
-    source: smart_home
+    source: external
     measurement: system
     field: status
   system_status_ok:
-    source: smart_home
+    source: external
     measurement: system
     field: status_ok
   grid_import_power:
-    source: smart_home
+    source: external
     measurement: grid
     field: import_power
   grid_export_power:
-    source: smart_home
+    source: external
     measurement: grid
     field: export_power
   grid_export_limit:
-    source: smart_home
+    source: external
     measurement: grid
     field: export_limit
   house_power:
-    source: smart_home
+    source: external
     measurement: house
     field: power
   battery_charging_power:
-    source: smart_home
+    source: external
     measurement: battery
     field: charging_power
   battery_discharging_power:
-    source: smart_home
+    source: external
     measurement: battery
     field: discharging_power
   battery_soc:
-    source: smart_home
+    source: external
     measurement: battery
     field: soc
   wallbox_power:
-    source: smart_home
+    source: external
     measurement: wallbox
     field: power
   wallbox_car_connected:
-    source: smart_home
+    source: external
     measurement: wallbox
     field: connected
   car_battery_soc:
-    source: smart_home
+    source: external
     measurement: car
     field: battery_soc
   heatpump_power:
-    source: smart_home
+    source: external
     measurement: heatpump
     field: power
   heatpump_heating_power:
-    source: smart_home
+    source: external
     measurement: heatpump
     field: heating_power
   heatpump_tank_temp:
-    source: smart_home
+    source: external
     measurement: heatpump
     field: tank_temp
   heatpump_status:
-    source: smart_home
+    source: external
     measurement: heatpump
     field: status
   outdoor_temp:
-    source: smart_home
+    source: external
     measurement: outdoor
     field: temperature
   inverter_power_forecast:
@@ -125,18 +125,18 @@ sensors:
     measurement: outdoor_forecast
     field: temperature
   custom_power_01:
-    source: smart_home
+    source: external
     measurement: custom_01
     field: power
   custom_power_02:
-    source: smart_home
+    source: external
     measurement: custom_02
     field: power
   custom_power_03:
-    source: smart_home
+    source: external
     measurement: custom_03
     field: power
   custom_power_04:
-    source: smart_home
+    source: external
     measurement: custom_04
     field: power

@@ -1,11 +1,11 @@
 module SensorRow
   class Component < ViewComponent::Base
     SOURCE_BADGES = {
-      'senec' => { label: 'SENEC', css: 'badge-primary' },
-      'shelly' => { label: 'Shelly', css: 'badge-secondary' },
-      'mqtt' => { label: 'MQTT', css: 'badge-accent' },
-      'forecast' => { label: 'Forecast', css: 'badge-info' },
-      'smart_home' => { label: 'Smart Home', css: 'badge-warning' },
+      'senec' => 'badge-primary',
+      'shelly' => 'badge-secondary',
+      'mqtt' => 'badge-accent',
+      'forecast' => 'badge-info',
+      'external' => 'badge-warning',
     }.freeze
 
     attr_reader :sensor_name, :configuration, :reading
@@ -27,8 +27,12 @@ module SensorRow
 
     delegate :source, to: :sensor_config
 
-    def source_badge
+    def source_badge_css
       SOURCE_BADGES[source]
+    end
+
+    def source_badge_label
+      t(".sources.#{source}")
     end
 
     def unit

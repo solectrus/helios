@@ -44,10 +44,10 @@
               }
             },
             {
-              "value": "smart_home",
+              "value": "external",
               "text": {
-                "de": "Anderer, über Smart-Home-System (ioBroker, Home Assistant)",
-                "default": "Other, via smart home system (ioBroker, Home Assistant)"
+                "de": "Anderer, extern (ioBroker, Home Assistant)",
+                "default": "Other, external (ioBroker, Home Assistant)"
               }
             },
             {
@@ -226,19 +226,19 @@
       ]
     },
     {
-      "name": "p_smart_home",
-      "visibleIf": "{battery_vendor} = 'smart_home'",
+      "name": "p_external",
+      "visibleIf": "{battery_vendor} = 'external'",
       "title": {
-        "de": "Smart-Home-System",
-        "default": "Smart home system"
+        "de": "Externe Befüllung",
+        "default": "External input"
       },
       "elements": [
         {
           "type": "radiogroup",
-          "name": "smart_home_system",
+          "name": "external_system",
           "title": {
-            "de": "Welches Smart-Home-System nutzt du?",
-            "default": "Which smart home system do you use?"
+            "de": "Welches System wird verwendet?",
+            "default": "Which system is used?"
           },
           "isRequired": true,
           "choices": [

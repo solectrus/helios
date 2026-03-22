@@ -16,6 +16,9 @@ class Configuration
   # Source configurations shown when at least one sensor uses that source
   SOURCE_CONFIGS = %w[senec mqtt shelly forecast].freeze
 
+  # All data sources (SOURCE_CONFIGS + external sources without own configuration)
+  ALL_SOURCES = (SOURCE_CONFIGS + %w[external]).freeze
+
   # All valid setting names
   ALL = SINGLETONS.freeze
 
@@ -213,7 +216,7 @@ class Configuration
   SENSOR_FIELDS_BY_SOURCE = {
     'senec' => %w[source measurement field],
     'forecast' => %w[source measurement field],
-    'smart_home' => %w[source measurement field name exclude_from_house_power],
+    'external' => %w[source measurement field name exclude_from_house_power],
     'shelly' => %w[
       source measurement field name shelly_connection shelly_host shelly_interval shelly_password
       shelly_cloud_server shelly_auth_key shelly_device_id shelly_invert_power

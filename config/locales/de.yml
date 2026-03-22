@@ -53,6 +53,34 @@ de:
       configure: "Konfigurieren"
       not_configured: "Noch nicht konfiguriert"
 
+  external_input_info:
+    component:
+      title: "Externe Befüllung"
+      sensor_count:
+        one: "%{count} Sensor verbunden"
+        other: "%{count} Sensoren verbunden"
+      modal:
+        title: "Externe Befüllung"
+        description: "Alternativ zu den Collectoren, die Messwerte selbst abrufen, können Sensordaten auch von außen direkt in die InfluxDB geschrieben werden. Dies kann über ioBroker oder Home Assistant erfolgen."
+        iobroker:
+          title: "ioBroker"
+          description: "Der SOLECTRUS-Adapter für ioBroker schreibt Sensordaten direkt in die InfluxDB."
+          link: "ioBroker-Adapter"
+        home_assistant:
+          title: "Home Assistant"
+          description: "Die SOLECTRUS-Integration für Home Assistant schreibt Sensordaten direkt in die InfluxDB."
+          link: "Home Assistant Integration"
+        close: "Schließen"
+
+  sensor_row:
+    component:
+      sources:
+        senec: "SENEC"
+        shelly: "Shelly"
+        mqtt: "MQTT"
+        forecast: "Forecast"
+        external: "Extern"
+
   sensors:
     inverter_power: "Summe aller PV-Erzeuger"
     inverter_power_1: "Separater PV-Erzeuger 1"

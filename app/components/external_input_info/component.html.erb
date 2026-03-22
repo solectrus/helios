@@ -1,0 +1,76 @@
+<div class="card bg-base-100 shadow-md">
+  <div class="card-body flex-row items-start gap-4 p-5">
+    <div class="text-primary flex items-center self-stretch px-2 text-5xl">
+      <i class="fa-solid fa-house-signal"></i>
+    </div>
+
+    <div class="min-w-0 flex-1">
+      <div class="flex items-center justify-between">
+        <h2 class="text-lg font-semibold"><%= t('.title') %></h2>
+      </div>
+
+      <div class="flex items-center justify-between py-2">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-check text-success text-xs"></i>
+          <span class="text-base-content/70 text-sm"><%= t('.sensor_count', count: sensor_count) %></span>
+        </div>
+
+        <button class="btn btn-ghost btn-sm btn-square" onclick="external_input_info_modal.showModal()">
+          <i class="fa-solid fa-circle-info"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<dialog id="external_input_info_modal" class="modal">
+  <div class="modal-box max-w-lg">
+    <h3 class="text-lg font-bold"><%= t('.modal.title') %></h3>
+
+    <p class="text-base-content/70 mt-2"><%= t('.modal.description') %></p>
+
+    <div class="divider"></div>
+
+    <div class="space-y-4">
+      <div>
+        <h4 class="font-semibold"><%= t('.modal.iobroker.title') %></h4>
+        <p class="text-base-content/70 mt-1 text-sm"><%= t('.modal.iobroker.description') %></p>
+
+        <a
+          href="https://github.com/patricknitsch/ioBroker.solectrus-influxdb"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="link link-primary mt-1 inline-flex items-center gap-1 text-sm"
+        >
+          <i class="fa-brands fa-github"></i>
+          <%= t('.modal.iobroker.link') %>
+        </a>
+      </div>
+
+      <div>
+        <h4 class="font-semibold"><%= t('.modal.home_assistant.title') %></h4>
+        <p class="text-base-content/70 mt-1 text-sm"><%= t('.modal.home_assistant.description') %></p>
+
+        <a
+          href="https://github.com/solectrus/ha-integration"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="link link-primary mt-1 inline-flex items-center gap-1 text-sm"
+        >
+          <i class="fa-brands fa-github"></i>
+          <%= t('.modal.home_assistant.link') %>
+        </a>
+      </div>
+    </div>
+
+    <div class="modal-action">
+      <form method="dialog">
+        <button class="btn"><%= t('.modal.close') %></button>
+      </form>
+    </div>
+  </div>
+
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>

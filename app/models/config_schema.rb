@@ -114,10 +114,6 @@ class ConfigSchema
     exclude_from_house_power
   ].freeze
 
-  SENSOR_SENEC_FIELDS = %w[source].freeze
-  SENSOR_FORECAST_FIELDS = %w[source].freeze
-  SENSOR_SMART_HOME_FIELDS = %w[source name exclude_from_house_power].freeze
-
   # --- Singleton fields ---
 
   FORECAST_FIELDS = %w[

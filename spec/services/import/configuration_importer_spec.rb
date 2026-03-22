@@ -453,8 +453,8 @@ RSpec.describe Import::ConfigurationImporter do
     end
   end
 
-  context 'with with_smart_home scenario' do
-    let(:scenario) { 'with_smart_home' }
+  context 'with with_external scenario' do
+    let(:scenario) { 'with_external' }
 
     describe 'sensor data' do
       subject(:sensors) { importer.result[:sensors] }
@@ -483,9 +483,9 @@ RSpec.describe Import::ConfigurationImporter do
     describe '#import!' do
       subject(:config) { importer.import! }
 
-      it 'persists sensors as smart_home source' do
-        smart_home_sensors = config.sensors_with_source('smart_home')
-        expect(smart_home_sensors.keys).to include('inverter_power', 'house_power')
+      it 'persists sensors as external source' do
+        external_sensors = config.sensors_with_source('external')
+        expect(external_sensors.keys).to include('inverter_power', 'house_power')
       end
 
       it 'preserves custom measurement:field mappings' do
