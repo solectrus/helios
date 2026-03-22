@@ -48,9 +48,23 @@ module Compose
       @data['name'] = value
     end
 
+    KEY_ORDER = %w[
+      image
+      user
+      command
+      environment
+      volumes
+      ports
+      labels
+      depends_on
+      healthcheck
+      restart
+      logging
+    ].freeze
+
     def add_service(name, config, comment: nil)
       @services = nil # Reset memoized collection
-      (@data['services'] ||= {})[name.to_s] = stringify_keys(config)
+      (@data['services'] ||= {})[name.to_s] = sort_keys(stringify_keys(config))
       @service_comments[name.to_s] = comment if comment
     end
 
@@ -77,6 +91,10 @@ module Compose
 
     def stringify_keys(hash)
       hash.deep_stringify_keys
+    end
+
+    def sort_keys(hash)
+      hash.sort_by { |key, _| KEY_ORDER.index(key) || KEY_ORDER.size }.to_h
     end
 
     # Insert blank lines between top-level sections and comments before services
