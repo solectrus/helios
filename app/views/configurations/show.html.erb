@@ -11,7 +11,7 @@
           ) %>
 
       <%# Source settings section (shown when sources are in use) %>
-      <% active_sources = Configuration::ALL_SOURCES.select { |s| @configuration.configured?(s) || @configuration.sensors_with_source(s).any? } %>
+      <% active_sources = Configuration::ALL_SOURCES.select { |s| @configuration.sensors_with_source(s).any? } %>
 
       <% if active_sources.any? %>
         <h3 class="text-base-content/50 mb-3 text-sm font-semibold tracking-wide uppercase">

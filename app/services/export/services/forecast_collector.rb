@@ -10,7 +10,7 @@ module Export
       end
 
       def self.enabled?(configuration)
-        configuration.forecast.forecast.present?
+        configuration.forecast_required?
       end
 
       def to_h
