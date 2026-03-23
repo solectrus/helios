@@ -136,8 +136,8 @@ export default class extends Controller {
     input.value = JSON.stringify(data);
     form.appendChild(input);
 
-    // Submit the form
-    form.submit();
+    // Submit via requestSubmit so Turbo intercepts the submission
+    form.requestSubmit();
   }
 
   // Public method to get current survey data
