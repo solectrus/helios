@@ -94,12 +94,16 @@ class Configuration
     (@data['sensors'] || {}).select { |_name, config| config['source'] == source.to_s }
   end
 
-  # Enable/update a sensor
-  def update_sensor(name, data)
+  # Enable/update a sensor. Returns true if data changed.
+  def update_sensor(name, data) # rubocop:disable Naming/PredicateMethod
     @data['sensors'] ||= {}
     raw = data.is_a?(Data) ? data.to_h : data
-    @data['sensors'][name.to_s] = sanitize_sensor_data(raw)
+    sanitized = sanitize_sensor_data(raw)
+    return false if @data['sensors'][name.to_s] == sanitized
+
+    @data['sensors'][name.to_s] = sanitized
     save!
+    true
   end
 
   # Disable/remove a sensor
@@ -169,11 +173,14 @@ class Configuration
     Data.wrap(@data[setting.to_s] || {})
   end
 
-  # Create or update a singleton setting
-  def update(setting, data)
+  # Create or update a singleton setting. Returns true if data changed.
+  def update(setting, data) # rubocop:disable Naming/PredicateMethod
     raw = data.is_a?(Data) ? data.to_h : data
+    return false if @data[setting.to_s] == raw
+
     @data[setting.to_s] = raw
     save!
+    true
   end
 
   def configured?(setting)

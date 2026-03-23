@@ -6,6 +6,7 @@ module Orchestration
       @service_statuses = Concurrent::Map.new
       @overall = Concurrent::AtomicReference.new(:stopped)
       @initialized = Concurrent::AtomicBoolean.new(false)
+      @restart_required = Concurrent::AtomicBoolean.new(false)
     end
 
     # Faster refresh when services are still starting up
@@ -33,6 +34,7 @@ module Orchestration
     end
 
     def mark_config_changed!
+      @restart_required.value = config_changed?
       recompute_and_broadcast(force: true)
     end
 
@@ -40,6 +42,7 @@ module Orchestration
       Orchestration::Container.invalidate_cache
       refresh_service_statuses
 
+      @restart_required.value = config_changed?
       @initialized.make_true
       recompute_and_broadcast(force: true)
     rescue StandardError => e
@@ -53,6 +56,7 @@ module Orchestration
       @service_statuses.clear
       @overall.set(:stopped)
       @initialized.make_false
+      @restart_required.make_false
     end
 
     # True when services are in a transient state (:starting)
@@ -93,18 +97,21 @@ module Orchestration
     end
 
     def restart_required?
-      config_path =
-        ::File.join(
-          Rails.configuration.helios_stack_path,
-          Configuration::YAML_FILENAME,
-        )
+      @restart_required.true?
+    end
+
+    def config_changed?
       compose_path = ::Compose.path
+      env_path = ::Env.path
 
-      unless ::File.exist?(config_path) && ::File.exist?(compose_path)
-        return false
-      end
+      return false unless ::File.exist?(compose_path) && ::File.exist?(env_path)
 
-      ::File.mtime(config_path) > ::File.mtime(compose_path)
+      configuration = Configuration.current
+      return false unless configuration.setup_completed?
+
+      builder = Export::Builder.new(configuration)
+      builder.compose_content != ::File.read(compose_path) ||
+        builder.env_content != ::File.read(env_path)
     end
 
     def broadcast!
