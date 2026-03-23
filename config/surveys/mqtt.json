@@ -10,10 +10,10 @@
   },
   "pages": [
     {
-      "name": "p_mqtt",
+      "name": "p_mqtt_connection",
       "title": {
-        "de": "MQTT-Broker",
-        "default": "MQTT broker"
+        "de": "Verbindung",
+        "default": "Connection"
       },
       "elements": [
         {
@@ -50,7 +50,16 @@
             "default": "Use SSL/TLS"
           },
           "defaultValue": false
-        },
+        }
+      ]
+    },
+    {
+      "name": "p_mqtt_auth",
+      "title": {
+        "de": "Authentifizierung",
+        "default": "Authentication"
+      },
+      "elements": [
         {
           "type": "text",
           "name": "mqtt_username",
