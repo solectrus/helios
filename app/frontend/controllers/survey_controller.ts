@@ -62,7 +62,7 @@ export default class extends Controller {
         this.initialDataTarget.textContent || '{}',
       );
       if (Object.keys(initialData).length > 0) {
-        this.survey.data = initialData;
+        this.survey.mergeData(initialData);
       }
     }
 
