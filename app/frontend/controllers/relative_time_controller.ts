@@ -24,7 +24,9 @@ export default class extends Controller {
     const diffMs = now.getTime() - timestamp.getTime();
     const diffSec = Math.round(diffMs / 1000);
 
-    (this.element as HTMLElement).dataset.tip = this.formatRelative(diffSec);
+    const el = this.element as HTMLElement;
+    el.dataset.tip = this.formatRelative(diffSec);
+    el.classList.add('tooltip', 'tooltip-left', 'before:text-xs');
   }
 
   private formatRelative(seconds: number): string {

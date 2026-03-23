@@ -1,7 +1,7 @@
 <td id="sensor-value-<%= sensor_name.parameterize %>" class="text-right font-mono text-sm <%= freshness_class %>">
   <% if enabled? %>
     <span
-      class="tooltip tooltip-left cursor-default before:text-xs"
+      class="cursor-default"
       data-controller="relative-time"
       data-relative-time-datetime-value="<%= timestamp_iso %>"
     >
