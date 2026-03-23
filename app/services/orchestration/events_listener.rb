@@ -45,8 +45,13 @@ module Orchestration
       end
 
       def restart
-        stop
-        start
+        class_mutex.synchronize do
+          instance&.stop(graceful: false)
+          self.instance = nil
+          new_instance = new
+          new_instance.start
+          self.instance = new_instance
+        end
       end
 
       def running?
@@ -99,17 +104,16 @@ module Orchestration
       Orchestration::StackStatus.refresh!
     end
 
-    def stop
+    def stop(graceful: true)
       return unless running
 
       log_stopping
       self.running = false
-
-      # Wake up sleeping threads so they can exit immediately
-      scheduler_thread&.wakeup rescue nil # rubocop:disable Style/RescueModifier
-      listener_thread&.join(2)
-      scheduler_thread&.join(2)
-
+      if graceful
+        scheduler_thread&.wakeup rescue nil # rubocop:disable Style/RescueModifier
+        listener_thread&.join(2)
+        scheduler_thread&.join(2)
+      end
       force_kill_threads
       log_stopped
     end
@@ -133,10 +137,6 @@ module Orchestration
     end
 
     # --- Listener thread ---
-    #
-    # Wraps each iteration in Rails.application.executor to ensure
-    # proper constant autoloading and database connection management
-    # in background threads.
 
     def listen_loop
       reconnecting = false
@@ -144,13 +144,15 @@ module Orchestration
       log_loop_ended('Listener')
     end
 
+    # No executor.wrap — would hold the interlock shared lock during
+    # slow Docker API calls and block the Rails reloader.
+    # Broadcaster classes wrap only the rendering part in executor.
     def listen_once(reconnecting)
-      Rails.application.executor.wrap do
-        if reconnecting
-          log_reconnect
-          Orchestration::StackStatus.refresh!
-        end
-        Orchestration.configure!
+      Orchestration.configure!
+
+      if reconnecting
+        log_reconnect
+        Orchestration::StackStatus.refresh!
       end
       stream_events
       false
@@ -172,9 +174,7 @@ module Orchestration
       Docker::Event.stream do |raw_event|
         break unless running
 
-        Rails.application.executor.wrap do
-          process_event(Orchestration::Event.new(raw_event))
-        end
+        process_event(Orchestration::Event.new(raw_event))
       end
     end
 
@@ -199,10 +199,10 @@ module Orchestration
     end
 
     def run_scheduler_tick
-      Rails.application.executor.wrap do
-        process_pending_broadcasts
-        periodic_refresh
-      end
+      # No executor.wrap — Docker API calls would hold the interlock
+      # shared lock and block the Rails reloader.
+      process_pending_broadcasts
+      periodic_refresh
     rescue StandardError => e
       logger.error("[#{id}] Scheduler error: #{e.class}: #{e.message}")
     end

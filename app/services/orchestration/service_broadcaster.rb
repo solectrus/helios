@@ -5,17 +5,20 @@ module Orchestration
     end
 
     def broadcast(service_name)
-      Rails.application.reloader.wrap do
-        Orchestration::Container.invalidate_cache
-        container = Orchestration::Container.find(service_name)
-        compose_service = ::Compose.load.services.find(service_name)
+      # Docker API calls outside executor.wrap — holding the interlock
+      # shared lock during slow API calls would block the Rails reloader.
+      Orchestration::Container.invalidate_cache
+      container = Orchestration::Container.find(service_name)
+      compose_service = ::Compose.load.services.find(service_name)
 
-        return false unless compose_service
+      return false unless compose_service
 
+      # Only rendering + broadcasting need executor (auto-loading, DB connections)
+      Rails.application.executor.wrap do
         broadcast_service_row(service_name, container, compose_service)
         update_stack_status(service_name, container)
-        true
       end
+      true
     rescue StandardError => e
       log_error(service_name, e)
       false
