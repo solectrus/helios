@@ -5,3 +5,6 @@ en:
   error: "Some services have issues"
   stopped: "All services stopped"
   restart_required: "Configuration changed – restart required"
+  start: "Start"
+  stop: "Stop"
+  restart: "Restart"

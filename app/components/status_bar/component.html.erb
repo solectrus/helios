@@ -13,14 +13,19 @@
         <% if show_start? %>
           <%= button_to batch_path, method: :post, class: "btn btn-outline btn-sm" do %>
             <i class="fa-solid fa-play"></i>
-            Start
+            <%= t(".start") %>
           <% end %>
         <% end %>
 
-        <% if show_stop? %>
+        <% if show_restart? %>
+          <%= button_to batch_path, method: :post, class: "btn btn-outline btn-sm" do %>
+            <i class="fa-solid fa-arrows-rotate"></i>
+            <%= t(".restart") %>
+          <% end %>
+        <% elsif show_stop? %>
           <%= button_to batch_path, method: :delete, class: "btn btn-outline btn-sm" do %>
             <i class="fa-solid fa-stop"></i>
-            Stop
+            <%= t(".stop") %>
           <% end %>
         <% end %>
       </div>

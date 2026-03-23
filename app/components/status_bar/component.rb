@@ -7,7 +7,7 @@ module StatusBar
       },
       starting: {
         icon: 'fa-solid fa-spinner fa-spin',
-        css: 'bg-info text-info-content animate-pulse',
+        css: 'bg-info text-info-content',
       },
       partial: {
         icon: 'fa-solid fa-circle-half-stroke',
@@ -54,7 +54,11 @@ module StatusBar
     end
 
     def show_stop?
-      @status.in?(%i[ok starting partial error restart_required])
+      @status.in?(%i[ok starting partial error])
+    end
+
+    def show_restart?
+      @status == :restart_required
     end
 
     def batch_path

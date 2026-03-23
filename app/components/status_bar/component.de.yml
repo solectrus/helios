@@ -5,3 +5,6 @@ de:
   error: "Einige Dienste haben Probleme"
   stopped: "Alle Dienste gestoppt"
   restart_required: "Konfiguration geändert – Neustart erforderlich"
+  start: "Start"
+  stop: "Stop"
+  restart: "Neustart"
