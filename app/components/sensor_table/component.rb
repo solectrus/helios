@@ -14,11 +14,14 @@ module SensorTable
       readings.present?
     end
 
-    def visible_groups
+    def all_groups
       SensorRegistry::GROUPS.filter_map do |group, sensor_names|
-        visible = show_all? ? sensor_names : sensor_names.select { |s| configuration.sensor_enabled?(s) }
-        [group, visible] if visible.any?
+        [group, sensor_names] if sensor_names.any?
       end
+    end
+
+    def group_has_enabled_sensors?(sensor_names)
+      sensor_names.any? { |s| configuration.sensor_enabled?(s) }
     end
 
     def group_icon(group)
