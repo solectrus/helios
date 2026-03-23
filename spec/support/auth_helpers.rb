@@ -23,6 +23,7 @@ end
 RSpec.configure do |config|
   config.include AuthHelpers, type: :request
   config.include AuthHelpers, type: :system
+  config.include AuthHelpers, type: :channel
 
   config.before(:each, :with_admin_password) { set_admin_password }
   config.after(:each, :with_admin_password) { clear_admin_password }

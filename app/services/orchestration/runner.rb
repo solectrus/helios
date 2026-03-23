@@ -56,12 +56,25 @@ module Orchestration
         run_compose(*args)
       end
 
-      def logs(service: nil, tail: nil, follow: false)
+      def logs(service: nil, tail: nil, follow: false, timestamps: false)
         args = ['logs']
         args << '-f' if follow
+        args << '--timestamps' if timestamps
         args += ['--tail', tail.to_s] if tail
         args << service if service
         run_compose(*args)
+      end
+
+      # Streams log lines from `docker compose logs -f`.
+      # Returns [io, pid]. Caller is responsible for reading
+      # from io and killing the process when done.
+      def stream_logs(service:, tail: 0)
+        validate_stack_path!
+
+        cmd = build_compose_command('logs', '-f', '--timestamps', '--tail', tail.to_s, service.to_s)
+        io = IO.popen(cmd, err: %i[child out])
+
+        [io, io.pid]
       end
 
       def ps

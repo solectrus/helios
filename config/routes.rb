@@ -26,6 +26,7 @@ Rails.application.routes.draw do
   # Service management
   resources :services, only: :index do
     resource :row, only: :show, module: :services
+    resource :log, only: :show, module: :services
     resource :task, only: %i[create update destroy], module: :services
 
     collection do

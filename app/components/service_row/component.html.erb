@@ -66,6 +66,17 @@
             Open
           </a>
         <% end %>
+        <% if container %>
+          <div class="tooltip tooltip-info" data-tip="Logs">
+            <a
+              href="<%= service_log_path(service_name) %>"
+              data-turbo-frame="log-modal-content"
+              class="btn btn-ghost btn-sm btn-square"
+            >
+              <i class="fa-solid fa-file-lines"></i>
+            </a>
+          </div>
+        <% end %>
         <div class="join">
           <div class="tooltip tooltip-info join-item" data-tip="Start">
             <%= button_to service_task_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "startButton" } do %>
