@@ -290,8 +290,10 @@ module Export
 
       shelly = configuration.shelly
       env.add_section('Shelly collector')
-      entry(env, 'SHELLY_HOST', shelly_csv(sensors) { |_, config| config['shelly_host'] },
-            'Shelly device hostnames (comma-separated)')
+      if shelly&.connection != 'cloud'
+        entry(env, 'SHELLY_HOST', shelly_csv(sensors) { |_, config| config['shelly_host'] },
+              'Shelly device hostnames (comma-separated)')
+      end
       entry(env, 'SHELLY_INTERVAL', shelly&.interval || '5',
             'Polling interval in seconds')
       entry(env, 'INFLUX_MEASUREMENT', shelly_csv(sensors) { |_, config| config['measurement'] },
@@ -301,7 +303,7 @@ module Export
 
     def shelly_optional_entries(env, sensors, shelly)
       shelly_per_sensor_optional_entries(env, sensors)
-      shelly_global_optional_entries(env, shelly, sensors.size)
+      shelly_global_optional_entries(env, shelly)
     end
 
     def shelly_per_sensor_optional_entries(env, sensors)
@@ -313,14 +315,15 @@ module Export
       end
     end
 
-    def shelly_global_optional_entries(env, shelly, sensor_count)
-      { 'SHELLY_CLOUD_SERVER' => shelly&.cloud_server,
-        'SHELLY_AUTH_KEY' => shelly&.auth_key }.each do |env_key, value|
-        next if value.blank?
+    def shelly_global_optional_entries(env, shelly)
+      return unless shelly&.connection == 'cloud'
 
-        entry(env, env_key, ([value] * sensor_count).join(','),
-              "Shelly #{env_key.sub('SHELLY_', '').downcase} (same for all devices)")
-      end
+      entry(env, 'SHELLY_CLOUD_SERVER', shelly.cloud_server,
+            'Shelly Cloud server URL')
+      return if shelly.auth_key.blank?
+
+      entry(env, 'SHELLY_AUTH_KEY', shelly.auth_key,
+            'Shelly Cloud authentication key')
     end
 
     def shelly_csv(sensors, &)

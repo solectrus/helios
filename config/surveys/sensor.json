@@ -25,44 +25,8 @@
       ]
     },
     {
-      "name": "p_shelly_connection",
-      "visibleIf": "{source} = 'shelly'",
-      "title": {
-        "de": "Shelly-Verbindung",
-        "default": "Shelly Connection"
-      },
-      "elements": [
-        {
-          "type": "radiogroup",
-          "name": "shelly_connection",
-          "title": {
-            "de": "Wie ist der Shelly erreichbar?",
-            "default": "How is the Shelly accessed?"
-          },
-          "isRequired": true,
-          "defaultValue": "local",
-          "choices": [
-            {
-              "value": "local",
-              "text": {
-                "de": "Lokal (im Heimnetzwerk)",
-                "default": "Local (in home network)"
-              }
-            },
-            {
-              "value": "cloud",
-              "text": {
-                "de": "Über Shelly Cloud",
-                "default": "Via Shelly Cloud"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
       "name": "p_shelly_local",
-      "visibleIf": "{source} = 'shelly' and {shelly_connection} = 'local'",
+      "visibleIf": "{source} = 'shelly'",
       "title": {
         "de": "Shelly — Lokaler Zugriff",
         "default": "Shelly — Local Access"
@@ -83,18 +47,6 @@
         },
         {
           "type": "text",
-          "name": "shelly_interval",
-          "title": {
-            "de": "Abfrage-Intervall (in Sekunden)",
-            "default": "Query interval (in seconds)"
-          },
-          "defaultValue": 5,
-          "isRequired": true,
-          "inputType": "number",
-          "min": 1
-        },
-        {
-          "type": "text",
           "name": "shelly_password",
           "title": {
             "de": "Passwort (optional)",
@@ -109,7 +61,7 @@
     },
     {
       "name": "p_shelly_cloud",
-      "visibleIf": "{source} = 'shelly' and {shelly_connection} = 'cloud'",
+      "visibleIf": "{source} = 'shelly'",
       "title": {
         "de": "Shelly — Cloud-Zugriff",
         "default": "Shelly — Cloud Access"
@@ -123,18 +75,6 @@
             "default": "Device ID"
           },
           "isRequired": true
-        },
-        {
-          "type": "text",
-          "name": "shelly_interval",
-          "title": {
-            "de": "Abfrage-Intervall (in Sekunden)",
-            "default": "Query interval (in seconds)"
-          },
-          "defaultValue": 5,
-          "isRequired": true,
-          "inputType": "number",
-          "min": 1
         }
       ]
     },

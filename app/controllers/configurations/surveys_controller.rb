@@ -61,6 +61,7 @@ module Configurations
       inject_source_choices!(survey)
       inject_mapping_defaults!(survey)
       inject_name_page!(survey) if custom_power_sensor?
+      inject_shelly_connection_page!(survey)
       inject_shelly_invert_power!(survey) if invert_power_relevant?
       inject_house_power_page!(survey) if exclude_from_house_power_relevant?
     end
@@ -117,6 +118,12 @@ module Configurations
         'isRequired' => true,
         'placeholder' => { 'de' => 'z.B. Kühlschrank', 'default' => 'e.g. Fridge' },
       }
+    end
+
+    def inject_shelly_connection_page!(survey)
+      shelly = Configuration.current.shelly
+      remove_page = shelly&.connection == 'cloud' ? 'p_shelly_local' : 'p_shelly_cloud'
+      survey['pages']&.reject! { |p| p['name'] == remove_page }
     end
 
     def inject_shelly_invert_power!(survey)

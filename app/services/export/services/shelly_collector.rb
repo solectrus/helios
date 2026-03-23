@@ -43,7 +43,9 @@ module Export
       end
 
       def passthrough_vars
-        %w[INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SHELLY_HOST SHELLY_INTERVAL INFLUX_MEASUREMENT]
+        vars = %w[INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SHELLY_INTERVAL INFLUX_MEASUREMENT]
+        vars << 'SHELLY_HOST' unless cloud_mode?
+        vars
       end
 
       def explicit_vars
@@ -62,10 +64,15 @@ module Export
       end
 
       def global_optional_vars
-        vars = []
-        vars << 'SHELLY_CLOUD_SERVER' if shelly_defaults&.cloud_server.present?
+        return [] unless cloud_mode?
+
+        vars = ['SHELLY_CLOUD_SERVER']
         vars << 'SHELLY_AUTH_KEY' if shelly_defaults&.auth_key.present?
         vars
+      end
+
+      def cloud_mode?
+        shelly_defaults&.connection == 'cloud'
       end
     end
   end
