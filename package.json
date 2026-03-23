@@ -38,10 +38,10 @@
     "rails-vite-plugin": "^0.2.2",
     "size-limit": "^12.0.1",
     "tailwindcss": "^4.2.2",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.2",
     "typescript-eslint": "^8.57.1",
     "vite": "^8.0.2",
-    "vitest": "^4.1.0"
+    "vitest": "^4.1.1"
   },
   "dependenciesMeta": {
     "@tailwindcss/oxide": {
