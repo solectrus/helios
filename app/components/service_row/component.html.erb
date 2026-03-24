@@ -66,8 +66,8 @@
             <%= t('.open') %>
           </a>
         <% end %>
-        <% if container %>
-          <div class="tooltip tooltip-info" data-tip="<%= t('.logs') %>">
+        <div class="tooltip tooltip-info" data-tip="<%= t('.logs') %>">
+          <% if container %>
             <a
               href="<%= service_log_path(service_name) %>"
               data-turbo-frame="log-modal-content"
@@ -75,8 +75,12 @@
             >
               <i class="fa-solid fa-file-lines"></i>
             </a>
-          </div>
-        <% end %>
+          <% else %>
+            <span class="btn btn-ghost btn-sm btn-square btn-disabled" aria-disabled="true" tabindex="-1">
+              <i class="fa-solid fa-file-lines"></i>
+            </span>
+          <% end %>
+        </div>
         <div class="join">
           <div class="tooltip tooltip-info join-item" data-tip="<%= t('.start') %>">
             <%= button_to service_task_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "startButton" } do %>
