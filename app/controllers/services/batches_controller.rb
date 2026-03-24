@@ -3,28 +3,29 @@ module Services
     # POST /services/batch - Start all services
     def create
       ComposeJob.perform_later(:up)
-      respond_with_pending_status { |container| !container&.running? }
+      respond_with_pending_status(:starting) { |container| !container&.running? }
     end
 
     # DELETE /services/batch - Stop all services
     def destroy
+      Orchestration::StackStatus.mark_stopping!
       ComposeJob.perform_later(:down)
-      respond_with_pending_status { |container| container&.running? }
+      respond_with_pending_status(:stopping) { |container| container&.running? }
     end
 
     private
 
-    def respond_with_pending_status(&)
+    def respond_with_pending_status(status, &)
       respond_to do |format|
         format.turbo_stream do
-          render turbo_stream: turbo_stream_updates(&)
+          render turbo_stream: turbo_stream_updates(status, &)
         end
         format.html { redirect_to services_path }
       end
     end
 
-    def turbo_stream_updates(&)
-      service_row_updates(&) + [status_bar_update]
+    def turbo_stream_updates(status, &)
+      service_row_updates(&) + [status_bar_update(status)]
     end
 
     def service_row_updates
@@ -42,10 +43,10 @@ module Services
       end
     end
 
-    def status_bar_update
+    def status_bar_update(status)
       turbo_stream.replace(
         'status-bar',
-        StatusBar::Component.new(status: :starting),
+        StatusBar::Component.new(status:),
       )
     end
 

@@ -1,7 +1,9 @@
 <%= helpers.turbo_frame_tag "status-bar" do %>
   <div class="fixed right-0 bottom-0 left-0 z-40">
-    <div class="flex items-center px-4 py-2 text-sm font-medium <%= bar_class %>">
-      <div class="flex flex-1 items-center justify-center gap-3">
+    <div class="grid min-h-12 grid-cols-3 items-center px-4 py-2 text-sm font-medium <%= bar_class %>">
+      <div></div>
+
+      <div class="flex items-center justify-center gap-3">
         <i class="<%= icon_class %>"></i>
 
         <% labels.each do |locale, text| %>
@@ -9,7 +11,7 @@
         <% end %>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center justify-end gap-2">
         <% if show_start? %>
           <%= button_to batch_path, method: :post, class: "btn btn-outline btn-sm" do %>
             <i class="fa-solid fa-play"></i>

@@ -7,6 +7,7 @@ module Orchestration
       @overall = Concurrent::AtomicReference.new(:stopped)
       @initialized = Concurrent::AtomicBoolean.new(false)
       @restart_required = Concurrent::AtomicBoolean.new(false)
+      @stopping = Concurrent::AtomicBoolean.new(false)
     end
 
     # Faster refresh when services are still starting up
@@ -17,6 +18,7 @@ module Orchestration
                :refresh!,
                :update,
                :mark_config_changed!,
+               :mark_stopping!,
                :reset!,
                :services_settling?,
                to: :instance
@@ -38,6 +40,11 @@ module Orchestration
       recompute_and_broadcast(force: true)
     end
 
+    def mark_stopping!
+      @stopping.make_true
+      @overall.set(compute_overall)
+    end
+
     def refresh!
       Orchestration::Container.invalidate_cache
       refresh_service_statuses
@@ -57,6 +64,7 @@ module Orchestration
       @overall.set(:stopped)
       @initialized.make_false
       @restart_required.make_false
+      @stopping.make_false
     end
 
     # True when services are in a transient state (:starting)
@@ -80,6 +88,7 @@ module Orchestration
 
     def recompute_and_broadcast(force: false)
       new_overall = compute_overall
+      @stopping.make_false if new_overall == :stopped
       old_overall = @overall.get_and_set(new_overall)
 
       broadcast! if force || old_overall != new_overall
@@ -88,12 +97,17 @@ module Orchestration
     def compute_overall
       statuses = @service_statuses.values
       return :stopped if statuses.empty? || statuses.all?(:stopped)
+      return :stopping if stopping?
       return :error if statuses.include?(:error)
       return :starting if statuses.include?(:starting)
       return :partial if statuses.include?(:stopped)
       return :restart_required if restart_required?
 
       :ok
+    end
+
+    def stopping?
+      @stopping.true?
     end
 
     def restart_required?

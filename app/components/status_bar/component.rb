@@ -7,7 +7,11 @@ module StatusBar
       },
       starting: {
         icon: 'fa-solid fa-spinner fa-spin',
-        css: 'bg-info text-info-content',
+        css: 'bg-info text-info-content status-bar-barber-pole',
+      },
+      stopping: {
+        icon: 'fa-solid fa-spinner fa-spin',
+        css: 'bg-base-content text-base-100 status-bar-barber-pole',
       },
       partial: {
         icon: 'fa-solid fa-circle-half-stroke',

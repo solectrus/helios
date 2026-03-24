@@ -78,12 +78,17 @@ RSpec.describe 'Services::Batches', :with_admin_password do
   end
 
   describe 'DELETE /services/batch (stop all)' do
+    before do
+      allow(Orchestration::StackStatus).to receive(:mark_stopping!)
+    end
+
     it 'enqueues a down job' do
       mock_compose_services('influxdb', 'redis')
       mock_containers('influxdb' => true, 'redis' => true)
 
       delete batch_path
 
+      expect(Orchestration::StackStatus).to have_received(:mark_stopping!)
       expect(ComposeJob).to have_received(:perform_later).with(:down)
       expect(response).to redirect_to(services_path)
     end
@@ -94,6 +99,7 @@ RSpec.describe 'Services::Batches', :with_admin_password do
 
       delete batch_path, as: :turbo_stream
 
+      expect(Orchestration::StackStatus).to have_received(:mark_stopping!)
       expect(ComposeJob).to have_received(:perform_later).with(:down)
       expect(response).to have_http_status(:ok)
       expect(response.media_type).to eq('text/vnd.turbo-stream.html')

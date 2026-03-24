@@ -70,6 +70,38 @@ RSpec.describe Orchestration::StackStatus do
     end
   end
 
+  describe '#mark_stopping!' do
+    before do
+      described_class.instance.instance_variable_get(:@initialized).make_true
+      allow(Orchestration::StatusBarBroadcaster).to receive(:new)
+        .and_return(instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil))
+    end
+
+    it 'returns :stopping when flag is set and services are running' do
+      described_class.update('postgresql', :ok)
+      described_class.update('redis', :ok)
+      described_class.mark_stopping!
+
+      expect(described_class.overall).to eq(:stopping)
+    end
+
+    it 'returns :stopping even when some services are already stopped' do
+      described_class.update('postgresql', :ok)
+      described_class.update('redis', :stopped)
+      described_class.mark_stopping!
+
+      expect(described_class.overall).to eq(:stopping)
+    end
+
+    it 'clears stopping flag when all services are stopped' do
+      described_class.mark_stopping!
+      described_class.update('postgresql', :stopped)
+      described_class.update('redis', :stopped)
+
+      expect(described_class.overall).to eq(:stopped)
+    end
+  end
+
   describe '#services_settling?' do
     before do
       allow(Orchestration::StatusBarBroadcaster).to receive(:new)

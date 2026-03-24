@@ -1,9 +1,10 @@
 de:
-  ok: "Alle Dienste laufen"
+  ok: "Alle Dienste in Betrieb"
   starting: "Dienste werden gestartet…"
-  partial: "Einige Dienste sind nicht gestartet"
+  stopping: "Dienste werden gestoppt…"
+  partial: "Nur einige Dienste in Betrieb"
   error: "Einige Dienste haben Probleme"
-  stopped: "Alle Dienste gestoppt"
+  stopped: "Kein Dienst in Betrieb"
   restart_required: "Konfiguration geändert – Neustart erforderlich"
   start: "Start"
   stop: "Stop"

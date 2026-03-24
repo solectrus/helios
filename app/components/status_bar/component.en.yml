@@ -1,9 +1,10 @@
 en:
-  ok: "All services running"
+  ok: "All services operational"
   starting: "Services are starting…"
-  partial: "Some services are not running"
+  stopping: "Services are stopping…"
+  partial: "Some services offline"
   error: "Some services have issues"
-  stopped: "All services stopped"
+  stopped: "No services operational"
   restart_required: "Configuration changed – restart required"
   start: "Start"
   stop: "Stop"

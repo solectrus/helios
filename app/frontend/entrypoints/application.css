@@ -21,6 +21,28 @@
   display: inline;
 }
 
+/* Status bar: animated barber-pole stripes for active states */
+.status-bar-barber-pole {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 20px,
+    oklch(0% 0 0 / 10%) 20px,
+    oklch(0% 0 0 / 10%) 40px
+  );
+  background-size: 200% 100%;
+  animation: barber-pole 40s linear infinite;
+}
+
+@keyframes barber-pole {
+  0% {
+    background-position: 0 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 /* Sensor table: hide disabled sensors unless "show all" is active */
 table[data-show-all='false'] tbody[data-has-enabled-sensors='false'],
 table[data-show-all='false'] tr[data-sensor-enabled='false'] {
