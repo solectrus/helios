@@ -21,12 +21,20 @@ module Export
         []
       end
 
+      HEALTHCHECK_DEFAULTS = {
+        interval: '10s',
+        timeout: '5s',
+        retries: 5,
+        start_period: '30s',
+        start_interval: '2s',
+      }.freeze
+
       private
 
       attr_reader :configuration
 
-      def healthcheck(*test_cmd)
-        { test: test_cmd, interval: '10s', timeout: '5s', retries: 5 }
+      def healthcheck(*test_cmd, **)
+        HEALTHCHECK_DEFAULTS.merge(test: test_cmd, **)
       end
 
       def healthy_depends_on(services)

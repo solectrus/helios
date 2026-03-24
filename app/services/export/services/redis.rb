@@ -18,7 +18,7 @@ module Export
           image: configuration.redis.image,
           volumes: ['./redis:/data'],
           restart: 'unless-stopped',
-          healthcheck: healthcheck('CMD', 'redis-cli', 'ping'),
+          healthcheck: healthcheck('CMD', 'redis-cli', 'ping', timeout: '3s', retries: 3, start_period: '10s'),
         }
       end
     end

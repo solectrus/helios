@@ -15,7 +15,7 @@ module Export
           environment: dashboard_environment,
           depends_on: healthy_depends_on(%i[postgresql redis influxdb]),
           restart: 'unless-stopped',
-          healthcheck: healthcheck('CMD-SHELL', 'nc -z 127.0.0.1 3000 || exit 1'),
+          healthcheck: healthcheck('CMD-SHELL', 'nc -z 127.0.0.1 3000 || exit 1', start_period: '60s'),
         }
 
         if Traefik.enabled?(configuration)

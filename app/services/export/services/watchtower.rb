@@ -16,6 +16,7 @@ module Export
           volumes: ['/var/run/docker.sock:/var/run/docker.sock'],
           command: '--scope solectrus --cleanup',
           restart: 'unless-stopped',
+          healthcheck: healthcheck('CMD', '/watchtower', '--health-check', start_period: '10s'),
         }
       end
     end
