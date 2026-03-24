@@ -141,8 +141,8 @@ de:
     forecast: "Prognose"
     custom: "Selbstdefinierte Verbraucher"
 
-  generated_files:
-    show:
+  files:
+    index:
       title: "Dateien - Helios"
 
   sessions:

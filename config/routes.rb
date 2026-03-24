@@ -6,7 +6,7 @@ Rails.application.routes.draw do
   resource :session, only: %i[new create destroy]
 
   # Generated files preview
-  resource :generated_files, only: :show
+  resources :files, only: :index
 
   # Configuration with settings and surveys
   resource :configuration, only: :show do

@@ -170,9 +170,9 @@ en:
     forecast: "Forecast"
     custom: "Custom Consumer"
 
-  generated_files:
-    show:
-      title: "Generated Files - Helios"
+  files:
+    index:
+      title: "Files - Helios"
 
   sessions:
     new:

@@ -1,0 +1,14 @@
+<% content_for :title, t('.title') %>
+
+<div class="flex h-[calc(100dvh-3.5rem)] flex-col overflow-hidden">
+  <%= turbo_frame_tag "tab-content", class: "flex flex-col overflow-hidden flex-1" do %>
+    <%= render Header::Component.new(active_tab: :files) %>
+
+    <div class="w-full flex-1 overflow-hidden p-4">
+      <%= render StackPreview::Component.new(
+            compose_content: @stack_builder.compose_content,
+            env_content: @stack_builder.env_content
+          ) %>
+    </div>
+  <% end %>
+</div>
