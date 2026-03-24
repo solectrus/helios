@@ -56,11 +56,14 @@ module Orchestration
         run_compose(*args)
       end
 
-      def logs(service: nil, tail: nil, follow: false, timestamps: false)
+      def logs(service: nil, tail: nil, follow: false, timestamps: false,
+               until_timestamp: nil)
         args = ['logs']
         args << '-f' if follow
         args << '--timestamps' if timestamps
-        args += ['--tail', tail.to_s] if tail
+        # --tail and --until cannot be combined (Docker ignores --until when --tail is set)
+        args += ['--tail', tail.to_s] if tail && !until_timestamp
+        args += ['--until', until_timestamp.to_s] if until_timestamp
         args << service if service
         run_compose(*args)
       end

@@ -27,6 +27,10 @@ class LogLineFormatter
   private
 
   def formatted_line(timestamp, message)
+    if message.blank?
+      return "<span data-ts=\"#{timestamp}\" class=\"block whitespace-pre\">\n</span>"
+    end
+
     time = format_time(timestamp)
     content = AnsiToHtml.convert(message)
     time_tag = "<time class=\"text-base-content/40 select-none\" datetime=\"#{timestamp}\">#{time}</time>"

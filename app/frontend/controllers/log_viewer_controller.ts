@@ -3,12 +3,21 @@ import consumer from '../channels/consumer';
 import type { Subscription } from '@rails/actioncable';
 
 export default class LogViewerController extends Controller {
-  static targets = ['output', 'streamingDot', 'streamingLabel'];
+  static targets = [
+    'output',
+    'scrollContainer',
+    'streamingDot',
+    'streamingLabel',
+    'loader',
+  ];
   static values = {
     service: String,
   };
 
   declare outputTarget: HTMLPreElement;
+  declare scrollContainerTarget: HTMLElement;
+  declare loaderTarget: HTMLElement;
+  declare hasLoaderTarget: boolean;
   declare streamingDotTarget: HTMLElement;
   declare streamingLabelTarget: HTMLElement;
   declare hasStreamingDotTarget: boolean;
@@ -19,15 +28,17 @@ export default class LogViewerController extends Controller {
 
   private subscription?: Subscription;
   private isScrolledToBottom = true;
+  private isLoadingOlder = false;
+  private hasMoreLogs = true;
 
   connect() {
     this.scrollToBottom();
-    this.outputTarget.addEventListener('scroll', this.handleScroll);
+    this.scrollContainerTarget.addEventListener('scroll', this.handleScroll);
     this.subscribe();
   }
 
   disconnect() {
-    this.outputTarget.removeEventListener('scroll', this.handleScroll);
+    this.scrollContainerTarget.removeEventListener('scroll', this.handleScroll);
     this.unsubscribe();
   }
 
@@ -80,21 +91,100 @@ export default class LogViewerController extends Controller {
       }
     }
 
-    while (children.length > LogViewerController.MAX_LINES) {
-      children[0].remove();
+    if (this.isScrolledToBottom) {
+      while (children.length > LogViewerController.MAX_LINES) {
+        children[0].remove();
+      }
+      this.scrollToBottom();
     }
-
-    if (this.isScrolledToBottom) this.scrollToBottom();
   }
 
   private scrollToBottom() {
-    this.outputTarget.scrollTop = this.outputTarget.scrollHeight;
+    this.scrollContainerTarget.scrollTop =
+      this.scrollContainerTarget.scrollHeight;
   }
 
   private handleScroll = () => {
-    const { scrollTop, scrollHeight, clientHeight } = this.outputTarget;
+    const { scrollTop, scrollHeight, clientHeight } =
+      this.scrollContainerTarget;
     this.isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 20;
+
+    if (scrollTop < 50 && !this.isLoadingOlder && this.hasMoreLogs) {
+      this.fetchOlderLogs();
+    }
   };
+
+  private getOldestTimestamp(): string | null {
+    const firstTimestamped = this.outputTarget.querySelector(
+      '[data-ts]',
+    ) as HTMLElement | null;
+    return firstTimestamped?.dataset.ts ?? null;
+  }
+
+  private async fetchOlderLogs() {
+    const oldest = this.getOldestTimestamp();
+    if (!oldest) return;
+
+    this.isLoadingOlder = true;
+    this.showLoader(true);
+
+    try {
+      const url = `/services/${encodeURIComponent(this.serviceValue)}/log?until=${encodeURIComponent(oldest)}`;
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const html = await response.text();
+      if (!html.trim()) {
+        this.hasMoreLogs = false;
+        return;
+      }
+
+      const prevScrollHeight = this.scrollContainerTarget.scrollHeight;
+
+      const temp = document.createElement('template');
+      temp.innerHTML = html;
+      const fragment = temp.content;
+
+      // Docker --until is inclusive, so remove lines at the boundary to prevent duplicates
+      fragment.querySelectorAll('[data-ts]').forEach((el) => {
+        if ((el as HTMLElement).dataset.ts! >= oldest) el.remove();
+      });
+
+      if (!fragment.children.length) {
+        this.hasMoreLogs = false;
+        return;
+      }
+
+      this.outputTarget.prepend(fragment);
+
+      // If oldest timestamp didn't change, we've reached the beginning
+      if (this.getOldestTimestamp() === oldest) {
+        this.hasMoreLogs = false;
+      }
+
+      // Restore scroll position
+      const newScrollHeight = this.scrollContainerTarget.scrollHeight;
+      this.scrollContainerTarget.scrollTop +=
+        newScrollHeight - prevScrollHeight;
+
+      // Trim oldest lines from bottom if exceeding limit
+      const children = this.outputTarget.children;
+      while (children.length > LogViewerController.MAX_LINES) {
+        children[children.length - 1].remove();
+      }
+    } catch (e) {
+      console.error('Failed to load older logs:', e);
+    } finally {
+      this.isLoadingOlder = false;
+      this.showLoader(false);
+    }
+  }
+
+  private showLoader(visible: boolean) {
+    if (this.hasLoaderTarget) {
+      this.loaderTarget.classList.toggle('hidden', !visible);
+    }
+  }
 
   private setStreamingStatus(connected: boolean) {
     if (!this.hasStreamingDotTarget || !this.hasStreamingLabelTarget) return;
