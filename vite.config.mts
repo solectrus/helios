@@ -18,14 +18,21 @@ export default defineConfig(() => ({
   build: {
     rolldownOptions: {
       output: {
-        manualChunks(id: string) {
-          if (id.includes('node_modules')) {
-            return 'vendor';
-          }
+        codeSplitting: {
+          groups: [
+            {
+              test: /node_modules\/survey/,
+              name: 'survey',
+            },
+            {
+              test: /node_modules/,
+              name: 'vendor',
+            },
+          ],
         },
       },
     },
-    chunkSizeWarningLimit: 620,
+    chunkSizeWarningLimit: 1500,
   },
   server: {
     port: 3036,
