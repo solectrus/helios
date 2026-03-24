@@ -1,5 +1,7 @@
 module Export
   class Compose
+    WATCHTOWER_LABEL = 'com.centurylinklabs.watchtower.scope=solectrus'.freeze
+
     BASE_SERVICES = [
       Services::Dashboard,
       Services::Influxdb,
@@ -45,9 +47,12 @@ module Export
 
     def add_class_based_services(compose)
       active_service_classes.each do |service_class|
+        service_hash = service_class.new(configuration).to_h.reverse_merge(default_logging)
+        service_hash[:labels] = Array(service_hash[:labels]) + [WATCHTOWER_LABEL]
+
         compose.add_service(
           service_class.service_name,
-          service_class.new(configuration).to_h.reverse_merge(default_logging),
+          service_hash,
           comment: service_class.comment,
         )
       end

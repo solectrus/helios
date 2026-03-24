@@ -16,7 +16,6 @@ module Export
           volumes: ['/var/run/docker.sock:/var/run/docker.sock'],
           command: '--scope solectrus --cleanup',
           restart: 'unless-stopped',
-          labels: ['com.centurylinklabs.watchtower.scope=solectrus'],
         }
       end
     end
