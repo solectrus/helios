@@ -67,7 +67,7 @@ module ServiceRow
 
       dot = 'inline-block w-3 h-3 rounded-full'
       return "#{dot} bg-error" if error?
-      return "#{dot} border-2 border-success animate-pulse" if healthcheck_starting?
+      return 'loading loading-spinner loading-xs text-success' if healthcheck_starting?
 
       "#{dot} #{indicator_class}"
     end
