@@ -14,6 +14,8 @@ RSpec.describe Export::Builder do
   describe '#write!' do
     before { described_class.new(configuration).write! }
 
+    it_behaves_like 'valid Docker Compose configuration'
+
     it 'creates compose.yaml and .env files' do
       expect(File.exist?(compose_path)).to be true
       expect(File.exist?(env_path)).to be true
@@ -176,6 +178,8 @@ RSpec.describe Export::Builder do
       described_class.new(configuration).write!
     end
 
+    it_behaves_like 'valid Docker Compose configuration'
+
     it 'includes traefik service in compose.yaml' do
       compose = Compose.load
       expect(compose.services.names).to include('traefik')
@@ -255,6 +259,8 @@ RSpec.describe Export::Builder do
       described_class.new(configuration).write!
     end
 
+    it_behaves_like 'valid Docker Compose configuration'
+
     it 'includes postgresql-backup service' do
       compose = Compose.load
       expect(compose.services.names).to include('postgresql-backup')
@@ -324,6 +330,8 @@ RSpec.describe Export::Builder do
       described_class.new(Configuration.current).write!
     end
 
+    it_behaves_like 'valid Docker Compose configuration'
+
     it 'includes senec-collector service' do
       compose = Compose.load
       expect(compose.services.names).to include('senec-collector')
@@ -361,6 +369,8 @@ RSpec.describe Export::Builder do
       configuration.update_sensor('inverter_power', { 'source' => 'senec' })
       described_class.new(Configuration.current).write!
     end
+
+    it_behaves_like 'valid Docker Compose configuration'
 
     it 'includes cloud credentials in .env' do
       env = Env.load
@@ -400,6 +410,8 @@ RSpec.describe Export::Builder do
       configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
       described_class.new(Configuration.current).write!
     end
+
+    it_behaves_like 'valid Docker Compose configuration'
 
     it 'includes forecast-collector service' do
       compose = Compose.load
@@ -444,6 +456,8 @@ RSpec.describe Export::Builder do
       described_class.new(Configuration.current).write!
     end
 
+    it_behaves_like 'valid Docker Compose configuration'
+
     it 'includes multi-roof configuration in .env' do
       env = Env.load
       expect(env['FORECAST_CONFIGURATIONS']).to eq('2')
@@ -475,6 +489,8 @@ RSpec.describe Export::Builder do
       described_class.new(Configuration.current).write!
     end
 
+    it_behaves_like 'valid Docker Compose configuration'
+
     it 'includes solcast variables in .env' do
       env = Env.load
       expect(env['SOLCAST_APIKEY']).to eq('solcast-key')
@@ -498,6 +514,8 @@ RSpec.describe Export::Builder do
       configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
       described_class.new(Configuration.current).write!
     end
+
+    it_behaves_like 'valid Docker Compose configuration'
 
     it 'includes pvnode variables in .env' do
       env = Env.load
@@ -532,6 +550,8 @@ RSpec.describe Export::Builder do
       described_class.new(Configuration.current).write!
     end
 
+    it_behaves_like 'valid Docker Compose configuration'
+
     it 'includes optional forecast variables in .env' do
       env = Env.load
       expect(env['FORECAST_DAMPING_MORNING']).to eq('0.5')
@@ -562,6 +582,8 @@ RSpec.describe Export::Builder do
                                   })
       described_class.new(Configuration.current).write!
     end
+
+    it_behaves_like 'valid Docker Compose configuration'
 
     it 'includes shelly-collector service' do
       compose = Compose.load
@@ -600,6 +622,8 @@ RSpec.describe Export::Builder do
                                   })
       described_class.new(Configuration.current).write!
     end
+
+    it_behaves_like 'valid Docker Compose configuration'
 
     it 'includes mqtt-collector service' do
       compose = Compose.load
@@ -643,6 +667,8 @@ RSpec.describe Export::Builder do
       configuration.update('senec', { 'adapter' => 'local', 'host' => '192.168.1.100' })
       described_class.new(Configuration.current).write!
     end
+
+    it_behaves_like 'valid Docker Compose configuration'
 
     it 'includes power-splitter service' do
       compose = Compose.load
