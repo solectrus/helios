@@ -6,7 +6,7 @@ module Export
       end
 
       def self.comment
-        'Relational database for daily summaries, electricity prices, and settings'
+        'PostgreSQL — Relational database for daily summaries, electricity prices, and settings'
       end
 
       def self.data_directories

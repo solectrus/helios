@@ -6,7 +6,7 @@ module Export
       end
 
       def self.comment
-        'SENEC data collector'
+        'SENEC Collector — Reads data from SENEC battery storage systems'
       end
 
       def self.enabled?(configuration)

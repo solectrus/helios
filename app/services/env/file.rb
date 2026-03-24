@@ -67,7 +67,14 @@ module Env
     end
 
     def add_section(title)
-      @lines << "# --- #{title} ---"
+      content = "  #{title}  "
+      width = [58, content.length].max
+      @lines << '#'
+      @lines << "# ┌#{'─' * width}┐"
+      @lines << "# │#{content.ljust(width)}│"
+      @lines << "# └#{'─' * width}┘"
+      @lines << '#'
+      @lines << ''
     end
 
     def to_s

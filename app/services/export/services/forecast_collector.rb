@@ -6,7 +6,7 @@ module Export
       end
 
       def self.comment
-        'Solar forecast data collector'
+        'Forecast Collector — Fetches solar production forecasts'
       end
 
       def self.enabled?(configuration)

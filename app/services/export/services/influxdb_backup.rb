@@ -6,7 +6,7 @@ module Export
       end
 
       def self.comment
-        'Automated InfluxDB backup to S3'
+        'InfluxDB Backup — Automated backup to S3'
       end
 
       def self.enabled?(configuration)

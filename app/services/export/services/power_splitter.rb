@@ -6,7 +6,7 @@ module Export
       end
 
       def self.comment
-        'Calculates derived power values'
+        'Power Splitter — Calculates derived power values'
       end
 
       def self.enabled?(configuration)

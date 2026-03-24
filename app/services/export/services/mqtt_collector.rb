@@ -15,7 +15,7 @@ module Export
       end
 
       def self.comment
-        'MQTT data collector'
+        'MQTT Collector — Receives sensor data via MQTT protocol'
       end
 
       def self.enabled?(configuration)

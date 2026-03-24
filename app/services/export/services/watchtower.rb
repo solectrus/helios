@@ -6,7 +6,7 @@ module Export
       end
 
       def self.comment
-        'Automatic Docker image updates'
+        'Watchtower — Automatic Docker image updates'
       end
 
       def to_h

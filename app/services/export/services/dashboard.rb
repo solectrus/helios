@@ -6,7 +6,7 @@ module Export
       end
 
       def self.comment
-        'SOLECTRUS web application'
+        'SOLECTRUS — Web application'
       end
 
       def to_h

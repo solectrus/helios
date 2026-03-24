@@ -6,7 +6,7 @@ module Export
       end
 
       def self.comment
-        'In-memory store for caching'
+        'Redis — In-memory store for caching'
       end
 
       def self.data_directories

@@ -6,7 +6,7 @@ module Export
       end
 
       def self.comment
-        'Time-series database for sensor measurements'
+        'InfluxDB — Time-series database for sensor measurements'
       end
 
       def self.data_directories

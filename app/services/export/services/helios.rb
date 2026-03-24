@@ -14,7 +14,7 @@ module Export
       end
 
       def self.comment
-        'Configuration management UI'
+        'Helios — Configuration management UI'
       end
 
       def to_h

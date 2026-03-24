@@ -6,7 +6,7 @@ module Export
       end
 
       def self.comment
-        'Automated PostgreSQL backup to S3'
+        'PostgreSQL Backup — Automated backup to S3'
       end
 
       def self.enabled?(configuration)

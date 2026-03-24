@@ -6,7 +6,7 @@ module Export
       end
 
       def self.comment
-        'Shelly collector'
+        'Shelly Collector — Reads data from Shelly energy meters'
       end
 
       def self.enabled?(configuration)

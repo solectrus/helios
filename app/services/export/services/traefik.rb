@@ -6,7 +6,7 @@ module Export
       end
 
       def self.comment
-        'Reverse proxy with automatic HTTPS'
+        'Traefik — Reverse proxy with automatic HTTPS'
       end
 
       def self.enabled?(configuration)

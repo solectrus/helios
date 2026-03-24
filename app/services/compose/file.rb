@@ -78,9 +78,9 @@ module Compose
     end
 
     def to_yaml
-      base = YAML.dump(@data)
+      base = YAML.dump(@data).delete_prefix("---\n")
       base = insert_blank_lines_between_services(base)
-      @header_comment ? "#{@header_comment}\n#{base}" : base
+      @header_comment ? "#{@header_comment}\n\n#{base}" : base
     end
 
     def to_h
@@ -103,17 +103,28 @@ module Compose
       result = [lines.first]
 
       lines.drop(1).each do |line|
-        if line.match?(/\A {2}\w/)
+        if line.match?(/\A\w/)
           result << "\n"
-          # Add service comment if this is a service definition
-          match = line.match(/\A {2}([\w-]+):/)
-          comment = match && @service_comments[match[1]]
-          result << "  # #{comment}\n" if comment
+        elsif (match = line.match(/\A {2}([\w-]+):/))
+          result << "\n"
+          comment = @service_comments[match[1]]
+          result.concat(service_comment_box(comment)) if comment
         end
         result << line
       end
 
       result.join
+    end
+
+    def service_comment_box(comment)
+      content = "  #{comment}  "
+      width = [58, content.length].max
+      [
+        "  # ┌#{'─' * width}┐\n",
+        "  # │#{content.ljust(width)}│\n",
+        "  # └#{'─' * width}┘\n",
+        "  #\n",
+      ]
     end
   end
 end
