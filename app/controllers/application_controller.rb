@@ -5,6 +5,7 @@ class ApplicationController < ActionController::Base
   before_action :auto_import_existing_config
   before_action :require_authentication
   before_action :set_locale
+  before_action :set_time_zone
 
   helper_method :authenticated?, :preferences
 
@@ -52,6 +53,11 @@ class ApplicationController < ActionController::Base
 
   def set_locale
     I18n.locale = preferences.locale.to_sym
+  end
+
+  def set_time_zone
+    tz = Configuration.current.system.timezone
+    Time.zone = tz if tz.present?
   end
 
   def require_expert_mode

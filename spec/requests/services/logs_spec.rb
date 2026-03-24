@@ -34,7 +34,7 @@ RSpec.describe 'Services::Logs', :with_admin_password do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('turbo-frame')
-      expect(response.body).to include('14:30:05')
+      expect(response.body).to include('15:30:05') # UTC+1 (Europe/Berlin, CET)
     end
 
     context 'with until parameter' do
@@ -45,7 +45,7 @@ RSpec.describe 'Services::Logs', :with_admin_password do
             params: { until: '2024-03-23T14:30:05.000000000Z' }
 
         expect(response).to have_http_status(:ok)
-        expect(response.body).to include('14:29:00')
+        expect(response.body).to include('15:29:00') # UTC+1 (Europe/Berlin, CET)
         expect(response.body).not_to include('turbo-frame')
       end
 

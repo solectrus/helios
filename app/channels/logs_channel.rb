@@ -39,8 +39,10 @@ class LogsChannel < ApplicationCable::Channel
     @io, @pid = Orchestration::Runner.stream_logs(service: @service_name, tail: 0)
     stream_id = @stream_id
     pid = @pid
+    tz = Configuration.current.system.timezone.presence || Time.zone
 
     @reader_future = Concurrent::Promises.future do
+      Time.zone = tz
       @io.each_line do |line|
         html = LogLineFormatter.call(line.chomp)
         ActionCable.server.broadcast(stream_id, { html: })
