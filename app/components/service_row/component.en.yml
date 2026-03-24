@@ -1,0 +1,12 @@
+en:
+  processing: "Processing..."
+  not_created: "Not created"
+  unknown: "Unknown"
+  waiting_for_healthcheck: "Waiting for healthcheck..."
+  running: "Running"
+  open: "Open"
+  logs: "Logs"
+  start: "Start"
+  stop: "Stop"
+  recreate: "Recreate"
+  image_mismatch: "Container uses %{image} — recreate to apply"

@@ -1,6 +1,6 @@
 <%= turbo_frame_tag "log-modal-content" do %>
   <div data-controller="log-viewer" data-log-viewer-service-value="<%= params[:service_id] %>">
-    <h3 class="mb-4 text-lg font-bold"><%= @service_display_name %> — Logs</h3>
+    <h3 class="mb-4 text-lg font-bold"><%= t('.title', name: @service_display_name) %></h3>
 
     <pre
       data-log-viewer-target="output"
@@ -10,7 +10,7 @@
     <div class="mt-3 flex items-center text-xs">
       <span class="text-base-content/50 flex items-center gap-2">
         <span data-log-viewer-target="streamingDot" class="inline-block h-2 w-2 rounded-full bg-current"></span>
-        <span data-log-viewer-target="streamingLabel">Connecting…</span>
+        <span data-log-viewer-target="streamingLabel"><%= t('.connecting') %></span>
       </span>
     </div>
   </div>

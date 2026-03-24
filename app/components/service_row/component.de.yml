@@ -1,0 +1,12 @@
+de:
+  processing: "Wird verarbeitet…"
+  not_created: "Nicht erstellt"
+  unknown: "Unbekannt"
+  waiting_for_healthcheck: "Warte auf Healthcheck…"
+  running: "Läuft"
+  open: "Öffnen"
+  logs: "Protokoll"
+  start: "Start"
+  stop: "Stopp"
+  recreate: "Neu erstellen"
+  image_mismatch: "Container nutzt %{image} – zum Anwenden neu erstellen"

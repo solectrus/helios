@@ -42,7 +42,7 @@
             <% if image_mismatch? %>
               <span
                 class="tooltip tooltip-right tooltip-warning"
-                data-tip="Container uses <%= container.image %> — recreate to apply"
+                data-tip="<%= t('.image_mismatch', image: container.image) %>"
               >
                 <i class="fa-solid fa-triangle-exclamation text-warning"></i>
               </span>
@@ -63,11 +63,11 @@
             <%= 'aria-disabled="true" tabindex="-1"'.html_safe unless open_button_enabled? %>
           >
             <i class="fa-solid fa-up-right-from-square"></i>
-            Open
+            <%= t('.open') %>
           </a>
         <% end %>
         <% if container %>
-          <div class="tooltip tooltip-info" data-tip="Logs">
+          <div class="tooltip tooltip-info" data-tip="<%= t('.logs') %>">
             <a
               href="<%= service_log_path(service_name) %>"
               data-turbo-frame="log-modal-content"
@@ -78,19 +78,19 @@
           </div>
         <% end %>
         <div class="join">
-          <div class="tooltip tooltip-info join-item" data-tip="Start">
+          <div class="tooltip tooltip-info join-item" data-tip="<%= t('.start') %>">
             <%= button_to service_task_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "startButton" } do %>
               <i class="fa-solid fa-play"></i>
             <% end %>
           </div>
 
-          <div class="tooltip tooltip-info join-item" data-tip="Stop">
+          <div class="tooltip tooltip-info join-item" data-tip="<%= t('.stop') %>">
             <%= button_to service_task_path(service_name), method: :delete, disabled: stop_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "stopButton" } do %>
               <i class="fa-solid fa-stop"></i>
             <% end %>
           </div>
 
-          <div class="tooltip tooltip-info join-item" data-tip="Recreate">
+          <div class="tooltip tooltip-info join-item" data-tip="<%= t('.recreate') %>">
             <%= button_to service_task_path(service_name), method: :patch, disabled: recreate_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "recreateButton" } do %>
               <i class="fa-solid fa-arrows-rotate"></i>
             <% end %>

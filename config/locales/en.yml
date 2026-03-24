@@ -37,6 +37,10 @@ en:
   services:
     index:
       title: "Services - Helios"
+    logs:
+      show:
+        title: "%{name} — Logs"
+        connecting: "Connecting…"
 
   configurations:
     show:

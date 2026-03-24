@@ -8,6 +8,10 @@ de:
   services:
     index:
       title: "Dienste - Helios"
+    logs:
+      show:
+        title: "%{name} — Logs"
+        connecting: "Verbinden…"
 
   configurations:
     show:

@@ -73,11 +73,11 @@ module ServiceRow
     end
 
     def status_label
-      return 'Processing...' if pending
+      return t('.processing') if pending
       return error_message if error?
-      return 'Not created' if container.nil?
+      return t('.not_created') if container.nil?
 
-      running? ? running_status_label : (status&.capitalize || 'Unknown')
+      running? ? running_status_label : (status&.capitalize || t('.unknown'))
     end
 
     def status_starting?
@@ -161,9 +161,9 @@ module ServiceRow
     end
 
     def running_status_label
-      return 'Waiting for healthcheck...' if health == 'starting'
+      return t('.waiting_for_healthcheck') if health == 'starting'
 
-      health&.capitalize || 'Running'
+      health&.capitalize || t('.running')
     end
   end
 end
