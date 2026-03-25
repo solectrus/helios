@@ -1,49 +1,30 @@
 module Orchestration
-  class EventsListener
+  class EventsListener # rubocop:disable Metrics/ClassLength
     include Logging
+    include Streaming
 
-    # Debounce delay: wait this long after the last event before broadcasting.
-    # Multiple rapid events for the same service are merged into one broadcast.
     BROADCAST_DELAY = 0.5
-
-    # How often the scheduler checks for due broadcasts.
-    # Max latency = BROADCAST_DELAY + SCHEDULER_INTERVAL (currently 1.5s)
     SCHEDULER_INTERVAL = 1.0
-
-    # Max retries for failed broadcasts (exponential backoff: 1s, 2s, 4s)
-    MAX_BROADCAST_RETRIES = 3
+    MAX_BROADCAST_RETRIES = 3 # Exponential backoff: 1s, 2s, 4s
+    RESTART_COOLDOWN = 5.seconds
+    RECONCILE_TICKS = 30
 
     class << self
       def start
-        class_mutex.synchronize do
-          if instance&.running?
-            Logging.logger.info("Already running (#{instance.id})")
-            return
-          end
-
-          instance&.stop
-          new_instance = new
-          new_instance.start
-          self.instance = new_instance
-        end
+        class_mutex.synchronize { start_instance }
       end
 
       def stop
-        class_mutex.synchronize do
-          return unless instance
-
-          instance.stop
-          self.instance = nil
-        end
+        class_mutex.synchronize { stop_instance }
       end
 
       def restart
         class_mutex.synchronize do
-          instance&.stop(graceful: false)
-          self.instance = nil
-          new_instance = new
-          new_instance.start
-          self.instance = new_instance
+          next if recently_restarted?
+
+          storage[:last_restart] = Time.current
+          stop_instance(graceful: false)
+          start_instance
         end
       end
 
@@ -51,7 +32,55 @@ module Orchestration
         instance&.running?
       end
 
+      def subscriber_connected
+        class_mutex.synchronize do
+          storage[:subscriber_count] = subscriber_count + 1
+          start_instance
+        end
+      end
+
+      def subscriber_disconnected
+        class_mutex.synchronize do
+          new_count = [subscriber_count - 1, 0].max
+          storage[:subscriber_count] = new_count
+          stop_instance(graceful: false) if new_count.zero?
+        end
+      end
+
+      def subscriber_count
+        storage[:subscriber_count] || 0
+      end
+
+      def reset_subscriber_count!
+        class_mutex.synchronize { storage[:subscriber_count] = 0 }
+      end
+
+      def initialize_lifecycle
+        storage[:mutex] ||= Mutex.new
+      end
+
       private
+
+      def start_instance
+        return if instance&.running?
+
+        instance&.stop
+        new_instance = new
+        new_instance.start
+        self.instance = new_instance
+      end
+
+      def stop_instance(graceful: true)
+        return unless instance
+
+        instance.stop(graceful:)
+        self.instance = nil
+      end
+
+      def recently_restarted?
+        last = storage[:last_restart]
+        last && Time.current - last < RESTART_COOLDOWN
+      end
 
       def class_mutex
         storage[:mutex] ||= Mutex.new
@@ -94,29 +123,16 @@ module Orchestration
       # rubocop:enable ThreadSafety/NewThread
 
       log_started
-      # Initial StackStatus.refresh! is handled by the scheduler thread
-      # to avoid blocking the Rails reloader during to_prepare.
     end
 
     def stop(graceful: true)
-      return unless running
+      return unless running || threads_alive?
 
-      log_stopping
+      was_running = running
+      log_stopping if was_running
       self.running = false
-
-      # Always stop the scheduler thread gracefully — it may hold the
-      # Rails executor interlock shared lock while broadcasting.
-      # Thread.kill would leave the lock unreleased, deadlocking requests.
-      scheduler_thread&.wakeup rescue nil # rubocop:disable Style/RescueModifier
-      scheduler_thread&.join(2)
-
-      # The listener thread blocks on Docker::Event.stream and cannot
-      # exit cooperatively without incoming events. It never acquires
-      # the interlock shared lock, so Thread.kill is safe.
-      listener_thread&.join(2) if graceful
-      [listener_thread, scheduler_thread].each { |t| kill_thread(t) }
-
-      log_stopped
+      join_threads(graceful:)
+      log_stopped if was_running
     end
 
     def running?
@@ -128,6 +144,18 @@ module Orchestration
     attr_reader :mutex, :pending_broadcasts, :broadcaster
     attr_accessor :running, :listener_thread, :scheduler_thread
 
+    def threads_alive?
+      listener_thread&.alive? || scheduler_thread&.alive?
+    end
+
+    def join_threads(graceful:)
+      scheduler_thread&.wakeup rescue nil # rubocop:disable Style/RescueModifier
+      scheduler_thread&.join(2)
+      listener_thread&.join(2) if graceful
+      kill_thread(listener_thread)
+      kill_thread(scheduler_thread)
+    end
+
     def kill_thread(thread)
       return unless thread&.alive?
 
@@ -135,20 +163,14 @@ module Orchestration
       logger.debug("[#{id}] Thread #{thread.name} force killed")
     end
 
-    # --- Listener thread ---
-
     def listen_loop
       reconnecting = false
       reconnecting = listen_once(reconnecting) while running
       log_loop_ended('Listener')
     end
 
-    # No executor.wrap — would hold the interlock shared lock during
-    # slow Docker API calls and block the Rails reloader.
-    # Broadcaster classes wrap only the rendering part in executor.
     def listen_once(reconnecting)
       Orchestration.configure!
-
       if reconnecting
         log_reconnect
         Orchestration::StackStatus.refresh!
@@ -167,16 +189,6 @@ module Orchestration
       running
     end
 
-    def stream_events
-      log_connecting
-
-      Docker::Event.stream do |raw_event|
-        break unless running
-
-        process_event(Orchestration::Event.new(raw_event))
-      end
-    end
-
     def process_event(event)
       return unless event.relevant?
 
@@ -184,16 +196,17 @@ module Orchestration
       schedule_broadcast(event.service_name)
     end
 
-    # --- Scheduler thread ---
-
     def scheduler_loop
-      # Initial refresh runs here instead of in start to avoid
-      # blocking the Rails reloader during to_prepare.
       initial_refresh
-
+      tick = 0
       while running
         sleep SCHEDULER_INTERVAL
         run_scheduler_tick
+        tick += 1
+        if (tick % RECONCILE_TICKS).zero?
+          reconcile_subscribers
+          tick = 0
+        end
       end
 
       log_loop_ended('Scheduler')
@@ -202,18 +215,28 @@ module Orchestration
     def initial_refresh
       Orchestration::StackStatus.refresh!
     rescue StandardError => e
-      logger.error("[#{id}] Initial refresh failed: #{e.class}: #{e.message}")
+      logger.error("[#{id}] Initial refresh: #{e.class}: #{e.message}")
+    end
+
+    def reconcile_subscribers
+      return unless subscribers_drifted?
+
+      logger.info("[#{id}] No active connections, stopping")
+      self.class.reset_subscriber_count!
+      stop
+    rescue StandardError => e
+      logger.debug("[#{id}] Reconciliation: #{e.class}: #{e.message}")
+    end
+
+    def subscribers_drifted?
+      ActionCable.server.connections.empty? && self.class.subscriber_count.positive?
     end
 
     def run_scheduler_tick
-      # No executor.wrap — Docker API calls would hold the interlock
-      # shared lock and block the Rails reloader.
       process_pending_broadcasts
     rescue StandardError => e
-      logger.error("[#{id}] Scheduler error: #{e.class}: #{e.message}")
+      logger.error("[#{id}] Scheduler: #{e.class}: #{e.message}")
     end
-
-    # --- Broadcast scheduling ---
 
     def schedule_broadcast(service_name)
       mutex.synchronize do
@@ -225,15 +248,13 @@ module Orchestration
     end
 
     def process_pending_broadcasts
-      due_broadcasts = collect_due_broadcasts
-      due_broadcasts.each do |name, entry|
+      collect_due_broadcasts.each do |name, entry|
         execute_broadcast(name, retries: entry[:retries])
       end
     end
 
     def collect_due_broadcasts
       now = Time.current
-
       mutex.synchronize do
         due = pending_broadcasts.select { |_, entry| entry[:due_at] <= now }
         due.each_key { |name| pending_broadcasts.delete(name) }
@@ -249,7 +270,6 @@ module Orchestration
       end
     end
 
-    # Retry with exponential backoff (1s, 2s, 4s — max 3 retries)
     def retry_broadcast(service_name, retries:)
       return if retries >= MAX_BROADCAST_RETRIES
 
