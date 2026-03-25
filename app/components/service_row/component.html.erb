@@ -16,10 +16,6 @@
         <div class="flex h-3 w-3 items-center justify-center">
           <span class="loading loading-spinner loading-xs"></span>
         </div>
-        <div>
-          <div class="text-base font-semibold"><%= compose_service.display_name %></div>
-          <div class="text-base-content/50 text-xs"><span class="truncate"><%= compose_service.image %></span></div>
-        </div>
       <% else %>
         <%# Full content %>
         <div class="<%= tooltip_class %>" data-tip="<%= status_label %>">
@@ -27,44 +23,47 @@
             <span class="<%= status_indicator_class %>"></span>
           </div>
         </div>
-        <div>
-          <div class="text-base font-semibold">
-            <%= compose_service.display_name %>
-
-            <% if version %>
-              <span class="text-base-content/50 ml-1 font-normal"><%= version %></span>
-            <% end %>
-          </div>
-
-          <div class="text-base-content/50 text-xs">
-            <span class="truncate"><%= compose_service.image %></span>
-
-            <% if image_mismatch? %>
-              <span
-                class="tooltip tooltip-right tooltip-warning"
-                data-tip="<%= t('.image_mismatch', image: container.image) %>"
-              >
-                <i class="fa-solid fa-triangle-exclamation text-warning"></i>
-              </span>
-            <% end %>
-          </div>
-        </div>
       <% end %>
+
+      <div>
+        <div class="text-base font-semibold">
+          <%= compose_service.display_name %>
+
+          <% if !lazy && version %>
+            <span class="text-base-content/50 ml-1 font-normal"><%= version %></span>
+          <% end %>
+        </div>
+
+        <div class="text-base-content/50 text-xs">
+          <span class="truncate"><%= compose_service.image %></span>
+
+          <% if !lazy && image_mismatch? %>
+            <span
+              class="tooltip tooltip-right tooltip-warning"
+              data-tip="<%= t('.image_mismatch', image: container.image) %>"
+            >
+              <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+            </span>
+          <% end %>
+        </div>
+      </div>
     </div>
 
     <div class="flex items-center gap-4">
       <% unless helios? %>
         <% if public_port %>
-          <a
-            href="#"
+          <button
+            type="button"
             data-action="click->service-row--component#open"
             data-port="<%= public_port %>"
-            class="btn btn-sm <%= 'btn-disabled' unless open_button_enabled? %>"
-            <%= 'aria-disabled="true" tabindex="-1"'.html_safe unless open_button_enabled? %>
+            class="btn btn-sm"
+            <% unless open_button_enabled? %>
+              disabled
+            <% end %>
           >
             <i class="fa-solid fa-up-right-from-square"></i>
             <%= t('.open') %>
-          </a>
+          </button>
         <% end %>
         <div class="tooltip tooltip-info" data-tip="<%= t('.logs') %>">
           <% if container %>

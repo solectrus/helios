@@ -67,7 +67,6 @@ export default class extends Controller {
   }
 
   open(event: Event) {
-    event.preventDefault();
     const target = event.currentTarget as HTMLElement;
     const port = target.dataset.port;
     if (port) {

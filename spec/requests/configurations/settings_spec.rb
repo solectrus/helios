@@ -81,9 +81,9 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
       get edit_configuration_setting_path(setting: 'sensor', name: 'inverter_power')
 
-      expect(response.body).to include('"SENEC"')
-      expect(response.body).to include('"inverter_power"')
-      expect(response.body).not_to include('"WRONG"')
+      expect(response.body).to include('&quot;SENEC&quot;')
+      expect(response.body).to include('&quot;inverter_power&quot;')
+      expect(response.body).not_to include('&quot;WRONG&quot;')
     end
 
     it 'uses collector measurement when configured' do
@@ -97,7 +97,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
       get edit_configuration_setting_path(setting: 'sensor', name: 'inverter_power')
 
-      expect(response.body).to include('"MySENEC"')
+      expect(response.body).to include('&quot;MySENEC&quot;')
     end
 
     it 'renders the survey form for an existing singleton' do

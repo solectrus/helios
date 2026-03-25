@@ -5,6 +5,8 @@ CI.run do
 
   step 'Style: Ruby', 'bin/rubocop'
   step 'Style: ERB', 'bin/yarn erb:check'
+  step 'Validate: ERB', 'bin/herb analyze .'
+  step 'Lint: ERB', 'bin/herb lint'
   step 'Style: JavaScript', 'bin/yarn lint'
   step 'Style: TypeScript', 'bin/yarn tsc'
 

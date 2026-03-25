@@ -10,22 +10,22 @@ import 'survey-js-ui';
 // Survey.JS styles are imported in application.css for correct cascade order
 
 export default class extends Controller {
-  static targets = ['container', 'output', 'initialData'];
+  static targets = ['container', 'output'];
   static values = {
     url: String,
     formId: String,
     fieldName: { type: String, default: 'survey_data' },
+    initialData: { type: Object, default: {} },
   };
 
   declare containerTarget: HTMLElement;
   declare outputTarget: HTMLElement;
   declare hasOutputTarget: boolean;
-  declare initialDataTarget: HTMLScriptElement;
-  declare hasInitialDataTarget: boolean;
   declare urlValue: string;
   declare formIdValue: string;
   declare hasFormIdValue: boolean;
   declare fieldNameValue: string;
+  declare initialDataValue: Record<string, unknown>;
 
   private survey: Model | null = null;
   private unsubscribeTheme: (() => void) | null = null;
@@ -57,13 +57,8 @@ export default class extends Controller {
     this.survey.progressBarType = 'pages';
 
     // Load initial data if provided
-    if (this.hasInitialDataTarget) {
-      const initialData = JSON.parse(
-        this.initialDataTarget.textContent || '{}',
-      );
-      if (Object.keys(initialData).length > 0) {
-        this.survey.mergeData(initialData);
-      }
+    if (Object.keys(this.initialDataValue).length > 0) {
+      this.survey.mergeData(this.initialDataValue);
     }
 
     // Handle survey completing (fires before DOM changes)

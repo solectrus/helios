@@ -52,6 +52,12 @@ jobs:
       - name: Lint with RuboCop
         run: bin/rubocop --parallel
 
+      - name: Validate ERB templates
+        run: bin/herb analyze .
+
+      - name: Lint ERB templates
+        run: bin/herb lint
+
       - name: Brakeman security scan
         run: bin/brakeman
 

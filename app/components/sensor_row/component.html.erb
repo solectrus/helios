@@ -54,6 +54,7 @@
         <%= form_with url: destroy_path, method: :delete,
                      class: "hidden",
                      data: { confirm_delete_target: "form", turbo_frame: "_top" } do %>
+          <%# Submitted programmatically via confirm-delete controller %>
         <% end %>
 
         <dialog data-confirm-delete-target="dialog" class="modal modal-middle">
