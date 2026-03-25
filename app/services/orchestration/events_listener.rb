@@ -101,7 +101,8 @@ module Orchestration
       # rubocop:enable ThreadSafety/NewThread
 
       log_started
-      Orchestration::StackStatus.refresh!
+      # Initial StackStatus.refresh! is handled by the scheduler thread
+      # to avoid blocking the Rails reloader during to_prepare.
     end
 
     def stop(graceful: true)
@@ -109,12 +110,19 @@ module Orchestration
 
       log_stopping
       self.running = false
-      if graceful
-        scheduler_thread&.wakeup rescue nil # rubocop:disable Style/RescueModifier
-        listener_thread&.join(2)
-        scheduler_thread&.join(2)
-      end
-      force_kill_threads
+
+      # Always stop the scheduler thread gracefully — it may hold the
+      # Rails executor interlock shared lock while broadcasting.
+      # Thread.kill would leave the lock unreleased, deadlocking requests.
+      scheduler_thread&.wakeup rescue nil # rubocop:disable Style/RescueModifier
+      scheduler_thread&.join(2)
+
+      # The listener thread blocks on Docker::Event.stream and cannot
+      # exit cooperatively without incoming events. It never acquires
+      # the interlock shared lock, so Thread.kill is safe.
+      listener_thread&.join(2) if graceful
+      [listener_thread, scheduler_thread].each { |t| kill_thread(t) }
+
       log_stopped
     end
 
@@ -127,13 +135,11 @@ module Orchestration
     attr_reader :mutex, :pending_broadcasts, :broadcaster
     attr_accessor :running, :listener_thread, :scheduler_thread
 
-    def force_kill_threads
-      [listener_thread, scheduler_thread].each do |thread|
-        next unless thread&.alive?
+    def kill_thread(thread)
+      return unless thread&.alive?
 
-        thread.kill
-        logger.debug("[#{id}] Thread #{thread.name} force killed")
-      end
+      thread.kill
+      logger.debug("[#{id}] Thread #{thread.name} force killed")
     end
 
     # --- Listener thread ---
@@ -190,12 +196,22 @@ module Orchestration
     def scheduler_loop
       @next_refresh = Time.current + INITIAL_REFRESH_DELAY
 
+      # Initial refresh runs here instead of in start to avoid
+      # blocking the Rails reloader during to_prepare.
+      initial_refresh
+
       while running
         sleep SCHEDULER_INTERVAL
         run_scheduler_tick
       end
 
       log_loop_ended('Scheduler')
+    end
+
+    def initial_refresh
+      Orchestration::StackStatus.refresh!
+    rescue StandardError => e
+      logger.error("[#{id}] Initial refresh failed: #{e.class}: #{e.message}")
     end
 
     def run_scheduler_tick

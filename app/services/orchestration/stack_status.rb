@@ -120,12 +120,16 @@ module Orchestration
 
       return false unless ::File.exist?(compose_path) && ::File.exist?(env_path)
 
-      configuration = Configuration.current
-      return false unless configuration.setup_completed?
+      # Wrap in executor for DB connection management in background threads.
+      # executor.wrap is reentrant, so this is safe from request threads too.
+      Rails.application.executor.wrap do
+        configuration = Configuration.current
+        next false unless configuration.setup_completed?
 
-      builder = Export::Builder.new(configuration)
-      builder.compose_content != ::File.read(compose_path) ||
-        builder.env_content != ::File.read(env_path)
+        builder = Export::Builder.new(configuration)
+        builder.compose_content != ::File.read(compose_path) ||
+          builder.env_content != ::File.read(env_path)
+      end
     end
 
     def broadcast!
