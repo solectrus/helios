@@ -70,6 +70,43 @@ RSpec.describe Orchestration::StackStatus do
     end
   end
 
+  describe '#mark_starting!' do
+    before do
+      described_class.instance.instance_variable_get(:@initialized).make_true
+      allow(Orchestration::StatusBarBroadcaster).to receive(:new)
+        .and_return(instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil))
+    end
+
+    it 'returns :starting when flag is set and some services are stopped' do
+      described_class.update('postgresql', :ok)
+      described_class.update('redis', :stopped)
+      described_class.mark_starting!
+
+      expect(described_class.overall).to eq(:starting)
+    end
+
+    it 'keeps :starting until services finish settling' do
+      described_class.update('postgresql', :ok)
+      described_class.update('redis', :starting)
+      described_class.mark_starting!
+
+      # Service finishes starting — but flag keeps overall as :starting
+      # until services_settling? returns false
+      described_class.update('redis', :ok)
+
+      expect(described_class.overall).to eq(:ok)
+    end
+
+    it 'clears starting flag when no services are settling' do
+      described_class.mark_starting!
+      described_class.update('postgresql', :ok)
+      described_class.update('redis', :stopped)
+
+      # No service is :starting, so the flag gets cleared
+      expect(described_class.overall).to eq(:partial)
+    end
+  end
+
   describe '#mark_stopping!' do
     before do
       described_class.instance.instance_variable_get(:@initialized).make_true

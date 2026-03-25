@@ -4,12 +4,14 @@ module Services
 
     # POST /services/:service_id/task - Start
     def create
+      Orchestration::StackStatus.mark_starting!
       ComposeJob.perform_later(:start, service_name)
       respond_with_pending_status
     end
 
     # PATCH /services/:service_id/task - Recreate
     def update
+      Orchestration::StackStatus.mark_starting!
       ComposeJob.perform_later(:recreate, service_name)
       respond_with_pending_status
     end

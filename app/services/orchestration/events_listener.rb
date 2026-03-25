@@ -13,13 +13,6 @@ module Orchestration
     # Max retries for failed broadcasts (exponential backoff: 1s, 2s, 4s)
     MAX_BROADCAST_RETRIES = 3
 
-    # Periodic full refresh to self-correct missed events or stale states.
-    REFRESH_INTERVAL = 30.seconds
-
-    # Delay before first periodic refresh — gives the listener time to connect
-    # and containers time to complete health checks after startup.
-    INITIAL_REFRESH_DELAY = 5.seconds
-
     class << self
       def start
         class_mutex.synchronize do
@@ -194,8 +187,6 @@ module Orchestration
     # --- Scheduler thread ---
 
     def scheduler_loop
-      @next_refresh = Time.current + INITIAL_REFRESH_DELAY
-
       # Initial refresh runs here instead of in start to avoid
       # blocking the Rails reloader during to_prepare.
       initial_refresh
@@ -218,24 +209,8 @@ module Orchestration
       # No executor.wrap — Docker API calls would hold the interlock
       # shared lock and block the Rails reloader.
       process_pending_broadcasts
-      periodic_refresh
     rescue StandardError => e
       logger.error("[#{id}] Scheduler error: #{e.class}: #{e.message}")
-    end
-
-    def periodic_refresh
-      return unless Time.current >= @next_refresh
-
-      interval =
-        (
-          if Orchestration::StackStatus.services_settling?
-            Orchestration::StackStatus::ACTIVE_REFRESH_INTERVAL
-          else
-            REFRESH_INTERVAL
-          end
-        )
-      @next_refresh = Time.current + interval
-      Orchestration::StackStatus.refresh!
     end
 
     # --- Broadcast scheduling ---

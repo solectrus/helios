@@ -8,16 +8,15 @@ module Orchestration
       @initialized = Concurrent::AtomicBoolean.new(false)
       @restart_required = Concurrent::AtomicBoolean.new(false)
       @stopping = Concurrent::AtomicBoolean.new(false)
+      @starting = Concurrent::AtomicBoolean.new(false)
     end
-
-    # Faster refresh when services are still starting up
-    ACTIVE_REFRESH_INTERVAL = 5.seconds
 
     class << self
       delegate :overall,
                :refresh!,
                :update,
                :mark_config_changed!,
+               :mark_starting!,
                :mark_stopping!,
                :reset!,
                :services_settling?,
@@ -38,6 +37,11 @@ module Orchestration
     def mark_config_changed!
       @restart_required.value = config_changed?
       recompute_and_broadcast(force: true)
+    end
+
+    def mark_starting!
+      @starting.make_true
+      @overall.set(compute_overall)
     end
 
     def mark_stopping!
@@ -64,6 +68,7 @@ module Orchestration
       @overall.set(:stopped)
       @initialized.make_false
       @restart_required.make_false
+      @starting.make_false
       @stopping.make_false
     end
 
@@ -87,6 +92,7 @@ module Orchestration
     end
 
     def recompute_and_broadcast(force: false)
+      @starting.make_false unless services_settling?
       new_overall = compute_overall
       @stopping.make_false if new_overall == :stopped
       old_overall = @overall.get_and_set(new_overall)
@@ -99,11 +105,15 @@ module Orchestration
       return :stopped if statuses.empty? || statuses.all?(:stopped)
       return :stopping if stopping?
       return :error if statuses.include?(:error)
-      return :starting if statuses.include?(:starting)
+      return :starting if any_starting?(statuses)
       return :partial if statuses.include?(:stopped)
       return :restart_required if restart_required?
 
       :ok
+    end
+
+    def any_starting?(statuses)
+      statuses.include?(:starting) || @starting.true?
     end
 
     def stopping?

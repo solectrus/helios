@@ -2,6 +2,7 @@ module Services
   class BatchesController < ApplicationController
     # POST /services/batch - Start all services
     def create
+      Orchestration::StackStatus.mark_starting!
       ComposeJob.perform_later(:up)
       respond_with_pending_status(:starting) { |container| !container&.running? }
     end
