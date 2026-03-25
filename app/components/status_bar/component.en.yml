@@ -2,7 +2,7 @@ en:
   ok: "All services operational"
   starting: "Services are starting…"
   stopping: "Services are stopping…"
-  partial: "Some services offline"
+  partial: "%{running} of %{total} services operational"
   error: "Some services have issues"
   stopped: "No services operational"
   restart_required: "Configuration changed – restart required"

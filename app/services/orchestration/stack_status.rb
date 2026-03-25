@@ -13,6 +13,7 @@ module Orchestration
 
     class << self
       delegate :overall,
+               :service_counts,
                :refresh!,
                :update,
                :mark_config_changed!,
@@ -26,6 +27,14 @@ module Orchestration
     def overall
       refresh! unless @initialized.true?
       @overall.get
+    end
+
+    def service_counts
+      refresh! unless @initialized.true?
+      statuses = @service_statuses.values
+      total = statuses.size
+      running = statuses.count { |s| s != :stopped }
+      { running:, total: }
     end
 
     def update(service_name, status)

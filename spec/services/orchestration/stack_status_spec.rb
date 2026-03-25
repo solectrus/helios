@@ -70,6 +70,35 @@ RSpec.describe Orchestration::StackStatus do
     end
   end
 
+  describe '#service_counts' do
+    before do
+      described_class.instance.instance_variable_get(:@initialized).make_true
+      allow(Orchestration::StatusBarBroadcaster).to receive(:new)
+        .and_return(instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil))
+    end
+
+    it 'returns zero counts when no services exist' do
+      expect(described_class.service_counts).to eq(running: 0, total: 0)
+    end
+
+    it 'counts running services correctly' do
+      described_class.update('postgresql', :running)
+      described_class.update('redis', :stopped)
+      described_class.update('influxdb', :running)
+
+      expect(described_class.service_counts).to eq(running: 2, total: 3)
+    end
+
+    it 'counts all non-stopped services as running' do
+      described_class.update('postgresql', :running)
+      described_class.update('redis', :error)
+      described_class.update('influxdb', :starting)
+      described_class.update('mqtt', :stopped)
+
+      expect(described_class.service_counts).to eq(running: 3, total: 4)
+    end
+  end
+
   describe '#mark_starting!' do
     before do
       described_class.instance.instance_variable_get(:@initialized).make_true

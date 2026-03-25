@@ -48,8 +48,9 @@ module StatusBar
     end
 
     def labels
+      counts = service_counts
       I18n.available_locales.index_with do |locale|
-        t(".#{@status}", locale:)
+        t(".#{@status}", locale:, **counts)
       end
     end
 
@@ -67,6 +68,12 @@ module StatusBar
 
     def batch_path
       '/services/batch'
+    end
+
+    private
+
+    def service_counts
+      Orchestration::StackStatus.service_counts
     end
   end
 end
