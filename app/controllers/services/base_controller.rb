@@ -13,5 +13,9 @@ module Services
     def compose_service
       @compose_service ||= Compose.load.services.find(service_name)
     end
+
+    def helios?
+      compose_service&.helios?
+    end
   end
 end

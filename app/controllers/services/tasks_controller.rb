@@ -1,6 +1,6 @@
 module Services
   class TasksController < BaseController
-    before_action :reject_helios
+    before_action :reject_helios, only: %i[create destroy]
 
     # POST /services/:service_id/task - Start
     def create
@@ -9,10 +9,11 @@ module Services
       respond_with_pending_status(status_bar: :starting)
     end
 
-    # PATCH /services/:service_id/task - Recreate
+    # PATCH /services/:service_id/task - Recreate (or self-recreate for Helios)
     def update
       Orchestration::StackStatus.mark_starting!
-      ComposeJob.perform_later(:recreate, service_name)
+      action = helios? ? :self_recreate : :recreate
+      ComposeJob.perform_later(action, service_name)
       respond_with_pending_status(status_bar: :starting)
     end
 
@@ -25,7 +26,7 @@ module Services
     private
 
     def reject_helios
-      head :forbidden if service_name == 'helios'
+      head :forbidden if helios?
     end
 
     def respond_with_pending_status(status_bar: nil)

@@ -21,18 +21,13 @@ class ComposeJob < ApplicationJob
 
   def execute_action(action, service_name)
     case action
-    when :up
-      Orchestration::Runner.up
-    when :down
-      Orchestration::Runner.down
-    when :start
-      Orchestration::Runner.start(*Array(service_name))
-    when :stop
-      Orchestration::Runner.stop(service_name)
-    when :recreate
-      Orchestration::Runner.recreate(service_name)
-    else
-      raise ArgumentError, "Unknown compose action: #{action}"
+    when :up then Orchestration::Runner.up
+    when :down then Orchestration::Runner.down
+    when :start then Orchestration::Runner.start(*Array(service_name))
+    when :stop then Orchestration::Runner.stop(service_name)
+    when :recreate then Orchestration::Runner.recreate(service_name)
+    when :self_recreate then Orchestration::Runner.self_recreate
+    else raise ArgumentError, "Unknown compose action: #{action}"
     end
   end
 

@@ -80,13 +80,15 @@ RSpec.describe 'Services::Tasks', :with_admin_password do
       expect(response).to redirect_to(services_path)
     end
 
-    it 'rejects recreate on helios service' do
+    it 'enqueues self_recreate for helios service' do
       mock_compose_service('helios')
+      container = mock_container('helios', running: true)
+      allow(Orchestration::Container).to receive(:find).with('helios').and_return(container)
 
       patch service_task_path(service_id: 'helios')
 
-      expect(ComposeJob).not_to have_received(:perform_later)
-      expect(response).to have_http_status(:forbidden)
+      expect(ComposeJob).to have_received(:perform_later).with(:self_recreate, 'helios')
+      expect(response).to redirect_to(services_path)
     end
   end
 

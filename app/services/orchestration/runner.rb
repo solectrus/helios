@@ -44,6 +44,27 @@ module Orchestration
         run_compose('up', '--no-build', '-d', service.to_s)
       end
 
+      # Self-update: pull new image, then delegate the recreate to
+      # a temporary helper container. A process inside the Helios
+      # container cannot survive the container being stopped, so the
+      # helper runs independently and outlives the restart.
+      def self_recreate
+        pull(service: SELF_SERVICE)
+
+        image = ::Compose.load.services.find(SELF_SERVICE).image
+        compose_args = self_recreate_compose_args
+
+        cmd = [
+          'docker', 'run', '--rm', '-d',
+          '--entrypoint', 'docker',
+          '-v', '/var/run/docker.sock:/var/run/docker.sock',
+          '-v', "#{host_stack_path}:#{host_stack_path}",
+          image,
+          *compose_args
+        ]
+        run_docker(*cmd)
+      end
+
       def start(*services)
         args = %w[up --no-build -d]
         args.concat(services.flatten.compact)
@@ -161,6 +182,26 @@ module Orchestration
         return if Dir.exist?(path)
 
         raise CommandError, "Stack path does not exist: #{path}"
+      end
+
+      def run_docker(*args)
+        output, status = Open3.capture2e(*args)
+        raise_command_error(args.first, output, status) unless status.success?
+      end
+
+      def self_recreate_compose_args
+        args = [
+          'compose',
+          '-f', ::File.join(host_stack_path, 'compose.yaml'),
+          '--project-directory', host_stack_path
+        ]
+        if ::File.exist?(::Env.path)
+          args.push('--env-file', ::File.join(host_stack_path, '.env'))
+        end
+        args.push(
+          '--progress', 'plain',
+          'up', '--no-build', '-d', '--force-recreate', SELF_SERVICE
+        )
       end
 
       def services_except_self
