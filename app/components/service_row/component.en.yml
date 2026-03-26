@@ -10,3 +10,4 @@ en:
   stop: "Stop"
   recreate: "Recreate"
   image_mismatch: "Container uses %{image} — recreate to apply"
+  restart_pending: "Configuration changed — restart required"

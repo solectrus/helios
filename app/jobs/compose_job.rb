@@ -21,12 +21,18 @@ class ComposeJob < ApplicationJob
 
   def execute_action(action, service_name)
     case action
-    when :up then Orchestration::Runner.up
-    when :down then Orchestration::Runner.down
-    when :start then Orchestration::Runner.start(*Array(service_name))
-    when :stop then Orchestration::Runner.stop(service_name)
-    when :recreate then Orchestration::Runner.recreate(service_name)
-    else raise ArgumentError, "Unknown compose action: #{action}"
+    when :up
+      Orchestration::Runner.up
+    when :down
+      Orchestration::Runner.down
+    when :start
+      Orchestration::Runner.start(*Array(service_name))
+    when :stop
+      Orchestration::Runner.stop(service_name)
+    when :recreate
+      Orchestration::Runner.recreate(service_name)
+    else
+      raise ArgumentError, "Unknown compose action: #{action}"
     end
   end
 
@@ -43,11 +49,15 @@ class ComposeJob < ApplicationJob
 
   def store_batch_errors(error)
     error_message = extract_error_details(error)
-    affected_service_name = extract_affected_service(error) || extract_service_from_image(error)
+    affected_service_name =
+      extract_affected_service(error) || extract_service_from_image(error)
 
     all_services.each do |compose_service|
-      service_error = service_error_for(compose_service, affected_service_name, error_message)
-      Orchestration::ErrorStore.set(compose_service.name, service_error) if service_error
+      service_error =
+        service_error_for(compose_service, affected_service_name, error_message)
+      if service_error
+        Orchestration::ErrorStore.set(compose_service.name, service_error)
+      end
     end
   end
 
@@ -63,6 +73,7 @@ class ComposeJob < ApplicationJob
 
   def broadcast_results(action, service_name)
     Orchestration::Container.invalidate_cache
+    Orchestration::AffectedServices.invalidate_cache
 
     if batch_action?(action)
       all_services.each { |s| broadcast_service(s.name) }
@@ -80,15 +91,24 @@ class ComposeJob < ApplicationJob
     compose_service = compose_file.services.find(service_name)
     error_message = Orchestration::ErrorStore.get(service_name)
 
-    html = ApplicationController.render(
-      ServiceRow::Component.new(compose_service:, container:, error_message:, lazy: false),
-      layout: false,
-    )
+    html = render_service_row(compose_service:, container:, error_message:)
 
     Turbo::StreamsChannel.broadcast_replace_to(
       'services',
       target: "service-#{service_name}",
       html:,
+    )
+  end
+
+  def render_service_row(compose_service:, container:, error_message:)
+    ApplicationController.render(
+      ServiceRow::Component.new(
+        compose_service:,
+        container:,
+        error_message:,
+        lazy: false,
+      ),
+      layout: false,
     )
   end
 
@@ -116,7 +136,8 @@ class ComposeJob < ApplicationJob
   end
 
   def service_error_for(compose_service, affected_service_name, error_message)
-    if affected_service_name.nil? || compose_service.name == affected_service_name
+    if affected_service_name.nil? ||
+       compose_service.name == affected_service_name
       error_message
     elsif compose_service.depends_on.key?(affected_service_name)
       dependency_error_message(affected_service_name)
@@ -128,7 +149,9 @@ class ComposeJob < ApplicationJob
   end
 
   def dependency_error_message(dependency_name)
-    display_name = compose_file.services.find(dependency_name)&.display_name || dependency_name
+    display_name =
+      compose_file.services.find(dependency_name)&.display_name ||
+      dependency_name
     "Blocked: #{display_name} failed to start"
   end
 
@@ -141,10 +164,7 @@ class ComposeJob < ApplicationJob
   end
 
   def extract_affected_service(error)
-    output =
-      error.stdout.to_s.lines
-           .grep_v(/^\s+(?:Container|Network)\s/)
-           .join
+    output = error.stdout.to_s.lines.grep_v(/^\s+(?:Container|Network)\s/).join
 
     compose_file.services.each do |service|
       return service.name if output.include?("-#{service.name}-")

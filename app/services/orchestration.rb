@@ -6,6 +6,7 @@ module Orchestration
 
   COMPOSE_PROJECT_LABEL = 'com.docker.compose.project'.freeze
   COMPOSE_SERVICE_LABEL = 'com.docker.compose.service'.freeze
+  COMPOSE_CONFIG_HASH_LABEL = 'com.docker.compose.config-hash'.freeze
 
   class << self
     delegate :configure!, :connected?, to: 'Orchestration::Connection'

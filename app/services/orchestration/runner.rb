@@ -56,8 +56,13 @@ module Orchestration
         run_compose(*args)
       end
 
-      def logs(service: nil, tail: nil, follow: false, timestamps: false,
-               until_timestamp: nil)
+      def logs(
+        service: nil,
+        tail: nil,
+        follow: false,
+        timestamps: false,
+        until_timestamp: nil
+      )
         args = ['logs']
         args << '-f' if follow
         args << '--timestamps' if timestamps
@@ -74,10 +79,26 @@ module Orchestration
       def stream_logs(service:, tail: 0)
         validate_stack_path!
 
-        cmd = build_compose_command('logs', '-f', '--timestamps', '--tail', tail.to_s, service.to_s)
+        cmd =
+          build_compose_command(
+            'logs',
+            '-f',
+            '--timestamps',
+            '--tail',
+            tail.to_s,
+            service.to_s,
+          )
         io = IO.popen(cmd, err: %i[child out])
 
         [io, io.pid]
+      end
+
+      def config_hashes
+        result = run_compose('config', '--hash', '*')
+        result.output.each_line.to_h do |line|
+          name, hash = line.strip.split
+          [name, hash]
+        end
       end
 
       def ps

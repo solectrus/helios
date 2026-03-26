@@ -6,7 +6,10 @@ RSpec.describe Orchestration::StackStatus do
       before do
         # Stub refresh! to avoid real Docker calls, just mark as initialized
         allow(described_class.instance).to receive(:refresh!) do
-          described_class.instance.instance_variable_get(:@initialized).make_true
+          described_class
+            .instance
+            .instance_variable_get(:@initialized)
+            .make_true
         end
       end
 
@@ -30,8 +33,10 @@ RSpec.describe Orchestration::StackStatus do
   describe '#update and compute_overall' do
     before do
       described_class.instance.instance_variable_get(:@initialized).make_true
-      allow(Orchestration::StatusBarBroadcaster).to receive(:new)
-        .and_return(instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil))
+      allow(Orchestration::StatusBarBroadcaster).to receive(:new).and_return(
+        instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil),
+      )
+      allow(Orchestration::AffectedServices).to receive(:compute).and_return([])
     end
 
     it 'returns :ok when all services are running' do
@@ -68,13 +73,24 @@ RSpec.describe Orchestration::StackStatus do
 
       expect(described_class.overall).to eq(:partial)
     end
+
+    it 'returns :restart_required when affected services exist' do
+      allow(Orchestration::AffectedServices).to receive(:compute).and_return(
+        %w[redis],
+      )
+      described_class.update('postgresql', :running)
+      described_class.update('redis', :running)
+
+      expect(described_class.overall).to eq(:restart_required)
+    end
   end
 
   describe '#service_counts' do
     before do
       described_class.instance.instance_variable_get(:@initialized).make_true
-      allow(Orchestration::StatusBarBroadcaster).to receive(:new)
-        .and_return(instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil))
+      allow(Orchestration::StatusBarBroadcaster).to receive(:new).and_return(
+        instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil),
+      )
     end
 
     it 'returns zero counts when no services exist' do
@@ -102,8 +118,10 @@ RSpec.describe Orchestration::StackStatus do
   describe '#mark_starting!' do
     before do
       described_class.instance.instance_variable_get(:@initialized).make_true
-      allow(Orchestration::StatusBarBroadcaster).to receive(:new)
-        .and_return(instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil))
+      allow(Orchestration::StatusBarBroadcaster).to receive(:new).and_return(
+        instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil),
+      )
+      allow(Orchestration::AffectedServices).to receive(:compute).and_return([])
     end
 
     it 'returns :starting when flag is set and some services are stopped' do
@@ -139,8 +157,9 @@ RSpec.describe Orchestration::StackStatus do
   describe '#mark_stopping!' do
     before do
       described_class.instance.instance_variable_get(:@initialized).make_true
-      allow(Orchestration::StatusBarBroadcaster).to receive(:new)
-        .and_return(instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil))
+      allow(Orchestration::StatusBarBroadcaster).to receive(:new).and_return(
+        instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil),
+      )
     end
 
     it 'returns :stopping when flag is set and services are running' do
@@ -168,10 +187,74 @@ RSpec.describe Orchestration::StackStatus do
     end
   end
 
+  describe '#mark_config_changed!' do
+    before do
+      described_class.instance.instance_variable_get(:@initialized).make_true
+      allow(Orchestration::StatusBarBroadcaster).to receive(:new).and_return(
+        instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil),
+      )
+      allow(described_class.instance).to receive(:rebuild_stack)
+    end
+
+    it 'rebuilds stack files' do
+      allow(Orchestration::AffectedServices).to receive_messages(
+        compute: [],
+        invalidate_cache: nil,
+      )
+      described_class.mark_config_changed!
+
+      expect(described_class.instance).to have_received(:rebuild_stack)
+    end
+
+    it 'invalidates affected services cache' do
+      allow(Orchestration::AffectedServices).to receive_messages(
+        compute: [],
+        invalidate_cache: nil,
+      )
+      described_class.mark_config_changed!
+
+      expect(Orchestration::AffectedServices).to have_received(
+        :invalidate_cache,
+      )
+    end
+
+    it 'sets restart_required when services are affected' do
+      allow(Orchestration::AffectedServices).to receive_messages(
+        compute: %w[redis],
+        invalidate_cache: nil,
+      )
+      described_class.update('redis', :running)
+      described_class.mark_config_changed!
+
+      expect(described_class.overall).to eq(:restart_required)
+    end
+
+    it 'returns affected service names' do
+      allow(Orchestration::AffectedServices).to receive_messages(
+        compute: %w[redis influxdb],
+        invalidate_cache: nil,
+      )
+      described_class.mark_config_changed!
+
+      expect(described_class.pending_restart_services).to eq(%w[redis influxdb])
+    end
+  end
+
+  describe '#pending_restart_services' do
+    it 'delegates to AffectedServices.compute' do
+      allow(Orchestration::AffectedServices).to receive(:compute).and_return(
+        %w[redis],
+      )
+
+      expect(described_class.pending_restart_services).to eq(%w[redis])
+    end
+  end
+
   describe '#services_settling?' do
     before do
-      allow(Orchestration::StatusBarBroadcaster).to receive(:new)
-        .and_return(instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil))
+      allow(Orchestration::StatusBarBroadcaster).to receive(:new).and_return(
+        instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil),
+      )
     end
 
     it 'returns true when a service is starting' do
@@ -189,16 +272,27 @@ RSpec.describe Orchestration::StackStatus do
 
   describe '#reset!' do
     before do
-      allow(Orchestration::StatusBarBroadcaster).to receive(:new)
-        .and_return(instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil))
+      allow(Orchestration::StatusBarBroadcaster).to receive(:new).and_return(
+        instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil),
+      )
       described_class.update('postgresql', :running)
     end
 
     it 'clears all state' do
       described_class.reset!
 
-      initialized = described_class.instance.instance_variable_get(:@initialized)
+      initialized =
+        described_class.instance.instance_variable_get(:@initialized)
       expect(initialized.true?).to be false
+    end
+
+    it 'invalidates affected services cache' do
+      allow(Orchestration::AffectedServices).to receive(:invalidate_cache)
+      described_class.reset!
+
+      expect(Orchestration::AffectedServices).to have_received(
+        :invalidate_cache,
+      )
     end
   end
 end

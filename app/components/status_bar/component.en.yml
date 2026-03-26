@@ -6,6 +6,7 @@ en:
   error: "Some services have issues"
   stopped: "No services operational"
   restart_required: "Configuration changed – restart required"
+  restart_required_services: "Restart required: %{services}"
   start: "Start"
   stop: "Stop"
   restart: "Restart"

@@ -6,14 +6,14 @@ module Services
     def create
       Orchestration::StackStatus.mark_starting!
       ComposeJob.perform_later(:start, service_name)
-      respond_with_pending_status
+      respond_with_pending_status(status_bar: :starting)
     end
 
     # PATCH /services/:service_id/task - Recreate
     def update
       Orchestration::StackStatus.mark_starting!
       ComposeJob.perform_later(:recreate, service_name)
-      respond_with_pending_status
+      respond_with_pending_status(status_bar: :starting)
     end
 
     # DELETE /services/:service_id/task - Stop
@@ -28,16 +28,26 @@ module Services
       head :forbidden if service_name == 'helios'
     end
 
-    def respond_with_pending_status
+    def respond_with_pending_status(status_bar: nil)
       respond_to do |format|
         format.turbo_stream do
-          render turbo_stream: turbo_stream.replace(
-            "service-#{service_name}",
-            service_row_component,
-          )
+          render turbo_stream: turbo_stream_updates(status_bar:)
         end
         format.html { redirect_to services_path }
       end
+    end
+
+    def turbo_stream_updates(status_bar: nil)
+      updates = [
+        turbo_stream.replace("service-#{service_name}", service_row_component),
+      ]
+      if status_bar
+        updates << turbo_stream.replace(
+          'status-bar',
+          StatusBar::Component.new(status: status_bar),
+        )
+      end
+      updates
     end
 
     def service_row_component

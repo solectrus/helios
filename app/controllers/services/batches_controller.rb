@@ -1,17 +1,30 @@
 module Services
   class BatchesController < ApplicationController
-    # POST /services/batch - Start all services
+    # POST /services/batch - Start all services, or restart only pending ones
     def create
+      pending = Orchestration::StackStatus.pending_restart_services
       Orchestration::StackStatus.mark_starting!
-      ComposeJob.perform_later(:up)
-      respond_with_pending_status(:starting) { |container| !container&.running? }
+
+      if pending.any?
+        pending.each { |name| ComposeJob.perform_later(:recreate, name) }
+        respond_with_pending_status(:starting) do |cs, _|
+          pending.include?(cs.name)
+        end
+      else
+        ComposeJob.perform_later(:up)
+        respond_with_pending_status(:starting) do |_, container|
+          !container&.running?
+        end
+      end
     end
 
     # DELETE /services/batch - Stop all services
     def destroy
       Orchestration::StackStatus.mark_stopping!
       ComposeJob.perform_later(:down)
-      respond_with_pending_status(:stopping) { |container| container&.running? }
+      respond_with_pending_status(:stopping) do |_, container|
+        container&.running?
+      end
     end
 
     private
@@ -37,7 +50,7 @@ module Services
           ServiceRow::Component.new(
             compose_service:,
             container:,
-            pending: yield(container),
+            pending: yield(compose_service, container),
             lazy: false,
           ),
         )
@@ -45,10 +58,7 @@ module Services
     end
 
     def status_bar_update(status)
-      turbo_stream.replace(
-        'status-bar',
-        StatusBar::Component.new(status:),
-      )
+      turbo_stream.replace('status-bar', StatusBar::Component.new(status:))
     end
 
     def services_to_update
@@ -56,7 +66,8 @@ module Services
     end
 
     def containers_by_service
-      @containers_by_service ||= Orchestration::Container.all.index_by(&:service_name)
+      @containers_by_service ||=
+        Orchestration::Container.all.index_by(&:service_name)
     end
   end
 end

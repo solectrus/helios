@@ -10,3 +10,4 @@ de:
   stop: "Stopp"
   recreate: "Neu erstellen"
   image_mismatch: "Container nutzt %{image} – zum Anwenden neu erstellen"
+  restart_pending: "Konfiguration geändert – Neustart erforderlich"

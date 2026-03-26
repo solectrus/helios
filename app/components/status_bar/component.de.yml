@@ -6,6 +6,7 @@ de:
   error: "Einige Dienste haben Probleme"
   stopped: "Kein Dienst in Betrieb"
   restart_required: "Konfiguration geändert – Neustart erforderlich"
+  restart_required_services: "Neustart erforderlich: %{services}"
   start: "Start"
   stop: "Stop"
   restart: "Neustart"

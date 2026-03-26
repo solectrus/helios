@@ -63,11 +63,15 @@ module ServiceRow
 
     def status_indicator_class
       return 'loading loading-spinner loading-xs text-primary' if pending
-      return 'loading loading-spinner loading-xs text-warning' if status_starting?
+      if status_starting?
+        return 'loading loading-spinner loading-xs text-warning'
+      end
 
       dot = 'inline-block w-3 h-3 rounded-full'
       return "#{dot} bg-error" if error?
-      return 'loading loading-spinner loading-xs text-success' if healthcheck_starting?
+      if healthcheck_starting?
+        return 'loading loading-spinner loading-xs text-success'
+      end
 
       "#{dot} #{indicator_class}"
     end
@@ -90,13 +94,26 @@ module ServiceRow
 
     def tooltip_class
       base = 'tooltip tooltip-left before:text-left before:text-xs'
-      error? ? "#{base} tooltip-error before:max-w-sm before:break-words" : "#{base} tooltip-info"
+      if error?
+        "#{base} tooltip-error before:max-w-sm before:break-words"
+      else
+        "#{base} tooltip-info"
+      end
     end
 
     delegate :helios?, to: :compose_service
 
+    def restart_pending?
+      return @restart_pending if defined?(@restart_pending)
+
+      @restart_pending =
+        !helios? && !pending &&
+        Orchestration::AffectedServices.compute.include?(service_name)
+    end
+
     def row_class
-      base = 'block rounded-lg border border-base-300 p-4 shadow-sm transition-shadow'
+      base =
+        'block rounded-lg border border-base-300 p-4 shadow-sm transition-shadow'
 
       if helios?
         "#{base} bg-base-300 mt-6"

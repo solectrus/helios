@@ -93,9 +93,12 @@
             <% end %>
           </div>
 
-          <div class="tooltip tooltip-info join-item" data-tip="<%= t('.recreate') %>">
+          <div
+            class="tooltip join-item <%= restart_pending? ? 'tooltip-warning' : 'tooltip-info' %>"
+            data-tip="<%= restart_pending? ? t('.restart_pending') : t('.recreate') %>"
+          >
             <%= button_to service_task_path(service_name), method: :patch, disabled: recreate_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "recreateButton" } do %>
-              <i class="fa-solid fa-arrows-rotate"></i>
+              <i class="fa-solid fa-arrows-rotate <%= 'text-warning' if restart_pending? %>"></i>
             <% end %>
           </div>
         </div>

@@ -67,6 +67,10 @@ module Orchestration
       raw_container.info['Image']
     end
 
+    def config_hash
+      raw_container.info.dig('Labels', COMPOSE_CONFIG_HASH_LABEL)
+    end
+
     def image_tag
       return nil unless image
 
