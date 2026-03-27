@@ -52,15 +52,17 @@ module Orchestration
     end
 
     def render_service_row(container, compose_service, error_message: nil)
-      ApplicationController.render(
-        ServiceRow::Component.new(
-          compose_service:,
-          container:,
-          error_message:,
-          lazy: false,
-        ),
-        layout: false,
-      )
+      I18n.with_locale(EventsListener.locale) do
+        ApplicationController.render(
+          ServiceRow::Component.new(
+            compose_service:,
+            container:,
+            error_message:,
+            lazy: false,
+          ),
+          layout: false,
+        )
+      end
     end
 
     def log_error(service_name, error)

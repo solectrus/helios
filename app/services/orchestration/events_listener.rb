@@ -32,11 +32,16 @@ module Orchestration
         instance&.running?
       end
 
-      def subscriber_connected
+      def subscriber_connected(locale: nil)
         class_mutex.synchronize do
           storage[:subscriber_count] = subscriber_count + 1
+          storage[:locale] = locale if locale
           start_instance
         end
+      end
+
+      def locale
+        storage[:locale] || I18n.default_locale
       end
 
       def subscriber_disconnected
