@@ -1,6 +1,9 @@
 Rails.application.routes.draw do
-  # Health check
-  get 'up' => 'rails/health#show', :as => :rails_health_check
+  # Health check with boot ID header for restart detection
+  get 'up' => 'health#show', as: :rails_health_check
+
+  # Restart status page
+  resource :restarting, only: :show, controller: 'restarting'
 
   # Authentication
   resource :session, only: %i[new create destroy]

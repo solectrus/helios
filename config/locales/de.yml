@@ -146,6 +146,11 @@ de:
     forecast: 'Prognose'
     custom: 'Selbstdefinierte Verbraucher'
 
+  restarting:
+    show:
+      title: 'Helios wird neu gestartet…'
+      heading: 'Helios wird neu gestartet…'
+
   files:
     index:
       title: 'Dateien - Helios'

@@ -175,6 +175,11 @@ en:
     forecast: 'Forecast'
     custom: 'Custom Consumer'
 
+  restarting:
+    show:
+      title: 'Helios is restarting…'
+      heading: 'Helios is restarting…'
+
   files:
     index:
       title: 'Files - Helios'

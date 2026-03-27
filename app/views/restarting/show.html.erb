@@ -1,10 +1,8 @@
 <!doctype html>
 
-<html lang="en">
-
+<html lang="<%= I18n.locale %>">
   <head>
-
-    <title>Helios is restarting…</title>
+    <title><%= t('.title') %></title>
 
     <meta charset="utf-8">
     <meta name="viewport" content="initial-scale=1, width=device-width">
@@ -98,6 +96,7 @@
       }
 
       .spinner {
+        margin-top: 2em;
         display: inline-block;
         width: 1.5em;
         height: 1.5em;
@@ -109,30 +108,38 @@
       }
 
     </style>
-
   </head>
 
   <body>
-
     <main>
       <header>
         <svg viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg">
-          <path class="icon" stroke-width="25" stroke-linejoin="round" d="m747.775 44.2c245.861 65.31 427.225 289.542 427.225 555.8 0 314.622-253.236 570.56-566.779 574.94 41.679-83.59 94.576-189.745 151.182-303.438 149.04-299.567 230.764-466.538 231.549-473.168 1.31-9.085.524-11.05-8.905-20.381-17.026-17.188-11.002-17.924-205.095 26.765-94.296 21.854-173.662 40.27-176.019 41.006-2.881.737-4.715 0-4.715-1.964 0-1.719 34.313-89.87 75.961-195.946 41.909-105.831 75.961-195.946 75.961-199.63 0-1.331-.124-2.661-.365-3.984zm-367.512 24.346c-39.478 141.435-171.707 647.798-171.707 660.539 0 16.943 17.026 31.921 36.147 31.921 4.191 0 88.272-18.907 186.497-41.743 98.487-23.081 179.686-41.497 180.734-41.252 1.048.491-37.456 151.503-85.39 335.909-14.918 57.08-27.922 107.14-38.984 150.07-263.581-52.32-462.56-285.102-462.56-563.99 0-239.537 146.788-445.06 355.263-531.454z"/>
+          <path
+            class="icon"
+            stroke-width="25"
+            stroke-linejoin="round"
+            d="m747.775 44.2c245.861 65.31 427.225 289.542 427.225 555.8 0 314.622-253.236 570.56-566.779 574.94 41.679-83.59 94.576-189.745 151.182-303.438 149.04-299.567 230.764-466.538 231.549-473.168 1.31-9.085.524-11.05-8.905-20.381-17.026-17.188-11.002-17.924-205.095 26.765-94.296 21.854-173.662 40.27-176.019 41.006-2.881.737-4.715 0-4.715-1.964 0-1.719 34.313-89.87 75.961-195.946 41.909-105.831 75.961-195.946 75.961-199.63 0-1.331-.124-2.661-.365-3.984zm-367.512 24.346c-39.478 141.435-171.707 647.798-171.707 660.539 0 16.943 17.026 31.921 36.147 31.921 4.191 0 88.272-18.907 186.497-41.743 98.487-23.081 179.686-41.497 180.734-41.252 1.048.491-37.456 151.503-85.39 335.909-14.918 57.08-27.922 107.14-38.984 150.07-263.581-52.32-462.56-285.102-462.56-563.99 0-239.537 146.788-445.06 355.263-531.454z"
+          />
         </svg>
       </header>
+
       <article>
+        <p><strong><%= t('.heading') %></strong></p>
         <p><span class="spinner"></span></p>
-        <p><strong>Helios is restarting…</strong></p>
-        <p>This page will automatically reload once Helios is back.</p>
       </article>
     </main>
 
     <script>
       (function() {
+        var oldBootId = <%= raw @boot_id.to_s.to_json %>;
+
         var interval = setInterval(function() {
-          fetch("/", { method: "HEAD", cache: "no-store" })
+          fetch("/up", { method: "HEAD", cache: "no-store" })
             .then(function(response) {
-              if (response.ok) {
+              if (!response.ok) return;
+
+              var newBootId = response.headers.get("X-Boot-Id");
+              if (newBootId && newBootId !== oldBootId) {
                 clearInterval(interval);
                 window.location.href = "/";
               }
@@ -140,10 +147,8 @@
             .catch(function() {
               // Server still down, keep trying
             });
-        }, 3000);
+        }, 2000);
       })();
     </script>
-
   </body>
-
 </html>

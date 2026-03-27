@@ -15,7 +15,7 @@ module Services
 
       if helios?
         ComposeJob.perform_later(:self_recreate, service_name)
-        redirect_to '/restarting.html'
+        redirect_to restarting_path(boot_id: Rails.application.config.boot_id)
       else
         ComposeJob.perform_later(:recreate, service_name)
         respond_with_pending_status(status_bar: :starting)
