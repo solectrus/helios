@@ -13,9 +13,9 @@ module Orchestration
       end
     end
 
-    class << self
-      SELF_SERVICE = 'helios'.freeze
+    SELF_SERVICE = 'helios'.freeze
 
+    class << self
       def up(detach: true)
         validate_stack_path!
 

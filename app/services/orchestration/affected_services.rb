@@ -48,7 +48,7 @@ module Orchestration
     def expected_hashes
       Rails
         .cache
-        .fetch(CONFIG_HASH_CACHE_KEY) { Runner.config_hashes.except('helios') }
+        .fetch(CONFIG_HASH_CACHE_KEY) { Runner.config_hashes.except(Runner::SELF_SERVICE) }
     end
   end
 end

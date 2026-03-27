@@ -13,7 +13,7 @@ module Orchestration
     end
 
     def service_name
-      raw_event.actor&.attributes&.dig('com.docker.compose.service')
+      raw_event.actor&.attributes&.dig(COMPOSE_SERVICE_LABEL)
     end
 
     def to_h

@@ -4,46 +4,51 @@ module Orchestration
     end
 
     CACHE_TTL = 3.seconds
+    CACHE_KEY = 'docker_containers'.freeze
 
     class << self
       def all(project: nil)
-        Orchestration::Connection.configure!
-        project ||= Orchestration.default_project
-        return [] unless project
-
-        fetch_all_containers
-          .select { |c| c.info.dig('Labels', COMPOSE_PROJECT_LABEL) == project }
-          .map { |c| new(c) }
-      rescue Excon::Error::Socket, Docker::Error::TimeoutError => e
-        raise ConnectionError, "Cannot connect to Docker: #{e.message}"
+        with_docker_connection(project:) do |proj|
+          project_containers(proj).map { |c| new(c) }
+        end || []
       end
 
       def find(service_name, project: nil)
-        Orchestration::Connection.configure!
-        project ||= Orchestration.default_project
-        return nil unless project
-
-        raw =
-          fetch_all_containers.find do |c|
-            c.info.dig('Labels', COMPOSE_PROJECT_LABEL) == project &&
+        with_docker_connection(project:) do |proj|
+          raw =
+            project_containers(proj).find do |c|
               c.info.dig('Labels', COMPOSE_SERVICE_LABEL) == service_name.to_s
-          end
+            end
 
-        raw ? new(raw) : nil
-      rescue Excon::Error::Socket, Docker::Error::TimeoutError => e
-        raise ConnectionError, "Cannot connect to Docker: #{e.message}"
+          raw ? new(raw) : nil
+        end
       end
 
       def invalidate_cache
-        Rails.cache.delete('docker_containers')
+        Rails.cache.delete(CACHE_KEY)
       end
 
       private
 
+      def with_docker_connection(project: nil)
+        Orchestration::Connection.configure!
+        project ||= Orchestration.default_project
+        return nil unless project
+
+        yield(project)
+      rescue Excon::Error::Socket, Docker::Error::TimeoutError => e
+        raise ConnectionError, "Cannot connect to Docker: #{e.message}"
+      end
+
+      def project_containers(project)
+        fetch_all_containers
+          .select { |c| c.info.dig('Labels', COMPOSE_PROJECT_LABEL) == project }
+      end
+
       def fetch_all_containers
         Rails
           .cache
-          .fetch('docker_containers', expires_in: CACHE_TTL) do
+          .fetch(CACHE_KEY, expires_in: CACHE_TTL) do
             Docker::Container.all(all: true)
           end
       end
