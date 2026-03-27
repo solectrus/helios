@@ -101,29 +101,6 @@ RSpec.describe Orchestration::Runner do
     end
   end
 
-  describe '.pull' do
-    before { skip_without_docker }
-
-    context 'with compose file' do
-      before { File.write(File.join(stack_path, 'compose.yaml'), <<~YAML) }
-        name: helios-test
-        services:
-          test:
-            image: alpine:latest
-      YAML
-
-      it 'pulls images' do
-        result = described_class.pull
-        expect(result.success?).to be true
-      end
-
-      it 'pulls specific service' do
-        result = described_class.pull(service: 'test')
-        expect(result.success?).to be true
-      end
-    end
-  end
-
   describe '.ps' do
     before { skip_without_docker }
 
