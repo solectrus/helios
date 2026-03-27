@@ -1,165 +1,164 @@
 de:
   common:
-    back: "Zurück"
-    cancel: "Abbrechen"
-    confirm: "Weiter"
-    boolean_yes: "JA"
-    boolean_no: "NEIN"
+    back: 'Zurück'
+    cancel: 'Abbrechen'
+    confirm: 'Ja'
+    boolean_yes: 'JA'
+    boolean_no: 'NEIN'
 
   services:
     index:
-      title: "Dienste - Helios"
+      title: 'Dienste - Helios'
     logs:
       show:
-        title: "%{name} — Logs"
-        connecting: "Verbinden…"
+        title: '%{name} — Logs'
+        connecting: 'Verbinden…'
 
   configurations:
     show:
-      title: "Konfiguration - Helios"
-      configured: "Konfiguriert"
-      pending: "Offen"
-      settings: "Einstellungen"
-      source_settings: "Datenquellen"
-      sensor_name: "Sensor"
-      source: "Quelle"
-      live_value: "Wert"
+      title: 'Konfiguration - Helios'
+      configured: 'Konfiguriert'
+      pending: 'Offen'
+      settings: 'Einstellungen'
+      source_settings: 'Datenquellen'
+      sensor_name: 'Sensor'
+      source: 'Quelle'
+      live_value: 'Wert'
     settings:
       senec:
-        title: "SENEC-Collector"
-        description: "Verbindungseinstellungen für deinen SENEC"
+        title: 'SENEC-Collector'
+        description: 'Verbindungseinstellungen für deinen SENEC'
       mqtt:
-        title: "MQTT-Collector"
-        description: "Verbindungseinstellungen für den MQTT-Broker"
+        title: 'MQTT-Collector'
+        description: 'Verbindungseinstellungen für den MQTT-Broker'
       shelly:
-        title: "Shelly-Collector"
-        description: "Allgemeine Einstellungen für Shelly-Sensoren"
+        title: 'Shelly-Collector'
+        description: 'Allgemeine Einstellungen für Shelly-Sensoren'
       forecast:
-        title: "Forecast-Collector"
-        description: "Ertragsprognose für deine PV-Anlage"
+        title: 'Forecast-Collector'
+        description: 'Ertragsprognose für deine PV-Anlage'
       system:
-        title: "System"
-        description: "Allgemeine Einstellungen für SOLECTRUS"
+        title: 'System'
+        description: 'Allgemeine Einstellungen für SOLECTRUS'
       reverse_proxy:
-        title: "Reverse Proxy"
-        description: "Domain & HTTPS mit Traefik"
+        title: 'Reverse Proxy'
+        description: 'Domain & HTTPS mit Traefik'
       backup:
-        title: "Backup"
-        description: "Konfiguration der S3-Datensicherung"
-      invalid_setting: "Unbekannte Einstellung"
-      add: "Hinzufügen"
-      edit: "Bearbeiten"
-      delete: "Löschen"
-      delete_confirm: "Sensor wirklich deaktivieren?"
-      delete_confirm_yes: "Deaktivieren"
-      discard_confirm: "Ungespeicherte Änderungen verwerfen?"
-      discard_cancel: "Weiter bearbeiten"
-      discard_discard: "Verwerfen"
-      configure: "Konfigurieren"
-      not_configured: "Noch nicht konfiguriert"
+        title: 'Backup'
+        description: 'Konfiguration der S3-Datensicherung'
+      invalid_setting: 'Unbekannte Einstellung'
+      add: 'Hinzufügen'
+      edit: 'Bearbeiten'
+      delete: 'Löschen'
+      delete_confirm: 'Sensor wirklich deaktivieren?'
+      delete_confirm_yes: 'Deaktivieren'
+      discard_confirm: 'Ungespeicherte Änderungen verwerfen?'
+      discard_cancel: 'Weiter bearbeiten'
+      discard_discard: 'Verwerfen'
+      configure: 'Konfigurieren'
+      not_configured: 'Noch nicht konfiguriert'
 
   external_input_info:
     component:
-      title: "Externe Befüllung"
+      title: 'Externe Befüllung'
       sensor_count:
-        one: "%{count} Sensor verbunden"
-        other: "%{count} Sensoren verbunden"
+        one: '%{count} Sensor verbunden'
+        other: '%{count} Sensoren verbunden'
       modal:
-        title: "Externe Befüllung"
-        description: "Alternativ zu den Collectoren, die Messwerte selbst abrufen, können Sensordaten auch von außen direkt in die InfluxDB geschrieben werden. Dies kann über ioBroker oder Home Assistant erfolgen."
+        title: 'Externe Befüllung'
+        description: 'Alternativ zu den Collectoren, die Messwerte selbst abrufen, können Sensordaten auch von außen direkt in die InfluxDB geschrieben werden. Dies kann über ioBroker oder Home Assistant erfolgen.'
         iobroker:
-          title: "ioBroker"
-          description: "Der SOLECTRUS-Adapter für ioBroker schreibt Sensordaten direkt in die InfluxDB."
-          link: "ioBroker-Adapter"
+          title: 'ioBroker'
+          description: 'Der SOLECTRUS-Adapter für ioBroker schreibt Sensordaten direkt in die InfluxDB.'
+          link: 'ioBroker-Adapter'
         home_assistant:
-          title: "Home Assistant"
-          description: "Die SOLECTRUS-Integration für Home Assistant schreibt Sensordaten direkt in die InfluxDB."
-          link: "Home Assistant Integration"
-        close: "Schließen"
+          title: 'Home Assistant'
+          description: 'Die SOLECTRUS-Integration für Home Assistant schreibt Sensordaten direkt in die InfluxDB.'
+          link: 'Home Assistant Integration'
+        close: 'Schließen'
 
   sensor_row:
     component:
       sources:
-        senec: "SENEC"
-        shelly: "Shelly"
-        mqtt: "MQTT"
-        forecast: "Forecast"
-        external: "Extern"
+        senec: 'SENEC'
+        shelly: 'Shelly'
+        mqtt: 'MQTT'
+        forecast: 'Forecast'
+        external: 'Extern'
 
   sensors:
-    inverter_power: "Summe aller PV-Erzeuger"
-    inverter_power_1: "Separater PV-Erzeuger 1"
-    inverter_power_2: "Separater PV-Erzeuger 2"
-    inverter_power_3: "Separater PV-Erzeuger 3"
-    inverter_power_4: "Separater PV-Erzeuger 4"
-    inverter_power_5: "Separater PV-Erzeuger 5"
-    case_temp: "Gehäusetemperatur des Wechselrichters"
-    system_status: "Betriebszustand des Wechselrichters, z.B. Einspeisen oder Standby"
-    system_status_ok: "Fehlerfreier Betrieb des Wechselrichters (ja/nein)"
-    grid_import_power: "Leistung, die aus dem Stromnetz bezogen wird"
-    grid_export_power: "Leistung, die ins Stromnetz eingespeist wird"
-    grid_export_limit: "Maximale Einspeisung in Prozent der Anlagenleistung (Abregelung)"
-    house_power: "Stromverbrauch des gesamten Haushalts"
-    house_power_exclusion_hint: "In SOLECTRUS wird %{sensors} herausgerechnet"
-    battery_charging_power: "Ladeleistung der Batterie"
-    battery_discharging_power: "Entladeleistung der Batterie"
-    battery_soc: "Ladestand der Batterie in Prozent"
-    wallbox_power: "Ladeleistung der Wallbox"
-    wallbox_car_connected: "Fahrzeug an der Wallbox angeschlossen (ja/nein)"
-    car_battery_soc: "Ladestand der Fahrzeugbatterie in Prozent"
-    heatpump_power: "Stromverbrauch der Wärmepumpe"
-    heatpump_heating_power: "Thermische Leistung der Wärmepumpe"
-    heatpump_tank_temp: "Temperatur im Warmwasserspeicher"
-    heatpump_status: "Betriebsmodus der Wärmepumpe, z.B. Heizen oder Kühlen"
-    outdoor_temp: "Außentemperatur am Standort (gemessen)"
-    inverter_power_forecast: "PV-Erzeugung laut Wettervorhersage"
-    inverter_power_forecast_clearsky: "Maximal mögliche PV-Erzeugung bei wolkenlosem Himmel"
-    outdoor_temp_forecast: "Außentemperatur laut Wettervorhersage"
-    custom_power_01: "Eigener Verbraucher 1"
-    custom_power_02: "Eigener Verbraucher 2"
-    custom_power_03: "Eigener Verbraucher 3"
-    custom_power_04: "Eigener Verbraucher 4"
-    custom_power_05: "Eigener Verbraucher 5"
-    custom_power_06: "Eigener Verbraucher 6"
-    custom_power_07: "Eigener Verbraucher 7"
-    custom_power_08: "Eigener Verbraucher 8"
-    custom_power_09: "Eigener Verbraucher 9"
-    custom_power_10: "Eigener Verbraucher 10"
-    custom_power_11: "Eigener Verbraucher 11"
-    custom_power_12: "Eigener Verbraucher 12"
-    custom_power_13: "Eigener Verbraucher 13"
-    custom_power_14: "Eigener Verbraucher 14"
-    custom_power_15: "Eigener Verbraucher 15"
-    custom_power_16: "Eigener Verbraucher 16"
-    custom_power_17: "Eigener Verbraucher 17"
-    custom_power_18: "Eigener Verbraucher 18"
-    custom_power_19: "Eigener Verbraucher 19"
-    custom_power_20: "Eigener Verbraucher 20"
+    inverter_power: 'Summe aller PV-Erzeuger'
+    inverter_power_1: 'Separater PV-Erzeuger 1'
+    inverter_power_2: 'Separater PV-Erzeuger 2'
+    inverter_power_3: 'Separater PV-Erzeuger 3'
+    inverter_power_4: 'Separater PV-Erzeuger 4'
+    inverter_power_5: 'Separater PV-Erzeuger 5'
+    case_temp: 'Gehäusetemperatur des Wechselrichters'
+    system_status: 'Betriebszustand des Wechselrichters, z.B. Einspeisen oder Standby'
+    system_status_ok: 'Fehlerfreier Betrieb des Wechselrichters (ja/nein)'
+    grid_import_power: 'Leistung, die aus dem Stromnetz bezogen wird'
+    grid_export_power: 'Leistung, die ins Stromnetz eingespeist wird'
+    grid_export_limit: 'Maximale Einspeisung in Prozent der Anlagenleistung (Abregelung)'
+    house_power: 'Stromverbrauch des gesamten Haushalts'
+    house_power_exclusion_hint: 'In SOLECTRUS wird %{sensors} herausgerechnet'
+    battery_charging_power: 'Ladeleistung der Batterie'
+    battery_discharging_power: 'Entladeleistung der Batterie'
+    battery_soc: 'Ladestand der Batterie in Prozent'
+    wallbox_power: 'Ladeleistung der Wallbox'
+    wallbox_car_connected: 'Fahrzeug an der Wallbox angeschlossen (ja/nein)'
+    car_battery_soc: 'Ladestand der Fahrzeugbatterie in Prozent'
+    heatpump_power: 'Stromverbrauch der Wärmepumpe'
+    heatpump_heating_power: 'Thermische Leistung der Wärmepumpe'
+    heatpump_tank_temp: 'Temperatur im Warmwasserspeicher'
+    heatpump_status: 'Betriebsmodus der Wärmepumpe, z.B. Heizen oder Kühlen'
+    outdoor_temp: 'Außentemperatur am Standort (gemessen)'
+    inverter_power_forecast: 'PV-Erzeugung laut Wettervorhersage'
+    inverter_power_forecast_clearsky: 'Maximal mögliche PV-Erzeugung bei wolkenlosem Himmel'
+    outdoor_temp_forecast: 'Außentemperatur laut Wettervorhersage'
+    custom_power_01: 'Eigener Verbraucher 1'
+    custom_power_02: 'Eigener Verbraucher 2'
+    custom_power_03: 'Eigener Verbraucher 3'
+    custom_power_04: 'Eigener Verbraucher 4'
+    custom_power_05: 'Eigener Verbraucher 5'
+    custom_power_06: 'Eigener Verbraucher 6'
+    custom_power_07: 'Eigener Verbraucher 7'
+    custom_power_08: 'Eigener Verbraucher 8'
+    custom_power_09: 'Eigener Verbraucher 9'
+    custom_power_10: 'Eigener Verbraucher 10'
+    custom_power_11: 'Eigener Verbraucher 11'
+    custom_power_12: 'Eigener Verbraucher 12'
+    custom_power_13: 'Eigener Verbraucher 13'
+    custom_power_14: 'Eigener Verbraucher 14'
+    custom_power_15: 'Eigener Verbraucher 15'
+    custom_power_16: 'Eigener Verbraucher 16'
+    custom_power_17: 'Eigener Verbraucher 17'
+    custom_power_18: 'Eigener Verbraucher 18'
+    custom_power_19: 'Eigener Verbraucher 19'
+    custom_power_20: 'Eigener Verbraucher 20'
 
   sensor_groups:
-    inverter: "Wechselrichter"
-    grid: "Stromnetz"
-    battery: "Batterie"
-    wallbox: "Wallbox"
-    car: "Elektroauto"
-    heatpump: "Wärmepumpe"
-    forecast: "Prognose"
-    custom: "Selbstdefinierte Verbraucher"
+    inverter: 'Wechselrichter'
+    grid: 'Stromnetz'
+    battery: 'Batterie'
+    wallbox: 'Wallbox'
+    car: 'Elektroauto'
+    heatpump: 'Wärmepumpe'
+    forecast: 'Prognose'
+    custom: 'Selbstdefinierte Verbraucher'
 
   files:
     index:
-      title: "Dateien - Helios"
+      title: 'Dateien - Helios'
 
   sessions:
     new:
-      title: "Anmeldung - Helios"
-      subtitle: "Konfiguration von SOLECTRUS"
-      password_label: "Passwort"
-      password_placeholder: "Passwort eingeben"
-      login: "Anmelden"
-      hero_alt: "Helios, der Sonnengott der griechischen Mythologie"
+      title: 'Anmeldung - Helios'
+      subtitle: 'Konfiguration von SOLECTRUS'
+      password_label: 'Passwort'
+      password_placeholder: 'Passwort eingeben'
+      login: 'Anmelden'
+      hero_alt: 'Helios, der Sonnengott der griechischen Mythologie'
 
   flash:
     session:
       invalid_password: 'Ungültiges Passwort'
-
