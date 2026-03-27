@@ -11,3 +11,4 @@ en:
   recreate: "Recreate"
   image_mismatch: "Container uses %{image} — recreate to apply"
   restart_pending: "Configuration changed — restart required"
+  self_recreate_confirm: "Helios will be restarted. The interface will be temporarily unavailable. Continue?"

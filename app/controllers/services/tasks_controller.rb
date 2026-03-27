@@ -12,9 +12,14 @@ module Services
     # PATCH /services/:service_id/task - Recreate (or self-recreate for Helios)
     def update
       Orchestration::StackStatus.mark_starting!
-      action = helios? ? :self_recreate : :recreate
-      ComposeJob.perform_later(action, service_name)
-      respond_with_pending_status(status_bar: :starting)
+
+      if helios?
+        ComposeJob.perform_later(:self_recreate, service_name)
+        redirect_to '/restarting.html'
+      else
+        ComposeJob.perform_later(:recreate, service_name)
+        respond_with_pending_status(status_bar: :starting)
+      end
     end
 
     # DELETE /services/:service_id/task - Stop

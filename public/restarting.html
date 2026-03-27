@@ -1,0 +1,149 @@
+<!doctype html>
+
+<html lang="en">
+
+  <head>
+
+    <title>Helios is restarting…</title>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="initial-scale=1, width=device-width">
+    <meta name="robots" content="noindex, nofollow">
+
+    <style>
+
+      *, *::before, *::after {
+        box-sizing: border-box;
+      }
+
+      * {
+        margin: 0;
+      }
+
+      html {
+        font-size: 16px;
+      }
+
+      body {
+        background: #FFF;
+        color: #261B23;
+        display: grid;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, Aptos, Roboto, "Segoe UI", "Helvetica Neue", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        font-size: clamp(1rem, 2.5vw, 2rem);
+        -webkit-font-smoothing: antialiased;
+        font-style: normal;
+        font-weight: 400;
+        letter-spacing: -0.0025em;
+        line-height: 1.4;
+        min-height: 100dvh;
+        place-items: center;
+        text-rendering: optimizeLegibility;
+        -webkit-text-size-adjust: 100%;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        body {
+          background: #101010;
+          color: #e0e0e0;
+        }
+
+        .icon {
+          fill: #e0e0e0;
+        }
+      }
+
+      .icon {
+        fill: #B8860B;
+      }
+
+      a {
+        color: inherit;
+        font-weight: 700;
+        text-decoration: underline;
+        text-underline-offset: 0.0925em;
+      }
+
+      b, strong {
+        font-weight: 700;
+      }
+
+      main {
+        display: grid;
+        gap: 1em;
+        padding: 2em;
+        place-items: center;
+        text-align: center;
+      }
+
+      main header {
+        width: min(100%, 5em);
+      }
+
+      main header svg {
+        height: auto;
+        max-width: 100%;
+        width: 100%;
+      }
+
+      main article {
+        width: min(100%, 30em);
+      }
+
+      main article p {
+        font-size: 75%;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .spinner {
+        display: inline-block;
+        width: 1.5em;
+        height: 1.5em;
+        border: 0.15em solid currentColor;
+        border-right-color: transparent;
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+        opacity: 0.6;
+      }
+
+    </style>
+
+  </head>
+
+  <body>
+
+    <main>
+      <header>
+        <svg viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg">
+          <path class="icon" stroke-width="25" stroke-linejoin="round" d="m747.775 44.2c245.861 65.31 427.225 289.542 427.225 555.8 0 314.622-253.236 570.56-566.779 574.94 41.679-83.59 94.576-189.745 151.182-303.438 149.04-299.567 230.764-466.538 231.549-473.168 1.31-9.085.524-11.05-8.905-20.381-17.026-17.188-11.002-17.924-205.095 26.765-94.296 21.854-173.662 40.27-176.019 41.006-2.881.737-4.715 0-4.715-1.964 0-1.719 34.313-89.87 75.961-195.946 41.909-105.831 75.961-195.946 75.961-199.63 0-1.331-.124-2.661-.365-3.984zm-367.512 24.346c-39.478 141.435-171.707 647.798-171.707 660.539 0 16.943 17.026 31.921 36.147 31.921 4.191 0 88.272-18.907 186.497-41.743 98.487-23.081 179.686-41.497 180.734-41.252 1.048.491-37.456 151.503-85.39 335.909-14.918 57.08-27.922 107.14-38.984 150.07-263.581-52.32-462.56-285.102-462.56-563.99 0-239.537 146.788-445.06 355.263-531.454z"/>
+        </svg>
+      </header>
+      <article>
+        <p><span class="spinner"></span></p>
+        <p><strong>Helios is restarting…</strong></p>
+        <p>This page will automatically reload once Helios is back.</p>
+      </article>
+    </main>
+
+    <script>
+      (function() {
+        var interval = setInterval(function() {
+          fetch("/", { method: "HEAD", cache: "no-store" })
+            .then(function(response) {
+              if (response.ok) {
+                clearInterval(interval);
+                window.location.href = "/";
+              }
+            })
+            .catch(function() {
+              // Server still down, keep trying
+            });
+        }, 3000);
+      })();
+    </script>
+
+  </body>
+
+</html>

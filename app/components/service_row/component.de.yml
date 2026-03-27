@@ -11,3 +11,4 @@ de:
   recreate: "Neu erstellen"
   image_mismatch: "Container nutzt %{image} – zum Anwenden neu erstellen"
   restart_pending: "Konfiguration geändert – Neustart erforderlich"
+  self_recreate_confirm: "Helios wird neu gestartet. Die Oberfläche ist vorübergehend nicht erreichbar. Fortfahren?"
