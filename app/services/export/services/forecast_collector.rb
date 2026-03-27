@@ -29,12 +29,12 @@ module Export
       end
 
       def passthrough_vars
-        %w[TZ INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET INFLUX_MEASUREMENT_FORECAST
+        %w[TZ INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET
            FORECAST_PROVIDER FORECAST_LATITUDE FORECAST_LONGITUDE FORECAST_INTERVAL]
       end
 
       def explicit_vars
-        ['INFLUX_HOST=influxdb']
+        ['INFLUX_HOST=influxdb', 'INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}']
       end
 
       def optional_vars
