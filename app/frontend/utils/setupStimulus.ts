@@ -36,3 +36,34 @@ Turbo.StreamActions.redirect = function (this: Element) {
     Turbo.visit(target);
   }
 };
+
+// Replace browser confirm() with a daisyUI modal dialog.
+// The dialog element must exist in the layout with id="turbo-confirm-dialog".
+// Buttons inside use value="confirm" / value="cancel" with method="dialog"
+// so that dialog.returnValue reflects the user's choice.
+declare module '@hotwired/turbo' {
+  const config: {
+    forms: {
+      confirm: (message: string, element: HTMLFormElement) => Promise<boolean>;
+    };
+  };
+}
+
+Turbo.config.forms.confirm = (message: string) => {
+  const dialog = document.getElementById(
+    'turbo-confirm-dialog',
+  ) as HTMLDialogElement | null;
+  if (!dialog) return Promise.resolve(confirm(message));
+
+  const messageEl = dialog.querySelector('[data-confirm-message]');
+  if (messageEl) messageEl.textContent = message;
+
+  return new Promise<boolean>((resolve) => {
+    dialog.addEventListener(
+      'close',
+      () => resolve(dialog.returnValue === 'confirm'),
+      { once: true },
+    );
+    dialog.showModal();
+  });
+};

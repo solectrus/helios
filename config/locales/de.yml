@@ -2,6 +2,7 @@ de:
   common:
     back: "Zurück"
     cancel: "Abbrechen"
+    confirm: "Weiter"
     boolean_yes: "JA"
     boolean_no: "NEIN"
 

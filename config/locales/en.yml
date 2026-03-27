@@ -31,6 +31,7 @@ en:
   common:
     back: "Back"
     cancel: "Cancel"
+    confirm: "Continue"
     boolean_yes: "YES"
     boolean_no: "NO"
 
