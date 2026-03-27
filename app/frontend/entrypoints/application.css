@@ -49,6 +49,12 @@ table[data-show-all='false'] tr[data-sensor-enabled='false'] {
   display: none;
 }
 
+/* Tooltips: show only on hover, not on focus */
+.tooltip:focus-within::before,
+.tooltip:focus-within::after {
+  opacity: 0 !important;
+}
+
 /* hljs theme is applied dynamically by stack_preview_controller */
 .hljs {
   background: transparent !important;
