@@ -130,7 +130,8 @@ jobs:
 
       - name: Set ENV values
         run: |
-          echo "COMMIT_TIME=$(git show -s --format=%cI $GITHUB_SHA)" >> $GITHUB_ENV
+          echo "COMMIT_SHA=$(git rev-parse HEAD)" >> $GITHUB_ENV
+          echo "COMMIT_TIME=$(git show -s --format=%cI HEAD)" >> $GITHUB_ENV
           echo "COMMIT_VERSION=$(git describe --always --abbrev=7)" >> $GITHUB_ENV
 
       - name: Docker meta
@@ -151,9 +152,11 @@ jobs:
           provenance: false
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
+            COMMIT_SHA=${{ env.COMMIT_SHA }}
             COMMIT_TIME=${{ env.COMMIT_TIME }}
             COMMIT_VERSION=${{ env.COMMIT_VERSION }}
-          outputs: type=image,name=ghcr.io/solectrus/helios,push-by-digest=true,name-canonical=true,push=true
+            COMMIT_BRANCH=${{ github.head_ref || github.ref_name }}
+          outputs: type=image,name=ghcr.io/${{ github.repository }},push-by-digest=true,name-canonical=true,push=true
           cache-from: type=gha,scope=${{ env.PLATFORM_PAIR }}
           cache-to: type=gha,mode=max,scope=${{ env.PLATFORM_PAIR }}
 

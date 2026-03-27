@@ -1,7 +1,15 @@
 <%= helpers.turbo_frame_tag "status-bar" do %>
   <div class="fixed right-0 bottom-0 left-0 z-40">
     <div class="grid min-h-12 grid-cols-3 items-center px-4 py-2 text-sm font-medium <%= bar_class %>">
-      <div></div>
+      <div class="cursor-default text-xs">
+        <span
+          class="tooltip tooltip-neutral tooltip-right before:text-xs"
+          data-controller="relative-time"
+          data-relative-time-datetime-value="<%= Rails.configuration.x.git.commit_time %>"
+        >
+          <%= Rails.configuration.x.git.commit_version %>
+        </span>
+      </div>
 
       <div class="flex items-center justify-center gap-3">
         <i class="<%= icon_class %>"></i>

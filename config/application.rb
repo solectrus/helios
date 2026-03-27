@@ -46,5 +46,14 @@ module Helios
       ENV.fetch('HELIOS_STACK_PATH', Rails.root.join('stack').to_s)
     config.helios_host_stack_path =
       ENV.fetch('HELIOS_HOST_STACK_PATH') { config.helios_stack_path }
+
+    config.x.git.commit_version =
+      ENV.fetch('COMMIT_VERSION') { `git describe --always --abbrev=7`.chomp }
+
+    config.x.git.commit_time =
+      ENV.fetch('COMMIT_TIME') { `git show -s --format=%cI`.chomp }
+
+    config.x.git.commit_branch =
+      ENV.fetch('COMMIT_BRANCH') { `git rev-parse --abbrev-ref HEAD`.chomp }
   end
 end
