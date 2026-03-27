@@ -6,6 +6,60 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    env:
+      RAILS_ENV: test
+      CI: true
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Enable Corepack
+        run: corepack enable
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          cache: yarn
+          node-version-file: "package.json"
+
+      - name: Install Yarn packages
+        run: bin/yarn install --immutable
+
+      - name: Lint with RuboCop
+        run: bin/rubocop --parallel
+
+      - name: Validate ERB templates
+        run: bin/herb analyze .
+
+      - name: Lint ERB templates
+        run: bin/herb lint
+
+      - name: Brakeman security scan
+        run: bin/brakeman
+
+      - name: Run ESLint
+        run: bin/yarn lint
+
+      - name: Check for TypeScript errors
+        run: bin/yarn tsc
+
+      - name: Run JavaScript Tests
+        run: bin/yarn test
+
+      - name: Check JS size limit
+        run: |
+          yarn vite build
+          yarn size-limit
+
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -49,27 +103,6 @@ jobs:
         if: steps.playwright-cache.outputs.cache-hit != 'true'
         run: yarn playwright install --with-deps chromium
 
-      - name: Lint with RuboCop
-        run: bin/rubocop --parallel
-
-      - name: Validate ERB templates
-        run: bin/herb analyze .
-
-      - name: Lint ERB templates
-        run: bin/herb lint
-
-      - name: Brakeman security scan
-        run: bin/brakeman
-
-      - name: Run ESLint
-        run: bin/yarn lint
-
-      - name: Check for TypeScript errors
-        run: bin/yarn tsc
-
-      - name: Run JavaScript Tests
-        run: bin/yarn test
-
       - name: Build Vite assets for test
         run: yarn vite build --mode test
 
@@ -88,11 +121,6 @@ jobs:
           name: playwright-artifacts
           path: tmp/capybara/
           if-no-files-found: ignore
-
-      - name: Check JS size limit
-        run: |
-          yarn vite build
-          yarn size-limit
 
   build:
     runs-on: ${{ matrix.runner }}
@@ -180,7 +208,7 @@ jobs:
 
     if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags')
 
-    needs: [test, build]
+    needs: [lint, test, build]
 
     steps:
       - name: Download digests
