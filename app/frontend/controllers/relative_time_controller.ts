@@ -4,9 +4,11 @@ import { readLocale } from '../utils/preferences_cookie';
 export default class extends Controller {
   static values = {
     datetime: String,
+    target: { type: String, default: 'tip' },
   };
 
   declare datetimeValue: string;
+  declare targetValue: string;
 
   connect() {
     this.update();
@@ -24,7 +26,13 @@ export default class extends Controller {
     const diffMs = now.getTime() - timestamp.getTime();
     const diffSec = Math.round(diffMs / 1000);
 
-    (this.element as HTMLElement).dataset.tip = this.formatRelative(diffSec);
+    const text = this.formatRelative(diffSec);
+
+    if (this.targetValue === 'text') {
+      this.element.textContent = text;
+    } else {
+      (this.element as HTMLElement).dataset.tip = text;
+    }
   }
 
   private formatRelative(seconds: number): string {

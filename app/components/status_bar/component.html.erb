@@ -2,12 +2,15 @@
   <div class="fixed right-0 bottom-0 left-0 z-40">
     <div class="grid min-h-12 grid-cols-3 items-center px-4 py-2 text-sm font-medium <%= bar_class %>">
       <div class="cursor-default text-xs">
-        <span
-          class="tooltip tooltip-neutral tooltip-right before:text-xs"
-          data-controller="relative-time"
-          data-relative-time-datetime-value="<%= Rails.configuration.x.git.commit_time %>"
-        >
-          <%= Rails.configuration.x.git.commit_version %>
+        <%= Rails.configuration.x.git.commit_version %>
+
+        <span class="opacity-60">
+          /
+          <span
+            data-controller="relative-time"
+            data-relative-time-datetime-value="<%= Rails.configuration.x.git.commit_time %>"
+            data-relative-time-target-value="text"
+          ></span>
         </span>
       </div>
 
