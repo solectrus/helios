@@ -1,0 +1,5 @@
+en:
+  processing: 'Stopping...'
+  orphaned: 'Orphaned — no longer in configuration'
+  orphaned_badge: 'Orphaned'
+  stop: 'Stop and remove'

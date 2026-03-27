@@ -149,6 +149,11 @@ module Orchestration
       first_binding&.dig('HostPort')&.to_i
     end
 
+    def stop_and_remove!
+      raw_container.stop
+      raw_container.remove
+    end
+
     def to_h
       {
         id: id,

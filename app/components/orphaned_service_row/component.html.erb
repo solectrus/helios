@@ -1,0 +1,34 @@
+<%= helpers.turbo_frame_tag dom_id,
+                             class: "block rounded-lg border border-warning/50 p-4 shadow-sm bg-base-100" do %>
+  <div class="flex items-center justify-between">
+    <div class="flex items-center gap-4">
+      <div class="tooltip tooltip-left tooltip-warning before:text-left before:text-xs" data-tip="<%= status_label %>">
+        <div class="flex h-3 w-3 items-center justify-center">
+          <span class="<%= status_indicator_class %>"></span>
+        </div>
+      </div>
+
+      <div>
+        <div class="text-base font-semibold">
+          <%= display_name %>
+          <span class="badge badge-warning badge-sm ml-2"><%= t('.orphaned_badge') %></span>
+        </div>
+
+        <div class="text-base-content/50 text-xs">
+          <span class="truncate"><%= container.image %></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <div class="tooltip tooltip-info" data-tip="<%= t('.stop') %>">
+        <%= helpers.button_to helpers.service_orphaned_task_path(service_name),
+              method: :delete,
+              disabled: stop_disabled?,
+              class: "btn btn-ghost btn-sm btn-square text-warning" do %>
+          <i class="fa-solid fa-stop"></i>
+        <% end %>
+      </div>
+    </div>
+  </div>
+<% end %>
