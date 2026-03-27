@@ -1,6 +1,6 @@
 <% content_for :title, t('.title') %>
 
-<div class="min-h-screen">
+<div>
   <%= turbo_frame_tag "tab-content", data: { controller: "visibility" } do %>
     <%= render Header::Component.new(active_tab: :services) %>
 

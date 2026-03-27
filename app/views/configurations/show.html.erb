@@ -5,7 +5,7 @@
   <meta name="turbo-refresh-scroll" content="preserve">
 <% end %>
 
-<div class="min-h-screen">
+<div>
   <%= turbo_frame_tag "tab-content" do %>
     <%= render Header::Component.new(active_tab: :configuration) %>
 
