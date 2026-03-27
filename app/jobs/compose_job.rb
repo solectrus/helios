@@ -86,24 +86,11 @@ class ComposeJob < ApplicationJob
     compose_service = compose_file.services.find(service_name)
     error_message = Orchestration::ErrorStore.get(service_name)
 
-    html = render_service_row(compose_service:, container:, error_message:)
-
-    Turbo::StreamsChannel.broadcast_replace_to(
-      'services',
-      target: "service-#{service_name}",
-      html:,
-    )
-  end
-
-  def render_service_row(compose_service:, container:, error_message:)
-    ApplicationController.render(
-      ServiceRow::Component.new(
-        compose_service:,
-        container:,
-        error_message:,
-        lazy: false,
-      ),
-      layout: false,
+    Orchestration::ServiceBroadcaster.broadcast_row(
+      service_name,
+      container:,
+      compose_service:,
+      error_message:,
     )
   end
 

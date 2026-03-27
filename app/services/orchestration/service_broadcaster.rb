@@ -1,5 +1,24 @@
 module Orchestration
   class ServiceBroadcaster
+    def self.broadcast_row(service_name, container:, compose_service:, error_message: nil)
+      html =
+        ApplicationController.render(
+          ServiceRow::Component.new(
+            compose_service:,
+            container:,
+            error_message:,
+            lazy: false,
+          ),
+          layout: false,
+        )
+
+      Turbo::StreamsChannel.broadcast_replace_to(
+        'services',
+        target: "service-#{service_name}",
+        html:,
+      )
+    end
+
     def initialize(listener_id: nil)
       @listener_id = listener_id
     end
@@ -16,8 +35,7 @@ module Orchestration
 
       # Only rendering + broadcasting need executor (auto-loading, DB connections)
       Rails.application.executor.wrap do
-        broadcast_service_row(service_name, container, compose_service)
-        update_stack_status(service_name, container)
+        broadcast_and_update(service_name, container, compose_service)
       end
       true
     rescue StandardError => e
@@ -27,14 +45,17 @@ module Orchestration
 
     private
 
-    def broadcast_service_row(service_name, container, compose_service)
+    def broadcast_and_update(service_name, container, compose_service)
       error_message = resolve_error(service_name, container)
-
-      Turbo::StreamsChannel.broadcast_replace_to(
-        'services',
-        target: "service-#{service_name}",
-        html: render_service_row(container, compose_service, error_message:),
-      )
+      I18n.with_locale(EventsListener.locale) do
+        self.class.broadcast_row(
+          service_name,
+          container:,
+          compose_service:,
+          error_message:,
+        )
+      end
+      update_stack_status(service_name, container)
     end
 
     def update_stack_status(service_name, container)
@@ -48,20 +69,6 @@ module Orchestration
         nil
       else
         Orchestration::ErrorStore.get(service_name)
-      end
-    end
-
-    def render_service_row(container, compose_service, error_message: nil)
-      I18n.with_locale(EventsListener.locale) do
-        ApplicationController.render(
-          ServiceRow::Component.new(
-            compose_service:,
-            container:,
-            error_message:,
-            lazy: false,
-          ),
-          layout: false,
-        )
       end
     end
 
