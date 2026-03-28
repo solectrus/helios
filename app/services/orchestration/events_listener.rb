@@ -64,6 +64,20 @@ module Orchestration
         storage[:mutex] ||= Mutex.new
       end
 
+      # Called from the scheduler thread when no subscribers remain.
+      # We cannot call instance.stop from a thread that belongs to the
+      # instance (join would deadlock), so we just mark it stopped and
+      # clear class state. The threads exit naturally via the running flag.
+      def stop_abandoned(listener)
+        class_mutex.synchronize do
+          return unless instance == listener
+
+          listener.send(:running=, false)
+          storage[:subscriber_count] = 0
+          self.instance = nil
+        end
+      end
+
       private
 
       def start_instance
@@ -227,8 +241,10 @@ module Orchestration
       return unless subscribers_drifted?
 
       logger.info("[#{id}] No active connections, stopping")
-      self.class.reset_subscriber_count!
-      stop
+      # Can't call instance stop from the scheduler thread (ThreadError
+      # on self-join). Signal both loops to exit and clear class state
+      # so the next subscriber_connected creates a fresh instance.
+      self.class.stop_abandoned(self)
     rescue StandardError => e
       logger.debug("[#{id}] Reconciliation: #{e.class}: #{e.message}")
     end
