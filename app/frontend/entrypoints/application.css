@@ -43,9 +43,9 @@
   }
 }
 
-/* Sensor table: hide disabled sensors unless "show all" is active */
-table[data-show-all='false'] tbody[data-has-enabled-sensors='false'],
-table[data-show-all='false'] tr[data-sensor-enabled='false'] {
+/* Sensor table: hide disabled sensors when "hide unused" is active */
+table[data-hide-unused='true'] tbody[data-has-enabled-sensors='false'],
+table[data-hide-unused='true'] tr[data-sensor-enabled='false'] {
   display: none;
 }
 

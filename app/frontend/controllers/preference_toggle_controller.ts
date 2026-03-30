@@ -17,7 +17,7 @@ export default class extends Controller {
 
     if (this.hasContainerTarget) {
       // Instant client-side toggle (e.g. sensor filter)
-      this.containerTarget.dataset.showAll = String(checked);
+      this.containerTarget.dataset.hideUnused = String(checked);
     } else {
       // Full page refresh for toggles that affect server-rendered layout
       Turbo.visit(window.location.href, { action: 'replace' });

@@ -4,7 +4,7 @@ const MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 interface Preferences {
   theme?: string;
   expert_mode?: boolean;
-  show_all_sensors?: boolean;
+  hide_unused?: boolean;
   locale?: string;
   [key: string]: string | boolean | undefined;
 }

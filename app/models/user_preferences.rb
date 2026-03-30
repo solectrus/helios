@@ -4,7 +4,7 @@ class UserPreferences
   DEFAULTS = {
     'theme' => 'light',
     'expert_mode' => false,
-    'show_all_sensors' => false,
+    'hide_unused' => false,
     'locale' => 'en',
   }.freeze
 
@@ -25,8 +25,8 @@ class UserPreferences
     @data.fetch('expert_mode', DEFAULTS['expert_mode'])
   end
 
-  def show_all_sensors?
-    @data.fetch('show_all_sensors', DEFAULTS['show_all_sensors'])
+  def hide_unused?
+    @data.fetch('hide_unused', DEFAULTS['hide_unused'])
   end
 
   def locale

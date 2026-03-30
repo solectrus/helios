@@ -3,6 +3,7 @@ module SensorTable
     attr_reader :configuration, :readings
 
     delegate :preferences, to: :helpers
+    delegate :hide_unused?, to: :preferences
 
     def initialize(configuration:, readings: {})
       super()
@@ -26,10 +27,6 @@ module SensorTable
 
     def group_icon(group)
       SENSOR_GROUP_ICONS[group.to_sym] || 'fa-circle-question'
-    end
-
-    def show_all?
-      preferences.show_all_sensors?
     end
 
     SENSOR_GROUP_ICONS = {

@@ -12,7 +12,7 @@ RSpec.describe 'Configurations', :with_admin_password do
     end
 
     it 'displays sensor group headers' do
-      cookies[:preferences] = { show_all_sensors: true }.to_json
+      cookies[:preferences] = { hide_unused: false }.to_json
 
       get configuration_path
 
