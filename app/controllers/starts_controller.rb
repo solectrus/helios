@@ -6,24 +6,13 @@ class StartsController < ApplicationController
   def show; end
 
   def create
-    backup_stack_files!
+    StackBackup.create!
     import_existing_config!
 
     redirect_to services_path
   end
 
   private
-
-  def backup_stack_files!
-    backup_file(Compose.path)
-    backup_file(Env.path)
-  end
-
-  def backup_file(path)
-    return unless File.exist?(path)
-
-    FileUtils.cp(path, "#{path}.bak")
-  end
 
   def import_existing_config!
     reader = Import::StackReader.new(compose_path: Compose.path, env_path: Env.path)
