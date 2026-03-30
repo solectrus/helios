@@ -14,3 +14,15 @@ formatter:
 
     # Post-format rewriters (run after formatting)
     post: []
+
+linter:
+  rules:
+    # False positive: `>` is standard Stimulus action syntax (e.g. click->controller#method)
+    html-no-unescaped-entities:
+      enabled: false
+    # False positive: content_for :title, t('.title') is standard Rails usage (side effect, not unused)
+    erb-no-unused-expressions:
+      enabled: false
+    # CSP is not enabled, so script nonces are not applicable
+    html-require-script-nonce:
+      enabled: false
