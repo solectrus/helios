@@ -2,24 +2,20 @@ class ApplicationController < ActionController::Base
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
 
-  before_action :auto_import_existing_config
   before_action :require_authentication
+  before_action :require_consent
   before_action :set_locale
   before_action :set_time_zone
 
-  helper_method :authenticated?, :preferences
+  helper_method :authenticated?, :config_yaml_exists?, :preferences
 
   private
 
-  def auto_import_existing_config
+  def require_consent
     return if config_yaml_exists?
     return unless existing_stack_files?
 
-    reader = Import::StackReader.new(compose_path: Compose.path, env_path: Env.path)
-    Import::ConfigurationImporter.new(reader).import!
-  rescue Import::StackReader::Error
-    # If docker compose config fails (e.g., invalid YAML), skip auto-import
-    nil
+    redirect_to start_path
   end
 
   def config_yaml_exists?

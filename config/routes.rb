@@ -8,6 +8,9 @@ Rails.application.routes.draw do
   # Authentication
   resource :session, only: %i[new create destroy]
 
+  # First-start consent
+  resource :start, only: %i[show create]
+
   # Generated files preview
   resources :files, only: :index
 

@@ -155,6 +155,17 @@ de:
     index:
       title: 'Dateien - Helios'
 
+  starts:
+    show:
+      title: 'Willkommen - Helios'
+      subtitle: 'Konfiguration von SOLECTRUS'
+      heading: 'Willkommen bei HELIOS'
+      step_import_html: 'Deine bestehenden Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> werden importiert und interpretiert'
+      step_backup_html: 'Beide Dateien werden als Sicherheitskopie gespeichert (<code class="rounded bg-base-300 px-1 font-mono">.bak</code>)'
+      step_manage: 'Anschließend erfolgt die gesamte Konfiguration von SOLECTRUS sowie der Betrieb der Container webbasiert über HELIOS – die Kommandozeile wird nicht mehr benötigt'
+      hint_exclusive_html: 'Da HELIOS die Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> zukünftig selbst schreibt und ändert, ist eine parallele Nutzung von Portainer, Dockge, Arcane oder ähnlichen Tools nicht mehr vorgesehen.'
+      agree: 'Einverstanden, Import starten'
+
   sessions:
     new:
       title: 'Anmeldung - Helios'
