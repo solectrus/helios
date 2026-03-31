@@ -1,27 +1,30 @@
-# ADR-0002: SQLite for Internal Storage
+# ADR-0002: SQLite for Rails Infrastructure
 
 ## Status
 
-Accepted
+Accepted (updated to reflect current usage)
 
 ## Context
 
-Helios needs to store internal state:
-
-- Admin password hash
-- Setup completion status
-- Service registry (which services Helios manages)
-- Configuration (JSON blob with general settings, sensor mappings, service options)
-
-Options considered:
-
-1. PostgreSQL (already in stack)
-2. SQLite (embedded)
-3. File-based (JSON/YAML)
+Helios needs persistence for Rails infrastructure (background jobs, WebSocket messages) but stores no application data in the database. All business data is file-based (see ADR-0009).
 
 ## Decision
 
-Use SQLite for Helios internal storage.
+Use SQLite exclusively for Rails infrastructure:
+
+| Database                           | Purpose                        | Managed by |
+| ---------------------------------- | ------------------------------ | ---------- |
+| `storage/production.sqlite3`       | Primary (unused, empty schema) | Rails      |
+| `storage/production_queue.sqlite3` | Background job queue           | SolidQueue |
+| `storage/production_cable.sqlite3` | WebSocket message transport    | SolidCable |
+| `storage/production_cache.sqlite3` | Cache store                    | SolidCache |
+
+Application data is stored elsewhere:
+
+| Data             | Storage                  |
+| ---------------- | ------------------------ |
+| Configuration    | `config.yaml` (ADR-0009) |
+| User preferences | Browser cookies          |
 
 ## Consequences
 
@@ -29,14 +32,12 @@ Use SQLite for Helios internal storage.
 
 - No additional container required
 - Lightweight, suitable for Raspberry Pi
-- Rails has excellent SQLite support
-- Single file, easy to backup
-- No network dependencies
+- No database migrations needed for application features
+- Application data is human-readable and easy to backup
 
 **Negative:**
 
-- Cannot share database with SOLECTRUS Dashboard
-- Limited concurrent write performance (not an issue for Helios)
+- Multiple SQLite files to persist (via bind mount)
 
 **Location:**
 `/app/storage/` (persisted via bind mount to `./helios/`)

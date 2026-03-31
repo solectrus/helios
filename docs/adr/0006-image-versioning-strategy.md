@@ -24,6 +24,8 @@ Use different strategies for own services vs. third-party services:
 | SOLECTRUS services | `latest`             | `ghcr.io/solectrus/solectrus:latest` |
 | Third-party        | Major version pinned | `postgres:18-alpine`                 |
 
+During development, some SOLECTRUS services may temporarily use the `develop` tag instead of `latest` to track the development branch. This is switched to `latest` before release.
+
 ## Consequences
 
 **Positive:**

@@ -2,7 +2,7 @@
 
 ## Status
 
-Accepted (updated to reflect chapters-based implementation)
+Accepted (updated to reflect file-based YAML implementation)
 
 ## Context
 
@@ -10,47 +10,35 @@ Helios needs to store user configuration that drives the generation of `compose.
 
 - General settings (timezone, installation date)
 - Device/service configuration (inverter, wallbox, heatpump, etc.)
-- Sensor mappings (Phase 2)
+- Sensor mappings
 
 Options considered:
 
 1. Key-value settings table
 2. Typed models per configuration area
-3. Single JSON blob
-4. **Chapters-based model** (chosen)
+3. Database with JSON blobs
+4. **File-based YAML** (chosen)
 
 ## Decision
 
-Use a `configurations` table with associated `chapters` records. Each chapter stores a JSON blob for a specific configuration area.
+Use a single `config.yaml` file to store all configuration. The `Configuration` model reads and writes this file directly — no database tables are needed.
+
+Configuration is organized into named singletons (chapters), each representing a specific area:
 
 ```ruby
-# Schema
-create_table :configurations do |t|
-  t.json :data, null: false, default: {}
-  t.timestamps
-end
-
-create_table :chapters do |t|
-  t.references :configuration, null: false, foreign_key: true
-  t.string :name, null: false
-  t.json :data, null: false, default: {}
-  t.timestamps
-  t.index [:configuration_id, :name], unique: true
-end
-
 # Usage
 config = Configuration.current
-config.chapter('system')
+config.system
 # => { "installation_date" => "2024-01-15", "timezone" => "Europe/Berlin" }
 
-config.update_chapter('system', { 'installation_date' => '2024-01-15', 'timezone' => 'Europe/Berlin' })
+config.update('system', { 'installation_date' => '2024-01-15', 'timezone' => 'Europe/Berlin' })
 ```
 
-## Chapter Names
+## Singletons
 
-Defined in `Chapter::NAMES`:
+Defined in `Configuration::SINGLETONS`:
 
-| Chapter    | Purpose                       |
+| Singleton  | Purpose                       |
 | ---------- | ----------------------------- |
 | `system`   | Installation date, timezone   |
 | `devices`  | Device configuration          |
@@ -64,21 +52,22 @@ Defined in `Chapter::NAMES`:
 
 **Positive:**
 
-- Each chapter is independently editable
-- Flexible JSON schema per chapter, easy to extend
-- No migrations needed for new config options
-- Chapters can be completed incrementally (setup wizard)
-- Single `Configuration` record tracks global state (e.g., `setup_completed`)
+- No database needed — simpler architecture, no migrations
+- Each singleton is independently editable
+- Flexible schema, easy to extend
+- Singletons can be completed incrementally (setup wizard)
+- YAML is human-readable and easy to debug
+- File can be backed up/restored trivially
 
 **Negative:**
 
-- No database-level validation of JSON content (must validate in Ruby)
-- Queries on nested fields are less efficient (acceptable for single-row config)
+- No database-level validation (must validate in Ruby)
+- Concurrent writes require care (acceptable for single-user admin tool)
 
 ## Data Flow
 
 ```
-User Input (UI) → Configuration + Chapters (SQLite/JSON) → StackBuilder → compose.yaml + .env
+User Input (UI) → config.yaml → StackBuilder → compose.yaml + .env
 ```
 
-`StackBuilder` reads configuration and chapters, then generates both `compose.yaml` and `.env`.
+`StackBuilder` reads the YAML configuration and generates both `compose.yaml` and `.env`.
