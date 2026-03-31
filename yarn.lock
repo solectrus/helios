@@ -1624,8 +1624,8 @@ __metadata:
     rails-vite-plugin: "npm:^0.2.3"
     size-limit: "npm:^12.0.1"
     stimulus-vite-helpers: "npm:^3.1.0"
-    survey-core: "npm:^2.5.16"
-    survey-js-ui: "npm:^2.5.16"
+    survey-core: "npm:^2.5.18"
+    survey-js-ui: "npm:^2.5.18"
     tailwindcss: "npm:^4.2.2"
     typescript: "npm:^6.0.2"
     typescript-eslint: "npm:^8.58.0"
@@ -2646,21 +2646,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"survey-core@npm:^2.5.16":
-  version: 2.5.16
-  resolution: "survey-core@npm:2.5.16"
-  checksum: 10c0/15342c7f19f91a4132774a78dc221123317ef567e2412327b171d0c934c06c3b02bd1fef25f45ec560a29cad886bb04912df4ccea75b9d45e70d38f7d7b0cd63
+"survey-core@npm:^2.5.18":
+  version: 2.5.18
+  resolution: "survey-core@npm:2.5.18"
+  checksum: 10c0/a43a4f6c9bfc8badb92462237230b1e2fec7233a484fa44521bdf73ca28355a2bf231fb581072397939c1921b60b35732dbbabbe3120f574d847d32cea00ebe1
   languageName: node
   linkType: hard
 
-"survey-js-ui@npm:^2.5.16":
-  version: 2.5.16
-  resolution: "survey-js-ui@npm:2.5.16"
+"survey-js-ui@npm:^2.5.18":
+  version: 2.5.18
+  resolution: "survey-js-ui@npm:2.5.18"
   peerDependencies:
     "@types/react": "*"
     "@types/react-dom": "*"
-    survey-core: 2.5.16
-  checksum: 10c0/39243fd1421a33ba641a8f4d631a02cd50a0f71594b4661e41b2cb0fbbe79f8618345293be0ebb002fa5d3f41d5ffbce8274e21d60e1bbfbc8b0edfc74793783
+    survey-core: 2.5.18
+  checksum: 10c0/f3822d8a66ffb9dea99dd09d217dac26a7b83f47d7fc072c4441446be57f3f09022cf54c308ffdd3d7579e4718d781daec6a6154a1947b573cfcfd01285af066
   languageName: node
   linkType: hard
 
