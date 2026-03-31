@@ -10,6 +10,7 @@ gem 'sqlite3'
 gem 'docker-api'
 
 # Frontend
+gem 'rack-brotli'
 gem 'rails_vite'
 gem 'stimulus-rails'
 gem 'turbo-rails'
