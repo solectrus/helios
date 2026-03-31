@@ -43,6 +43,9 @@ jobs:
       - name: Lint ERB templates
         run: bin/herb lint
 
+      - name: Check ERB formatting
+        run: bin/yarn erb:check
+
       - name: Brakeman security scan
         run: bin/brakeman
 
