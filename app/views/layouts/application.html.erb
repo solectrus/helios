@@ -2,39 +2,33 @@
 
 <html lang="<%= I18n.locale %>" data-theme="<%= preferences.theme %>">
   <head>
+    <meta charset="utf-8">
+
     <title><%= content_for(:title) || "HELIOS" %></title>
 
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="application-name" content="HELIOS">
     <meta name="git-commit-version" content="<%= Rails.configuration.x.git.commit_version %>">
     <meta name="git-commit-time" content="<%= Rails.configuration.x.git.commit_time %>">
-    <meta name="mobile-web-app-capable" content="yes">
 
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
     <%= yield :head %>
 
-    <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="/icon.png">
 
     <%= vite_typescript_tag 'application' %>
-    <%= vite_stylesheet_tag 'application.css', media: 'all' %>
+    <%= vite_stylesheet_tag 'application.css' %>
   </head>
 
   <body class="bg-base-200 min-h-screen pb-10">
-    <% if flash[:alert] %>
-      <div class="toast toast-top toast-center z-50">
-        <div class="alert alert-error"><span><%= flash[:alert] %></span></div>
-      </div>
-    <% end %>
-
-    <% if flash[:notice] %>
-      <div class="toast toast-top toast-center z-50">
-        <div class="alert alert-success"><span><%= flash[:notice] %></span></div>
-      </div>
+    <% { alert: "alert-error", notice: "alert-success" }.each do |key, alert_class| %>
+      <% if flash[key] %>
+        <div class="toast toast-top toast-center z-50">
+          <div class="alert <%= alert_class %>"><span><%= flash[key] %></span></div>
+        </div>
+      <% end %>
     <% end %>
 
     <%= yield %>
