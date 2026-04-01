@@ -68,7 +68,7 @@ class ComposeJob < ApplicationJob
 
   def broadcast_results(action, service_name)
     Orchestration::Container.invalidate_cache
-    Orchestration::AffectedServices.invalidate_cache
+    Orchestration::AffectedServices.invalidate_config_hashes
 
     if batch_action?(action)
       all_services.each { |s| broadcast_service(s.name) }

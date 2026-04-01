@@ -50,7 +50,6 @@ module Orchestration
     def mark_config_changed!
       rebuild_stack
       AffectedServices.invalidate_config_hashes
-      AffectedServices.invalidate_cache
       recompute_and_broadcast(force: true)
     end
 
@@ -85,7 +84,6 @@ module Orchestration
       @starting.make_false
       @stopping.make_false
       AffectedServices.invalidate_config_hashes
-      AffectedServices.invalidate_cache
     end
 
     # True when services are in a transient state (:starting)

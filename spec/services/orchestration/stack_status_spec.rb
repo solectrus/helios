@@ -199,29 +199,29 @@ RSpec.describe Orchestration::StackStatus do
     it 'rebuilds stack files' do
       allow(Orchestration::AffectedServices).to receive_messages(
         compute: [],
-        invalidate_cache: nil,
+        invalidate_config_hashes: nil,
       )
       described_class.mark_config_changed!
 
       expect(described_class.instance).to have_received(:rebuild_stack)
     end
 
-    it 'invalidates affected services cache' do
+    it 'invalidates config hashes and affected services cache' do
       allow(Orchestration::AffectedServices).to receive_messages(
         compute: [],
-        invalidate_cache: nil,
+        invalidate_config_hashes: nil,
       )
       described_class.mark_config_changed!
 
       expect(Orchestration::AffectedServices).to have_received(
-        :invalidate_cache,
+        :invalidate_config_hashes,
       )
     end
 
     it 'sets restart_required when services are affected' do
       allow(Orchestration::AffectedServices).to receive_messages(
         compute: %w[redis],
-        invalidate_cache: nil,
+        invalidate_config_hashes: nil,
       )
       described_class.update('redis', :running)
       described_class.mark_config_changed!
@@ -232,7 +232,7 @@ RSpec.describe Orchestration::StackStatus do
     it 'returns affected service names' do
       allow(Orchestration::AffectedServices).to receive_messages(
         compute: %w[redis influxdb],
-        invalidate_cache: nil,
+        invalidate_config_hashes: nil,
       )
       described_class.mark_config_changed!
 
@@ -286,12 +286,12 @@ RSpec.describe Orchestration::StackStatus do
       expect(initialized.true?).to be false
     end
 
-    it 'invalidates affected services cache' do
-      allow(Orchestration::AffectedServices).to receive(:invalidate_cache)
+    it 'invalidates config hashes and affected services cache' do
+      allow(Orchestration::AffectedServices).to receive(:invalidate_config_hashes)
       described_class.reset!
 
       expect(Orchestration::AffectedServices).to have_received(
-        :invalidate_cache,
+        :invalidate_config_hashes,
       )
     end
   end

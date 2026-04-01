@@ -20,9 +20,11 @@ module Orchestration
       Rails.cache.delete(AFFECTED_CACHE_KEY)
     end
 
-    # Invalidate the expected config hashes (only needed on config change)
+    # Invalidate the expected config hashes and the derived affected-services
+    # cache (stale config hashes make the affected-services cache meaningless).
     def self.invalidate_config_hashes
       Rails.cache.delete(CONFIG_HASH_CACHE_KEY)
+      Rails.cache.delete(AFFECTED_CACHE_KEY)
     end
 
     def compute
