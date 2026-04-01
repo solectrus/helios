@@ -1,6 +1,15 @@
 module Compose
   FILENAMES = %w[compose.yaml docker-compose.yaml docker-compose.yml].freeze
 
+  # Ensure Docker image references always include an explicit tag.
+  # Docker treats "nginx" and "nginx:latest" as identical,
+  # but string comparisons need a canonical form.
+  def self.normalize_image(image)
+    return image if image.nil? || image.include?(':')
+
+    "#{image}:latest"
+  end
+
   def self.load
     File.load(path)
   end

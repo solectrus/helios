@@ -22,7 +22,7 @@ influxdb:
 redis:
   image: redis:8-alpine
 watchtower:
-  image: nickfedor/watchtower
+  image: nickfedor/watchtower:latest
 sensors:
   inverter_power:
     source: external

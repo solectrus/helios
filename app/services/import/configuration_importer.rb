@@ -119,7 +119,7 @@ module Import
       {
         'timezone' => dashboard_env['TZ'],
         'installation_date' => dashboard_env['INSTALLATION_DATE'],
-        'image' => @reader.service('dashboard')&.dig('image'),
+        'image' => Compose.normalize_image(@reader.service('dashboard')&.dig('image')),
         'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
         'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],
       }
@@ -163,7 +163,7 @@ module Import
 
     def postgresql_data
       {
-        'image' => @reader.service('postgresql')&.dig('image'),
+        'image' => Compose.normalize_image(@reader.service('postgresql')&.dig('image')),
         'password' => @reader.raw_env['POSTGRES_PASSWORD'],
       }.compact
     end
@@ -175,7 +175,7 @@ module Import
               @reader.raw_env['INFLUX_TOKEN_WRITE']
 
       {
-        'image' => @reader.service('influxdb')&.dig('image'),
+        'image' => Compose.normalize_image(@reader.service('influxdb')&.dig('image')),
         'password' => @reader.raw_env['INFLUX_PASSWORD'],
         'org' => @reader.raw_env['INFLUX_ORG'],
         'bucket' => @reader.raw_env['INFLUX_BUCKET'],
@@ -273,7 +273,7 @@ module Import
     end
 
     def image_hash_for(service_name)
-      image = @reader.service(service_name)&.dig('image')
+      image = Compose.normalize_image(@reader.service(service_name)&.dig('image'))
       { 'image' => image } if image
     end
 
@@ -292,7 +292,7 @@ module Import
     end
 
     def image_data_for(service_name)
-      image = @reader.service(service_name)&.dig('image')
+      image = Compose.normalize_image(@reader.service(service_name)&.dig('image'))
       { 'image' => image }.compact
     end
   end

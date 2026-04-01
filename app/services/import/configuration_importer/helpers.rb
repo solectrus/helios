@@ -21,7 +21,7 @@ module Import
       end
 
       def image_data_for(service_name)
-        image = @reader.service(service_name)&.dig('image')
+        image = Compose.normalize_image(@reader.service(service_name)&.dig('image'))
         { 'image' => image }.compact
       end
 

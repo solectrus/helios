@@ -16,7 +16,7 @@ module Compose
     end
 
     def image
-      config['image']
+      Compose.normalize_image(config['image'])
     end
 
     def image_name
@@ -24,10 +24,7 @@ module Compose
     end
 
     def image_tag
-      return nil unless image
-
-      tag = image.split(':').last
-      tag == image ? 'latest' : tag
+      image&.split(':')&.last
     end
 
     def display_name
