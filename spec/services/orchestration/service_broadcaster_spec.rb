@@ -111,7 +111,7 @@ RSpec.describe Orchestration::ServiceBroadcaster do
 
   def stub_docker_lookup(container:)
     allow(Orchestration::Container).to receive(:invalidate_cache)
-    allow(Orchestration::AffectedServices).to receive(:invalidate_cache)
+    allow(Orchestration::AffectedServices).to receive(:invalidate_config_hashes)
     allow(Orchestration::Container).to receive(:find).and_return(container)
   end
 

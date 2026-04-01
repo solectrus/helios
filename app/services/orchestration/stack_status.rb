@@ -65,7 +65,7 @@ module Orchestration
 
     def refresh!
       Orchestration::Container.invalidate_cache
-      AffectedServices.invalidate_cache
+      AffectedServices.invalidate_config_hashes
       refresh_service_statuses
 
       @initialized.make_true

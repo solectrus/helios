@@ -27,7 +27,7 @@ module Orchestration
       # Docker API calls outside executor.wrap — holding the interlock
       # shared lock during slow API calls would block the Rails reloader.
       Orchestration::Container.invalidate_cache
-      Orchestration::AffectedServices.invalidate_cache
+      Orchestration::AffectedServices.invalidate_config_hashes
       container = Orchestration::Container.find(service_name)
       compose_service = ::Compose.load.services.find(service_name)
 
