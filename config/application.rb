@@ -18,6 +18,8 @@ require 'action_cable/engine'
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
+require_relative '../lib/startup_check_middleware'
+
 module Helios
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
@@ -42,6 +44,12 @@ module Helios
     # Path where stack files (compose.yaml, .env) are stored.
     # Defaults to /data in production; overridden in development/test.
     config.data_path = '/data'
+
+    # Block requests with a fail screen when startup prerequisites are not met.
+    # Only active in production — development/test rely on local file paths.
+    if ENV['RAILS_ENV'] == 'production'
+      config.middleware.insert(0, StartupCheckMiddleware)
+    end
 
     config.x.git.commit_version =
       ENV.fetch('COMMIT_VERSION') { `git describe --always --abbrev=7`.chomp }
