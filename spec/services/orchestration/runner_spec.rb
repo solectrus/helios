@@ -1,25 +1,25 @@
 RSpec.describe Orchestration::Runner do
-  let(:stack_path) { Rails.root.join('tmp/stack').to_s }
+  let(:data_path) { Rails.root.join('tmp/stack').to_s }
 
   before do
-    allow(Rails.configuration).to receive(:helios_stack_path).and_return(
-      stack_path,
+    allow(Rails.configuration).to receive(:data_path).and_return(
+      data_path,
     )
-    FileUtils.mkdir_p(stack_path)
+    FileUtils.mkdir_p(data_path)
   end
 
-  after { FileUtils.rm_rf(stack_path) }
+  after { FileUtils.rm_rf(data_path) }
 
-  describe '.stack_path' do
+  describe '.data_path' do
     it 'returns the configured stack path' do
-      expect(described_class.stack_path).to eq(stack_path)
+      expect(described_class.data_path).to eq(data_path)
     end
   end
 
   describe 'validation' do
     context 'when stack path is not set' do
       before do
-        allow(Rails.configuration).to receive(:helios_stack_path).and_return(
+        allow(Rails.configuration).to receive(:data_path).and_return(
           nil,
         )
       end
@@ -33,7 +33,7 @@ RSpec.describe Orchestration::Runner do
     end
 
     context 'when stack path does not exist' do
-      before { FileUtils.rm_rf(stack_path) }
+      before { FileUtils.rm_rf(data_path) }
 
       it 'raises CommandError' do
         expect { described_class.up }.to raise_error(
@@ -48,7 +48,7 @@ RSpec.describe Orchestration::Runner do
     before { skip_without_docker }
 
     context 'with minimal compose file' do
-      before { File.write(File.join(stack_path, 'compose.yaml'), <<~YAML) }
+      before { File.write(File.join(data_path, 'compose.yaml'), <<~YAML) }
         name: helios-test
         services:
           test:
@@ -60,7 +60,7 @@ RSpec.describe Orchestration::Runner do
         # Clean up containers
         system(
           'docker compose down -v',
-          chdir: stack_path,
+          chdir: data_path,
           out: File::NULL,
           err: File::NULL,
         )
@@ -79,7 +79,7 @@ RSpec.describe Orchestration::Runner do
 
     context 'with running containers' do
       before do
-        File.write(File.join(stack_path, 'compose.yaml'), <<~YAML)
+        File.write(File.join(data_path, 'compose.yaml'), <<~YAML)
           name: helios-test
           services:
             test:
@@ -88,7 +88,7 @@ RSpec.describe Orchestration::Runner do
         YAML
         system(
           'docker compose up -d',
-          chdir: stack_path,
+          chdir: data_path,
           out: File::NULL,
           err: File::NULL,
         )
@@ -105,7 +105,7 @@ RSpec.describe Orchestration::Runner do
     before { skip_without_docker }
 
     context 'with compose file' do
-      before { File.write(File.join(stack_path, 'compose.yaml'), <<~YAML) }
+      before { File.write(File.join(data_path, 'compose.yaml'), <<~YAML) }
         name: helios-test
         services:
           test:

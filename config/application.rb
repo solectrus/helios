@@ -39,13 +39,9 @@ module Helios
     # Don't generate system test files.
     config.generators.system_tests = nil
 
-    # Helios stack path configuration
-    # HELIOS_STACK_PATH: Path inside the container where stack files are mounted
-    # HELIOS_HOST_STACK_PATH: Path on the Docker host (for Docker Compose commands)
-    config.helios_stack_path =
-      ENV.fetch('HELIOS_STACK_PATH', Rails.root.join('stack').to_s)
-    config.helios_host_stack_path =
-      ENV.fetch('HELIOS_HOST_STACK_PATH') { config.helios_stack_path }
+    # Path where stack files (compose.yaml, .env) are stored.
+    # Defaults to /data in production; overridden in development/test.
+    config.data_path = '/data'
 
     config.x.git.commit_version =
       ENV.fetch('COMMIT_VERSION') { `git describe --always --abbrev=7`.chomp }

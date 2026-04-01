@@ -1,7 +1,7 @@
 RSpec.describe Export::Builder do
   before { with_config_yaml }
 
-  let(:tmp_dir) { Rails.configuration.helios_stack_path }
+  let(:tmp_dir) { Rails.configuration.data_path }
   let(:compose_path) { File.join(tmp_dir, 'compose.yaml') }
   let(:env_path) { File.join(tmp_dir, '.env') }
 

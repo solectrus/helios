@@ -17,7 +17,7 @@ module Orchestration
 
     class << self
       def up(detach: true)
-        validate_stack_path!
+        validate_data_path!
 
         args = %w[up --no-build]
         args << '-d' if detach
@@ -58,7 +58,7 @@ module Orchestration
           'docker', 'run', '--rm', '-d',
           '--entrypoint', 'docker',
           '-v', '/var/run/docker.sock:/var/run/docker.sock',
-          '-v', "#{host_stack_path}:#{host_stack_path}",
+          '-v', "#{data_path}:#{data_path}",
           image,
           *compose_args
         ]
@@ -98,7 +98,7 @@ module Orchestration
       # Returns [io, pid]. Caller is responsible for reading
       # from io and killing the process when done.
       def stream_logs(service:, tail: 0)
-        validate_stack_path!
+        validate_data_path!
 
         cmd =
           build_compose_command(
@@ -126,18 +126,14 @@ module Orchestration
         run_compose('ps')
       end
 
-      def stack_path
-        Rails.configuration.helios_stack_path
-      end
-
-      def host_stack_path
-        Rails.configuration.helios_host_stack_path
+      def data_path
+        Rails.configuration.data_path
       end
 
       private
 
       def run_compose(*args)
-        validate_stack_path!
+        validate_data_path!
 
         cmd = build_compose_command(*args)
         output, status = Open3.capture2e(*cmd)
@@ -154,7 +150,7 @@ module Orchestration
           '-f',
           ::Compose.path,
           '--project-directory',
-          host_stack_path,
+          data_path,
         ]
         env_path = ::Env.path
         cmd.push('--env-file', env_path) if ::File.exist?(env_path)
@@ -171,17 +167,17 @@ module Orchestration
               )
       end
 
-      def validate_stack_path!
-        path = stack_path
+      def validate_data_path!
+        path = data_path
 
         if path.blank?
           raise CommandError,
-                'Stack path not configured. Set HELIOS_STACK_PATH environment variable.'
+                'Data path not configured.'
         end
 
         return if Dir.exist?(path)
 
-        raise CommandError, "Stack path does not exist: #{path}"
+        raise CommandError, "Data path does not exist: #{path}"
       end
 
       def run_docker(*args)
@@ -192,11 +188,11 @@ module Orchestration
       def self_recreate_compose_args
         args = [
           'compose',
-          '-f', ::File.join(host_stack_path, 'compose.yaml'),
-          '--project-directory', host_stack_path
+          '-f', ::File.join(data_path, 'compose.yaml'),
+          '--project-directory', data_path
         ]
         if ::File.exist?(::Env.path)
-          args.push('--env-file', ::File.join(host_stack_path, '.env'))
+          args.push('--env-file', ::File.join(data_path, '.env'))
         end
         args.push(
           '--progress', 'plain',

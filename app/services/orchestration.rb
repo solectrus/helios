@@ -12,20 +12,20 @@ module Orchestration
     delegate :configure!, :connected?, to: 'Orchestration::Connection'
 
     def default_project
-      ENV.fetch('COMPOSE_PROJECT_NAME', nil) || project_from_stack_path
+      ENV.fetch('COMPOSE_PROJECT_NAME', nil) || project_from_data_path
     end
 
     private
 
-    def project_from_stack_path
-      stack_path = Rails.configuration.helios_stack_path
-      return nil unless stack_path
+    def project_from_data_path
+      data_path = Rails.configuration.data_path
+      return nil unless data_path
 
-      compose_file = ::File.join(stack_path, 'compose.yaml')
-      return ::File.basename(stack_path) unless ::File.exist?(compose_file)
+      compose_file = ::File.join(data_path, 'compose.yaml')
+      return ::File.basename(data_path) unless ::File.exist?(compose_file)
 
       config = YAML.safe_load_file(compose_file)
-      config['name'] || ::File.basename(stack_path)
+      config['name'] || ::File.basename(data_path)
     end
   end
 end

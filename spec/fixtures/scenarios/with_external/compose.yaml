@@ -12,7 +12,6 @@ services:
       - SECRET_KEY_BASE
       - ADMIN_PASSWORD
       - HELIOS_STACK_PATH=/app/solectrus
-      - HELIOS_HOST_STACK_PATH=/opt/solectrus
 
   dashboard:
     image: ghcr.io/solectrus/solectrus:develop

@@ -48,7 +48,7 @@ class Configuration
   end
 
   def self.current
-    path = File.join(Rails.configuration.helios_stack_path, YAML_FILENAME)
+    path = File.join(Rails.configuration.data_path, YAML_FILENAME)
     new(path)
   end
 

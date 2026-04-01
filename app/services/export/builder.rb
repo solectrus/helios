@@ -24,8 +24,8 @@ module Export
 
     private
 
-    def stack_path
-      Rails.configuration.helios_stack_path
+    def data_path
+      Rails.configuration.data_path
     end
 
     def compose_builder
@@ -34,7 +34,7 @@ module Export
 
     def create_data_directories!
       compose_builder.data_directories.each do |dir|
-        FileUtils.mkdir_p(File.join(stack_path, dir))
+        FileUtils.mkdir_p(File.join(data_path, dir))
       end
     end
 

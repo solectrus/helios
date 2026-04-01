@@ -19,8 +19,8 @@ class ApplicationController < ActionController::Base
   end
 
   def config_yaml_exists?
-    stack_path = Rails.configuration.helios_stack_path
-    File.exist?(File.join(stack_path, Configuration::YAML_FILENAME))
+    data_path = Rails.configuration.data_path
+    File.exist?(File.join(data_path, Configuration::YAML_FILENAME))
   end
 
   def existing_stack_files?

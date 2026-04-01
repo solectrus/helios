@@ -34,21 +34,17 @@ test:
     database: storage/test_queue.sqlite3
     migrations_paths: db/queue_migrate
 
-# Store production database in the storage/ directory, which by default
-# is mounted as a persistent Docker volume in config/deploy.yml.
+# Store production databases in /data (the mounted stack directory),
+# so they persist across container recreations without a separate volume.
 production:
   primary:
     <<: *default
-    database: storage/production.sqlite3
-  cache:
-    <<: *default
-    database: storage/production_cache.sqlite3
-    migrations_paths: db/cache_migrate
+    database: /data/helios/primary.sqlite3
   queue:
     <<: *default
-    database: storage/production_queue.sqlite3
+    database: /data/helios/queue.sqlite3
     migrations_paths: db/queue_migrate
   cable:
     <<: *default
-    database: storage/production_cable.sqlite3
+    database: /data/helios/cable.sqlite3
     migrations_paths: db/cable_migrate

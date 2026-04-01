@@ -28,7 +28,7 @@ Helios needs read/write access to:
 ```yaml
 volumes:
   - /var/run/docker.sock:/var/run/docker.sock
-  - /opt/solectrus:/app/solectrus # or wherever SOLECTRUS lives
+  - /opt/solectrus:/data # or wherever SOLECTRUS lives
 ```
 
 ---

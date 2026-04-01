@@ -19,6 +19,37 @@ Helios eliminates the need to manually edit configuration files or understand Do
 | [Development Guide](docs/guides/development.md)   | Local setup, testing               |
 | [Phases](docs/guides/phases.md)                   | Phase 0, MVP, roadmap              |
 
+## Adding Helios to an existing SOLECTRUS installation
+
+Add the following service to your `compose.yaml`:
+
+```yaml
+helios:
+  image: ghcr.io/solectrus/helios:develop
+  user: root
+  environment:
+    - ADMIN_PASSWORD
+    - SECRET_KEY_BASE
+  volumes:
+    - /opt/solectrus:/data
+    - /var/run/docker.sock:/var/run/docker.sock
+  ports:
+    - 3999:3000
+  restart: unless-stopped
+```
+
+Running as `root` is required to access the Docker socket and manage containers on the host.
+
+No changes to `.env` are needed — `ADMIN_PASSWORD` and `SECRET_KEY_BASE` are reused from your existing SOLECTRUS setup.
+
+After updating, start Helios:
+
+```bash
+docker compose up -d helios
+```
+
+Helios is then available at `http://<your-host>:3999`.
+
 ## Development
 
 1. Install dependencies from the [Brewfile](Brewfile):

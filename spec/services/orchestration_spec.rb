@@ -20,10 +20,10 @@ RSpec.describe Orchestration do
         'COMPOSE_PROJECT_NAME',
         nil,
       ).and_return(nil)
-      allow(Rails.configuration).to receive(:helios_stack_path).and_return(
-        '/opt/solectrus',
+      allow(Rails.configuration).to receive(:data_path).and_return(
+        '/data',
       )
-      expect(described_class.default_project).to eq('solectrus')
+      expect(described_class.default_project).to eq('data')
     end
   end
 end

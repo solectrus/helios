@@ -17,19 +17,17 @@ bin/setup
 
 ## Configuration
 
-```bash
-# Path where Helios manages compose.yaml and .env
-# Default: ./stack (relative to Rails root)
-# Configurable via environment variable
-HELIOS_STACK_PATH=./stack
-```
+**Stack path:**
+
+- In production: `/data` (mounted from host via Docker volume)
+- In development: `./stack` (relative to Rails root)
 
 **Project name derivation:**
 
 - In production (container): Helios reads project name from its own container labels
-- In development (native): Project name is derived from the directory name of `HELIOS_STACK_PATH`
+- In development (native): Project name is derived from the directory name of the stack path
 
-Example: `HELIOS_STACK_PATH=./stack` → project name is `stack`
+Example: `./stack` → project name is `stack`
 
 This matches Docker Compose's default behavior (using directory name as project name).
 

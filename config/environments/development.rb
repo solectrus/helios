@@ -56,6 +56,5 @@ Rails.application.configure do
   # config.generators.apply_rubocop_autocorrect_after_generate!
 
   # Helios stack path for development
-  config.helios_stack_path =
-    ENV.fetch('HELIOS_STACK_PATH', Rails.root.join('stack').to_s)
+  config.data_path = Rails.root.join('stack').to_s
 end

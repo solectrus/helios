@@ -30,7 +30,6 @@ module Export
       dashboard_section(env)
       postgresql_section(env)
       influxdb_section(env)
-      helios_section(env)
       reverse_proxy_section(env) if Services::Traefik.enabled?(configuration)
       backup_section(env) if Services::PostgresqlBackup.enabled?(configuration)
       senec_section(env) if configuration.senec_required?
@@ -109,12 +108,6 @@ module Export
             'Bucket (database) name for time-series data')
       entry(env, 'INFLUX_TOKEN', configuration.influxdb.token,
             'API token with full access — auto-generated, do not change after first start')
-    end
-
-    def helios_section(env)
-      env.add_section('Helios')
-      entry(env, 'HELIOS_HOST_STACK_PATH', Rails.configuration.helios_host_stack_path,
-            'Path on the Docker host where stack files are stored')
     end
 
     def reverse_proxy_section(env)

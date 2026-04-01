@@ -15,12 +15,12 @@ module Compose
   end
 
   def self.path
-    stack_path = Rails.configuration.helios_stack_path
+    data_path = Rails.configuration.data_path
     FILENAMES.each do |filename|
-      full_path = ::File.join(stack_path, filename)
+      full_path = ::File.join(data_path, filename)
       return full_path if ::File.exist?(full_path)
     end
     # Default to compose.yaml if none exists
-    ::File.join(stack_path, 'compose.yaml')
+    ::File.join(data_path, 'compose.yaml')
   end
 end

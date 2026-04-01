@@ -510,7 +510,7 @@ RSpec.describe Import::ConfigurationImporter do
         importer.import!
 
         imported_data = YAML.safe_load_file(
-          File.join(Rails.configuration.helios_stack_path, Configuration::YAML_FILENAME),
+          File.join(Rails.configuration.data_path, Configuration::YAML_FILENAME),
           permitted_classes: [Date],
         )
         expected_config = YAML.safe_load_file(
@@ -530,7 +530,7 @@ RSpec.describe Import::ConfigurationImporter do
       importer.import!
 
       imported_data = YAML.safe_load_file(
-        File.join(Rails.configuration.helios_stack_path, Configuration::YAML_FILENAME),
+        File.join(Rails.configuration.data_path, Configuration::YAML_FILENAME),
         permitted_classes: [Date],
       )
       expected_config = YAML.safe_load_file(

@@ -4,6 +4,6 @@ module Env
   end
 
   def self.path
-    ::File.join(Rails.configuration.helios_stack_path, '.env')
+    ::File.join(Rails.configuration.data_path, '.env')
   end
 end
