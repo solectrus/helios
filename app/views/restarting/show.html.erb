@@ -1,6 +1,6 @@
 <!doctype html>
 
-<html lang="<%= I18n.locale %>">
+<html lang="<%= I18n.locale %>" data-theme="<%= @theme %>">
   <head>
     <title><%= t('.title') %></title>
 
@@ -39,19 +39,17 @@
         -webkit-text-size-adjust: 100%;
       }
 
-      @media (prefers-color-scheme: dark) {
-        body {
-          background: #101010;
-          color: #e0e0e0;
-        }
-
-        .icon {
-          fill: #e0e0e0;
-        }
-      }
-
       .icon {
         fill: #B8860B;
+      }
+
+      [data-theme="aqua"] body {
+        background: #101010;
+        color: #e0e0e0;
+      }
+
+      [data-theme="aqua"] .icon {
+        fill: #e0e0e0;
       }
 
       a {

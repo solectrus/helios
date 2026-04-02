@@ -177,8 +177,8 @@ en:
 
   restarting:
     show:
-      title: 'Helios is restarting…'
-      heading: 'Helios is restarting…'
+      title: 'HELIOS is restarting…'
+      heading: 'HELIOS is restarting…'
 
   starts:
     show:

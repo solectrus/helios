@@ -148,8 +148,8 @@ de:
 
   restarting:
     show:
-      title: 'Helios wird neu gestartet…'
-      heading: 'Helios wird neu gestartet…'
+      title: 'HELIOS wird neu gestartet…'
+      heading: 'HELIOS wird neu gestartet…'
 
   starts:
     show:
