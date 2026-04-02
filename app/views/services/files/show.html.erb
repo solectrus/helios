@@ -1,0 +1,9 @@
+<%= turbo_frame_tag "file-modal-content" do %>
+  <div data-controller="stack-preview">
+    <h3 class="mb-4 text-lg font-bold"><%= @label %></h3>
+
+    <div class="bg-base-300 max-h-[70vh] overflow-auto rounded-lg p-4">
+      <pre class="text-xs leading-relaxed"><code class="<%= @language_class %>" data-stack-preview-target="code"><%= @content %></code></pre>
+    </div>
+  </div>
+<% end %>

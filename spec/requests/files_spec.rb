@@ -4,33 +4,35 @@ RSpec.describe 'Files', :with_admin_password do
     login
   end
 
-  describe 'GET /files' do
+  describe 'GET /services/files/:id' do
     context 'with expert mode enabled' do
       before { cookies[:preferences] = { expert_mode: true }.to_json }
 
-      it 'renders the files page' do
-        get files_path
+      it 'renders compose.yaml content' do
+        get file_path('compose')
 
         expect(response).to have_http_status(:ok)
-      end
-
-      it 'displays compose.yaml content' do
-        get files_path
-
         expect(response.body).to include('compose.yaml')
         expect(response.body).to include('solectrus')
       end
 
-      it 'displays .env content' do
-        get files_path
+      it 'renders .env content' do
+        get file_path('env')
 
+        expect(response).to have_http_status(:ok)
         expect(response.body).to include('.env')
+      end
+
+      it 'returns not found for unknown file' do
+        get file_path('unknown')
+
+        expect(response).to have_http_status(:not_found)
       end
     end
 
     context 'without expert mode' do
       it 'redirects to services' do
-        get files_path
+        get file_path('compose')
 
         expect(response).to redirect_to(services_path)
       end

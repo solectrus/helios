@@ -7,6 +7,29 @@
     <div class="mx-auto max-w-4xl p-8">
       <%= turbo_stream_from "services" %>
 
+      <% if preferences.expert_mode? %>
+        <div class="mb-6 grid grid-cols-2 gap-3">
+          <a
+            href="<%= file_path('compose') %>"
+            data-turbo-frame="file-modal-content"
+            class="btn btn-info btn-block gap-3 font-mono"
+          >
+            <i class="fa-solid fa-file-code opacity-70"></i>
+            compose.yaml
+          </a>
+
+          <a
+            href="<%= file_path('env') %>"
+            data-turbo-frame="file-modal-content"
+            class="btn btn-info btn-block gap-3 font-mono"
+          >
+            <i class="fa-solid fa-file-lines opacity-70"></i>
+            .env
+          </a>
+        </div>
+        <div class="divider mb-6"></div>
+      <% end %>
+
       <% regular, tail = @compose_services.partition { |s| !s.helios? } %>
 
       <div class="space-y-3">
@@ -31,6 +54,22 @@
         <% end %>
       </div>
     </div>
+
+    <dialog id="file-modal" class="modal" data-controller="log-modal">
+      <div class="modal-box relative max-h-[95vh] w-[95vw] max-w-[95vw] overflow-y-auto p-6">
+        <%= turbo_frame_tag "file-modal-content", data: { log_modal_target: "frame" } do %>
+          <div class="flex justify-center py-8"><span class="loading loading-spinner loading-lg"></span></div>
+        <% end %>
+
+        <form method="dialog" class="absolute top-2 right-2">
+          <button class="btn btn-circle btn-ghost btn-sm"><i class="fa-solid fa-xmark"></i></button>
+        </form>
+      </div>
+
+      <form method="dialog" class="modal-backdrop">
+        <button>close</button>
+      </form>
+    </dialog>
 
     <dialog id="log-modal" class="modal" data-controller="log-modal">
       <div class="modal-box relative max-h-[95vh] w-[95vw] max-w-[95vw] overflow-y-auto p-6">

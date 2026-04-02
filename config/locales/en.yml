@@ -180,10 +180,6 @@ en:
       title: 'Helios is restarting…'
       heading: 'Helios is restarting…'
 
-  files:
-    index:
-      title: 'Files - Helios'
-
   starts:
     show:
       title: 'Welcome - Helios'

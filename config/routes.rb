@@ -11,9 +11,6 @@ Rails.application.routes.draw do
   # First-start consent
   resource :start, only: %i[show create]
 
-  # Generated files preview
-  resources :files, only: :index
-
   # Configuration with settings and surveys
   resource :configuration, only: :show do
     resources :settings, only: %i[new create], module: :configurations
@@ -38,6 +35,7 @@ Rails.application.routes.draw do
 
     collection do
       resource :batch, only: %i[create destroy], module: :services
+      resources :files, only: :show, module: :services
     end
   end
 

@@ -151,10 +151,6 @@ de:
       title: 'Helios wird neu gestartet…'
       heading: 'Helios wird neu gestartet…'
 
-  files:
-    index:
-      title: 'Dateien - Helios'
-
   starts:
     show:
       title: 'Willkommen - Helios'
