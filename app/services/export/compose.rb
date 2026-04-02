@@ -18,10 +18,10 @@ module Export
       Services::PostgresqlBackup,
       Services::InfluxdbBackup,
       Services::Traefik,
+      Services::Helios,
     ].freeze
 
     TAIL_SERVICES = [
-      Services::Helios,
       Services::Watchtower,
     ].freeze
 

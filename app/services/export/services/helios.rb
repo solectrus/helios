@@ -15,6 +15,10 @@ module Export
         'Helios — Configuration management UI'
       end
 
+      def self.enabled?(_configuration)
+        !Rails.env.development?
+      end
+
       def to_h
         {
           image: IMAGE,
