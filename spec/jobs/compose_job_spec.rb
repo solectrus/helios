@@ -247,7 +247,7 @@ RSpec.describe ComposeJob do
 
     after { Orchestration::StackStatus.reset! }
 
-    %i[up recreate].each do |action|
+    %i[up start recreate].each do |action|
       context "when #{action} succeeds" do
         before do
           allow(Orchestration::Runner).to receive(action).and_return(
@@ -263,7 +263,7 @@ RSpec.describe ComposeJob do
       end
     end
 
-    %i[start stop down].each do |action|
+    %i[stop down].each do |action|
       context "when #{action} succeeds" do
         before do
           allow(Orchestration::Runner).to receive(action).and_return(

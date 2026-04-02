@@ -112,11 +112,11 @@ class ComposeJob < ApplicationJob
     %i[up down].include?(action)
   end
 
-  # Only `up` and `recreate` actually apply new configuration to containers.
-  # `start`/`stop`/`down` do not, so storing hashes after them would
-  # incorrectly mark pending config changes as deployed.
+  # Actions that apply the current compose.yaml config to containers.
+  # `stop`/`down` do not create or recreate containers, so storing
+  # hashes after them would incorrectly mark pending changes as deployed.
   def applies_config?(action)
-    %i[up recreate self_recreate].include?(action)
+    %i[up start recreate self_recreate].include?(action)
   end
 
   # Remove containers that previously failed, so Docker Compose creates fresh ones.
