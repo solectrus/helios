@@ -48,17 +48,23 @@ module Orchestration
       # a temporary helper container. A process inside the Helios
       # container cannot survive the container being stopped, so the
       # helper runs independently and outlives the restart.
+      #
+      # The volume mount must use the HOST path (e.g. /opt/solectrus),
+      # not the container-internal data_path (/data), because the helper
+      # is a sibling container that mounts directly from the host.
       def self_recreate
         pull(service: SELF_SERVICE)
 
-        image = ::Compose.load.services.find(SELF_SERVICE).image
-        compose_args = self_recreate_compose_args
+        compose = ::Compose.load
+        image = compose.services.find(SELF_SERVICE).image
+        host_path = host_data_path(compose)
+        compose_args = self_recreate_compose_args(host_path)
 
         cmd = [
           'docker', 'run', '--rm', '-d',
           '--entrypoint', 'docker',
           '-v', '/var/run/docker.sock:/var/run/docker.sock',
-          '-v', "#{data_path}:#{data_path}",
+          '-v', "#{host_path}:#{host_path}",
           image,
           *compose_args
         ]
@@ -185,19 +191,27 @@ module Orchestration
         raise_command_error(args.first, output, status) unless status.success?
       end
 
-      def self_recreate_compose_args
+      def self_recreate_compose_args(host_path)
         args = [
           'compose',
-          '-f', ::File.join(data_path, 'compose.yaml'),
-          '--project-directory', data_path
+          '-f', ::File.join(host_path, 'compose.yaml'),
+          '--project-directory', host_path
         ]
         if ::File.exist?(::Env.path)
-          args.push('--env-file', ::File.join(data_path, '.env'))
+          args.push('--env-file', ::File.join(host_path, '.env'))
         end
         args.push(
           '--progress', 'plain',
           'up', '--no-build', '-d', '--force-recreate', SELF_SERVICE
         )
+      end
+
+      # Extract the host-side path of the data volume from the
+      # Helios service definition in compose.yaml.
+      def host_data_path(compose)
+        helios = compose.services.find(SELF_SERVICE)
+        volume = helios&.volumes&.find { |v| v.end_with?(":#{data_path}") }
+        volume&.split(':')&.first || data_path
       end
 
       def services_except_self
