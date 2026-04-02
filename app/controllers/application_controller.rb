@@ -1,4 +1,6 @@
 class ApplicationController < ActionController::Base
+  include Authentication
+
   # Only allow modern browsers supporting webp images, web push, badges, import maps, CSS nesting, and CSS :has.
   allow_browser versions: :modern
 
@@ -7,7 +9,7 @@ class ApplicationController < ActionController::Base
   before_action :set_locale
   before_action :set_time_zone
 
-  helper_method :authenticated?, :config_yaml_exists?, :preferences
+  helper_method :authorized?, :password_required?, :config_yaml_exists?, :preferences
 
   private
 
@@ -28,15 +30,10 @@ class ApplicationController < ActionController::Base
   end
 
   def require_authentication
-    return if ENV['ADMIN_PASSWORD'].blank?
-    return if authenticated?
+    return if authorized?
     return if sessions_controller?
 
     redirect_to new_session_path
-  end
-
-  def authenticated?
-    session[:authenticated] == true
   end
 
   def sessions_controller?

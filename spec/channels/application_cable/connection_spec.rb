@@ -2,6 +2,8 @@ require 'rails_helper'
 
 RSpec.describe ApplicationCable::Connection do
   context 'without admin password', :without_admin_password do
+    before { with_config_yaml }
+
     it 'accepts the connection' do
       connect '/cable'
 
@@ -10,6 +12,8 @@ RSpec.describe ApplicationCable::Connection do
   end
 
   context 'with admin password', :with_admin_password do
+    before { with_config_yaml }
+
     it 'rejects unauthenticated connections' do
       expect do
         connect '/cable'

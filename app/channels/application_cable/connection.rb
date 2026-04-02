@@ -1,7 +1,9 @@
 module ApplicationCable
   class Connection < ActionCable::Connection::Base
+    include Authentication
+
     def connect
-      reject_unauthorized_connection unless authenticated?
+      reject_unauthorized_connection unless authorized?
       Orchestration::EventsListener.subscriber_connected(locale: subscriber_locale)
     end
 
@@ -11,11 +13,8 @@ module ApplicationCable
 
     private
 
-    def authenticated?
-      # When no password is configured, all connections are allowed
-      return true if ENV['ADMIN_PASSWORD'].blank?
-
-      request.session[:authenticated] == true
+    def session
+      request.session
     end
 
     def subscriber_locale

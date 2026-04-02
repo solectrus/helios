@@ -1,5 +1,6 @@
 class SessionsController < ApplicationController
   skip_before_action :require_authentication
+  before_action :require_password
 
   def new
     redirect_to root_path if authenticated?
@@ -22,10 +23,14 @@ class SessionsController < ApplicationController
 
   private
 
+  def require_password
+    redirect_to root_path unless password_required?
+  end
+
   def valid_password?(password)
     ActiveSupport::SecurityUtils.secure_compare(
       password.to_s,
-      ENV.fetch('ADMIN_PASSWORD'),
+      admin_password,
     )
   end
 end

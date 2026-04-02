@@ -1,5 +1,8 @@
 RSpec.describe 'Configurations::Surveys', :with_admin_password do
-  before { login }
+  before do
+    with_config_yaml
+    login
+  end
 
   describe 'GET /configuration/surveys/:id' do
     (Configuration::ALL - Configuration::HIDDEN).each do |setting|

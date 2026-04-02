@@ -24,8 +24,10 @@
     <%= render ThemeToggle::Component.new %>
     <%= render LanguageSelect::Component.new %>
 
-    <%= button_to session_path, method: :delete, class: "btn btn-ghost btn-sm btn-square", title: t('.logout') do %>
-      <i class="fa-solid fa-right-from-bracket"></i>
+    <% if helpers.password_required? %>
+      <%= button_to session_path, method: :delete, class: "btn btn-ghost btn-sm btn-square", title: t('.logout') do %>
+        <i class="fa-solid fa-right-from-bracket"></i>
+      <% end %>
     <% end %>
   </div>
 </nav>

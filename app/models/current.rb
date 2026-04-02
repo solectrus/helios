@@ -1,3 +1,3 @@
 class Current < ActiveSupport::CurrentAttributes
-  attribute :preferences
+  attribute :preferences, :configuration
 end

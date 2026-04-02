@@ -48,7 +48,7 @@
       </form>
     </dialog>
 
-    <% if authenticated? && config_yaml_exists? %>
+    <% if authorized? && config_yaml_exists? %>
       <%= turbo_stream_from "status_bar" %>
       <%= render StatusBar::Component.new %>
     <% end %>

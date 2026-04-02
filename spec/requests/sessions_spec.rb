@@ -1,4 +1,6 @@
 RSpec.describe 'Sessions', :with_admin_password do
+  before { with_config_yaml }
+
   describe 'GET /session/new' do
     it 'shows login form' do
       get new_session_path

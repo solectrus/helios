@@ -48,8 +48,10 @@ class Configuration
   end
 
   def self.current
-    path = File.join(Rails.configuration.data_path, YAML_FILENAME)
-    new(path)
+    Current.configuration ||= begin
+      path = File.join(Rails.configuration.data_path, YAML_FILENAME)
+      new(path)
+    end
   end
 
   def self.singleton?(setting)
@@ -209,6 +211,8 @@ class Configuration
     tmp_path = "#{@path}.tmp"
     File.write(tmp_path, YAML.dump(ordered_data))
     File.rename(tmp_path, @path)
+
+    Current.configuration = nil
   end
 
   def ordered_data
