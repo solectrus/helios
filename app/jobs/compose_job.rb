@@ -6,6 +6,7 @@ class ComposeJob < ApplicationJob
     remove_errored_containers if action.to_sym == :up
     clear_errors(action, service_name)
     execute_action(action.to_sym, service_name)
+    @deploy_succeeded = true
   rescue Orchestration::Runner::CommandError => e
     Rails.logger.error("ComposeJob failed: #{e.message}")
     store_errors(action, service_name, e)
@@ -68,17 +69,27 @@ class ComposeJob < ApplicationJob
 
   def broadcast_results(action, service_name)
     Orchestration::Container.invalidate_cache
-    Orchestration::AffectedServices.invalidate_config_hashes
+    update_deployed_hashes(action)
+    broadcast_affected_services(action, service_name)
+    Orchestration::StackStatus.refresh!
+  rescue StandardError => e
+    Rails.logger.error("ComposeJob broadcast failed: #{e.class}: #{e.message}")
+  end
 
+  def update_deployed_hashes(action)
+    if @deploy_succeeded && applies_config?(action)
+      Orchestration::AffectedServices.store_deployed_hashes!
+    else
+      Orchestration::AffectedServices.invalidate_config_hashes
+    end
+  end
+
+  def broadcast_affected_services(action, service_name)
     if batch_action?(action)
       all_services.each { |s| broadcast_service(s.name) }
     elsif service_name
       broadcast_service(service_name)
     end
-
-    Orchestration::StackStatus.refresh!
-  rescue StandardError => e
-    Rails.logger.error("ComposeJob broadcast failed: #{e.class}: #{e.message}")
   end
 
   def broadcast_service(service_name)
@@ -98,6 +109,13 @@ class ComposeJob < ApplicationJob
 
   def batch_action?(action)
     %i[up down].include?(action.to_sym)
+  end
+
+  # Only `up` and `recreate` actually apply new configuration to containers.
+  # `start`/`stop`/`down` do not, so storing hashes after them would
+  # incorrectly mark pending config changes as deployed.
+  def applies_config?(action)
+    %i[up recreate self_recreate].include?(action.to_sym)
   end
 
   # Remove containers that previously failed, so Docker Compose creates fresh ones.

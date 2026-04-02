@@ -212,7 +212,7 @@ module Orchestration
       return unless event.relevant?
 
       log_event(event)
-      schedule_broadcast(event.service_name)
+      schedule_broadcast(event.service_name, created: event.action == 'create')
     end
 
     def scheduler_loop
@@ -259,18 +259,20 @@ module Orchestration
       logger.error("[#{id}] Scheduler: #{e.class}: #{e.message}")
     end
 
-    def schedule_broadcast(service_name)
+    def schedule_broadcast(service_name, created: false)
       mutex.synchronize do
+        existing = pending_broadcasts[service_name]
         pending_broadcasts[service_name] = {
           due_at: Time.current + BROADCAST_DELAY,
           retries: 0,
+          created: created || existing&.dig(:created),
         }
       end
     end
 
     def process_pending_broadcasts
       collect_due_broadcasts.each do |name, entry|
-        execute_broadcast(name, retries: entry[:retries])
+        execute_broadcast(name, retries: entry[:retries], created: entry[:created])
       end
     end
 
@@ -283,8 +285,8 @@ module Orchestration
       end
     end
 
-    def execute_broadcast(service_name, retries: 0)
-      if broadcaster.broadcast(service_name)
+    def execute_broadcast(service_name, retries: 0, created: false)
+      if broadcaster.broadcast(service_name, created:)
         log_broadcast(service_name)
       else
         retry_broadcast(service_name, retries:)

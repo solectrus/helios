@@ -82,6 +82,40 @@ RSpec.describe Orchestration::ServiceBroadcaster do
       end
     end
 
+    context 'when created is true' do
+      let(:container) { mock_container(running: true, status: :ok) }
+      let(:compose_service) { instance_double(Compose::Service) }
+
+      it 'updates deployed hash for the service' do
+        broadcaster.broadcast(service_name, created: true)
+
+        expect(Orchestration::AffectedServices).to have_received(:update_deployed_hash!).with(service_name)
+      end
+
+      it 'does not invalidate config hashes' do
+        broadcaster.broadcast(service_name, created: true)
+
+        expect(Orchestration::AffectedServices).not_to have_received(:invalidate_config_hashes)
+      end
+    end
+
+    context 'when created is false' do
+      let(:container) { mock_container(running: true, status: :ok) }
+      let(:compose_service) { instance_double(Compose::Service) }
+
+      it 'invalidates config hashes' do
+        broadcaster.broadcast(service_name)
+
+        expect(Orchestration::AffectedServices).to have_received(:invalidate_config_hashes)
+      end
+
+      it 'does not update deployed hash' do
+        broadcaster.broadcast(service_name)
+
+        expect(Orchestration::AffectedServices).not_to have_received(:update_deployed_hash!)
+      end
+    end
+
     context 'when listener_id is nil' do
       let(:broadcaster) { described_class.new }
       let(:container) { nil }
@@ -112,6 +146,7 @@ RSpec.describe Orchestration::ServiceBroadcaster do
   def stub_docker_lookup(container:)
     allow(Orchestration::Container).to receive(:invalidate_cache)
     allow(Orchestration::AffectedServices).to receive(:invalidate_config_hashes)
+    allow(Orchestration::AffectedServices).to receive(:update_deployed_hash!)
     allow(Orchestration::Container).to receive(:find).and_return(container)
   end
 

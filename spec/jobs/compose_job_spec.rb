@@ -237,6 +237,55 @@ RSpec.describe ComposeJob do
     end
   end
 
+  describe 'deployed hashes management' do
+    before do
+      allow(Export::Builder).to receive(:new)
+        .and_return(instance_double(Export::Builder, write!: nil))
+      allow(Orchestration::AffectedServices).to receive(:store_deployed_hashes!)
+      allow(Orchestration::AffectedServices).to receive(:invalidate_config_hashes)
+    end
+
+    after { Orchestration::StackStatus.reset! }
+
+    %i[up recreate].each do |action|
+      context "when #{action} succeeds" do
+        before do
+          allow(Orchestration::Runner).to receive(action).and_return(
+            Orchestration::CommandResult.new(output: 'OK', exit_status: 0),
+          )
+        end
+
+        it 'stores deployed hashes' do
+          described_class.perform_now(action, action == :recreate ? 'redis' : nil)
+
+          expect(Orchestration::AffectedServices).to have_received(:store_deployed_hashes!)
+        end
+      end
+    end
+
+    %i[start stop down].each do |action|
+      context "when #{action} succeeds" do
+        before do
+          allow(Orchestration::Runner).to receive(action).and_return(
+            Orchestration::CommandResult.new(output: 'OK', exit_status: 0),
+          )
+        end
+
+        it 'does not store deployed hashes' do
+          described_class.perform_now(action, action == :down ? nil : 'redis')
+
+          expect(Orchestration::AffectedServices).not_to have_received(:store_deployed_hashes!)
+        end
+
+        it 'invalidates config hashes instead' do
+          described_class.perform_now(action, action == :down ? nil : 'redis')
+
+          expect(Orchestration::AffectedServices).to have_received(:invalidate_config_hashes).at_least(:once)
+        end
+      end
+    end
+  end
+
   describe 'batch error with dependencies' do
     let(:influxdb_service) do
       instance_double(

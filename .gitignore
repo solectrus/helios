@@ -46,6 +46,9 @@
 *.sqlite3-shm
 *.sqlite3-wal
 
+# Ignore deployed config hashes (runtime state)
+/storage/deployed_config_hashes.json
+
 # Ignore stack files
 /stack/postgresql
 /stack/redis

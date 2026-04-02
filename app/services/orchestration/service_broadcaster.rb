@@ -23,11 +23,11 @@ module Orchestration
       @listener_id = listener_id
     end
 
-    def broadcast(service_name)
+    def broadcast(service_name, created: false)
       # Docker API calls outside executor.wrap — holding the interlock
       # shared lock during slow API calls would block the Rails reloader.
       Orchestration::Container.invalidate_cache
-      Orchestration::AffectedServices.invalidate_config_hashes
+      refresh_config_hashes(service_name, created:)
       container = Orchestration::Container.find(service_name)
       compose_service = ::Compose.load.services.find(service_name)
 
@@ -69,6 +69,17 @@ module Orchestration
         nil
       else
         Orchestration::ErrorStore.get(service_name)
+      end
+    end
+
+    # A `create` event means Docker Compose recreated the container with the
+    # current compose.yaml config, so the deployed hash for this service can
+    # be updated. Other events (start/stop/die) don't apply new config.
+    def refresh_config_hashes(service_name, created:)
+      if created
+        Orchestration::AffectedServices.update_deployed_hash!(service_name)
+      else
+        Orchestration::AffectedServices.invalidate_config_hashes
       end
     end
 
