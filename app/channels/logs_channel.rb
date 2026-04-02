@@ -37,22 +37,27 @@ class LogsChannel < ApplicationCable::Channel
 
   def start_streaming
     @io, @pid = Orchestration::Runner.stream_logs(service: @service_name, tail: 0)
+    io = @io
     stream_id = @stream_id
     pid = @pid
     tz = Configuration.current.system.timezone.presence || Time.zone
 
     @reader_future = Concurrent::Promises.future do
-      Time.zone = tz
-      @io.each_line do |line|
-        html = LogLineFormatter.call(line.chomp)
-        ActionCable.server.broadcast(stream_id, { html: })
-      end
-    rescue IOError
-      # expected when IO is closed during shutdown
-    ensure
-      @io.close unless @io.closed?
-      reap_process(pid)
+      read_log_stream(io, stream_id, pid, tz)
     end
+  end
+
+  def read_log_stream(io, stream_id, pid, timezone)
+    Time.zone = timezone
+    io.each_line do |line|
+      html = LogLineFormatter.call(line.chomp)
+      ActionCable.server.broadcast(stream_id, { html: })
+    end
+  rescue IOError
+    # expected when IO is closed during shutdown
+  ensure
+    io.close unless io.closed?
+    reap_process(pid)
   end
 
   def stop_streaming

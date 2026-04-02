@@ -28,6 +28,11 @@ require 'rspec/rails'
 Rails.root.glob('spec/support/**/*.rb').sort_by(&:to_s).each { |f| require f }
 
 RSpec.configure do |config|
+  # Reset memoized state between tests to prevent cross-test pollution
+  config.before do
+    Orchestration.reset_cache!
+  end
+
   # RSpec Rails uses metadata to mix in different behaviours to your tests,
   # for example enabling you to call `get` and `post` in request specs. e.g.:
   #

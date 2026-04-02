@@ -215,8 +215,7 @@ module Orchestration
       end
 
       def services_except_self
-        compose_file = ::Compose.load
-        compose_file.services.map(&:name) - [SELF_SERVICE]
+        ::Compose.load.services.names - [SELF_SERVICE]
       end
     end
   end

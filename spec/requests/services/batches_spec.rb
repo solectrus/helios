@@ -27,21 +27,24 @@ RSpec.describe 'Services::Batches', :with_admin_password do
   end
 
   def mock_containers(containers_data)
-    containers = containers_data.map do |name, running|
-      instance_double(
-        Orchestration::Container,
-        service_name: name,
-        running?: running,
-        status: running ? 'running' : 'exited',
-        health_status: nil,
-        version: '1.0.0',
-        public_port: nil,
-        stoppable?: running,
-        image: "#{name}:latest",
-      )
-    end
+    containers = containers_data.map { |name, running| mock_container_double(name, running) }
     allow(Orchestration::Container).to receive(:all).and_return(containers)
     containers
+  end
+
+  def mock_container_double(name, running)
+    instance_double(
+      Orchestration::Container,
+      service_name: name,
+      running?: running,
+      status: running ? 'running' : 'exited',
+      effective_status: running ? :ok : :stopped,
+      health_status: nil,
+      version: '1.0.0',
+      public_port: nil,
+      stoppable?: running,
+      image: "#{name}:latest",
+    )
   end
 
   describe 'POST /services/batch (start all)' do

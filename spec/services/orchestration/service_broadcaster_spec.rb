@@ -103,10 +103,10 @@ RSpec.describe Orchestration::ServiceBroadcaster do
       let(:container) { mock_container(running: true, status: :ok) }
       let(:compose_service) { instance_double(Compose::Service) }
 
-      it 'invalidates config hashes' do
+      it 'does not invalidate config hashes' do
         broadcaster.broadcast(service_name)
 
-        expect(Orchestration::AffectedServices).to have_received(:invalidate_config_hashes)
+        expect(Orchestration::AffectedServices).not_to have_received(:invalidate_config_hashes)
       end
 
       it 'does not update deployed hash' do

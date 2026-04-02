@@ -20,7 +20,6 @@ module Compose
       full_path = ::File.join(data_path, filename)
       return full_path if ::File.exist?(full_path)
     end
-    # Default to compose.yaml if none exists
     ::File.join(data_path, 'compose.yaml')
   end
 end

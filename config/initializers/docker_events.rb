@@ -5,6 +5,11 @@
 # Started/stopped automatically when browsers connect/disconnect via ActionCable.
 # Logs are written to log/docker_events.log
 
+# Persistent storage for EventsListener state — survives code reloading.
+# Defined here (outside autoload) so it persists across code reloads in development.
+# Concurrent::Map is thread-safe for all subsequent read/write access.
+DOCKER_EVENTS_STORAGE = Concurrent::Map.new
+
 Rails.application.config.after_initialize do
   Orchestration::EventsListener.initialize_lifecycle
 end

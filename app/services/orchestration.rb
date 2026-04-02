@@ -7,17 +7,22 @@ module Orchestration
   COMPOSE_PROJECT_LABEL = 'com.docker.compose.project'.freeze
   COMPOSE_SERVICE_LABEL = 'com.docker.compose.service'.freeze
   COMPOSE_CONFIG_HASH_LABEL = 'com.docker.compose.config-hash'.freeze
+  CACHE = Concurrent::Map.new
 
   class << self
     delegate :configure!, :connected?, to: 'Orchestration::Connection'
 
     def default_project
-      ENV.fetch('COMPOSE_PROJECT_NAME', nil) || project_from_data_path
+      CACHE.compute_if_absent(:default_project) { compute_default_project }
+    end
+
+    def reset_cache!
+      CACHE.clear
     end
 
     private
 
-    def project_from_data_path
+    def compute_default_project
       data_path = Rails.configuration.data_path
       return nil unless data_path
 

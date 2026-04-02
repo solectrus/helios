@@ -13,7 +13,7 @@ module Orchestration
         Docker.connection.get(
           '/events', {},
           response_block: lambda { |chunk, _remaining, _total|
-            next unless running
+            next unless @running.true?
 
             process_chunk(buffer, chunk)
           }
@@ -24,7 +24,7 @@ module Orchestration
         buffer << chunk
         return overflow_reset(buffer) if buffer.size > 1.megabyte
 
-        while running && (idx = buffer.index("\n"))
+        while @running.true? && (idx = buffer.index("\n"))
           line = buffer.slice!(0, idx + 1)
           raw_event = parse_event(line)
           process_event(Orchestration::Event.new(raw_event)) if raw_event

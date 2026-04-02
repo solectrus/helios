@@ -74,13 +74,12 @@ module Orchestration
 
     # A `create` event means Docker Compose recreated the container with the
     # current compose.yaml config, so the deployed hash for this service can
-    # be updated. Other events (start/stop/die) don't apply new config.
+    # be updated. Other events (start/stop/die) don't change config hashes,
+    # so no invalidation is needed.
     def refresh_config_hashes(service_name, created:)
-      if created
-        Orchestration::AffectedServices.update_deployed_hash!(service_name)
-      else
-        Orchestration::AffectedServices.invalidate_config_hashes
-      end
+      return unless created
+
+      Orchestration::AffectedServices.update_deployed_hash!(service_name)
     end
 
     def log_error(service_name, error)

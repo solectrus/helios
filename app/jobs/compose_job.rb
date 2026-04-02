@@ -2,10 +2,11 @@ class ComposeJob < ApplicationJob
   queue_as :default
 
   def perform(action, service_name = nil)
-    rebuild_stack
-    remove_errored_containers if action.to_sym == :up
+    action = action.to_sym
+    rebuild_stack if applies_config?(action)
+    remove_errored_containers if action == :up
     clear_errors(action, service_name)
-    execute_action(action.to_sym, service_name)
+    execute_action(action, service_name)
     @deploy_succeeded = true
   rescue Orchestration::Runner::CommandError => e
     Rails.logger.error("ComposeJob failed: #{e.message}")
@@ -108,14 +109,14 @@ class ComposeJob < ApplicationJob
   # --- Helpers ---
 
   def batch_action?(action)
-    %i[up down].include?(action.to_sym)
+    %i[up down].include?(action)
   end
 
   # Only `up` and `recreate` actually apply new configuration to containers.
   # `start`/`stop`/`down` do not, so storing hashes after them would
   # incorrectly mark pending config changes as deployed.
   def applies_config?(action)
-    %i[up recreate self_recreate].include?(action.to_sym)
+    %i[up recreate self_recreate].include?(action)
   end
 
   # Remove containers that previously failed, so Docker Compose creates fresh ones.

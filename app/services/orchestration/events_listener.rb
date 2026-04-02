@@ -22,7 +22,7 @@ module Orchestration
         class_mutex.synchronize do
           next if recently_restarted?
 
-          storage[:last_restart] = Time.current
+          DOCKER_EVENTS_STORAGE[:last_restart] = Time.current
           stop_instance(graceful: false)
           start_instance
         end
@@ -34,34 +34,34 @@ module Orchestration
 
       def subscriber_connected(locale: nil)
         class_mutex.synchronize do
-          storage[:subscriber_count] = subscriber_count + 1
-          storage[:locale] = locale if locale
+          DOCKER_EVENTS_STORAGE[:subscriber_count] = subscriber_count + 1
+          DOCKER_EVENTS_STORAGE[:locale] = locale if locale
           start_instance
         end
       end
 
       def locale
-        storage[:locale] || I18n.default_locale
+        DOCKER_EVENTS_STORAGE[:locale] || I18n.default_locale
       end
 
       def subscriber_disconnected
         class_mutex.synchronize do
           new_count = [subscriber_count - 1, 0].max
-          storage[:subscriber_count] = new_count
+          DOCKER_EVENTS_STORAGE[:subscriber_count] = new_count
           stop_instance(graceful: false) if new_count.zero?
         end
       end
 
       def subscriber_count
-        storage[:subscriber_count] || 0
+        DOCKER_EVENTS_STORAGE[:subscriber_count] || 0
       end
 
       def reset_subscriber_count!
-        class_mutex.synchronize { storage[:subscriber_count] = 0 }
+        class_mutex.synchronize { DOCKER_EVENTS_STORAGE[:subscriber_count] = 0 }
       end
 
       def initialize_lifecycle
-        storage[:mutex] ||= Mutex.new
+        DOCKER_EVENTS_STORAGE[:mutex] ||= Mutex.new
       end
 
       # Called from the scheduler thread when no subscribers remain.
@@ -72,8 +72,8 @@ module Orchestration
         class_mutex.synchronize do
           return unless instance == listener
 
-          listener.send(:running=, false)
-          storage[:subscriber_count] = 0
+          listener.mark_stopped!
+          DOCKER_EVENTS_STORAGE[:subscriber_count] = 0
           self.instance = nil
         end
       end
@@ -97,26 +97,20 @@ module Orchestration
       end
 
       def recently_restarted?
-        last = storage[:last_restart]
+        last = DOCKER_EVENTS_STORAGE[:last_restart]
         last && Time.current - last < RESTART_COOLDOWN
       end
 
       def class_mutex
-        storage[:mutex] ||= Mutex.new
+        DOCKER_EVENTS_STORAGE[:mutex] ||= Mutex.new
       end
 
       def instance
-        storage[:instance]
+        DOCKER_EVENTS_STORAGE[:instance]
       end
 
       def instance=(value)
-        storage[:instance] = value
-      end
-
-      def storage
-        # Store in Rails app instance variable to survive code reloading
-        Rails.application.instance_variable_get(:@docker_events_listener) ||
-          Rails.application.instance_variable_set(:@docker_events_listener, {})
+        DOCKER_EVENTS_STORAGE[:instance] = value
       end
     end
 
@@ -126,12 +120,12 @@ module Orchestration
       @id = SecureRandom.hex(4)
       @mutex = Mutex.new
       @pending_broadcasts = {}
-      @running = false
+      @running = Concurrent::AtomicBoolean.new(false)
       @broadcaster = ServiceBroadcaster.new(listener_id: id)
     end
 
     def start
-      self.running = true
+      @running.make_true
 
       # rubocop:disable ThreadSafety/NewThread -- background threads are intentional
       self.listener_thread = Thread.new { listen_loop }
@@ -145,23 +139,27 @@ module Orchestration
     end
 
     def stop(graceful: true)
-      return unless running || threads_alive?
+      return unless @running.true? || threads_alive?
 
-      was_running = running
+      was_running = @running.true?
       log_stopping if was_running
-      self.running = false
+      @running.make_false
       join_threads(graceful:)
       log_stopped if was_running
     end
 
     def running?
-      running && listener_thread&.alive?
+      @running.true? && listener_thread&.alive?
+    end
+
+    def mark_stopped!
+      @running.make_false
     end
 
     private
 
     attr_reader :mutex, :pending_broadcasts, :broadcaster
-    attr_accessor :running, :listener_thread, :scheduler_thread
+    attr_accessor :listener_thread, :scheduler_thread
 
     def threads_alive?
       listener_thread&.alive? || scheduler_thread&.alive?
@@ -184,7 +182,7 @@ module Orchestration
 
     def listen_loop
       reconnecting = false
-      reconnecting = listen_once(reconnecting) while running
+      reconnecting = listen_once(reconnecting) while @running.true?
       log_loop_ended('Listener')
     end
 
@@ -204,8 +202,9 @@ module Orchestration
 
     def handle_stream_error(error, delay)
       log_stream_error(error, delay)
-      sleep delay if running
-      running
+      still_running = @running.true?
+      sleep delay if still_running
+      still_running
     end
 
     def process_event(event)
@@ -218,7 +217,7 @@ module Orchestration
     def scheduler_loop
       initial_refresh
       tick = 0
-      while running
+      while @running.true?
         sleep SCHEDULER_INTERVAL
         run_scheduler_tick
         tick += 1

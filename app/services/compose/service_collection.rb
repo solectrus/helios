@@ -13,7 +13,7 @@ module Compose
     end
 
     def all
-      @services_hash.map { |name, config| Service.new(name, config) }
+      @all ||= @services_hash.map { |name, config| Service.new(name, config) }
     end
 
     def sorted

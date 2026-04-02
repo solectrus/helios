@@ -85,7 +85,7 @@ module Orchestration
 
     def version
       @version ||= VersionExtractor.extract(raw_container)
-    rescue Docker::Error::NotFoundError
+    rescue Docker::Error::DockerError, Excon::Error
       nil
     end
 
