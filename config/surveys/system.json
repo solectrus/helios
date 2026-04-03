@@ -10,41 +10,6 @@
   },
   "pages": [
     {
-      "name": "p_machine",
-      "title": {
-        "de": "Linux-Gerät",
-        "default": "Linux Machine"
-      },
-      "elements": [
-        {
-          "type": "radiogroup",
-          "name": "linux_machine",
-          "title": {
-            "de": "Auf welchem Gerät läuft SOLECTRUS?",
-            "default": "On which device does SOLECTRUS run?"
-          },
-          "isRequired": true,
-          "choices": [
-            {
-              "value": "raspberry",
-              "text": "Raspberry Pi"
-            },
-            {
-              "value": "synology",
-              "text": "Synology NAS"
-            },
-            {
-              "value": "other",
-              "text": {
-                "de": "Anderer Linux-Server",
-                "default": "Other Linux server"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
       "name": "p_general",
       "title": {
         "de": "Allgemein",

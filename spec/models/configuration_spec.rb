@@ -91,6 +91,15 @@ RSpec.describe Configuration do
       reloaded = described_class.current
       expect(reloaded.system).to eq({ 'timezone' => 'UTC' })
     end
+
+    it 'strips unknown fields from sections on save' do
+      config = described_class.current
+      config.update('system', { 'timezone' => 'UTC', 'unknown_field' => 'stale' })
+
+      reloaded = described_class.current
+      expect(reloaded.system).to include('timezone' => 'UTC')
+      expect(reloaded.system).not_to have_key('unknown_field')
+    end
   end
 
   describe '#configured?' do

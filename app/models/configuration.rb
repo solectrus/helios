@@ -220,6 +220,7 @@ class Configuration
       hash[key] = @data[key] if @data.key?(key)
     end
     sanitize_all_sensors!(result) if result.key?('sensors')
+    sanitize_sections!(result)
     result[UNMANAGED_KEY] = @data[UNMANAGED_KEY] if @data.key?(UNMANAGED_KEY)
     result
   end
@@ -239,6 +240,17 @@ class Configuration
   }.freeze
 
   private
+
+  def sanitize_sections!(result)
+    result.each do |section, data|
+      next unless data.is_a?(Hash)
+
+      fields = ConfigSchema.fields_for(section)
+      next unless fields.is_a?(Array)
+
+      result[section] = data.slice(*fields)
+    end
+  end
 
   def sanitize_sensor_data(data)
     return data unless data.is_a?(Hash)

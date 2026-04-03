@@ -3,7 +3,6 @@ class ConfigSchema
   SYSTEM_FIELDS = %w[
     timezone
     installation_date
-    linux_machine
     app_host
     admin_password
     influx_poll_interval

@@ -3,7 +3,7 @@ RSpec.describe ConfigSchema do
     it 'returns fields for system' do
       fields = described_class.fields_for('system')
       expect(fields).to include(
-        'timezone', 'installation_date', 'linux_machine',
+        'timezone', 'installation_date',
         'app_host', 'admin_password', 'image', 'secret_key_base'
       )
     end
