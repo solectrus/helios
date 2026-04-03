@@ -772,12 +772,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=20.0.0, @types/node@npm:^25.5.0":
-  version: 25.5.0
-  resolution: "@types/node@npm:25.5.0"
+"@types/node@npm:*, @types/node@npm:>=20.0.0, @types/node@npm:^25.5.1":
+  version: 25.5.1
+  resolution: "@types/node@npm:25.5.1"
   dependencies:
     undici-types: "npm:~7.18.0"
-  checksum: 10c0/70c508165b6758c4f88d4f91abca526c3985eee1985503d4c2bd994dbaf588e52ac57e571160f18f117d76e963570ac82bd20e743c18987e82564312b3b62119
+  checksum: 10c0/354b8ddec9a961be9a54eecc5f201f5c686adc2a0d01e9c5ba30786d82186965871a6c3dda66306be1253f3bea492bfe8bf19af06d0ce85ccfbc095cdf5e7f58
   languageName: node
   linkType: hard
 
@@ -1611,7 +1611,7 @@ __metadata:
     "@size-limit/file": "npm:^12.0.1"
     "@tailwindcss/typography": "npm:^0.5.19"
     "@tailwindcss/vite": "npm:^4.2.2"
-    "@types/node": "npm:^25.5.0"
+    "@types/node": "npm:^25.5.1"
     daisyui: "npm:^5.5.19"
     eslint: "npm:^10.1.0"
     eslint-config-prettier: "npm:^10.1.8"
