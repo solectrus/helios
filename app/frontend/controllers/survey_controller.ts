@@ -61,6 +61,11 @@ export default class extends Controller {
       this.survey.mergeData(this.initialDataValue);
     }
 
+    // Auto-fill app_host from browser's address bar if not already set
+    if (!this.survey.getValue('app_host')) {
+      this.survey.setValue('app_host', window.location.hostname);
+    }
+
     // Handle survey completing (fires before DOM changes)
     this.survey.onCompleting.add((sender, options) => {
       // Prevent SurveyJS completion. This avoids UI changes.
