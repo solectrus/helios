@@ -78,6 +78,9 @@ updates:
           - '@tailwindcss/*'
           - 'tailwindcss'
           - 'prettier-plugin-tailwindcss'
+      survey:
+        patterns:
+          - 'survey-*'
 
   - package-ecosystem: 'github-actions'
     directory: '/'
