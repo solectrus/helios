@@ -1775,7 +1775,7 @@ __metadata:
     rails-vite-plugin: "npm:^0.2.3"
     size-limit: "npm:^12.0.1"
     stimulus-vite-helpers: "npm:^3.1.0"
-    survey-core: "npm:^2.5.18"
+    survey-core: "npm:^2.5.19"
     survey-js-ui: "npm:^2.5.19"
     tailwindcss: "npm:^4.2.2"
     typescript: "npm:^6.0.2"
@@ -2855,10 +2855,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"survey-core@npm:^2.5.18":
-  version: 2.5.18
-  resolution: "survey-core@npm:2.5.18"
-  checksum: 10c0/a43a4f6c9bfc8badb92462237230b1e2fec7233a484fa44521bdf73ca28355a2bf231fb581072397939c1921b60b35732dbbabbe3120f574d847d32cea00ebe1
+"survey-core@npm:^2.5.19":
+  version: 2.5.19
+  resolution: "survey-core@npm:2.5.19"
+  checksum: 10c0/4f338ccce71969d3aaf5ab435bd922fa62ddd2ce0f0c4b07d95ac6774bbde8cbd6ab26581d43ef360d531641480a31bd7ea579998eb5eaf9835938dacf229adc
   languageName: node
   linkType: hard
 
