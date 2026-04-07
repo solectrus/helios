@@ -2,7 +2,7 @@ services:
   helios:
     image: ghcr.io/solectrus/helios:develop
     ports:
-      - "3999:3000"
+      - '3999:3000'
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
       - .:/app/solectrus
@@ -81,7 +81,7 @@ services:
     volumes:
       - ${DB_VOLUME_PATH}:/var/lib/postgresql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
       interval: 10s
       timeout: 20s
       retries: 5
@@ -95,7 +95,7 @@ services:
     volumes:
       - ${REDIS_VOLUME_PATH}:/data
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
       timeout: 20s
       retries: 5
@@ -118,7 +118,7 @@ services:
     ports:
       - 8086:8086
     healthcheck:
-      test: ["CMD", "influx", "ping"]
+      test: ['CMD', 'influx', 'ping']
       interval: 30s
       timeout: 10s
       retries: 5

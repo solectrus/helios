@@ -128,8 +128,14 @@
           "isRequired": true,
           "choices": [
             { "value": "de", "text": { "de": "Deutsch", "default": "German" } },
-            { "value": "en", "text": { "de": "Englisch", "default": "English" } },
-            { "value": "it", "text": { "de": "Italienisch", "default": "Italian" } }
+            {
+              "value": "en",
+              "text": { "de": "Englisch", "default": "English" }
+            },
+            {
+              "value": "it",
+              "text": { "de": "Italienisch", "default": "Italian" }
+            }
           ]
         }
       ]

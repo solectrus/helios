@@ -41,4 +41,4 @@ Existing SOLECTRUS installation with `compose.yaml` and `.env`. Helios reads the
 | [architecture/docker.md](architecture/docker.md)     | Docker integration, compose.yaml, health checks |
 | [adr/](adr/README.md)                                | Architecture Decision Records                   |
 | [guides/development.md](guides/development.md)       | Local setup, testing                            |
-| [guides/phases.md](guides/phases.md)                 | Development phases and current scope             |
+| [guides/phases.md](guides/phases.md)                 | Development phases and current scope            |

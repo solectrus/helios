@@ -38,15 +38,15 @@ config.update('system', { 'installation_date' => '2024-01-15', 'timezone' => 'Eu
 
 Defined in `Configuration::SINGLETONS`:
 
-| Singleton  | Purpose                       |
-| ---------- | ----------------------------- |
-| `system`   | Installation date, timezone   |
-| `devices`  | Device configuration          |
-| `inverter` | Inverter settings             |
-| `wallbox`  | EV charger settings           |
-| `heatpump` | Heat pump settings            |
-| `mqtt`     | MQTT configuration            |
-| `forecast` | Weather forecast settings     |
+| Singleton  | Purpose                     |
+| ---------- | --------------------------- |
+| `system`   | Installation date, timezone |
+| `devices`  | Device configuration        |
+| `inverter` | Inverter settings           |
+| `wallbox`  | EV charger settings         |
+| `heatpump` | Heat pump settings          |
+| `mqtt`     | MQTT configuration          |
+| `forecast` | Weather forecast settings   |
 
 ## Consequences
 

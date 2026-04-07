@@ -1,6 +1,37 @@
 {
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "editor.formatOnSave": true,
+  "editor.tabSize": 2,
+  "files.trimTrailingWhitespace": true,
+  "files.watcherExclude": {
+    "**/tmp/**": true,
+    "**/.yarn": true,
+    "**/public/vite*": true
+  },
+  "search.exclude": {
+    "**/tmp": true,
+    "**/public/vite*": true,
+    "**/.yarn": true,
+    "**/node_modules": true
+  },
+  "eslint.validate": ["javascript"],
   "[ruby]": {
-    "editor.defaultFormatter": "ruby-syntax-tree.vscode-syntax-tree",
+    "editor.defaultFormatter": "Shopify.ruby-lsp",
     "editor.formatOnSave": true
+  },
+  "[shellscript]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+  "[dotenv]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+  "[ignore]": {
+    "editor.defaultFormatter": "foxundermoon.shell-format"
+  },
+  "[css]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[github-actions-workflow]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
   }
 }

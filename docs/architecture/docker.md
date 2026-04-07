@@ -37,14 +37,14 @@ volumes:
 
 Helios performs these operations via Docker API / CLI:
 
-| Operation               | How                                     |
-| ----------------------- | --------------------------------------- |
-| Read running containers | Docker API: `GET /containers/json`      |
-| Start stack             | `docker compose up -d`                  |
-| Stop stack              | `docker compose down`                   |
+| Operation               | How                                               |
+| ----------------------- | ------------------------------------------------- |
+| Read running containers | Docker API: `GET /containers/json`                |
+| Start stack             | `docker compose up -d`                            |
+| Stop stack              | `docker compose down`                             |
 | Recreate service        | `docker compose up -d --force-recreate <service>` |
-| Pull new images         | `docker compose pull`                   |
-| View logs               | Docker API: `GET /containers/{id}/logs` |
+| Pull new images         | `docker compose pull`                             |
+| View logs               | Docker API: `GET /containers/{id}/logs`           |
 
 ### Implementation
 

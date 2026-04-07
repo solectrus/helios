@@ -97,7 +97,7 @@ services:
       - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
       - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
     volumes:
-      - "./influxdb:/var/lib/influxdb2"
+      - './influxdb:/var/lib/influxdb2'
     restart: unless-stopped
     healthcheck:
       test:
@@ -115,7 +115,7 @@ services:
       - POSTGRES_PASSWORD
       - POSTGRES_DB=solectrus
     volumes:
-      - "./postgresql:/var/lib/postgresql"
+      - './postgresql:/var/lib/postgresql'
     restart: unless-stopped
     healthcheck:
       test:
@@ -129,7 +129,7 @@ services:
   redis:
     image: redis:8-alpine
     volumes:
-      - "./redis:/data"
+      - './redis:/data'
     restart: unless-stopped
     healthcheck:
       test:
@@ -146,14 +146,14 @@ services:
     environment:
       - TZ
     volumes:
-      - "/var/run/docker.sock:/var/run/docker.sock"
-    command: "--scope solectrus --cleanup"
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    command: '--scope solectrus --cleanup'
     restart: unless-stopped
     logging:
       driver: json-file
       options:
         max-size: 10m
-        max-file: "3"
+        max-file: '3'
     labels:
       - com.centurylinklabs.watchtower.scope=solectrus
 
@@ -165,8 +165,8 @@ services:
       - ADMIN_PASSWORD
       - SECRET_KEY_BASE
     volumes:
-      - "/opt/solectrus:/data"
-      - "/var/run/docker.sock:/var/run/docker.sock"
+      - '/opt/solectrus:/data'
+      - '/var/run/docker.sock:/var/run/docker.sock'
     ports:
       - 3999:3000
     restart: unless-stopped

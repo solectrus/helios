@@ -85,7 +85,7 @@ services:
       driver: json-file
       options:
         max-size: 10m
-        max-file: "3"
+        max-file: '3'
     labels:
       - com.centurylinklabs.watchtower.scope=solectrus
   influxdb:
@@ -115,7 +115,7 @@ services:
       driver: json-file
       options:
         max-size: 10m
-        max-file: "3"
+        max-file: '3'
     labels:
       - com.centurylinklabs.watchtower.scope=solectrus
   postgresql:
@@ -138,7 +138,7 @@ services:
       driver: json-file
       options:
         max-size: 10m
-        max-file: "3"
+        max-file: '3'
     labels:
       - com.centurylinklabs.watchtower.scope=solectrus
   redis:
@@ -161,7 +161,7 @@ services:
       driver: json-file
       options:
         max-size: 10m
-        max-file: "3"
+        max-file: '3'
     labels:
       - com.centurylinklabs.watchtower.scope=solectrus
   senec-collector:
@@ -190,7 +190,7 @@ services:
       driver: json-file
       options:
         max-size: 10m
-        max-file: "3"
+        max-file: '3'
     depends_on:
       influxdb:
         condition: service_healthy
@@ -208,6 +208,6 @@ services:
       driver: json-file
       options:
         max-size: 10m
-        max-file: "3"
+        max-file: '3'
     labels:
       - com.centurylinklabs.watchtower.scope=solectrus
