@@ -1776,7 +1776,7 @@ __metadata:
     size-limit: "npm:^12.0.1"
     stimulus-vite-helpers: "npm:^3.1.0"
     survey-core: "npm:^2.5.18"
-    survey-js-ui: "npm:^2.5.18"
+    survey-js-ui: "npm:^2.5.19"
     tailwindcss: "npm:^4.2.2"
     typescript: "npm:^6.0.2"
     typescript-eslint: "npm:^8.58.0"
@@ -2862,14 +2862,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"survey-js-ui@npm:^2.5.18":
-  version: 2.5.18
-  resolution: "survey-js-ui@npm:2.5.18"
+"survey-js-ui@npm:^2.5.19":
+  version: 2.5.19
+  resolution: "survey-js-ui@npm:2.5.19"
   peerDependencies:
     "@types/react": "*"
     "@types/react-dom": "*"
-    survey-core: 2.5.18
-  checksum: 10c0/f3822d8a66ffb9dea99dd09d217dac26a7b83f47d7fc072c4441446be57f3f09022cf54c308ffdd3d7579e4718d781daec6a6154a1947b573cfcfd01285af066
+    survey-core: 2.5.19
+  checksum: 10c0/3bebad1dec814bf8a6372324df85634f550ee92c83458f80408cbcae724631bd011cf608d4701f2a673d03548466646a473aa3b0b2f2bb2866e935f2c361d62d
   languageName: node
   linkType: hard
 
