@@ -15,7 +15,7 @@ def server_ready?(uri)
   http.verify_mode = OpenSSL::SSL::VERIFY_NONE # Accept self-signed certificates from Caddy
   response = http.head('/')
   response.is_a?(Net::HTTPSuccess) || response.is_a?(Net::HTTPRedirection)
-rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Net::OpenTimeout, OpenSSL::SSL::SSLError
+rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Net::OpenTimeout, Net::ReadTimeout, OpenSSL::SSL::SSLError
   false
 end
 
