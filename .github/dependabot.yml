@@ -1,12 +1,89 @@
+# To get started with Dependabot version updates, you'll need to specify which
+# package ecosystems to update and where the package manifests are located.
+# Please see the documentation for all configuration options:
+# https://docs.github.com/en/code-security/how-tos/secure-your-supply-chain/secure-your-dependencies/configuring-dependabot-version-updates
+
 version: 2
 updates:
   - package-ecosystem: bundler
     directory: '/'
     schedule:
-      interval: weekly
+      interval: cron
+      cronjob: '30 4 * * *'
+      timezone: Europe/Berlin
     open-pull-requests-limit: 10
-  - package-ecosystem: github-actions
+    versioning-strategy: lockfile-only
+    allow:
+      - dependency-type: direct
+      - dependency-type: indirect
+    labels:
+      - 'dependencies'
+    groups:
+      rails:
+        patterns:
+          - 'actioncable'
+          - 'actionmailbox'
+          - 'actionmailer'
+          - 'actionpack'
+          - 'actiontext'
+          - 'actionview'
+          - 'activejob'
+          - 'activemodel'
+          - 'activerecord'
+          - 'activestorage'
+          - 'activesupport'
+          - 'rails'
+          - 'railties'
+          - 'turbo-rails'
+          - 'stimulus-rails'
+      rubocop:
+        patterns:
+          - 'rubocop'
+          - 'rubocop-*'
+      rspec:
+        patterns:
+          - 'rspec'
+          - 'rspec-*'
+
+  - package-ecosystem: npm
     directory: '/'
     schedule:
-      interval: weekly
+      interval: cron
+      cronjob: '30 4 * * *'
+      timezone: Europe/Berlin
     open-pull-requests-limit: 10
+    versioning-strategy: auto
+    labels:
+      - 'dependencies'
+    groups:
+      vite:
+        patterns:
+          - 'vite'
+          - 'vite-plugin-rails'
+      eslint:
+        patterns:
+          - 'eslint*'
+      hotwired:
+        patterns:
+          - '@hotwired*'
+      fortawesome:
+        patterns:
+          - '@fortawesome/*'
+      size-limit:
+        patterns:
+          - '@size-limit/file'
+          - 'size-limit'
+      tailwindcss:
+        patterns:
+          - '@tailwindcss/*'
+          - 'tailwindcss'
+          - 'prettier-plugin-tailwindcss'
+
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: cron
+      cronjob: '30 3 * * *'
+      timezone: Europe/Berlin
+    labels:
+      - 'dependencies'
