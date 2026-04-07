@@ -65,6 +65,7 @@ RSpec.describe ComposeJob do
         expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
           'services',
           target: 'service-broken-service',
+          attributes: { method: :morph },
           html: '<div>html</div>',
         )
       end
@@ -182,6 +183,7 @@ RSpec.describe ComposeJob do
         expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
           'services',
           target: 'service-dashboard',
+          attributes: { method: :morph },
           html: '<div>error</div>',
         )
       end
@@ -214,6 +216,7 @@ RSpec.describe ComposeJob do
         expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
           'services',
           target: 'service-dashboard',
+          attributes: { method: :morph },
           html: '<div>error</div>',
         )
       end
@@ -231,6 +234,7 @@ RSpec.describe ComposeJob do
         expect(Turbo::StreamsChannel).to have_received(:broadcast_replace_to).with(
           'services',
           target: 'service-dashboard',
+          attributes: { method: :morph },
           html: '<div>error</div>',
         )
       end

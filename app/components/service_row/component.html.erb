@@ -18,7 +18,7 @@
         </div>
       <% else %>
         <%# Full content %>
-        <div class="<%= tooltip_class %>" data-tip="<%= status_label %>">
+        <div id="<%= dom_id %>-status" class="<%= tooltip_class %>" data-tip="<%= status_label %>">
           <div class="flex h-3 w-3 items-center justify-center">
             <span class="<%= status_indicator_class %>"></span>
           </div>
@@ -65,7 +65,7 @@
             <%= t('.open') %>
           </button>
         <% end %>
-        <div class="tooltip tooltip-info" data-tip="<%= t('.logs') %>">
+        <div id="<%= dom_id %>-logs" class="tooltip tooltip-info" data-tip="<%= t('.logs') %>">
           <% if container %>
             <a
               href="<%= service_log_path(service_name) %>"
@@ -81,19 +81,20 @@
           <% end %>
         </div>
         <div class="join">
-          <div class="tooltip tooltip-info join-item" data-tip="<%= t('.start') %>">
+          <div id="<%= dom_id %>-start" class="tooltip tooltip-info join-item" data-tip="<%= t('.start') %>">
             <%= button_to service_task_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "startButton" } do %>
               <i class="fa-solid fa-play"></i>
             <% end %>
           </div>
 
-          <div class="tooltip tooltip-info join-item" data-tip="<%= t('.stop') %>">
+          <div id="<%= dom_id %>-stop" class="tooltip tooltip-info join-item" data-tip="<%= t('.stop') %>">
             <%= button_to service_task_path(service_name), method: :delete, disabled: stop_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "stopButton" } do %>
               <i class="fa-solid fa-stop"></i>
             <% end %>
           </div>
 
           <div
+            id="<%= dom_id %>-recreate"
             class="tooltip join-item <%= restart_pending? ? 'tooltip-warning' : 'tooltip-info' %>"
             data-tip="<%= restart_pending? ? t('.restart_pending') : t('.recreate') %>"
           >
@@ -103,7 +104,7 @@
           </div>
         </div>
       <% else %>
-        <div class="tooltip tooltip-info" data-tip="<%= t('.recreate') %>">
+        <div id="<%= dom_id %>-recreate" class="tooltip tooltip-info" data-tip="<%= t('.recreate') %>">
           <%= button_to service_task_path(service_name), method: :patch, disabled: recreate_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { turbo_confirm: t('.self_recreate_confirm'), turbo_frame: "_top", service_row__component_target: "recreateButton" } do %>
             <i class="fa-solid fa-arrows-rotate"></i>
           <% end %>

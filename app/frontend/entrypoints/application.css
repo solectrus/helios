@@ -49,10 +49,15 @@ table[data-hide-unused='true'] tr[data-sensor-enabled='false'] {
   display: none;
 }
 
-/* Tooltips: show only on hover, not on focus */
-.tooltip:focus-within::before,
-.tooltip:focus-within::after {
+/* Tooltips: show only on hover, not on keyboard focus */
+.tooltip:has(:focus-visible)::before,
+.tooltip:has(:focus-visible)::after {
   opacity: 0 !important;
+}
+
+/* Tooltips: keep pointer-events on disabled buttons to prevent hover gap during morph */
+.tooltip .btn:disabled {
+  pointer-events: auto;
 }
 
 /* hljs theme is applied dynamically by stack_preview_controller */

@@ -1,21 +1,15 @@
 module Orchestration
   class ServiceBroadcaster
     def self.broadcast_row(service_name, container:, compose_service:, error_message: nil)
-      html =
-        ApplicationController.render(
-          ServiceRow::Component.new(
-            compose_service:,
-            container:,
-            error_message:,
-            lazy: false,
-          ),
-          layout: false,
-        )
+      component = ServiceRow::Component.new(
+        compose_service:, container:, error_message:, lazy: false,
+      )
 
       Turbo::StreamsChannel.broadcast_replace_to(
         'services',
         target: "service-#{service_name}",
-        html:,
+        attributes: { method: :morph },
+        html: ApplicationController.render(component, layout: false),
       )
     end
 
