@@ -5,7 +5,7 @@ import DialogModalController from '@/controllers/dialog_modal_controller';
 function createDOM() {
   document.body.innerHTML = `
     <dialog id="modal" data-controller="dialog-modal">
-      <div>
+      <div data-dialog-modal-target="box" tabindex="-1">
         <turbo-frame id="frame" data-dialog-modal-target="frame"></turbo-frame>
         <input type="text" id="test-input" />
         <form method="dialog" id="close-form">

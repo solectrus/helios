@@ -1,11 +1,12 @@
 import { Controller } from '@hotwired/stimulus';
 
 export default class extends Controller<HTMLDialogElement> {
-  static targets = ['frame', 'confirm'];
+  static targets = ['frame', 'confirm', 'box'];
 
   declare frameTarget: HTMLElement;
   declare hasFrameTarget: boolean;
   declare confirmTarget: HTMLDialogElement;
+  declare boxTarget: HTMLElement;
 
   private dirty = false;
   private confirming = false;
@@ -66,6 +67,7 @@ export default class extends Controller<HTMLDialogElement> {
     this.dirty = false;
     this.confirming = false;
     this.element.showModal();
+    this.boxTarget.focus();
   }
 
   close() {
