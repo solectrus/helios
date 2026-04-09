@@ -91,8 +91,20 @@ jobs:
       - name: Install Yarn packages
         run: bin/yarn install --immutable
 
-      - name: Install Playwright
-        run: yarn playwright install --with-deps chromium
+      - name: Get Playwright version
+        id: playwright-version
+        run: echo "version=$(node -p "require('./node_modules/playwright/package.json').version")" >> $GITHUB_OUTPUT
+
+      - name: Cache Playwright browsers
+        id: playwright-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+
+      - name: Install Playwright browsers
+        if: steps.playwright-cache.outputs.cache-hit != 'true'
+        run: yarn playwright install --with-deps --only-shell chromium
 
       - name: Cache Vite build
         uses: actions/cache@v5
