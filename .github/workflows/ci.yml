@@ -107,12 +107,14 @@ jobs:
         run: yarn playwright install --with-deps --only-shell chromium
 
       - name: Cache Vite build
+        id: vite-cache
         uses: actions/cache@v5
         with:
           path: public/vite-test
           key: vite-test-${{ hashFiles('app/javascript/**', 'vite.config.mts') }}
 
       - name: Build Vite assets for test
+        if: steps.vite-cache.outputs.cache-hit != 'true'
         run: yarn vite build --mode test
 
       - name: Setup Database
