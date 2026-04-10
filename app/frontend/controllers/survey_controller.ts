@@ -1,7 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
 import { Model } from 'survey-core';
-import { BorderlessLight, BorderlessDark } from 'survey-core/themes';
-import { isDarkMode, onThemeChange } from '../utils/theme';
+import { BorderlessDark } from 'survey-core/themes';
 import { readLocale } from '../utils/preferences_cookie';
 
 // Import Survey.JS UI (side-effect: registers UI components)
@@ -28,15 +27,12 @@ export default class extends Controller {
   declare initialDataValue: Record<string, unknown>;
 
   private survey: Model | null = null;
-  private unsubscribeTheme: (() => void) | null = null;
 
   async connect() {
     await this.initSurvey();
-    this.unsubscribeTheme = onThemeChange(() => this.applyTheme());
   }
 
   disconnect() {
-    this.unsubscribeTheme?.();
     this.survey = null;
   }
 
@@ -47,9 +43,7 @@ export default class extends Controller {
 
     // Create survey model from JSON
     this.survey = new Model(surveyJson);
-
-    // Apply theme based on current mode
-    this.applyTheme();
+    this.survey.applyTheme(BorderlessDark);
 
     // Configure survey
     this.survey.locale = readLocale();
@@ -89,12 +83,6 @@ export default class extends Controller {
     this.survey.onValueChanged.add((_sender, options) => {
       this.handleValueChanged(options);
     });
-  }
-
-  private applyTheme() {
-    if (!this.survey) return;
-
-    this.survey.applyTheme(isDarkMode() ? BorderlessDark : BorderlessLight);
   }
 
   private handleValueChanged(options: { name: string; value: unknown }) {

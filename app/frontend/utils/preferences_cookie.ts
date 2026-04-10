@@ -2,7 +2,6 @@ const COOKIE_NAME = 'preferences';
 const MAX_AGE = 60 * 60 * 24 * 365; // 1 year
 
 interface Preferences {
-  theme?: string;
   expert_mode?: boolean;
   hide_unused?: boolean;
   locale?: string;

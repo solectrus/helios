@@ -2,7 +2,6 @@ class UserPreferences
   COOKIE_NAME = :preferences
 
   DEFAULTS = {
-    'theme' => 'light',
     'expert_mode' => false,
     'hide_unused' => false,
     'locale' => 'en',
@@ -11,14 +10,6 @@ class UserPreferences
   def initialize(cookies)
     raw = cookies[COOKIE_NAME]
     @data = raw ? parse(raw) : {}
-  end
-
-  def theme
-    @data.fetch('theme', DEFAULTS['theme'])
-  end
-
-  def dark_theme?
-    theme == 'aqua'
   end
 
   def expert_mode?

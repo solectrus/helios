@@ -4,6 +4,5 @@ class RestartingController < ApplicationController
 
   def show
     @boot_id = params[:boot_id]
-    @theme = params[:theme]
   end
 end

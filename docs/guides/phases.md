@@ -13,7 +13,6 @@ Phase 0 (Proof of Concept) and Phase 1 (Foundation) are complete. The following 
 - Background jobs for async compose operations
 - Full `compose.yaml` and `.env` generation (14 services)
 - Install script (`install.sh`)
-- Theme toggle (light/dark mode)
 - ViewComponent-based UI architecture
 - compose.yaml/env parsing with comment preservation
 - Docker API integration (container status, health) + Compose CLI
@@ -45,7 +44,7 @@ Define all SOLECTRUS usage options through interactive forms (Scenarios A/B + C)
 | Status  | Detail                                                           |
 | ------- | ---------------------------------------------------------------- |
 | ✅ Done | Survey JSON files for all chapters (`config/surveys/`, 15 files) |
-| ✅ Done | SurveyJS rendering with theme support and localization           |
+| ✅ Done | SurveyJS rendering with localization                             |
 | ✅ Done | Configuration model with YAML storage (`config.yaml`)            |
 | ✅ Done | Add/remove sensors via UI (create/edit/delete)                   |
 | ✅ Done | Conditional dependencies via SurveyJS `visibleIf` expressions    |

@@ -88,7 +88,7 @@ RSpec.describe 'Services::Tasks', :with_admin_password do
       patch service_task_path(service_id: 'helios')
 
       expect(ComposeJob).to have_received(:perform_later).with(:self_recreate, 'helios')
-      expect(response).to redirect_to(restarting_path(boot_id: Rails.application.config.boot_id, theme: 'light'))
+      expect(response).to redirect_to(restarting_path(boot_id: Rails.application.config.boot_id))
     end
   end
 
