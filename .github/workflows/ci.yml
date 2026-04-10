@@ -111,7 +111,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: public/vite-test
-          key: vite-test-${{ hashFiles('app/javascript/**', 'vite.config.mts') }}
+          key: vite-test-${{ hashFiles('app/frontend/**', 'vite.config.mts', 'yarn.lock') }}
 
       - name: Build Vite assets for test
         if: steps.vite-cache.outputs.cache-hit != 'true'
