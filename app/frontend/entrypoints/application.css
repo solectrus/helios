@@ -10,8 +10,6 @@
 @source '../../**/*.{erb,rb}';
 @source '../../frontend/**/*.{js,ts}';
 
-@plugin '@tailwindcss/typography';
-
 /* Status bar: show only the label matching the current locale */
 .status-bar-label {
   display: none;

@@ -25,7 +25,6 @@
     "@herb-tools/formatter": "^0.9.5",
     "@herb-tools/linter": "^0.9.5",
     "@size-limit/file": "^12.0.1",
-    "@tailwindcss/typography": "^0.5.19",
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^25.6.0",
     "daisyui": "^5.5.19",
