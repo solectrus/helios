@@ -1,7 +1,9 @@
 module Header
   class Component < ViewComponent::Base
     TAB_DEFINITIONS = [
-      { id: :configuration, path_helper: :configuration_path, icon: 'fa-solid fa-wrench' },
+      { id: :sensors, path_helper: :sensors_path, icon: 'fa-solid fa-gauge-high' },
+      { id: :datasources, path_helper: :datasources_path, icon: 'fa-solid fa-plug' },
+      { id: :advanced, path_helper: :advanced_path, icon: 'fa-solid fa-sliders' },
       { id: :services, path_helper: :services_path, icon: 'fa-solid fa-server' },
     ].freeze
 

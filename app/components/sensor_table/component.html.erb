@@ -1,30 +1,26 @@
-<div class="mb-3 flex items-center justify-between">
-  <h3 class="text-base-content/50 text-sm font-semibold tracking-wide uppercase"><%= t('.sensors') %></h3>
-</div>
-
 <div
-  class="card bg-base-100 mb-8 overflow-visible shadow-md"
+  class="mb-8"
   data-controller="sensors-polling preference-toggle"
-  data-sensors-polling-url-value="<%= helpers.configuration_readings_path %>"
+  data-sensors-polling-url-value="<%= helpers.sensors_readings_path %>"
   data-sensors-polling-enabled-value="<%= polling_enabled? %>"
   data-preference-toggle-key-value="hide_unused"
 >
-  <div class="card-body p-0">
-    <div class="flex items-center justify-end gap-2 px-4 pt-3">
-      <span class="text-base-content/50 text-xs"><%= t('.hide_unused') %></span>
+  <div class="mb-3 flex items-center justify-end gap-2">
+    <span class="text-base-content/50 text-xs"><%= t('.hide_unused') %></span>
 
-      <input
-        type="checkbox"
-        class="toggle toggle-xs"
-        data-preference-toggle-target="checkbox"
-        data-action="change->preference-toggle#toggle"
-        <% if hide_unused? %>
-          checked
-        <% end %>
-      >
-    </div>
+    <input
+      type="checkbox"
+      class="toggle toggle-xs"
+      data-preference-toggle-target="checkbox"
+      data-action="change->preference-toggle#toggle"
+      <% if hide_unused? %>
+        checked
+      <% end %>
+    >
+  </div>
 
-    <div class="overflow-visible">
+  <div class="card bg-base-100 overflow-visible shadow-md">
+    <div class="card-body overflow-visible p-0">
       <table class="table-sm table" data-preference-toggle-target="container" data-hide-unused="<%= hide_unused? %>">
         <% all_groups.each do |group, sensor_names| %>
           <tbody data-has-enabled-sensors="<%= group_has_enabled_sensors?(sensor_names) %>">

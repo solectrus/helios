@@ -25,13 +25,13 @@ module Configurations
     def create
       save_setting
       Orchestration::StackStatus.mark_config_changed!
-      redirect_to configuration_path
+      redirect_to redirect_target
     end
 
     def update
       save_setting
       Orchestration::StackStatus.mark_config_changed!
-      redirect_to configuration_path
+      redirect_to redirect_target
     end
 
     def destroy
@@ -40,7 +40,7 @@ module Configurations
       end
 
       Orchestration::StackStatus.mark_config_changed!
-      redirect_to configuration_path
+      redirect_to redirect_target
     end
 
     private
@@ -65,7 +65,14 @@ module Configurations
       return if sensor_setting? && sensor_name.present? && SensorRegistry.valid?(sensor_name)
       return if Configuration.valid?(setting)
 
-      redirect_to configuration_path
+      redirect_to sensors_path
+    end
+
+    def redirect_target
+      return sensors_path if sensor_setting?
+      return datasources_path if Configuration::ALL_SOURCES.include?(setting)
+
+      advanced_path
     end
 
     def save_setting

@@ -1,4 +1,6 @@
 en:
   logout: 'Logout'
+  sensors: 'Sensors'
+  datasources: 'Data Sources'
+  advanced: 'Advanced'
   services: 'Services'
-  configuration: 'Configuration'

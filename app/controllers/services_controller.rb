@@ -1,6 +1,6 @@
 class ServicesController < ApplicationController
   def index
-    return redirect_to configuration_path unless Configuration.current.setup_completed?
+    return redirect_to sensors_path unless Configuration.current.setup_completed?
 
     compose = Compose.load
     @compose_services = compose.services.sorted

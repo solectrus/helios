@@ -1,4 +1,4 @@
-class ConfigurationsController < ApplicationController
+class SensorsController < ApplicationController
   include SensorReadings
 
   def show

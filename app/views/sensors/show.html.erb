@@ -1,0 +1,21 @@
+<% content_for :title, t('.title') %>
+
+<% content_for :head do %>
+  <meta name="turbo-refresh-method" content="morph">
+  <meta name="turbo-refresh-scroll" content="preserve">
+<% end %>
+
+<div>
+  <%= turbo_frame_tag "tab-content" do %>
+    <%= render Header::Component.new(active_tab: :sensors) %>
+
+    <div class="mx-auto max-w-4xl p-8">
+      <%= render SensorTable::Component.new(
+            configuration: @configuration,
+            readings: @readings,
+          ) %>
+
+      <%= render DialogModal::Component.new(id: "setting-modal", turbo_frame: "setting-modal-content") %>
+    </div>
+  <% end %>
+</div>

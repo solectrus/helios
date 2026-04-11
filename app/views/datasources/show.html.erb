@@ -7,22 +7,13 @@
 
 <div>
   <%= turbo_frame_tag "tab-content" do %>
-    <%= render Header::Component.new(active_tab: :configuration) %>
+    <%= render Header::Component.new(active_tab: :datasources) %>
 
     <div class="mx-auto max-w-4xl p-8">
-      <%= render SensorTable::Component.new(
-            configuration: @configuration,
-            readings: @readings,
-          ) %>
-
-      <%# Source settings section (shown when sources are in use) %>
       <% active_sources = Configuration::ALL_SOURCES.select { |s| @configuration.sensors_with_source(s).any? } %>
 
       <% if active_sources.any? %>
-        <h3 class="text-base-content/50 mb-3 text-sm font-semibold tracking-wide uppercase">
-          <%= t('.source_settings') %>
-        </h3>
-        <div class="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <% active_sources.each do |source| %>
             <% if source == 'external' %>
               <%= render ExternalInputInfo::Component.new(configuration: @configuration) %>
@@ -31,16 +22,9 @@
             <% end %>
           <% end %>
         </div>
+      <% else %>
+        <p class="text-base-content/50 text-sm"><%= t('.empty') %></p>
       <% end %>
-
-      <%# Settings section %>
-      <h3 class="text-base-content/50 mb-3 text-sm font-semibold tracking-wide uppercase"><%= t('.settings') %></h3>
-
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <% Configuration::SETTINGS.each do |setting| %>
-          <%= render SettingSection::Component.new(setting:, configuration: @configuration) %>
-        <% end %>
-      </div>
 
       <%= render DialogModal::Component.new(id: "setting-modal", turbo_frame: "setting-modal-content") %>
     </div>

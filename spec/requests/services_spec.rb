@@ -74,9 +74,9 @@ RSpec.describe 'Services', :with_admin_password do
     context 'when setup not completed' do
       before { with_config_yaml }
 
-      it 'redirects to configuration' do
+      it 'redirects to sensors' do
         get services_path
-        expect(response).to redirect_to(configuration_path)
+        expect(response).to redirect_to(sensors_path)
       end
     end
   end

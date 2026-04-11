@@ -1,8 +1,8 @@
-module Configurations
+module Sensors
   class ReadingsController < ApplicationController
     include SensorReadings
 
-    def index
+    def show
       @configuration = Configuration.current
       @readings = fetch_readings(configuration: @configuration)
     end

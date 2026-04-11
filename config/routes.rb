@@ -11,11 +11,16 @@ Rails.application.routes.draw do
   # First-start consent
   resource :start, only: %i[show create]
 
-  # Configuration with settings and surveys
-  resource :configuration, only: :show do
+  # Main navigation: configuration pages
+  resource :sensors, only: :show
+  get 'sensors/readings', to: 'sensors/readings#show', as: :sensors_readings
+  resource :datasources, only: :show
+  resource :advanced, only: :show, controller: 'advanced'
+
+  # Setting CRUD (modal forms) — kept under 'configuration/' prefix for now
+  scope 'configuration', as: :configuration do
     resources :settings, only: %i[new create], module: :configurations
     resources :surveys, only: :show, module: :configurations
-    resources :readings, only: :index, module: :configurations
   end
 
   scope 'configuration/:setting/:name',
