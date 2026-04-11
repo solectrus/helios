@@ -1,4 +1,4 @@
-<nav class="navbar bg-base-300 sticky top-0 z-50 mb-8 gap-8 px-8 py-1 shadow-sm">
+<nav class="navbar bg-base-300 sticky top-0 z-50 h-16 min-h-0 gap-8 px-8 py-0 shadow-sm">
   <h1>
     <img
       src="/logo.svg"
@@ -10,10 +10,10 @@
     <span class="sr-only">HELIOS</span>
   </h1>
 
-  <div class="flex gap-1">
+  <div class="flex items-center gap-1">
     <% tabs.each do |tab| %>
       <%= link_to tab[:path], class: tab_classes(tab), data: { turbo_frame: "_top" } do %>
-        <i class="mr-1 <%= tab[:icon] %>"></i>
+        <i class="<%= tab[:icon] %>"></i>
         <%= tab[:label] %>
       <% end %>
     <% end %>

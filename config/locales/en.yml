@@ -37,22 +37,24 @@ en:
 
   services:
     index:
-      title: 'Services - Helios'
+      title: 'Services'
     logs:
       show:
         title: '%{name} — Logs'
         connecting: 'Connecting…'
 
+  datasources:
+    show:
+      title: 'Data Sources'
+      empty: 'No data sources in use. Enable sensors to configure sources.'
+
+  advanced:
+    show:
+      title: 'Advanced'
+
   configurations:
     show:
-      title: 'Configuration - Helios'
       configured: 'Configured'
-      pending: 'Pending'
-      settings: 'Settings'
-      source_settings: 'Data Sources'
-      sensor_name: 'Sensor'
-      source: 'Source'
-      live_value: 'Value'
     settings:
       senec:
         title: 'SENEC-Collector'
@@ -116,6 +118,8 @@ en:
         external: 'External'
 
   sensors:
+    show:
+      title: 'Sensors'
     inverter_power: 'Sum of all PV generators'
     inverter_power_1: 'Separate PV generator 1'
     inverter_power_2: 'Separate PV generator 2'
@@ -177,7 +181,7 @@ en:
 
   restarting:
     show:
-      title: 'HELIOS is restarting…'
+      title: 'Restarting…'
       heading: 'HELIOS is restarting…'
 
   starts:

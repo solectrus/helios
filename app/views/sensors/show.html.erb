@@ -1,0 +1,8 @@
+<% content_for :title, t('.title') %>
+
+<%= render "shared/configuration_page", active_tab: :sensors do %>
+  <%= render SensorTable::Component.new(
+        configuration: @configuration,
+        readings: @readings,
+      ) %>
+<% end %>

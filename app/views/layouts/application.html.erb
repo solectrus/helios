@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
 
-    <title><%= content_for(:title) || "HELIOS" %></title>
+    <title><%= content_for?(:title) ? "#{content_for(:title)} – HELIOS" : "HELIOS" %></title>
 
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="application-name" content="HELIOS">

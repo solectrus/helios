@@ -62,6 +62,10 @@ class Configuration
     setting.to_s.in?(ALL)
   end
 
+  def self.source?(setting)
+    setting.to_s.in?(ALL_SOURCES)
+  end
+
   def initialize(path)
     @path = path
     @data = File.exist?(path) ? YAML.safe_load_file(path, permitted_classes: [Date]) || {} : {}
@@ -94,6 +98,12 @@ class Configuration
   # All sensors using a specific source
   def sensors_with_source(source)
     (@data['sensors'] || {}).select { |_name, config| config['source'] == source.to_s }
+  end
+
+  # Sources currently in use by at least one sensor
+  def active_sources
+    used = (@data['sensors'] || {}).each_value.filter_map { |config| config['source'] }.to_set
+    ALL_SOURCES.select { |source| used.include?(source) }
   end
 
   # Enable/update a sensor. Returns true if data changed.

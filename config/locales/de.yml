@@ -8,22 +8,24 @@ de:
 
   services:
     index:
-      title: 'Dienste - Helios'
+      title: 'Dienste'
     logs:
       show:
         title: '%{name} — Logs'
         connecting: 'Verbinden…'
 
+  datasources:
+    show:
+      title: 'Datenquellen'
+      empty: 'Keine Datenquellen in Verwendung. Aktiviere Sensoren, um Quellen zu konfigurieren.'
+
+  advanced:
+    show:
+      title: 'Erweitert'
+
   configurations:
     show:
-      title: 'Konfiguration - Helios'
       configured: 'Konfiguriert'
-      pending: 'Offen'
-      settings: 'Einstellungen'
-      source_settings: 'Datenquellen'
-      sensor_name: 'Sensor'
-      source: 'Quelle'
-      live_value: 'Wert'
     settings:
       senec:
         title: 'SENEC-Collector'
@@ -87,6 +89,8 @@ de:
         external: 'Extern'
 
   sensors:
+    show:
+      title: 'Sensoren'
     inverter_power: 'Summe aller PV-Erzeuger'
     inverter_power_1: 'Separater PV-Erzeuger 1'
     inverter_power_2: 'Separater PV-Erzeuger 2'
@@ -148,12 +152,12 @@ de:
 
   restarting:
     show:
-      title: 'HELIOS wird neu gestartet…'
+      title: 'Wird neu gestartet…'
       heading: 'HELIOS wird neu gestartet…'
 
   starts:
     show:
-      title: 'Willkommen - Helios'
+      title: 'Willkommen'
       subtitle: 'Konfiguration von SOLECTRUS'
       heading: 'Willkommen bei HELIOS'
       step_import_html: 'Deine bestehenden Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> werden importiert und interpretiert'
@@ -164,7 +168,7 @@ de:
 
   sessions:
     new:
-      title: 'Anmeldung - Helios'
+      title: 'Anmeldung'
       subtitle: 'Konfiguration von SOLECTRUS'
       password_label: 'Passwort'
       password_placeholder: 'Passwort eingeben'

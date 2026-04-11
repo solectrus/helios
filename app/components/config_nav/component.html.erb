@@ -1,0 +1,13 @@
+<aside class="bg-base-200/40 border-base-content/10 sticky top-16 min-h-[calc(100vh-6.5rem)] w-72 shrink-0 self-start border-r">
+  <nav class="flex flex-col gap-2 p-8">
+    <% tabs.each do |tab| %>
+      <%= link_to tab[:path], class: item_classes(tab), data: { turbo_frame: "_top" } do %>
+        <span class="<%= icon_box_classes(tab) %>">
+          <i class="<%= tab[:icon] %>"></i>
+        </span>
+
+        <span class="text-base font-medium"><%= tab[:label] %></span>
+      <% end %>
+    <% end %>
+  </nav>
+</aside>

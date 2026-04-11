@@ -11,11 +11,15 @@ Rails.application.routes.draw do
   # First-start consent
   resource :start, only: %i[show create]
 
-  # Configuration with settings and surveys
-  resource :configuration, only: :show do
+  resource :sensors, only: :show do
+    resource :readings, only: :show, module: :sensors
+  end
+  resource :datasources, only: :show
+  resource :advanced, only: :show, controller: 'advanced'
+
+  scope 'configuration', as: :configuration do
     resources :settings, only: %i[new create], module: :configurations
     resources :surveys, only: :show, module: :configurations
-    resources :readings, only: :index, module: :configurations
   end
 
   scope 'configuration/:setting/:name',

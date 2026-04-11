@@ -1,0 +1,20 @@
+<% content_for :head do %>
+  <meta name="turbo-refresh-method" content="morph">
+  <meta name="turbo-refresh-scroll" content="preserve">
+<% end %>
+
+<%= turbo_frame_tag "tab-content" do %>
+  <%= render Header::Component.new(active_tab: :configuration) %>
+
+  <div class="flex items-start">
+    <%= render ConfigNav::Component.new(active_tab:) %>
+
+    <div class="min-w-0 flex-1 p-8">
+      <div class="mx-auto max-w-4xl">
+        <%= yield %>
+
+        <%= render DialogModal::Component.new(id: "setting-modal", turbo_frame: "setting-modal-content") %>
+      </div>
+    </div>
+  </div>
+<% end %>

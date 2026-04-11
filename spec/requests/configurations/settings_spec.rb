@@ -22,7 +22,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     it 'redirects for invalid setting' do
       get new_configuration_setting_path(setting: 'nonexistent')
 
-      expect(response).to redirect_to(configuration_path)
+      expect(response).to redirect_to(sensors_path)
     end
   end
 
@@ -33,7 +33,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       post configuration_settings_path,
            params: { setting: 'sensor', name: 'inverter_power', data: sensor_data.to_json }
 
-      expect(response).to redirect_to(configuration_path)
+      expect(response).to redirect_to(sensors_path)
 
       config = Configuration.current
       expect(config.sensor_config('inverter_power').source).to eq('senec')
@@ -50,11 +50,11 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(config.sensor_config('inverter_power').field).to eq('inverter_power')
     end
 
-    it 'creates a singleton and redirects to configuration' do
+    it 'creates a singleton and redirects to the advanced page' do
       post configuration_settings_path,
            params: { setting: 'system', data: { timezone: 'Europe/Berlin' }.to_json }
 
-      expect(response).to redirect_to(configuration_path)
+      expect(response).to redirect_to(advanced_path)
 
       config = Configuration.current
       expect(config.system.timezone).to eq('Europe/Berlin')
@@ -120,7 +120,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       patch configuration_setting_path(setting: 'sensor', name: 'inverter_power'),
             params: { data: sensor_data.to_json }
 
-      expect(response).to redirect_to(configuration_path)
+      expect(response).to redirect_to(sensors_path)
 
       config = Configuration.current
       expect(config.sensor_config('inverter_power').source).to eq('mqtt')
@@ -132,7 +132,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       patch configuration_setting_path(setting: 'system', name: 'system'),
             params: { data: setting_data.to_json }
 
-      expect(response).to redirect_to(configuration_path)
+      expect(response).to redirect_to(advanced_path)
 
       config = Configuration.current
       expect(config.system.app_host).to eq('example.com')
@@ -146,7 +146,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
       delete configuration_setting_path(setting: 'sensor', name: 'inverter_power')
 
-      expect(response).to redirect_to(configuration_path)
+      expect(response).to redirect_to(sensors_path)
       expect(Configuration.current.sensor_enabled?('inverter_power')).to be false
     end
   end

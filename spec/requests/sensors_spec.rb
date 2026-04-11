@@ -1,12 +1,12 @@
-RSpec.describe 'Configurations', :with_admin_password do
+RSpec.describe 'Sensors', :with_admin_password do
   before do
     with_config_yaml
     login
   end
 
-  describe 'GET /configuration' do
-    it 'renders the configuration page' do
-      get configuration_path
+  describe 'GET /sensors' do
+    it 'renders the sensors page' do
+      get sensors_path
 
       expect(response).to have_http_status(:ok)
     end
@@ -14,19 +14,10 @@ RSpec.describe 'Configurations', :with_admin_password do
     it 'displays sensor group headers' do
       cookies[:preferences] = { hide_unused: false }.to_json
 
-      get configuration_path
+      get sensors_path
 
       SensorRegistry::GROUPS.each_key do |group|
         title = I18n.t("sensor_groups.#{group}")
-        expect(response.body).to include(title)
-      end
-    end
-
-    it 'displays setting section titles' do
-      get configuration_path
-
-      Configuration::SETTINGS.each do |setting|
-        title = I18n.t("configurations.settings.#{setting}.title")
         expect(response.body).to include(title)
       end
     end
@@ -35,7 +26,7 @@ RSpec.describe 'Configurations', :with_admin_password do
       config = Configuration.current
       config.update_sensor('inverter_power', { 'source' => 'senec' })
 
-      get configuration_path
+      get sensors_path
 
       expect(response.body).to include('inverter_power')
     end
