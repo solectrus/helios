@@ -26,3 +26,7 @@ linter:
     # CSP is not enabled, so script nonces are not applicable
     html-require-script-nonce:
       enabled: false
+    # False positive in 0.9.6: flags enclosing `<% if/unless %>` blocks
+    # whenever a `link_to`/`button_to` appears inside them
+    actionview-no-silent-helper:
+      enabled: false
