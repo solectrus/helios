@@ -123,18 +123,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@herb-tools/config@npm:0.9.5":
-  version: 0.9.5
-  resolution: "@herb-tools/config@npm:0.9.5"
-  dependencies:
-    "@herb-tools/core": "npm:0.9.5"
-    picomatch: "npm:^4.0.4"
-    tinyglobby: "npm:^0.2.15"
-    yaml: "npm:^2.8.3"
-  checksum: 10c0/5d539c9f0f7a28e3fed50f2f1e3a1e72421dbf716cf7395c5a0416a6d9fd545e9c8a1b70ad09d7a174fa220884ed991a38b7bff8e15741f6f2de75b91989a84f
-  languageName: node
-  linkType: hard
-
 "@herb-tools/config@npm:0.9.6":
   version: 0.9.6
   resolution: "@herb-tools/config@npm:0.9.6"
@@ -144,13 +132,6 @@ __metadata:
     tinyglobby: "npm:^0.2.16"
     yaml: "npm:^2.8.3"
   checksum: 10c0/ebdbb4acbaa99cbd711c253f677a6bb2747f796c53f4b53d3462801f35f1619ddc97e3023bdf3f75338dd26e3ebbe1ba65a6a6c492b647552b8c42cbe09edb0b
-  languageName: node
-  linkType: hard
-
-"@herb-tools/core@npm:0.9.5":
-  version: 0.9.5
-  resolution: "@herb-tools/core@npm:0.9.5"
-  checksum: 10c0/622165472655d5e41a3dcd4c0275308d374225d82c2cb6cc9c16643e7053c01f1df4499a3fb396804b19f079bf6204384237998c73587d46175e1c896cb9a021
   languageName: node
   linkType: hard
 
@@ -176,54 +157,42 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@herb-tools/highlighter@npm:0.9.5":
-  version: 0.9.5
-  resolution: "@herb-tools/highlighter@npm:0.9.5"
+"@herb-tools/highlighter@npm:0.9.6":
+  version: 0.9.6
+  resolution: "@herb-tools/highlighter@npm:0.9.6"
   dependencies:
-    "@herb-tools/core": "npm:0.9.5"
-    "@herb-tools/node-wasm": "npm:0.9.5"
+    "@herb-tools/core": "npm:0.9.6"
+    "@herb-tools/node-wasm": "npm:0.9.6"
   bin:
     herb-highlight: bin/herb-highlight
-  checksum: 10c0/7fb109a38d3dc9e42d2cf08b0fd3b61e4eb63f472bf5b0a5ae89783b1cfc7f517bb801efd9e6bc99ca09e9ea631e53c47c6b37d8823a314a2a7888247780eaad
+  checksum: 10c0/18a39f5067a5a1022c6c8b6d15f936e7c22141fdfe4ad2758ff05adddc6a9579c1ee824e7272acc584f80a7046adcc397d97466b3817dd4b3178aee7b69a41b8
   languageName: node
   linkType: hard
 
-"@herb-tools/linter@npm:^0.9.5":
-  version: 0.9.5
-  resolution: "@herb-tools/linter@npm:0.9.5"
+"@herb-tools/linter@npm:^0.9.6":
+  version: 0.9.6
+  resolution: "@herb-tools/linter@npm:0.9.6"
   dependencies:
-    "@herb-tools/config": "npm:0.9.5"
-    "@herb-tools/core": "npm:0.9.5"
-    "@herb-tools/highlighter": "npm:0.9.5"
-    "@herb-tools/node-wasm": "npm:0.9.5"
-    "@herb-tools/printer": "npm:0.9.5"
-    "@herb-tools/rewriter": "npm:0.9.5"
+    "@herb-tools/config": "npm:0.9.6"
+    "@herb-tools/core": "npm:0.9.6"
+    "@herb-tools/highlighter": "npm:0.9.6"
+    "@herb-tools/node-wasm": "npm:0.9.6"
+    "@herb-tools/printer": "npm:0.9.6"
+    "@herb-tools/rewriter": "npm:0.9.6"
     picomatch: "npm:^4.0.4"
     tinyglobby: "npm:^0.2.15"
   bin:
     herb-lint: bin/herb-lint
-  checksum: 10c0/bc8ec28093984299f641049427d2d9a4ab04decff218c2aa577cdb687c7699a58f6d3ae139a8801cf9282347ad2f91a55b9ea87e7f5ac2dfb10efa02e698f4fa
+  checksum: 10c0/65f619b175a21157fb73ada8cdf65188a7d3ac73c222edde74e3e738bd0a9edaf19dbce9c22399c43afb5e8ff3e10da403e073bdd65dd4b50ef523872f94bb2a
   languageName: node
   linkType: hard
 
-"@herb-tools/node-wasm@npm:0.9.5":
-  version: 0.9.5
-  resolution: "@herb-tools/node-wasm@npm:0.9.5"
+"@herb-tools/node-wasm@npm:0.9.6":
+  version: 0.9.6
+  resolution: "@herb-tools/node-wasm@npm:0.9.6"
   dependencies:
-    "@herb-tools/core": "npm:0.9.5"
-  checksum: 10c0/4936bbc6f89377469fc4a32ba5599faa32764f2d044c0e34388e72d2ce3f1a87a45d92f9f3df9cd146576e8e3388c203d9bad3664e1ec0cdc5fc49d6b0b1e1f5
-  languageName: node
-  linkType: hard
-
-"@herb-tools/printer@npm:0.9.5":
-  version: 0.9.5
-  resolution: "@herb-tools/printer@npm:0.9.5"
-  dependencies:
-    "@herb-tools/core": "npm:0.9.5"
-    tinyglobby: "npm:^0.2.15"
-  bin:
-    herb-print: bin/herb-print
-  checksum: 10c0/6dd597fa5f3a40d3934497b5a4e0a59f21416d9eb234726194397a4703c4f509be8af27d027a45e07a0d1b96354e7d6c9930cb52467555841ff7893053ca0edd
+    "@herb-tools/core": "npm:0.9.6"
+  checksum: 10c0/effb9f63b4c8273228045c0afd07653a71123e7a7e87449f7bfbd4de061587deb19da624eccf96798111ef8772963e4139c5c9de23ddede64005294400c9f8bf
   languageName: node
   linkType: hard
 
@@ -239,17 +208,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@herb-tools/rewriter@npm:0.9.5":
-  version: 0.9.5
-  resolution: "@herb-tools/rewriter@npm:0.9.5"
-  dependencies:
-    "@herb-tools/core": "npm:0.9.5"
-    "@herb-tools/tailwind-class-sorter": "npm:0.9.5"
-    tinyglobby: "npm:^0.2.15"
-  checksum: 10c0/cb601e2d5b0d321025c64ec4eb0b26f1da622a310c4e83de26ad75dcb2857c9346d55becf4e1be5266742c0448c7423aa5a4daccf4a10e443ebc9807e7fdc747
-  languageName: node
-  linkType: hard
-
 "@herb-tools/rewriter@npm:0.9.6":
   version: 0.9.6
   resolution: "@herb-tools/rewriter@npm:0.9.6"
@@ -258,21 +216,6 @@ __metadata:
     "@herb-tools/tailwind-class-sorter": "npm:0.9.6"
     tinyglobby: "npm:^0.2.15"
   checksum: 10c0/ced948b76aa67077d991d440233f413f5d9f0abfedf727538f5cb8bf5639c212726d78b806e5e497b41807dd802a7e4809ea34fc75c70f13e62aaba89045d7ca
-  languageName: node
-  linkType: hard
-
-"@herb-tools/tailwind-class-sorter@npm:0.9.5":
-  version: 0.9.5
-  resolution: "@herb-tools/tailwind-class-sorter@npm:0.9.5"
-  dependencies:
-    clear-module: "npm:^4.1.2"
-    escalade: "npm:^3.2.0"
-    jiti: "npm:^2.5.1"
-    postcss: "npm:^8.5.8"
-    postcss-import: "npm:^16.1.1"
-  peerDependencies:
-    tailwindcss: ^3.0 || ^4.0
-  checksum: 10c0/aa7fb24dcfa0cc39790e4a0a1367663c21302dce9cae79b7b9229983612ca47b517c81bd5cbdb20d13fb6162b738be1ce52c37a3a5c85c94e2534b68178d37d2
   languageName: node
   linkType: hard
 
@@ -1650,7 +1593,7 @@ __metadata:
     "@eslint/js": "npm:^10.0.1"
     "@fortawesome/fontawesome-free": "npm:^7.2.0"
     "@herb-tools/formatter": "npm:^0.9.6"
-    "@herb-tools/linter": "npm:^0.9.5"
+    "@herb-tools/linter": "npm:^0.9.6"
     "@hotwired/stimulus": "npm:^3.2.2"
     "@hotwired/turbo-rails": "npm:^8.0.23"
     "@rails/actioncable": "npm:^8.1.300"
