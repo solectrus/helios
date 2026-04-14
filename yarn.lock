@@ -135,6 +135,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@herb-tools/config@npm:0.9.6":
+  version: 0.9.6
+  resolution: "@herb-tools/config@npm:0.9.6"
+  dependencies:
+    "@herb-tools/core": "npm:0.9.6"
+    picomatch: "npm:^4.0.4"
+    tinyglobby: "npm:^0.2.16"
+    yaml: "npm:^2.8.3"
+  checksum: 10c0/ebdbb4acbaa99cbd711c253f677a6bb2747f796c53f4b53d3462801f35f1619ddc97e3023bdf3f75338dd26e3ebbe1ba65a6a6c492b647552b8c42cbe09edb0b
+  languageName: node
+  linkType: hard
+
 "@herb-tools/core@npm:0.9.5":
   version: 0.9.5
   resolution: "@herb-tools/core@npm:0.9.5"
@@ -142,18 +154,25 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@herb-tools/formatter@npm:^0.9.5":
-  version: 0.9.5
-  resolution: "@herb-tools/formatter@npm:0.9.5"
+"@herb-tools/core@npm:0.9.6":
+  version: 0.9.6
+  resolution: "@herb-tools/core@npm:0.9.6"
+  checksum: 10c0/910cb8dedc2d1db2b22749cadb8a4cac5f841e982450dc82b2b8008eb92b63403da4a6da3a575d29e8c57b71036843d8523be0b86f19c3a7bca2980a640c7314
+  languageName: node
+  linkType: hard
+
+"@herb-tools/formatter@npm:^0.9.6":
+  version: 0.9.6
+  resolution: "@herb-tools/formatter@npm:0.9.6"
   dependencies:
-    "@herb-tools/config": "npm:0.9.5"
-    "@herb-tools/core": "npm:0.9.5"
-    "@herb-tools/printer": "npm:0.9.5"
-    "@herb-tools/rewriter": "npm:0.9.5"
+    "@herb-tools/config": "npm:0.9.6"
+    "@herb-tools/core": "npm:0.9.6"
+    "@herb-tools/printer": "npm:0.9.6"
+    "@herb-tools/rewriter": "npm:0.9.6"
     tinyglobby: "npm:^0.2.15"
   bin:
     herb-format: bin/herb-format
-  checksum: 10c0/9f7a10228df700f5fe9444ace85e87158cc66fc1aca8b3c23fdd63d4746b77f05189a091ee7036cd07bd80149be2f3add9fca056f7ff83db6fd3d8ebc4910342
+  checksum: 10c0/ce9c0dca49331fa50ed778ddd4f8f56f82fd0ef74c411c711e448950c3aa1e585c0b940721b62f98a04cf1f1b685744f914059f0543f77afd13d47a000794ad5
   languageName: node
   linkType: hard
 
@@ -208,6 +227,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@herb-tools/printer@npm:0.9.6":
+  version: 0.9.6
+  resolution: "@herb-tools/printer@npm:0.9.6"
+  dependencies:
+    "@herb-tools/core": "npm:0.9.6"
+    tinyglobby: "npm:^0.2.15"
+  bin:
+    herb-print: bin/herb-print
+  checksum: 10c0/b64bb7dbb5bf3608d6ca9b929579b43ec88ce8662ec5958c95b7b17dec35ff62ef6fce6473ce3eb7a1a56e69f530bf144de20f8aaca074acdf862f39b7043231
+  languageName: node
+  linkType: hard
+
 "@herb-tools/rewriter@npm:0.9.5":
   version: 0.9.5
   resolution: "@herb-tools/rewriter@npm:0.9.5"
@@ -216,6 +247,17 @@ __metadata:
     "@herb-tools/tailwind-class-sorter": "npm:0.9.5"
     tinyglobby: "npm:^0.2.15"
   checksum: 10c0/cb601e2d5b0d321025c64ec4eb0b26f1da622a310c4e83de26ad75dcb2857c9346d55becf4e1be5266742c0448c7423aa5a4daccf4a10e443ebc9807e7fdc747
+  languageName: node
+  linkType: hard
+
+"@herb-tools/rewriter@npm:0.9.6":
+  version: 0.9.6
+  resolution: "@herb-tools/rewriter@npm:0.9.6"
+  dependencies:
+    "@herb-tools/core": "npm:0.9.6"
+    "@herb-tools/tailwind-class-sorter": "npm:0.9.6"
+    tinyglobby: "npm:^0.2.15"
+  checksum: 10c0/ced948b76aa67077d991d440233f413f5d9f0abfedf727538f5cb8bf5639c212726d78b806e5e497b41807dd802a7e4809ea34fc75c70f13e62aaba89045d7ca
   languageName: node
   linkType: hard
 
@@ -231,6 +273,21 @@ __metadata:
   peerDependencies:
     tailwindcss: ^3.0 || ^4.0
   checksum: 10c0/aa7fb24dcfa0cc39790e4a0a1367663c21302dce9cae79b7b9229983612ca47b517c81bd5cbdb20d13fb6162b738be1ce52c37a3a5c85c94e2534b68178d37d2
+  languageName: node
+  linkType: hard
+
+"@herb-tools/tailwind-class-sorter@npm:0.9.6":
+  version: 0.9.6
+  resolution: "@herb-tools/tailwind-class-sorter@npm:0.9.6"
+  dependencies:
+    clear-module: "npm:^4.1.2"
+    escalade: "npm:^3.2.0"
+    jiti: "npm:^2.5.1"
+    postcss: "npm:^8.5.8"
+    postcss-import: "npm:^16.1.1"
+  peerDependencies:
+    tailwindcss: ^3.0 || ^4.0
+  checksum: 10c0/d0ee2416c976f84f5ba48707ca87b786916ce3637671187a20ef4b2ae6f0a9b775a024efb070d80502e61522531aca8238ed780ce42a6cbbf9a17aae0083afd0
   languageName: node
   linkType: hard
 
@@ -1592,7 +1649,7 @@ __metadata:
   dependencies:
     "@eslint/js": "npm:^10.0.1"
     "@fortawesome/fontawesome-free": "npm:^7.2.0"
-    "@herb-tools/formatter": "npm:^0.9.5"
+    "@herb-tools/formatter": "npm:^0.9.6"
     "@herb-tools/linter": "npm:^0.9.5"
     "@hotwired/stimulus": "npm:^3.2.2"
     "@hotwired/turbo-rails": "npm:^8.0.23"
