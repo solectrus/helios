@@ -18,7 +18,7 @@ module ApplicationCable
     end
 
     def subscriber_locale
-      UserPreferences.new(cookies).locale.to_sym
+      UserPreferences.new(cookies).resolved_locale(request.env['HTTP_ACCEPT_LANGUAGE'])
     end
   end
 end

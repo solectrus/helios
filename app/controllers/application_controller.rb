@@ -44,7 +44,7 @@ class ApplicationController < ActionController::Base
   end
 
   def set_locale
-    I18n.locale = preferences.locale.to_sym
+    I18n.locale = preferences.resolved_locale(request.headers['Accept-Language'])
   end
 
   def set_time_zone

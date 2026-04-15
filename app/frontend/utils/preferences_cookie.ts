@@ -22,7 +22,7 @@ function readPreferences(): Preferences {
 }
 
 export function readLocale(): string {
-  return readPreferences().locale ?? 'en';
+  return readPreferences().locale ?? (document.documentElement.lang || 'en');
 }
 
 export function updatePreferences(updates: Partial<Preferences>) {
