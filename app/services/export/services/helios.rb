@@ -24,7 +24,7 @@ module Export
           image: IMAGE,
           environment: ENVIRONMENT,
           volumes: [
-            '/opt/solectrus:/data',
+            '.:/data',
             '/var/run/docker.sock:/var/run/docker.sock',
           ],
           ports: ['3999:3000'],

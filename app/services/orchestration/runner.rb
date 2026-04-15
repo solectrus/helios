@@ -57,7 +57,7 @@ module Orchestration
 
         compose = ::Compose.load
         image = compose.services.find(SELF_SERVICE).image
-        host_path = host_data_path(compose)
+        host_path = host_data_path
         compose_args = self_recreate_compose_args(host_path)
 
         cmd = [
@@ -206,12 +206,17 @@ module Orchestration
         )
       end
 
-      # Extract the host-side path of the data volume from the
-      # Helios service definition in compose.yaml.
-      def host_data_path(compose)
-        helios = compose.services.find(SELF_SERVICE)
-        volume = helios&.volumes&.find { |v| v.end_with?(":#{data_path}") }
-        volume&.split(':')&.first || data_path
+      # Resolve the absolute host-side path of the data volume by asking
+      # Docker for the Helios container's mount source. This works for
+      # any volume spec the user wrote (absolute, relative, symlinked).
+      def host_data_path
+        container = Orchestration::Container.find(SELF_SERVICE)
+        raise CommandError, 'Helios container not found' unless container
+
+        source = container.mount_source(data_path)
+        raise CommandError, "No host mount found for #{data_path}" unless source
+
+        source
       end
 
       def services_except_self

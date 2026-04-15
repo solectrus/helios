@@ -31,7 +31,7 @@ class StartupCheck
         name: 'Data path',
         message:
           "Directory '#{data_path}' does not exist. " \
-          "Add this to your volumes: - /opt/solectrus:#{data_path}",
+          "Add this to your volumes: - .:#{data_path}",
       )
     end
 

@@ -42,7 +42,7 @@ helios:
     - ADMIN_PASSWORD
     - SECRET_KEY_BASE
   volumes:
-    - /opt/solectrus:/data
+    - .:/data
     - /var/run/docker.sock:/var/run/docker.sock
   ports:
     - 3999:3000

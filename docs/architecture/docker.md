@@ -28,7 +28,7 @@ Helios needs read/write access to:
 ```yaml
 volumes:
   - /var/run/docker.sock:/var/run/docker.sock
-  - /opt/solectrus:/data # or wherever SOLECTRUS lives
+  - .:/data # Compose resolves this relative to the compose.yaml location
 ```
 
 ---

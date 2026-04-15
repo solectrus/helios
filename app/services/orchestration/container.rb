@@ -154,6 +154,13 @@ module Orchestration
       first_binding&.dig('HostPort')&.to_i
     end
 
+    # Host path for a given mount destination inside the container.
+    # Returns nil if the destination is not mounted.
+    def mount_source(destination)
+      mount = inspect_data&.dig('Mounts')&.find { |m| m['Destination'] == destination }
+      mount&.dig('Source')
+    end
+
     def stop_and_remove!
       raw_container.stop
       raw_container.remove
