@@ -187,7 +187,7 @@ module Orchestration
     end
 
     def listen_once(reconnecting)
-      Orchestration.configure!
+      Orchestration::Connection.configure!
       if reconnecting
         log_reconnect
         Orchestration::StackStatus.refresh!

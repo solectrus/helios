@@ -21,7 +21,19 @@ Helios eliminates the need to manually edit configuration files or understand Do
 
 ## Adding Helios to an existing SOLECTRUS installation
 
-Add the following service to your `compose.yaml`:
+### 1. Set the project name
+
+Helios requires the Docker Compose project to be named `solectrus`. Add this line at the top of your `compose.yaml` (if it is not already there):
+
+```yaml
+name: solectrus
+```
+
+Without it, Helios will refuse to start and show a clear error message.
+
+### 2. Add the Helios service
+
+Append the following to your `compose.yaml`:
 
 ```yaml
 helios:
@@ -42,10 +54,13 @@ Running as `root` is required to access the Docker socket and manage containers 
 
 No changes to `.env` are needed — `ADMIN_PASSWORD` and `SECRET_KEY_BASE` are reused from your existing SOLECTRUS setup.
 
-After updating, start Helios:
+### 3. Recreate the stack
+
+Because adding `name: solectrus` changes the Compose project identity, recreate all containers so they are labeled correctly:
 
 ```bash
-docker compose up -d helios
+docker compose down
+docker compose up -d
 ```
 
 Helios is then available at `http://<your-host>:3999`.

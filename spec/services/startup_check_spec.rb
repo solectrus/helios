@@ -87,6 +87,44 @@ RSpec.describe StartupCheck do
       end
     end
 
+    context 'when compose file has the wrong project name' do
+      before do
+        allow(File).to receive(:directory?).and_call_original
+        allow(File).to receive(:directory?).with(Rails.configuration.data_path).and_return(true)
+        allow(File).to receive(:writable?).and_call_original
+        allow(File).to receive(:writable?).with(Rails.configuration.data_path).and_return(true)
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with(match(%r{/(compose|docker-compose)\.(yaml|yml)$})).and_return(true)
+        allow(File).to receive(:exist?).with(match(/\.env$/)).and_return(true)
+        allow(YAML).to receive(:safe_load_file).and_return({ 'name' => 'wrong' })
+      end
+
+      it 'reports compose project name mismatch' do
+        failures = described_class.run
+        failure = failures.find { |c| c.name == 'Compose project name' }
+        expect(failure).not_to be_nil
+        expect(failure.message).to include('solectrus')
+      end
+    end
+
+    context 'when compose file has no project name' do
+      before do
+        allow(File).to receive(:directory?).and_call_original
+        allow(File).to receive(:directory?).with(Rails.configuration.data_path).and_return(true)
+        allow(File).to receive(:writable?).and_call_original
+        allow(File).to receive(:writable?).with(Rails.configuration.data_path).and_return(true)
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with(match(%r{/(compose|docker-compose)\.(yaml|yml)$})).and_return(true)
+        allow(File).to receive(:exist?).with(match(/\.env$/)).and_return(true)
+        allow(YAML).to receive(:safe_load_file).and_return({ 'services' => {} })
+      end
+
+      it 'reports compose project name missing' do
+        failures = described_class.run
+        expect(failures.map(&:name)).to include('Compose project name')
+      end
+    end
+
     it 'skips Docker checks outside production' do
       failures = described_class.run
       names = failures.map(&:name)

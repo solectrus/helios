@@ -32,7 +32,7 @@ module Orchestration
 
       def with_docker_connection(project: nil)
         Orchestration::Connection.configure!
-        project ||= Orchestration.default_project
+        project ||= Orchestration::PROJECT_NAME
         return nil unless project
 
         yield(project)

@@ -6,6 +6,7 @@ class StartupCheck
       checks = []
       checks << check_data_path
       checks << check_compose_file
+      checks << check_compose_project_name
       checks << check_env_file
       checks << check_data_writable
 
@@ -49,6 +50,30 @@ class StartupCheck
           "No compose file found in '#{data_path}'. " \
           "The volume should point to the directory containing your #{Compose::FILENAMES.first}.",
       )
+    end
+
+    def check_compose_project_name
+      return unless File.directory?(data_path)
+
+      compose_file = existing_compose_file
+      return unless compose_file
+
+      config = YAML.safe_load_file(compose_file) || {}
+      return if config['name'] == Orchestration::PROJECT_NAME
+
+      Check.new(name: 'Compose project name', message: compose_project_name_message(compose_file))
+    rescue Psych::SyntaxError => e
+      Check.new(name: 'Compose project name', message: "Could not parse compose file: #{e.message}")
+    end
+
+    def existing_compose_file
+      Compose::FILENAMES.map { |filename| File.join(data_path, filename) }.find { |path| File.exist?(path) }
+    end
+
+    def compose_project_name_message(compose_file)
+      "The top-level `name:` in '#{compose_file}' must be set to " \
+        "'#{Orchestration::PROJECT_NAME}'. Add this line to your compose file: " \
+        "name: #{Orchestration::PROJECT_NAME}"
     end
 
     def check_env_file
