@@ -55,7 +55,7 @@
 /stack/influxdb
 /stack/redis
 /stack/compose.yaml
-/stack/config.yaml
+/stack/helios
 
 # Ignore ESLint cache
 .eslintcache

@@ -7,9 +7,11 @@ module ConfigurationHelpers
     end
 
     @config_yaml_dir = Dir.mktmpdir
-    path = File.join(@config_yaml_dir, Configuration::YAML_FILENAME)
-    File.write(path, YAML.dump(data)) if data.present?
     allow(Rails.configuration).to receive(:data_path).and_return(@config_yaml_dir)
+    if data.present?
+      FileUtils.mkdir_p(File.dirname(Configuration.path))
+      File.write(Configuration.path, YAML.dump(data))
+    end
     @config_yaml_dir
   end
 

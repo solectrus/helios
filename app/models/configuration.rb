@@ -47,11 +47,12 @@ class Configuration
     end
   end
 
+  def self.path
+    File.join(Rails.configuration.data_path, 'helios', YAML_FILENAME)
+  end
+
   def self.current
-    Current.configuration ||= begin
-      path = File.join(Rails.configuration.data_path, YAML_FILENAME)
-      new(path)
-    end
+    Current.configuration ||= new(path)
   end
 
   def self.singleton?(setting)

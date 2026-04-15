@@ -21,8 +21,7 @@ class ApplicationController < ActionController::Base
   end
 
   def config_yaml_exists?
-    data_path = Rails.configuration.data_path
-    File.exist?(File.join(data_path, Configuration::YAML_FILENAME))
+    File.exist?(Configuration.path)
   end
 
   def existing_stack_files?
