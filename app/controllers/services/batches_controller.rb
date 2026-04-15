@@ -1,20 +1,13 @@
 module Services
   class BatchesController < ApplicationController
-    # POST /services/batch - Start all services, or restart only pending ones
+    # POST /services/batch - Start all services (also recreates containers
+    # whose config has changed, since `docker compose up` is idempotent).
     def create
-      pending = Orchestration::StackStatus.pending_restart_services
       Orchestration::StackStatus.mark_starting!
+      ComposeJob.perform_later(:up)
 
-      if pending.any?
-        pending.each { |name| ComposeJob.perform_later(:recreate, name) }
-        respond_with_pending_status(:starting) do |cs, _|
-          pending.include?(cs.name)
-        end
-      else
-        ComposeJob.perform_later(:up)
-        respond_with_pending_status(:starting) do |_, container|
-          !container&.running?
-        end
+      respond_with_pending_status(:starting) do |_, container|
+        !container&.running?
       end
     end
 
