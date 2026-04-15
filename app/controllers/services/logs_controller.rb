@@ -1,5 +1,7 @@
 module Services
   class LogsController < BaseController
+    skip_before_action :require_turbo_frame, if: -> { params[:until].present? }
+
     TAIL_LINES = 200
 
     def show

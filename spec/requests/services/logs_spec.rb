@@ -30,11 +30,17 @@ RSpec.describe 'Services::Logs', :with_admin_password do
     it 'renders the full log view' do
       mock_logs("influxdb-1  | 2024-03-23T14:30:05.000000000Z started\n")
 
-      get service_log_path(service_id: 'influxdb')
+      get service_log_path(service_id: 'influxdb'), headers: turbo_frame_headers
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('turbo-frame')
       expect(response.body).to include('15:30:05') # UTC+1 (Europe/Berlin, CET)
+    end
+
+    it 'redirects non-frame requests to services' do
+      get service_log_path(service_id: 'influxdb')
+
+      expect(response).to redirect_to(services_path)
     end
 
     context 'with until parameter' do
@@ -91,7 +97,7 @@ RSpec.describe 'Services::Logs', :with_admin_password do
       end
 
       it 'renders error in the full view' do
-        get service_log_path(service_id: 'influxdb')
+        get service_log_path(service_id: 'influxdb'), headers: turbo_frame_headers
 
         expect(response).to have_http_status(:ok)
         expect(response.body).to include('error output')

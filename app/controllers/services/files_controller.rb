@@ -1,5 +1,5 @@
 module Services
-  class FilesController < ApplicationController
+  class FilesController < BaseController
     before_action :require_expert_mode
 
     ALLOWED_FILES = {

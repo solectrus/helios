@@ -2,6 +2,7 @@ module Configurations
   class SettingsController < ApplicationController
     before_action :set_configuration
     before_action :validate_setting
+    before_action :redirect_non_frame_requests, only: %i[new edit]
 
     def new
       if sensor_setting?
@@ -59,6 +60,12 @@ module Configurations
 
     def set_configuration
       @configuration = Configuration.current
+    end
+
+    def redirect_non_frame_requests
+      return if turbo_frame_request?
+
+      redirect_to redirect_target
     end
 
     def validate_setting

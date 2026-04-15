@@ -41,7 +41,7 @@ RSpec.describe 'Services::Rows', :with_admin_password do
       container = mock_container('influxdb', running: true)
       allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(container)
 
-      get service_row_path(service_id: 'influxdb')
+      get service_row_path(service_id: 'influxdb'), headers: turbo_frame_headers
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('influxdb')
@@ -52,7 +52,7 @@ RSpec.describe 'Services::Rows', :with_admin_password do
       container = mock_container('redis', running: false)
       allow(Orchestration::Container).to receive(:find).with('redis').and_return(container)
 
-      get service_row_path(service_id: 'redis')
+      get service_row_path(service_id: 'redis'), headers: turbo_frame_headers
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('redis')
@@ -62,10 +62,16 @@ RSpec.describe 'Services::Rows', :with_admin_password do
       mock_compose_service('postgresql')
       allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(nil)
 
-      get service_row_path(service_id: 'postgresql')
+      get service_row_path(service_id: 'postgresql'), headers: turbo_frame_headers
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('postgresql')
+    end
+
+    it 'redirects non-frame requests to services' do
+      get service_row_path(service_id: 'influxdb')
+
+      expect(response).to redirect_to(services_path)
     end
   end
 end

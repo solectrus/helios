@@ -6,14 +6,15 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
   describe 'GET /configuration/settings/new' do
     it 'renders the survey form for a sensor' do
-      get new_configuration_setting_path(setting: 'sensor', name: 'inverter_power')
+      get new_configuration_setting_path(setting: 'sensor', name: 'inverter_power'),
+          headers: turbo_frame_headers
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('survey')
     end
 
     it 'renders the survey form for a singleton' do
-      get new_configuration_setting_path(setting: 'system')
+      get new_configuration_setting_path(setting: 'system'), headers: turbo_frame_headers
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('survey')
@@ -23,6 +24,18 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       get new_configuration_setting_path(setting: 'nonexistent')
 
       expect(response).to redirect_to(sensors_path)
+    end
+
+    it 'redirects non-frame requests to the sensor page for sensor settings' do
+      get new_configuration_setting_path(setting: 'sensor', name: 'inverter_power')
+
+      expect(response).to redirect_to(sensors_path)
+    end
+
+    it 'redirects non-frame requests to the advanced page for singleton settings' do
+      get new_configuration_setting_path(setting: 'system')
+
+      expect(response).to redirect_to(advanced_path)
     end
   end
 
@@ -66,7 +79,8 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       config = Configuration.current
       config.update_sensor('inverter_power', { 'source' => 'senec' })
 
-      get edit_configuration_setting_path(setting: 'sensor', name: 'inverter_power')
+      get edit_configuration_setting_path(setting: 'sensor', name: 'inverter_power'),
+          headers: turbo_frame_headers
 
       expect(response).to have_http_status(:ok)
     end
@@ -79,7 +93,8 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
                              'field' => 'wrong_field',
                            })
 
-      get edit_configuration_setting_path(setting: 'sensor', name: 'inverter_power')
+      get edit_configuration_setting_path(setting: 'sensor', name: 'inverter_power'),
+          headers: turbo_frame_headers
 
       expect(response.body).to include('&quot;SENEC&quot;')
       expect(response.body).to include('&quot;inverter_power&quot;')
@@ -95,7 +110,8 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
                              'field' => 'inverter_power',
                            })
 
-      get edit_configuration_setting_path(setting: 'sensor', name: 'inverter_power')
+      get edit_configuration_setting_path(setting: 'sensor', name: 'inverter_power'),
+          headers: turbo_frame_headers
 
       expect(response.body).to include('&quot;MySENEC&quot;')
     end
@@ -104,7 +120,8 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       config = Configuration.current
       config.update('system', { 'timezone' => 'UTC' })
 
-      get edit_configuration_setting_path(setting: 'system', name: 'system')
+      get edit_configuration_setting_path(setting: 'system', name: 'system'),
+          headers: turbo_frame_headers
 
       expect(response).to have_http_status(:ok)
     end
