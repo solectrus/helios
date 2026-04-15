@@ -30,12 +30,13 @@ RSpec.describe 'Starts' do
       end
     end
 
-    context 'when config.yaml does not exist' do
+    context 'when config.yaml does not exist' do # rubocop:disable RSpec/MultipleMemoizedHelpers
       let(:dir) { with_config_yaml }
       let(:compose_content) { "services:\n  dashboard:\n    image: test:latest\n" }
       let(:env_content) { "TZ=Europe/Berlin\n" }
       let(:stack_reader) { instance_double(Import::StackReader) }
       let(:importer) { instance_double(Import::ConfigurationImporter) }
+      let(:builder) { instance_double(Export::Builder, write!: nil) }
 
       before do
         File.write(File.join(dir, 'compose.yaml'), compose_content)
@@ -44,6 +45,7 @@ RSpec.describe 'Starts' do
         allow(Import::StackReader).to receive(:new).and_return(stack_reader)
         allow(Import::ConfigurationImporter).to receive(:new).with(stack_reader).and_return(importer)
         allow(importer).to receive(:import!)
+        allow(Export::Builder).to receive(:new).and_return(builder)
       end
 
       it 'creates backup files' do
@@ -57,6 +59,12 @@ RSpec.describe 'Starts' do
         post start_path
 
         expect(importer).to have_received(:import!)
+      end
+
+      it 'rewrites compose.yaml and .env after import' do
+        post start_path
+
+        expect(builder).to have_received(:write!)
       end
 
       it 'redirects to services' do

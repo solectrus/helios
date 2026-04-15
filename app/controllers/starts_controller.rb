@@ -8,6 +8,7 @@ class StartsController < ApplicationController
   def create
     StackBackup.create!
     import_existing_config!
+    Export::Builder.new(Configuration.current).write!
 
     redirect_to services_path
   end
