@@ -38,7 +38,6 @@ Append the following to your `compose.yaml`:
 ```yaml
 helios:
   image: ghcr.io/solectrus/helios:develop
-  user: root
   environment:
     - ADMIN_PASSWORD
     - SECRET_KEY_BASE
@@ -49,8 +48,6 @@ helios:
     - 3999:3000
   restart: unless-stopped
 ```
-
-Running as `root` is required to access the Docker socket and manage containers on the host.
 
 No changes to `.env` are needed — `ADMIN_PASSWORD` and `SECRET_KEY_BASE` are reused from your existing SOLECTRUS setup.
 

@@ -22,7 +22,6 @@ module Export
       def to_h
         {
           image: IMAGE,
-          user: 'root',
           environment: ENVIRONMENT,
           volumes: [
             '/opt/solectrus:/data',

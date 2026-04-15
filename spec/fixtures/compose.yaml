@@ -124,7 +124,6 @@ services:
   # Configuration management UI
   helios:
     image: ghcr.io/solectrus/helios:develop
-    user: root
     environment:
       ADMIN_PASSWORD: '${ADMIN_PASSWORD}'
       SECRET_KEY_BASE: '${SECRET_KEY_BASE}'

@@ -94,9 +94,7 @@ class StartupCheck
 
       Check.new(
         name: 'Data path writable',
-        message:
-          "Directory '#{data_path}' is not writable. " \
-          'Add this to your compose.yaml: user: root',
+        message: "Directory '#{data_path}' is not writable.",
       )
     end
 
@@ -123,9 +121,7 @@ class StartupCheck
 
       Check.new(
         name: 'Docker connection',
-        message:
-          'Docker socket exists but connection failed. ' \
-          'Add this to your compose.yaml: user: root',
+        message: 'Docker socket exists but connection failed.',
       )
     rescue StandardError => e
       Check.new(
