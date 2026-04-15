@@ -141,6 +141,7 @@ GEM
     herb (0.9.6-arm64-darwin)
     herb (0.9.6-x86_64-linux-gnu)
     herb (0.9.6-x86_64-linux-musl)
+    http_accept_language (2.1.1)
     i18n (1.14.8)
       concurrent-ruby (~> 1.0)
     io-console (0.8.2)
@@ -416,6 +417,7 @@ DEPENDENCIES
   docker-api
   foreman
   herb
+  http_accept_language
   puma
   rack-brotli
   rails (~> 8.1.3)
@@ -492,6 +494,7 @@ CHECKSUMS
   herb (0.9.6-arm64-darwin) sha256=21e6c28d544f1474d5fc1c0c76d0a8f7be9e24dacc8d09c1bb58de2a56117de5
   herb (0.9.6-x86_64-linux-gnu) sha256=2ef21def65a62a54fd3f54eda8e225fbe44f0188b9c9fbc211e8a1c63e76a7c0
   herb (0.9.6-x86_64-linux-musl) sha256=e360cf8068e5d2803656dc537f707c9bd2e55eb1024aeaf8f584b0ad37d2db4f
+  http_accept_language (2.1.1) sha256=0043f0d55a148cf45b604dbdd197cb36437133e990016c68c892d49dbea31634
   i18n (1.14.8) sha256=285778639134865c5e0f6269e0b818256017e8cde89993fdfcbfb64d088824a5
   io-console (0.8.2) sha256=d6e3ae7a7cc7574f4b8893b4fca2162e57a825b223a177b7afa236c5ef9814cc
   irb (1.17.0) sha256=168c4ddb93d8a361a045c41d92b2952c7a118fa73f23fe14e55609eb7a863aae

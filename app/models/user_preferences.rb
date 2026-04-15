@@ -4,7 +4,6 @@ class UserPreferences
   DEFAULTS = {
     'expert_mode' => false,
     'hide_unused' => false,
-    'locale' => 'en',
   }.freeze
 
   def initialize(cookies)
@@ -21,7 +20,7 @@ class UserPreferences
   end
 
   def locale
-    @data.fetch('locale', DEFAULTS['locale'])
+    @data['locale']
   end
 
   private

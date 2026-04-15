@@ -18,7 +18,11 @@ module ApplicationCable
     end
 
     def subscriber_locale
-      UserPreferences.new(cookies).locale.to_sym
+      UserPreferences.new(cookies).locale&.to_sym ||
+        HttpAcceptLanguage::Parser.new(
+          request.env['HTTP_ACCEPT_LANGUAGE'],
+        ).compatible_language_from(I18n.available_locales) ||
+        I18n.default_locale
     end
   end
 end

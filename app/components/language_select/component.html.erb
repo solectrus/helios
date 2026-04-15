@@ -8,7 +8,7 @@
     <li>
       <button
         type="button"
-        class="justify-end <%= 'active font-bold' if preferences.locale == 'en' %>"
+        class="justify-end <%= 'active font-bold' if I18n.locale == :en %>"
         data-action="click->language-select--component#select"
         data-language-select--component-locale-param="en"
       >
@@ -19,7 +19,7 @@
     <li>
       <button
         type="button"
-        class="justify-end <%= 'active font-bold' if preferences.locale == 'de' %>"
+        class="justify-end <%= 'active font-bold' if I18n.locale == :de %>"
         data-action="click->language-select--component#select"
         data-language-select--component-locale-param="de"
       >
