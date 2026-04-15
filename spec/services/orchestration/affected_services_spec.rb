@@ -239,6 +239,19 @@ RSpec.describe Orchestration::AffectedServices do
         stored = JSON.parse(File.read(deployed_hashes_path))
         expect(stored).to eq('redis' => 'old_redis', 'influxdb' => 'bbb222')
       end
+
+      it 'prunes entries for services no longer in compose.yaml' do
+        write_deployed_hashes(
+          'redis' => 'old_redis',
+          'influxdb' => 'bbb222',
+          'obsolete' => 'xxx',
+        )
+
+        described_class.update_deployed_hash!('redis')
+
+        stored = JSON.parse(File.read(deployed_hashes_path))
+        expect(stored).not_to have_key('obsolete')
+      end
     end
 
     context 'when service is not in expected hashes' do

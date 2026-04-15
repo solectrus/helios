@@ -59,10 +59,13 @@ module Orchestration
       expected = Runner.config_hashes.except(Runner::SELF_SERVICE)
       hash = expected[service_name]
       return unless hash
-      return if deployed[service_name] == hash
 
-      deployed[service_name] = hash
-      ::File.write(deployed_hashes_path, deployed.to_json)
+      # Drop entries for services that no longer exist in compose.yaml
+      pruned = deployed.slice(*expected.keys)
+      pruned[service_name] = hash
+      return if pruned == deployed
+
+      ::File.write(deployed_hashes_path, pruned.to_json)
       Rails.cache.delete(CONFIG_HASH_CACHE_KEY)
       Rails.cache.delete(AFFECTED_CACHE_KEY)
     rescue StandardError => e
