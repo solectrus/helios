@@ -16,6 +16,7 @@ module Orchestration
     CACHE_TTL = 5.seconds
     CONFIG_HASH_CACHE_KEY = 'orchestration/config_hashes'.freeze
     AFFECTED_CACHE_KEY = 'orchestration/affected_services'.freeze
+    START_PENDING_CACHE_KEY = 'orchestration/start_pending_services'.freeze
 
     def self.compute
       Rails
@@ -23,15 +24,23 @@ module Orchestration
         .fetch(AFFECTED_CACHE_KEY, expires_in: CACHE_TTL) { new.compute }
     end
 
+    def self.start_pending
+      Rails
+        .cache
+        .fetch(START_PENDING_CACHE_KEY, expires_in: CACHE_TTL) do
+          new.start_pending
+        end
+    end
+
     def self.invalidate_cache
-      Rails.cache.delete(AFFECTED_CACHE_KEY)
+      invalidate_affected_caches
     end
 
     # Invalidate the expected config hashes and the derived affected-services
     # cache (stale config hashes make the affected-services cache meaningless).
     def self.invalidate_config_hashes
       Rails.cache.delete(CONFIG_HASH_CACHE_KEY)
-      Rails.cache.delete(AFFECTED_CACHE_KEY)
+      invalidate_affected_caches
     end
 
     # Persist the current expected config hashes as the "deployed" baseline.
@@ -41,11 +50,16 @@ module Orchestration
       hashes = Runner.config_hashes.except(Runner::SELF_SERVICE)
       Rails.cache.write(CONFIG_HASH_CACHE_KEY, hashes)
       ::File.write(deployed_hashes_path, hashes.to_json)
-      Rails.cache.delete(AFFECTED_CACHE_KEY)
+      invalidate_affected_caches
     rescue StandardError => e
       Rails.logger.error(
         "AffectedServices: failed to store deployed hashes: #{e.message}",
       )
+    end
+
+    def self.invalidate_affected_caches
+      Rails.cache.delete(AFFECTED_CACHE_KEY)
+      Rails.cache.delete(START_PENDING_CACHE_KEY)
     end
 
     # Update the deployed hash for a single service when its container
@@ -67,7 +81,7 @@ module Orchestration
 
       ::File.write(deployed_hashes_path, pruned.to_json)
       Rails.cache.delete(CONFIG_HASH_CACHE_KEY)
-      Rails.cache.delete(AFFECTED_CACHE_KEY)
+      invalidate_affected_caches
     rescue StandardError => e
       Rails.logger.error(
         "AffectedServices: failed to update deployed hash for #{service_name}: #{e.message}",
@@ -85,35 +99,43 @@ module Orchestration
     end
 
     def compute
+      categorize { |changed, containers| changed.select { |name| containers[name] } }
+    end
+
+    # Services that are defined in compose.yaml but have no container yet
+    # and whose config hash differs from (or is missing in) the deployed
+    # baseline — typically a service newly added via a configuration change
+    # (e.g. mqtt-collector after enabling the first MQTT topic).
+    def start_pending
+      categorize { |changed, containers| changed.reject { |name| containers[name] } }
+    end
+
+    private
+
+    def categorize
       expected = expected_hashes
       return [] if expected.empty?
 
       deployed = load_deployed_hashes
-      return seed_deployed_hashes(expected) if deployed.empty?
+      if deployed.empty?
+        seed_deployed_hashes(expected)
+        return []
+      end
 
-      compare_hashes(expected, deployed)
+      changed = changed_services(expected, deployed)
+      containers = Container.all.index_by(&:service_name)
+      yield(changed, containers)
     rescue Runner::CommandError, ConnectionError => e
       Rails.logger.error("AffectedServices: #{e.message}")
       []
     end
 
-    private
-
     def seed_deployed_hashes(expected)
       write_deployed_hashes(expected)
-      []
     end
 
-    def compare_hashes(expected, deployed)
-      containers = Container.all.index_by(&:service_name)
-
-      expected.filter_map do |name, hash|
-        container = containers[name]
-        next if container.nil?
-        next if deployed[name] == hash
-
-        name
-      end
+    def changed_services(expected, deployed)
+      expected.filter_map { |name, hash| name if deployed[name] != hash }
     end
 
     def expected_hashes

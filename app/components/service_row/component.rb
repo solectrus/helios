@@ -69,6 +69,7 @@ module ServiceRow
 
       dot = 'inline-block w-3 h-3 rounded-full'
       return "#{dot} bg-error" if error?
+      return "#{dot} bg-warning" if start_pending?
       if healthcheck_starting?
         return 'loading loading-spinner loading-xs text-success'
       end
@@ -79,7 +80,9 @@ module ServiceRow
     def status_label
       return t('.processing') if pending
       return error_message if error?
-      return t('.not_created') if container.nil?
+      if container.nil?
+        return start_pending? ? t('.start_pending') : t('.not_created')
+      end
 
       running? ? running_status_label : (status&.capitalize || t('.unknown'))
     end
@@ -96,6 +99,8 @@ module ServiceRow
       base = 'tooltip tooltip-left before:text-left before:text-xs'
       if error?
         "#{base} tooltip-error before:max-w-sm before:break-words"
+      elsif start_pending?
+        "#{base} tooltip-warning before:max-w-sm before:break-words"
       else
         "#{base} tooltip-info"
       end
@@ -109,6 +114,14 @@ module ServiceRow
       @restart_pending =
         !helios? && !pending &&
         Orchestration::AffectedServices.compute.include?(service_name)
+    end
+
+    def start_pending?
+      return @start_pending if defined?(@start_pending)
+
+      @start_pending =
+        !helios? && !pending && container.nil? &&
+        Orchestration::AffectedServices.start_pending.include?(service_name)
     end
 
     def row_class

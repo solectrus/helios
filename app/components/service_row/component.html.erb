@@ -81,9 +81,13 @@
           <% end %>
         </div>
         <div class="join">
-          <div id="<%= dom_id %>-start" class="tooltip tooltip-info join-item" data-tip="<%= t('.start') %>">
+          <div
+            id="<%= dom_id %>-start"
+            class="tooltip join-item <%= start_pending? ? 'tooltip-warning' : 'tooltip-info' %>"
+            data-tip="<%= start_pending? ? t('.start_pending') : t('.start') %>"
+          >
             <%= button_to service_task_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "startButton" } do %>
-              <i class="fa-solid fa-play"></i>
+              <i class="fa-solid fa-play <%= 'text-warning' if start_pending? %>"></i>
             <% end %>
           </div>
 
