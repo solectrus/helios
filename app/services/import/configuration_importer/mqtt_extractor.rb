@@ -4,9 +4,14 @@ module Import
       include Helpers
 
       MAPPING_FIELDS = %i[
-        topic measurement field json_key json_path json_formula
+        topic measurement field
         measurement_positive measurement_negative field_positive field_negative
+        json_key json_path json_formula formula
         type min max null_to_zero
+      ].freeze
+
+      SPLIT_FIELDS = %i[
+        measurement_positive measurement_negative field_positive field_negative
       ].freeze
 
       # Maps sensor names to the device type they indicate.
@@ -79,9 +84,51 @@ module Import
       private
 
       def parse_mappings(mqtt_env)
-        mapping_indices(mqtt_env).map do |i|
+        raw = mapping_indices(mqtt_env).map do |i|
           MAPPING_FIELDS.index_with { |f| mqtt_env["MAPPING_#{i}_#{f.upcase}"] }.compact
         end
+        raw.flat_map { |m| expand_sign_split(m) }
+      end
+
+      # mqtt-collector's sign-based splitting (MEASUREMENT_POSITIVE/NEGATIVE + FIELD_POSITIVE/NEGATIVE)
+      # writes one topic into two Influx locations. Helios models one sensor = one Influx target,
+      # so we expand such mappings into two sensors, each with a sign-filter formula that keeps
+      # only the matching half of the value.
+      def expand_sign_split(mapping)
+        return [mapping] if SPLIT_FIELDS.none? { |k| mapping[k].present? }
+
+        %i[positive negative].filter_map { |sign| build_split_variant(mapping, sign) }
+      end
+
+      def build_split_variant(mapping, sign)
+        measurement = mapping[:"measurement_#{sign}"]
+        field = mapping[:"field_#{sign}"]
+        return nil if measurement.blank? || field.blank?
+
+        variant = mapping.except(*SPLIT_FIELDS).merge(measurement:, field:)
+        apply_sign_filter!(variant, sign)
+        variant
+      end
+
+      # Rewrite value extraction so the collector only emits the matching half.
+      # The non-matching sign falls back to 0 (not NULL) so the time series stays gap-free —
+      # InfluxDB aggregations (MEAN, SUM, integrals) behave predictably only with continuous data.
+      def apply_sign_filter!(variant, sign)
+        target_key, reference = sign_filter_target(variant)
+        variant[target_key] = sign_formula(reference, sign)
+      end
+
+      def sign_filter_target(variant)
+        return :json_formula, "{#{variant.delete(:json_key)}}" if variant[:json_key].present?
+        return :json_formula, "{#{variant.delete(:json_path)}}" if variant[:json_path].present?
+        return :json_formula, "(#{variant[:json_formula]})" if variant[:json_formula].present?
+        return :formula, "(#{variant[:formula]})" if variant[:formula].present?
+
+        [:formula, '{value}']
+      end
+
+      def sign_formula(ref, sign)
+        sign == :positive ? "IF(#{ref} > 0, #{ref}, 0)" : "IF(#{ref} < 0, -#{ref}, 0)"
       end
 
       def mapping_indices(mqtt_env)

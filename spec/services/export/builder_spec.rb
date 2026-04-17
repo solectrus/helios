@@ -594,7 +594,7 @@ RSpec.describe Export::Builder do
                                     'mqtt_topic' => 'solar/inverter',
                                     'measurement' => 'PV',
                                     'field' => 'power',
-                                    'mqtt_payload_type' => 'json',
+                                    'mqtt_payload_type' => 'float',
                                     'mqtt_json_key' => 'value',
                                   })
       described_class.new(Configuration.current).write!
@@ -632,8 +632,72 @@ RSpec.describe Export::Builder do
       expect(env['MAPPING_0_TOPIC']).to eq('solar/inverter')
       expect(env['MAPPING_0_MEASUREMENT']).to eq('PV')
       expect(env['MAPPING_0_FIELD']).to eq('power')
-      expect(env['MAPPING_0_TYPE']).to eq('json')
+      expect(env['MAPPING_0_TYPE']).to eq('float')
       expect(env['MAPPING_0_JSON_KEY']).to eq('value')
+    end
+  end
+
+  describe 'with MQTT advanced mapping features' do
+    before do
+      configuration.update('mqtt', { 'mqtt_host' => '192.168.1.50' })
+      configuration.update_sensor('inverter_power', {
+                                    'source' => 'mqtt',
+                                    'mqtt_topic' => 'nested/json',
+                                    'measurement' => 'PV',
+                                    'field' => 'power',
+                                    'mqtt_payload_type' => 'float',
+                                    'mqtt_json_path' => '$.data.power',
+                                    'mqtt_min' => 0,
+                                    'mqtt_max' => 15_000,
+                                    'mqtt_null_to_zero' => true,
+                                  })
+      configuration.update_sensor('heatpump_power', {
+                                    'source' => 'mqtt',
+                                    'mqtt_topic' => 'heatpump/power',
+                                    'measurement' => 'Heatpump',
+                                    'field' => 'power',
+                                    'mqtt_payload_type' => 'integer',
+                                    'mqtt_formula' => 'round({value} * 1000)',
+                                  })
+      configuration.update_sensor('heatpump_heating_power', {
+                                    'source' => 'mqtt',
+                                    'mqtt_topic' => 'heatpump/state',
+                                    'measurement' => 'Heatpump',
+                                    'field' => 'heating_power',
+                                    'mqtt_payload_type' => 'float',
+                                    'mqtt_json_formula' => 'round({power} / 1000)',
+                                  })
+      described_class.new(Configuration.current).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'emits JSON_PATH, MIN, MAX and NULL_TO_ZERO for the first sensor' do
+      env = Env.load
+      expect(env['MAPPING_0_JSON_PATH']).to eq('$.data.power')
+      expect(env['MAPPING_0_MIN']).to eq('0')
+      expect(env['MAPPING_0_MAX']).to eq('15000')
+      expect(env['MAPPING_0_NULL_TO_ZERO']).to eq('true')
+    end
+
+    it 'emits FORMULA (not JSON_FORMULA) for string-based formula' do
+      env = Env.load
+      expect(env['MAPPING_1_FORMULA']).to eq('round({value} * 1000)')
+      expect(env['MAPPING_1_JSON_FORMULA']).to be_nil
+    end
+
+    it 'emits JSON_FORMULA for JSON-based formula' do
+      env = Env.load
+      expect(env['MAPPING_2_JSON_FORMULA']).to eq('round({power} / 1000)')
+      expect(env['MAPPING_2_FORMULA']).to be_nil
+    end
+
+    it 'skips NULL_TO_ZERO when false' do
+      updated = configuration.sensor_config('inverter_power').to_h.merge('mqtt_null_to_zero' => false)
+      configuration.update_sensor('inverter_power', updated)
+      described_class.new(Configuration.current).write!
+      env = Env.load
+      expect(env['MAPPING_0_NULL_TO_ZERO']).to be_nil
     end
   end
 

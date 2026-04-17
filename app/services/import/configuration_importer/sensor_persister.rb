@@ -3,6 +3,23 @@ module Import
     class SensorPersister
       include Helpers
 
+      # Maps mapping env-keys (symbol) to sensor-config keys (string).
+      # Sign-based splitting (measurement_positive/negative, field_positive/negative)
+      # is already expanded upstream by MqttExtractor — Helios models 1 sensor = 1 Influx target.
+      MQTT_MAPPING_TO_SENSOR_KEY = {
+        measurement: 'measurement',
+        field: 'field',
+        topic: 'mqtt_topic',
+        type: 'mqtt_payload_type',
+        json_key: 'mqtt_json_key',
+        json_path: 'mqtt_json_path',
+        json_formula: 'mqtt_json_formula',
+        formula: 'mqtt_formula',
+        min: 'mqtt_min',
+        max: 'mqtt_max',
+        null_to_zero: 'mqtt_null_to_zero',
+      }.freeze
+
       def initialize(sensors_data:, devices:, senec_enabled:, mqtt_mappings:)
         @sensors_data = sensors_data
         @devices = devices
@@ -142,14 +159,9 @@ module Import
           sensor_name = find_sensor_for_candidate(@sensors_data, candidate)
           next unless sensor_name
 
-          details[sensor_name] = {
-            'measurement' => mapping[:measurement],
-            'field' => mapping[:field],
-            'mqtt_topic' => mapping[:topic],
-            'mqtt_payload_type' => mapping[:type],
-            'mqtt_json_key' => mapping[:json_key],
-            'mqtt_formula' => mapping[:json_formula],
-          }.compact
+          details[sensor_name] = MQTT_MAPPING_TO_SENSOR_KEY
+                                 .to_h { |src, dst| [dst, mapping[src]] }
+                                 .compact
         end
       end
     end

@@ -16,6 +16,7 @@ module Configurations
       if sensor_setting?
         data = @configuration.sensor_config(sensor_name)
         normalize_fixed_source_mapping!(data)
+        inject_mqtt_ui_state!(data)
         render SettingForm::Component.new(setting: 'sensor', sensor_name:, data:)
       else
         data = @configuration.setting_data(setting)
@@ -119,6 +120,23 @@ module Configurations
 
       data['measurement'] = collector_measurement(source)
       data['field'] = SensorMappings.default_field(sensor_name, source)
+    end
+
+    # Derive UI-only state (extraction mode) from persisted MQTT fields.
+    # This key is stripped by sanitize_sensor_data on save, so it never touches config.yaml.
+    def inject_mqtt_ui_state!(data)
+      return unless data['source'] == 'mqtt'
+
+      data['mqtt_extraction_mode'] = mqtt_extraction_mode_from(data)
+    end
+
+    def mqtt_extraction_mode_from(data)
+      return 'json_key' if data['mqtt_json_key'].present?
+      return 'json_path' if data['mqtt_json_path'].present?
+      return 'json_formula' if data['mqtt_json_formula'].present?
+      return 'formula' if data['mqtt_formula'].present?
+
+      'plain'
     end
 
     def collector_measurement(source)
