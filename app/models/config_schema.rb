@@ -110,7 +110,10 @@ class ConfigSchema
   ].freeze
 
   SENSOR_MQTT_FIELDS = %w[
-    source name mqtt_topic mqtt_payload_type mqtt_json_key mqtt_formula
+    source name
+    mqtt_topic mqtt_payload_type
+    mqtt_json_key mqtt_json_path mqtt_json_formula mqtt_formula
+    mqtt_min mqtt_max mqtt_null_to_zero
     exclude_from_house_power
   ].freeze
 

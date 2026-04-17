@@ -4,6 +4,7 @@
     "de": "Sensor konfigurieren",
     "default": "Configure sensor"
   },
+  "clearInvisibleValues": "onHidden",
   "pages": [
     {
       "name": "p_source",
@@ -82,8 +83,8 @@
       "name": "p_mqtt",
       "visibleIf": "{source} = 'mqtt'",
       "title": {
-        "de": "MQTT-Konfiguration",
-        "default": "MQTT Configuration"
+        "de": "MQTT — Topic & Datentyp",
+        "default": "MQTT — Topic & Data Type"
       },
       "elements": [
         {
@@ -137,19 +138,85 @@
                 "de": "Zeichenkette (string)",
                 "default": "String"
               }
+            },
+            {
+              "value": "boolean",
+              "text": {
+                "de": "Wahrheitswert (boolean)",
+                "default": "Boolean"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_mqtt_extraction",
+      "visibleIf": "{source} = 'mqtt'",
+      "title": {
+        "de": "MQTT — Wertgewinnung",
+        "default": "MQTT — Value Extraction"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "mqtt_extraction_mode",
+          "title": {
+            "de": "Wie wird der Messwert aus der Nachricht gewonnen?",
+            "default": "How is the value extracted from the message?"
+          },
+          "isRequired": true,
+          "defaultValue": "plain",
+          "choices": [
+            {
+              "value": "plain",
+              "text": {
+                "de": "Payload direkt übernehmen",
+                "default": "Use payload directly"
+              }
+            },
+            {
+              "value": "json_key",
+              "text": {
+                "de": "Aus flachem JSON per Schlüssel",
+                "default": "From flat JSON by key"
+              }
+            },
+            {
+              "value": "json_path",
+              "text": {
+                "de": "Aus verschachteltem JSON per JSONPath",
+                "default": "From nested JSON by JSONPath"
+              }
+            },
+            {
+              "value": "json_formula",
+              "text": {
+                "de": "Formel über JSON-Werte",
+                "default": "Formula on JSON values"
+              }
+            },
+            {
+              "value": "formula",
+              "text": {
+                "de": "Formel über Payload",
+                "default": "Formula on payload"
+              }
             }
           ]
         },
         {
           "type": "text",
           "name": "mqtt_json_key",
+          "visibleIf": "{mqtt_extraction_mode} = 'json_key'",
+          "isRequired": true,
           "title": {
-            "de": "JSON-Key",
+            "de": "JSON-Schlüssel",
             "default": "JSON key"
           },
           "description": {
-            "de": "Wenn die MQTT-Nachricht ein JSON-Objekt ist: der Schlüssel, aus dem der Wert extrahiert wird",
-            "default": "If the MQTT message is a JSON object: the key to extract the value from"
+            "de": "Name des Felds im flachen JSON-Objekt",
+            "default": "Name of the field in a flat JSON object"
           },
           "placeholder": {
             "de": "z.B. power oder DHW tank temp. (R5T)",
@@ -158,19 +225,97 @@
         },
         {
           "type": "text",
-          "name": "mqtt_formula",
+          "name": "mqtt_json_path",
+          "visibleIf": "{mqtt_extraction_mode} = 'json_path'",
+          "isRequired": true,
           "title": {
-            "de": "Formel",
-            "default": "Formula"
+            "de": "JSONPath-Ausdruck",
+            "default": "JSONPath expression"
           },
           "description": {
-            "de": "Optionale Formel zur Berechnung des Werts, z.B. IF({Operation Mode} = 'Heating', 1, 0)",
-            "default": "Optional formula to calculate the value, e.g. IF({Operation Mode} = 'Heating', 1, 0)"
+            "de": "Beginnt mit $, zum Beispiel $.ccp[2] oder $.sensor.temp",
+            "default": "Starts with $, e.g. $.ccp[2] or $.sensor.temp"
           },
-          "placeholder": {
-            "de": "z.B. IF({Operation Mode} = 'Heating', 1, 0)",
-            "default": "e.g. IF({Operation Mode} = 'Heating', 1, 0)"
+          "placeholder": "$.ccp[2]"
+        },
+        {
+          "type": "text",
+          "name": "mqtt_json_formula",
+          "visibleIf": "{mqtt_extraction_mode} = 'json_formula'",
+          "isRequired": true,
+          "title": {
+            "de": "Formel mit JSON-Werten",
+            "default": "Formula with JSON values"
+          },
+          "description": {
+            "de": "JSON-Werte in geschweiften Klammern referenzieren, z.B. round({power} / 1000)",
+            "default": "Reference JSON values in braces, e.g. round({power} / 1000)"
+          },
+          "placeholder": "round({power} / 1000)"
+        },
+        {
+          "type": "text",
+          "name": "mqtt_formula",
+          "visibleIf": "{mqtt_extraction_mode} = 'formula'",
+          "isRequired": true,
+          "title": {
+            "de": "Formel mit Payload",
+            "default": "Formula with payload"
+          },
+          "description": {
+            "de": "{value} steht für die komplette Payload, z.B. round({value} * 1000)",
+            "default": "{value} represents the full payload, e.g. round({value} * 1000)"
+          },
+          "placeholder": "round({value} * 1000)"
+        }
+      ]
+    },
+    {
+      "name": "p_mqtt_filter",
+      "visibleIf": "{source} = 'mqtt' and ({mqtt_payload_type} = 'float' or {mqtt_payload_type} = 'integer')",
+      "title": {
+        "de": "MQTT — Filter (optional)",
+        "default": "MQTT — Filters (optional)"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "inputType": "number",
+          "name": "mqtt_min",
+          "title": {
+            "de": "Minimalwert",
+            "default": "Minimum value"
+          },
+          "description": {
+            "de": "Kleinere Werte werden verworfen (leer lassen für keine Grenze)",
+            "default": "Values below are discarded (leave empty for no limit)"
           }
+        },
+        {
+          "type": "text",
+          "inputType": "number",
+          "name": "mqtt_max",
+          "title": {
+            "de": "Maximalwert",
+            "default": "Maximum value"
+          },
+          "description": {
+            "de": "Größere Werte werden verworfen (leer lassen für keine Grenze)",
+            "default": "Values above are discarded (leave empty for no limit)"
+          }
+        },
+        {
+          "type": "boolean",
+          "name": "mqtt_null_to_zero",
+          "title": {
+            "de": "NULL als 0 speichern",
+            "default": "Store NULL as 0"
+          },
+          "description": {
+            "de": "Leere oder NULL-Werte werden als 0 in InfluxDB gespeichert",
+            "default": "Empty or NULL values are stored as 0 in InfluxDB"
+          },
+          "defaultValue": false
         }
       ]
     },

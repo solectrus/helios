@@ -7,7 +7,12 @@ module Export
         'field' => 'FIELD',
         'mqtt_payload_type' => 'TYPE',
         'mqtt_json_key' => 'JSON_KEY',
-        'mqtt_formula' => 'JSON_FORMULA',
+        'mqtt_json_path' => 'JSON_PATH',
+        'mqtt_json_formula' => 'JSON_FORMULA',
+        'mqtt_formula' => 'FORMULA',
+        'mqtt_min' => 'MIN',
+        'mqtt_max' => 'MAX',
+        'mqtt_null_to_zero' => 'NULL_TO_ZERO',
       }.freeze
 
       def self.service_name

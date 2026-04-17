@@ -99,7 +99,7 @@ sensors:
     field: heat
     mqtt_topic: espaltherma/ATTR
     mqtt_payload_type: float
-    mqtt_formula:
+    mqtt_json_formula:
       IF({Operation Mode} = 'Heating' AND {Freeze Protection} = 'OFF'
       AND {Leaving water temp. after BUH (R2T)} > {Inlet water temp.(R4T)}, {Flow
       sensor (l/min)} * 60.0 * 1.163 * ({Leaving water temp. after BUH (R2T)} - {Inlet
@@ -117,7 +117,7 @@ sensors:
     field: current_state
     mqtt_topic: espaltherma/ATTR
     mqtt_payload_type: string
-    mqtt_formula:
+    mqtt_json_formula:
       IF({Freeze Protection} == 'ON', 'Frostschutz', IF({Defrost Operation}
       == 'ON', 'Abtauen', IF({[HPSU] Tank valve position (0:Bypass 100:Tank)} > 50,
       'Warmwasser', IF({[HPSU] Bypass valve position (0:Bypass 100:Emitter)} > 50

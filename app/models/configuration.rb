@@ -245,7 +245,10 @@ class Configuration
       shelly_device_id shelly_invert_power exclude_from_house_power
     ],
     'mqtt' => %w[
-      source measurement field name mqtt_topic mqtt_payload_type mqtt_json_key mqtt_formula
+      source name measurement field
+      mqtt_topic mqtt_payload_type
+      mqtt_json_key mqtt_json_path mqtt_json_formula mqtt_formula
+      mqtt_min mqtt_max mqtt_null_to_zero
       exclude_from_house_power
     ],
   }.freeze
