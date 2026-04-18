@@ -252,6 +252,22 @@
         },
         {
           "type": "text",
+          "name": "mqtt_topic_tank_temp_setpoint",
+          "title": {
+            "de": "MQTT-Topic für die Soll-Speichertemperatur (in °C)",
+            "default": "MQTT topic for target tank temperature (in °C)"
+          },
+          "description": {
+            "de": "Das Topic, auf dem die Soll-Temperatur des Warmwasserspeichers veröffentlicht wird (optional)",
+            "default": "The topic where the target hot water tank temperature is published (optional)"
+          },
+          "placeholder": {
+            "de": "z.B. sensors/heatpump/tank_temp_setpoint",
+            "default": "e.g. sensors/heatpump/tank_temp_setpoint"
+          }
+        },
+        {
+          "type": "text",
           "name": "mqtt_topic_heatpump_status",
           "title": {
             "de": "MQTT-Topic für den Betriebsstatus",
