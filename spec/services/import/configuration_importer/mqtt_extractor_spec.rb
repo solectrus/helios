@@ -136,6 +136,30 @@ RSpec.describe Import::ConfigurationImporter::MqttExtractor do
       end
     end
 
+    context 'with an existing FORMULA split' do
+      let(:env) do
+        {
+          'MAPPING_0_TOPIC' => 'grid/power',
+          'MAPPING_0_TYPE' => 'float',
+          'MAPPING_0_FORMULA' => 'round({value} * 1000)',
+          'MAPPING_0_MEASUREMENT_POSITIVE' => 'PV',
+          'MAPPING_0_FIELD_POSITIVE' => 'import',
+          'MAPPING_0_MEASUREMENT_NEGATIVE' => 'PV',
+          'MAPPING_0_FIELD_NEGATIVE' => 'export',
+        }
+      end
+
+      it 'wraps the existing formula in a sign-filter IF for the positive variant' do
+        positive = extractor.mappings.find { |m| m[:field] == 'import' }
+        expect(positive[:formula]).to eq('IF((round({value} * 1000)) > 0, (round({value} * 1000)), 0)')
+      end
+
+      it 'wraps the existing formula in a sign-filter IF for the negative variant' do
+        negative = extractor.mappings.find { |m| m[:field] == 'export' }
+        expect(negative[:formula]).to eq('IF((round({value} * 1000)) < 0, -(round({value} * 1000)), 0)')
+      end
+    end
+
     context 'without splitting' do
       let(:env) do
         {
