@@ -37,6 +37,7 @@ class SensorRegistry
       heatpump_power
       heatpump_heating_power
       heatpump_tank_temp
+      heatpump_tank_temp_setpoint
       heatpump_status
       outdoor_temp
     ],
@@ -100,6 +101,7 @@ class SensorRegistry
     'heatpump_power' => { unit: 'W', sources: %w[shelly mqtt external] },
     'heatpump_heating_power' => { unit: 'W', sources: %w[mqtt external] },
     'heatpump_tank_temp' => { unit: '°C', sources: %w[mqtt external] },
+    'heatpump_tank_temp_setpoint' => { unit: '°C', sources: %w[mqtt external] },
     'heatpump_status' => { unit: '', sources: %w[mqtt external] },
 
     # System

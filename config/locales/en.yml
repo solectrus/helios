@@ -143,6 +143,7 @@ en:
     heatpump_power: 'Heat pump power consumption'
     heatpump_heating_power: 'Thermal output of the heat pump'
     heatpump_tank_temp: 'Hot water tank temperature'
+    heatpump_tank_temp_setpoint: 'Target hot water tank temperature'
     heatpump_status: 'Heat pump operating mode, e.g. heating or cooling'
     outdoor_temp: 'Outdoor temperature at the site (measured)'
     inverter_power_forecast: 'PV generation per weather forecast'

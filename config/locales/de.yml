@@ -114,6 +114,7 @@ de:
     heatpump_power: 'Stromverbrauch der Wärmepumpe'
     heatpump_heating_power: 'Thermische Leistung der Wärmepumpe'
     heatpump_tank_temp: 'Temperatur im Warmwasserspeicher'
+    heatpump_tank_temp_setpoint: 'Soll-Temperatur des Warmwasserspeichers'
     heatpump_status: 'Betriebsmodus der Wärmepumpe, z.B. Heizen oder Kühlen'
     outdoor_temp: 'Außentemperatur am Standort (gemessen)'
     inverter_power_forecast: 'PV-Erzeugung laut Wettervorhersage'
