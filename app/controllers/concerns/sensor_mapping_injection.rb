@@ -10,7 +10,7 @@ module SensorMappingInjection
   # Default measurements when no collector config exists yet
   DEFAULT_MEASUREMENTS = {
     'senec' => 'SENEC',
-    'forecast' => 'Forecast',
+    'forecast' => 'forecast',
   }.freeze
 
   private

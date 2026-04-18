@@ -404,6 +404,10 @@ RSpec.describe Export::Builder do
       expect(env['FORECAST_SOLAR_APIKEY']).to eq('abc123')
     end
 
+    it 'defaults INFLUX_MEASUREMENT_FORECAST to lowercase' do
+      expect(Env.load['INFLUX_MEASUREMENT_FORECAST']).to eq('forecast')
+    end
+
     it 'configures forecast-collector with environment' do
       compose = Compose.load
       forecast = compose.services.find('forecast-collector')
@@ -412,6 +416,26 @@ RSpec.describe Export::Builder do
         'FORECAST_PROVIDER', 'FORECAST_LATITUDE', 'FORECAST_LONGITUDE',
         'FORECAST_DECLINATION', 'FORECAST_AZIMUTH', 'FORECAST_KWP'
       )
+    end
+  end
+
+  describe 'with custom forecast measurement' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'forecast.solar',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_declination1' => '30',
+                             'forecast_azimuth1' => '180',
+                             'forecast_kwp1' => '10',
+                             'measurement' => 'MyForecast',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'writes configured measurement to .env' do
+      expect(Env.load['INFLUX_MEASUREMENT_FORECAST']).to eq('MyForecast')
     end
   end
 

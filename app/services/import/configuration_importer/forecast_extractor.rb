@@ -18,6 +18,7 @@ module Import
         data = base_data(fc_env)
         data.merge!(roof_data(fc_env))
         data.merge!(provider_data(fc_env))
+        data['measurement'] = @reader.raw_env['INFLUX_MEASUREMENT_FORECAST'].presence
         data.compact.presence
       end
 

@@ -21,16 +21,16 @@ class SensorMappings
   }.freeze
 
   FORECAST_DEFAULTS = {
-    'inverter_power_forecast' => { measurement: 'Forecast', field: 'watt' },
-    'inverter_power_forecast_clearsky' => { measurement: 'Forecast', field: 'watt_clearsky' },
-    'outdoor_temp_forecast' => { measurement: 'Forecast', field: 'temperature' },
+    'inverter_power_forecast' => { measurement: 'forecast', field: 'watt' },
+    'inverter_power_forecast_clearsky' => { measurement: 'forecast', field: 'watt_clearsky' },
+    'outdoor_temp_forecast' => { measurement: 'forecast', field: 'temperature' },
   }.freeze
 
   # Returns the default measurement for a sensor+source combination
   def self.default_measurement(sensor_name, source)
     case source
     when 'senec' then SENEC_DEFAULTS.dig(sensor_name, :measurement) || 'SENEC'
-    when 'forecast' then FORECAST_DEFAULTS.dig(sensor_name, :measurement) || 'Forecast'
+    when 'forecast' then FORECAST_DEFAULTS.dig(sensor_name, :measurement) || 'forecast'
     else sensor_name
     end
   end

@@ -170,7 +170,8 @@ module Export
       forecast_base_entries(env, fcast)
       forecast_roof_entries(env, fcast)
       forecast_provider_entries(env, fcast)
-      entry(env, 'INFLUX_MEASUREMENT_FORECAST', 'Forecast', 'InfluxDB measurement name for forecasts')
+      entry(env, 'INFLUX_MEASUREMENT_FORECAST', fcast.measurement.presence || 'forecast',
+            'InfluxDB measurement name for forecasts')
     end
 
     def forecast_base_entries(env, fcast)
