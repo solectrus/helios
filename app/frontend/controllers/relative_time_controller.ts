@@ -38,10 +38,11 @@ export default class extends Controller {
   private formatRelative(seconds: number): string {
     const locale = readLocale();
     const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' });
+    const abs = Math.abs(seconds);
 
-    if (seconds < 60) return rtf.format(-seconds, 'second');
-    if (seconds < 3600) return rtf.format(-Math.round(seconds / 60), 'minute');
-    if (seconds < 86400) return rtf.format(-Math.round(seconds / 3600), 'hour');
+    if (abs < 60) return rtf.format(-seconds, 'second');
+    if (abs < 3600) return rtf.format(-Math.round(seconds / 60), 'minute');
+    if (abs < 86400) return rtf.format(-Math.round(seconds / 3600), 'hour');
     return rtf.format(-Math.round(seconds / 86400), 'day');
   }
 }
