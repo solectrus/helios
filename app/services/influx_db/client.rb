@@ -55,7 +55,7 @@ module InfluxDb
     def flux_latest_query(measurement, field)
       <<~FLUX
         from(bucket: "#{bucket}")
-          |> range(start: -24h)
+          |> range(start: -24h, stop: 1h)
           |> filter(fn: (r) => r._measurement == "#{measurement}" and r._field == "#{field}")
           |> last()
       FLUX
