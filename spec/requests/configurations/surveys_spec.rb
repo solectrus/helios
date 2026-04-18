@@ -113,7 +113,7 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
       field_element = mapping_page['elements'].find { |e| e['name'] == 'field' }
 
       expect(measurement_element['enableIf']).to eq("{source} != 'forecast'")
-      expect(measurement_element['setValueExpression']).to include("'Forecast'")
+      expect(measurement_element['setValueExpression']).to include("'forecast'")
       expect(field_element['enableIf']).to eq("{source} != 'forecast'")
     end
 

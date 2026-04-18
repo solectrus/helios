@@ -494,6 +494,10 @@ RSpec.describe Import::ConfigurationImporter do
       it 'imports forecast interval' do
         expect(forecast).to include('forecast_interval' => '900')
       end
+
+      it 'preserves INFLUX_MEASUREMENT_FORECAST from existing .env' do
+        expect(forecast).to include('measurement' => 'Forecast')
+      end
     end
 
     describe 'device data' do

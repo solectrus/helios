@@ -31,6 +31,7 @@ forecast:
   forecast_azimuth1: '0'
   forecast_kwp1: '9.24'
   forecast_pvnode_apikey: pvn_secret_1234567890abcdef
+  measurement: Forecast
 senec:
   adapter: local
   interval: '60'
@@ -131,8 +132,12 @@ sensors:
     mqtt_json_key: R1T-Outdoor air temp.
   inverter_power_forecast:
     source: forecast
+    measurement: Forecast
+    field: watt
   inverter_power_forecast_clearsky:
     source: forecast
+    measurement: Forecast
+    field: watt_clearsky
   outdoor_temp_forecast:
     source: forecast
     measurement: Forecast

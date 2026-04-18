@@ -8,8 +8,12 @@ RSpec.describe SensorMappings do
       expect(described_class.default_measurement('unknown', 'senec')).to eq('SENEC')
     end
 
-    it 'returns Forecast for forecast source' do
-      expect(described_class.default_measurement('inverter_power_forecast', 'forecast')).to eq('Forecast')
+    it 'returns forecast for forecast source' do
+      expect(described_class.default_measurement('inverter_power_forecast', 'forecast')).to eq('forecast')
+    end
+
+    it 'returns forecast for forecast source with unknown sensor' do
+      expect(described_class.default_measurement('unknown', 'forecast')).to eq('forecast')
     end
 
     it 'returns sensor_name for other sources' do
