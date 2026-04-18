@@ -28,7 +28,7 @@
     "@tailwindcss/vite": "^4.2.2",
     "@types/node": "^25.6.0",
     "daisyui": "^5.5.19",
-    "eslint": "^10.2.0",
+    "eslint": "^10.2.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
     "happy-dom": "^20.9.0",
