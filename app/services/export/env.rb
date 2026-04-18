@@ -247,9 +247,22 @@ module Export
         entry(env, 'PVNODE_PAID', fcast.forecast_pvnode_paid,
               'pvnode paid account')
       end
-      return if fcast.forecast_pvnode_extra_params.blank?
+      if fcast.forecast_pvnode_extra_params.present?
+        entry(env, 'PVNODE_EXTRA_PARAMS', fcast.forecast_pvnode_extra_params,
+              'Additional pvnode parameters')
+      end
+      pvnode_per_roof_extra_params_entries(env, fcast)
+    end
 
-      entry(env, 'PVNODE_EXTRA_PARAMS', fcast.forecast_pvnode_extra_params, 'Additional pvnode parameters')
+    def pvnode_per_roof_extra_params_entries(env, fcast)
+      roofs = (fcast.forecast_roofs || 1).to_i
+      roofs.times do |i|
+        value = fcast.send("forecast_pvnode_extra_params#{i + 1}")
+        next if value.blank?
+
+        entry(env, "PVNODE_#{i}_EXTRA_PARAMS", value,
+              "Additional pvnode parameters for roof #{i + 1}")
+      end
     end
 
     def mqtt_section(env)

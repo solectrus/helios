@@ -148,6 +148,10 @@ class ConfigSchema
     forecast_pvnode_apikey
     forecast_pvnode_paid
     forecast_pvnode_extra_params
+    forecast_pvnode_extra_params1
+    forecast_pvnode_extra_params2
+    forecast_pvnode_extra_params3
+    forecast_pvnode_extra_params4
     measurement
   ].freeze
 
