@@ -62,7 +62,7 @@ module Import
         data
       end
 
-      def provider_data(fc_env) # rubocop:disable Metrics/MethodLength
+      def provider_data(fc_env)
         case fc_env['FORECAST_PROVIDER']
         when 'forecast.solar'
           { 'forecast_solar_apikey' => fc_env['FORECAST_SOLAR_APIKEY'] }
@@ -73,14 +73,23 @@ module Import
             'forecast_solcast_id2' => fc_env['SOLCAST_1_SITE'],
           }
         when 'pvnode'
-          {
-            'forecast_pvnode_apikey' => fc_env['PVNODE_APIKEY'],
-            'forecast_pvnode_paid' => fc_env['PVNODE_PAID'],
-            'forecast_pvnode_extra_params' => fc_env['PVNODE_EXTRA_PARAMS'],
-          }
+          pvnode_data(fc_env)
         else
           {}
         end
+      end
+
+      def pvnode_data(fc_env)
+        data = {
+          'forecast_pvnode_apikey' => fc_env['PVNODE_APIKEY'],
+          'forecast_pvnode_paid' => fc_env['PVNODE_PAID'],
+          'forecast_pvnode_extra_params' => fc_env['PVNODE_EXTRA_PARAMS'],
+        }
+        configs = fc_env['FORECAST_CONFIGURATIONS']&.to_i || 1
+        configs.times do |i|
+          data["forecast_pvnode_extra_params#{i + 1}"] = fc_env["PVNODE_#{i}_EXTRA_PARAMS"]
+        end
+        data
       end
     end
   end

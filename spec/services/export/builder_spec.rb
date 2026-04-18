@@ -509,6 +509,49 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'with pvnode multi-roof forecast configured' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'pvnode',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_roofs' => '2',
+                             'forecast_declination1' => '30',
+                             'forecast_azimuth1' => '180',
+                             'forecast_kwp1' => '10',
+                             'forecast_declination2' => '20',
+                             'forecast_azimuth2' => '90',
+                             'forecast_kwp2' => '5',
+                             'forecast_pvnode_apikey' => 'pvnode-key',
+                             'forecast_pvnode_extra_params' => 'global=1',
+                             'forecast_pvnode_extra_params1' => 'roof1=a',
+                             'forecast_pvnode_extra_params2' => 'roof2=b',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'includes per-roof pvnode extra params in .env' do
+      env = Env.load
+      expect(env['PVNODE_EXTRA_PARAMS']).to eq('global=1')
+      expect(env['PVNODE_0_EXTRA_PARAMS']).to eq('roof1=a')
+      expect(env['PVNODE_1_EXTRA_PARAMS']).to eq('roof2=b')
+    end
+
+    it 'includes per-roof pvnode vars in compose environment' do
+      compose = Compose.load
+      forecast = compose.services.find('forecast-collector')
+
+      expect(forecast.environment).to include(
+        'PVNODE_EXTRA_PARAMS',
+        'PVNODE_0_EXTRA_PARAMS',
+        'PVNODE_1_EXTRA_PARAMS',
+      )
+    end
+  end
+
   describe 'with forecast optional fields configured' do
     before do
       configuration.update('forecast', {

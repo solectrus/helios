@@ -206,7 +206,7 @@ RSpec.describe ConfigSchema do
       page['elements']&.each do |element|
         name = element['name']
         # Skip non-data elements (comments, info panels)
-        next if element['type'] == 'comment'
+        next if %w[comment html].include?(element['type'])
         next if element['readOnly'] == true
 
         names << name if name
