@@ -186,6 +186,116 @@ RSpec.describe Import::ConfigurationImporter do
     end
   end
 
+  context 'with with_tibber scenario' do
+    let(:scenario) { 'with_tibber' }
+
+    describe 'unmanaged data' do
+      subject(:unmanaged) { importer.result[:unmanaged] }
+
+      it 'detects tibber-collector as unmanaged service' do
+        expect(unmanaged['services']).to include('tibber-collector')
+      end
+
+      it 'preserves the full tibber-collector service block' do
+        tibber = unmanaged.dig('services', 'tibber-collector')
+        expect(tibber).to include(
+          'image' => 'ghcr.io/solectrus/tibber-collector:latest',
+          'restart' => 'unless-stopped',
+        )
+        expect(tibber['environment']).to include('TIBBER_TOKEN', 'TIBBER_INTERVAL')
+      end
+
+      it 'detects tibber-specific env vars as unmanaged' do
+        expect(unmanaged['env_vars']).to include(
+          'TIBBER_TOKEN' => 'tibber-api-token-xyz',
+          'TIBBER_INTERVAL' => '3600',
+          'INFLUX_MEASUREMENT_TIBBER' => 'Tibber',
+        )
+      end
+    end
+
+    describe '#import!' do
+      subject(:config) { importer.import! }
+
+      it 'persists tibber-collector as unmanaged' do
+        expect(config.unmanaged.services).to include('tibber-collector')
+      end
+
+      it 'persists tibber env vars' do
+        expect(config.unmanaged.env_vars).to include(
+          'TIBBER_TOKEN' => 'tibber-api-token-xyz',
+          'TIBBER_INTERVAL' => '3600',
+          'INFLUX_MEASUREMENT_TIBBER' => 'Tibber',
+        )
+      end
+    end
+  end
+
+  context 'with with_senec_charger scenario' do
+    let(:scenario) { 'with_senec_charger' }
+
+    describe 'unmanaged data' do
+      subject(:unmanaged) { importer.result[:unmanaged] }
+
+      it 'detects senec-charger as unmanaged service' do
+        expect(unmanaged['services']).to include('senec-charger')
+      end
+
+      it 'does not classify senec-collector or forecast-collector as unmanaged' do
+        expect(unmanaged['services'].keys).not_to include('senec-collector', 'forecast-collector')
+      end
+
+      it 'preserves the full senec-charger service block' do
+        charger = unmanaged.dig('services', 'senec-charger')
+        expect(charger).to include(
+          'image' => 'ghcr.io/solectrus/senec-charger:latest',
+          'restart' => 'unless-stopped',
+        )
+        expect(charger['environment']).to include(
+          'CHARGER_INTERVAL', 'CHARGER_PRICE_MAX', 'CHARGER_PRICE_TIME_RANGE',
+          'CHARGER_FORECAST_THRESHOLD', 'CHARGER_DRY_RUN',
+          'INFLUX_MEASUREMENT_PRICES=Tibber'
+        )
+      end
+
+      it 'detects charger-specific env vars as unmanaged' do
+        expect(unmanaged['env_vars']).to include(
+          'CHARGER_INTERVAL' => '3600',
+          'CHARGER_PRICE_MAX' => '70',
+          'CHARGER_PRICE_TIME_RANGE' => '4',
+          'CHARGER_FORECAST_THRESHOLD' => '20',
+          'CHARGER_DRY_RUN' => 'false',
+        )
+      end
+
+      it 'does not classify shared SENEC/forecast env vars as unmanaged' do
+        expect(unmanaged['env_vars'].keys).not_to include(
+          'SENEC_HOST', 'SENEC_SCHEMA',
+          'INFLUX_MEASUREMENT_SENEC', 'INFLUX_MEASUREMENT_FORECAST'
+        )
+      end
+    end
+
+    describe '#import!' do
+      subject(:config) { importer.import! }
+
+      it 'persists senec-charger as unmanaged' do
+        expect(config.unmanaged.services).to include('senec-charger')
+      end
+
+      it 'persists charger env vars' do
+        expect(config.unmanaged.env_vars).to include(
+          'CHARGER_INTERVAL' => '3600',
+          'CHARGER_PRICE_MAX' => '70',
+        )
+      end
+
+      it 'still imports senec-collector as managed' do
+        expect(config.senec).to include('host' => '192.168.178.42')
+      end
+    end
+  end
+
   context 'with with_traefik_and_backup scenario' do
     let(:scenario) { 'with_traefik_and_backup' }
 

@@ -1,0 +1,73 @@
+services:
+  dashboard:
+    image: ghcr.io/solectrus/solectrus:latest
+    ports:
+      - 3000:3000
+    environment:
+      - TZ
+      - INSTALLATION_DATE
+      - SECRET_KEY_BASE
+      - ADMIN_PASSWORD
+      - DB_HOST=postgresql
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_USER=postgres
+      - REDIS_URL=redis://redis:6379
+      - INFLUX_HOST=influxdb
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+  influxdb:
+    image: influxdb:2-alpine
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
+    volumes:
+      - ./influxdb:/var/lib/influxdb2
+    restart: unless-stopped
+  postgresql:
+    image: postgres:18-alpine
+    environment:
+      - POSTGRES_PASSWORD
+    volumes:
+      - ./postgresql:/var/lib/postgresql
+    restart: unless-stopped
+  redis:
+    image: redis:8-alpine
+    volumes:
+      - ./redis:/data
+    restart: unless-stopped
+  watchtower:
+    image: nickfedor/watchtower
+    environment:
+      - TZ
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --scope solectrus --cleanup
+    restart: unless-stopped
+  tibber-collector:
+    image: ghcr.io/solectrus/tibber-collector:latest
+    environment:
+      - TZ
+      - TIBBER_TOKEN
+      - TIBBER_INTERVAL
+      - INFLUX_HOST=influxdb
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_TIBBER}
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
