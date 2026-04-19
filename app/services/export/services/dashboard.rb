@@ -11,7 +11,7 @@ module Export
 
       def to_h
         config = {
-          image: configuration.system.image,
+          image: configuration.dashboard.image,
           environment: dashboard_environment,
           depends_on: healthy_depends_on(%i[postgresql redis influxdb]),
           restart: 'unless-stopped',
