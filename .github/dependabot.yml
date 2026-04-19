@@ -81,6 +81,9 @@ updates:
       survey:
         patterns:
           - 'survey-*'
+      herb:
+        patterns:
+          - '@herb-tools/*'
 
   - package-ecosystem: 'github-actions'
     directory: '/'
