@@ -185,5 +185,27 @@ RSpec.describe StartupCheck do
         expect(result).to be_nil
       end
     end
+
+    describe 'check_docker_version' do
+      it 'returns nil when the engine meets the minimum version' do
+        allow(Orchestration::Connection).to receive(:engine_version).and_return(Gem::Version.new('24.0.2'))
+
+        expect(described_class.send(:check_docker_version)).to be_nil
+      end
+
+      it 'reports a failure when the engine is too old' do
+        allow(Orchestration::Connection).to receive(:engine_version).and_return(Gem::Version.new('20.10.24'))
+
+        result = described_class.send(:check_docker_version)
+        expect(result.name).to eq('Docker version')
+        expect(result.message).to include('20.10.24', '24.0')
+      end
+
+      it 'returns nil when the engine version is unknown' do
+        allow(Orchestration::Connection).to receive(:engine_version).and_return(nil)
+
+        expect(described_class.send(:check_docker_version)).to be_nil
+      end
+    end
   end
 end

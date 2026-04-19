@@ -5,6 +5,11 @@ module Orchestration
       ::File.expand_path('~/.docker/run/docker.sock'),
     ].freeze
 
+    # Minimum Docker Engine version Helios supports. Older daemons
+    # miss features the generated compose.yaml relies on (e.g. the
+    # Compose Spec layout, `docker compose config --hash`).
+    MIN_ENGINE_VERSION = Gem::Version.new('24.0').freeze
+
     class << self
       def configure!
         socket = SOCKET_PATHS.find { |path| ::File.exist?(path) }
