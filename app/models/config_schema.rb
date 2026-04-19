@@ -5,7 +5,6 @@ class ConfigSchema
     installation_date
     app_host
     admin_password
-    influx_poll_interval
     co2_emission_factor
     force_ssl
     web_concurrency

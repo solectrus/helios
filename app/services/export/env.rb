@@ -77,8 +77,6 @@ module Export
             'Hostname for the SOLECTRUS web interface')
       entry(env, 'WEB_CONCURRENCY', sys.web_concurrency.presence || '0',
             'Number of web server processes (0 = single process)')
-      entry(env, 'INFLUX_POLL_INTERVAL', sys.influx_poll_interval.presence || '5',
-            'InfluxDB polling interval in seconds')
       dashboard_optional_entries(env, sys)
     end
 

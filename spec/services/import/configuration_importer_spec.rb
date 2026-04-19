@@ -25,7 +25,7 @@ RSpec.describe Import::ConfigurationImporter do
       it { is_expected.to include('secret_key_base') }
       it { is_expected.to include('image') }
       it { is_expected.to include('app_host' => 'pi') }
-      it { is_expected.not_to include('influx_poll_interval') } # default value, not stored
+      it { is_expected.not_to include('influx_poll_interval') } # deprecated, not imported
       it { is_expected.to include('co2_emission_factor' => '500') }
     end
 
@@ -451,7 +451,7 @@ RSpec.describe Import::ConfigurationImporter do
           'app_host' => 'myhost',
           'co2_emission_factor' => '500',
         )
-        # Default values (web_concurrency='0', influx_poll_interval='5') are not stored
+        # Default web_concurrency='0' is not stored; influx_poll_interval is deprecated
         expect(system).not_to include('web_concurrency', 'influx_poll_interval')
       end
     end

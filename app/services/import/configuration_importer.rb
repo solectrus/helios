@@ -3,7 +3,6 @@ module Import
     # Dashboard defaults that are always set in compose.yaml regardless of config.
     # Only store values that differ from these defaults.
     DASHBOARD_DEFAULTS = {
-      'INFLUX_POLL_INTERVAL' => '5',
       'WEB_CONCURRENCY' => '0',
     }.freeze
 

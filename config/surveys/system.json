@@ -199,21 +199,6 @@
         },
         {
           "type": "text",
-          "name": "influx_poll_interval",
-          "title": {
-            "de": "InfluxDB-Abfrageintervall (Sekunden)",
-            "default": "InfluxDB poll interval (seconds)"
-          },
-          "description": {
-            "de": "Intervall für die Abfrage aktueller Messwerte",
-            "default": "Interval for fetching current measurements"
-          },
-          "defaultValue": "5",
-          "inputType": "number",
-          "min": 1
-        },
-        {
-          "type": "text",
           "name": "power_splitter_interval",
           "title": {
             "de": "Power-Splitter-Intervall (Sekunden)",

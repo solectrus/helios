@@ -38,7 +38,7 @@ module Export
       def passthrough_vars
         %w[
           TZ INSTALLATION_DATE INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SECRET_KEY_BASE ADMIN_PASSWORD
-          APP_HOST WEB_CONCURRENCY INFLUX_POLL_INTERVAL
+          APP_HOST WEB_CONCURRENCY
         ]
       end
 
