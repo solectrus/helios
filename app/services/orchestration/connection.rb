@@ -17,6 +17,27 @@ module Orchestration
       rescue StandardError
         false
       end
+
+      ENGINE_VERSION_CACHE_KEY = 'orchestration/engine_version'.freeze
+
+      # Docker Engine version as Gem::Version, or nil if the daemon is
+      # unreachable. Cached for 1 hour — the daemon version only changes
+      # on host upgrade, which requires a Helios restart anyway.
+      def engine_version
+        Rails.cache.fetch(ENGINE_VERSION_CACHE_KEY, expires_in: 1.hour) do
+          fetch_engine_version
+        end
+      end
+
+      private
+
+      def fetch_engine_version
+        configure!
+        raw = Docker.version['Version']
+        Gem::Version.new(raw) if raw
+      rescue StandardError
+        nil
+      end
     end
   end
 end
