@@ -156,7 +156,7 @@ module Orchestration
           '-f',
           ::Compose.path,
           '--project-directory',
-          data_path,
+          host_data_path,
         ]
         env_path = ::Env.path
         cmd.push('--env-file', env_path) if ::File.exist?(env_path)
@@ -206,15 +206,14 @@ module Orchestration
         )
       end
 
-      # Resolve the absolute host-side path of the data volume by asking
-      # Docker for the Helios container's mount source. This works for
-      # any volume spec the user wrote (absolute, relative, symlinked).
+      # In production, data_path (e.g. /data) is container-internal; the Docker
+      # daemon runs on the host and needs the real host path to resolve bind-mount
+      # sources in compose.yaml. In dev/test, data_path is already a host path.
       def host_data_path
-        container = Orchestration::Container.find(SELF_SERVICE)
-        raise CommandError, 'Helios container not found' unless container
+        return data_path unless Rails.env.production?
 
-        source = container.mount_source(data_path)
-        raise CommandError, "No host mount found for #{data_path}" unless source
+        source = Orchestration::Container.find(SELF_SERVICE)&.mount_source(data_path)
+        raise CommandError, "Cannot resolve Helios host mount for #{data_path}" unless source
 
         source
       end
