@@ -22,7 +22,7 @@
     <%= vite_stylesheet_tag 'application.css' %>
   </head>
 
-  <body class="bg-base-200 min-h-screen pb-10">
+  <body class="bg-base-200 min-h-dvh pb-10">
     <% { alert: "alert-error", notice: "alert-success" }.each do |key, alert_class| %>
       <% if flash[key] %>
         <div class="toast toast-top toast-center z-50">
