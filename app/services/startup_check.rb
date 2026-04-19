@@ -13,6 +13,7 @@ class StartupCheck
       if Rails.env.production?
         checks << check_docker_socket
         checks << check_docker_connection
+        checks << check_docker_version
       end
 
       checks.compact
@@ -127,6 +128,19 @@ class StartupCheck
       Check.new(
         name: 'Docker connection',
         message: "Docker socket exists but connection failed: #{e.message}",
+      )
+    end
+
+    def check_docker_version
+      version = Orchestration::Connection.engine_version
+      return if version.nil? # connection failure is reported by check_docker_connection
+      return if version >= Orchestration::Connection::MIN_ENGINE_VERSION
+
+      Check.new(
+        name: 'Docker version',
+        message:
+          "Docker Engine #{version} is too old. " \
+          "Helios requires #{Orchestration::Connection::MIN_ENGINE_VERSION} or newer.",
       )
     end
   end
