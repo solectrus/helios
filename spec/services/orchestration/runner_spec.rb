@@ -16,6 +16,49 @@ RSpec.describe Orchestration::Runner do
     end
   end
 
+  describe '#host_data_path' do
+    context 'when not in production' do
+      it 'returns data_path without inspecting Docker' do
+        allow(Orchestration::Container).to receive(:find)
+
+        expect(described_class.send(:host_data_path)).to eq(data_path)
+        expect(Orchestration::Container).not_to have_received(:find)
+      end
+    end
+
+    context 'when in production' do
+      before { allow(Rails.env).to receive(:production?).and_return(true) }
+
+      it 'returns the host-side mount source for data_path' do
+        container = instance_double(Orchestration::Container)
+        allow(container).to receive(:mount_source).with(data_path).and_return('/opt/solectrus')
+        allow(Orchestration::Container).to receive(:find).with('helios').and_return(container)
+
+        expect(described_class.send(:host_data_path)).to eq('/opt/solectrus')
+      end
+
+      it 'raises CommandError when the container cannot be found' do
+        allow(Orchestration::Container).to receive(:find).with('helios').and_return(nil)
+
+        expect { described_class.send(:host_data_path) }.to raise_error(
+          Orchestration::Runner::CommandError,
+          /Cannot resolve Helios host mount/,
+        )
+      end
+
+      it 'raises CommandError when the mount source is missing' do
+        container = instance_double(Orchestration::Container)
+        allow(container).to receive(:mount_source).with(data_path).and_return(nil)
+        allow(Orchestration::Container).to receive(:find).with('helios').and_return(container)
+
+        expect { described_class.send(:host_data_path) }.to raise_error(
+          Orchestration::Runner::CommandError,
+          /Cannot resolve Helios host mount/,
+        )
+      end
+    end
+  end
+
   describe 'validation' do
     context 'when stack path is not set' do
       before do
@@ -40,6 +83,23 @@ RSpec.describe Orchestration::Runner do
           Orchestration::Runner::CommandError,
           /does not exist/,
         )
+      end
+    end
+  end
+
+  describe 'compose command construction' do
+    before { File.write(File.join(data_path, 'compose.yaml'), "name: x\nservices: {}\n") }
+
+    it 'passes host_data_path as --project-directory' do
+      allow(described_class).to receive(:host_data_path).and_return('/opt/solectrus')
+      status = instance_double(Process::Status, success?: true, exitstatus: 0)
+      allow(Open3).to receive(:capture2e).and_return(['', status])
+
+      described_class.ps
+
+      expect(Open3).to have_received(:capture2e) do |*cmd|
+        project_dir = cmd[cmd.index('--project-directory') + 1]
+        expect(project_dir).to eq('/opt/solectrus')
       end
     end
   end
