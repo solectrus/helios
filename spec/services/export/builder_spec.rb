@@ -56,6 +56,42 @@ RSpec.describe Export::Builder do
       expect(postgresql.healthcheck).to include('test', 'interval')
     end
 
+    context 'with Docker Engine 25.0 or newer' do
+      before do
+        allow(Orchestration::Connection).to receive(:engine_version).and_return(Gem::Version.new('25.0.3'))
+        described_class.new(configuration).write!
+      end
+
+      it 'includes start_interval in healthchecks' do
+        compose = Compose.load
+        expect(compose.services.find('postgresql').healthcheck).to include('start_interval' => '2s')
+      end
+    end
+
+    context 'with Docker Engine older than 25.0' do
+      before do
+        allow(Orchestration::Connection).to receive(:engine_version).and_return(Gem::Version.new('24.0.2'))
+        described_class.new(configuration).write!
+      end
+
+      it 'omits start_interval from healthchecks' do
+        compose = Compose.load
+        expect(compose.services.find('postgresql').healthcheck).not_to include('start_interval')
+      end
+    end
+
+    context 'when the Docker daemon is unreachable' do
+      before do
+        allow(Orchestration::Connection).to receive(:engine_version).and_return(nil)
+        described_class.new(configuration).write!
+      end
+
+      it 'omits start_interval from healthchecks' do
+        compose = Compose.load
+        expect(compose.services.find('postgresql').healthcheck).not_to include('start_interval')
+      end
+    end
+
     it 'configures dashboard with depends_on' do
       compose = Compose.load
       dashboard = compose.services.find('dashboard')
