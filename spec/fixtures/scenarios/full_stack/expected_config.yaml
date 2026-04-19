@@ -2,12 +2,13 @@
 system:
   timezone: Europe/Berlin
   installation_date: '2026-03-18'
-  image: ghcr.io/solectrus/solectrus:latest
   admin_password: secret_admin_password
   secret_key_base: very_secret_key_base
   app_host: localhost
   ui_theme: light
   lockup_codeword: secret
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
 postgresql:
   image: postgres:18-alpine
   password: secret_postgres_password

@@ -12,8 +12,8 @@ RSpec.describe Import::ConfigurationImporter do
     let(:scenario) { 'senec3' }
 
     it 'returns a hash with setting data' do
-      expect(importer.result).to include(:system, :postgresql, :influxdb, :redis, :watchtower,
-                                         :sensors, :devices)
+      expect(importer.result).to include(:system, :dashboard, :postgresql, :influxdb, :redis,
+                                         :watchtower, :sensors, :devices)
     end
 
     describe 'system data' do
@@ -23,10 +23,15 @@ RSpec.describe Import::ConfigurationImporter do
       it { is_expected.to include('installation_date' => '2020-01-01') }
       it { is_expected.to include('admin_password' => 'secret') }
       it { is_expected.to include('secret_key_base') }
-      it { is_expected.to include('image') }
       it { is_expected.to include('app_host' => 'pi') }
       it { is_expected.not_to include('influx_poll_interval') } # deprecated, not imported
       it { is_expected.to include('co2_emission_factor' => '500') }
+    end
+
+    describe 'dashboard data' do
+      subject(:dashboard) { importer.result[:dashboard] }
+
+      it { is_expected.to include('image') }
     end
 
     describe 'postgresql data' do

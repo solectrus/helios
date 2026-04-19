@@ -4,8 +4,13 @@ RSpec.describe ConfigSchema do
       fields = described_class.fields_for('system')
       expect(fields).to include(
         'timezone', 'installation_date',
-        'app_host', 'admin_password', 'image', 'secret_key_base'
+        'app_host', 'admin_password', 'secret_key_base'
       )
+    end
+
+    it 'returns fields for dashboard' do
+      fields = described_class.fields_for('dashboard')
+      expect(fields).to include('image')
     end
 
     it 'returns fields for postgresql' do
@@ -74,8 +79,8 @@ RSpec.describe ConfigSchema do
       expect(described_class.valid_field?('system', 'secret_key_base')).to be true
     end
 
-    it 'returns true for image in system' do
-      expect(described_class.valid_field?('system', 'image')).to be true
+    it 'returns true for image in dashboard' do
+      expect(described_class.valid_field?('dashboard', 'image')).to be true
     end
 
     it 'returns true for image in postgresql' do
@@ -122,12 +127,12 @@ RSpec.describe ConfigSchema do
       config = Configuration.current
       missing = described_class.missing_auto_generated(config)
 
-      expect(missing.keys).to match_array(%w[system postgresql influxdb redis watchtower backup])
+      expect(missing.keys).to match_array(%w[system dashboard postgresql influxdb redis watchtower backup])
     end
 
     it 'returns all system defaults when empty' do
       missing = described_class.missing_auto_generated(Configuration.current)
-      expect(missing['system'].keys).to match_array(%w[image admin_password secret_key_base])
+      expect(missing['system'].keys).to match_array(%w[admin_password secret_key_base])
     end
 
     it 'returns all postgresql defaults when empty' do
@@ -148,7 +153,7 @@ RSpec.describe ConfigSchema do
     it 'returns image defaults for image-only sections when empty' do
       missing = described_class.missing_auto_generated(Configuration.current)
 
-      %w[redis watchtower].each do |section|
+      %w[dashboard redis watchtower].each do |section|
         expect(missing[section].keys).to match_array(%w[image])
       end
     end

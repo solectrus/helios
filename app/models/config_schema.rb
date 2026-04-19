@@ -16,12 +16,19 @@ class ConfigSchema
   ].freeze
 
   SYSTEM_DEFAULTS = {
-    'image' => -> { 'ghcr.io/solectrus/solectrus:latest' },
     'admin_password' => -> { SecureRandom.alphanumeric(32) },
     'secret_key_base' => -> { SecureRandom.hex(64) },
   }.freeze
 
   SYSTEM_ALL = (SYSTEM_FIELDS + SYSTEM_DEFAULTS.keys).uniq.freeze
+
+  # --- Dashboard ---
+
+  DASHBOARD_DEFAULTS = {
+    'image' => -> { 'ghcr.io/solectrus/solectrus:latest' },
+  }.freeze
+
+  DASHBOARD_ALL = DASHBOARD_DEFAULTS.keys.freeze
 
   # --- PostgreSQL ---
 
@@ -70,6 +77,7 @@ class ConfigSchema
   # Combined auto-generated defaults keyed by section
   AUTO_GENERATED = {
     'system' => SYSTEM_DEFAULTS,
+    'dashboard' => DASHBOARD_DEFAULTS,
     'postgresql' => POSTGRESQL_DEFAULTS,
     'influxdb' => INFLUXDB_DEFAULTS,
     'redis' => REDIS_DEFAULTS,
@@ -176,6 +184,7 @@ class ConfigSchema
 
   FIELDS = {
     'system' => SYSTEM_ALL,
+    'dashboard' => DASHBOARD_ALL,
     'postgresql' => POSTGRESQL_ALL,
     'influxdb' => INFLUXDB_ALL,
     'redis' => REDIS_ALL,

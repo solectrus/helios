@@ -64,6 +64,7 @@ module Import
     def build_result # rubocop:disable Metrics/MethodLength
       {
         system: system_data,
+        dashboard: dashboard_data,
         postgresql: postgresql_data,
         influxdb: influxdb_data,
         redis: redis_data,
@@ -92,8 +93,8 @@ module Import
     # --- Persistence ---
 
     def persist_singletons!(config)
-      %i[system postgresql influxdb redis watchtower sensors forecast senec mqtt shelly reverse_proxy
-         backup].each do |key|
+      %i[system dashboard postgresql influxdb redis watchtower sensors forecast senec mqtt shelly
+         reverse_proxy backup].each do |key|
         config.update(key.to_s, result[key]) if result[key]
       end
     end
@@ -118,10 +119,15 @@ module Import
       {
         'timezone' => dashboard_env['TZ'],
         'installation_date' => dashboard_env['INSTALLATION_DATE'],
-        'image' => Compose.normalize_image(@reader.service('dashboard')&.dig('image')),
         'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
         'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],
       }
+    end
+
+    # --- Dashboard ---
+
+    def dashboard_data
+      image_data_for('dashboard')
     end
 
     def system_dashboard_data

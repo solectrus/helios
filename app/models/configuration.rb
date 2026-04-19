@@ -3,12 +3,12 @@ class Configuration
 
   # Singletons exist at most once per configuration
   SINGLETONS = %w[
-    system postgresql influxdb redis
+    system dashboard postgresql influxdb redis
     watchtower forecast senec mqtt shelly reverse_proxy backup sensors
   ].freeze
 
   # Sections hidden from the configuration UI (auto-managed)
-  HIDDEN = %w[postgresql influxdb redis watchtower].freeze
+  HIDDEN = %w[dashboard postgresql influxdb redis watchtower].freeze
 
   # Settings shown in the configuration UI (non-hidden singletons, excluding sensors and source configs)
   SETTINGS = %w[system reverse_proxy backup].freeze
