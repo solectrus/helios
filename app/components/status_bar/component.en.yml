@@ -7,6 +7,7 @@ en:
   stopped: 'No services operational'
   restart_required: 'Configuration changed – restart required'
   restart_required_services: 'Restart required: %{services}'
+  start_pending_services: 'Start pending: %{services}'
   start: 'Start'
   stop: 'Stop'
   restart: 'Restart'

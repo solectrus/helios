@@ -14,6 +14,7 @@ module Orchestration
       delegate :overall,
                :service_counts,
                :pending_restart_services,
+               :pending_start_services,
                :refresh!,
                :update,
                :mark_config_changed!,
@@ -39,6 +40,10 @@ module Orchestration
 
     def pending_restart_services
       AffectedServices.compute
+    end
+
+    def pending_start_services
+      AffectedServices.start_pending
     end
 
     def update(service_name, status)
