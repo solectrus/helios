@@ -88,4 +88,12 @@ See [Development Guide](docs/guides/development.md) for details.
 
 ## License
 
-MIT
+HELIOS is source-available, not open source.
+
+Licensed under the [PolyForm Noncommercial License 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0/):
+
+- Noncommercial use is permitted (personal, hobby, research, and charitable, educational, or government organizations).
+- Modification and redistribution are permitted for noncommercial purposes.
+- Commercial use is not permitted.
+
+See [`LICENSE.md`](./LICENSE.md) for the full license text.
