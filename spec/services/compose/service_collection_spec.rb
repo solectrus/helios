@@ -99,9 +99,27 @@ RSpec.describe Compose::ServiceCollection do
       }
     end
 
-    it 'returns services in priority order: dashboard, influxdb, postgresql, redis, then alphabetically' do
+    it 'returns services in priority order, then alphabetically' do
       names = collection.sorted.map(&:name)
       expect(names).to eq(%w[dashboard influxdb postgresql redis nginx whoami])
+    end
+
+    context 'with collector services' do
+      let(:services_hash) do
+        {
+          'forecast-collector' => {},
+          'mqtt-collector' => {},
+          'senec-collector' => {},
+          'shelly-collector' => {},
+        }
+      end
+
+      it 'orders collectors by protocol type' do
+        names = collection.sorted.map(&:name)
+        expect(names).to eq(
+          %w[senec-collector shelly-collector mqtt-collector forecast-collector],
+        )
+      end
     end
 
     it 'returns Service objects' do

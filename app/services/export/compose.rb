@@ -2,22 +2,23 @@ module Export
   class Compose
     WATCHTOWER_LABEL = 'com.centurylinklabs.watchtower.scope=solectrus'.freeze
 
+    # Keep in sync with Compose::ServiceCollection::PRIORITY_ORDER (UI order).
     SERVICE_ORDER = [
       Services::Dashboard,
       Services::Influxdb,
       Services::Ingest,
       Services::Postgresql,
       Services::Redis,
-      Services::PowerSplitter,
       Services::SenecCollector,
       Services::ShellyCollector,
       Services::MqttCollector,
       Services::ForecastCollector,
-      Services::PostgresqlBackup,
-      Services::InfluxdbBackup,
+      Services::PowerSplitter,
       Services::Traefik,
-      Services::Helios,
+      Services::InfluxdbBackup,
+      Services::PostgresqlBackup,
       Services::Watchtower,
+      Services::Helios,
     ].freeze
 
     def initialize(configuration)
