@@ -128,6 +128,30 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
       expect(fixed_hint['html']['de']).not_to include('SENEC')
     end
 
+    it 'injects balcony page before the mapping page for balcony-capable sensors' do
+      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power_2' })
+
+      survey = response.parsed_body
+      names = survey['pages'].pluck('name')
+      expect(names.index('p_balcony')).to be < names.index('p_mapping')
+    end
+
+    it 'hides balcony page when source is senec' do
+      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power_2' })
+
+      survey = response.parsed_body
+      balcony_page = survey['pages'].find { |p| p['name'] == 'p_balcony' }
+
+      expect(balcony_page['visibleIf']).to eq("{source} <> 'senec'")
+    end
+
+    it 'does not inject balcony page for non-balcony-capable sensors' do
+      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power' })
+
+      survey = response.parsed_body
+      expect(survey['pages'].pluck('name')).not_to include('p_balcony')
+    end
+
     it 'returns 404 for sensor survey without sensor param' do
       get configuration_survey_path(id: 'sensor')
 

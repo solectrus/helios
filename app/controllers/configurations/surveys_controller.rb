@@ -56,6 +56,10 @@ module Configurations
       sensor_name.in?(%w[heatpump_power wallbox_power]) || custom_power_sensor?
     end
 
+    def balcony_relevant?
+      SensorRegistry::BALCONY_CAPABLE_SENSORS.include?(sensor_name)
+    end
+
     def customize_sensor_survey!(survey)
       inject_sensor_title!(survey)
       inject_source_choices!(survey)
@@ -64,6 +68,7 @@ module Configurations
       inject_shelly_connection_page!(survey)
       inject_shelly_invert_power!(survey) if invert_power_relevant?
       inject_house_power_page!(survey) if exclude_from_house_power_relevant?
+      inject_balcony_page!(survey) if balcony_relevant?
     end
 
     def inject_sensor_title!(survey)
@@ -167,6 +172,45 @@ module Configurations
           'default' => "Corrects house power by deducting this sensor's consumption",
         },
         'defaultValue' => false,
+      }
+    end
+
+    def inject_balcony_page!(survey)
+      balcony_page = {
+        'name' => 'p_balcony',
+        'visibleIf' => "{source} <> 'senec'",
+        'title' => { 'de' => 'Steckersolargerät', 'default' => 'Balcony power plant' },
+        'elements' => [balcony_element],
+      }
+      mapping_index = survey['pages'].index { |p| p['name'] == 'p_mapping' } || survey['pages'].length
+      survey['pages'].insert(mapping_index, balcony_page)
+    end
+
+    def balcony_element
+      {
+        'type' => 'boolean',
+        'name' => 'is_balcony',
+        'title' => balcony_title,
+        'description' => balcony_description,
+        'defaultValue' => false,
+      }
+    end
+
+    def balcony_title
+      {
+        'de' => 'Das ist ein Steckersolargerät (BKW)',
+        'default' => 'This is a balcony power plant',
+      }
+    end
+
+    def balcony_description
+      {
+        'de' => 'Balkonkraftwerke speisen direkt ins Hausnetz ein und verfälschen den vom ' \
+                'Wechselrichter gemeldeten Hausverbrauch. Mit dieser Option wird der Ingest-Dienst ' \
+                'aktiviert, der den Hausverbrauch korrekt neu berechnet.',
+        'default' => 'Balcony power plants feed directly into the home grid and distort the ' \
+                     'house_power reported by the inverter. This enables the Ingest service, ' \
+                     'which recalculates house_power correctly.',
       }
     end
   end

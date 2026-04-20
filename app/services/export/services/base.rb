@@ -55,6 +55,17 @@ module Export
           "INFLUX_SENSOR_#{sensor.upcase}" if mapping.present?
         end
       end
+
+      # Collectors publish to Ingest when enabled — it recalculates house_power before forwarding.
+      def collector_influx_target
+        configuration.ingest_required? ? :ingest : :influxdb
+      end
+
+      def explicit_vars
+        vars = ["INFLUX_HOST=#{collector_influx_target}"]
+        vars << "INFLUX_PORT=#{Ingest::PORT}" if collector_influx_target == :ingest
+        vars
+      end
     end
   end
 end

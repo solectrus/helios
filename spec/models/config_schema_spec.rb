@@ -127,7 +127,7 @@ RSpec.describe ConfigSchema do
       config = Configuration.current
       missing = described_class.missing_auto_generated(config)
 
-      expect(missing.keys).to match_array(%w[system dashboard postgresql influxdb redis watchtower backup])
+      expect(missing.keys).to match_array(%w[system dashboard postgresql influxdb redis watchtower backup ingest])
     end
 
     it 'returns all system defaults when empty' do

@@ -23,7 +23,7 @@ module Export
         {
           image: 'ghcr.io/solectrus/shelly-collector:develop',
           environment: shelly_environment,
-          depends_on: healthy_depends_on(%i[influxdb]),
+          depends_on: healthy_depends_on([collector_influx_target]),
           restart: 'unless-stopped',
         }
       end
@@ -46,10 +46,6 @@ module Export
         vars = %w[INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SHELLY_INTERVAL INFLUX_MEASUREMENT]
         vars << 'SHELLY_HOST' unless cloud_mode?
         vars
-      end
-
-      def explicit_vars
-        ['INFLUX_HOST=influxdb']
       end
 
       def optional_vars

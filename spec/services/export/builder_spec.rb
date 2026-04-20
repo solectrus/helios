@@ -837,6 +837,225 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'with Ingest (balcony power plant)' do
+    before do
+      configuration.update('senec', {
+                             'adapter' => 'local',
+                             'host' => '192.168.1.100',
+                             'schema' => 'https',
+                             'language' => 'de',
+                             'interval' => '5',
+                           })
+      configuration.update_sensor('inverter_power', { 'source' => 'senec' })
+      configuration.update_sensor('house_power', { 'source' => 'senec' })
+      configuration.update_sensor('inverter_power_2', {
+                                    'source' => 'external',
+                                    'is_balcony' => true,
+                                    'measurement' => 'balcony',
+                                    'field' => 'power',
+                                  })
+      described_class.new(Configuration.current).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'activates Configuration#ingest_required?' do
+      expect(Configuration.current.ingest_required?).to be true
+    end
+
+    it 'includes ingest service' do
+      compose = Compose.load
+      expect(compose.services.names).to include('ingest')
+    end
+
+    it 'uses the default ingest image' do
+      compose = Compose.load
+      ingest = compose.services.find('ingest')
+      expect(ingest.image).to eq('ghcr.io/solectrus/ingest:latest')
+    end
+
+    it 'mounts a bind volume for the SQLite buffer' do
+      compose = Compose.load
+      ingest = compose.services.find('ingest')
+      expect(ingest.config['volumes']).to include('./ingest:/app/data')
+    end
+
+    it 'exposes the web UI on port 4567' do
+      compose = Compose.load
+      ingest = compose.services.find('ingest')
+      expect(ingest.ports).to include('4567:4567')
+      expect(ingest.public_port).to eq(4567)
+    end
+
+    it 'creates the ingest data directory' do
+      expect(Dir.exist?(File.join(tmp_dir, 'ingest'))).to be true
+    end
+
+    it 'forwards measurements to the real InfluxDB' do
+      compose = Compose.load
+      ingest = compose.services.find('ingest')
+      expect(ingest.environment).to include('INFLUX_HOST=influxdb')
+    end
+
+    it 'redirects the SENEC collector to ingest' do
+      compose = Compose.load
+      senec = compose.services.find('senec-collector')
+      expect(senec.environment).to include('INFLUX_HOST=ingest', 'INFLUX_PORT=4567')
+      expect(senec.depends_on.keys).to include('ingest')
+      expect(senec.depends_on.keys).not_to include('influxdb')
+    end
+
+    it 'keeps dashboard pointing at InfluxDB directly' do
+      compose = Compose.load
+      dashboard = compose.services.find('dashboard')
+      expect(dashboard.environment).to include('INFLUX_HOST=influxdb')
+      expect(dashboard.environment).not_to include(a_string_starting_with('INFLUX_PORT='))
+    end
+
+    it 'keeps power-splitter pointing at InfluxDB directly' do
+      compose = Compose.load
+      splitter = compose.services.find('power-splitter')
+      expect(splitter.environment).to include('INFLUX_HOST=influxdb')
+      expect(splitter.environment).not_to include(a_string_starting_with('INFLUX_PORT='))
+    end
+
+    context 'when a forecast collector is also configured' do
+      before do
+        Configuration.current.update('forecast', {
+                                       'forecast' => 'forecast.solar',
+                                       'forecast_latitude' => '51.3',
+                                       'forecast_longitude' => '9.5',
+                                       'forecast_declination1' => '30',
+                                       'forecast_azimuth1' => '180',
+                                       'forecast_kwp1' => '10',
+                                     })
+        Configuration.current.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+        described_class.new(Configuration.current).write!
+      end
+
+      it 'does not route forecast data through ingest' do
+        compose = Compose.load
+        forecast = compose.services.find('forecast-collector')
+        expect(forecast.environment).to include('INFLUX_HOST=influxdb')
+        expect(forecast.environment).not_to include(a_string_starting_with('INFLUX_PORT='))
+        expect(forecast.depends_on.keys).to contain_exactly('influxdb')
+      end
+    end
+
+    it 'does not emit a separate INFLUX_SENSOR_HOUSE_POWER_CALCULATED (Ingest overwrites house_power directly)' do
+      content = File.read(env_path)
+      expect(content).not_to include('INFLUX_SENSOR_HOUSE_POWER_CALCULATED')
+
+      compose = Compose.load
+      ingest = compose.services.find('ingest')
+      expect(ingest.environment).not_to include('INFLUX_SENSOR_HOUSE_POWER_CALCULATED')
+    end
+
+    it 'persists ingest defaults (image) into config.yaml' do
+      reloaded = Configuration.current
+      expect(reloaded.ingest.image).to eq('ghcr.io/solectrus/ingest:latest')
+    end
+
+    it 'writes RETENTION_HOURS with the documented default of 12 hours' do
+      env = Env.load
+      expect(env['RETENTION_HOURS']).to eq('12')
+    end
+
+    it 'always lists RETENTION_HOURS in the ingest service environment' do
+      compose = Compose.load
+      ingest = compose.services.find('ingest')
+      expect(ingest.environment).to include('RETENTION_HOURS')
+    end
+
+    context 'when unrelated sensors are configured' do
+      before do
+        Configuration.current.update_sensor('case_temp', { 'source' => 'senec' })
+        Configuration.current.update_sensor('custom_power_01', {
+                                              'source' => 'external',
+                                              'measurement' => 'custom', 'field' => 'power'
+                                            })
+        described_class.new(Configuration.current).write!
+      end
+
+      it 'does not forward unrelated sensor mappings to ingest' do
+        compose = Compose.load
+        ingest = compose.services.find('ingest')
+        expect(ingest.environment).not_to include('INFLUX_SENSOR_CASE_TEMP')
+        expect(ingest.environment).not_to include('INFLUX_SENSOR_CUSTOM_POWER_01')
+      end
+
+      it 'forwards only sensors relevant to the house_power recalculation' do
+        compose = Compose.load
+        ingest = compose.services.find('ingest')
+        sensor_vars = ingest.environment.grep(/\AINFLUX_SENSOR_/)
+        expect(sensor_vars).to contain_exactly(
+          'INFLUX_SENSOR_INVERTER_POWER',
+          'INFLUX_SENSOR_INVERTER_POWER_2',
+          'INFLUX_SENSOR_HOUSE_POWER',
+        )
+      end
+    end
+  end
+
+  describe 'without Ingest' do
+    before do
+      configuration.update_sensor('inverter_power', { 'source' => 'senec' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'does not include ingest service' do
+      compose = Compose.load
+      expect(compose.services.names).not_to include('ingest')
+    end
+
+    it 'does not create the ingest data directory' do
+      expect(Dir.exist?(File.join(tmp_dir, 'ingest'))).to be false
+    end
+  end
+
+  describe 'with Ingest retention_hours tuning' do
+    before do
+      configuration.update('ingest', { 'retention_hours' => '24' })
+      configuration.update_sensor('inverter_power_1', { 'source' => 'external', 'is_balcony' => true })
+      configuration.update_sensor('house_power', { 'source' => 'senec' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'writes RETENTION_HOURS to .env' do
+      env = Env.load
+      expect(env['RETENTION_HOURS']).to eq('24')
+    end
+
+    it 'passes RETENTION_HOURS into the ingest service' do
+      compose = Compose.load
+      ingest = compose.services.find('ingest')
+      expect(ingest.environment).to include('RETENTION_HOURS')
+    end
+  end
+
+  describe 'Ingest stats password' do
+    before do
+      configuration.update_sensor('inverter_power_2', {
+                                    'source' => 'external',
+                                    'is_balcony' => true,
+                                    'measurement' => 'balcony',
+                                    'field' => 'power',
+                                  })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'reuses the admin password so the stats dashboard is protected' do
+      compose = Compose.load
+      ingest = compose.services.find('ingest')
+      expect(ingest.environment).to include('STATS_PASSWORD=${ADMIN_PASSWORD}')
+    end
+
+    it 'does not emit a separate STATS_PASSWORD variable to .env' do
+      content = File.read(env_path)
+      expect(content).not_to include("\nSTATS_PASSWORD=")
+    end
+  end
+
   describe 'secret persistence' do
     it 'persists generated secrets to config.yaml' do
       described_class.new(configuration).write!

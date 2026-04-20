@@ -67,6 +67,16 @@ class ConfigSchema
 
   WATCHTOWER_ALL = WATCHTOWER_DEFAULTS.keys.freeze
 
+  # --- Ingest: proxy that recalculates house_power for balcony power plants ---
+
+  INGEST_DEFAULTS = {
+    'image' => -> { 'ghcr.io/solectrus/ingest:latest' },
+  }.freeze
+
+  INGEST_FIELDS = %w[retention_hours].freeze
+
+  INGEST_ALL = (INGEST_FIELDS + INGEST_DEFAULTS.keys).uniq.freeze
+
   # --- Backup image defaults ---
 
   BACKUP_DEFAULTS = {
@@ -83,6 +93,7 @@ class ConfigSchema
     'redis' => REDIS_DEFAULTS,
     'watchtower' => WATCHTOWER_DEFAULTS,
     'backup' => BACKUP_DEFAULTS,
+    'ingest' => INGEST_DEFAULTS,
   }.freeze
 
   # --- Source configuration fields ---
@@ -189,6 +200,7 @@ class ConfigSchema
     'influxdb' => INFLUXDB_ALL,
     'redis' => REDIS_ALL,
     'watchtower' => WATCHTOWER_ALL,
+    'ingest' => INGEST_ALL,
     'senec' => SENEC_FIELDS,
     'mqtt' => MQTT_FIELDS,
     'shelly' => SHELLY_FIELDS,

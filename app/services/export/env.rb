@@ -37,6 +37,7 @@ module Export
       mqtt_section(env) if configuration.mqtt_required?
       shelly_section(env) if configuration.shelly_required?
       power_splitter_section(env)
+      ingest_section(env) if configuration.ingest_required?
       sensor_section(env)
       unmanaged_section(env)
     end
@@ -346,6 +347,13 @@ module Export
 
       env.add_section('Power Splitter')
       entry(env, 'POWER_SPLITTER_INTERVAL', interval, 'Power splitter calculation interval in seconds')
+    end
+
+    def ingest_section(env)
+      env.add_section('Ingest (recalculates house_power for balcony power plants)')
+
+      entry(env, 'RETENTION_HOURS', configuration.ingest.retention_hours.presence || '12',
+            'Hours of measurement data Ingest buffers in its SQLite store')
     end
 
     def sensor_section(env)

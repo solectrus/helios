@@ -21,6 +21,7 @@ module Import
 
       persist_singletons!(config)
       sensor_persister.persist!(config)
+      mark_balcony_sensor!(config)
       persist_unmanaged!(config)
 
       config
@@ -59,9 +60,22 @@ module Import
       )
     end
 
+    # The imported stack has an ingest service and at least one individual
+    # inverter sensor we can flag as balcony power plant. The highest-numbered
+    # sensor wins — main roof inverters are typically the lowest slot;
+    # balcony generators get added later.
+    def balcony_sensor_name
+      return @balcony_sensor_name if defined?(@balcony_sensor_name)
+
+      @balcony_sensor_name =
+        if @reader.services.key?('ingest')
+          SensorRegistry::BALCONY_CAPABLE_SENSORS.rfind { |name| sensors_data.key?(name) }
+        end
+    end
+
     # --- Result building ---
 
-    def build_result # rubocop:disable Metrics/MethodLength
+    def build_result # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
       {
         system: system_data,
         dashboard: dashboard_data,
@@ -69,6 +83,7 @@ module Import
         influxdb: influxdb_data,
         redis: redis_data,
         watchtower: watchtower_data,
+        ingest: ingest_section_data,
         sensors: sensors_data,
         forecast: forecast_extractor.section_data,
         senec: senec_extractor.section_data,
@@ -93,8 +108,8 @@ module Import
     # --- Persistence ---
 
     def persist_singletons!(config)
-      %i[system dashboard postgresql influxdb redis watchtower sensors forecast senec mqtt shelly
-         reverse_proxy backup].each do |key|
+      %i[system dashboard postgresql influxdb redis watchtower ingest sensors forecast senec mqtt
+         shelly reverse_proxy backup].each do |key|
         config.update(key.to_s, result[key]) if result[key]
       end
     end
@@ -102,6 +117,13 @@ module Import
     def persist_unmanaged!(config)
       unmanaged = result[:unmanaged]
       config.update_unmanaged(unmanaged) if unmanaged.present?
+    end
+
+    def mark_balcony_sensor!(config)
+      return unless balcony_sensor_name
+
+      existing = config.sensor_config(balcony_sensor_name).to_h
+      config.update_sensor(balcony_sensor_name, existing.merge('is_balcony' => true))
     end
 
     # --- System ---
@@ -197,6 +219,7 @@ module Import
           .select { |k, _| k.start_with?('INFLUX_SENSOR_') }
           .compact_blank
           .transform_keys { |k| k.delete_prefix('INFLUX_SENSOR_').downcase }
+          .select { |name, _| SensorRegistry.valid?(name) }
       end
     end
 
@@ -287,6 +310,18 @@ module Import
     def power_splitter_interval
       ps_env = service_env('power-splitter')
       ps_env['POWER_SPLITTER_INTERVAL']
+    end
+
+    # --- Ingest ---
+
+    def ingest_section_data
+      return unless balcony_sensor_name
+
+      ingest_env = service_env('ingest')
+      {
+        'image' => Compose.normalize_image(@reader.service('ingest')&.dig('image')),
+        'retention_hours' => ingest_env['RETENTION_HOURS'],
+      }.compact
     end
 
     # --- Shared helpers ---

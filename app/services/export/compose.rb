@@ -2,15 +2,13 @@ module Export
   class Compose
     WATCHTOWER_LABEL = 'com.centurylinklabs.watchtower.scope=solectrus'.freeze
 
-    BASE_SERVICES = [
+    SERVICE_ORDER = [
       Services::Dashboard,
       Services::Influxdb,
+      Services::Ingest,
       Services::Postgresql,
       Services::Redis,
       Services::PowerSplitter,
-    ].freeze
-
-    CONDITIONAL_SERVICES = [
       Services::SenecCollector,
       Services::ShellyCollector,
       Services::MqttCollector,
@@ -19,9 +17,6 @@ module Export
       Services::InfluxdbBackup,
       Services::Traefik,
       Services::Helios,
-    ].freeze
-
-    TAIL_SERVICES = [
       Services::Watchtower,
     ].freeze
 
@@ -63,11 +58,9 @@ module Export
     end
 
     def active_service_classes
-      @active_service_classes ||= [
-        *BASE_SERVICES,
-        *CONDITIONAL_SERVICES.select { |service_class| service_class.enabled?(configuration) },
-        *TAIL_SERVICES,
-      ]
+      @active_service_classes ||= SERVICE_ORDER.select do |service_class|
+        service_class.enabled?(configuration)
+      end
     end
 
     def add_unmanaged_services(compose)

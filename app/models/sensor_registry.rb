@@ -2,6 +2,17 @@ class SensorRegistry
   # Available data sources for sensors
   SOURCES = %w[senec shelly mqtt forecast external].freeze
 
+  # Sensors that can be flagged as a balcony power plant. A balcony generator
+  # feeds directly into the home grid and distorts inverter-reported
+  # house_power, so Ingest is required for correction.
+  BALCONY_CAPABLE_SENSORS = %w[
+    inverter_power_1
+    inverter_power_2
+    inverter_power_3
+    inverter_power_4
+    inverter_power_5
+  ].freeze
+
   # Sensor groups for UI display
   GROUPS = {
     inverter: %w[

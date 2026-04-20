@@ -4,11 +4,11 @@ class Configuration
   # Singletons exist at most once per configuration
   SINGLETONS = %w[
     system dashboard postgresql influxdb redis
-    watchtower forecast senec mqtt shelly reverse_proxy backup sensors
+    watchtower forecast senec mqtt shelly reverse_proxy backup sensors ingest
   ].freeze
 
   # Sections hidden from the configuration UI (auto-managed)
-  HIDDEN = %w[dashboard postgresql influxdb redis watchtower].freeze
+  HIDDEN = %w[dashboard postgresql influxdb redis watchtower ingest].freeze
 
   # Settings shown in the configuration UI (non-hidden singletons, excluding sensors and source configs)
   SETTINGS = %w[system reverse_proxy backup].freeze
@@ -88,7 +88,7 @@ class Configuration
 
   # List of enabled sensor names
   def enabled_sensors
-    (@data['sensors'] || {}).keys.select { |name| SensorRegistry.valid?(name) }
+    @enabled_sensors ||= (@data['sensors'] || {}).keys.select { |name| SensorRegistry.valid?(name) }
   end
 
   # Get config for a specific sensor
@@ -148,11 +148,23 @@ class Configuration
     sensors_with_source('forecast').any?
   end
 
+  # Ingest recalculates house_power when a balcony power plant feeds into
+  # the home grid and distorts the inverter-reported value.
+  def ingest_required?
+    balcony_sensors.any?
+  end
+
+  def balcony_sensors
+    @balcony_sensors ||= SensorRegistry::BALCONY_CAPABLE_SENSORS.select do |name|
+      sensor_enabled?(name) && sensor_config(name).is_balcony
+    end
+  end
+
   # --- Sensor mappings for .env generation ---
 
   # Effective sensor mappings derived from sensor configuration
   def effective_sensor_mappings
-    enabled_sensors.each_with_object({}) do |name, mappings|
+    @effective_sensor_mappings ||= enabled_sensors.each_with_object({}) do |name, mappings|
       config = sensor_config(name)
       mapping = SensorMappings.mapping_for(name, config)
       mappings[name] = mapping if mapping
@@ -217,6 +229,9 @@ class Configuration
     File.write(tmp_path, YAML.dump(ordered_data))
     File.rename(tmp_path, @path)
 
+    @enabled_sensors = nil
+    @balcony_sensors = nil
+    @effective_sensor_mappings = nil
     Current.configuration = nil
   end
 
@@ -233,17 +248,17 @@ class Configuration
   SENSOR_FIELDS_BY_SOURCE = {
     'senec' => %w[source measurement field],
     'forecast' => %w[source measurement field],
-    'external' => %w[source measurement field name exclude_from_house_power],
+    'external' => %w[source measurement field name exclude_from_house_power is_balcony],
     'shelly' => %w[
       source measurement field name shelly_connection shelly_host shelly_interval shelly_password
-      shelly_device_id shelly_invert_power exclude_from_house_power
+      shelly_device_id shelly_invert_power exclude_from_house_power is_balcony
     ],
     'mqtt' => %w[
       source name measurement field
       mqtt_topic mqtt_payload_type
       mqtt_json_key mqtt_json_path mqtt_json_formula mqtt_formula
       mqtt_min mqtt_max mqtt_null_to_zero
-      exclude_from_house_power
+      exclude_from_house_power is_balcony
     ],
   }.freeze
 

@@ -3,7 +3,7 @@ module Import
     class UnmanagedDetector
       # All service names that Helios manages (generates in compose.yaml)
       MANAGED_SERVICES = %w[
-        dashboard postgresql redis influxdb watchtower helios
+        dashboard postgresql redis influxdb watchtower helios ingest
         traefik postgresql-backup influxdb-backup
         senec-collector shelly-collector mqtt-collector forecast-collector power-splitter
       ].freeze
@@ -16,6 +16,7 @@ module Import
         INFLUX_EXCLUDE_FROM_HOUSE_POWER
         LOCKUP_CODEWORD TRUSTED_PROXY_RANGES
         POWER_SPLITTER_INTERVAL
+        RETENTION_HOURS STATS_PASSWORD
         POSTGRES_PASSWORD
         INFLUX_PASSWORD INFLUX_ORG INFLUX_BUCKET INFLUX_TOKEN
         INFLUX_ADMIN_TOKEN INFLUX_TOKEN_READ INFLUX_TOKEN_WRITE

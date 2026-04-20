@@ -17,7 +17,7 @@ module Export
         {
           image: 'ghcr.io/solectrus/senec-collector:latest',
           environment: senec_environment,
-          depends_on: healthy_depends_on(%i[influxdb]),
+          depends_on: healthy_depends_on([collector_influx_target]),
           restart: 'unless-stopped',
         }
       end
@@ -34,10 +34,6 @@ module Export
 
       def passthrough_vars
         %w[TZ INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET INFLUX_MEASUREMENT_SENEC SENEC_ADAPTER SENEC_INTERVAL]
-      end
-
-      def explicit_vars
-        ['INFLUX_HOST=influxdb']
       end
 
       def adapter_vars

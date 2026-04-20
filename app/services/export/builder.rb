@@ -1,7 +1,12 @@
 module Export
   class Builder
-    # Sections whose defaults are only generated when the section is present in config
-    OPTIONAL_SECTIONS = %w[backup].freeze
+    # Sections whose defaults are only generated on demand. The lambda decides
+    # whether defaults should be written for this section given the current
+    # configuration. Sections not listed here are always populated with defaults.
+    OPTIONAL_SECTIONS = {
+      'backup' => ->(config) { config.configured?('backup') },
+      'ingest' => ->(config) { config.ingest_required? },
+    }.freeze
 
     def initialize(configuration)
       @configuration = configuration
@@ -57,7 +62,8 @@ module Export
       return if missing.empty?
 
       missing.each do |section, defaults|
-        next if OPTIONAL_SECTIONS.include?(section) && !@configuration.configured?(section)
+        gate = OPTIONAL_SECTIONS[section]
+        next if gate && !gate.call(@configuration)
 
         current = @configuration.send(section)
         updates = defaults.transform_values(&:call)

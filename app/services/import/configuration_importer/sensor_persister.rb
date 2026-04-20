@@ -32,8 +32,7 @@ module Import
           source = infer_source_for_sensor(sensor_name)
           next unless source
 
-          sensor_data = build_sensor_data(sensor_name, source)
-          config.update_sensor(sensor_name, sensor_data)
+          config.update_sensor(sensor_name, build_sensor_data(sensor_name, source))
         end
       end
 
