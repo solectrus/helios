@@ -10,8 +10,15 @@ export default class extends Controller {
   declare datetimeValue: string;
   declare targetValue: string;
 
+  private intervalId?: number;
+
   connect() {
     this.update();
+    this.intervalId = window.setInterval(() => this.update(), 60_000);
+  }
+
+  disconnect() {
+    window.clearInterval(this.intervalId);
   }
 
   datetimeValueChanged() {
