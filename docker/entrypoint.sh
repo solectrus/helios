@@ -6,7 +6,6 @@ echo "Based on Alpine Linux $(cat /etc/alpine-release)"
 
 echo ""
 echo "Copyright (C) 2020-2026 Georg Ledermann"
-echo "License: GNU AGPLv3 - https://www.gnu.org/licenses/agpl-3.0.html"
 
 # If running the rails server then wait for services
 # and create or migrate existing database

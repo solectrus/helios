@@ -88,4 +88,11 @@ See [Development Guide](docs/guides/development.md) for details.
 
 ## License
 
-MIT
+Copyright (c) 2026 Georg Ledermann. All rights reserved.
+
+HELIOS is currently **unlicensed** — a formal license will be chosen at a later date. Until then:
+
+- **Docker image:** You may pull, run, and operate the official HELIOS Docker images for any purpose.
+- **Source code:** Published for reference only — no permission is granted to copy, modify, or redistribute.
+
+See [`LICENSE.md`](./LICENSE.md) for details.
