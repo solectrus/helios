@@ -1,6 +1,6 @@
 # Architecture Decision Records
 
-This directory contains Architecture Decision Records (ADRs) for the Helios project.
+This directory contains Architecture Decision Records (ADRs) for the HELIOS project.
 
 An ADR captures an important architectural decision along with its context and consequences.
 

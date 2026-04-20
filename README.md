@@ -2,22 +2,20 @@
 
 Web-based bootstrap helper and management interface for [SOLECTRUS](https://solectrus.de).
 
-**Status:** Active development (Phase 2: Configuration) – see [docs/guides/phases.md](docs/guides/phases.md) for details.
+## What is HELIOS?
 
-## What is Helios?
-
-Helios eliminates the need to manually edit configuration files or understand Docker. Users install SOLECTRUS with a single command and manage it through a web interface.
+HELIOS eliminates the need to manually edit configuration files or understand Docker. Users install SOLECTRUS with a single command and manage it through a web interface.
 
 ## Documentation
 
-| Document                                          | Description                        |
-| ------------------------------------------------- | ---------------------------------- |
-| [Requirements](docs/spec/requirements.md)         | Functional and non-functional spec |
-| [Architecture](docs/architecture/overview.md)     | Tech stack, system diagram         |
-| [Docker Integration](docs/architecture/docker.md) | Compose, volumes, health checks    |
-| [ADRs](docs/adr/)                                 | Architecture Decision Records      |
-| [Development Guide](docs/guides/development.md)   | Local setup, testing               |
-| [Phases](docs/guides/phases.md)                   | Phase 0, MVP, roadmap              |
+| Document                                          | Description                                |
+| ------------------------------------------------- | ------------------------------------------ |
+| [Product overview](docs/product.md)               | Scenarios, features, technical constraints |
+| [Architecture](docs/architecture/overview.md)     | System diagram, internal storage           |
+| [Docker Integration](docs/architecture/docker.md) | Compose, volumes, health checks            |
+| [ADRs](docs/adr/)                                 | Architecture Decision Records              |
+| [Development Guide](docs/guides/development.md)   | Local setup, testing                       |
+| [Open TODOs](docs/todos.md)                       | Work items still ahead                     |
 
 ## Adding HELIOS to an existing SOLECTRUS installation
 

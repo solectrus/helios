@@ -35,7 +35,7 @@ Use bind mounts (local directories) for all persistent data instead of Docker vo
 
 ```
 /opt/solectrus/
-├── helios/      # Helios SQLite database
+├── helios/      # HELIOS SQLite database
 ├── postgresql/  # PostgreSQL data
 ├── redis/       # Redis data
 └── influxdb/    # InfluxDB data

@@ -6,12 +6,12 @@ Accepted
 
 ## Context
 
-Helios reads and writes two external files:
+HELIOS reads and writes two external files:
 
 - `compose.yaml` – Docker Compose configuration
 - `.env` – Environment variables
 
-Both files may contain user modifications (comments, custom variables, formatting). We need clear rules for how Helios handles these files.
+Both files may contain user modifications (comments, custom variables, formatting). We need clear rules for how HELIOS handles these files.
 
 ## Decision
 
@@ -19,9 +19,9 @@ Both files may contain user modifications (comments, custom variables, formattin
 
 | Aspect           | Decision      | Rationale                                                                                                    |
 | ---------------- | ------------- | ------------------------------------------------------------------------------------------------------------ |
-| Comments         | Not preserved | Standard YAML parsers (Psych) don't support comment preservation. Acceptable since Helios manages this file. |
+| Comments         | Not preserved | Standard YAML parsers (Psych) don't support comment preservation. Acceptable since HELIOS manages this file. |
 | Anchors/Aliases  | Not preserved | Resolved during parsing. Complex anchor preservation not worth the effort.                                   |
-| Formatting       | Normalized    | Helios writes consistent formatting.                                                                         |
+| Formatting       | Normalized    | HELIOS writes consistent formatting.                                                                         |
 | Unknown services | Preserved     | User-added services (e.g., `traefik`) are kept as-is.                                                        |
 
 ### .env
@@ -44,7 +44,7 @@ Both files may contain user modifications (comments, custom variables, formattin
 
 **Negative:**
 
-- Comments in compose.yaml lost on first Helios write
+- Comments in compose.yaml lost on first HELIOS write
 - YAML anchors/aliases resolved (may increase file size slightly)
 - Users needing multiline values must use alternative encoding
 

@@ -6,7 +6,7 @@ Accepted (updated to reflect file-based YAML implementation)
 
 ## Context
 
-Helios needs to store user configuration that drives the generation of `compose.yaml` and `.env` files. This includes:
+HELIOS needs to store user configuration that drives the generation of `compose.yaml` and `.env` files. This includes:
 
 - General settings (timezone, installation date)
 - Device/service configuration (inverter, wallbox, heatpump, etc.)
@@ -36,17 +36,26 @@ config.update('system', { 'installation_date' => '2024-01-15', 'timezone' => 'Eu
 
 ## Singletons
 
-Defined in `Configuration::SINGLETONS`:
+Defined in `Configuration::SINGLETONS` (see [configuration.rb](../../app/models/configuration.rb)):
 
-| Singleton  | Purpose                     |
-| ---------- | --------------------------- |
-| `system`   | Installation date, timezone |
-| `devices`  | Device configuration        |
-| `inverter` | Inverter settings           |
-| `wallbox`  | EV charger settings         |
-| `heatpump` | Heat pump settings          |
-| `mqtt`     | MQTT configuration          |
-| `forecast` | Weather forecast settings   |
+| Singleton       | Purpose                                              | Visibility |
+| --------------- | ---------------------------------------------------- | ---------- |
+| `system`        | Installation date, timezone, admin password, locale  | Settings   |
+| `reverse_proxy` | Traefik / HTTPS configuration                        | Settings   |
+| `backup`        | Backup schedule and destination                      | Settings   |
+| `sensors`       | Sensor → measurement:field mappings                  | Sensors UI |
+| `senec`         | SENEC collector connection settings                  | Source     |
+| `mqtt`          | MQTT broker settings                                 | Source     |
+| `shelly`        | Shelly collector settings (one or more instances)    | Source     |
+| `forecast`      | forecast.solar / Solcast / pvnode settings           | Source     |
+| `dashboard`     | Auto-managed dashboard settings (ports, secrets)     | Hidden     |
+| `postgresql`    | Auto-managed Postgres credentials                    | Hidden     |
+| `influxdb`      | Auto-managed InfluxDB token/org/bucket               | Hidden     |
+| `redis`         | Auto-managed Redis settings                          | Hidden     |
+| `watchtower`    | Auto-managed update service settings                 | Hidden     |
+| `ingest`        | Auto-managed ingest endpoint (external data sources) | Hidden     |
+
+Hidden singletons are maintained internally and not shown in the configuration UI. A `_unmanaged` key preserves services and env vars imported from existing installations that HELIOS does not manage itself.
 
 ## Consequences
 

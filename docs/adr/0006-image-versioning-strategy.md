@@ -45,7 +45,7 @@ During development, some SOLECTRUS services may temporarily use the `develop` ta
 | Service        | Image                                     |
 | -------------- | ----------------------------------------- |
 | Dashboard      | `ghcr.io/solectrus/solectrus:latest`      |
-| Helios         | `ghcr.io/solectrus/helios:latest`         |
+| HELIOS         | `ghcr.io/solectrus/helios:latest`         |
 | Power-Splitter | `ghcr.io/solectrus/power-splitter:latest` |
 | PostgreSQL     | `postgres:18-alpine`                      |
 | Redis          | `redis:8-alpine`                          |
