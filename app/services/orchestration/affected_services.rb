@@ -106,8 +106,16 @@ module Orchestration
     # and whose config hash differs from (or is missing in) the deployed
     # baseline — typically a service newly added via a configuration change
     # (e.g. mqtt-collector after enabling the first MQTT topic).
+    #
+    # Only reported when at least one container exists. If the whole stack
+    # is down, flagging every missing service as "start pending" is noise —
+    # the user will start the whole stack.
     def start_pending
-      categorize { |changed, containers| changed.reject { |name| containers[name] } }
+      categorize do |changed, containers|
+        next [] if containers.except(Runner::SELF_SERVICE).empty?
+
+        changed.reject { |name| containers[name] }
+      end
     end
 
     private

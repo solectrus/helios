@@ -280,6 +280,36 @@ RSpec.describe Orchestration::AffectedServices do
         expect(File.exist?(deployed_hashes_path)).to be(true)
       end
     end
+
+    context 'when no containers exist at all (stack fully down)' do
+      before do
+        write_deployed_hashes(
+          'redis' => 'old_redis',
+          'influxdb' => 'old_influx',
+        )
+        allow(Orchestration::Container).to receive(:all).and_return([])
+      end
+
+      it 'returns empty array instead of flagging every missing service' do
+        expect(described_class.start_pending).to eq([])
+      end
+    end
+
+    context 'when only helios is running (user stack fully down)' do
+      before do
+        write_deployed_hashes(
+          'redis' => 'aaa111',
+          'influxdb' => 'bbb222',
+        )
+        allow(Orchestration::Container).to receive(:all).and_return(
+          [mock_container('helios', 'any')],
+        )
+      end
+
+      it 'returns empty array (helios alone does not count as "up")' do
+        expect(described_class.start_pending).to eq([])
+      end
+    end
   end
 
   describe '.update_deployed_hash!' do
