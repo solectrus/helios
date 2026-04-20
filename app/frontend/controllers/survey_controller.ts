@@ -6,6 +6,9 @@ import { readLocale } from '../utils/preferences_cookie';
 // Import Survey.JS UI (side-effect: registers UI components)
 import 'survey-js-ui';
 
+// Register German translations (Yes/No buttons, validation messages, etc.)
+import 'survey-core/i18n/german';
+
 // Survey.JS styles are imported in application.css for correct cascade order
 
 export default class extends Controller {
