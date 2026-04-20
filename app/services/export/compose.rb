@@ -7,6 +7,7 @@ module Export
       Services::Influxdb,
       Services::Postgresql,
       Services::Redis,
+      Services::PowerSplitter,
     ].freeze
 
     CONDITIONAL_SERVICES = [
@@ -14,7 +15,6 @@ module Export
       Services::ShellyCollector,
       Services::MqttCollector,
       Services::ForecastCollector,
-      Services::PowerSplitter,
       Services::PostgresqlBackup,
       Services::InfluxdbBackup,
       Services::Traefik,

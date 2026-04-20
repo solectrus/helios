@@ -200,29 +200,6 @@ RSpec.describe Configuration do
     end
   end
 
-  describe '#ingest_required?' do
-    it 'returns false with single inverter power sensor' do
-      config = described_class.current
-      config.update_sensor('inverter_power_1', { 'source' => 'senec' })
-
-      expect(config.ingest_required?).to be false
-    end
-
-    it 'returns true with multiple inverter power sensors' do
-      config = described_class.current
-      config.update_sensor('inverter_power_1', { 'source' => 'senec' })
-      config.update_sensor('inverter_power_2', { 'source' => 'mqtt' })
-
-      expect(config.ingest_required?).to be true
-    end
-
-    it 'returns false with no inverter sensors' do
-      config = described_class.current
-
-      expect(config.ingest_required?).to be false
-    end
-  end
-
   describe '#effective_sensor_mappings' do
     it 'returns mappings for enabled sensors' do
       config = described_class.current

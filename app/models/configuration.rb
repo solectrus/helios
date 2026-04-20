@@ -174,12 +174,6 @@ class Configuration
     end.map(&:upcase)
   end
 
-  # Check if Ingest service is needed (multiple inverter power sensors)
-  def ingest_required?
-    inverter_sensors = enabled_sensors.select { |n| n.start_with?('inverter_power_') && n.match?(/\d$/) }
-    inverter_sensors.size > 1
-  end
-
   # --- Generic singleton access ---
 
   def setting_data(setting)

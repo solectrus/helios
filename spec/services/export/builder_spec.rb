@@ -43,6 +43,7 @@ RSpec.describe Export::Builder do
         'redis',
         'influxdb',
         'dashboard',
+        'power-splitter',
         'watchtower',
         'helios',
       )
@@ -804,27 +805,35 @@ RSpec.describe Export::Builder do
     end
   end
 
-  describe 'with power-splitter configured' do
+  describe 'power-splitter service' do
     before do
-      configuration.update_sensor('inverter_power_1', { 'source' => 'senec' })
-      configuration.update_sensor('inverter_power_2', { 'source' => 'senec' })
+      configuration.update_sensor('grid_import_power', { 'source' => 'senec' })
+      configuration.update_sensor('house_power', { 'source' => 'senec' })
+      configuration.update_sensor('wallbox_power', { 'source' => 'senec' })
+      configuration.update_sensor('heatpump_power', { 'source' => 'shelly', 'shelly_host' => '1.2.3.4' })
+      configuration.update_sensor('custom_power_01', { 'source' => 'shelly', 'shelly_host' => '1.2.3.5' })
       configuration.update('senec', { 'adapter' => 'local', 'host' => '192.168.1.100' })
       described_class.new(Configuration.current).write!
     end
 
     it_behaves_like 'valid Docker Compose configuration'
 
-    it 'includes power-splitter service' do
+    it 'is always included in the stack' do
       compose = Compose.load
       expect(compose.services.names).to include('power-splitter')
     end
 
-    it 'configures power-splitter with sensor environment' do
+    it 'receives sensor environment for the sensors it consumes' do
       compose = Compose.load
       splitter = compose.services.find('power-splitter')
 
-      expect(splitter.environment).to include('INFLUX_SENSOR_INVERTER_POWER_1')
-      expect(splitter.environment).to include('INFLUX_SENSOR_INVERTER_POWER_2')
+      expect(splitter.environment).to include(
+        'INFLUX_SENSOR_GRID_IMPORT_POWER',
+        'INFLUX_SENSOR_HOUSE_POWER',
+        'INFLUX_SENSOR_WALLBOX_POWER',
+        'INFLUX_SENSOR_HEATPUMP_POWER',
+        'INFLUX_SENSOR_CUSTOM_POWER_01',
+      )
     end
   end
 

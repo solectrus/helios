@@ -9,10 +9,6 @@ module Export
         'Power Splitter — Calculates derived power values'
       end
 
-      def self.enabled?(configuration)
-        configuration.ingest_required?
-      end
-
       def to_h
         {
           image: 'ghcr.io/solectrus/power-splitter:latest',
