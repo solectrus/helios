@@ -97,7 +97,8 @@ module StatusBar
     end
 
     def pending_label(key, services, locale, counts)
-      t(".#{key}", locale:, services: services.join(', '), **counts)
+      display_names = services.map { |s| Compose::Service.display_name_for(s) }
+      t(".#{key}", locale:, services: display_names.join(', '), **counts)
     end
   end
 end

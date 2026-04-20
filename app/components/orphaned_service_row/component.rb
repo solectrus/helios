@@ -15,7 +15,7 @@ module OrphanedServiceRow
     delegate :service_name, to: :container
 
     def display_name
-      Compose::Service::DISPLAY_NAMES[container_image_name] || service_name
+      Compose::Service.display_name_for(service_name)
     end
 
     def stop_disabled?
@@ -32,12 +32,6 @@ module OrphanedServiceRow
 
     def status_label
       pending ? t('.processing') : t('.orphaned')
-    end
-
-    private
-
-    def container_image_name
-      container.image&.split(':')&.first
     end
   end
 end

@@ -1,12 +1,26 @@
 module Compose
   class Service
     DISPLAY_NAMES = {
-      'postgres' => 'PostgreSQL',
-      'redis' => 'Redis',
+      'dashboard' => 'SOLECTRUS',
+      'forecast-collector' => 'Forecast-Collector',
+      'helios' => 'HELIOS',
       'influxdb' => 'InfluxDB',
-      'ghcr.io/solectrus/solectrus' => 'SOLECTRUS',
-      'nickfedor/watchtower' => 'Watchtower',
+      'influxdb-backup' => 'InfluxDB-Backup',
+      'ingest' => 'Ingest',
+      'mqtt-collector' => 'MQTT-Collector',
+      'postgresql' => 'PostgreSQL',
+      'postgresql-backup' => 'PostgreSQL-Backup',
+      'power-splitter' => 'Power-Splitter',
+      'redis' => 'Redis',
+      'senec-collector' => 'SENEC-Collector',
+      'shelly-collector' => 'Shelly-Collector',
+      'traefik' => 'Traefik',
+      'watchtower' => 'Watchtower',
     }.freeze
+
+    def self.display_name_for(service_name)
+      DISPLAY_NAMES[service_name] || service_name
+    end
 
     attr_reader :name, :config
 
@@ -28,7 +42,7 @@ module Compose
     end
 
     def display_name
-      DISPLAY_NAMES[image_name] || name
+      self.class.display_name_for(name)
     end
 
     def helios?

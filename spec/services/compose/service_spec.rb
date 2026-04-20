@@ -36,22 +36,7 @@ RSpec.describe Compose::Service do
   end
 
   describe '#display_name' do
-    it 'returns PostgreSQL for postgres image' do
-      service = described_class.new('db', { 'image' => 'postgres:18-alpine' })
-      expect(service.display_name).to eq('PostgreSQL')
-    end
-
-    it 'returns Redis for redis image' do
-      service = described_class.new('cache', { 'image' => 'redis:8-alpine' })
-      expect(service.display_name).to eq('Redis')
-    end
-
-    it 'returns InfluxDB for influxdb image' do
-      service = described_class.new('tsdb', { 'image' => 'influxdb:2-alpine' })
-      expect(service.display_name).to eq('InfluxDB')
-    end
-
-    it 'returns SOLECTRUS for solectrus image' do
+    it 'returns SOLECTRUS for dashboard service' do
       service =
         described_class.new(
           'dashboard',
@@ -60,15 +45,33 @@ RSpec.describe Compose::Service do
       expect(service.display_name).to eq('SOLECTRUS')
     end
 
-    it 'returns service name for unknown images' do
+    it 'returns PostgreSQL for postgresql service' do
+      service =
+        described_class.new('postgresql', { 'image' => 'postgres:18-alpine' })
+      expect(service.display_name).to eq('PostgreSQL')
+    end
+
+    it 'returns MQTT-Collector for mqtt-collector service' do
+      service = described_class.new('mqtt-collector', {})
+      expect(service.display_name).to eq('MQTT-Collector')
+    end
+
+    it 'returns service name for unknown services' do
       service =
         described_class.new('my-custom-service', { 'image' => 'nginx:latest' })
       expect(service.display_name).to eq('my-custom-service')
     end
+  end
 
-    it 'returns service name when image is nil' do
-      service = described_class.new('no-image', {})
-      expect(service.display_name).to eq('no-image')
+  describe '.display_name_for' do
+    it 'returns the mapped display name' do
+      expect(described_class.display_name_for('power-splitter')).to eq(
+        'Power-Splitter',
+      )
+    end
+
+    it 'falls back to the service name for unknown services' do
+      expect(described_class.display_name_for('unknown')).to eq('unknown')
     end
   end
 
