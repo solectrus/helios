@@ -6,7 +6,7 @@ Accepted (updated to reflect current usage)
 
 ## Context
 
-Helios needs persistence for Rails infrastructure (background jobs, WebSocket messages) but stores no application data in the database. All business data is file-based (see ADR-0009).
+HELIOS needs persistence for Rails infrastructure (background jobs, WebSocket messages) but stores no application data in the database. All business data is file-based (see ADR-0009).
 
 ## Decision
 

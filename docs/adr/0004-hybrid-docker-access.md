@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Helios needs to:
+HELIOS needs to:
 
 1. Read container status, health, and logs
 2. Execute Docker Compose operations (up, down, pull, restart)

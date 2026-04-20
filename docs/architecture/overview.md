@@ -15,7 +15,7 @@ See [ADR-0007: Technology Stack](../adr/0007-technology-stack.md) for details an
 │  │                     Docker Engine                          │  │
 │  │                                                            │  │
 │  │  ┌──────────┐ ┌────────────┐ ┌──────────┐ ┌─────────────┐  │  │
-│  │  │  Helios  │ │ Watchtower │ │ InfluxDB │ │  SOLECTRUS  │  │  │
+│  │  │  HELIOS  │ │ Watchtower │ │ InfluxDB │ │  SOLECTRUS  │  │  │
 │  │  │  :3999   │ │ (updates)  │ │  :8086   │ │  Dashboard  │  │  │
 │  │  └────┬─────┘ └──────┬─────┘ └──────────┘ │   :3000     │  │  │
 │  │       │              │                    └─────────────┘  │  │
@@ -31,36 +31,40 @@ See [ADR-0007: Technology Stack](../adr/0007-technology-stack.md) for details an
 │  │  └─────────────────────────┘                               │  │
 │  └────────────────────────────────────────────────────────────┘  │
 │                                                                  │
-│  /var/run/docker.sock ◄─── Helios + Watchtower access Docker API │
+│  /var/run/docker.sock ◄─── HELIOS + Watchtower access Docker API │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Helios Internal Storage
+## HELIOS Internal Storage
 
-Helios uses SQLite for its own data:
+All user-facing configuration is stored in a single `config.yaml` file (see [ADR-0009](../adr/0009-configuration-model.md)) — there are no Active Record tables for application data. The `primary` SQLite database exists only to satisfy Rails' default setup and is currently empty.
 
-| Table            | Purpose                                                              |
-| ---------------- | -------------------------------------------------------------------- |
-| `admins`         | Admin password hash (authentication)                                 |
-| `configurations` | Setup state, flags, and unmanaged services/env vars (JSON blob)      |
-| `chapters`       | Configuration sections: system, devices, inverter, etc. (JSON blobs) |
+| File              | Purpose                                                              |
+| ----------------- | -------------------------------------------------------------------- |
+| `config.yaml`     | All user configuration (singletons: system, senec, mqtt, sensors, …) |
+| `primary.sqlite3` | Rails primary DB (empty; reserved for future use)                    |
+| `queue.sqlite3`   | SolidQueue (background jobs for compose operations)                  |
+| `cable.sqlite3`   | SolidCable (Turbo Streams / Action Cable pub-sub)                    |
 
-**Location:** `/app/storage/` (inside container, persisted via bind mount to `./helios/`)
+The admin password is stored in `config.yaml` under `system.admin_password` (bcrypt hash), not in a separate `admins` table.
+
+**Location:** `/data/helios/` inside the HELIOS container (bind-mounted from the stack directory on the host).
 
 ---
 
 ## Directory Structure
 
 ```
-/opt/solectrus/              # Installation directory (host)
-├── compose.yaml             # Docker Compose file (managed by Helios)
-├── .env                     # Environment variables (managed by Helios)
-├── helios/                  # Helios data (bind mount for /app/storage)
-│   ├── production.sqlite3   # Primary database
-│   ├── production_queue.sqlite3  # SolidQueue database
-│   └── production_cable.sqlite3  # SolidCable database
+/opt/solectrus/              # Installation directory (host, mounted as /data)
+├── compose.yaml             # Docker Compose file (managed by HELIOS)
+├── .env                     # Environment variables (managed by HELIOS)
+├── helios/                  # HELIOS state
+│   ├── config.yaml          # User configuration (single source of truth)
+│   ├── primary.sqlite3      # Rails primary DB (unused)
+│   ├── queue.sqlite3        # SolidQueue
+│   └── cable.sqlite3        # SolidCable
 ├── postgresql/              # PostgreSQL data (bind mount)
 ├── redis/                   # Redis data (bind mount)
 └── influxdb/                # InfluxDB data (bind mount)
@@ -76,4 +80,4 @@ See [`install.sh`](../../install.sh) in the repository root.
 
 **Prerequisites:** Docker and Docker Compose must be installed.
 
-The script checks prerequisites, creates a minimal `compose.yaml` with only Helios, and starts the stack. The vanity URL `solectrus.de/install.sh` can redirect to the raw file on GitHub.
+The script checks prerequisites, creates a minimal `compose.yaml` with only HELIOS, and starts the stack. The vanity URL `solectrus.de/install.sh` can redirect to the raw file on GitHub.

@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Helios needs to manage Docker containers: start/stop services, read logs, check health status. There are multiple ways to access Docker:
+HELIOS needs to manage Docker containers: start/stop services, read logs, check health status. There are multiple ways to access Docker:
 
 1. Docker Socket (`/var/run/docker.sock`)
 2. Docker TCP API (requires extra configuration)
@@ -33,5 +33,5 @@ Use Docker Socket for all Docker operations.
 
 **Mitigations:**
 
-- Helios is the management layer, so full access is intentional
+- HELIOS is the management layer, so full access is intentional
 - LAN-only access reduces attack surface

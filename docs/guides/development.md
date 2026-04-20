@@ -24,7 +24,7 @@ bin/setup
 
 **Project name derivation:**
 
-- In production (container): Helios reads project name from its own container labels
+- In production (container): HELIOS reads project name from its own container labels
 - In development (native): Project name is derived from the directory name of the stack path
 
 Example: `./stack` → project name is `stack`
@@ -42,8 +42,8 @@ bin/dev
 
 **Key difference from production:**
 
-- Production: Helios runs inside the stack it manages
-- Development: Helios runs outside, manages stack via CLI
+- Production: HELIOS runs inside the stack it manages
+- Development: HELIOS runs outside, manages stack via CLI
 
 **Docker access:**
 
@@ -112,45 +112,73 @@ COVERAGE=true bin/rspec
 
 ```
 spec/
+├── channels/                           # Action Cable
+│   ├── application_cable/connection_spec.rb
+│   └── logs_channel_spec.rb
+├── frontend/                           # JS/Vite frontend unit tests
+├── jobs/
+│   ├── compose_job_spec.rb
+│   └── orphaned_stop_job_spec.rb
+├── lib/
+│   └── startup_check_middleware_spec.rb
 ├── models/
-│   ├── admin_spec.rb
-│   ├── chapter_spec.rb
-│   └── configuration_spec.rb
+│   ├── config_schema_spec.rb
+│   ├── configuration_spec.rb
+│   ├── sensor_mappings_spec.rb
+│   └── sensor_registry_spec.rb
 ├── requests/
-│   ├── admins_spec.rb
-│   ├── configurations_spec.rb
-│   ├── configurations/chapters_spec.rb
-│   ├── dashboard_spec.rb
+│   ├── advanced_spec.rb
+│   ├── datasources_spec.rb
+│   ├── files_spec.rb
+│   ├── locale_spec.rb
+│   ├── sensors_spec.rb
+│   ├── services_spec.rb
 │   ├── sessions_spec.rb
-│   ├── setups_spec.rb
+│   ├── starts_spec.rb
+│   ├── configurations/
+│   │   ├── settings_spec.rb
+│   │   └── surveys_spec.rb
 │   └── services/
 │       ├── batches_spec.rb
+│       ├── logs_spec.rb
+│       ├── orphaned_tasks_spec.rb
 │       ├── rows_spec.rb
 │       └── tasks_spec.rb
-├── jobs/
-│   └── compose_job_spec.rb
 ├── services/
-│   ├── compose/
-│   │   ├── command_result_spec.rb
+│   ├── compose/                        # compose.yaml parsing & models
 │   │   ├── file_spec.rb
-│   │   ├── runner_spec.rb
 │   │   ├── service_spec.rb
 │   │   └── service_collection_spec.rb
 │   ├── env/
 │   │   └── file_spec.rb
-│   ├── docker_host/
-│   │   └── container_spec.rb
-│   ├── docker_host_spec.rb
-│   └── stack_builder_spec.rb
+│   ├── export/                         # compose.yaml + .env generation
+│   │   ├── builder_spec.rb
+│   │   └── unmanaged_round_trip_spec.rb
+│   ├── import/                         # Scenario C auto-import
+│   │   ├── configuration_importer_spec.rb
+│   │   └── configuration_importer/mqtt_extractor_spec.rb
+│   ├── influx_db/
+│   │   └── client_spec.rb
+│   ├── orchestration/                  # Docker integration & runtime
+│   │   ├── affected_services_spec.rb
+│   │   ├── command_result_spec.rb
+│   │   ├── connection_spec.rb
+│   │   ├── container_spec.rb
+│   │   ├── error_store_spec.rb
+│   │   ├── event_spec.rb
+│   │   ├── orphaned_services_spec.rb
+│   │   ├── runner_spec.rb
+│   │   ├── service_broadcaster_spec.rb
+│   │   ├── stack_status_spec.rb
+│   │   └── version_extractor_spec.rb
+│   ├── orchestration_spec.rb
+│   ├── ansi_to_html_spec.rb
+│   ├── log_line_formatter_spec.rb
+│   └── startup_check_spec.rb
 ├── system/
 │   └── smoke_spec.rb
 ├── fixtures/
-│   └── ...
 └── support/
-    ├── auth_helpers.rb
-    ├── docker_helpers.rb
-    ├── system.rb
-    └── vite_helpers.rb
 ```
 
 ### Writing Good Tests

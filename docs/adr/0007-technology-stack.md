@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Helios needs a technology stack for building a web-based Docker management interface. Key requirements:
+HELIOS needs a technology stack for building a web-based Docker management interface. Key requirements:
 
 - Lightweight (runs on Raspberry Pi)
 - Modern UI without heavy JavaScript frameworks
