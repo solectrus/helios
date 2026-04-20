@@ -56,10 +56,10 @@ echo "Creating installation directory..."
 mkdir -p "$INSTALL_DIR"
 cd "$INSTALL_DIR"
 
-# Create Helios data directory
+# Create HELIOS data directory
 mkdir -p helios
 
-# Create minimal compose.yaml with only Helios
+# Create minimal compose.yaml with only HELIOS
 cat > compose.yaml << EOF
 name: solectrus
 
@@ -77,8 +77,8 @@ services:
     restart: unless-stopped
 EOF
 
-# Start Helios
-echo "Starting Helios..."
+# Start HELIOS
+echo "Starting HELIOS..."
 docker compose up -d
 
 # Get IP address

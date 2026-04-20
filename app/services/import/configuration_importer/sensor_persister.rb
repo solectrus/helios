@@ -5,7 +5,7 @@ module Import
 
       # Maps mapping env-keys (symbol) to sensor-config keys (string).
       # Sign-based splitting (measurement_positive/negative, field_positive/negative)
-      # is already expanded upstream by MqttExtractor — Helios models 1 sensor = 1 Influx target.
+      # is already expanded upstream by MqttExtractor — HELIOS models 1 sensor = 1 Influx target.
       MQTT_MAPPING_TO_SENSOR_KEY = {
         measurement: 'measurement',
         field: 'field',

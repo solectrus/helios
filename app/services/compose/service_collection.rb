@@ -3,7 +3,7 @@ module Compose
     include Enumerable
 
     # Keep in sync with Export::Compose::SERVICE_ORDER (compose.yaml order).
-    # Helios is handled separately by #sort_key and always appears last in the UI.
+    # HELIOS is handled separately by #sort_key and always appears last in the UI.
     PRIORITY_ORDER = %w[
       dashboard
       influxdb

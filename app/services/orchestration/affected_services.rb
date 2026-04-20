@@ -1,13 +1,13 @@
 module Orchestration
   # Determines which services need a restart by comparing
   # the current Docker Compose config hashes (from compose.yaml + .env)
-  # against the hashes stored at the time of the last Helios-initiated
+  # against the hashes stored at the time of the last HELIOS-initiated
   # deployment.
   #
-  # By comparing two runs of the same Helios-internal Docker Compose
+  # By comparing two runs of the same HELIOS-internal Docker Compose
   # binary (instead of comparing against container labels set by the
   # host's Docker Compose), this avoids false positives caused by
-  # Docker Compose version mismatches between the Helios container
+  # Docker Compose version mismatches between the HELIOS container
   # and the host system.
   #
   # Results are cached briefly to avoid repeated subprocess calls
@@ -44,7 +44,7 @@ module Orchestration
     end
 
     # Persist the current expected config hashes as the "deployed" baseline.
-    # Called after successful Helios-initiated deployments so that subsequent
+    # Called after successful HELIOS-initiated deployments so that subsequent
     # comparisons know which config was last applied.
     def self.store_deployed_hashes!
       hashes = Runner.config_hashes.except(Runner::SELF_SERVICE)

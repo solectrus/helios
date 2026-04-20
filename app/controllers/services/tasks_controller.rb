@@ -9,7 +9,7 @@ module Services
       respond_with_pending_status(status_bar: :starting)
     end
 
-    # PATCH /services/:service_id/task - Recreate (or self-recreate for Helios)
+    # PATCH /services/:service_id/task - Recreate (or self-recreate for HELIOS)
     def update
       Orchestration::StackStatus.mark_starting!
 

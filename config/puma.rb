@@ -35,7 +35,7 @@ port ENV.fetch('PORT', 3000)
 plugin :tmp_restart
 
 # Run the Solid Queue supervisor inside of Puma for single-container deployments.
-# Helios runs in a single Docker container, so always enable this.
+# HELIOS runs in a single Docker container, so always enable this.
 plugin :solid_queue
 
 # Specify the PID file. Defaults to tmp/pids/server.pid in development.

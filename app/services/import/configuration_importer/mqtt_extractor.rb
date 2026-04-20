@@ -93,7 +93,7 @@ module Import
       end
 
       # mqtt-collector's sign-based splitting (MEASUREMENT_POSITIVE/NEGATIVE + FIELD_POSITIVE/NEGATIVE)
-      # writes one topic into two Influx locations. Helios models one sensor = one Influx target,
+      # writes one topic into two Influx locations. HELIOS models one sensor = one Influx target,
       # so we expand such mappings into two sensors, each with a sign-filter formula that keeps
       # only the matching half of the value.
       def expand_sign_split(mapping)

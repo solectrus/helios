@@ -12,7 +12,7 @@ module Export
       end
 
       def self.comment
-        'Helios — Configuration management UI'
+        'HELIOS — Configuration management UI'
       end
 
       def self.enabled?(_configuration)

@@ -42,7 +42,7 @@ RSpec.describe Orchestration::Runner do
 
         expect { described_class.send(:host_data_path) }.to raise_error(
           Orchestration::Runner::CommandError,
-          /Cannot resolve Helios host mount/,
+          /Cannot resolve HELIOS host mount/,
         )
       end
 
@@ -53,7 +53,7 @@ RSpec.describe Orchestration::Runner do
 
         expect { described_class.send(:host_data_path) }.to raise_error(
           Orchestration::Runner::CommandError,
-          /Cannot resolve Helios host mount/,
+          /Cannot resolve HELIOS host mount/,
         )
       end
     end

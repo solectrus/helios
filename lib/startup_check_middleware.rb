@@ -57,7 +57,7 @@ class StartupCheckMiddleware
       <!doctype html>
       <html lang="en">
         <head>
-          <title>Helios – Startup Failed</title>
+          <title>HELIOS – Startup Failed</title>
           <meta charset="utf-8">
           <meta name="viewport" content="initial-scale=1, width=device-width">
           <meta name="robots" content="noindex, nofollow">
@@ -70,7 +70,7 @@ class StartupCheckMiddleware
             </header>
             <article>
               <h1>Startup Failed</h1>
-              <p class="subtitle">Helios cannot start because of configuration problems.<br>
+              <p class="subtitle">HELIOS cannot start because of configuration problems.<br>
               Please check your <code>compose.yaml</code> and try again.</p>
               #{checks_html}
             </article>

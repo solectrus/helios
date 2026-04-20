@@ -140,7 +140,7 @@ class StartupCheck
         name: 'Docker version',
         message:
           "Docker Engine #{version} is too old. " \
-          "Helios requires #{Orchestration::Connection::MIN_ENGINE_VERSION} or newer.",
+          "HELIOS requires #{Orchestration::Connection::MIN_ENGINE_VERSION} or newer.",
       )
     end
   end

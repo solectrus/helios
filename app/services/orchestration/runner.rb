@@ -45,7 +45,7 @@ module Orchestration
       end
 
       # Self-update: pull new image, then delegate the recreate to
-      # a temporary helper container. A process inside the Helios
+      # a temporary helper container. A process inside the HELIOS
       # container cannot survive the container being stopped, so the
       # helper runs independently and outlives the restart.
       #
@@ -213,7 +213,7 @@ module Orchestration
         return data_path unless Rails.env.production?
 
         source = Orchestration::Container.find(SELF_SERVICE)&.mount_source(data_path)
-        raise CommandError, "Cannot resolve Helios host mount for #{data_path}" unless source
+        raise CommandError, "Cannot resolve HELIOS host mount for #{data_path}" unless source
 
         source
       end

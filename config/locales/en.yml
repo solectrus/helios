@@ -187,7 +187,7 @@ en:
 
   starts:
     show:
-      title: 'Welcome - Helios'
+      title: 'Welcome - HELIOS'
       subtitle: 'Configuration for SOLECTRUS'
       heading: 'Welcome to HELIOS'
       step_import_html: 'Your existing <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> and <code class="rounded bg-base-300 px-1 font-mono">.env</code> files will be imported and interpreted'
@@ -198,12 +198,11 @@ en:
 
   sessions:
     new:
-      title: 'Login - Helios'
+      title: 'Login - HELIOS'
       subtitle: 'Configuration for SOLECTRUS'
       password_label: 'Password'
       password_placeholder: 'Enter password'
       login: 'Login'
-      hero_alt: 'Helios, the sun god in Greek mythology'
 
   flash:
     session:

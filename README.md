@@ -1,4 +1,4 @@
-# Helios
+# HELIOS
 
 Web-based bootstrap helper and management interface for [SOLECTRUS](https://solectrus.de).
 
@@ -19,19 +19,19 @@ Helios eliminates the need to manually edit configuration files or understand Do
 | [Development Guide](docs/guides/development.md)   | Local setup, testing               |
 | [Phases](docs/guides/phases.md)                   | Phase 0, MVP, roadmap              |
 
-## Adding Helios to an existing SOLECTRUS installation
+## Adding HELIOS to an existing SOLECTRUS installation
 
 ### 1. Set the project name
 
-Helios requires the Docker Compose project to be named `solectrus`. Add this line at the top of your `compose.yaml` (if it is not already there):
+HELIOS requires the Docker Compose project to be named `solectrus`. Add this line at the top of your `compose.yaml` (if it is not already there):
 
 ```yaml
 name: solectrus
 ```
 
-Without it, Helios will refuse to start and show a clear error message.
+Without it, HELIOS will refuse to start and show a clear error message.
 
-### 2. Add the Helios service
+### 2. Add the HELIOS service
 
 Append the following to your `compose.yaml`:
 
@@ -60,7 +60,7 @@ docker compose down
 docker compose up -d
 ```
 
-Helios is then available at `http://<your-host>:3999`.
+HELIOS is then available at `http://<your-host>:3999`.
 
 ## Development
 

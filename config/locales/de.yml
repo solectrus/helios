@@ -174,7 +174,6 @@ de:
       password_label: 'Passwort'
       password_placeholder: 'Passwort eingeben'
       login: 'Anmelden'
-      hero_alt: 'Helios, der Sonnengott der griechischen Mythologie'
 
   flash:
     session:

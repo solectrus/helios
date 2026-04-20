@@ -1,6 +1,6 @@
 module Orchestration
   class OrphanedServices
-    # Managed service names that Helios knows about.
+    # Managed service names that HELIOS knows about.
     # Reuse the canonical list from the import detector.
     MANAGED_SERVICES =
       Import::ConfigurationImporter::UnmanagedDetector::MANAGED_SERVICES

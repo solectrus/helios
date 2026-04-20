@@ -1,14 +1,14 @@
 module Import
   class ConfigurationImporter
     class UnmanagedDetector
-      # All service names that Helios manages (generates in compose.yaml)
+      # All service names that HELIOS manages (generates in compose.yaml)
       MANAGED_SERVICES = %w[
         dashboard postgresql redis influxdb watchtower helios ingest
         traefik postgresql-backup influxdb-backup
         senec-collector shelly-collector mqtt-collector forecast-collector power-splitter
       ].freeze
 
-      # All .env variable keys that Helios manages (generates in .env)
+      # All .env variable keys that HELIOS manages (generates in .env)
       MANAGED_ENV_KEYS = %w[
         TZ INSTALLATION_DATE ADMIN_PASSWORD SECRET_KEY_BASE
         APP_HOST INFLUX_POLL_INTERVAL CO2_EMISSION_FACTOR
@@ -39,7 +39,7 @@ module Import
         MQTT_HOST MQTT_PORT MQTT_SSL MQTT_USERNAME MQTT_PASSWORD
       ].freeze
 
-      # Infrastructure .env keys that Helios doesn't generate but are well-known
+      # Infrastructure .env keys that HELIOS doesn't generate but are well-known
       # SOLECTRUS vars. These are suppressed from unmanaged to avoid noise.
       INFRASTRUCTURE_ENV_KEYS = %w[
         INFLUX_HOST INFLUX_SCHEMA INFLUX_PORT INFLUX_VOLUME_PATH INFLUX_USERNAME

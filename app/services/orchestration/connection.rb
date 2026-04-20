@@ -5,7 +5,7 @@ module Orchestration
       ::File.expand_path('~/.docker/run/docker.sock'),
     ].freeze
 
-    # Minimum Docker Engine version Helios supports. Older daemons
+    # Minimum Docker Engine version HELIOS supports. Older daemons
     # miss features the generated compose.yaml relies on (e.g. the
     # Compose Spec layout, `docker compose config --hash`).
     MIN_ENGINE_VERSION = Gem::Version.new('24.0').freeze
@@ -27,7 +27,7 @@ module Orchestration
 
       # Docker Engine version as Gem::Version, or nil if the daemon is
       # unreachable. Cached for 1 hour — the daemon version only changes
-      # on host upgrade, which requires a Helios restart anyway.
+      # on host upgrade, which requires a HELIOS restart anyway.
       def engine_version
         Rails.cache.fetch(ENGINE_VERSION_CACHE_KEY, expires_in: 1.hour) do
           fetch_engine_version
