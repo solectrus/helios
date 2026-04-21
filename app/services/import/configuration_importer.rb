@@ -1,11 +1,5 @@
 module Import
   class ConfigurationImporter # rubocop:disable Metrics/ClassLength
-    # Dashboard defaults that are always set in compose.yaml regardless of config.
-    # Only store values that differ from these defaults.
-    DASHBOARD_DEFAULTS = {
-      'WEB_CONCURRENCY' => '0',
-    }.freeze
-
     def initialize(stack_reader)
       @reader = stack_reader
     end
@@ -131,7 +125,6 @@ module Import
     def system_data
       system_core_data
         .merge(system_dashboard_data)
-        .merge('power_splitter_interval' => power_splitter_interval)
         .compact
     end
 
@@ -155,27 +148,13 @@ module Import
     def system_dashboard_data
       dashboard_env = service_env('dashboard')
 
-      system_optional_dashboard_data(dashboard_env)
-        .merge(system_non_default_dashboard_data(dashboard_env))
-    end
-
-    def system_optional_dashboard_data(dashboard_env)
       {
         'app_host' => dashboard_env['APP_HOST'],
         'co2_emission_factor' => dashboard_env['CO2_EMISSION_FACTOR'],
-        'force_ssl' => dashboard_env['FORCE_SSL'],
         'frame_ancestors' => dashboard_env['FRAME_ANCESTORS'],
         'ui_theme' => dashboard_env['UI_THEME'],
         'lockup_codeword' => dashboard_env['LOCKUP_CODEWORD'],
-        'trusted_proxy_ranges' => dashboard_env['TRUSTED_PROXY_RANGES'],
       }
-    end
-
-    def system_non_default_dashboard_data(dashboard_env)
-      DASHBOARD_DEFAULTS.each_with_object({}) do |(env_key, default), data|
-        value = dashboard_env[env_key]
-        data[env_key.downcase] = value if value.present? && value.to_s != default
-      end
     end
 
     # --- Infrastructure services ---
@@ -226,15 +205,15 @@ module Import
     # --- Reverse Proxy ---
 
     def reverse_proxy_data
-      return unless @reader.services.key?('traefik')
+      dashboard_env = service_env('dashboard')
+      data = { 'trusted_proxy_ranges' => dashboard_env['TRUSTED_PROXY_RANGES'] }
 
-      domain = extract_domain_from_dashboard_labels
-      return unless domain
+      if @reader.services.key?('traefik') && (domain = extract_domain_from_dashboard_labels)
+        data['app_domain'] = domain
+        data['letsencrypt_email'] = @reader.raw_env['LETSENCRYPT_EMAIL']
+      end
 
-      {
-        'app_domain' => domain,
-        'letsencrypt_email' => @reader.raw_env['LETSENCRYPT_EMAIL'],
-      }.compact
+      data.compact.presence
     end
 
     def extract_domain_from_dashboard_labels
@@ -303,13 +282,6 @@ module Import
     def image_hash_for(service_name)
       image = Compose.normalize_image(@reader.service(service_name)&.dig('image'))
       { 'image' => image } if image
-    end
-
-    # --- Power-Splitter ---
-
-    def power_splitter_interval
-      ps_env = service_env('power-splitter')
-      ps_env['POWER_SPLITTER_INTERVAL']
     end
 
     # --- Ingest ---

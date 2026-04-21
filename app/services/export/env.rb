@@ -36,7 +36,6 @@ module Export
       forecast_section(env) if Services::ForecastCollector.enabled?(configuration)
       mqtt_section(env) if configuration.mqtt_required?
       shelly_section(env) if configuration.shelly_required?
-      power_splitter_section(env)
       ingest_section(env) if configuration.ingest_required?
       sensor_section(env)
       unmanaged_section(env)
@@ -76,8 +75,6 @@ module Export
       env.add_section('Dashboard')
       entry(env, 'APP_HOST', sys.app_host.presence || 'localhost',
             'Hostname for the SOLECTRUS web interface')
-      entry(env, 'WEB_CONCURRENCY', sys.web_concurrency.presence || '0',
-            'Number of web server processes (0 = single process)')
       dashboard_optional_entries(env, sys)
     end
 
@@ -86,7 +83,8 @@ module Export
       optional_entry(env, 'FRAME_ANCESTORS', sys.frame_ancestors, 'Allowed frame ancestors for embedding')
       optional_entry(env, 'UI_THEME', sys.ui_theme, 'UI theme (light or dark)')
       optional_entry(env, 'LOCKUP_CODEWORD', sys.lockup_codeword, 'Codeword for lockup page protection')
-      optional_entry(env, 'TRUSTED_PROXY_RANGES', sys.trusted_proxy_ranges, 'Trusted proxy IP ranges')
+      optional_entry(env, 'TRUSTED_PROXY_RANGES', configuration.reverse_proxy.trusted_proxy_ranges,
+                     'Trusted proxy IP ranges')
       excluded = configuration.excluded_from_house_power.join(',').presence
       optional_entry(env, 'INFLUX_EXCLUDE_FROM_HOUSE_POWER', excluded,
                      'Sensors excluded from house power calculation')
@@ -343,14 +341,6 @@ module Export
 
     def shelly_csv(sensors, &)
       sensors.map(&).join(',')
-    end
-
-    def power_splitter_section(env)
-      interval = configuration.system.power_splitter_interval
-      return if interval.blank?
-
-      env.add_section('Power Splitter')
-      entry(env, 'POWER_SPLITTER_INTERVAL', interval, 'Power splitter calculation interval in seconds')
     end
 
     def ingest_section(env)
