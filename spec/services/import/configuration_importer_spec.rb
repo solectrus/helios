@@ -51,7 +51,7 @@ RSpec.describe Import::ConfigurationImporter do
 
       it 'includes influxdb settings without prefix' do
         expect(influxdb).to include(
-          'password' => 'ExAmPl3PA55W0rD',
+          'password' => 'example-influx-password',
           'org' => 'solectrus',
           'bucket' => 'solectrus',
         )
