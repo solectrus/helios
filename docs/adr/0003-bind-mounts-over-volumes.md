@@ -1,9 +1,5 @@
 # ADR-0003: Bind Mounts over Docker Volumes
 
-## Status
-
-Accepted
-
 ## Context
 
 Docker offers two main options for persistent data:

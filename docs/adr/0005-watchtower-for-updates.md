@@ -1,9 +1,5 @@
 # ADR-0005: Watchtower for Automatic Updates
 
-## Status
-
-Accepted
-
 ## Context
 
 SOLECTRUS containers need to be updated when new versions are released. Options:

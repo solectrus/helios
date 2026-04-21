@@ -1,9 +1,5 @@
 # ADR-0004: Hybrid Docker Access (API + CLI)
 
-## Status
-
-Accepted
-
 ## Context
 
 HELIOS needs to:

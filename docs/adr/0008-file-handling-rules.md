@@ -1,9 +1,5 @@
 # ADR-0008: File Handling Rules
 
-## Status
-
-Accepted
-
 ## Context
 
 HELIOS reads and writes two external files:

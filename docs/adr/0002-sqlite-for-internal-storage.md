@@ -1,9 +1,5 @@
 # ADR-0002: SQLite for Rails Infrastructure
 
-## Status
-
-Accepted (updated to reflect current usage)
-
 ## Context
 
 HELIOS needs persistence for Rails infrastructure (WebSocket messages) but stores no application data in the database. All business data is file-based (see ADR-0009).
@@ -19,7 +15,7 @@ Use SQLite exclusively for Rails infrastructure:
 
 In development and test these live under `storage/` (e.g. `storage/development.sqlite3`).
 
-Background jobs run in-process via ActiveJob's `:async` adapter (thread pool inside Puma). Jobs are only ever enqueued by user clicks, and the Docker daemon — not HELIOS — holds the authoritative state. `EventsListener` reconciles the UI from Docker events if a job is lost on restart.
+Background jobs run in-process (no separate queue) — see [ADR-0012](0012-in-process-background-jobs.md).
 
 Application data is stored elsewhere:
 

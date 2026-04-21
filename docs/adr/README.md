@@ -9,10 +9,6 @@ An ADR captures an important architectural decision along with its context and c
 ```markdown
 # ADR-NNNN: Title
 
-## Status
-
-Proposed | Accepted | Deprecated | Superseded by [ADR-XXXX](XXXX-title.md)
-
 ## Context
 
 What is the issue that we're seeing that is motivating this decision?

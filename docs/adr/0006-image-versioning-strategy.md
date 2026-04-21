@@ -1,9 +1,5 @@
 # ADR-0006: Image Versioning Strategy
 
-## Status
-
-Accepted
-
 ## Context
 
 Docker images can be tagged in different ways:
