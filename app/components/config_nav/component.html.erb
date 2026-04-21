@@ -9,5 +9,25 @@
         <span class="text-base font-medium"><%= tab[:label] %></span>
       <% end %>
     <% end %>
+
+    <% if helpers.preferences.expert_mode? %>
+      <div class="divider my-2"></div>
+      <a
+        href="<%= helpers.file_path('compose') %>"
+        data-turbo-frame="file-modal-content"
+        class="btn btn-ghost btn-block bg-base-content/5 hover:bg-base-content/10 justify-start gap-3 font-mono"
+      >
+        <i class="fa-solid fa-file-code opacity-70"></i>
+        compose.yaml
+      </a>
+      <a
+        href="<%= helpers.file_path('env') %>"
+        data-turbo-frame="file-modal-content"
+        class="btn btn-ghost btn-block bg-base-content/5 hover:bg-base-content/10 justify-start gap-3 font-mono"
+      >
+        <i class="fa-solid fa-file-lines opacity-70"></i>
+        .env
+      </a>
+    <% end %>
   </nav>
 </aside>
