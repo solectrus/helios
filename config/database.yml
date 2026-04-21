@@ -13,10 +13,6 @@ development:
   primary:
     <<: *default
     database: storage/development.sqlite3
-  queue:
-    <<: *default
-    database: storage/development_queue.sqlite3
-    migrations_paths: db/queue_migrate
   cable:
     <<: *default
     database: storage/development_cable.sqlite3
@@ -29,10 +25,6 @@ test:
   primary:
     <<: *default
     database: storage/test.sqlite3
-  queue:
-    <<: *default
-    database: storage/test_queue.sqlite3
-    migrations_paths: db/queue_migrate
 
 # Store production databases in /data (the mounted stack directory),
 # so they persist across container recreations without a separate volume.
@@ -40,10 +32,6 @@ production:
   primary:
     <<: *default
     database: /data/helios/primary.sqlite3
-  queue:
-    <<: *default
-    database: /data/helios/queue.sqlite3
-    migrations_paths: db/queue_migrate
   cable:
     <<: *default
     database: /data/helios/cable.sqlite3

@@ -41,10 +41,6 @@ module Helios
     # Don't generate system test files.
     config.generators.system_tests = nil
 
-    # Reduce heartbeat writes to one per SolidQueue process every 5 minutes
-    # (default: 1/min). HELIOS has no ops tooling that needs fast liveness.
-    config.solid_queue.process_heartbeat_interval = 5.minutes
-
     # Path where stack files (compose.yaml, .env) are stored.
     # Defaults to /data in production; overridden in development/test.
     config.data_path = '/data'

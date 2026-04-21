@@ -45,7 +45,6 @@ All user-facing configuration is stored in a single `config.yaml` file (see [ADR
 | ----------------- | -------------------------------------------------------------------- |
 | `config.yaml`     | All user configuration (singletons: system, senec, mqtt, sensors, …) |
 | `primary.sqlite3` | Rails primary DB (empty; reserved for future use)                    |
-| `queue.sqlite3`   | SolidQueue (background jobs for compose operations)                  |
 | `cable.sqlite3`   | SolidCable (Turbo Streams / Action Cable pub-sub)                    |
 
 The admin password is stored in `config.yaml` under `system.admin_password` (bcrypt hash), not in a separate `admins` table.
@@ -63,7 +62,6 @@ The admin password is stored in `config.yaml` under `system.admin_password` (bcr
 ├── helios/                  # HELIOS state
 │   ├── config.yaml          # User configuration (single source of truth)
 │   ├── primary.sqlite3      # Rails primary DB (unused)
-│   ├── queue.sqlite3        # SolidQueue
 │   └── cable.sqlite3        # SolidCable
 ├── postgresql/              # PostgreSQL data (bind mount)
 ├── redis/                   # Redis data (bind mount)
