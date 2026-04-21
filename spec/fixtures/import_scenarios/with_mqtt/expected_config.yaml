@@ -1,0 +1,92 @@
+---
+system:
+  admin_password: test-admin
+  app_host: myhost
+  co2_emission_factor: '401'
+  installation_date: '2024-01-15'
+  secret_key_base: test-secret-key
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: test-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: test-influx-pw
+  token: test-influx-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+senec:
+  adapter: local
+  host: 192.168.1.42
+  interval: '5'
+  language: de
+  schema: https
+mqtt:
+  mqtt_host: mqtt-broker.local
+  mqtt_password: mqttpass
+  mqtt_port: '1883'
+  mqtt_username: mqttuser
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  car_battery_soc:
+    field: soc
+    measurement: MyTesla
+    mqtt_json_key: soc
+    mqtt_payload_type: float
+    mqtt_topic: tesla/battery
+    source: mqtt
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  heatpump_heating_power:
+    field: heat
+    measurement: ALTHERMA
+    mqtt_json_formula: IF({Operation Mode} = 'Heating', 1, 0)
+    mqtt_payload_type: float
+    mqtt_topic: espaltherma/ATTR
+    source: mqtt
+  heatpump_status:
+    field: current_state
+    measurement: ALTHERMA
+    mqtt_json_formula: IF({Freeze Protection} == 'ON', 'Frostschutz', 'Warten')
+    mqtt_payload_type: string
+    mqtt_topic: espaltherma/ATTR
+    source: mqtt
+  heatpump_tank_temp:
+    field: r5t_tank_temp
+    measurement: ALTHERMA
+    mqtt_json_key: DHW tank temp. (R5T)
+    mqtt_payload_type: float
+    mqtt_topic: espaltherma/ATTR
+    source: mqtt
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  outdoor_temp:
+    field: r6t_outdoor_temp
+    measurement: ALTHERMA
+    mqtt_json_key: R1T-Outdoor air temp.
+    mqtt_payload_type: float
+    mqtt_topic: espaltherma/ATTR
+    source: mqtt
+  wallbox_car_connected:
+    field: car_connected
+    measurement: go-eCharger
+    source: senec
+  wallbox_power:
+    field: power
+    measurement: go-eCharger
+    source: senec

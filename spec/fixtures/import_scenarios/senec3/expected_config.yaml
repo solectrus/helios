@@ -1,0 +1,58 @@
+---
+system:
+  admin_password: secret
+  app_host: pi
+  co2_emission_factor: '500'
+  installation_date: '2020-01-01'
+  secret_key_base: example-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: my-secret-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: example-influx-password
+  token: my-super-secret-admin-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+senec:
+  adapter: local
+  host: 192.168.178.42
+  interval: '5'
+  language: de
+  schema: https
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_1:
+    source: senec
+  inverter_power_2:
+    source: senec
+  inverter_power_3:
+    source: senec
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec

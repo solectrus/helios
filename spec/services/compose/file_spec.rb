@@ -1,5 +1,5 @@
 RSpec.describe Compose::File do
-  let(:fixture_path) { Rails.root.join('spec/fixtures/scenarios/minimal/compose.yaml') }
+  let(:fixture_path) { Rails.root.join('spec/fixtures/import_scenarios/minimal/old_compose.yaml') }
   let(:tmp_path) { Rails.root.join('tmp/test-compose.yaml') }
 
   after { FileUtils.rm_f(tmp_path) }

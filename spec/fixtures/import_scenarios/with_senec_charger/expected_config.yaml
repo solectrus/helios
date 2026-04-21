@@ -1,0 +1,84 @@
+---
+system:
+  admin_password: test-admin
+  installation_date: '2023-06-15'
+  secret_key_base: test-secret-key
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: test-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: test-influx-pw
+  token: test-influx-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: forecast.solar
+  forecast_azimuth1: '180'
+  forecast_declination1: '30'
+  forecast_kwp1: '10'
+  forecast_latitude: '51.3'
+  forecast_longitude: '9.5'
+  forecast_roofs: '1'
+  measurement: Forecast
+senec:
+  adapter: local
+  host: 192.168.178.42
+  interval: '5'
+  language: de
+  schema: https
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_forecast:
+    field: watts
+    measurement: Forecast
+    source: forecast
+_unmanaged:
+  env_vars:
+    CHARGER_DRY_RUN: 'false'
+    CHARGER_FORECAST_THRESHOLD: '20'
+    CHARGER_INTERVAL: '3600'
+    CHARGER_PRICE_MAX: '70'
+    CHARGER_PRICE_TIME_RANGE: '4'
+  services:
+    senec-charger:
+      depends_on:
+        influxdb:
+          condition: service_healthy
+      environment:
+      - TZ
+      - SENEC_HOST
+      - SENEC_SCHEMA
+      - CHARGER_INTERVAL
+      - CHARGER_PRICE_MAX
+      - CHARGER_PRICE_TIME_RANGE
+      - CHARGER_FORECAST_THRESHOLD
+      - CHARGER_DRY_RUN
+      - INFLUX_HOST=influxdb
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT_PRICES=Tibber
+      - INFLUX_MEASUREMENT_FORECAST=${INFLUX_MEASUREMENT_FORECAST}
+      image: ghcr.io/solectrus/senec-charger:latest
+      restart: unless-stopped

@@ -60,11 +60,12 @@ Style/MultilineBlockChain:
 Style/IfUnlessModifier:
   Enabled: false
 
-# Exclude environment configs from block length check
+# Exclude environment configs and rake tasks from block length check
 Metrics/BlockLength:
   Exclude:
     - config/environments/*.rb
     - config/routes.rb
+    - lib/tasks/*.rake
 
 # RSpec settings - allow more flexibility
 RSpec/MultipleExpectations:
@@ -72,6 +73,15 @@ RSpec/MultipleExpectations:
 
 RSpec/ExampleLength:
   Max: 20
+
+# Fixture-driven cross-class specs and system specs use string descriptions:
+# the scenarios_spec covers the whole import/export round-trip, and system
+# specs describe end-to-end UI flows, not a single class.
+RSpec/DescribeClass:
+  Exclude:
+    - spec/services/scenarios_spec.rb
+    - spec/services/import/configuration_importer/**/*_spec.rb
+    - spec/system/**/*_spec.rb
 
 Metrics/AbcSize:
   Max: 20
