@@ -1,9 +1,5 @@
 # ADR-0001: Docker Socket Access
 
-## Status
-
-Accepted
-
 ## Context
 
 HELIOS needs to manage Docker containers: start/stop services, read logs, check health status. There are multiple ways to access Docker:

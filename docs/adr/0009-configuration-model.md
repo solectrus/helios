@@ -1,9 +1,5 @@
 # ADR-0009: Configuration Model
 
-## Status
-
-Accepted (updated to reflect file-based YAML implementation)
-
 ## Context
 
 HELIOS needs to store user configuration that drives the generation of `compose.yaml` and `.env` files. This includes:

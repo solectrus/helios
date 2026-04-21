@@ -1,9 +1,5 @@
 # ADR-0007: Technology Stack
 
-## Status
-
-Accepted
-
 ## Context
 
 HELIOS needs a technology stack for building a web-based Docker management interface. Key requirements:
