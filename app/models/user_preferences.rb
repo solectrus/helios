@@ -1,18 +1,11 @@
 class UserPreferences
   COOKIE_NAME = :preferences
 
-  DEFAULTS = {
-    'expert_mode' => false,
-    'hide_unused' => false,
-  }.freeze
+  DEFAULTS = { 'hide_unused' => false }.freeze
 
   def initialize(cookies)
     raw = cookies[COOKIE_NAME]
     @data = raw ? parse(raw) : {}
-  end
-
-  def expert_mode?
-    @data.fetch('expert_mode', DEFAULTS['expert_mode'])
   end
 
   def hide_unused?

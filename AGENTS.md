@@ -109,7 +109,7 @@ Docker integration (Docker API + Compose CLI + events listener), authentication,
 consent flow, survey-based configuration (15 survey JSONs), service management dashboard
 with live status bar and log viewer, full stack generation (~15 service definitions under
 `Export::Services::*`), auto-import of existing installations with unmanaged preservation,
-sensor mapping with InfluxDB latest-value readings, expert mode, DE/EN localization.
+sensor mapping with InfluxDB latest-value readings, DE/EN localization.
 
 Remaining work is tracked by area in `docs/todos.md` — configuration validation, auto-import
 review screen, unmanaged editor, InfluxDB discovery, log search/filter, update flow, alert

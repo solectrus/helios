@@ -51,8 +51,4 @@ class ApplicationController < ActionController::Base
     tz = Configuration.current.system.timezone
     Time.zone = tz if tz.present?
   end
-
-  def require_expert_mode
-    redirect_to services_path unless preferences.expert_mode?
-  end
 end
