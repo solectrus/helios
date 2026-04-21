@@ -1,10 +1,8 @@
 # HELIOS
 
-Web-based bootstrap helper and management interface for [SOLECTRUS](https://solectrus.de).
+Web-based bootstrap helper and management interface for [SOLECTRUS](https://solectrus.de). HELIOS eliminates the need to edit `compose.yaml` / `.env` by hand or run `docker compose` commands — install SOLECTRUS once, then configure and operate the full stack through a browser.
 
-## What is HELIOS?
-
-HELIOS eliminates the need to edit `compose.yaml` / `.env` by hand or run `docker compose` commands. Users install SOLECTRUS once, then configure and operate the full stack through a browser.
+![HELIOS sensor configuration](screenshot.jpg)
 
 ## Features
 
@@ -32,19 +30,14 @@ HELIOS supports two starting points. It auto-detects which one applies on first 
 
 For a new SOLECTRUS setup with no existing `compose.yaml`.
 
-1. Create a directory for the stack:
+1. Create a directory for the stack and generate a secret in `.env`:
 
    ```bash
    mkdir -p /opt/solectrus && cd /opt/solectrus
-   ```
-
-2. Generate a secret and store it in `.env`:
-
-   ```bash
    echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" > .env
    ```
 
-3. Create `compose.yaml` with only the HELIOS service:
+2. Create `compose.yaml` with only the HELIOS service:
 
    ```yaml
    name: solectrus
@@ -62,13 +55,13 @@ For a new SOLECTRUS setup with no existing `compose.yaml`.
        restart: unless-stopped
    ```
 
-4. Start the stack:
+3. Start the stack:
 
    ```bash
    docker compose up -d
    ```
 
-HELIOS is now available at `http://<your-host>:3999`. It will guide you through the rest of the stack configuration (see [First run](#first-run)).
+HELIOS is now available at `http://<your-host>:3999` and will guide you through the rest of the stack configuration.
 
 ### Add to an existing installation
 
@@ -158,11 +151,4 @@ See the [Development Guide](docs/guides/development.md) for details.
 
 ## License
 
-Copyright (c) 2026 Georg Ledermann. All rights reserved.
-
-HELIOS is currently **unlicensed** — a formal license will be chosen at a later date. Until then:
-
-- **Docker image:** You may pull, run, and operate the official HELIOS Docker images for any purpose.
-- **Source code:** Published for reference only — no permission is granted to copy, modify, or redistribute.
-
-See [`LICENSE.md`](./LICENSE.md) for details.
+Copyright © 2026 Georg Ledermann. HELIOS is currently **unlicensed** — the official Docker images may be pulled and operated for any purpose, but the source code is published for reference only. A formal license will follow. See [`LICENSE.md`](./LICENSE.md) for details.
