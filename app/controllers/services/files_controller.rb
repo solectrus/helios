@@ -1,7 +1,5 @@
 module Services
   class FilesController < BaseController
-    before_action :require_expert_mode
-
     ALLOWED_FILES = {
       'compose' => { label: 'compose.yaml', language_class: 'language-yaml', method: :compose_content },
       'env' => { label: '.env', language_class: 'language-properties', method: :env_content },

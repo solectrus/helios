@@ -45,20 +45,20 @@ describe('preferences_cookie', () => {
 
   describe('updatePreferences', () => {
     it('writes a fresh cookie when none exists', () => {
-      updatePreferences({ expert_mode: true });
+      updatePreferences({ hide_unused: true });
 
       expect(JSON.parse(readCookieValue('preferences')!)).toEqual({
-        expert_mode: true,
+        hide_unused: true,
       });
     });
 
     it('merges with existing preferences', () => {
       updatePreferences({ locale: 'de' });
-      updatePreferences({ expert_mode: true });
+      updatePreferences({ hide_unused: true });
 
       expect(JSON.parse(readCookieValue('preferences')!)).toEqual({
         locale: 'de',
-        expert_mode: true,
+        hide_unused: true,
       });
     });
 
