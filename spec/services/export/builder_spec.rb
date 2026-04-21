@@ -570,6 +570,65 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'with pvnode nowcast plan configured' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'pvnode',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_declination1' => '30',
+                             'forecast_azimuth1' => '180',
+                             'forecast_kwp1' => '10',
+                             'forecast_pvnode_apikey' => 'pvnode-key',
+                             'forecast_pvnode_paid' => 'nowcast',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'writes PVNODE_PAID=nowcast to .env' do
+      expect(Env.load['PVNODE_PAID']).to eq('nowcast')
+    end
+
+    it 'lists PVNODE_PAID in the compose environment' do
+      compose = Compose.load
+      forecast = compose.services.find('forecast-collector')
+      expect(forecast.environment).to include('PVNODE_PAID')
+    end
+  end
+
+  describe 'with pvnode free plan configured' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'pvnode',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_declination1' => '30',
+                             'forecast_azimuth1' => '180',
+                             'forecast_kwp1' => '10',
+                             'forecast_pvnode_apikey' => 'pvnode-key',
+                             'forecast_pvnode_paid' => 'false',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'omits PVNODE_PAID from .env' do
+      content = File.read(env_path)
+      expect(content).not_to include('PVNODE_PAID')
+    end
+
+    it 'does not list PVNODE_PAID in the compose environment' do
+      compose = Compose.load
+      forecast = compose.services.find('forecast-collector')
+      expect(forecast.environment).not_to include('PVNODE_PAID')
+    end
+  end
+
   describe 'with pvnode multi-roof forecast configured' do
     before do
       configuration.update('forecast', {
