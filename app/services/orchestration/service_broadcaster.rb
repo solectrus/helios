@@ -41,7 +41,7 @@ module Orchestration
 
     def broadcast_and_update(service_name, container, compose_service)
       error_message = resolve_error(service_name, container)
-      I18n.with_locale(EventsListener.locale) do
+      I18n.with_locale(Orchestration::EventsListener.locale) do
         self.class.broadcast_row(
           service_name,
           container:,

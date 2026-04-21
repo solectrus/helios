@@ -26,6 +26,15 @@ RSpec.describe Orchestration::ServiceBroadcaster do
 
         expect(Orchestration::ErrorStore.get(service_name)).to be_nil
       end
+
+      it 'updates the stack status with the effective status' do
+        broadcaster.broadcast(service_name)
+
+        expect(Orchestration::StackStatus).to have_received(:update).with(
+          service_name,
+          :ok,
+        )
+      end
     end
 
     context 'when container is not running' do
