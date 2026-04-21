@@ -85,13 +85,17 @@ module Export
       def pvnode_vars
         fcast = configuration.forecast
         vars = %w[PVNODE_APIKEY]
-        vars << 'PVNODE_PAID' if fcast.forecast_pvnode_paid.present?
+        vars << 'PVNODE_PAID' if pvnode_paid_plan?(fcast.forecast_pvnode_paid)
         vars << 'PVNODE_EXTRA_PARAMS' if fcast.forecast_pvnode_extra_params.present?
         roofs = (fcast.forecast_roofs || 1).to_i
         roofs.times do |i|
           vars << "PVNODE_#{i}_EXTRA_PARAMS" if fcast.send("forecast_pvnode_extra_params#{i + 1}").present?
         end
         vars
+      end
+
+      def pvnode_paid_plan?(value)
+        value.present? && value.to_s != 'false'
       end
     end
   end

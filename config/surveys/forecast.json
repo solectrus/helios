@@ -113,8 +113,14 @@
           "choices": [
             "1",
             "2",
-            { "value": "3", "visibleIf": "{forecast} anyof ['forecast.solar', 'pvnode']" },
-            { "value": "4", "visibleIf": "{forecast} anyof ['forecast.solar', 'pvnode']" }
+            {
+              "value": "3",
+              "visibleIf": "{forecast} anyof ['forecast.solar', 'pvnode']"
+            },
+            {
+              "value": "4",
+              "visibleIf": "{forecast} anyof ['forecast.solar', 'pvnode']"
+            }
           ]
         }
       ]
@@ -399,17 +405,41 @@
           "isRequired": true
         },
         {
-          "type": "boolean",
+          "type": "radiogroup",
           "name": "forecast_pvnode_paid",
           "title": {
-            "de": "Bezahltes pvnode-Konto",
-            "default": "Paid pvnode account"
+            "de": "pvnode-Tarif",
+            "default": "pvnode plan"
           },
           "description": {
-            "de": "Aktiviert Funktionen für bezahlte Konten",
-            "default": "Enables features for paid accounts"
+            "de": "Der Tarif muss zum aktiv abonnierten pvnode-Konto passen. Eine falsche Angabe kann Fehler oder vorzeitiges Aufbrauchen des monatlichen Kontingents verursachen.",
+            "default": "The plan must match your active pvnode subscription. A mismatch can cause errors or exhaust the monthly quota prematurely."
           },
-          "defaultValue": false
+          "isRequired": true,
+          "defaultValue": "false",
+          "choices": [
+            {
+              "value": "false",
+              "text": {
+                "de": "Kostenlos (40 Abfragen/Monat, 1-Tages-Vorhersage)",
+                "default": "Free (40 queries/month, 1-day forecast)"
+              }
+            },
+            {
+              "value": "true",
+              "text": {
+                "de": "Hobbyist (1.000 Abfragen/Monat, 7-Tages-Vorhersage, stündliche Aktualisierungen)",
+                "default": "Hobbyist (1,000 queries/month, 7-day forecast, hourly updates)"
+              }
+            },
+            {
+              "value": "nowcast",
+              "text": {
+                "de": "Hobbyist mit Nowcast (3.000 Abfragen/Monat, 7-Tages-Vorhersage, 10-Minuten-Aktualisierungen tagsüber)",
+                "default": "Hobbyist with Nowcast (3,000 queries/month, 7-day forecast, 10-minute updates during daytime)"
+              }
+            }
+          ]
         }
       ]
     },

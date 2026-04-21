@@ -243,15 +243,19 @@ module Export
 
     def pvnode_entries(env, fcast)
       entry(env, 'PVNODE_APIKEY', fcast.forecast_pvnode_apikey, 'pvnode API key')
-      if fcast.forecast_pvnode_paid.present?
+      if pvnode_paid_plan?(fcast.forecast_pvnode_paid)
         entry(env, 'PVNODE_PAID', fcast.forecast_pvnode_paid,
-              'pvnode paid account')
+              'pvnode paid plan — only set for paid accounts (true = Hobbyist, nowcast = Hobbyist with Nowcast)')
       end
       if fcast.forecast_pvnode_extra_params.present?
         entry(env, 'PVNODE_EXTRA_PARAMS', fcast.forecast_pvnode_extra_params,
               'Additional pvnode parameters')
       end
       pvnode_per_roof_extra_params_entries(env, fcast)
+    end
+
+    def pvnode_paid_plan?(value)
+      value.present? && value.to_s != 'false'
     end
 
     def pvnode_per_roof_extra_params_entries(env, fcast)
