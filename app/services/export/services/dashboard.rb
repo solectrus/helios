@@ -38,7 +38,7 @@ module Export
       def passthrough_vars
         %w[
           TZ INSTALLATION_DATE INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SECRET_KEY_BASE ADMIN_PASSWORD
-          APP_HOST WEB_CONCURRENCY
+          APP_HOST
         ]
       end
 
@@ -51,6 +51,7 @@ module Export
           DB_USER=postgres
           DB_PASSWORD=${POSTGRES_PASSWORD}
           DB_DATABASE=solectrus
+          WEB_CONCURRENCY=0
         ]
       end
 
@@ -64,7 +65,7 @@ module Export
           'FRAME_ANCESTORS' => configuration.system.frame_ancestors,
           'UI_THEME' => configuration.system.ui_theme,
           'LOCKUP_CODEWORD' => configuration.system.lockup_codeword,
-          'TRUSTED_PROXY_RANGES' => configuration.system.trusted_proxy_ranges,
+          'TRUSTED_PROXY_RANGES' => configuration.reverse_proxy.trusted_proxy_ranges,
         }.filter_map { |key, value| key if value.present? }
       end
 

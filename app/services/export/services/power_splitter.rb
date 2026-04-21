@@ -21,7 +21,7 @@ module Export
       private
 
       def power_splitter_environment
-        passthrough_vars + explicit_vars + optional_vars + sensor_environment
+        passthrough_vars + explicit_vars + sensor_environment
       end
 
       # Variables passed through from .env (name only)
@@ -37,12 +37,8 @@ module Export
           DB_HOST=postgresql
           DB_USER=postgres
           DB_PASSWORD=${POSTGRES_PASSWORD}
+          POWER_SPLITTER_INTERVAL=300
         ]
-      end
-
-      def optional_vars
-        interval = configuration.system.power_splitter_interval
-        interval.present? ? %w[POWER_SPLITTER_INTERVAL] : []
       end
     end
   end

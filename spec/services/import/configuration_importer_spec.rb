@@ -456,8 +456,7 @@ RSpec.describe Import::ConfigurationImporter do
           'app_host' => 'myhost',
           'co2_emission_factor' => '500',
         )
-        # Default web_concurrency='0' is not stored; influx_poll_interval is deprecated
-        expect(system).not_to include('web_concurrency', 'influx_poll_interval')
+        expect(system).not_to include('influx_poll_interval')
       end
     end
 

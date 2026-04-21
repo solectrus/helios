@@ -6,13 +6,9 @@ class ConfigSchema
     app_host
     admin_password
     co2_emission_factor
-    force_ssl
-    web_concurrency
     frame_ancestors
     ui_theme
     lockup_codeword
-    trusted_proxy_ranges
-    power_splitter_interval
   ].freeze
 
   SYSTEM_DEFAULTS = {
@@ -176,6 +172,7 @@ class ConfigSchema
   REVERSE_PROXY_FIELDS = %w[
     app_domain
     letsencrypt_email
+    trusted_proxy_ranges
   ].freeze
 
   BACKUP_FIELDS = %w[

@@ -1,5 +1,9 @@
 module Configurations
   class SettingsController < ApplicationController
+    # Settings whose survey uses an `enabled` boolean to toggle the whole section.
+    # The flag is stripped on save, so we re-inject it on load when data is present.
+    ENABLED_FLAG_SETTINGS = %w[reverse_proxy backup].freeze
+
     before_action :set_configuration
     before_action :validate_setting
     before_action :redirect_non_frame_requests, only: %i[new edit]
@@ -20,6 +24,7 @@ module Configurations
         render SettingForm::Component.new(setting: 'sensor', sensor_name:, data:)
       else
         data = @configuration.setting_data(setting)
+        inject_enabled_flag!(data)
         render SettingForm::Component.new(setting:, data:)
       end
     end
@@ -120,6 +125,15 @@ module Configurations
 
       data['measurement'] = collector_measurement(source)
       data['field'] = SensorMappings.default_field(sensor_name, source)
+    end
+
+    # Re-inject the UI-only `enabled` flag for sections that use it.
+    # The flag is stripped on save (see persist_setting), so it must be derived
+    # from whether the section has persisted data.
+    def inject_enabled_flag!(data)
+      return unless ENABLED_FLAG_SETTINGS.include?(setting) && data.present?
+
+      data['enabled'] = true
     end
 
     # Derive UI-only state (extraction mode) from persisted MQTT fields.

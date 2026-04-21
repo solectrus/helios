@@ -5,9 +5,6 @@ system:
   admin_password: example-admin-password
   secret_key_base: example-secret-key-base
   app_host: 192.168.1.100
-  force_ssl: 'false'
-  web_concurrency: '2'
-  power_splitter_interval: '300'
 dashboard:
   image: ghcr.io/solectrus/solectrus:develop
 postgresql:

@@ -147,34 +147,6 @@
         },
         {
           "type": "text",
-          "name": "web_concurrency",
-          "title": {
-            "de": "Web-Worker-Prozesse",
-            "default": "Web worker processes"
-          },
-          "description": {
-            "de": "0 = Einzelmodus (empfohlen für Raspberry Pi)",
-            "default": "0 = single mode (recommended for Raspberry Pi)"
-          },
-          "defaultValue": "0",
-          "inputType": "number",
-          "min": 0
-        },
-        {
-          "type": "boolean",
-          "name": "force_ssl",
-          "title": {
-            "de": "HTTPS-Weiterleitung erzwingen",
-            "default": "Force HTTPS redirect"
-          },
-          "description": {
-            "de": "Nur aktivieren, wenn ein gültiges SSL-Zertifikat vorhanden ist",
-            "default": "Only enable if a valid SSL certificate is in place"
-          },
-          "defaultValue": false
-        },
-        {
-          "type": "text",
           "name": "frame_ancestors",
           "title": {
             "de": "iFrame-Einbettung erlauben (optional)",
@@ -184,33 +156,6 @@
             "de": "URL der übergeordneten Webseite, z.B. https://example.com",
             "default": "URL of the parent website, e.g. https://example.com"
           }
-        },
-        {
-          "type": "text",
-          "name": "trusted_proxy_ranges",
-          "title": {
-            "de": "Vertrauenswürdige Proxy-Bereiche (optional)",
-            "default": "Trusted proxy ranges (optional)"
-          },
-          "description": {
-            "de": "Kommaseparierte IP-Bereiche in CIDR-Notation, z.B. für Cloudflare",
-            "default": "Comma-separated IP ranges in CIDR notation, e.g. for Cloudflare"
-          }
-        },
-        {
-          "type": "text",
-          "name": "power_splitter_interval",
-          "title": {
-            "de": "Power-Splitter-Intervall (Sekunden)",
-            "default": "Power splitter interval (seconds)"
-          },
-          "description": {
-            "de": "Berechnungsfrequenz für abgeleitete Leistungswerte",
-            "default": "Calculation frequency for derived power values"
-          },
-          "defaultValue": "3600",
-          "inputType": "number",
-          "min": 300
         }
       ]
     }
