@@ -48,9 +48,10 @@ Rails.application.configure do
   # Replace the default in-process memory cache store with a durable alternative.
   # config.cache_store = :mem_cache_store
 
-  # Replace the default in-process and non-durable queuing backend for Active Job.
-  config.active_job.queue_adapter = :solid_queue
-  config.solid_queue.connects_to = { database: { writing: :queue } }
+  # Run Active Jobs in an in-process thread pool. Jobs are only ever enqueued
+  # by user clicks, and Docker state is authoritative — EventsListener will
+  # reconcile UI state from Docker events if a job is lost on restart.
+  config.active_job.queue_adapter = :async
 
   # Enable locale fallbacks for I18n (makes lookups for any locale fall back to
   # the I18n.default_locale when a translation cannot be found).
