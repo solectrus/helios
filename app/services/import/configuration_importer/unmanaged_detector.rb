@@ -67,12 +67,29 @@ module Import
 
       def detect_unmanaged_services
         raw_services = @reader.raw_compose['services'] || {}
-        raw_services.except(*MANAGED_SERVICES).presence
+        raw_services
+          .reject { |name, config| managed_service?(name, config) }
+          .presence
       end
 
       def detect_unmanaged_env_vars
         all_managed = all_managed_env_keys
-        @reader.raw_env.to_h.except(*all_managed).presence
+        @reader
+          .raw_env
+          .to_h
+          .reject { |key, _| all_managed.include?(key) || managed_shelly_env_key?(key) }
+          .presence
+      end
+
+      def managed_service?(name, config)
+        MANAGED_SERVICES.include?(name) || ShellyExtractor.shelly_image?(config['image'])
+      end
+
+      # Pattern-named shelly-collector services reference per-device env vars
+      # like SHELLY_DEVICE_ID_FRIDGE and INFLUX_MEASUREMENT_SHELLY_FRIDGE.
+      # Treat them as managed so they do not pollute the unmanaged section.
+      def managed_shelly_env_key?(key)
+        key.start_with?('SHELLY_DEVICE_ID_', 'INFLUX_MEASUREMENT_SHELLY_')
       end
 
       def all_managed_env_keys

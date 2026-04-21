@@ -571,6 +571,109 @@ RSpec.describe Import::ConfigurationImporter do
     end
   end
 
+  context 'with multi_shelly scenario' do
+    let(:scenario) { 'multi_shelly' }
+
+    describe 'shelly section data' do
+      subject(:shelly) { importer.result[:shelly] }
+
+      it 'imports cloud connection settings from the first shelly service' do
+        expect(shelly).to include(
+          'connection' => 'cloud',
+          'cloud_server' => 'https://shelly-123-eu.shelly.cloud',
+          'auth_key' => 'example-shelly-auth-key',
+        )
+      end
+
+      it 'imports the shortest SHELLY_INTERVAL across all services' do
+        # Services define 20, 22, 23 → min is 20
+        expect(shelly).to include('interval' => '20')
+      end
+    end
+
+    describe 'device data' do
+      subject(:devices) { importer.result[:devices] }
+
+      it 'detects SENEC plus one device per shelly-collector-* service' do
+        # 1 SENEC inverter + 3 shelly consumers
+        expect(devices.size).to eq(4)
+      end
+
+      it 'infers all shelly devices as consumer' do
+        shellys = devices.reject { |d| d[:type] == 'inverter' }
+        expect(shellys.pluck(:type).uniq).to eq(['consumer'])
+      end
+
+      it 'uses the measurement name as the device name' do
+        shelly_names = devices.reject { |d| d[:type] == 'inverter' }.pluck(:name)
+        expect(shelly_names).to contain_exactly('Fridge', 'Dishwasher', 'Washer')
+      end
+
+      it 'carries the per-service device_id' do
+        fridge = devices.find { |d| d[:name] == 'Fridge' }
+        expect(fridge[:data]).to include(
+          'data_source' => 'shelly',
+          'shelly_device_id' => 'device-id-fridge',
+        )
+      end
+
+      it 'does not carry shelly_host in cloud mode' do
+        fridge = devices.find { |d| d[:name] == 'Fridge' }
+        expect(fridge[:data].keys).not_to include('shelly_host')
+      end
+
+      it 'carries the per-service shelly_interval' do
+        intervals = devices
+                    .reject { |d| d[:type] == 'inverter' }
+                    .to_h { |d| [d[:name], d[:data]['shelly_interval']] }
+        expect(intervals).to eq(
+          'Fridge' => '20',
+          'Dishwasher' => '22',
+          'Washer' => '23',
+        )
+      end
+    end
+
+    describe 'unmanaged data' do
+      subject(:unmanaged) { importer.result[:unmanaged] }
+
+      it 'does not classify shelly-collector-* services as unmanaged' do
+        services = unmanaged&.dig('services') || {}
+        expect(services.keys.grep(/\Ashelly-collector/)).to be_empty
+      end
+
+      it 'does not classify SHELLY_DEVICE_ID_* env vars as unmanaged' do
+        env_vars = unmanaged&.dig('env_vars') || {}
+        expect(env_vars.keys.grep(/\ASHELLY_DEVICE_ID_/)).to be_empty
+      end
+
+      it 'does not classify INFLUX_MEASUREMENT_SHELLY_* env vars as unmanaged' do
+        env_vars = unmanaged&.dig('env_vars') || {}
+        expect(env_vars.keys.grep(/\AINFLUX_MEASUREMENT_SHELLY_/)).to be_empty
+      end
+    end
+
+    describe '#import!' do
+      subject(:config) { importer.import! }
+
+      it 'persists shelly section with cloud connection' do
+        expect(config.shelly).to include('connection' => 'cloud')
+      end
+
+      it 'persists one shelly-backed custom_power sensor per service' do
+        shelly_sensors = config.sensors_with_source('shelly')
+        custom = shelly_sensors.keys.grep(/\Acustom_power_\d+\z/)
+        expect(custom.size).to eq(3)
+      end
+
+      it 'stores shelly_device_id on the persisted sensor' do
+        sensor = config.sensor_config('custom_power_01')
+        expect(sensor.shelly_device_id).to eq('device-id-fridge')
+        expect(sensor.shelly_connection).to eq('cloud')
+      end
+    end
+  end
+
   context 'with with_external scenario' do
     let(:scenario) { 'with_external' }
 
