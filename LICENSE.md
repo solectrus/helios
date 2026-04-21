@@ -8,7 +8,7 @@ Until then, the following terms apply:
 
 ## Docker Image
 
-The official HELIOS Docker images (published by the copyright holder) may be pulled, run, and operated for any purpose, including on your own infrastructure.
+The official HELIOS Docker image (published by the copyright holder) may be pulled, run, and operated for private, non-commercial purposes on your own infrastructure. Commercial use requires prior written permission from the copyright holder.
 
 ## Source Code
 

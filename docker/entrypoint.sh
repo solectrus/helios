@@ -5,7 +5,7 @@ echo "Using $(ruby -v)"
 echo "Based on Alpine Linux $(cat /etc/alpine-release)"
 
 echo ""
-echo "Copyright (C) 2020-2026 Georg Ledermann"
+echo "Copyright (C) 2020-2026 Georg Ledermann. All rights reserved."
 
 # If running the rails server then wait for services
 # and create or migrate existing database
