@@ -1,0 +1,43 @@
+---
+system:
+  admin_password: test-admin
+  installation_date: '2023-06-15'
+  secret_key_base: test-secret-key
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: test-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: test-influx-pw
+  token: test-influx-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+sensors: {}
+_unmanaged:
+  env_vars:
+    INFLUX_MEASUREMENT_TIBBER: Tibber
+    TIBBER_INTERVAL: '3600'
+    TIBBER_TOKEN: tibber-api-token-xyz
+  services:
+    tibber-collector:
+      depends_on:
+        influxdb:
+          condition: service_healthy
+      environment:
+      - TZ
+      - TIBBER_TOKEN
+      - TIBBER_INTERVAL
+      - INFLUX_HOST=influxdb
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_TIBBER}
+      image: ghcr.io/solectrus/tibber-collector:latest
+      restart: unless-stopped

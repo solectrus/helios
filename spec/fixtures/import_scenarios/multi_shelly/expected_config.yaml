@@ -1,0 +1,118 @@
+---
+system:
+  admin_password: example-admin-password
+  app_host: solectrus.example.com
+  installation_date: '2024-01-01'
+  lockup_codeword: sonne
+  secret_key_base: 12e336f0dda1f5878bf24e60529b8980d972e67384efd32c0665d39593e407c7c9c66cee3eedbdd9b5a1012e0522c252a6ddf4f7ea568052e1ad8101e7e1219f
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: my-secret-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: example-influx-password
+  token: my-super-secret-admin-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: pvnode
+  forecast_azimuth1: '180'
+  forecast_azimuth2: '180'
+  forecast_azimuth3: '90'
+  forecast_azimuth4: '270'
+  forecast_declination1: '45'
+  forecast_declination2: '38'
+  forecast_declination3: '38'
+  forecast_declination4: '38'
+  forecast_interval: '3600'
+  forecast_kwp1: '6'
+  forecast_kwp2: '3.08'
+  forecast_kwp3: '3.85'
+  forecast_kwp4: '3.85'
+  forecast_latitude: '50.123'
+  forecast_longitude: '11.456'
+  forecast_pvnode_apikey: pvn_example-pvnode-api-key
+  forecast_pvnode_extra_params: diffuse_radiation_model=perez
+  forecast_pvnode_paid: 'true'
+  forecast_roofs: '4'
+  measurement: forecast
+senec:
+  adapter: cloud
+  interval: '60'
+  password: example-password
+  username: mail@example.com
+shelly:
+  auth_key: example-shelly-auth-key
+  cloud_server: https://shelly-123-eu.shelly.cloud
+  connection: cloud
+  interval: '20'
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  custom_power_01:
+    field: power
+    measurement: Fridge
+    name: Fridge
+    shelly_connection: cloud
+    shelly_device_id: device-id-fridge
+    shelly_interval: '20'
+    source: shelly
+  custom_power_02:
+    field: power
+    measurement: Dishwasher
+    name: Dishwasher
+    shelly_connection: cloud
+    shelly_device_id: device-id-dishwasher
+    shelly_interval: '22'
+    source: shelly
+  custom_power_03:
+    field: power
+    measurement: Washer
+    name: Washer
+    shelly_connection: cloud
+    shelly_device_id: device-id-washer
+    shelly_interval: '23'
+    source: shelly
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_forecast:
+    source: forecast
+  inverter_power_forecast_clearsky:
+    source: forecast
+  outdoor_temp_forecast:
+    field: temp
+    measurement: forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_car_connected:
+    source: senec
+  wallbox_power:
+    source: senec
+_unmanaged:
+  env_vars:
+    SENEC_REQUEST_MODE: full
+    TRAEFIK_VOLUME_PATH: "./traefik"

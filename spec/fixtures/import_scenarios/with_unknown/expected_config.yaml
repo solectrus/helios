@@ -1,0 +1,40 @@
+---
+system:
+  admin_password: test-admin
+  installation_date: '2023-06-15'
+  secret_key_base: test-secret-key
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: test-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: test-influx-pw
+  token: test-influx-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+sensors: {}
+_unmanaged:
+  env_vars:
+    MY_CUSTOM_VAR: custom-value
+  services:
+    dozzle:
+      image: amir20/dozzle:latest
+      ports:
+      - 8082:8080
+      restart: unless-stopped
+      volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    nginx:
+      environment:
+      - NGINX_CUSTOM_SETTING=${MY_CUSTOM_VAR}
+      image: nginx:alpine
+      ports:
+      - 8080:80
+      restart: unless-stopped

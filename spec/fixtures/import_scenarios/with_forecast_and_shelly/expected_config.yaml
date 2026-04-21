@@ -1,0 +1,79 @@
+---
+system:
+  admin_password: test-admin
+  app_host: myhost
+  co2_emission_factor: '500'
+  installation_date: '2023-06-15'
+  secret_key_base: test-secret-key
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: test-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: test-influx-pw
+  token: test-influx-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: forecast.solar
+  forecast_azimuth1: "-10"
+  forecast_damping_evening: '0'
+  forecast_damping_morning: '0'
+  forecast_declination1: '30'
+  forecast_horizon: '24'
+  forecast_interval: '900'
+  forecast_inverter: '1'
+  forecast_kwp1: '8.4'
+  forecast_latitude: '51.5'
+  forecast_longitude: '7.5'
+  forecast_roofs: '1'
+  forecast_solar_apikey: my-solar-api-key
+  measurement: Forecast
+senec:
+  adapter: local
+  host: 192.168.1.42
+  ignore: wallbox_charge_power,grid_power_minus
+  interval: '5'
+  language: de
+  schema: https
+shelly:
+  connection: local
+  interval: '5'
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  heatpump_power:
+    field: power
+    measurement: HeatPump
+    name: HeatPump
+    shelly_connection: local
+    shelly_host: shelly-hp.local
+    shelly_interval: '5'
+    source: shelly
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  wallbox_power:
+    field: power
+    measurement: Wallbox
+    source: senec

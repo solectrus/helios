@@ -1,0 +1,34 @@
+---
+system:
+  admin_password: test-admin
+  installation_date: '2023-06-15'
+  secret_key_base: test-secret-key
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: test-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: test-influx-pw
+  token: test-influx-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+reverse_proxy:
+  app_domain: solar.example.com
+  letsencrypt_email: webmaster@solar.example.com
+backup:
+  aws_access_key_id: AKIAEXAMPLE
+  aws_bucket: my-backup-bucket
+  aws_region: eu-central-1
+  aws_secret_access_key: secret123
+  influxdb:
+    image: ghcr.io/solectrus/influxdb2-s3-backup:latest
+  postgresql:
+    image: ghcr.io/solectrus/postgres-s3-backup:18
+sensors: {}
