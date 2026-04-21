@@ -12,10 +12,12 @@ HELIOS needs persistence for Rails infrastructure (WebSocket messages) but store
 
 Use SQLite exclusively for Rails infrastructure:
 
-| Database                           | Purpose                        | Managed by |
-| ---------------------------------- | ------------------------------ | ---------- |
-| `storage/production.sqlite3`       | Primary (unused, empty schema) | Rails      |
-| `storage/production_cable.sqlite3` | WebSocket message transport    | SolidCable |
+| Database (production)          | Purpose                        | Managed by |
+| ------------------------------ | ------------------------------ | ---------- |
+| `/data/helios/primary.sqlite3` | Primary (unused, empty schema) | Rails      |
+| `/data/helios/cable.sqlite3`   | WebSocket message transport    | SolidCable |
+
+In development and test these live under `storage/` (e.g. `storage/development.sqlite3`).
 
 Background jobs run in-process via ActiveJob's `:async` adapter (thread pool inside Puma). Jobs are only ever enqueued by user clicks, and the Docker daemon — not HELIOS — holds the authoritative state. `EventsListener` reconciles the UI from Docker events if a job is lost on restart.
 
@@ -40,4 +42,4 @@ Application data is stored elsewhere:
 - Multiple SQLite files to persist (via bind mount)
 
 **Location:**
-`/app/storage/` (persisted via bind mount to `./helios/`)
+In production both SQLite files live in `/data/helios/` inside the container, which is bind-mounted to the stack directory on the host. No separate volume is required.

@@ -28,8 +28,8 @@ Scenarios A and B can coexist (e.g. SENEC collector for the inverter + ioBroker 
 
 ### Installation
 
-- **One-command install** (new users): `curl -fsSL solectrus.de/install.sh | sh` checks prerequisites, detects architecture (AMD64 / ARM64), writes a minimal `compose.yaml` with only HELIOS, and starts the stack.
-- **Manual install** (existing users): a short snippet to add `helios` to an existing `compose.yaml`. HELIOS is opt-in — existing setups keep working without it.
+- **Fresh install** (new users): create a minimal `compose.yaml` containing only the `helios` service and start it. HELIOS then guides the user through the full stack configuration.
+- **Add to existing installation** (existing users): a short snippet adds `helios` to the existing `compose.yaml`. HELIOS is opt-in — existing setups keep working without it.
 
 ### First-Run Setup
 

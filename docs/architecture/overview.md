@@ -69,13 +69,3 @@ The admin password is stored in `config.yaml` under `system.admin_password` (bcr
 ```
 
 **Note:** All data directories are bind mounts (local folders), not Docker volumes. This makes backup and inspection easier.
-
----
-
-## Install Script
-
-See [`install.sh`](../../install.sh) in the repository root.
-
-**Prerequisites:** Docker and Docker Compose must be installed.
-
-The script checks prerequisites, creates a minimal `compose.yaml` with only HELIOS, and starts the stack. The vanity URL `solectrus.de/install.sh` can redirect to the raw file on GitHub.
