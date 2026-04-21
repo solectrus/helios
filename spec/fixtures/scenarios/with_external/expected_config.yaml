@@ -2,9 +2,9 @@
 system:
   timezone: Europe/Berlin
   installation_date: '2025-01-01'
-  admin_password: NMbLSQHxJI04Ilp
-  secret_key_base: 31daffd9b7e9f511f210b7ed2ac38aa0853d8daa633c3832d3aec2c5b0287a6dc58070f46b212797a847d3028a7de4b0948ebb44ce30e8100d3e9ac3afc7aed6
-  app_host: 192.168.178.131
+  admin_password: example-admin-password
+  secret_key_base: example-secret-key-base
+  app_host: 192.168.1.100
   force_ssl: 'false'
   web_concurrency: '2'
   power_splitter_interval: '300'
@@ -12,13 +12,13 @@ dashboard:
   image: ghcr.io/solectrus/solectrus:develop
 postgresql:
   image: postgres:18-alpine
-  password: juQrcEKQz92FVxUwRsRTKkO2kFtrbekU
+  password: example-postgres-password
 influxdb:
   image: influxdb:2-alpine
-  password: XVmfziSoqDnVbm2GfRzZhdf18yLtFd7
+  password: example-influx-password
   org: solectrus
   bucket: solectrus
-  token: NWD3vfbwdz8kKXizGk63sH1f83B25EQKytC3iW6f08WPyK1SsHlxAkI25kWANTS
+  token: example-influx-admin-token
 redis:
   image: redis:8-alpine
 watchtower:
