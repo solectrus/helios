@@ -23,15 +23,15 @@
 
         <% if singleton_configured? %>
           <%= link_to helpers.edit_configuration_setting_path(setting:, name: setting),
-                      class: "btn btn-ghost btn-sm btn-square",
+                      class: "btn btn-ghost btn-lg btn-square",
                       data: { turbo_frame: "setting-modal-content" } do %>
-            <i class="fa-solid fa-pen-to-square"></i>
+            <i class="fa-solid fa-pen-to-square text-xl"></i>
           <% end %>
         <% else %>
           <%= link_to helpers.new_configuration_setting_path(setting:),
-                      class: "btn btn-ghost btn-sm btn-square",
+                      class: "btn btn-ghost btn-lg btn-square",
                       data: { turbo_frame: "setting-modal-content" } do %>
-            <i class="fa-solid fa-pen-to-square"></i>
+            <i class="fa-solid fa-pen-to-square text-xl"></i>
           <% end %>
         <% end %>
       </div>
