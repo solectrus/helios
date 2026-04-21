@@ -4,7 +4,7 @@ Work still ahead, grouped by area. This list replaces the earlier phase-based ro
 
 ## Configuration experience
 
-- **Cross-chapter validation and dependency checks.** E.g. a wallbox configuration requires an inverter; a Shelly data source requires at least one mapped sensor. Today the surveys validate each chapter in isolation.
+- **Cross-singleton validation and dependency checks.** E.g. a wallbox configuration requires an inverter; a Shelly data source requires at least one mapped sensor. Today the surveys validate each singleton in isolation.
 - **Summary / review view after auto-import (scenario C).** Show the user what HELIOS detected, which services / variables it preserved as unmanaged, and which fields still need attention before the first edit.
 - **Web editor for unmanaged services and env vars.** Power-user feature: let users modify preserved services inline in HELIOS instead of editing `compose.yaml` by hand.
 
@@ -29,7 +29,6 @@ Work still ahead, grouped by area. This list replaces the earlier phase-based ro
 
 ## User experience
 
-- **Link to the running SOLECTRUS Dashboard** from the HELIOS UI (with correct hostname / port / HTTPS detection).
 - **Mobile-responsive polish.** The layout works on desktop today; revisit narrow viewports once the above features land.
 
 ## Platform

@@ -23,7 +23,7 @@ Options considered:
 
 Use a single `config.yaml` file to store all configuration. The `Configuration` model reads and writes this file directly — no database tables are needed.
 
-Configuration is organized into named singletons (chapters), each representing a specific area:
+Configuration is organized into named singletons, each representing a specific area:
 
 ```ruby
 # Usage

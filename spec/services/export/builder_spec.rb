@@ -36,7 +36,7 @@ RSpec.describe Export::Builder do
       expect(compose.name).to eq('solectrus')
     end
 
-    it 'includes all required MVP services' do
+    it 'includes all required core services' do
       compose = Compose.load
       expect(compose.services.names).to contain_exactly(
         'postgresql',

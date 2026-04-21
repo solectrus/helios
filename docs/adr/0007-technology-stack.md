@@ -11,7 +11,7 @@ HELIOS needs a technology stack for building a web-based Docker management inter
 - Lightweight (runs on Raspberry Pi)
 - Modern UI without heavy JavaScript frameworks
 - Good Docker ecosystem support
-- Maintainability by a small team
+- Maintainable as a solo project alongside the rest of SOLECTRUS
 
 ## Decision
 
@@ -39,4 +39,4 @@ HELIOS needs a technology stack for building a web-based Docker management inter
 **Negative:**
 
 - Ruby is slower than Go/Rust (acceptable for this use case)
-- Team must know Ruby (but that's given for SOLECTRUS)
+- Locked into the Ruby ecosystem (already the case for the rest of SOLECTRUS)

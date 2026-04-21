@@ -157,7 +157,7 @@ end
 
 **Scenario A/B (Fresh install):** Only HELIOS service exists → setup wizard. User configures devices and selects a data source per device (SENEC/Shelly/MQTT or ioBroker/HA). Collector services are generated only for devices with direct hardware data sources. The distinction between standalone and smart home setups is implicit — no separate wizard question.
 
-**Scenario C (Existing installation):** Other services present → HELIOS automatically imports `compose.yaml` and `.env` on first access, reverse-maps configuration into internal chapter data (best-effort), and shows the result to the user for review.
+**Scenario C (Existing installation):** Other services present → HELIOS automatically imports `compose.yaml` and `.env` on first access, reverse-maps configuration into internal singletons (best-effort), and shows the result to the user for review.
 
 ---
 
@@ -176,7 +176,7 @@ If Docker socket is not accessible (not mounted, daemon stopped):
 
 If `compose.yaml` is missing or invalid after initial setup:
 
-- HELIOS can regenerate the file from its internal service registry (SQLite)
+- HELIOS can regenerate the file from `config.yaml` (see [ADR-0009](../adr/0009-configuration-model.md))
 - User is prompted: "Configuration file missing. Regenerate from saved state?"
 - Regeneration restores all HELIOS-managed services
 - User-added services cannot be recovered (warning shown)
@@ -232,7 +232,7 @@ When HELIOS needs to modify `compose.yaml` (e.g., adding a service), it may enco
 
 **Strategy: Detect and warn**
 
-1. HELIOS tracks which services it manages (stored in SQLite)
+1. HELIOS tracks which services it manages (stored in `config.yaml`)
 2. Before modifying, compare current file with expected state
 3. If differences detected in managed services → show warning to user
 4. User decides: apply changes, skip, or review diff
