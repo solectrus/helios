@@ -9,8 +9,8 @@ module Export
         'PostgreSQL — Relational database for daily summaries, electricity prices, and settings'
       end
 
-      def self.data_directories
-        ['postgresql']
+      def data_directories
+        managed_data_directory
       end
 
       def to_h
@@ -20,7 +20,7 @@ module Export
             'POSTGRES_PASSWORD',
             'POSTGRES_DB=solectrus',
           ],
-          volumes: ['./postgresql:/var/lib/postgresql'],
+          volumes: [bind_mount('/var/lib/postgresql')],
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD-SHELL', 'pg_isready -U postgres'),
         }

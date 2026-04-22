@@ -17,7 +17,7 @@ module Export
         raise NotImplementedError
       end
 
-      def self.data_directories
+      def data_directories
         []
       end
 
@@ -65,6 +65,25 @@ module Export
         vars = ["INFLUX_HOST=#{collector_influx_target}"]
         vars << "INFLUX_PORT=#{Ingest::PORT}" if collector_influx_target == :ingest
         vars
+      end
+
+      # Bind mount honoring an optional `volume_path` override from config.yaml.
+      # Defaults to `./<service_name>`; pair with `managed_data_directory` to
+      # skip creating the default dir when the user pointed the mount elsewhere.
+      def bind_mount(container_path)
+        "#{volume_host_path}:#{container_path}"
+      end
+
+      def managed_data_directory
+        volume_section.volume_path.present? ? [] : [self.class.service_name]
+      end
+
+      def volume_host_path
+        volume_section.volume_path.presence || "./#{self.class.service_name}"
+      end
+
+      def volume_section
+        configuration.public_send(self.class.service_name)
       end
     end
   end

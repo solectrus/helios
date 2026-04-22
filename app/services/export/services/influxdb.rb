@@ -9,8 +9,8 @@ module Export
         'InfluxDB — Time-series database for sensor measurements'
       end
 
-      def self.data_directories
-        ['influxdb']
+      def data_directories
+        managed_data_directory
       end
 
       def to_h
@@ -25,7 +25,7 @@ module Export
             'DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}',
             'DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}',
           ],
-          volumes: ['./influxdb:/var/lib/influxdb2'],
+          volumes: [bind_mount('/var/lib/influxdb2')],
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD', 'influx', 'ping'),
         }

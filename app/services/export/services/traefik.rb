@@ -18,7 +18,7 @@ module Export
           "webmaster@#{configuration.reverse_proxy.app_domain}"
       end
 
-      def self.data_directories
+      def data_directories
         ['traefik']
       end
 

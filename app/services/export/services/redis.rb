@@ -9,14 +9,14 @@ module Export
         'Redis — In-memory store for caching'
       end
 
-      def self.data_directories
-        ['redis']
+      def data_directories
+        managed_data_directory
       end
 
       def to_h
         {
           image: configuration.redis.image,
-          volumes: ['./redis:/data'],
+          volumes: [bind_mount('/data')],
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD', 'redis-cli', 'ping', timeout: '3s', retries: 3, start_period: '10s'),
         }

@@ -1115,6 +1115,35 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'with custom volume paths' do
+    before do
+      configuration.update('postgresql',
+                           configuration.postgresql.merge('volume_path' => '/volume1/docker/solectrus/postgresql'))
+      configuration.update('influxdb',
+                           configuration.influxdb.merge('volume_path' => '/volume1/docker/solectrus/influxdb'))
+      configuration.update('redis', configuration.redis.merge('volume_path' => '/volume1/docker/solectrus/redis'))
+      described_class.new(Configuration.current).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'mounts the configured host paths in compose.yaml' do
+      compose = Compose.load
+      expect(compose.services.find('postgresql').config['volumes'])
+        .to eq(['/volume1/docker/solectrus/postgresql:/var/lib/postgresql'])
+      expect(compose.services.find('influxdb').config['volumes'])
+        .to eq(['/volume1/docker/solectrus/influxdb:/var/lib/influxdb2'])
+      expect(compose.services.find('redis').config['volumes'])
+        .to eq(['/volume1/docker/solectrus/redis:/data'])
+    end
+
+    it 'does not create default data directories when volume paths are external' do
+      expect(Dir.exist?(File.join(tmp_dir, 'postgresql'))).to be false
+      expect(Dir.exist?(File.join(tmp_dir, 'influxdb'))).to be false
+      expect(Dir.exist?(File.join(tmp_dir, 'redis'))).to be false
+    end
+  end
+
   describe 'secret persistence' do
     it 'persists generated secrets to config.yaml' do
       described_class.new(configuration).write!
