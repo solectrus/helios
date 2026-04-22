@@ -14,6 +14,41 @@ module Import
         measurement_positive measurement_negative field_positive field_negative
       ].freeze
 
+      # Pre-MAPPING-style env vars that mqtt-collector still accepts for backward
+      # compatibility (see mqtt-collector/lib/config.rb DEPRECATED_ENV). Each maps
+      # to a fixed (field, type) pair; the measurement comes from INFLUX_MEASUREMENT.
+      DEPRECATED_TOPIC_VARS = {
+        'MQTT_TOPIC_HOUSE_POW' => %w[house_power integer],
+        'MQTT_TOPIC_BAT_FUEL_CHARGE' => %w[bat_fuel_charge float],
+        'MQTT_TOPIC_CASE_TEMP' => %w[case_temp float],
+        'MQTT_TOPIC_CURRENT_STATE' => %w[current_state string],
+        'MQTT_TOPIC_MPP1_POWER' => %w[mpp1_power integer],
+        'MQTT_TOPIC_MPP2_POWER' => %w[mpp2_power integer],
+        'MQTT_TOPIC_MPP3_POWER' => %w[mpp3_power integer],
+        'MQTT_TOPIC_INVERTER_POWER' => %w[inverter_power integer],
+        'MQTT_TOPIC_POWER_RATIO' => %w[power_ratio integer],
+        'MQTT_TOPIC_WALLBOX_CHARGE_POWER' => %w[wallbox_charge_power integer],
+        'MQTT_TOPIC_WALLBOX_CHARGE_POWER1' => %w[wallbox_charge_power1 integer],
+        'MQTT_TOPIC_WALLBOX_CHARGE_POWER2' => %w[wallbox_charge_power2 integer],
+        'MQTT_TOPIC_WALLBOX_CHARGE_POWER3' => %w[wallbox_charge_power3 integer],
+        'MQTT_TOPIC_HEATPUMP_POWER' => %w[heatpump_power integer],
+      }.freeze
+
+      # Sign-split vars have a corresponding MQTT_FLIP_* that swaps the
+      # positive/negative field assignment. Mirrors mqtt-collector's behaviour.
+      DEPRECATED_SPLIT_VARS = {
+        'MQTT_TOPIC_GRID_POW' => {
+          field: 'grid_power',
+          type: 'integer',
+          flip_var: 'MQTT_FLIP_GRID_POW',
+        },
+        'MQTT_TOPIC_BAT_POWER' => {
+          field: 'bat_power',
+          type: 'integer',
+          flip_var: 'MQTT_FLIP_BAT_POWER',
+        },
+      }.freeze
+
       # Maps sensor names to the device type they indicate.
       # Sensors not listed here are either shared (forecast)
       # or handled via pattern matching (inverter_power_*, custom_power_*).
@@ -89,7 +124,45 @@ module Import
         raw = mapping_indices(mqtt_env).map do |i|
           MAPPING_FIELDS.index_with { |f| mqtt_env["MAPPING_#{i}_#{f.upcase}"] }.compact
         end
+        raw.concat(parse_deprecated_mappings(mqtt_env))
         raw.flat_map { |m| expand_sign_split(m) }
+      end
+
+      # Legacy mqtt-collector installs only expose MQTT_TOPIC_* (plus MQTT_FLIP_*
+      # for sign-split vars). Synthesize the equivalent modern mappings so the
+      # rest of the import pipeline treats them like first-class configurations.
+      def parse_deprecated_mappings(mqtt_env)
+        measurement = mqtt_env['INFLUX_MEASUREMENT']
+        return [] if measurement.blank?
+
+        plain = DEPRECATED_TOPIC_VARS.filter_map do |var, (field, type)|
+          next if mqtt_env[var].blank?
+
+          { topic: mqtt_env[var], measurement: measurement, field: field, type: type }
+        end
+
+        split = DEPRECATED_SPLIT_VARS.filter_map do |var, info|
+          next if mqtt_env[var].blank?
+
+          build_deprecated_split(mqtt_env[var], info, measurement, mqtt_env[info[:flip_var]])
+        end
+
+        plain + split
+      end
+
+      def build_deprecated_split(topic, info, measurement, flip_value)
+        flipped = flip_value.to_s == 'true'
+        positive_field = flipped ? "#{info[:field]}_minus" : "#{info[:field]}_plus"
+        negative_field = flipped ? "#{info[:field]}_plus" : "#{info[:field]}_minus"
+
+        {
+          topic: topic,
+          measurement_positive: measurement,
+          measurement_negative: measurement,
+          field_positive: positive_field,
+          field_negative: negative_field,
+          type: info[:type],
+        }
       end
 
       # mqtt-collector's sign-based splitting (MEASUREMENT_POSITIVE/NEGATIVE + FIELD_POSITIVE/NEGATIVE)

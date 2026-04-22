@@ -177,4 +177,88 @@ RSpec.describe Import::ConfigurationImporter::MqttExtractor do
       end
     end
   end
+
+  describe 'legacy MQTT_TOPIC_* translation' do
+    context 'with plain deprecated vars' do
+      let(:env) do
+        {
+          'INFLUX_MEASUREMENT' => 'pv',
+          'MQTT_TOPIC_HOUSE_POW' => 'evcc/site/homePower',
+          'MQTT_TOPIC_INVERTER_POWER' => 'evcc/site/pvPower',
+        }
+      end
+
+      it 'synthesizes MAPPING-style entries with fixed field and type' do
+        expect(extractor.mappings).to contain_exactly(
+          { topic: 'evcc/site/homePower', measurement: 'pv', field: 'house_power', type: 'integer' },
+          { topic: 'evcc/site/pvPower', measurement: 'pv', field: 'inverter_power', type: 'integer' },
+        )
+      end
+    end
+
+    context 'with MQTT_TOPIC_GRID_POW (sign split, no flip)' do
+      let(:env) do
+        {
+          'INFLUX_MEASUREMENT' => 'pv',
+          'MQTT_TOPIC_GRID_POW' => 'evcc/site/gridPower',
+        }
+      end
+
+      it 'splits into grid_power_plus/minus with sign-filter formulas' do
+        expect(extractor.mappings).to contain_exactly(
+          hash_including(field: 'grid_power_plus', formula: 'IF({value} > 0, {value}, 0)'),
+          hash_including(field: 'grid_power_minus', formula: 'IF({value} < 0, -{value}, 0)'),
+        )
+      end
+    end
+
+    context 'with MQTT_TOPIC_BAT_POWER + MQTT_FLIP_BAT_POWER=true' do
+      let(:env) do
+        {
+          'INFLUX_MEASUREMENT' => 'pv',
+          'MQTT_TOPIC_BAT_POWER' => 'evcc/site/batteryPower',
+          'MQTT_FLIP_BAT_POWER' => 'true',
+        }
+      end
+
+      it 'assigns positive input to the _minus field (flipped) and vice versa' do
+        # With FLIP=true, raw positive values end up in bat_power_minus (discharge
+        # convention where the battery delivers power to the house) and raw
+        # negatives in bat_power_plus (charge).
+        positive = extractor.mappings.find { |m| m[:field] == 'bat_power_minus' }
+        negative = extractor.mappings.find { |m| m[:field] == 'bat_power_plus' }
+
+        expect(positive[:formula]).to eq('IF({value} > 0, {value}, 0)')
+        expect(negative[:formula]).to eq('IF({value} < 0, -{value}, 0)')
+      end
+    end
+
+    context 'with INFLUX_MEASUREMENT missing' do
+      let(:env) do
+        { 'MQTT_TOPIC_HOUSE_POW' => 'evcc/site/homePower' }
+      end
+
+      it 'skips legacy translation entirely' do
+        expect(extractor.mappings).to be_empty
+      end
+    end
+
+    context 'when mixed with a modern MAPPING_N_* entry' do
+      let(:env) do
+        {
+          'INFLUX_MEASUREMENT' => 'pv',
+          'MAPPING_0_TOPIC' => 'modern/topic',
+          'MAPPING_0_TYPE' => 'float',
+          'MAPPING_0_MEASUREMENT' => 'pv',
+          'MAPPING_0_FIELD' => 'modern_field',
+          'MQTT_TOPIC_HOUSE_POW' => 'legacy/topic',
+        }
+      end
+
+      it 'keeps modern mappings alongside synthesized legacy ones' do
+        fields = extractor.mappings.pluck(:field)
+        expect(fields).to include('modern_field', 'house_power')
+      end
+    end
+  end
 end

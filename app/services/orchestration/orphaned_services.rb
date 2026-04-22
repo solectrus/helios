@@ -1,9 +1,9 @@
 module Orchestration
   class OrphanedServices
-    # Managed service names that HELIOS knows about.
-    # Reuse the canonical list from the import detector.
-    MANAGED_SERVICES =
-      Import::ConfigurationImporter::UnmanagedDetector::MANAGED_SERVICES
+    # Canonical service names HELIOS generates in compose.yaml. The import
+    # layer owns this list (mapped to image prefixes); we only care about the
+    # names a running container might carry.
+    MANAGED_SERVICES = Import::StackReader::SERVICE_IMAGE_PREFIXES.keys.freeze
 
     # Returns containers that are running (or stoppable) for managed services
     # which are no longer defined in the current compose.yaml.
