@@ -26,6 +26,12 @@ class ConfigSchema
 
   DASHBOARD_ALL = DASHBOARD_DEFAULTS.keys.freeze
 
+  # Optional absolute host path for the service's data directory. When unset,
+  # the service uses the default bind mount `./<service>` inside the stack dir.
+  # Needed for installations (e.g. Synology) that keep data on a dedicated
+  # mount and must not be migrated into the HELIOS-managed stack directory.
+  STORAGE_FIELDS = %w[volume_path].freeze
+
   # --- PostgreSQL ---
 
   POSTGRESQL_DEFAULTS = {
@@ -33,7 +39,7 @@ class ConfigSchema
     'password' => -> { SecureRandom.alphanumeric(32) },
   }.freeze
 
-  POSTGRESQL_ALL = POSTGRESQL_DEFAULTS.keys.freeze
+  POSTGRESQL_ALL = (STORAGE_FIELDS + POSTGRESQL_DEFAULTS.keys).uniq.freeze
 
   # --- InfluxDB ---
 
@@ -45,7 +51,7 @@ class ConfigSchema
     'token' => -> { SecureRandom.hex(32) },
   }.freeze
 
-  INFLUXDB_ALL = INFLUXDB_DEFAULTS.keys.freeze
+  INFLUXDB_ALL = (STORAGE_FIELDS + INFLUXDB_DEFAULTS.keys).uniq.freeze
 
   # --- Redis ---
 
@@ -53,7 +59,7 @@ class ConfigSchema
     'image' => -> { 'redis:8-alpine' },
   }.freeze
 
-  REDIS_ALL = REDIS_DEFAULTS.keys.freeze
+  REDIS_ALL = (STORAGE_FIELDS + REDIS_DEFAULTS.keys).uniq.freeze
 
   # --- Watchtower ---
 

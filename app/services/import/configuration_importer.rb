@@ -1,5 +1,13 @@
 module Import
   class ConfigurationImporter # rubocop:disable Metrics/ClassLength
+    # Env var that carries the absolute host path for each service's data dir
+    # in legacy SOLECTRUS installs.
+    VOLUME_PATH_ENVS = {
+      'postgresql' => 'DB_VOLUME_PATH',
+      'influxdb' => 'INFLUX_VOLUME_PATH',
+      'redis' => 'REDIS_VOLUME_PATH',
+    }.freeze
+
     def initialize(stack_reader)
       @reader = stack_reader
     end
@@ -160,7 +168,7 @@ module Import
     # --- Infrastructure services ---
 
     def redis_data
-      image_data_for('redis')
+      image_data_for('redis').merge(volume_path_data('redis')).compact
     end
 
     def watchtower_data
@@ -175,22 +183,36 @@ module Import
       {
         'image' => Compose.normalize_image(@reader.service('postgresql')&.dig('image')),
         'password' => @reader.raw_env['POSTGRES_PASSWORD'],
-      }.compact
+      }.merge(volume_path_data('postgresql')).compact
     end
 
     def influxdb_data
-      # Support token aliasing: prefer INFLUX_TOKEN, fallback to INFLUX_ADMIN_TOKEN or INFLUX_TOKEN_WRITE
-      token = @reader.raw_env['INFLUX_TOKEN'].presence ||
-              @reader.raw_env['INFLUX_ADMIN_TOKEN'].presence ||
-              @reader.raw_env['INFLUX_TOKEN_WRITE']
-
       {
         'image' => Compose.normalize_image(@reader.service('influxdb')&.dig('image')),
         'password' => @reader.raw_env['INFLUX_PASSWORD'],
         'org' => @reader.raw_env['INFLUX_ORG'],
         'bucket' => @reader.raw_env['INFLUX_BUCKET'],
-        'token' => token,
-      }.compact
+        'token' => influxdb_token,
+      }.merge(volume_path_data('influxdb')).compact
+    end
+
+    # Support token aliasing: prefer INFLUX_TOKEN, fallback to INFLUX_ADMIN_TOKEN or INFLUX_TOKEN_WRITE
+    def influxdb_token
+      @reader.raw_env['INFLUX_TOKEN'].presence ||
+        @reader.raw_env['INFLUX_ADMIN_TOKEN'].presence ||
+        @reader.raw_env['INFLUX_TOKEN_WRITE']
+    end
+
+    # Preserve absolute host paths (e.g. Synology `/volume1/...`) so the stack
+    # keeps pointing at the existing data directory after import. Relative
+    # values and absolute paths that resolve to the default bind mount next
+    # to compose.yaml are dropped — they match HELIOS's default anyway.
+    def volume_path_data(section)
+      value = @reader.raw_env[VOLUME_PATH_ENVS.fetch(section)]
+      return {} unless value&.start_with?('/')
+      return {} if File.expand_path(value) == File.expand_path(section, @reader.stack_dir)
+
+      { 'volume_path' => value }
     end
 
     # --- Sensors ---

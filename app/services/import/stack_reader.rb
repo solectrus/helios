@@ -39,6 +39,13 @@ module Import
       @env_path = env_path
     end
 
+    # Directory the imported stack lives in. Used to decide whether an
+    # absolute volume path from .env is equivalent to the default relative
+    # bind mount (./service) and can therefore be dropped.
+    def stack_dir
+      File.dirname(@compose_path)
+    end
+
     # Full resolved config hash for a single service (image, ports, volumes, healthcheck, restart, etc.).
     # Falls back to image-based lookup so legacy service names (e.g. 'app') resolve
     # to their canonical counterparts.

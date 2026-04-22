@@ -10,14 +10,17 @@ dashboard:
 postgresql:
   image: postgres:18-alpine
   password: example-postgres-password
+  volume_path: "/opt/solectrus/postgresql"
 influxdb:
   bucket: solectrus
   image: influxdb:2-alpine
   org: solectrus
   password: example-influx-password
   token: example-influx-admin-token
+  volume_path: "/opt/solectrus/influxdb"
 redis:
   image: redis:8-alpine
+  volume_path: "/opt/solectrus/redis"
 watchtower:
   image: nickfedor/watchtower:latest
 sensors:

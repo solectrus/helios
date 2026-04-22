@@ -10,14 +10,17 @@ dashboard:
 postgresql:
   image: postgres:16-alpine
   password: XXXXXX
+  volume_path: "/volume1/docker/solectrus/postgresql"
 influxdb:
   bucket: klushygel-pv
   image: influxdb:2.7-alpine
   org: solectrus
   password: XXXXXXX
   token: XXXXXX
+  volume_path: "/volume1/docker/solectrus/influxdb"
 redis:
   image: redis:7-alpine
+  volume_path: "/volume1/docker/solectrus/redis"
 watchtower:
   image: nickfedor/watchtower:latest
 forecast:

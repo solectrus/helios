@@ -26,7 +26,7 @@ module Export
         configuration.ingest_required?
       end
 
-      def self.data_directories
+      def data_directories
         [DATA_DIR]
       end
 

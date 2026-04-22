@@ -37,7 +37,7 @@ module Export
     end
 
     def data_directories
-      active_service_classes.flat_map(&:data_directories).uniq
+      active_service_classes.flat_map { |klass| klass.new(configuration).data_directories }.uniq
     end
 
     private
