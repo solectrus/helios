@@ -1,0 +1,118 @@
+---
+system:
+  admin_password: xxxx
+  app_host: 192.168.178.10
+  frame_ancestors: https://192.168.178.10:8123
+  installation_date: '2024-02-03'
+  secret_key_base: XXXXXXXXX6c0e3f1a5bc028d74e9a6b3c870d92f5e1f6c82549e5d30a71f8b7d39eac57d80a693fcb29e8d3a5f70334e81b6d2f4e91755fb8e84dc69b4
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:16-alpine
+  password: XXXXXX
+influxdb:
+  bucket: klushygel-pv
+  image: influxdb:2.7-alpine
+  org: solectrus
+  password: XXXXXXX
+  token: XXXXXX
+redis:
+  image: redis:7-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast_azimuth1: "-85"
+  forecast_azimuth2: '95'
+  forecast_interval: '900'
+  forecast_kwp1: '5.04'
+  forecast_kwp2: '5.04'
+  forecast_latitude: XXXXX
+  forecast_longitude: XXXXX
+  forecast_roofs: '2'
+  measurement: Forecast
+mqtt:
+  mqtt_host: 192.168.178.10
+  mqtt_password: lXXXXX
+  mqtt_port: '1883'
+  mqtt_ssl: 'false'
+  mqtt_username: thomas
+shelly:
+  connection: local
+  interval: '5'
+sensors:
+  battery_charging_power:
+    field: bat_power_plus
+    measurement: klushygel-pv-messung
+    mqtt_formula: IF({value} < 0, -{value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/batteryPower
+    source: mqtt
+  battery_discharging_power:
+    field: bat_power_minus
+    measurement: klushygel-pv-messung
+    mqtt_formula: IF({value} > 0, {value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/batteryPower
+    source: mqtt
+  battery_soc:
+    field: bat_fuel_charge
+    measurement: klushygel-pv-messung
+    mqtt_payload_type: float
+    mqtt_topic: evcc/site/batterySoc
+    source: mqtt
+  case_temp:
+    field: case_temp
+    measurement: klushygel-pv-messung
+    source: external
+  grid_export_limit:
+    field: power_ratio
+    measurement: klushygel-pv-messung
+    source: external
+  grid_export_power:
+    field: grid_power_minus
+    measurement: klushygel-pv-messung
+    mqtt_formula: IF({value} < 0, -{value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/gridPower
+    source: mqtt
+  grid_import_power:
+    field: grid_power_plus
+    measurement: klushygel-pv-messung
+    mqtt_formula: IF({value} > 0, {value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/gridPower
+    source: mqtt
+  heatpump_power:
+    field: heatpump_power
+    measurement: klushygel-pv-messung
+    source: external
+  house_power:
+    field: house_power
+    measurement: klushygel-pv-messung
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/homePower
+    source: mqtt
+  inverter_power:
+    field: inverter_power
+    measurement: klushygel-pv-messung
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/pvPower
+    source: mqtt
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  system_status:
+    field: current_state
+    measurement: klushygel-pv-messung
+    source: external
+  system_status_ok:
+    field: current_state_ok
+    measurement: klushygel-pv-messung
+    source: external
+  wallbox_power:
+    field: wallbox_charge_power
+    measurement: klushygel-pv-messung
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/loadpoints/1/chargePower
+    source: mqtt

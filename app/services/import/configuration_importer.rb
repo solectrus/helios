@@ -164,7 +164,11 @@ module Import
     end
 
     def watchtower_data
-      image_data_for('watchtower')
+      data = image_data_for('watchtower')
+      # containrrr/watchtower is unmaintained — migrate legacy installs to the
+      # nickfedor fork at :latest, regardless of the tag the user had pinned.
+      data['image'] = 'nickfedor/watchtower:latest' if data['image']&.start_with?('containrrr/watchtower')
+      data
     end
 
     def postgresql_data
@@ -194,11 +198,15 @@ module Import
     def sensors_data
       @sensors_data ||= begin
         dashboard_env = service_env('dashboard')
-        dashboard_env
-          .select { |k, _| k.start_with?('INFLUX_SENSOR_') }
-          .compact_blank
-          .transform_keys { |k| k.delete_prefix('INFLUX_SENSOR_').downcase }
-          .select { |name, _| SensorRegistry.valid?(name) }
+        explicit = dashboard_env
+                   .select { |k, _| k.start_with?('INFLUX_SENSOR_') }
+                   .compact_blank
+                   .transform_keys { |k| k.delete_prefix('INFLUX_SENSOR_').downcase }
+        # Legacy stacks omit most INFLUX_SENSOR_* and rely on the dashboard's
+        # built-in fallback table — replicate it so the imported config matches
+        # what the dashboard actually serves.
+        LegacySensorAdapter.synthesize(dashboard_env).merge(explicit)
+                           .select { |name, _| SensorRegistry.valid?(name) }
       end
     end
 

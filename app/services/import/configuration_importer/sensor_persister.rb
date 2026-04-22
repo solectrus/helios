@@ -56,8 +56,30 @@ module Import
           sensor_mapping = @sensors_data[sensor_name]
           next unless sensor_mapping
 
-          sensor_mapping.start_with?("#{device[:name]}:")
+          device_claims_mapping?(source_type, device, sensor_mapping) &&
+            concrete_mapping_exists?(source_type, sensor_name)
         end
+      end
+
+      # The shelly-collector always writes its reading into the `power` field of
+      # its configured measurement. Matching only `{measurement}:power` prevents
+      # a shelly device from stealing unrelated sensors when an mqtt-collector
+      # (or another collector) writes other fields into the same measurement
+      # — a common setup in pre-HELIOS SOLECTRUS installs.
+      def device_claims_mapping?(source_type, device, sensor_mapping)
+        return sensor_mapping == "#{device[:name]}:power" if source_type == 'shelly'
+
+        sensor_mapping.start_with?("#{device[:name]}:")
+      end
+
+      # For mqtt, only attribute a sensor when a concrete topic mapping exists
+      # that feeds its exact field — otherwise a synthesized sensor (from a
+      # legacy dashboard fallback) would inherit the measurement name from the
+      # mqtt-collector device without having any topic to populate it.
+      def concrete_mapping_exists?(source_type, sensor_name)
+        return mqtt_mapping_details.key?(sensor_name) if source_type == 'mqtt'
+
+        true
       end
 
       def build_sensor_data(sensor_name, source)

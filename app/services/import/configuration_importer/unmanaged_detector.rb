@@ -1,13 +1,6 @@
 module Import
   class ConfigurationImporter
     class UnmanagedDetector
-      # All service names that HELIOS manages (generates in compose.yaml)
-      MANAGED_SERVICES = %w[
-        dashboard postgresql redis influxdb watchtower helios ingest
-        traefik postgresql-backup influxdb-backup
-        senec-collector shelly-collector mqtt-collector forecast-collector power-splitter
-      ].freeze
-
       # All .env variable keys that HELIOS manages (generates in .env)
       MANAGED_ENV_KEYS = %w[
         TZ INSTALLATION_DATE ADMIN_PASSWORD SECRET_KEY_BASE
@@ -47,6 +40,15 @@ module Import
         REDIS_URL REDIS_VOLUME_PATH
       ].freeze
 
+      # Legacy SOLECTRUS keys that HELIOS absorbs at import time via
+      # LegacySensorAdapter and MqttExtractor::DEPRECATED_TOPIC_VARS — once
+      # translated into sensors/mappings, the originals would only cause noise
+      # if re-emitted.
+      LEGACY_CONSUMED_ENV_KEYS = %w[
+        INFLUX_MEASUREMENT_PV
+        MQTT_FLIP_GRID_POW MQTT_FLIP_BAT_POWER
+      ].freeze
+
       def initialize(reader)
         @reader = reader
       end
@@ -68,7 +70,7 @@ module Import
       def detect_unmanaged_services
         raw_services = @reader.raw_compose['services'] || {}
         raw_services
-          .reject { |name, config| managed_service?(name, config) }
+          .reject { |_name, config| managed_service?(config) }
           .presence
       end
 
@@ -81,8 +83,12 @@ module Import
           .presence
       end
 
-      def managed_service?(name, config)
-        MANAGED_SERVICES.include?(name) || ShellyExtractor.shelly_image?(config['image'])
+      # Detect by image rather than service name, so legacy installations that use
+      # historical names like 'app' (for SOLECTRUS) or 'db' (for PostgreSQL) are
+      # recognized as managed and get migrated to canonical names on export.
+      def managed_service?(config)
+        StackReader.managed_image?(config['image']) ||
+          ShellyExtractor.shelly_image?(config['image'])
       end
 
       # Pattern-named shelly-collector services reference per-device env vars
@@ -95,6 +101,9 @@ module Import
       def all_managed_env_keys
         MANAGED_ENV_KEYS +
           INFRASTRUCTURE_ENV_KEYS +
+          LEGACY_CONSUMED_ENV_KEYS +
+          MqttExtractor::DEPRECATED_TOPIC_VARS.keys +
+          MqttExtractor::DEPRECATED_SPLIT_VARS.keys +
           SensorRegistry::SENSORS.keys.map { |s| "INFLUX_SENSOR_#{s.upcase}" } +
           forecast_indexed_env_keys +
           pvnode_indexed_env_keys +
