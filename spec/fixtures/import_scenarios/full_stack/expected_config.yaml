@@ -39,6 +39,7 @@ senec:
   interval: '60'
   language: de
   schema: https
+  version: v3
 mqtt:
   mqtt_host: iobroker.fritz.box
   mqtt_password: secret_mqtt_password

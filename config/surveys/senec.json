@@ -10,7 +10,7 @@
   },
   "pages": [
     {
-      "name": "p_adapter",
+      "name": "p_version",
       "title": {
         "de": "SENEC-Typ",
         "default": "SENEC type"
@@ -18,7 +18,7 @@
       "elements": [
         {
           "type": "radiogroup",
-          "name": "adapter",
+          "name": "version",
           "title": {
             "de": "Welches SENEC-System hast du?",
             "default": "Which SENEC system do you have?"
@@ -26,17 +26,55 @@
           "isRequired": true,
           "choices": [
             {
+              "value": "v3",
+              "text": {
+                "de": "SENEC.Home V3 oder V2.1",
+                "default": "SENEC.Home V3 or V2.1"
+              }
+            },
+            {
+              "value": "v4",
+              "text": {
+                "de": "SENEC.Home 4",
+                "default": "SENEC.Home 4"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_adapter",
+      "visibleIf": "{version} = 'v3'",
+      "title": {
+        "de": "Zugriffsart",
+        "default": "Access type"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "adapter",
+          "title": {
+            "de": "Wie möchtest du auf dein SENEC-System zugreifen?",
+            "default": "How would you like to access your SENEC system?"
+          },
+          "isRequired": true,
+          "defaultValue": "local",
+          "setValueIf": "{version} = 'v4'",
+          "setValueExpression": "'cloud'",
+          "choices": [
+            {
               "value": "local",
               "text": {
-                "de": "SENEC.Home V3 oder V2.1 (lokaler Zugriff)",
-                "default": "SENEC.Home V3 or V2.1 (local access)"
+                "de": "Lokaler Zugriff (im Heimnetz)",
+                "default": "Local access (home network)"
               }
             },
             {
               "value": "cloud",
               "text": {
-                "de": "SENEC.Home 4 (Cloud-Zugriff)",
-                "default": "SENEC.Home 4 (cloud access)"
+                "de": "Cloud-Zugriff (mein-senec.de)",
+                "default": "Cloud access (mein-senec.de)"
               }
             }
           ]

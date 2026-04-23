@@ -17,19 +17,22 @@ module Import
         senec_env = service_env('senec-collector')
         data = {
           'adapter' => senec_env['SENEC_ADAPTER'] || 'local',
+          'version' => infer_version(senec_env),
           'interval' => senec_env['SENEC_INTERVAL'],
           'ignore' => senec_env['SENEC_IGNORE'],
-        }
-
-        if senec_env['SENEC_ADAPTER'] == 'cloud'
-          data.merge!('username' => senec_env['SENEC_USERNAME'], 'password' => senec_env['SENEC_PASSWORD'],
-                      'totp_uri' => senec_env['SENEC_TOTP_URI'], 'system_id' => senec_env['SENEC_SYSTEM_ID'])
-        else
-          data.merge!('host' => senec_env['SENEC_HOST'], 'schema' => senec_env['SENEC_SCHEMA'],
-                      'language' => senec_env['SENEC_LANGUAGE'])
-        end
+        }.merge(adapter_section_data(senec_env))
 
         data.compact.presence
+      end
+
+      def adapter_section_data(senec_env)
+        if senec_env['SENEC_ADAPTER'] == 'cloud'
+          { 'username' => senec_env['SENEC_USERNAME'], 'password' => senec_env['SENEC_PASSWORD'],
+            'totp_uri' => senec_env['SENEC_TOTP_URI'], 'system_id' => senec_env['SENEC_SYSTEM_ID'] }
+        else
+          { 'host' => senec_env['SENEC_HOST'], 'schema' => senec_env['SENEC_SCHEMA'],
+            'language' => senec_env['SENEC_LANGUAGE'] }
+        end
       end
 
       def device_data
@@ -49,8 +52,14 @@ module Import
 
       private
 
+      # Legacy installations lack an explicit version marker.
+      # Cloud access was previously only supported for V4, local only for V3/V2.1.
+      def infer_version(senec_env)
+        senec_env['SENEC_ADAPTER'] == 'cloud' ? 'v4' : 'v3'
+      end
+
       def senec_vendor(senec_env)
-        senec_env['SENEC_ADAPTER'] == 'cloud' ? 'senec4' : 'senec3'
+        infer_version(senec_env) == 'v4' ? 'senec4' : 'senec3'
       end
 
       def senec_local_settings(senec_env)

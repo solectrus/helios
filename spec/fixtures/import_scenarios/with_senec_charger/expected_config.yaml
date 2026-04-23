@@ -34,6 +34,7 @@ senec:
   interval: '5'
   language: de
   schema: https
+  version: v3
 sensors:
   battery_charging_power:
     source: senec

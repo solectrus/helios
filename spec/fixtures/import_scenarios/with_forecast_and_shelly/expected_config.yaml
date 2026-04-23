@@ -43,6 +43,7 @@ senec:
   interval: '5'
   language: de
   schema: https
+  version: v3
 shelly:
   connection: local
   interval: '5'

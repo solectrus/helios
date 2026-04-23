@@ -27,6 +27,7 @@ senec:
   interval: '5'
   language: de
   schema: https
+  version: v3
 mqtt:
   mqtt_host: mqtt-broker.local
   mqtt_password: mqttpass
