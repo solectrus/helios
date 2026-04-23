@@ -18,8 +18,8 @@ namespace :fixtures do
 
   def import_scenario(scenario_path)
     stack_reader = Import::StackReader.new(
-      compose_path: scenario_path.join('old_compose.yaml'),
-      env_path: scenario_path.join('old.env'),
+      compose_path: scenario_path.join('compose.yaml.bak'),
+      env_path: scenario_path.join('.env.bak'),
     )
     Import::ConfigurationImporter.new(stack_reader).import!
   end
@@ -29,11 +29,11 @@ namespace :fixtures do
     # sort nested keys so diffs stay stable across importer reshuffles.
     data = YAML.safe_load_file(Configuration.path, permitted_classes: [Date])
     sorted = data.transform_values { |v| deep_sort_keys(v) }
-    File.write(scenario_path.join('expected_config.yaml'), YAML.dump(sorted))
+    File.write(scenario_path.join('config.yaml'), YAML.dump(sorted))
 
     Export::Builder.new(config).write!
-    FileUtils.cp(Compose.path, scenario_path.join('expected_compose.yaml'))
-    FileUtils.cp(Env.path, scenario_path.join('expected.env'))
+    FileUtils.cp(Compose.path, scenario_path.join('compose.yaml'))
+    FileUtils.cp(Env.path, scenario_path.join('.env'))
   end
 
   def with_scenario_sandbox
@@ -52,17 +52,17 @@ namespace :fixtures do
     end
   end
 
-  desc 'Regenerate expected_config.yaml + expected_compose.yaml + expected.env for every existing scenario'
+  desc 'Regenerate config.yaml + compose.yaml + .env for every existing scenario'
   task regenerate: :environment do
     with_scenario_sandbox do |scenarios_dir|
       names = Pathname
-              .glob(scenarios_dir.join('*/expected_config.yaml'))
+              .glob(scenarios_dir.join('*/config.yaml'))
               .map { |p| p.dirname.basename.to_s }
               .sort
 
       names.each do |name|
         regenerate_scenario(scenarios_dir.join(name))
-        puts "Regenerated #{name}/ (expected_config.yaml, expected_compose.yaml, expected.env)"
+        puts "Regenerated #{name}/ (config.yaml, compose.yaml, .env)"
       end
     end
   end
@@ -75,11 +75,11 @@ namespace :fixtures do
     with_scenario_sandbox do |scenarios_dir|
       scenario_path = scenarios_dir.join(name)
       abort "Scenario '#{name}' not found at #{scenario_path}" unless scenario_path.directory?
-      abort "Missing #{scenario_path}/old_compose.yaml" unless scenario_path.join('old_compose.yaml').file?
-      abort "Missing #{scenario_path}/old.env" unless scenario_path.join('old.env').file?
+      abort "Missing #{scenario_path}/compose.yaml.bak" unless scenario_path.join('compose.yaml.bak').file?
+      abort "Missing #{scenario_path}/.env.bak" unless scenario_path.join('.env.bak').file?
 
       regenerate_scenario(scenario_path)
-      puts "Bootstrapped #{name}/ (expected_config.yaml, expected_compose.yaml, expected.env)"
+      puts "Bootstrapped #{name}/ (config.yaml, compose.yaml, .env)"
     end
   end
 end
