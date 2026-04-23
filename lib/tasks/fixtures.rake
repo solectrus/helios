@@ -36,8 +36,7 @@ namespace :fixtures do
     FileUtils.cp(Env.path, scenario_path.join('expected.env'))
   end
 
-  desc 'Regenerate expected_config.yaml + expected_compose.yaml + expected.env for every import scenario'
-  task regenerate: :environment do
+  def with_scenario_sandbox
     # Export output depends on Rails.env (e.g. Helios service is exported in
     # test but skipped in development), so generate fixtures in the same env
     # that scenarios_spec.rb runs in.
@@ -46,20 +45,41 @@ namespace :fixtures do
     require 'fileutils'
     require 'tmpdir'
 
-    scenarios_dir = Rails.root.join('spec/fixtures/import_scenarios')
-    scenarios = Pathname
-                .glob(scenarios_dir.join('*/expected_config.yaml'))
-                .map { |p| p.dirname.basename.to_s }
-                .sort
-
     Dir.mktmpdir do |tmp|
       Rails.configuration.data_path = tmp
       FileUtils.mkdir_p(File.dirname(Configuration.path))
+      yield Rails.root.join('spec/fixtures/import_scenarios')
+    end
+  end
 
-      scenarios.each do |name|
+  desc 'Regenerate expected_config.yaml + expected_compose.yaml + expected.env for every existing scenario'
+  task regenerate: :environment do
+    with_scenario_sandbox do |scenarios_dir|
+      names = Pathname
+              .glob(scenarios_dir.join('*/expected_config.yaml'))
+              .map { |p| p.dirname.basename.to_s }
+              .sort
+
+      names.each do |name|
         regenerate_scenario(scenarios_dir.join(name))
         puts "Regenerated #{name}/ (expected_config.yaml, expected_compose.yaml, expected.env)"
       end
+    end
+  end
+
+  desc 'Create expected fixtures for a new scenario (usage: fixtures:bootstrap[name])'
+  task :bootstrap, [:name] => :environment do |_, args|
+    name = args[:name].to_s
+    abort "Usage: RAILS_ENV=test bin/rake 'fixtures:bootstrap[name]'" if name.empty?
+
+    with_scenario_sandbox do |scenarios_dir|
+      scenario_path = scenarios_dir.join(name)
+      abort "Scenario '#{name}' not found at #{scenario_path}" unless scenario_path.directory?
+      abort "Missing #{scenario_path}/old_compose.yaml" unless scenario_path.join('old_compose.yaml').file?
+      abort "Missing #{scenario_path}/old.env" unless scenario_path.join('old.env').file?
+
+      regenerate_scenario(scenario_path)
+      puts "Bootstrapped #{name}/ (expected_config.yaml, expected_compose.yaml, expected.env)"
     end
   end
 end
