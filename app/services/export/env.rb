@@ -24,18 +24,18 @@ module Export
 
     attr_reader :configuration
 
-    def build(env) # rubocop:disable Metrics/AbcSize
+    def build(env) # rubocop:disable Metrics/AbcSize,Metrics/PerceivedComplexity
       general_section(env)
       security_section(env)
-      dashboard_section(env)
-      postgresql_section(env)
+      dashboard_section(env) unless configuration.collectors_only?
+      postgresql_section(env) unless configuration.collectors_only?
       influxdb_section(env)
       reverse_proxy_section(env) if Services::Traefik.enabled?(configuration)
       backup_section(env) if Services::PostgresqlBackup.enabled?(configuration)
-      senec_section(env) if configuration.senec_required?
+      senec_section(env) if Services::SenecCollector.enabled?(configuration)
       forecast_section(env) if Services::ForecastCollector.enabled?(configuration)
-      mqtt_section(env) if configuration.mqtt_required?
-      shelly_section(env) if configuration.shelly_required?
+      mqtt_section(env) if Services::MqttCollector.enabled?(configuration)
+      shelly_section(env) if Services::ShellyCollector.enabled?(configuration)
       ingest_section(env) if configuration.ingest_required?
       sensor_section(env)
       unmanaged_section(env)
@@ -58,8 +58,8 @@ module Export
       env.add_section('General settings')
       entry(env, 'TZ', configuration.system.timezone.presence || 'Europe/Berlin',
             'Timezone for all services (IANA format, e.g. Europe/Berlin)')
-      entry(env, 'INSTALLATION_DATE', configuration.system.installation_date,
-            'Date of first solar installation (YYYY-MM-DD) — used for statistics and charts')
+      optional_entry(env, 'INSTALLATION_DATE', configuration.system.installation_date,
+                     'Date of first solar installation (YYYY-MM-DD) — used for statistics and charts')
     end
 
     def security_section(env)
@@ -97,6 +97,14 @@ module Export
     end
 
     def influxdb_section(env)
+      if configuration.collectors_only?
+        external_influxdb_section(env)
+      else
+        local_influxdb_section(env)
+      end
+    end
+
+    def local_influxdb_section(env)
       env.add_section('InfluxDB time-series database')
       entry(env, 'INFLUX_PASSWORD', configuration.influxdb.password,
             'Admin password — auto-generated, do not change after first start')
@@ -105,6 +113,17 @@ module Export
             'Bucket (database) name for time-series data')
       entry(env, 'INFLUX_TOKEN', configuration.influxdb.token,
             'API token with full access — auto-generated, do not change after first start')
+    end
+
+    def external_influxdb_section(env)
+      influx = configuration.influxdb
+      env.add_section('External InfluxDB target')
+      entry(env, 'INFLUX_HOST', influx.host, 'Hostname of the external InfluxDB instance')
+      entry(env, 'INFLUX_PORT', influx.port.presence || '8086', 'Port of the external InfluxDB instance')
+      entry(env, 'INFLUX_SCHEMA', influx.schema.presence || 'https', 'Protocol (http or https)')
+      entry(env, 'INFLUX_ORG', influx.org, 'Organization name')
+      entry(env, 'INFLUX_BUCKET', influx.bucket, 'Bucket (database) name for time-series data')
+      entry(env, 'INFLUX_TOKEN', influx.token, 'API token with write access')
     end
 
     def reverse_proxy_section(env)
@@ -151,6 +170,10 @@ module Export
       entry(env, 'SENEC_PASSWORD', senec.password, 'SENEC cloud password')
       entry(env, 'SENEC_TOTP_URI', senec.totp_uri, 'SENEC TOTP URI for MFA') if senec.totp_uri.present?
       entry(env, 'SENEC_SYSTEM_ID', senec.system_id, 'SENEC system ID') if senec.system_id.present?
+      return if senec.request_mode.blank?
+
+      entry(env, 'SENEC_REQUEST_MODE', senec.request_mode,
+            'Cloud request mode: minimal (default) or full (adds case_temp, application_version, current_state)')
     end
 
     def senec_local_entries(env, senec)
@@ -279,6 +302,8 @@ module Export
     end
 
     def mqtt_mapping_entries(env)
+      return raw_mqtt_mapping_entries(env) if configuration.collectors_only?
+
       sensors = configuration.sensors_with_source('mqtt')
       return if sensors.blank?
 
@@ -297,21 +322,60 @@ module Export
       end
     end
 
+    # Raw mappings (no sensor name) — one block per entry, numbered from 1 to
+    # match how hand-maintained mqtt-collector configs look in the wild.
+    def raw_mqtt_mapping_entries(env)
+      mappings = Array(configuration.mqtt.mappings)
+      return if mappings.empty?
+
+      mappings.each_with_index do |mapping, index|
+        i = index + 1
+        env.add_comment("--- Mapping #{i}")
+        written = false
+        Services::MqttCollector::COLLECTORS_ONLY_MAPPING_KEYS.each do |key, env_suffix|
+          value = mapping[key]
+          next if value.to_s.blank?
+
+          env.add_blank_line unless written
+          env["MAPPING_#{i}_#{env_suffix}"] = value
+          written = true
+        end
+        env.add_blank_line
+      end
+    end
+
     def shelly_section(env)
+      return collectors_only_shelly_section(env) if configuration.collectors_only?
+
       sensors = configuration.sensors_with_source('shelly')
       return if sensors.blank?
 
       shelly = configuration.shelly
       env.add_section('Shelly collector')
-      if shelly&.connection != 'cloud'
-        entry(env, 'SHELLY_HOST', shelly_csv(sensors) { |_, config| config['shelly_host'] },
-              'Shelly device hostnames (comma-separated)')
-      end
+      shelly_host_entry(env, sensors, shelly)
       entry(env, 'SHELLY_INTERVAL', shelly&.interval || '5',
             'Polling interval in seconds')
       entry(env, 'INFLUX_MEASUREMENT', shelly_csv(sensors) { |_, config| config['measurement'] },
             'InfluxDB measurement names (comma-separated)')
       shelly_optional_entries(env, sensors, shelly)
+    end
+
+    def shelly_host_entry(env, sensors, shelly)
+      return if shelly&.connection == 'cloud'
+
+      entry(env, 'SHELLY_HOST', shelly_csv(sensors) { |_, config| config['shelly_host'] },
+            'Shelly device hostnames (comma-separated)')
+    end
+
+    # In collectors_only mode Shelly devices are rendered as literal CSV in
+    # compose.yaml (SHELLY_HOST/INFLUX_MEASUREMENT), so the .env only needs
+    # the shared interval — per-device env vars aren't required.
+    def collectors_only_shelly_section(env)
+      shelly = configuration.shelly
+      return if Array(shelly&.devices).empty?
+
+      env.add_section('Shelly collector')
+      entry(env, 'SHELLY_INTERVAL', shelly.interval || '5', 'Polling interval in seconds')
     end
 
     def shelly_optional_entries(env, sensors, shelly)
@@ -365,6 +429,48 @@ module Export
 
     def unmanaged_section(env)
       unmanaged = configuration.unmanaged
+      unmanaged_service_env_section(env, unmanaged)
+      unmanaged_orphan_env_section(env, unmanaged)
+    end
+
+    def unmanaged_service_env_section(env, unmanaged)
+      return if unmanaged.services.blank?
+
+      unmanaged.services.each do |name, config|
+        values = config&.env_values
+        next if values.blank?
+
+        env.add_section("#{name} — service environment")
+        render_grouped_env_values(env, values)
+      end
+    end
+
+    # Render env values in logical groups (MQTT_*, SENEC_*, MAPPING_<N>_*, …),
+    # each group led by a `--- Group` separator. Keys within a group stay
+    # tight; a blank line separates groups. Single-group lists skip the
+    # separator since the enclosing section header is already descriptive.
+    def render_grouped_env_values(env, values)
+      groups = group_env_values(values)
+      groups.each do |title, entries|
+        env.add_comment("--- #{title}") if groups.size > 1
+        entries.each { |key, value| env[key] = value }
+        env.add_blank_line
+      end
+    end
+
+    def group_env_values(values)
+      values.group_by { |key, _| env_key_group_title(key) }
+    end
+
+    def env_key_group_title(key)
+      if (match = key.match(/\AMAPPING_(\d+)_/))
+        "Mapping #{match[1]}"
+      else
+        key.split('_', 2).first
+      end
+    end
+
+    def unmanaged_orphan_env_section(env, unmanaged)
       return if unmanaged.env_vars.blank?
 
       env.add_section('Unmanaged variables (preserved from existing installation)')

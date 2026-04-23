@@ -10,7 +10,13 @@ module Export
       end
 
       def self.enabled?(configuration)
-        configuration.shelly_required?
+        return false if configuration.dashboard_only?
+
+        configuration.shelly_required? || (configuration.collectors_only? && collectors_only_enabled?(configuration))
+      end
+
+      def self.collectors_only_enabled?(configuration)
+        Array(configuration.shelly&.devices).any?
       end
 
       def self.shelly?(device_data)
@@ -21,9 +27,9 @@ module Export
 
       def to_h
         {
-          image: 'ghcr.io/solectrus/shelly-collector:develop',
+          image: shelly_defaults&.image.presence || 'ghcr.io/solectrus/shelly-collector:develop',
           environment: shelly_environment,
-          depends_on: healthy_depends_on([collector_influx_target]),
+          depends_on: collector_depends_on,
           restart: 'unless-stopped',
         }
       end
@@ -39,7 +45,34 @@ module Export
       end
 
       def shelly_environment
+        return collectors_only_environment if configuration.collectors_only?
+
         passthrough_vars + explicit_vars + optional_vars
+      end
+
+      # In collectors_only mode the Shelly collector config comes verbatim
+      # from shelly.devices / shelly.password / shelly.mode — no sensor-driven
+      # CSV rebuilding, just the values the user imported.
+      def collectors_only_environment
+        vars = ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS + %w[INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SHELLY_INTERVAL]
+        vars + collectors_only_device_vars + collectors_only_extra_vars
+      end
+
+      def collectors_only_device_vars
+        devices = Array(shelly_defaults.devices)
+        hosts = devices.filter_map { |d| d['host'].presence }.join(',')
+        measurements = devices.filter_map { |d| d['measurement'].presence }.join(',')
+        vars = []
+        vars << "SHELLY_HOST=#{hosts}" if hosts.present?
+        vars << "INFLUX_MEASUREMENT=#{measurements}" if measurements.present?
+        vars
+      end
+
+      def collectors_only_extra_vars
+        vars = []
+        vars << "INFLUX_MODE=#{shelly_defaults.mode}" if shelly_defaults.mode.present?
+        vars << "SHELLY_PASSWORD=#{shelly_defaults.password}" if shelly_defaults.password.present?
+        vars
       end
 
       def passthrough_vars

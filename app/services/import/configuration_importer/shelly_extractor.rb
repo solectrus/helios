@@ -44,7 +44,66 @@ module Import
         shelly_service_names.flat_map { |name| devices_for_service(name) }
       end
 
+      # Raw device list for collectors_only mode: one hash per Shelly host,
+      # name derived from the SHELLY_HOST_<NAME> env var suffix when present,
+      # otherwise a sequential fallback. The measurement aligns by index with
+      # the comma-separated INFLUX_MEASUREMENT list the collector consumes.
+      def raw_devices
+        return [] unless enabled?
+
+        service = shelly_service_names.first
+        env = service_env(service)
+        compose_env = raw_compose_env(service)
+        hosts = csv_split(env['SHELLY_HOST'])
+        measurements = csv_split(env['INFLUX_MEASUREMENT'])
+        names = shelly_host_names(compose_env, hosts.size)
+
+        hosts.each_with_index.map do |host, i|
+          {
+            'name' => names[i] || "device#{i + 1}",
+            'host' => host,
+            'measurement' => measurements[i],
+          }.compact
+        end
+      end
+
+      # INFLUX_MODE passthrough — optional "essential"/"full" hint the
+      # collector uses to decide how much to publish. Not sensor-dependent.
+      def influx_mode
+        return nil unless enabled?
+
+        service_env(shelly_service_names.first)['INFLUX_MODE']
+      end
+
+      # Shared SHELLY_PASSWORD when a single value is used for all devices
+      # (the common case for a home full of identically-configured plugs).
+      # Mixed per-device passwords stay sensor-side and don't round-trip here.
+      def shared_password
+        return nil unless enabled?
+
+        passwords = csv_split(service_env(shelly_service_names.first)['SHELLY_PASSWORD']).compact_blank
+        passwords.uniq.size == 1 ? passwords.first : nil
+      end
+
       private
+
+      # Names from ${SHELLY_HOST_<NAME>} references in the *raw* compose
+      # environment list (pre-interpolation). Falls back to nil entries when
+      # the stack used a literal CSV instead.
+      def shelly_host_names(compose_env, expected_size)
+        shelly_host_entry = compose_env.find { |e| e.is_a?(String) && e.start_with?('SHELLY_HOST=') }
+        return Array.new(expected_size) unless shelly_host_entry
+
+        value = shelly_host_entry.split('=', 2).last.to_s
+        csv_split(value).map do |piece|
+          match = piece.match(/\A\$\{SHELLY_HOST_([A-Z0-9_]+)\}\z/)
+          match && match[1].downcase
+        end
+      end
+
+      def raw_compose_env(service_name)
+        Array(@reader.raw_compose.dig('services', service_name, 'environment'))
+      end
 
       def devices_for_service(service_name)
         parsed = parse_service(service_name)

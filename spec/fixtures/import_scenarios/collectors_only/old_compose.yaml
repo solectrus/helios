@@ -1,0 +1,60 @@
+services:
+  senec-collector:
+    image: ghcr.io/solectrus/senec-collector:develop
+    environment:
+      - TZ
+      - INFLUX_SCHEMA
+      - INFLUX_HOST
+      - INFLUX_TOKEN
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_PORT
+      - SENEC_HOST
+      - SENEC_INTERVAL
+      - SENEC_SCHEMA
+      - SENEC_LANGUAGE
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    restart: unless-stopped
+
+  shelly-collector:
+    image: ghcr.io/solectrus/shelly-collector:develop
+    environment:
+      - TZ
+      - INFLUX_SCHEMA
+      - INFLUX_HOST
+      - INFLUX_TOKEN
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_PORT
+      - INFLUX_MEASUREMENT=Consumer,Dishwasher,Washer,Fridge,iMac,Studio,Display,KabelFritz,Synology,TV,Mini-PC-1
+      - SHELLY_HOST=${SHELLY_HOST_HEATPUMP},${SHELLY_HOST_DISHWASHER},${SHELLY_HOST_WASHER},${SHELLY_HOST_FRIDGE},${SHELLY_HOST_IMAC},${SHELLY_HOST_STUDIO},${SHELLY_HOST_DISPLAY},${SHELLY_HOST_KABELFRITZ},${SHELLY_HOST_SYNOLOGY},${SHELLY_HOST_TV},${SHELLY_HOST_MINI_PC_1}
+      - INFLUX_MODE=essential
+      - SHELLY_PASSWORD=secret
+      - SHELLY_INTERVAL
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    restart: unless-stopped
+
+  mqtt-collector:
+    image: ghcr.io/solectrus/mqtt-collector:develop
+    env_file: .env
+    logging:
+      driver: json-file
+      options:
+        max-size: '1m'
+        max-file: '3'
+    restart: unless-stopped
+
+  watchtower:
+    image: nickfedor/watchtower:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --cleanup
+    restart: unless-stopped

@@ -24,17 +24,39 @@ module Export
       end
 
       def self.enabled?(configuration)
-        configuration.mqtt_required?
+        return false if configuration.dashboard_only?
+
+        configuration.mqtt_required? || (configuration.collectors_only? && collectors_only_enabled?(configuration))
+      end
+
+      def self.collectors_only_enabled?(configuration)
+        Array(configuration.mqtt&.mappings).any?
       end
 
       def to_h
         {
-          image: 'ghcr.io/solectrus/mqtt-collector:latest',
+          image: mqtt_config&.image.presence || 'ghcr.io/solectrus/mqtt-collector:latest',
           environment: mqtt_environment,
-          depends_on: healthy_depends_on([collector_influx_target]),
+          depends_on: collector_depends_on,
           restart: 'unless-stopped',
         }
       end
+
+      # Keys (in `mqtt.mappings`) that correspond to the MAPPING_N_* env var
+      # suffixes the collector consumes. Order defines the order we emit.
+      COLLECTORS_ONLY_MAPPING_KEYS = {
+        'topic' => 'TOPIC',
+        'measurement' => 'MEASUREMENT',
+        'field' => 'FIELD',
+        'type' => 'TYPE',
+        'json_key' => 'JSON_KEY',
+        'json_path' => 'JSON_PATH',
+        'json_formula' => 'JSON_FORMULA',
+        'formula' => 'FORMULA',
+        'min' => 'MIN',
+        'max' => 'MAX',
+        'null_to_zero' => 'NULL_TO_ZERO',
+      }.freeze
 
       private
 
@@ -47,7 +69,27 @@ module Export
       end
 
       def mqtt_environment
+        return collectors_only_environment if configuration.collectors_only?
+
         passthrough_vars + explicit_vars + optional_vars + mapping_vars
+      end
+
+      # In collectors_only mode the mappings are raw (no sensor names) —
+      # numbering starts at 1 so the output matches how existing mqtt-collector
+      # installations typically look.
+      def collectors_only_environment
+        vars = ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS.dup
+        vars += %w[TZ INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET MQTT_HOST]
+        vars += optional_vars
+        vars + raw_mapping_vars
+      end
+
+      def raw_mapping_vars
+        Array(mqtt_config.mappings).each_with_index.flat_map do |mapping, index|
+          COLLECTORS_ONLY_MAPPING_KEYS.filter_map do |key, env_suffix|
+            "MAPPING_#{index + 1}_#{env_suffix}" if mapping[key].to_s.present?
+          end
+        end
       end
 
       def passthrough_vars

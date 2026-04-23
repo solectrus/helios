@@ -55,31 +55,31 @@ sensors:
     measurement: Forecast
     source: forecast
 _unmanaged:
-  env_vars:
-    CHARGER_DRY_RUN: 'false'
-    CHARGER_FORECAST_THRESHOLD: '20'
-    CHARGER_INTERVAL: '3600'
-    CHARGER_PRICE_MAX: '70'
-    CHARGER_PRICE_TIME_RANGE: '4'
   services:
     senec-charger:
       depends_on:
         influxdb:
           condition: service_healthy
+      env_values:
+        CHARGER_DRY_RUN: 'false'
+        CHARGER_FORECAST_THRESHOLD: '20'
+        CHARGER_INTERVAL: '3600'
+        CHARGER_PRICE_MAX: '70'
+        CHARGER_PRICE_TIME_RANGE: '4'
       environment:
       - TZ
-      - SENEC_HOST
-      - SENEC_SCHEMA
+      - INFLUX_BUCKET
+      - INFLUX_HOST=influxdb
+      - INFLUX_MEASUREMENT_FORECAST=${INFLUX_MEASUREMENT_FORECAST}
+      - INFLUX_MEASUREMENT_PRICES=Tibber
+      - INFLUX_ORG
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - CHARGER_DRY_RUN
+      - CHARGER_FORECAST_THRESHOLD
       - CHARGER_INTERVAL
       - CHARGER_PRICE_MAX
       - CHARGER_PRICE_TIME_RANGE
-      - CHARGER_FORECAST_THRESHOLD
-      - CHARGER_DRY_RUN
-      - INFLUX_HOST=influxdb
-      - INFLUX_TOKEN=${INFLUX_TOKEN}
-      - INFLUX_ORG
-      - INFLUX_BUCKET
-      - INFLUX_MEASUREMENT_PRICES=Tibber
-      - INFLUX_MEASUREMENT_FORECAST=${INFLUX_MEASUREMENT_FORECAST}
+      - SENEC_HOST
+      - SENEC_SCHEMA
       image: ghcr.io/solectrus/senec-charger:latest
       restart: unless-stopped

@@ -9,6 +9,10 @@ module Export
         'Redis — In-memory store for caching'
       end
 
+      def self.enabled?(configuration)
+        !configuration.collectors_only?
+      end
+
       def data_directories
         managed_data_directory
       end

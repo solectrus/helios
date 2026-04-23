@@ -1,4 +1,4 @@
-class Configuration
+class Configuration # rubocop:disable Metrics/ClassLength
   YAML_FILENAME = 'config.yaml'.freeze
 
   # Singletons exist at most once per configuration
@@ -10,8 +10,12 @@ class Configuration
   # Sections hidden from the configuration UI (auto-managed)
   HIDDEN = %w[dashboard postgresql influxdb redis watchtower ingest].freeze
 
-  # Settings shown in the configuration UI (non-hidden singletons, excluding sensors and source configs)
+  # Settings shown in the configuration UI in full mode
   SETTINGS = %w[system reverse_proxy backup].freeze
+
+  # Settings shown in the configuration UI in collectors_only mode
+  # (reverse_proxy/backup target the local dashboard/postgres, which don't exist here)
+  COLLECTORS_ONLY_SETTINGS = %w[system influxdb].freeze
 
   # Source configurations shown when at least one sensor uses that source
   SOURCE_CONFIGS = %w[senec mqtt shelly forecast].freeze
@@ -149,9 +153,30 @@ class Configuration
   end
 
   # Ingest recalculates house_power when a balcony power plant feeds into
-  # the home grid and distorts the inverter-reported value.
+  # the home grid and distorts the inverter-reported value. It runs alongside
+  # the local InfluxDB only — in collectors_only mode there is nothing to
+  # recalculate.
   def ingest_required?
-    balcony_sensors.any?
+    !collectors_only? && balcony_sensors.any?
+  end
+
+  # --- Deployment mode ---
+
+  def mode
+    @mode ||= system.mode.presence || ConfigSchema::MODE_FULL
+  end
+
+  def collectors_only?
+    mode == ConfigSchema::MODE_COLLECTORS_ONLY
+  end
+
+  def dashboard_only?
+    mode == ConfigSchema::MODE_DASHBOARD_ONLY
+  end
+
+  # Settings visible in the configuration UI for the current mode.
+  def visible_settings
+    collectors_only? ? COLLECTORS_ONLY_SETTINGS : SETTINGS
   end
 
   def balcony_sensors
@@ -232,6 +257,7 @@ class Configuration
     @enabled_sensors = nil
     @balcony_sensors = nil
     @effective_sensor_mappings = nil
+    @mode = nil
     Current.configuration = nil
   end
 

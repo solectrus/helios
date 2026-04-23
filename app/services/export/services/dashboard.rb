@@ -9,6 +9,10 @@ module Export
         'SOLECTRUS — Web application'
       end
 
+      def self.enabled?(configuration)
+        !configuration.collectors_only?
+      end
+
       def to_h
         config = {
           image: configuration.dashboard.image,

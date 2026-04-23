@@ -1,6 +1,6 @@
 module Import
   class ConfigurationImporter
-    class MqttExtractor
+    class MqttExtractor # rubocop:disable Metrics/ClassLength
       include Helpers
 
       MAPPING_FIELDS = %i[
@@ -116,6 +116,21 @@ module Import
 
       def mappings
         @mappings ||= parse_mappings(service_env('mqtt-collector'))
+      end
+
+      # Raw MAPPING_N_* entries as plain hashes, ready to persist to
+      # mqtt.mappings in collectors_only mode where HELIOS cannot (and does
+      # not try to) map them back to canonical sensor names.
+      def raw_mappings
+        return [] unless enabled?
+
+        mqtt_env = service_env('mqtt-collector')
+        mapping_indices(mqtt_env).map do |i|
+          MAPPING_FIELDS.each_with_object({}) do |f, hash|
+            value = mqtt_env["MAPPING_#{i}_#{f.upcase}"]
+            hash[f.to_s] = value if value.present?
+          end
+        end.reject(&:empty?)
       end
 
       private

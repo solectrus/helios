@@ -187,6 +187,29 @@
             "de": "Nur erforderlich, wenn mehrere Systeme mit dem Konto verknüpft sind",
             "default": "Only required when multiple systems are linked to the account"
           }
+        },
+        {
+          "type": "radiogroup",
+          "name": "request_mode",
+          "title": {
+            "de": "Abfragemodus",
+            "default": "Request mode"
+          },
+          "description": {
+            "de": "\"Minimal\" ruft nur einen Endpunkt mit den wichtigsten Feldern ab und ist der empfohlene Standard. \"Voll\" fragt zusätzlich case_temp, application_version sowie current_state/_ok ab (nicht bei Home 4) und erzeugt mehr Last auf den SENEC-Servern.",
+            "default": "\"Minimal\" queries only one endpoint with the essential fields and is the recommended default. \"Full\" additionally fetches case_temp, application_version and current_state/_ok (not available on Home 4) and creates more load on the SENEC servers."
+          },
+          "defaultValue": "minimal",
+          "choices": [
+            {
+              "value": "minimal",
+              "text": { "de": "Minimal (empfohlen)", "default": "Minimal (recommended)" }
+            },
+            {
+              "value": "full",
+              "text": { "de": "Voll", "default": "Full" }
+            }
+          ]
         }
       ]
     },

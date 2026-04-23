@@ -3,12 +3,14 @@ RSpec.describe 'Import::ConfigurationImporter Ingest handling' do
 
   before { with_config_yaml }
 
-  def stub_stack_reader(services)
+  def stub_stack_reader(services, raw_env: {}, stack_dir: '/srv/solectrus')
+    defaults = { 'INFLUX_TOKEN' => 'token', 'INFLUX_ORG' => 'solectrus', 'INFLUX_BUCKET' => 'solectrus' }
     instance_double(
       Import::StackReader,
       services: services,
-      raw_env: { 'INFLUX_TOKEN' => 'token', 'INFLUX_ORG' => 'solectrus', 'INFLUX_BUCKET' => 'solectrus' },
+      raw_env: defaults.merge(raw_env),
       raw_compose: { 'services' => services },
+      stack_dir: stack_dir,
     ).tap do |double|
       allow(double).to receive(:service) { |name| services[name] }
     end
@@ -16,20 +18,20 @@ RSpec.describe 'Import::ConfigurationImporter Ingest handling' do
 
   context 'with an Ingest service in the stack' do
     let(:stack_reader) do
-      stub_stack_reader(
-        'dashboard' => {
-          'environment' => {
-            'INFLUX_SENSOR_INVERTER_POWER_2' => 'SENEC:mpp2_power',
-            'INFLUX_SENSOR_HOUSE_POWER' => 'SENEC:house_power',
-            'INFLUX_SENSOR_HOUSE_POWER_CALCULATED' => 'SENEC:house_power_calculated',
-          },
-        },
-        'ingest' => {
-          'image' => 'ghcr.io/solectrus/ingest:latest',
-          'environment' => { 'RETENTION_HOURS' => '48' },
-        },
-        'power-splitter' => { 'environment' => {} },
-      )
+      stub_stack_reader({
+                          'dashboard' => {
+                            'environment' => {
+                              'INFLUX_SENSOR_INVERTER_POWER_2' => 'SENEC:mpp2_power',
+                              'INFLUX_SENSOR_HOUSE_POWER' => 'SENEC:house_power',
+                              'INFLUX_SENSOR_HOUSE_POWER_CALCULATED' => 'SENEC:house_power_calculated',
+                            },
+                          },
+                          'ingest' => {
+                            'image' => 'ghcr.io/solectrus/ingest:latest',
+                            'environment' => { 'RETENTION_HOURS' => '48' },
+                          },
+                          'power-splitter' => { 'environment' => {} },
+                        })
     end
 
     describe 'ingest section data' do
@@ -81,20 +83,71 @@ RSpec.describe 'Import::ConfigurationImporter Ingest handling' do
     end
   end
 
+  context 'with an Ingest service and a custom INGEST_VOLUME_PATH' do
+    let(:services) do
+      {
+        'dashboard' => { 'environment' => { 'INFLUX_SENSOR_INVERTER_POWER_2' => 'SENEC:mpp2_power' } },
+        'ingest' => { 'image' => 'ghcr.io/solectrus/ingest:latest', 'environment' => {} },
+      }
+    end
+
+    context 'when the path points outside the stack directory' do
+      let(:stack_reader) do
+        stub_stack_reader(services, raw_env: { 'INGEST_VOLUME_PATH' => '/volume1/docker/solectrus/ingest' })
+      end
+
+      it 'preserves the absolute path as volume_path' do
+        expect(importer.result[:ingest]).to include('volume_path' => '/volume1/docker/solectrus/ingest')
+      end
+
+      it 'does not leak INGEST_VOLUME_PATH into unmanaged env_vars' do
+        expect(importer.result[:unmanaged]&.dig('env_vars') || {}).not_to have_key('INGEST_VOLUME_PATH')
+      end
+    end
+
+    context 'when the path resolves to the default bind mount next to compose.yaml' do
+      let(:stack_reader) do
+        stub_stack_reader(services, raw_env: { 'INGEST_VOLUME_PATH' => '/srv/solectrus/ingest' })
+      end
+
+      it 'drops the path — the relative default is equivalent' do
+        expect(importer.result[:ingest]).not_to have_key('volume_path')
+      end
+
+      it 'does not leak INGEST_VOLUME_PATH into unmanaged env_vars' do
+        expect(importer.result[:unmanaged]&.dig('env_vars') || {}).not_to have_key('INGEST_VOLUME_PATH')
+      end
+    end
+
+    context 'when the .env uses a relative path' do
+      let(:stack_reader) do
+        stub_stack_reader(services, raw_env: { 'INGEST_VOLUME_PATH' => './ingest' })
+      end
+
+      it 'ignores it — HELIOS already defaults to the same relative mount' do
+        expect(importer.result[:ingest]).not_to have_key('volume_path')
+      end
+
+      it 'does not leak INGEST_VOLUME_PATH into unmanaged env_vars' do
+        expect(importer.result[:unmanaged]&.dig('env_vars') || {}).not_to have_key('INGEST_VOLUME_PATH')
+      end
+    end
+  end
+
   context 'with an Ingest service but no individual inverter sensors' do
     let(:stack_reader) do
-      stub_stack_reader(
-        'dashboard' => {
-          'environment' => {
-            'INFLUX_SENSOR_INVERTER_POWER' => 'SENEC:inverter_power',
-            'INFLUX_SENSOR_HOUSE_POWER' => 'SENEC:house_power',
-          },
-        },
-        'ingest' => {
-          'image' => 'ghcr.io/solectrus/ingest:latest',
-          'environment' => { 'RETENTION_HOURS' => '48' },
-        },
-      )
+      stub_stack_reader({
+                          'dashboard' => {
+                            'environment' => {
+                              'INFLUX_SENSOR_INVERTER_POWER' => 'SENEC:inverter_power',
+                              'INFLUX_SENSOR_HOUSE_POWER' => 'SENEC:house_power',
+                            },
+                          },
+                          'ingest' => {
+                            'image' => 'ghcr.io/solectrus/ingest:latest',
+                            'environment' => { 'RETENTION_HOURS' => '48' },
+                          },
+                        })
     end
 
     it 'skips the ingest section (inconsistent stack — Ingest needs split inverters)' do

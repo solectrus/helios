@@ -62,9 +62,15 @@ module Export
       end
 
       def explicit_vars
+        return ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS if configuration.collectors_only?
+
         vars = ["INFLUX_HOST=#{collector_influx_target}"]
         vars << "INFLUX_PORT=#{Ingest::PORT}" if collector_influx_target == :ingest
         vars
+      end
+
+      def collector_depends_on
+        configuration.collectors_only? ? nil : healthy_depends_on([collector_influx_target])
       end
 
       # Bind mount honoring an optional `volume_path` override from config.yaml.

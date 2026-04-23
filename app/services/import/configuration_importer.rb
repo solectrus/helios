@@ -1,11 +1,16 @@
 module Import
   class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     # Env var that carries the absolute host path for each service's data dir
-    # in legacy SOLECTRUS installs.
+    # in legacy SOLECTRUS installs, plus the relative bind mount HELIOS defaults
+    # to — used to decide if a preserved path is equivalent to the default.
+    # Keyed by config section; default_dir usually equals the section name
+    # except for reverse_proxy, which hosts the traefik container.
     VOLUME_PATH_ENVS = {
-      'postgresql' => 'DB_VOLUME_PATH',
-      'influxdb' => 'INFLUX_VOLUME_PATH',
-      'redis' => 'REDIS_VOLUME_PATH',
+      'postgresql' => { env_key: 'DB_VOLUME_PATH', default_dir: 'postgresql' },
+      'influxdb' => { env_key: 'INFLUX_VOLUME_PATH', default_dir: 'influxdb' },
+      'redis' => { env_key: 'REDIS_VOLUME_PATH', default_dir: 'redis' },
+      'ingest' => { env_key: 'INGEST_VOLUME_PATH', default_dir: 'ingest' },
+      'reverse_proxy' => { env_key: 'TRAEFIK_VOLUME_PATH', default_dir: 'traefik' },
     }.freeze
 
     def initialize(stack_reader)
@@ -22,11 +27,21 @@ module Import
       config = Configuration.current
 
       persist_singletons!(config)
-      sensor_persister.persist!(config)
+      sensor_persister.persist!(config) unless collectors_only?
       mark_balcony_sensor!(config)
       persist_unmanaged!(config)
 
       config
+    end
+
+    def collectors_only?
+      return @collectors_only if defined?(@collectors_only)
+
+      services = @reader.services
+      has_local_target = services.key?('dashboard') || services.key?('influxdb')
+      has_any_collector = StackReader::COLLECTOR_SERVICES.any? { |s| services.key?(s) }
+
+      @collectors_only = !has_local_target && has_any_collector
     end
 
     private
@@ -77,7 +92,11 @@ module Import
 
     # --- Result building ---
 
-    def build_result # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
+    def build_result
+      collectors_only? ? collectors_only_result : full_result
+    end
+
+    def full_result # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
       {
         system: system_data,
         dashboard: dashboard_data,
@@ -96,6 +115,49 @@ module Import
         devices: build_devices,
         unmanaged: unmanaged_detector.detect,
       }
+    end
+
+    # Sensor canonicalization lives on the remote dashboard host, so HELIOS
+    # cannot reliably map collector env vars back to canonical sensor names.
+    # Collector connection data (hosts, credentials) is extracted into the
+    # usual senec/shelly/mqtt sections; the opaque mapping payload is kept
+    # as a raw list in mqtt.mappings and shelly.devices.
+    def collectors_only_result
+      {
+        system: system_data,
+        influxdb: influxdb_data,
+        watchtower: watchtower_data,
+        forecast: forecast_extractor.section_data,
+        senec: collectors_only_senec_data,
+        mqtt: collectors_only_mqtt_data,
+        shelly: collectors_only_shelly_data,
+        unmanaged: unmanaged_detector.detect,
+      }
+    end
+
+    def collectors_only_senec_data
+      data = senec_extractor.section_data
+      return nil unless data
+
+      data.merge('image' => senec_extractor.image).compact
+    end
+
+    def collectors_only_mqtt_data
+      broker = mqtt_extractor.broker_data
+      mappings = mqtt_extractor.raw_mappings
+      image = Compose.normalize_image(@reader.service('mqtt-collector')&.dig('image'))
+      data = (broker || {}).merge('image' => image, 'mappings' => mappings.presence).compact
+      data.presence
+    end
+
+    def collectors_only_shelly_data
+      section = shelly_extractor.section_data
+      devices = shelly_extractor.raw_devices
+      image = Compose.normalize_image(@reader.service('shelly-collector')&.dig('image'))
+      data = (section || {}).merge('image' => image, 'mode' => shelly_extractor.influx_mode,
+                                   'password' => shelly_extractor.shared_password,
+                                   'devices' => devices.presence).compact
+      data.presence
     end
 
     def build_devices
@@ -131,9 +193,9 @@ module Import
     # --- System ---
 
     def system_data
-      system_core_data
-        .merge(system_dashboard_data)
-        .compact
+      data = system_core_data.merge(system_dashboard_data)
+      data['mode'] = ConfigSchema::MODE_COLLECTORS_ONLY if collectors_only?
+      data.compact
     end
 
     def system_core_data
@@ -193,6 +255,10 @@ module Import
     end
 
     def influxdb_data
+      collectors_only? ? external_influxdb_data : local_influxdb_data
+    end
+
+    def local_influxdb_data
       image = Compose.normalize_image(@reader.service('influxdb')&.dig('image'))
       # Force upgrade to current InfluxDB image, regardless of the tag the user had pinned.
       image = 'influxdb:2-alpine' if image
@@ -203,6 +269,17 @@ module Import
         'bucket' => @reader.raw_env['INFLUX_BUCKET'],
         'token' => influxdb_token,
       }.merge(volume_path_data('influxdb')).compact
+    end
+
+    def external_influxdb_data
+      {
+        'host' => @reader.raw_env['INFLUX_HOST'],
+        'port' => @reader.raw_env['INFLUX_PORT'],
+        'schema' => @reader.raw_env['INFLUX_SCHEMA'],
+        'org' => @reader.raw_env['INFLUX_ORG'],
+        'bucket' => @reader.raw_env['INFLUX_BUCKET'],
+        'token' => influxdb_token,
+      }.compact
     end
 
     # Support token aliasing: prefer INFLUX_TOKEN, fallback to INFLUX_ADMIN_TOKEN or INFLUX_TOKEN_WRITE
@@ -217,9 +294,10 @@ module Import
     # values and absolute paths that resolve to the default bind mount next
     # to compose.yaml are dropped — they match HELIOS's default anyway.
     def volume_path_data(section)
-      value = @reader.raw_env[VOLUME_PATH_ENVS.fetch(section)]
+      mapping = VOLUME_PATH_ENVS.fetch(section)
+      value = @reader.raw_env[mapping[:env_key]]
       return {} unless value&.start_with?('/')
-      return {} if File.expand_path(value) == File.expand_path(section, @reader.stack_dir)
+      return {} if File.expand_path(value) == File.expand_path(mapping[:default_dir], @reader.stack_dir)
 
       { 'volume_path' => value }
     end
@@ -250,6 +328,7 @@ module Import
       if @reader.services.key?('traefik') && (domain = extract_domain_from_dashboard_labels)
         data['app_domain'] = domain
         data['letsencrypt_email'] = @reader.raw_env['LETSENCRYPT_EMAIL']
+        data.merge!(volume_path_data('reverse_proxy'))
       end
 
       data.compact.presence
@@ -332,7 +411,7 @@ module Import
       {
         'image' => Compose.normalize_image(@reader.service('ingest')&.dig('image')),
         'retention_hours' => ingest_env['RETENTION_HOURS'],
-      }.compact
+      }.merge(volume_path_data('ingest')).compact
     end
 
     # --- Shared helpers ---

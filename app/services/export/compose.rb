@@ -30,8 +30,15 @@ module Export
       compose.header_comment = compose_header_comment
       compose.name = 'solectrus'
 
-      add_class_based_services(compose)
-      add_unmanaged_services(compose)
+      # Unmanaged collectors are the stack's primary services in collectors_only
+      # mode — render them before HELIOS's own infrastructure (watchtower, helios).
+      if configuration.collectors_only?
+        add_unmanaged_services(compose)
+        add_class_based_services(compose)
+      else
+        add_class_based_services(compose)
+        add_unmanaged_services(compose)
+      end
 
       compose.to_yaml
     end
@@ -46,7 +53,7 @@ module Export
 
     def add_class_based_services(compose)
       active_service_classes.each do |service_class|
-        service_hash = service_class.new(configuration).to_h.reverse_merge(default_logging)
+        service_hash = service_class.new(configuration).to_h.compact.reverse_merge(default_logging)
         service_hash[:image] = ::Compose.normalize_image(service_hash[:image])
         service_hash[:labels] = Array(service_hash[:labels]) + [WATCHTOWER_LABEL]
 
@@ -71,7 +78,11 @@ module Export
       unmanaged.services.each do |name, config|
         next if config.blank?
 
-        compose.add_service(name, config.to_h, comment: 'Unmanaged service (preserved from existing installation)')
+        # env_values is HELIOS-internal state (values for the environment list,
+        # rendered into .env on export) — not a compose key.
+        service_config = config.to_h.except('env_values')
+        compose.add_service(name, service_config,
+                            comment: 'Unmanaged service (preserved from existing installation)')
       end
     end
 

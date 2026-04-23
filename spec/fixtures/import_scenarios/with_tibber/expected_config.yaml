@@ -21,23 +21,23 @@ watchtower:
   image: nickfedor/watchtower:latest
 sensors: {}
 _unmanaged:
-  env_vars:
-    INFLUX_MEASUREMENT_TIBBER: Tibber
-    TIBBER_INTERVAL: '3600'
-    TIBBER_TOKEN: tibber-api-token-xyz
   services:
     tibber-collector:
       depends_on:
         influxdb:
           condition: service_healthy
+      env_values:
+        INFLUX_MEASUREMENT_TIBBER: Tibber
+        TIBBER_INTERVAL: '3600'
+        TIBBER_TOKEN: tibber-api-token-xyz
       environment:
       - TZ
-      - TIBBER_TOKEN
-      - TIBBER_INTERVAL
-      - INFLUX_HOST=influxdb
-      - INFLUX_TOKEN=${INFLUX_TOKEN}
-      - INFLUX_ORG
       - INFLUX_BUCKET
+      - INFLUX_HOST=influxdb
       - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_TIBBER}
+      - INFLUX_ORG
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - TIBBER_INTERVAL
+      - TIBBER_TOKEN
       image: ghcr.io/solectrus/tibber-collector:latest
       restart: unless-stopped

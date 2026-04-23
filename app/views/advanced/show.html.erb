@@ -2,7 +2,7 @@
 
 <%= render "shared/configuration_page", active_tab: :advanced do %>
   <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-    <% Configuration::SETTINGS.each do |setting| %>
+    <% @configuration.visible_settings.each do |setting| %>
       <%= render SettingSection::Component.new(setting:, configuration: @configuration) %>
     <% end %>
   </div>

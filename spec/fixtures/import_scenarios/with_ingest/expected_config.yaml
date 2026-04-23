@@ -105,4 +105,3 @@ _unmanaged:
     INFLUX_MEASUREMENT_CAR: Car_Opel
     INFLUX_MEASUREMENT_Garage: Garage
     INFLUX_MEASUREMENT_TIBBER: my-tibber
-    INGEST_VOLUME_PATH: "./ingest"

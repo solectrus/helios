@@ -3,9 +3,14 @@ module Export
     # Sections whose defaults are only generated on demand. The lambda decides
     # whether defaults should be written for this section given the current
     # configuration. Sections not listed here are always populated with defaults.
+    LOCAL_STACK_ONLY = ->(config) { !config.collectors_only? }
     OPTIONAL_SECTIONS = {
       'backup' => ->(config) { config.configured?('backup') },
       'ingest' => ->(config) { config.ingest_required? },
+      'dashboard' => LOCAL_STACK_ONLY,
+      'postgresql' => LOCAL_STACK_ONLY,
+      'influxdb' => LOCAL_STACK_ONLY,
+      'redis' => LOCAL_STACK_ONLY,
     }.freeze
 
     def initialize(configuration)

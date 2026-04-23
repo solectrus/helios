@@ -240,6 +240,34 @@ RSpec.describe Export::Builder do
     it 'creates traefik data directory' do
       expect(Dir.exist?(File.join(tmp_dir, 'traefik'))).to be true
     end
+
+    it 'mounts the default relative bind path for /letsencrypt' do
+      compose = Compose.load
+      traefik = compose.services.find('traefik')
+      expect(traefik.config['volumes']).to include('./traefik:/letsencrypt')
+    end
+  end
+
+  describe 'with reverse_proxy and custom volume path' do
+    before do
+      configuration.update('reverse_proxy', {
+                             'app_domain' => 'solar.example.com',
+                             'volume_path' => '/volume1/docker/solectrus/traefik',
+                           })
+      described_class.new(configuration).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'mounts the configured host path in compose.yaml' do
+      compose = Compose.load
+      traefik = compose.services.find('traefik')
+      expect(traefik.config['volumes']).to include('/volume1/docker/solectrus/traefik:/letsencrypt')
+    end
+
+    it 'does not create the default traefik data directory' do
+      expect(Dir.exist?(File.join(tmp_dir, 'traefik'))).to be false
+    end
   end
 
   describe 'without reverse_proxy configured' do
@@ -406,6 +434,41 @@ RSpec.describe Export::Builder do
 
       expect(senec.environment).to include('SENEC_USERNAME', 'SENEC_PASSWORD')
       expect(senec.environment).to include('SENEC_TOTP_URI', 'SENEC_SYSTEM_ID', 'SENEC_IGNORE')
+    end
+
+    it 'omits SENEC_REQUEST_MODE when not configured (default minimal)' do
+      env = Env.load
+      expect(env['SENEC_REQUEST_MODE']).to be_nil
+
+      compose = Compose.load
+      senec = compose.services.find('senec-collector')
+      expect(senec.environment).not_to include('SENEC_REQUEST_MODE')
+    end
+  end
+
+  describe 'with SENEC cloud and request_mode=full' do
+    before do
+      configuration.update('senec', {
+                             'adapter' => 'cloud',
+                             'username' => 'user@example.com',
+                             'password' => 'secret',
+                             'request_mode' => 'full',
+                           })
+      configuration.update_sensor('inverter_power', { 'source' => 'senec' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'writes SENEC_REQUEST_MODE to .env' do
+      env = Env.load
+      expect(env['SENEC_REQUEST_MODE']).to eq('full')
+    end
+
+    it 'references SENEC_REQUEST_MODE in senec-collector environment' do
+      compose = Compose.load
+      senec = compose.services.find('senec-collector')
+      expect(senec.environment).to include('SENEC_REQUEST_MODE')
     end
   end
 
@@ -1068,6 +1131,27 @@ RSpec.describe Export::Builder do
     end
 
     it 'does not create the ingest data directory' do
+      expect(Dir.exist?(File.join(tmp_dir, 'ingest'))).to be false
+    end
+  end
+
+  describe 'with Ingest and custom volume path' do
+    before do
+      configuration.update('ingest', { 'volume_path' => '/volume1/docker/solectrus/ingest' })
+      configuration.update_sensor('inverter_power_1', { 'source' => 'external', 'is_balcony' => true })
+      configuration.update_sensor('house_power', { 'source' => 'senec' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'mounts the configured host path in compose.yaml' do
+      compose = Compose.load
+      ingest = compose.services.find('ingest')
+      expect(ingest.config['volumes']).to eq(['/volume1/docker/solectrus/ingest:/app/data'])
+    end
+
+    it 'does not create the default ingest data directory' do
       expect(Dir.exist?(File.join(tmp_dir, 'ingest'))).to be false
     end
   end

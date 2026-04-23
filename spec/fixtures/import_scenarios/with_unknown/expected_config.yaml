@@ -21,10 +21,9 @@ watchtower:
   image: nickfedor/watchtower:latest
 sensors: {}
 _unmanaged:
-  env_vars:
-    MY_CUSTOM_VAR: custom-value
   services:
     dozzle:
+      environment: []
       image: amir20/dozzle:latest
       ports:
       - 8082:8080
@@ -32,6 +31,8 @@ _unmanaged:
       volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     nginx:
+      env_values:
+        MY_CUSTOM_VAR: custom-value
       environment:
       - NGINX_CUSTOM_SETTING=${MY_CUSTOM_VAR}
       image: nginx:alpine
