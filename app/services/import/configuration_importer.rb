@@ -139,8 +139,11 @@ module Import
     def system_core_data
       dashboard_env = service_env('dashboard')
 
+      # Legacy compose files often define TZ in .env but don't reference it
+      # from the dashboard service — fall back to raw_env so the user's
+      # timezone survives the round-trip.
       {
-        'timezone' => dashboard_env['TZ'],
+        'timezone' => dashboard_env['TZ'].presence || @reader.raw_env['TZ'].presence,
         'installation_date' => dashboard_env['INSTALLATION_DATE'],
         'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
         'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],

@@ -56,7 +56,7 @@ module Export
 
     def general_section(env)
       env.add_section('General settings')
-      entry(env, 'TZ', configuration.system.timezone,
+      entry(env, 'TZ', configuration.system.timezone.presence || 'Europe/Berlin',
             'Timezone for all services (IANA format, e.g. Europe/Berlin)')
       entry(env, 'INSTALLATION_DATE', configuration.system.installation_date,
             'Date of first solar installation (YYYY-MM-DD) — used for statistics and charts')
