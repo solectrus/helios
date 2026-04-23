@@ -1,0 +1,67 @@
+---
+system:
+  admin_password: my-secret-login-password
+  app_host: my-little-raspberry.local
+  installation_date: '2022-01-27'
+  secret_key_base: f60debe97dcb73280a2cc83668fd60e8d0e8e48269036a7bce980ee53cfb312e377989a750b8c945a5f69b041289ecb4e2d9e40641b81257c65ac2d43e3c837f
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:16-alpine
+  password: my-secret-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: ExAmPl3PA55W0rD
+  token: my-super-secret-admin-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: forecast.solar
+  forecast_azimuth1: '20'
+  forecast_declination1: '30'
+  forecast_interval: '900'
+  forecast_kwp1: '8.4'
+  forecast_latitude: '50.12345'
+  forecast_longitude: '6.12345'
+  forecast_roofs: '1'
+  measurement: Forecast
+senec:
+  adapter: local
+  host: 192.168.0.0
+  interval: '5'
+  language: de
+  schema: https
+  version: v3
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_power:
+    source: senec
