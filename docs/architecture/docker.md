@@ -208,21 +208,31 @@ This works reliably because SOLECTRUS always uses Docker Compose (never `docker 
 
 ## Image Versioning Strategy
 
-| Service             | Image Tag                                     | Rationale                     |
-| ------------------- | --------------------------------------------- | ----------------------------- |
-| SOLECTRUS Dashboard | `ghcr.io/solectrus/solectrus:latest`          | Own service, always latest    |
-| HELIOS              | `ghcr.io/solectrus/helios:latest`             | Own service, always latest    |
-| Power-Splitter      | `ghcr.io/solectrus/power-splitter:latest`     | Own service, always latest    |
-| Forecast-Collector  | `ghcr.io/solectrus/forecast-collector:latest` | Own service, always latest    |
-| PostgreSQL          | `postgres:18-alpine`                          | Major version pinned          |
-| Redis               | `redis:8-alpine`                              | Major version pinned          |
-| InfluxDB            | `influxdb:2-alpine`                           | Major version pinned          |
-| Watchtower          | `nickfedor/watchtower:latest`                 | Fork with additional features |
+Defaults live in [`ConfigSchema`](../../app/models/config_schema.rb); per-service images can be overridden via `config.yaml`.
+
+| Service             | Image Tag                                      | Rationale                            |
+| ------------------- | ---------------------------------------------- | ------------------------------------ |
+| SOLECTRUS Dashboard | `ghcr.io/solectrus/solectrus:latest`           | Own service, always latest           |
+| HELIOS              | `ghcr.io/solectrus/helios:develop`             | Own service, currently pre-release   |
+| Power-Splitter      | `ghcr.io/solectrus/power-splitter:latest`      | Own service, always latest           |
+| Forecast-Collector  | `ghcr.io/solectrus/forecast-collector:latest`  | Own service, always latest           |
+| SENEC-Collector     | `ghcr.io/solectrus/senec-collector:latest`     | Own service, always latest           |
+| MQTT-Collector      | `ghcr.io/solectrus/mqtt-collector:latest`      | Own service, always latest           |
+| Shelly-Collector    | `ghcr.io/solectrus/shelly-collector:latest`    | Own service, always latest           |
+| Ingest              | `ghcr.io/solectrus/ingest:latest`              | Own service, always latest           |
+| InfluxDB Backup     | `ghcr.io/solectrus/influxdb2-s3-backup:latest` | Own service, always latest           |
+| PostgreSQL Backup   | `ghcr.io/solectrus/postgres-s3-backup:18`      | Own service, pinned to Postgres `18` |
+| PostgreSQL          | `postgres:18-alpine`                           | Major version pinned                 |
+| Redis               | `redis:8-alpine`                               | Major version pinned                 |
+| InfluxDB            | `influxdb:2-alpine`                            | Major version pinned                 |
+| Traefik             | `traefik:v3`                                   | Major version pinned                 |
+| Watchtower          | `nickfedor/watchtower:latest`                  | Fork with additional features        |
 
 **Rationale:**
 
 - Own services use `latest` – Watchtower handles updates automatically
 - Third-party services pin major version – prevents breaking changes, allows minor/patch updates
+- `helios` still tracks `develop` until its first stable release
 
 ---
 
