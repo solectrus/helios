@@ -57,8 +57,9 @@ module Import
       # never attach them to an unmanaged service even if it uses env_file.
       HELIOS_CORE_ENV_KEYS = %w[ADMIN_PASSWORD SECRET_KEY_BASE].freeze
 
-      def initialize(reader)
+      def initialize(reader, known_measurements: [])
         @reader = reader
+        @known_measurements = known_measurements.to_set
       end
 
       def detect
@@ -253,8 +254,20 @@ module Import
         @reader
           .raw_env
           .to_h
-          .reject { |key, _| managed.include?(key) || managed_shelly_env_key?(key) }
+          .reject do |key, value|
+            managed.include?(key) ||
+              managed_shelly_env_key?(key) ||
+              redundant_measurement_alias?(key, value)
+          end
           .presence
+      end
+
+      # User-defined INFLUX_MEASUREMENT_* vars are pure naming aliases — the
+      # SOLECTRUS stack never reads them. If the value is already captured as
+      # a measurement in the imported sensor config, the alias is redundant
+      # and would only clutter the unmanaged section.
+      def redundant_measurement_alias?(key, value)
+        key.start_with?('INFLUX_MEASUREMENT_') && @known_measurements.include?(value)
       end
 
       # Detect by image rather than service name, so legacy installations that use

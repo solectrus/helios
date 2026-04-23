@@ -102,6 +102,4 @@ ingest:
   image: ghcr.io/solectrus/ingest:latest
 _unmanaged:
   env_vars:
-    INFLUX_MEASUREMENT_CAR: Car_Opel
-    INFLUX_MEASUREMENT_Garage: Garage
     INFLUX_MEASUREMENT_TIBBER: my-tibber
