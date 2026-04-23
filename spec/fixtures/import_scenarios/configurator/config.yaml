@@ -1,0 +1,106 @@
+---
+system:
+  admin_password: my-admin-password
+  app_host: raspi
+  installation_date: '2023-02-01'
+  secret_key_base: 3b33d3e50e087fa975766d8533c6a3211f39abe2b23b79783d50f71bd1993f66c9147cf0057b7b7dcfd4e5e264aa1f9835f1d9f2c3934afe30a90f1a795ebc24
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: my-secret-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: ExAmPl3PA55W0rD
+  token: my-super-secret-admin-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: solcast
+  forecast_interval: '8640'
+  forecast_roofs: '1'
+  forecast_solcast_api_key: my-api-key
+  forecast_solcast_id1: 1111-2222-3333-4444
+  measurement: Forecast
+senec:
+  adapter: local
+  host: senec
+  interval: '5'
+  language: de
+  schema: https
+  version: v3
+mqtt:
+  mqtt_host: mqtt.fritz.box
+  mqtt_password: password
+  mqtt_port: '1883'
+  mqtt_ssl: 'false'
+  mqtt_username: admin
+shelly:
+  connection: local
+  interval: '5'
+backup:
+  aws_access_key_id: '1234567890'
+  aws_bucket: my-aws-bucket
+  aws_region: eu-west-1
+  aws_secret_access_key: ABCDEFGHIJKLMN
+  influxdb:
+    image: ghcr.io/solectrus/influxdb2-s3-backup:latest
+  postgresql:
+    image: ghcr.io/solectrus/postgres-s3-backup:18
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  car_battery_soc:
+    field: battery_soc
+    measurement: car
+    mqtt_payload_type: float
+    mqtt_topic: mycar/battery/0/soc
+    source: mqtt
+  case_temp:
+    source: senec
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  heatpump_power:
+    exclude_from_house_power: true
+    field: power
+    measurement: heatpump
+    name: heatpump
+    shelly_connection: local
+    shelly_host: shelly-heatpump.fritz.box
+    shelly_interval: '5'
+    source: shelly
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_1:
+    source: senec
+  inverter_power_2:
+    source: senec
+  inverter_power_3:
+    source: senec
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_car_connected:
+    source: senec
+  wallbox_power:
+    source: senec
