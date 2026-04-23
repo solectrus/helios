@@ -9,6 +9,7 @@ RSpec.describe StartupCheck do
         allow(File).to receive(:exist?).and_call_original
         allow(File).to receive(:exist?).with(match(%r{/(compose|docker-compose)\.(yaml|yml)$})).and_return(true)
         allow(File).to receive(:exist?).with(match(/\.env$/)).and_return(true)
+        allow(YAML).to receive(:safe_load_file).and_return({ 'name' => Orchestration::PROJECT_NAME })
       end
 
       it 'returns an empty array' do
@@ -62,6 +63,7 @@ RSpec.describe StartupCheck do
         allow(File).to receive(:exist?).and_call_original
         allow(File).to receive(:exist?).with(match(%r{/(compose|docker-compose)\.(yaml|yml)$})).and_return(true)
         allow(File).to receive(:exist?).with(match(/\.env$/)).and_return(false)
+        allow(YAML).to receive(:safe_load_file).and_return({ 'name' => Orchestration::PROJECT_NAME })
       end
 
       it 'reports env file missing' do
@@ -79,6 +81,7 @@ RSpec.describe StartupCheck do
         allow(File).to receive(:exist?).and_call_original
         allow(File).to receive(:exist?).with(match(%r{/(compose|docker-compose)\.(yaml|yml)$})).and_return(true)
         allow(File).to receive(:exist?).with(match(/\.env$/)).and_return(true)
+        allow(YAML).to receive(:safe_load_file).and_return({ 'name' => Orchestration::PROJECT_NAME })
       end
 
       it 'reports data path not writable' do
