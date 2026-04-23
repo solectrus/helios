@@ -85,8 +85,13 @@ sensors:
   wallbox_car_connected:
     field: car_connected
     measurement: go-eCharger
-    source: senec
+    mqtt_payload_type: integer
+    mqtt_topic: go-eCharger/123456/car
+    source: mqtt
   wallbox_power:
     field: power
     measurement: go-eCharger
-    source: senec
+    mqtt_json_key: p
+    mqtt_payload_type: float
+    mqtt_topic: go-eCharger/123456/nrg
+    source: mqtt

@@ -20,6 +20,11 @@ module Import
         null_to_zero: 'mqtt_null_to_zero',
       }.freeze
 
+      # Fields on an imported device that can carry its data-source identifier
+      # ('shelly', 'mqtt', …). `data_source` is the generic slot; the others
+      # are type-specific slots on inverter/wallbox/heatpump/battery devices.
+      SOURCE_FIELDS = %w[data_source wallbox_vendor heatpump_access battery_vendor].freeze
+
       def initialize(sensors_data:, devices:, senec_enabled:, mqtt_mappings:)
         @sensors_data = sensors_data
         @devices = devices
@@ -38,27 +43,17 @@ module Import
 
       private
 
+      # A concrete MQTT mapping (MAPPING_N writing into this sensor's
+      # measurement:field) wins over SENEC defaults — legacy installs route
+      # SENEC-default sensors through MQTT (e.g. via SENEC_IGNORE or a
+      # third-party inverter), and the explicit mapping is authoritative.
       def infer_source_for_sensor(sensor_name)
+        return 'mqtt' if mqtt_mapping_details.key?(sensor_name)
         return 'senec' if SensorMappings::SENEC_DEFAULTS.key?(sensor_name) && @senec_enabled
         return 'forecast' if SensorMappings::FORECAST_DEFAULTS.key?(sensor_name)
-        return 'shelly' if device_provides_sensor?(sensor_name, 'shelly')
-        return 'mqtt' if device_provides_sensor?(sensor_name, 'mqtt')
+        return 'shelly' if shelly_device_provides_sensor?(sensor_name)
 
         'external'
-      end
-
-      def device_provides_sensor?(sensor_name, source_type)
-        source_fields = %w[data_source wallbox_vendor heatpump_access battery_vendor]
-
-        @devices.any? do |device|
-          next unless device[:data].values_at(*source_fields).include?(source_type)
-
-          sensor_mapping = @sensors_data[sensor_name]
-          next unless sensor_mapping
-
-          device_claims_mapping?(source_type, device, sensor_mapping) &&
-            concrete_mapping_exists?(source_type, sensor_name)
-        end
       end
 
       # The shelly-collector always writes its reading into the `power` field of
@@ -66,20 +61,15 @@ module Import
       # a shelly device from stealing unrelated sensors when an mqtt-collector
       # (or another collector) writes other fields into the same measurement
       # — a common setup in pre-HELIOS SOLECTRUS installs.
-      def device_claims_mapping?(source_type, device, sensor_mapping)
-        return sensor_mapping == "#{device[:name]}:power" if source_type == 'shelly'
+      def shelly_device_provides_sensor?(sensor_name)
+        sensor_mapping = @sensors_data[sensor_name]
+        return false unless sensor_mapping
 
-        sensor_mapping.start_with?("#{device[:name]}:")
-      end
+        @devices.any? do |device|
+          next unless device[:data].values_at(*SOURCE_FIELDS).include?('shelly')
 
-      # For mqtt, only attribute a sensor when a concrete topic mapping exists
-      # that feeds its exact field — otherwise a synthesized sensor (from a
-      # legacy dashboard fallback) would inherit the measurement name from the
-      # mqtt-collector device without having any topic to populate it.
-      def concrete_mapping_exists?(source_type, sensor_name)
-        return mqtt_mapping_details.key?(sensor_name) if source_type == 'mqtt'
-
-        true
+          sensor_mapping == "#{device[:name]}:power"
+        end
       end
 
       def build_sensor_data(sensor_name, source)
@@ -144,10 +134,9 @@ module Import
         return nil unless mapping
 
         @devices.find do |device|
-          data = device[:data]
-          is_shelly = data.values_at('data_source', 'wallbox_vendor', 'heatpump_access',
-                                     'battery_vendor').include?('shelly')
-          is_shelly && mapping.start_with?("#{device[:name]}:")
+          next unless device[:data].values_at(*SOURCE_FIELDS).include?('shelly')
+
+          mapping.start_with?("#{device[:name]}:")
         end
       end
 
