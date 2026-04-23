@@ -17,6 +17,7 @@ Web-based bootstrap helper and management interface for [SOLECTRUS](https://sole
 - **Auto-import** — detects existing SOLECTRUS installations, reverse-maps the configuration, and preserves anything it does not understand.
 - **Auto-updates** — Watchtower keeps all images (including HELIOS itself) current.
 - **Real-time UI** — status updates via Turbo Streams + Action Cable, driven by the Docker events API. No polling.
+- **Support bundle** — download a ZIP of the current configuration, container logs, and host snapshot for troubleshooting; secrets are redacted with placeholder values so the bundle can be shared publicly.
 - **Localized** — German and English.
 
 ## Requirements
@@ -112,9 +113,9 @@ On the first visit to `http://<your-host>:3999`:
 
 1. **Set the admin password.** It is stored hashed in `helios/config.yaml` — HELIOS never writes it back to `.env` in plain text.
 2. **Scenario detection.** HELIOS reads the current `compose.yaml` and picks one of three modes:
-   - *Fresh install, standalone* — HELIOS will generate collector services to read data directly from hardware (SENEC, Shelly, MQTT).
-   - *Fresh install, smart home* — data is pushed into InfluxDB by an external system (ioBroker, Home Assistant). HELIOS only provisions infrastructure services.
-   - *Existing installation* — HELIOS auto-imports the current configuration and pre-fills sensor mappings from `.env`.
+   - _Fresh install, standalone_ — HELIOS will generate collector services to read data directly from hardware (SENEC, Shelly, MQTT).
+   - _Fresh install, smart home_ — data is pushed into InfluxDB by an external system (ioBroker, Home Assistant). HELIOS only provisions infrastructure services.
+   - _Existing installation_ — HELIOS auto-imports the current configuration and pre-fills sensor mappings from `.env`.
 3. **Configuration wizard.** Walk through the surveys (devices, data sources, forecasts, reverse proxy, backup). HELIOS regenerates `compose.yaml` and `.env` after every change.
 4. **Apply changes.** Services are not restarted automatically — the dashboard shows which services are affected and lets you restart them explicitly.
 

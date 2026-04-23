@@ -62,6 +62,11 @@ Scenarios A and B can coexist (e.g. SENEC collector for the inverter + ioBroker 
 - `Watchtower` is part of the generated stack and updates all images automatically, including HELIOS itself.
 - Image versioning strategy: own services track `latest` (Watchtower-managed), third-party services pin a major version. See [architecture/docker.md](architecture/docker.md#image-versioning-strategy).
 
+### Support Bundle
+
+- On-demand ZIP download for troubleshooting. Bundles `compose.yaml`, `.env`, `config.yaml` (plus their `.bak` variants), a `system-info.txt` snapshot (HELIOS version, Docker engine, OS / CPU / memory / disk, container table) and the last 200 log lines per container under `logs/`.
+- Secrets (passwords, tokens, API keys, geolocation) are replaced with deterministic placeholders (e.g. `dummy_postgres_password`) so the archive is safe to post in a public forum and a restored copy still starts locally.
+
 ---
 
 ## Technical Constraints
