@@ -12,12 +12,12 @@ postgresql:
   password: my-secret-db-password
 influxdb:
   bucket: my-solectrus-bucket
-  image: influxdb:2.7-alpine
+  image: influxdb:2-alpine
   org: solectrus
   password: password
   token: my-super-secret-admin-token
 redis:
-  image: redis:7-alpine
+  image: redis:8-alpine
 watchtower:
   image: nickfedor/watchtower:latest
 forecast:

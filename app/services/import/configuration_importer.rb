@@ -171,7 +171,10 @@ module Import
     # --- Infrastructure services ---
 
     def redis_data
-      image_data_for('redis').merge(volume_path_data('redis')).compact
+      data = image_data_for('redis').merge(volume_path_data('redis')).compact
+      # Force upgrade to current Redis image, regardless of the tag the user had pinned.
+      data['image'] = 'redis:8-alpine' if data['image']
+      data
     end
 
     def watchtower_data
@@ -190,8 +193,11 @@ module Import
     end
 
     def influxdb_data
+      image = Compose.normalize_image(@reader.service('influxdb')&.dig('image'))
+      # Force upgrade to current InfluxDB image, regardless of the tag the user had pinned.
+      image = 'influxdb:2-alpine' if image
       {
-        'image' => Compose.normalize_image(@reader.service('influxdb')&.dig('image')),
+        'image' => image,
         'password' => @reader.raw_env['INFLUX_PASSWORD'],
         'org' => @reader.raw_env['INFLUX_ORG'],
         'bucket' => @reader.raw_env['INFLUX_BUCKET'],
