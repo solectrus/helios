@@ -1,0 +1,70 @@
+<%= turbo_frame_tag "support-modal-content" do %>
+  <div class="space-y-7 p-2">
+    <header>
+      <h3 class="text-xl font-semibold tracking-tight"><%= t(".title") %></h3>
+      <p class="text-base-content/70 mt-1 text-sm"><%= t(".subtitle") %></p>
+    </header>
+
+    <ol class="space-y-6">
+      <li class="flex gap-4">
+        <span
+          class="
+            bg-primary/15 text-primary flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono
+            text-xs font-semibold
+          "
+        >
+          1
+        </span>
+
+        <div class="flex-1 space-y-3">
+          <div>
+            <p class="font-semibold"><%= t(".step_download.title") %></p>
+            <p class="text-base-content/70 text-sm"><%= t(".step_download.description") %></p>
+          </div>
+
+          <%= form_with url: support_path, method: :post, data: { turbo: false, turbo_frame: "_top" } do %>
+            <button
+              type="submit"
+              class="btn btn-primary btn-sm"
+              data-controller="loading"
+              data-action="click->loading#click"
+              data-loading-text-value="<%= t(".downloading") %>"
+              data-loading-success-text-value="<%= t(".downloaded") %>"
+            >
+              <i class="fa-solid fa-download"></i>
+              <%= t(".download") %>
+            </button>
+          <% end %>
+        </div>
+      </li>
+
+      <li class="flex gap-4">
+        <span
+          class="
+            bg-primary/15 text-primary flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono
+            text-xs font-semibold
+          "
+        >
+          2
+        </span>
+
+        <div class="flex-1 space-y-3">
+          <div>
+            <p class="font-semibold"><%= t(".step_forum.title") %></p>
+            <p class="text-base-content/70 text-sm"><%= t(".step_forum.description") %></p>
+          </div>
+
+          <a
+            href="https://github.com/orgs/solectrus/discussions"
+            target="_blank"
+            rel="noopener"
+            class="link link-primary inline-flex items-center gap-1.5 font-mono text-sm break-all"
+          >
+            github.com/orgs/solectrus/discussions
+            <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+          </a>
+        </div>
+      </li>
+    </ol>
+  </div>
+<% end %>

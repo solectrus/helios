@@ -1,12 +1,14 @@
 module Configurations
   class SettingsController < ApplicationController
+    include TurboFrameOnly
+
     # Settings whose survey uses an `enabled` boolean to toggle the whole section.
     # The flag is stripped on save, so we re-inject it on load when data is present.
     ENABLED_FLAG_SETTINGS = %w[reverse_proxy backup].freeze
 
     before_action :set_configuration
     before_action :validate_setting
-    before_action :redirect_non_frame_requests, only: %i[new edit]
+    before_action :require_turbo_frame, only: %i[new edit]
 
     def new
       if sensor_setting?
@@ -68,10 +70,8 @@ module Configurations
       @configuration = Configuration.current
     end
 
-    def redirect_non_frame_requests
-      return if turbo_frame_request?
-
-      redirect_to redirect_target
+    def require_turbo_frame
+      redirect_unless_turbo_frame(redirect_target)
     end
 
     def validate_setting

@@ -20,6 +20,15 @@
   </div>
 
   <div class="ml-auto flex items-center gap-1">
+    <a
+      href="<%= helpers.new_support_path %>"
+      data-turbo-frame="support-modal-content"
+      class="btn btn-ghost btn-sm gap-2"
+    >
+      <i class="fa-solid fa-life-ring"></i>
+      <%= t(".support") %>
+    </a>
+
     <%= render LanguageSelect::Component.new %>
 
     <% if helpers.password_required? %>

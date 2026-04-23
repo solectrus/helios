@@ -52,6 +52,20 @@ en:
     show:
       title: 'Advanced'
 
+  supports:
+    new:
+      title: 'Running into trouble?'
+      subtitle: 'Two steps to a solution.'
+      step_download:
+        title: 'Download support bundle'
+        description: 'Includes configuration, system info and container logs. Passwords, tokens and coordinates are anonymized automatically.'
+      step_forum:
+        title: 'Ask in the forum'
+        description: 'Attach the ZIP file to your post – the community will help you.'
+      download: 'Download ZIP'
+      downloading: 'Preparing…'
+      downloaded: 'Downloaded'
+
   configurations:
     show:
       configured: 'Configured'
