@@ -18,10 +18,22 @@ namespace :fixtures do
 
   def import_scenario(scenario_path)
     stack_reader = Import::StackReader.new(
-      compose_path: scenario_path.join('compose.yaml.bak'),
+      compose_path: compose_backup_path(scenario_path) || abort(missing_compose_backup_message(scenario_path)),
       env_path: scenario_path.join('.env.bak'),
     )
     Import::ConfigurationImporter.new(stack_reader).import!
+  end
+
+  # Locate the backup compose file next to an import scenario. Tries every
+  # filename variant HELIOS accepts (compose.yaml, docker-compose.yaml,
+  # docker-compose.yml) with a .bak suffix.
+  def compose_backup_path(scenario_path)
+    Compose::FILENAMES.lazy.map { |f| scenario_path.join("#{f}.bak") }.find(&:file?)
+  end
+
+  def missing_compose_backup_message(scenario_path)
+    candidates = Compose::FILENAMES.map { |f| "#{f}.bak" }.join(', ')
+    "Missing compose backup in #{scenario_path} (expected one of #{candidates})"
   end
 
   def dump_expected_fixtures(config, scenario_path)
@@ -75,7 +87,7 @@ namespace :fixtures do
     with_scenario_sandbox do |scenarios_dir|
       scenario_path = scenarios_dir.join(name)
       abort "Scenario '#{name}' not found at #{scenario_path}" unless scenario_path.directory?
-      abort "Missing #{scenario_path}/compose.yaml.bak" unless scenario_path.join('compose.yaml.bak').file?
+      abort missing_compose_backup_message(scenario_path) unless compose_backup_path(scenario_path)
       abort "Missing #{scenario_path}/.env.bak" unless scenario_path.join('.env.bak').file?
 
       regenerate_scenario(scenario_path)

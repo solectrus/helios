@@ -5,12 +5,17 @@ Verifies that the importer still recognises outdated naming and structure.
 
 ## Source
 
-`compose.yaml.bak` and `.env.bak` are byte-identical copies of the upstream
-[Raspberry Pi guide](https://github.com/solectrus/hosting/tree/main/guide/raspberry-pi)
-(the upstream `docker-compose.yml` is renamed to `compose.yaml.bak` here).
+`docker-compose.yml.bak` and `.env.bak` are byte-identical copies of the
+upstream [Raspberry Pi guide](https://github.com/solectrus/hosting/tree/main/guide/raspberry-pi).
+The backup keeps the historical `docker-compose.yml` filename so this
+scenario also verifies that HELIOS accepts legacy compose filenames at
+import time (alongside `compose.yaml` and `docker-compose.yaml`).
 
 ## Highlights
 
+- **Legacy filename** `docker-compose.yml` — HELIOS locates the compose
+  file via `Compose::FILENAMES`, so the import works regardless of which
+  of the three historical names the user has on disk.
 - **Obsolete Compose syntax** — top-level `version: '3.7'` and explicit
   `links:` between services. Both are silently dropped on import; modern
   Compose ignores `version` and uses default networking.
