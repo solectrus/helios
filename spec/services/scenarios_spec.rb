@@ -1,8 +1,12 @@
 # Data-driven round-trip tests: for each fixture scenario under
 # spec/fixtures/import_scenarios/<name>/ that has a config.yaml, verify that
 #
-#   compose.yaml.bak + .env.bak  →  Import  →  config.yaml
+#   <compose>.bak + .env.bak     →  Import  →  config.yaml
 #   config.yaml                  →  Export  →  compose.yaml + .env
+#
+# The source compose file may be any of compose.yaml, docker-compose.yaml, or
+# docker-compose.yml (with the .bak suffix), matching what HELIOS accepts at
+# import time.
 #
 # Regenerate the expected fixtures with `RAILS_ENV=test bin/rake fixtures:regenerate`.
 RSpec.describe 'Scenario round-trip' do
@@ -12,16 +16,19 @@ RSpec.describe 'Scenario round-trip' do
           .each do |name|
     context "with scenario '#{name}'" do
       let(:scenario_path) { Rails.root.join('spec/fixtures/import_scenarios', name) }
+      let(:compose_backup_path) do
+        Compose::FILENAMES.lazy.map { |f| scenario_path.join("#{f}.bak") }.find(&:file?)
+      end
       let(:stack_reader) do
         Import::StackReader.new(
-          compose_path: scenario_path.join('compose.yaml.bak'),
+          compose_path: compose_backup_path,
           env_path: scenario_path.join('.env.bak'),
         )
       end
 
       before { with_config_yaml }
 
-      it 'imports compose.yaml.bak + .env.bak into the expected config' do
+      it 'imports the compose backup + .env.bak into the expected config' do
         Import::ConfigurationImporter.new(stack_reader).import!
 
         imported = YAML.safe_load_file(Configuration.path, permitted_classes: [Date])
