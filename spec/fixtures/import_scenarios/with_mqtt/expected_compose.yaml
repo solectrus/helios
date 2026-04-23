@@ -237,6 +237,15 @@ services:
     - MAPPING_4_FIELD
     - MAPPING_4_TYPE
     - MAPPING_4_JSON_KEY
+    - MAPPING_5_TOPIC
+    - MAPPING_5_MEASUREMENT
+    - MAPPING_5_FIELD
+    - MAPPING_5_TYPE
+    - MAPPING_6_TOPIC
+    - MAPPING_6_MEASUREMENT
+    - MAPPING_6_FIELD
+    - MAPPING_6_TYPE
+    - MAPPING_6_JSON_KEY
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
