@@ -8,6 +8,9 @@ gem 'sqlite3'
 # Docker API access
 gem 'docker-api'
 
+# Zip archive generation (support bundle downloads)
+gem 'rubyzip', require: 'zip'
+
 # Frontend
 gem 'accept_language'
 gem 'rack-brotli'

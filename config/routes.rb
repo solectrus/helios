@@ -16,6 +16,7 @@ Rails.application.routes.draw do
   end
   resource :datasources, only: :show
   resource :advanced, only: :show, controller: 'advanced'
+  resource :support, only: %i[new create]
 
   scope 'configuration', as: :configuration do
     resources :settings, only: %i[new create], module: :configurations

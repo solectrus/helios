@@ -23,6 +23,21 @@ de:
     show:
       title: 'Erweitert'
 
+  supports:
+    new:
+      title: 'Gibt es Probleme?'
+      subtitle: 'In zwei Schritten zur Lösung.'
+      step_download:
+        title: 'Support-Paket herunterladen'
+        description: 'Enthält Konfiguration, System-Infos und Container-Logs. Passwörter, Tokens und Koordinaten werden automatisch anonymisiert.'
+      step_forum:
+        title: 'Frage im Forum stellen'
+        description: 'Hänge das ZIP-Archiv deinem Beitrag an – die Community hilft dir weiter.'
+        account_hint: 'Dafür benötigst du einen (kostenlosen) GitHub-Account.'
+      download: 'ZIP herunterladen'
+      downloading: 'Wird erstellt…'
+      downloaded: 'Heruntergeladen'
+
   configurations:
     show:
       configured: 'Konfiguriert'
