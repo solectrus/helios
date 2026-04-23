@@ -65,7 +65,13 @@ module Import
     end
 
     def unmanaged_detector
-      @unmanaged_detector ||= UnmanagedDetector.new(@reader)
+      @unmanaged_detector ||= UnmanagedDetector.new(@reader, known_measurements:)
+    end
+
+    def known_measurements
+      from_sensors = sensors_data.values.filter_map { |v| v.to_s.split(':', 2).first.presence }
+      from_mqtt = mqtt_extractor.enabled? ? mqtt_extractor.mappings.filter_map { |m| m[:measurement].presence } : []
+      (from_sensors + from_mqtt).uniq
     end
 
     def sensor_persister
