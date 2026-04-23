@@ -2,7 +2,11 @@
 
 Web-based bootstrap helper and management interface for [SOLECTRUS](https://solectrus.de). HELIOS eliminates the need to edit `compose.yaml` / `.env` by hand or run `docker compose` commands — install SOLECTRUS once, then configure and operate the full stack through a browser.
 
-![HELIOS sensor configuration](screenshot.jpg)
+## Screenshots
+
+|                                  Configuration                                  |                               Services                                |
+| :-----------------------------------------------------------------------------: | :-------------------------------------------------------------------: |
+| <img src="screenshot-configuration.jpg" alt="HELIOS configuration" width="450"> | <img src="screenshot-services.jpg" alt="HELIOS services" width="450"> |
 
 ## Features
 
