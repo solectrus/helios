@@ -10,7 +10,8 @@ module Export
       end
 
       def self.enabled?(configuration)
-        configuration.forecast_required? &&
+        !configuration.dashboard_only? &&
+          configuration.forecast_required? &&
           configuration.forecast.forecast.present? &&
           configuration.forecast.forecast != 'none'
       end
@@ -19,9 +20,15 @@ module Export
         {
           image: 'ghcr.io/solectrus/forecast-collector:latest',
           environment: forecast_environment,
-          depends_on: healthy_depends_on(%i[influxdb]),
+          depends_on: forecast_depends_on,
           restart: 'unless-stopped',
         }
+      end
+
+      # Targets InfluxDB directly, bypassing Ingest — forecast data must not be
+      # rewritten by the house_power recalculation.
+      def forecast_depends_on
+        configuration.collectors_only? ? nil : healthy_depends_on(%i[influxdb])
       end
 
       private
@@ -31,11 +38,16 @@ module Export
       end
 
       def passthrough_vars
-        %w[TZ INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET]
+        vars = %w[TZ INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET]
+        vars += ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS if configuration.collectors_only?
+        vars
       end
 
       def explicit_vars
-        ['INFLUX_HOST=influxdb', 'INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}']
+        measurement = 'INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}'
+        return [measurement] if configuration.collectors_only?
+
+        ['INFLUX_HOST=influxdb', measurement]
       end
 
       def forecast_vars

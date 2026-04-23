@@ -1,0 +1,246 @@
+---
+system:
+  admin_password: secret_admin_password
+  mode: collectors_only
+  secret_key_base: very_secret_key_base
+  timezone: Europe/Berlin
+influxdb:
+  bucket: solectrus
+  host: ingest.example.com
+  org: solectrus
+  port: '443'
+  schema: https
+  token: my-external-influx-token
+watchtower:
+  image: nickfedor/watchtower:latest
+senec:
+  adapter: local
+  host: senec.fritz.box
+  image: ghcr.io/solectrus/senec-collector:develop
+  interval: '5'
+  language: de
+  schema: https
+  version: v3
+mqtt:
+  image: ghcr.io/solectrus/mqtt-collector:develop
+  mappings:
+  - field: r1t_leaving_temp
+    json_key: Leaving water temp. before BUH (R1T)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: r2t_leaving_temp
+    json_key: Leaving water temp. after BUH (R2T)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: r3t_refrig_temp
+    json_key: Refrig. Temp. liquid side (R3T)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: r4t_inlet_temp
+    json_key: Inlet water temp.(R4T)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: r5t_tank_temp
+    json_key: DHW tank temp. (R5T)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: r6t_outdoor_temp
+    json_key: R1T-Outdoor air temp.
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: r7t_leaving_temp_after_tank
+    json_key: "[HPSU] Mixed leaving water temperature after the tank R7T (DLWA2)"
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: water_flow
+    json_key: Flow sensor (l/min)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: heat
+    json_formula: IF({Operation Mode} = 'Heating' AND {Freeze Protection} = 'OFF'
+      AND {Leaving water temp. after BUH (R2T)} > {Inlet water temp.(R4T)}, {Flow
+      sensor (l/min)} * 60.0 * 1.163 * ({Leaving water temp. after BUH (R2T)} - {Inlet
+      water temp.(R4T)}), 0)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: water_pressure
+    json_path: "$$.Water pressure"
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: operation_mode
+    json_key: Operation Mode
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: string
+  - field: freeze_protection
+    json_key: Freeze Protection
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: boolean
+  - field: inverter_frequency
+    json_key: INV frequency (rps)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: valve_tank
+    json_key: "[HPSU] Tank valve position (0:Bypass 100:Tank)"
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: integer
+  - field: valve_emitter
+    json_key: "[HPSU] Bypass valve position (0:Bypass 100:Emitter)"
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: integer
+  - field: setpoint_leaving_water
+    json_key: LW setpoint (main)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: setpoint_tank_water
+    json_key: DHW setpoint
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: startup_control
+    json_key: Startup Control
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: boolean
+  - field: defrost_operation
+    json_key: Defrost Operation
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: boolean
+  - field: water_pump_signal
+    json_key: Water pump signal (0:max-100:stop)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: integer
+  - field: current_state
+    json_formula: IF({Freeze Protection} == 'ON', 'Frostschutz', IF({Defrost Operation}
+      == 'ON', 'Abtauen', IF({[HPSU] Tank valve position (0:Bypass 100:Tank)} > 50,
+      'Warmwasser', IF({[HPSU] Bypass valve position (0:Bypass 100:Emitter)} > 50
+      AND {INV frequency (rps)} > 0, 'Heizen', 'Warten'))))
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: string
+  - field: power
+    measurement: IT
+    topic: data-solectrus/0/consumer/it
+    type: integer
+  - field: thermostat
+    json_key: Thermostat ON/OFF
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: boolean
+  - field: r4t_heat_exchanger_temp
+    json_key: O/U Heat Exch. Temp.(R4T)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: r6t_liquid_pipe_temp
+    json_key: Liquid pipe temp.(R6T)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: valve_3way
+    json_key: 3way valve(On:DHW_Off:Space)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: boolean
+  - field: buh_step1
+    json_key: BUH Step1
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: boolean
+  - field: buh_step2
+    json_key: BUH Step2
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: boolean
+  - field: water_pump_operation
+    json_key: Water pump operation
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: boolean
+  - field: space_heating
+    json_key: Space heating Operation ON/OFF
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: boolean
+  - field: system_off
+    json_key: System OFF (ON:System off)
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: boolean
+  - field: bypass_valve_output
+    json_key: Bypass Valve Output
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: boolean
+  - field: target_delta_t
+    json_key: Target delta T heating
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: float
+  - field: wifi_rssi
+    json_key: WifiRSSI
+    measurement: ALTHERMA
+    topic: espaltherma/ATTR
+    type: integer
+  mqtt_host: iobroker.fritz.box
+  mqtt_password: my-mqtt-password
+  mqtt_port: '1883'
+  mqtt_ssl: 'false'
+  mqtt_username: admin
+shelly:
+  connection: local
+  devices:
+  - host: shelly-heatpump.fritz.box
+    measurement: Consumer
+    name: heatpump
+  - host: shelly-dishwasher.fritz.box
+    measurement: Dishwasher
+    name: dishwasher
+  - host: shelly-washer.fritz.box
+    measurement: Washer
+    name: washer
+  - host: shelly-fridge.fritz.box
+    measurement: Fridge
+    name: fridge
+  - host: shelly-imac.fritz.box
+    measurement: iMac
+    name: imac
+  - host: shelly-macstudio.fritz.box
+    measurement: Studio
+    name: studio
+  - host: shelly-studiodisplay.fritz.box
+    measurement: Display
+    name: display
+  - host: shelly-kabelfritz.fritz.box
+    measurement: KabelFritz
+    name: kabelfritz
+  - host: shelly-synology.fritz.box
+    measurement: Synology
+    name: synology
+  - host: shelly-tv.fritz.box
+    measurement: TV
+    name: tv
+  - host: shelly-mini-pc-1.fritz.box
+    measurement: Mini-PC-1
+    name: mini_pc_1
+  image: ghcr.io/solectrus/shelly-collector:develop
+  interval: '5'
+  mode: essential
+  password: secret

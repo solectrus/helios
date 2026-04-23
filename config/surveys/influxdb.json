@@ -1,0 +1,111 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Externe InfluxDB",
+    "default": "External InfluxDB"
+  },
+  "description": {
+    "de": "Zugangsdaten für die InfluxDB, in die die Kollektoren schreiben sollen.",
+    "default": "Credentials for the InfluxDB the collectors should write to."
+  },
+  "pages": [
+    {
+      "name": "p_connection",
+      "title": {
+        "de": "Verbindung",
+        "default": "Connection"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "host",
+          "title": {
+            "de": "Hostname",
+            "default": "Hostname"
+          },
+          "isRequired": true,
+          "placeholder": "influxdb.example.com"
+        },
+        {
+          "type": "text",
+          "name": "port",
+          "title": {
+            "de": "Port",
+            "default": "Port"
+          },
+          "isRequired": true,
+          "defaultValue": "443",
+          "inputType": "number",
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "type": "dropdown",
+          "name": "schema",
+          "title": {
+            "de": "Protokoll",
+            "default": "Protocol"
+          },
+          "isRequired": true,
+          "defaultValue": "https",
+          "choices": [
+            { "value": "https", "text": "https" },
+            { "value": "http", "text": "http" }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_credentials",
+      "title": {
+        "de": "Zugangsdaten",
+        "default": "Credentials"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "org",
+          "title": {
+            "de": "Organisation",
+            "default": "Organization"
+          },
+          "isRequired": true,
+          "defaultValue": "solectrus"
+        },
+        {
+          "type": "text",
+          "name": "bucket",
+          "title": {
+            "de": "Bucket",
+            "default": "Bucket"
+          },
+          "isRequired": true,
+          "defaultValue": "solectrus"
+        },
+        {
+          "type": "text",
+          "name": "token",
+          "title": {
+            "de": "API-Token (Schreibrechte)",
+            "default": "API token (write access)"
+          },
+          "isRequired": true
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  },
+  "showCompletePage": false
+}

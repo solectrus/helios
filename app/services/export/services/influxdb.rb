@@ -9,6 +9,10 @@ module Export
         'InfluxDB — Time-series database for sensor measurements'
       end
 
+      def self.enabled?(configuration)
+        !configuration.collectors_only?
+      end
+
       def data_directories
         managed_data_directory
       end

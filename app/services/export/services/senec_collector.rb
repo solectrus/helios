@@ -10,14 +10,16 @@ module Export
       end
 
       def self.enabled?(configuration)
-        configuration.senec_required?
+        return false if configuration.dashboard_only?
+
+        configuration.senec_required? || (configuration.collectors_only? && configuration.senec.present?)
       end
 
       def to_h
         {
-          image: 'ghcr.io/solectrus/senec-collector:latest',
+          image: configuration.senec.image.presence || 'ghcr.io/solectrus/senec-collector:latest',
           environment: senec_environment,
-          depends_on: healthy_depends_on([collector_influx_target]),
+          depends_on: collector_depends_on,
           restart: 'unless-stopped',
         }
       end
@@ -48,6 +50,7 @@ module Export
         vars = %w[SENEC_USERNAME SENEC_PASSWORD]
         vars << 'SENEC_TOTP_URI' if senec_config.totp_uri.present?
         vars << 'SENEC_SYSTEM_ID' if senec_config.system_id.present?
+        vars << 'SENEC_REQUEST_MODE' if senec_config.request_mode.present?
         vars
       end
 

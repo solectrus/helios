@@ -1,6 +1,7 @@
 class ConfigSchema
   # Fields configurable via the setup wizard or system survey
   SYSTEM_FIELDS = %w[
+    mode
     timezone
     installation_date
     app_host
@@ -10,6 +11,15 @@ class ConfigSchema
     ui_theme
     lockup_codeword
   ].freeze
+
+  # Deployment mode: which set of services HELIOS generates.
+  #   full             — dashboard, databases, collectors, and supporting services (default)
+  #   collectors_only  — only collectors, pushing to an external InfluxDB
+  #   dashboard_only   — dashboard, databases, and power-splitter; collectors run remotely
+  MODE_FULL = 'full'.freeze
+  MODE_COLLECTORS_ONLY = 'collectors_only'.freeze
+  MODE_DASHBOARD_ONLY = 'dashboard_only'.freeze
+  SYSTEM_MODES = [MODE_FULL, MODE_COLLECTORS_ONLY, MODE_DASHBOARD_ONLY].freeze
 
   SYSTEM_DEFAULTS = {
     'admin_password' => -> { SecureRandom.alphanumeric(32) },
@@ -51,7 +61,13 @@ class ConfigSchema
     'token' => -> { SecureRandom.hex(32) },
   }.freeze
 
-  INFLUXDB_ALL = (STORAGE_FIELDS + INFLUXDB_DEFAULTS.keys).uniq.freeze
+  # Fields for targeting an external InfluxDB (used in collectors_only mode).
+  INFLUXDB_EXTERNAL_FIELDS = %w[host port schema].freeze
+
+  # Matching .env keys for the external-InfluxDB connection fields.
+  INFLUXDB_EXTERNAL_ENV_KEYS = INFLUXDB_EXTERNAL_FIELDS.map { |f| "INFLUX_#{f.upcase}" }.freeze
+
+  INFLUXDB_ALL = (STORAGE_FIELDS + INFLUXDB_EXTERNAL_FIELDS + INFLUXDB_DEFAULTS.keys).uniq.freeze
 
   # --- Redis ---
 
@@ -77,7 +93,7 @@ class ConfigSchema
 
   INGEST_FIELDS = %w[retention_hours].freeze
 
-  INGEST_ALL = (INGEST_FIELDS + INGEST_DEFAULTS.keys).uniq.freeze
+  INGEST_ALL = (STORAGE_FIELDS + INGEST_FIELDS + INGEST_DEFAULTS.keys).uniq.freeze
 
   # --- Backup image defaults ---
 
@@ -102,8 +118,9 @@ class ConfigSchema
 
   SENEC_FIELDS = %w[
     host schema interval language
-    username password totp_uri system_id ignore
+    username password totp_uri system_id ignore request_mode
     adapter version measurement
+    image
   ].freeze
 
   MQTT_FIELDS = %w[
@@ -112,6 +129,8 @@ class ConfigSchema
     mqtt_ssl
     mqtt_username
     mqtt_password
+    image
+    mappings
   ].freeze
 
   SHELLY_FIELDS = %w[
@@ -119,6 +138,10 @@ class ConfigSchema
     interval
     cloud_server
     auth_key
+    image
+    mode
+    password
+    devices
   ].freeze
 
   # --- Per-sensor fields (vary by source) ---
@@ -175,11 +198,11 @@ class ConfigSchema
     measurement
   ].freeze
 
-  REVERSE_PROXY_FIELDS = %w[
+  REVERSE_PROXY_FIELDS = (STORAGE_FIELDS + %w[
     app_domain
     letsencrypt_email
     trusted_proxy_ranges
-  ].freeze
+  ]).uniq.freeze
 
   BACKUP_FIELDS = %w[
     aws_access_key_id

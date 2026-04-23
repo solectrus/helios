@@ -1,7 +1,6 @@
 module Export
   module Services
     class Ingest < Base
-      DATA_DIR = 'ingest'.freeze
       PORT = 4567
 
       # See https://docs.solectrus.de/referenz/ingest/konfiguration/
@@ -27,7 +26,7 @@ module Export
       end
 
       def data_directories
-        [DATA_DIR]
+        managed_data_directory
       end
 
       def to_h
@@ -35,7 +34,7 @@ module Export
           image: configuration.ingest.image,
           ports: ["#{PORT}:#{PORT}"],
           environment: ingest_environment,
-          volumes: ["./#{DATA_DIR}:/app/data"],
+          volumes: [bind_mount('/app/data')],
           depends_on: healthy_depends_on(%i[influxdb]),
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD-SHELL', "wget -qO- http://127.0.0.1:#{PORT}/ping || exit 1"),

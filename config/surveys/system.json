@@ -10,6 +10,52 @@
   },
   "pages": [
     {
+      "name": "p_mode",
+      "title": {
+        "de": "Betriebsmodus",
+        "default": "Deployment mode"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "mode",
+          "title": {
+            "de": "Welche Dienste soll HELIOS auf diesem Host betreiben?",
+            "default": "Which services should HELIOS run on this host?"
+          },
+          "description": {
+            "de": "Im Regelfall läuft alles auf einem Host — wähle dann die erste Option. Die beiden anderen Optionen sind Spezialfälle für verteilte Installationen über mehrere Hosts.",
+            "default": "In most cases everything runs on a single host — pick the first option. The other two options are special cases for distributed setups across multiple hosts."
+          },
+          "isRequired": true,
+          "defaultValue": "full",
+          "choices": [
+            {
+              "value": "full",
+              "text": {
+                "de": "Dashboard, Datenbanken, Zusatzdienste und Kollektoren (empfohlen)\n\nVollständige Installation auf einem Host — Messwerte werden lokal erfasst, gespeichert und angezeigt.",
+                "default": "Dashboard, databases, supporting services and collectors (recommended)\n\nFull single-host installation — measurements are collected, stored, and displayed locally."
+              }
+            },
+            {
+              "value": "collectors_only",
+              "text": {
+                "de": "Nur Kollektoren — Spezialfall\n\nVerteilte Installation: Kollektoren laufen hier und pushen ihre Messwerte an eine externe InfluxDB auf einem anderen Host.",
+                "default": "Collectors only — special case\n\nDistributed setup: collectors run here and push measurements to an external InfluxDB on another host."
+              }
+            },
+            {
+              "value": "dashboard_only",
+              "text": {
+                "de": "Nur Dashboard, Datenbanken und Zusatzdienste — Spezialfall\n\nVerteilte Installation: Messwerte kommen von Kollektoren auf einem anderen Host und werden hier gespeichert und angezeigt.",
+                "default": "Dashboard, databases and supporting services only — special case\n\nDistributed setup: measurements arrive from collectors on another host and are stored and displayed here."
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "p_general",
       "title": {
         "de": "Allgemein",
@@ -27,6 +73,7 @@
             "de": "Wird für die Zeitraumauswahl benötigt",
             "default": "Required for time range selection"
           },
+          "visibleIf": "{mode} <> 'collectors_only'",
           "isRequired": true,
           "inputType": "date"
         },
@@ -61,6 +108,7 @@
         "de": "Netzwerk",
         "default": "Network"
       },
+      "visibleIf": "{mode} <> 'collectors_only'",
       "elements": [
         {
           "type": "text",
@@ -103,7 +151,8 @@
           "description": {
             "de": "Sperrt die gesamte Weboberfläche mit einem Codewort",
             "default": "Locks the entire web interface with a codeword"
-          }
+          },
+          "visibleIf": "{mode} <> 'collectors_only'"
         }
       ]
     },
@@ -113,6 +162,7 @@
         "de": "Erweitert",
         "default": "Advanced"
       },
+      "visibleIf": "{mode} <> 'collectors_only'",
       "elements": [
         {
           "type": "text",

@@ -47,6 +47,7 @@ senec:
   adapter: cloud
   interval: '60'
   password: example-password
+  request_mode: full
   username: mail@example.com
   version: v4
 shelly:
@@ -113,7 +114,3 @@ sensors:
     source: senec
   wallbox_power:
     source: senec
-_unmanaged:
-  env_vars:
-    SENEC_REQUEST_MODE: full
-    TRAEFIK_VOLUME_PATH: "./traefik"

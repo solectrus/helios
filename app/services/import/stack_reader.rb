@@ -34,6 +34,8 @@ module Import
 
     ALL_IMAGE_PREFIXES = SERVICE_IMAGE_PREFIXES.values.flatten.freeze
 
+    COLLECTOR_SERVICES = %w[senec-collector mqtt-collector shelly-collector forecast-collector].freeze
+
     def initialize(compose_path:, env_path:)
       @compose_path = compose_path
       @env_path = env_path

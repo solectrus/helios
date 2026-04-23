@@ -10,7 +10,7 @@ module Export
       end
 
       def self.enabled?(configuration)
-        configuration.configured?(:backup)
+        !configuration.collectors_only? && configuration.configured?(:backup)
       end
 
       def to_h

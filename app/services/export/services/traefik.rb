@@ -10,7 +10,7 @@ module Export
       end
 
       def self.enabled?(configuration)
-        configuration.reverse_proxy.app_domain.present?
+        !configuration.collectors_only? && configuration.reverse_proxy.app_domain.present?
       end
 
       def self.letsencrypt_email(configuration)
@@ -19,7 +19,7 @@ module Export
       end
 
       def data_directories
-        ['traefik']
+        managed_data_directory
       end
 
       def to_h
@@ -29,13 +29,19 @@ module Export
           ports: %w[80:80 443:443],
           volumes: [
             '/var/run/docker.sock:/var/run/docker.sock:ro',
-            './traefik:/letsencrypt',
+            bind_mount('/letsencrypt'),
           ],
           restart: 'unless-stopped',
         }
       end
 
       private
+
+      # Traefik lives under the reverse_proxy config section — override the
+      # default `configuration.<service_name>` lookup used by bind_mount.
+      def volume_section
+        configuration.reverse_proxy
+      end
 
       def traefik_command
         [

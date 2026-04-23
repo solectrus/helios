@@ -247,13 +247,13 @@ services:
     image: ghcr.io/solectrus/tibber-collector:latest
     environment:
     - TZ
-    - TIBBER_TOKEN
-    - TIBBER_INTERVAL
-    - INFLUX_HOST=influxdb
-    - INFLUX_TOKEN=${INFLUX_TOKEN}
-    - INFLUX_ORG
     - INFLUX_BUCKET
+    - INFLUX_HOST=influxdb
     - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_TIBBER}
+    - INFLUX_ORG
+    - INFLUX_TOKEN=${INFLUX_TOKEN}
+    - TIBBER_INTERVAL
+    - TIBBER_TOKEN
     depends_on:
       influxdb:
         condition: service_healthy

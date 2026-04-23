@@ -25,10 +25,15 @@ module Import
         data.compact.presence
       end
 
+      def image
+        Compose.normalize_image(@reader.service('senec-collector')&.dig('image'))
+      end
+
       def adapter_section_data(senec_env)
         if senec_env['SENEC_ADAPTER'] == 'cloud'
           { 'username' => senec_env['SENEC_USERNAME'], 'password' => senec_env['SENEC_PASSWORD'],
-            'totp_uri' => senec_env['SENEC_TOTP_URI'], 'system_id' => senec_env['SENEC_SYSTEM_ID'] }
+            'totp_uri' => senec_env['SENEC_TOTP_URI'], 'system_id' => senec_env['SENEC_SYSTEM_ID'],
+            'request_mode' => senec_env['SENEC_REQUEST_MODE'] }
         else
           { 'host' => senec_env['SENEC_HOST'], 'schema' => senec_env['SENEC_SCHEMA'],
             'language' => senec_env['SENEC_LANGUAGE'] }
