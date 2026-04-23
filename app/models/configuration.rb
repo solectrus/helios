@@ -246,7 +246,7 @@ class Configuration
   end
 
   SENSOR_FIELDS_BY_SOURCE = {
-    'senec' => %w[source measurement field],
+    'senec' => %w[source measurement field is_balcony],
     'forecast' => %w[source measurement field],
     'external' => %w[source measurement field name exclude_from_house_power is_balcony],
     'shelly' => %w[
