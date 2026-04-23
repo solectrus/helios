@@ -48,6 +48,7 @@ senec:
   interval: '60'
   password: example-password
   username: mail@example.com
+  version: v4
 shelly:
   auth_key: example-shelly-auth-key
   cloud_server: https://shelly-123-eu.shelly.cloud

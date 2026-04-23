@@ -103,7 +103,7 @@ class ConfigSchema
   SENEC_FIELDS = %w[
     host schema interval language
     username password totp_uri system_id ignore
-    adapter measurement
+    adapter version measurement
   ].freeze
 
   MQTT_FIELDS = %w[
