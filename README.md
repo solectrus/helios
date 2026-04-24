@@ -81,15 +81,23 @@ HELIOS is now available at `http://<your-host>:3999` and will guide you through 
 
 For hosts that already run SOLECTRUS.
 
-1. **Set the project name.** HELIOS requires the Compose project to be named `solectrus`. Add this line at the top of your `compose.yaml` if it is not already there:
+1. **Stop the running stack first**, so the next step can safely change the Compose project identity:
+
+   ```bash
+   docker compose down
+   ```
+
+2. **Edit `compose.yaml`:**
+
+   a. **Set the project name.** HELIOS requires the Compose project to be named `solectrus`. Add this line at the top if it is not already there:
 
    ```yaml
    name: solectrus
    ```
 
-   Without it, HELIOS refuses to start and shows a clear error message.
+   Without it, HELIOS refuses to start and shows an error message.
 
-2. **Add the HELIOS service** to `compose.yaml`:
+   b. **Add the HELIOS service:**
 
    ```yaml
    helios:
@@ -107,10 +115,10 @@ For hosts that already run SOLECTRUS.
 
    No changes to `.env` are needed — `ADMIN_PASSWORD` and `SECRET_KEY_BASE` are reused from your existing SOLECTRUS setup.
 
-3. **Recreate the stack.** Because `name: solectrus` changes the Compose project identity, recreate all containers so they are labeled correctly:
+3. **Start the stack.** All containers are now created under the `solectrus` project and labeled correctly:
 
    ```bash
-   docker compose down
+   docker compose pull
    docker compose up -d
    ```
 
@@ -120,13 +128,9 @@ HELIOS is now available at `http://<your-host>:3999`.
 
 On the first visit to `http://<your-host>:3999`:
 
-1. **Set the admin password.** It is stored hashed in `helios/config.yaml` — HELIOS never writes it back to `.env` in plain text.
-2. **Scenario detection.** HELIOS reads the current `compose.yaml` and picks one of three modes:
-   - _Fresh install, standalone_ — HELIOS will generate collector services to read data directly from hardware (SENEC, Shelly, MQTT).
-   - _Fresh install, smart home_ — data is pushed into InfluxDB by an external system (ioBroker, Home Assistant). HELIOS only provisions infrastructure services.
-   - _Existing installation_ — HELIOS auto-imports the current configuration and pre-fills sensor mappings from `.env`.
-3. **Configuration wizard.** Walk through the surveys (devices, data sources, forecasts, reverse proxy, backup). HELIOS regenerates `compose.yaml` and `.env` after every change.
-4. **Apply changes.** Services are not restarted automatically — the dashboard shows which services are affected and lets you restart them explicitly.
+1. **Existing installations only.** HELIOS shows a consent screen and auto-imports `compose.yaml` and `.env` into its internal configuration, pre-filling sensor mappings from existing env variables.
+2. **Configuration wizard.** Walk through the surveys (system, devices, data sources, forecasts, reverse proxy, backup). HELIOS regenerates `compose.yaml` and `.env` after every change. The admin password is a random string generated on first start and stored in `helios/config.yaml` (mirrored to `.env`, since Dashboard and Ingest share it).
+3. **Apply changes.** Services are not restarted automatically — the dashboard shows which services are affected and lets you restart them explicitly.
 
 ## Documentation
 
