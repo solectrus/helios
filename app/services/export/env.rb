@@ -367,15 +367,28 @@ module Export
             'Shelly device hostnames (comma-separated)')
     end
 
-    # In collectors_only mode Shelly devices are rendered as literal CSV in
-    # compose.yaml (SHELLY_HOST/INFLUX_MEASUREMENT), so the .env only needs
-    # the shared interval — per-device env vars aren't required.
     def collectors_only_shelly_section(env)
       shelly = configuration.shelly
-      return if Array(shelly&.devices).empty?
+      devices = Array(shelly&.devices)
+      return if devices.empty?
 
       env.add_section('Shelly collector')
       entry(env, 'SHELLY_INTERVAL', shelly.interval || '5', 'Polling interval in seconds')
+      collectors_only_shelly_device_entries(env, devices)
+      collectors_only_shelly_extra_entries(env, shelly)
+    end
+
+    def collectors_only_shelly_device_entries(env, devices)
+      hosts = devices.filter_map { |d| d['host'].presence }.join(',')
+      measurements = devices.filter_map { |d| d['measurement'].presence }.join(',')
+      optional_entry(env, 'SHELLY_HOST', hosts, 'Shelly device hostnames (comma-separated)')
+      optional_entry(env, 'INFLUX_MEASUREMENT', measurements,
+                     'InfluxDB measurement names (comma-separated)')
+    end
+
+    def collectors_only_shelly_extra_entries(env, shelly)
+      optional_entry(env, 'INFLUX_MODE', shelly.mode, 'InfluxDB write mode (essential or full)')
+      optional_entry(env, 'SHELLY_PASSWORD', shelly.password, 'Shelly device password')
     end
 
     def shelly_optional_entries(env, sensors, shelly)

@@ -53,10 +53,10 @@ services:
     - INFLUX_ORG
     - INFLUX_BUCKET
     - SHELLY_INTERVAL
-    - SHELLY_HOST=shelly-heatpump.fritz.box,shelly-dishwasher.fritz.box,shelly-washer.fritz.box,shelly-fridge.fritz.box,shelly-imac.fritz.box,shelly-macstudio.fritz.box,shelly-studiodisplay.fritz.box,shelly-kabelfritz.fritz.box,shelly-synology.fritz.box,shelly-tv.fritz.box,shelly-mini-pc-1.fritz.box
-    - INFLUX_MEASUREMENT=Consumer,Dishwasher,Washer,Fridge,iMac,Studio,Display,KabelFritz,Synology,TV,Mini-PC-1
-    - INFLUX_MODE=essential
-    - SHELLY_PASSWORD=secret
+    - SHELLY_HOST
+    - INFLUX_MEASUREMENT
+    - INFLUX_MODE
+    - SHELLY_PASSWORD
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     restart: unless-stopped

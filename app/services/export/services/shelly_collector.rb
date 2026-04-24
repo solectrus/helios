@@ -50,28 +50,26 @@ module Export
         passthrough_vars + explicit_vars + optional_vars
       end
 
-      # In collectors_only mode the Shelly collector config comes verbatim
-      # from shelly.devices / shelly.password / shelly.mode — no sensor-driven
-      # CSV rebuilding, just the values the user imported.
+      # In collectors_only mode the compose only lists env names; the values
+      # (SHELLY_HOST / INFLUX_MEASUREMENT CSVs, optional INFLUX_MODE and
+      # SHELLY_PASSWORD) are written to the .env by Export::Env.
       def collectors_only_environment
-        vars = ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS + %w[INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SHELLY_INTERVAL]
-        vars + collectors_only_device_vars + collectors_only_extra_vars
+        base = ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS + %w[INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SHELLY_INTERVAL]
+        base + collectors_only_device_vars + collectors_only_extra_vars
       end
 
       def collectors_only_device_vars
-        devices = Array(shelly_defaults.devices)
-        hosts = devices.filter_map { |d| d['host'].presence }.join(',')
-        measurements = devices.filter_map { |d| d['measurement'].presence }.join(',')
+        devices = Array(shelly_defaults&.devices)
         vars = []
-        vars << "SHELLY_HOST=#{hosts}" if hosts.present?
-        vars << "INFLUX_MEASUREMENT=#{measurements}" if measurements.present?
+        vars << 'SHELLY_HOST' if devices.any? { |d| d['host'].present? }
+        vars << 'INFLUX_MEASUREMENT' if devices.any? { |d| d['measurement'].present? }
         vars
       end
 
       def collectors_only_extra_vars
         vars = []
-        vars << "INFLUX_MODE=#{shelly_defaults.mode}" if shelly_defaults.mode.present?
-        vars << "SHELLY_PASSWORD=#{shelly_defaults.password}" if shelly_defaults.password.present?
+        vars << 'INFLUX_MODE' if shelly_defaults&.mode.present?
+        vars << 'SHELLY_PASSWORD' if shelly_defaults&.password.present?
         vars
       end
 
