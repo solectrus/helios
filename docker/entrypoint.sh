@@ -9,7 +9,7 @@ echo "Copyright (C) 2020-2026 Georg Ledermann. All rights reserved."
 
 # If running the rails server then wait for services
 # and create or migrate existing database
-if [ "${1}" == "./bin/rails" ] && [ "${2}" == "server" ]; then
+if [ "${1}" = "./bin/rails" ] && [ "${2}" = "server" ]; then
   # Create or migrate database
   echo ""
   echo "## Preparing database..."

@@ -1,1 +1,2 @@
 brew 'caddy'
+brew 'shellcheck'

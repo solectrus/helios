@@ -9,6 +9,7 @@ CI.run do
   step 'Lint: ERB', 'bin/herb lint'
   step 'Style: JavaScript', 'bin/yarn lint'
   step 'Style: TypeScript', 'bin/yarn tsc'
+  step 'Style: Shell', "shellcheck $(git ls-files '*.sh')"
 
   step 'Security: Gem audit', 'bin/bundler-audit'
   step 'Security: Brakeman code analysis',
