@@ -1,5 +1,14 @@
 # HELIOS
 
+> [!CAUTION]
+> **DO NOT USE — WORK IN PROGRESS**
+>
+> This project is **not ready for public use**. It is under active development and is **not intended for installation or testing** — not even for evaluation, demos, or experiments.
+>
+> **Do not install, run, deploy, or promote HELIOS** unless you have been **personally invited and guided by the maintainer ([@ledermann](https://github.com/ledermann))**. There is no support, no documentation for end users, no stability guarantee, and breaking changes happen without notice.
+>
+> If you stumbled upon this repository: please wait for an official announcement before trying anything.
+
 Web-based bootstrap helper and management interface for [SOLECTRUS](https://solectrus.de). HELIOS eliminates the need to edit `compose.yaml` / `.env` by hand or run `docker compose` commands — install SOLECTRUS once, then configure and operate the full stack through a browser.
 
 ## Screenshots
