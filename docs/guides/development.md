@@ -10,9 +10,17 @@
 
 ## Setup
 
-```bash
-bin/setup
-```
+1. Install native dependencies from the [Brewfile](../../Brewfile):
+
+   ```bash
+   brew bundle
+   ```
+
+2. Install gems, NPM packages, and create the database:
+
+   ```bash
+   bin/setup
+   ```
 
 ## Configuration
 
@@ -28,12 +36,13 @@ This keeps container lookups by `com.docker.compose.project` label stable regard
 
 ## Development Workflow
 
-```bash
-# Start all processes (Rails + Vite + Caddy)
-bin/dev
+Start all processes (Rails + Vite + Caddy) and open the app in your default browser:
 
-# URL: https://helios.localhost (via Caddy reverse proxy)
+```bash
+bin/dev
 ```
+
+The app is served at https://helios.localhost (via Caddy reverse proxy). On the first run, Caddy will ask for your password to install its local CA certificate.
 
 **Key difference from production:**
 

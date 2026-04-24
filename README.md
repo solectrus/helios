@@ -143,30 +143,6 @@ On the first visit to `http://<your-host>:3999`:
 | [Development Guide](docs/guides/development.md)   | Local setup, testing                       |
 | [Open TODOs](docs/todos.md)                       | Work items still ahead                     |
 
-## Development
-
-1. Install dependencies from the [Brewfile](Brewfile):
-
-   ```bash
-   brew bundle
-   ```
-
-2. Install gems, NPM packages, and create the database:
-
-   ```bash
-   bin/setup
-   ```
-
-3. Start the app locally:
-
-   ```bash
-   bin/dev
-   ```
-
-   This starts the app and opens https://helios.localhost in your default browser. On the first run, Caddy will ask for your password to install its local CA certificate.
-
-See the [Development Guide](docs/guides/development.md) for details.
-
 ## License
 
 Copyright © 2026 Georg Ledermann. All rights reserved.
