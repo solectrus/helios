@@ -21,9 +21,12 @@ class ConfigSchema
   MODE_DASHBOARD_ONLY = 'dashboard_only'.freeze
   SYSTEM_MODES = [MODE_FULL, MODE_COLLECTORS_ONLY, MODE_DASHBOARD_ONLY].freeze
 
+  # Both values are normally seeded by bootstrap/install.sh into .env and
+  # promoted into config.yaml on first save. Random fallbacks keep tests and
+  # one-off boots without an .env from breaking.
   SYSTEM_DEFAULTS = {
-    'admin_password' => -> { SecureRandom.alphanumeric(32) },
-    'secret_key_base' => -> { SecureRandom.hex(64) },
+    'admin_password' => -> { ENV['ADMIN_PASSWORD'].presence || SecureRandom.alphanumeric(32) },
+    'secret_key_base' => -> { ENV['SECRET_KEY_BASE'].presence || SecureRandom.hex(64) },
   }.freeze
 
   SYSTEM_ALL = (SYSTEM_FIELDS + SYSTEM_DEFAULTS.keys).uniq.freeze

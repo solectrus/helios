@@ -12,7 +12,7 @@ module Authentication
   end
 
   def admin_password
-    Configuration.current.system.admin_password
+    Configuration.current.system.admin_password.presence || ENV['ADMIN_PASSWORD'].presence
   end
 
   def authenticated?
