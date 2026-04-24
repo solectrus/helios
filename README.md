@@ -38,99 +38,26 @@ Web-based bootstrap helper and management interface for [SOLECTRUS](https://sole
 
 ## Installation
 
-HELIOS supports two starting points. It auto-detects which one applies on first launch.
+HELIOS runs as one service inside your SOLECTRUS Docker Compose stack. The bootstrap script handles everything — whether you're setting up SOLECTRUS for the first time or adding HELIOS to a host that already runs it.
 
-### Fresh install
+`cd` into an empty directory (new install) or into your existing SOLECTRUS stack's directory, then run:
 
-For a new SOLECTRUS setup with no existing `compose.yaml`.
+```bash
+curl -fsSL https://raw.githubusercontent.com/solectrus/helios/develop/bootstrap/install.sh | bash
+```
 
-1. Create a directory for the stack and generate a secret in `.env`:
+When it finishes, HELIOS is available at `http://<your-host>:3999`.
 
-   ```bash
-   mkdir -p /opt/solectrus && cd /opt/solectrus
-   echo "SECRET_KEY_BASE=$(openssl rand -hex 64)" > .env
-   ```
-
-2. Create `compose.yaml` with only the HELIOS service:
-
-   ```yaml
-   name: solectrus
-
-   services:
-     helios:
-       image: ghcr.io/solectrus/helios:develop
-       environment:
-         - SECRET_KEY_BASE
-       volumes:
-         - .:/data
-         - /var/run/docker.sock:/var/run/docker.sock
-       ports:
-         - 3999:3000
-       restart: unless-stopped
-   ```
-
-3. Start the stack:
-
-   ```bash
-   docker compose up -d
-   ```
-
-HELIOS is now available at `http://<your-host>:3999` and will guide you through the rest of the stack configuration.
-
-### Add to an existing installation
-
-For hosts that already run SOLECTRUS.
-
-1. **Stop the running stack first**, so the next step can safely change the Compose project identity:
-
-   ```bash
-   docker compose down
-   ```
-
-2. **Edit `compose.yaml`:**
-
-   a. **Set the project name.** HELIOS requires the Compose project to be named `solectrus`. Add this line at the top if it is not already there:
-
-   ```yaml
-   name: solectrus
-   ```
-
-   Without it, HELIOS refuses to start and shows an error message.
-
-   b. **Add the HELIOS service:**
-
-   ```yaml
-   helios:
-     image: ghcr.io/solectrus/helios:develop
-     environment:
-       - ADMIN_PASSWORD
-       - SECRET_KEY_BASE
-     volumes:
-       - .:/data
-       - /var/run/docker.sock:/var/run/docker.sock
-     ports:
-       - 3999:3000
-     restart: unless-stopped
-   ```
-
-   No changes to `.env` are needed — `ADMIN_PASSWORD` and `SECRET_KEY_BASE` are reused from your existing SOLECTRUS setup.
-
-3. **Start the stack.** All containers are now created under the `solectrus` project and labeled correctly:
-
-   ```bash
-   docker compose pull
-   docker compose up -d
-   ```
-
-HELIOS is now available at `http://<your-host>:3999`.
+> Prefer not to pipe `curl | bash`? Download `bootstrap/install.sh`, review it, and run it locally.
 
 ## First run
 
 On the first visit to `http://<your-host>:3999`:
 
-1. **Existing installations only.** HELIOS shows a consent screen and auto-imports `compose.yaml` and `.env` into its internal configuration, pre-filling sensor mappings from existing env variables.
-2. **Configuration wizard.** Walk through the surveys (system, devices, data sources, forecasts, reverse proxy, backup). HELIOS regenerates `compose.yaml` and `.env` after every change. The admin password is a random string generated on first start and stored in `helios/config.yaml` (mirrored to `.env`, since Dashboard and Ingest share it).
-3. **Apply changes.** Services are not restarted automatically — the dashboard shows which services are affected and lets you restart them explicitly.
+1. **Login.** Use the `ADMIN_PASSWORD` from `.env` (printed by the bootstrap script on a fresh install, or your existing one when adding HELIOS to a running stack).
+2. **Existing installations only.** HELIOS shows a consent screen and auto-imports `compose.yaml` and `.env` into its internal configuration, pre-filling sensor mappings from existing env variables.
+3. **Configuration wizard.** Walk through the surveys (system, devices, data sources, forecasts, reverse proxy, backup). HELIOS regenerates `compose.yaml` and `.env` after every change.
+4. **Apply changes.** Services are not restarted automatically — the dashboard shows which services are affected and lets you restart them explicitly.
 
 ## Documentation
 
