@@ -18,8 +18,8 @@ In production, HELIOS runs inside the stack as a regular Compose service ([Docke
 
 Two small consequences of this split are baked into the code:
 
-- **Project name derivation** — in production, HELIOS reads its own container labels to discover the Compose project name; in development, it falls back to the stack directory's basename. See [docs/guides/development.md](../guides/development.md).
-- **Stack path** — `/data` in production (bind-mounted from the host), `./stack` in development (relative to the Rails root).
+- **Project name** — hard-coded to `solectrus` in [`Orchestration::PROJECT_NAME`](../../app/services/orchestration.rb) and enforced at startup by [`StartupCheck#check_compose_project_name`](../../app/services/startup_check.rb). The generated `compose.yaml` must declare `name: solectrus`, regardless of the directory it lives in — so container-label lookups work identically in dev and prod.
+- **Stack path** — `/data` in production (bind-mounted from the host), `./stack` in development (relative to the Rails root). Configured via `config.data_path` per environment.
 
 ## Consequences
 
@@ -33,5 +33,5 @@ Two small consequences of this split are baked into the code:
 **Negative:**
 
 - Production's "HELIOS manages the stack it's part of" topology is not exercised in day-to-day dev — bugs specific to that setup (self-restart, label lookup, socket access) only surface in staging or production
-- Two code paths for project-name and stack-path resolution must be kept working
+- The stack path still has two code paths (dev vs. prod) that must be kept working
 - Development requires a local Ruby and Node toolchain on the host, not just Docker — acceptable trade-off given the Rails-native stack (ADR-0007)

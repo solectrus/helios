@@ -111,6 +111,6 @@ with live status bar and log viewer, full stack generation (~15 service definiti
 `Export::Services::*`), auto-import of existing installations with unmanaged preservation,
 sensor mapping with InfluxDB latest-value readings, DE/EN localization.
 
-Remaining work is tracked by area in `docs/todos.md` — configuration validation, auto-import
-review screen, unmanaged editor, InfluxDB discovery, log search/filter, update flow, alert
-UI, Dashboard deep-link, mobile polish, opt-in telemetry.
+Remaining work is tracked by area in `docs/todos.md` — auto-import review screen, InfluxDB
+discovery during import, "Update now" trigger for Watchtower, mobile polish, and a link
+from Dashboard back to HELIOS.

@@ -1,36 +1,20 @@
 # Open TODOs
 
-Work still ahead, grouped by area. This list replaces the earlier phase-based roadmap.
+Remaining work, grouped by area.
 
 ## Configuration experience
 
-- **Cross-singleton validation and dependency checks.** E.g. a wallbox configuration requires an inverter; a Shelly data source requires at least one mapped sensor. Today the surveys validate each singleton in isolation.
 - **Summary / review view after auto-import (scenario C).** Show the user what HELIOS detected, which services / variables it preserved as unmanaged, and which fields still need attention before the first edit.
-- **Web editor for unmanaged services and env vars.** Power-user feature: let users modify preserved services inline in HELIOS instead of editing `compose.yaml` by hand.
 
 ## Sensor mapping
 
-- **InfluxDB discovery.** Auto-query available measurements and fields from the running InfluxDB instance and offer them as selectable values in the mapping UI — instead of requiring the user to type them.
-
-## Log viewer
-
-- **Free-text search** within a service's log output.
-- **Filter by severity** (info / warn / error).
-- **Filter by time range.**
+- **InfluxDB discovery during import.** When reverse-mapping an existing installation, query the running InfluxDB for actual measurements and fields and offer them as selectable values — instead of relying on literal `.env` contents.
 
 ## Update management
 
-- **"Update now" button** to trigger an immediate Watchtower check instead of waiting for the next interval.
-- **Changelog display.** Fetch release notes from GitHub and show them before updating.
-
-## Operations / observability
-
-- **Dedicated alert UI.** The status bar already shows overall state; extend it with a drill-down that lists affected services, detected errors, and troubleshooting hints.
+- **"Update now" button** to trigger an immediate Watchtower check via its HTTP API instead of waiting for the next interval.
 
 ## User experience
 
 - **Mobile-responsive polish.** The layout works on desktop today; revisit narrow viewports once the above features land.
-
-## Platform
-
-- **Opt-in telemetry** via `update.solectrus.de` — update checks and anonymous usage statistics. User must consent during initial setup.
+- **Link from Dashboard back to HELIOS.** Expose HELIOS' URL to the Dashboard service (e.g. as an env var) so Dashboard can show a "configure" link — users who start in Dashboard should be able to jump straight to the settings UI without knowing the HELIOS URL by heart.

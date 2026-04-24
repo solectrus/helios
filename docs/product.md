@@ -33,7 +33,7 @@ Scenarios A and B can coexist (e.g. SENEC collector for the inverter + ioBroker 
 
 ### First-Run Setup
 
-- Admin password is set on first access (stored hashed in `config.yaml`).
+- Admin password is set on first access (stored as a random plaintext string in `config.yaml` and mirrored to `.env` as `ADMIN_PASSWORD`, because the Dashboard service needs the same value).
 - HELIOS auto-detects the scenario. For scenario C it runs the auto-import before the UI appears for the first time.
 
 ### Configuration Management
@@ -44,7 +44,7 @@ Scenarios A and B can coexist (e.g. SENEC collector for the inverter + ioBroker 
 
 ### Sensor Mapping
 
-- Registry of ~40 SOLECTRUS sensors (inverter / battery / consumers / wallbox / heat pump / forecasts).
+- Registry of ~50 SOLECTRUS sensors (inverter / grid / battery / wallbox / car / heat pump / system / forecasts / 20 custom consumer slots) — see [`SensorRegistry::SENSORS`](../app/models/sensor_registry.rb).
 - Each sensor is mapped to a `measurement:field` combination and written to `.env` as `INFLUX_SENSOR_*`.
 - Fresh installs are pre-filled with service defaults; existing installs are pre-filled from the current `.env`.
 - Live readings are shown in the mapping UI, queried from the running InfluxDB.
@@ -62,6 +62,11 @@ Scenarios A and B can coexist (e.g. SENEC collector for the inverter + ioBroker 
 - `Watchtower` is part of the generated stack and updates all images automatically, including HELIOS itself.
 - Image versioning strategy: own services track `latest` (Watchtower-managed), third-party services pin a major version. See [architecture/docker.md](architecture/docker.md#image-versioning-strategy).
 
+### Backup
+
+- Optional `postgresql-backup` and `influxdb-backup` services can be enabled to push daily dumps to any S3-compatible bucket (AWS S3, MinIO, etc.).
+- Restore is manual — there is no restore UI in HELIOS.
+
 ### Support Bundle
 
 - On-demand ZIP download for troubleshooting. Bundles `compose.yaml`, `.env`, `config.yaml` (plus their `.bak` variants), a `system-info.txt` snapshot (HELIOS version, Docker engine, OS / CPU / memory / disk, container table) and the last 200 log lines per container under `logs/`.
@@ -77,17 +82,8 @@ Scenarios A and B can coexist (e.g. SENEC collector for the inverter + ioBroker 
 | Target hosts       | Raspberry Pi (3/4/5), NAS (Synology, QNAP with Docker), VPS, any Linux with Docker                                                            |
 | Tech stack         | Rails 8.1+, Hotwire (Turbo + Stimulus, TypeScript), Tailwind v4 + daisyUI, Vite, SQLite, RSpec. See [ADR-0007](adr/0007-technology-stack.md). |
 | Network            | LAN-only by default, port 3999 (`http://<host-ip>:3999`). No outbound internet required.                                                      |
-| Security           | Single admin with password (bcrypt, stored in `config.yaml`). Docker socket mount required. Session persists indefinitely.                    |
+| Security           | Single admin with random password (stored plaintext in `config.yaml`, mirrored to `.env`). Docker socket mount required. Session persists indefinitely. |
 | Resource footprint | Target < 256 MB RAM for the HELIOS container (suitable for Raspberry Pi)                                                                      |
 | Localization       | German + English UI                                                                                                                           |
-| Telemetry          | Opt-in, via `update.solectrus.de` (update checks + anonymous usage stats)                                                                     |
+| Telemetry          | Planned: opt-in update checks + anonymous usage stats via `update.solectrus.de`. Not yet implemented.                                         |
 
----
-
-## Out of Scope (v1)
-
-- Backup / restore of user data (InfluxDB, PostgreSQL)
-- Remote access via secure tunnel
-- Multi-site management
-- Public API for external integrations
-- Plugin system for additional adapters

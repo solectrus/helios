@@ -14,24 +14,21 @@ See [ADR-0007: Technology Stack](../adr/0007-technology-stack.md) for details an
 │  ┌────────────────────────────────────────────────────────────┐  │
 │  │                     Docker Engine                          │  │
 │  │                                                            │  │
-│  │  ┌──────────┐ ┌────────────┐ ┌──────────┐ ┌─────────────┐  │  │
-│  │  │  HELIOS  │ │ Watchtower │ │ InfluxDB │ │  SOLECTRUS  │  │  │
-│  │  │  :3999   │ │ (updates)  │ │  :8086   │ │  Dashboard  │  │  │
-│  │  └────┬─────┘ └──────┬─────┘ └──────────┘ │   :3000     │  │  │
-│  │       │              │                    └─────────────┘  │  │
-│  │       │              │        ┌──────────┐ ┌─────────────┐ │  │
-│  │       │              │        │ Postgres │ │    Redis    │ │  │
-│  │       │              │        │  :5432   │ │   :6379     │ │  │
-│  │       │              │        └──────────┘ └─────────────┘ │  │
-│  │       │ manages      │ updates                             │  │
-│  │       ▼              ▼                                     │  │
+│  │  ┌──────────┐     ┌────────────────────────────────────┐   │  │
+│  │  │  HELIOS  │     │  Other stack services              │   │  │
+│  │  │  :3999   │     │  (Dashboard, databases, collectors,│   │  │
+│  │  │          │     │   Power-Splitter, Watchtower, …)   │   │  │
+│  │  └────┬─────┘     └────────────────────────────────────┘   │  │
+│  │       │                                                    │  │
+│  │       │ manages                                            │  │
+│  │       ▼                                                    │  │
 │  │  ┌─────────────────────────┐                               │  │
 │  │  │     compose.yaml        │                               │  │
 │  │  │         .env            │                               │  │
 │  │  └─────────────────────────┘                               │  │
 │  └────────────────────────────────────────────────────────────┘  │
 │                                                                  │
-│  /var/run/docker.sock ◄─── HELIOS + Watchtower access Docker API │
+│  /var/run/docker.sock ◄─── HELIOS accesses Docker API            │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
@@ -47,7 +44,7 @@ All user-facing configuration is stored in a single `config.yaml` file (see [ADR
 | `primary.sqlite3` | Rails primary DB (empty; reserved for future use)                    |
 | `cable.sqlite3`   | SolidCable (Turbo Streams / Action Cable pub-sub)                    |
 
-The admin password is stored in `config.yaml` under `system.admin_password` (bcrypt hash), not in a separate `admins` table.
+The admin password is stored in `config.yaml` under `system.admin_password` as a plaintext random string (generated via `SecureRandom.alphanumeric(32)` on first setup) and mirrored to the generated `.env` as `ADMIN_PASSWORD`, since the Dashboard service needs the same value. Login comparison uses `ActiveSupport::SecurityUtils.secure_compare` (see [`Authentication`](../../app/controllers/concerns/authentication.rb) / [`SessionsController`](../../app/controllers/sessions_controller.rb)).
 
 **Location:** `/data/helios/` inside the HELIOS container (bind-mounted from the stack directory on the host).
 

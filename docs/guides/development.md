@@ -2,12 +2,11 @@
 
 ## Prerequisites
 
-See [Architecture Overview](../architecture/overview.md) for versions.
-
-- Ruby
-- Node.js
+- Ruby (see [`.ruby-version`](../../.ruby-version))
+- Node.js with Yarn (pinned via `packageManager` in [`package.json`](../../package.json); installed by Corepack)
 - Docker Desktop or Docker Engine
 - Docker Compose CLI
+- [Caddy](https://caddyserver.com/) — terminates TLS for `https://helios.localhost` in development
 
 ## Setup
 
@@ -17,19 +16,15 @@ bin/setup
 
 ## Configuration
 
-**Stack path:**
+**Stack path** (`Rails.configuration.data_path`):
 
-- In production: `/data` (mounted from host via Docker volume)
-- In development: `./stack` (relative to Rails root)
+- Production: `/data` (bind-mounted from the host stack directory)
+- Development: `./stack` (relative to Rails root)
+- Test: `./spec/fixtures`
 
-**Project name derivation:**
+**Project name:** HELIOS hard-codes the Compose project name to `solectrus` (see [`Orchestration::PROJECT_NAME`](../../app/services/orchestration.rb)). On boot, [`StartupCheck#check_compose_project_name`](../../app/services/startup_check.rb) refuses to run if `compose.yaml` does not declare `name: solectrus`. The `stack/compose.yaml` checked into this repo already has that line — leave it in place.
 
-- In production (container): HELIOS reads project name from its own container labels
-- In development (native): Project name is derived from the directory name of the stack path
-
-Example: `./stack` → project name is `stack`
-
-This matches Docker Compose's default behavior (using directory name as project name).
+This keeps container lookups by `com.docker.compose.project` label stable regardless of the host directory name.
 
 ## Development Workflow
 
@@ -42,14 +37,10 @@ bin/dev
 
 **Key difference from production:**
 
-- Production: HELIOS runs inside the stack it manages
-- Development: HELIOS runs outside, manages stack via CLI
+- Production: HELIOS runs as a container inside the stack it manages; `docker.sock` is bind-mounted in.
+- Development: HELIOS runs natively on the host and talks to the local `docker.sock` directly — no container, no socket mount needed.
 
-**Docker access:**
-
-- Uses Docker CLI directly (same as production)
-- No socket mounting needed (native access on host)
-- Stack detection via labels still works
+Both modes use the same hybrid Docker access (docker-api gem + `docker compose` CLI + events listener). Stack detection via `com.docker.compose.project=solectrus` labels works identically in both.
 
 ---
 
@@ -64,6 +55,7 @@ bin/dev
 - All code must be covered by tests
 - 100% coverage is the goal (not enforced, but aspired to)
 - Focus on **unit tests** – they are fast, reliable, and document behavior
+- Use **real Docker** in tests, not mocks — [`spec/support/docker_helpers.rb`](../../spec/support/docker_helpers.rb) exposes `skip_without_docker` for tests that need a running daemon
 - Write tests first or alongside implementation, not as an afterthought
 
 **Test pyramid:**
@@ -103,10 +95,9 @@ bin/rspec spec/system/
 
 # Run system tests with visible browser (for debugging)
 HEADLESS=false bin/rspec spec/system/
-
-# Run with coverage report
-COVERAGE=true bin/rspec
 ```
+
+SimpleCov runs unconditionally from [`spec/spec_helper.rb`](../../spec/spec_helper.rb) and writes the coverage report to `coverage/index.html`.
 
 ### Test Structure
 
