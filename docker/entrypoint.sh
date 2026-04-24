@@ -1,5 +1,5 @@
 #!/bin/sh -e
-echo "HELIOS — knows your SOLECTRUS instance better than you do"
+echo "HELIOS — knows your SOLECTRUS configuration better than you do"
 echo "Version ${COMMIT_VERSION}, built on ${COMMIT_TIME}"
 echo "Using $(ruby -v)"
 echo "Based on Alpine Linux $(cat /etc/alpine-release)"

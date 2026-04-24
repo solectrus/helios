@@ -11,7 +11,7 @@ RUN rm -r package.json vite.config.mts tsconfig.json
 
 FROM ghcr.io/ledermann/rails-base-final:4.0.3-alpine
 LABEL maintainer="georg@ledermann.dev"
-LABEL org.opencontainers.image.description="HELIOS — knows your SOLECTRUS instance better than you do"
+LABEL org.opencontainers.image.description="HELIOS — knows your SOLECTRUS configuration better than you do"
 
 # Install Docker CLI for managing compose stacks
 RUN apk add --no-cache docker-cli docker-cli-compose

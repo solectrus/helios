@@ -79,7 +79,7 @@ welcome() {
   cyan "  ╚══════╝ ╚═════╝ ╚══════╝╚══════╝ ╚═════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝"
   dim  "  https://solectrus.de                  Copyright © 2020-2026 Georg Ledermann"
   printf '\n'
-  bold "  Installing HELIOS — knows your SOLECTRUS instance better than you do"
+  bold "  Installing HELIOS — knows your SOLECTRUS configuration better than you do"
   printf '\n'
   yellow "  ⚠  Developer preview — work in progress, for experienced users only."
   yellow "     Not recommended for production use yet."
