@@ -19,4 +19,6 @@ InfluxDB. Verifies that these three are mapped to dedicated config blocks
   (HELIOS defaults take over on export).
 - **`sensors: {}`** — no sensor mappings are defined; the dashboard has only
   the base environment (`APP_HOST` missing, `FORCE_SSL=true`).
-- Nothing ends up in `_unmanaged` — all six non-core services are recognised.
+- Nothing ends up in `_unmanaged` — `traefik`, `postgresql-backup` and
+  `influxdb-backup` are all recognised alongside `watchtower` and the four
+  core services (`dashboard`, `influxdb`, `postgresql`, `redis`).

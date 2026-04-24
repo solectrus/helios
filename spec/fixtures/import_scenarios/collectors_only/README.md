@@ -11,7 +11,8 @@ InfluxDB instance (`INFLUX_HOST=ingest.example.com`, `INFLUX_PORT=443`).
 - **SENEC collector** in `local` mode against `senec.fritz.box`.
 - **Shelly collector** with 11 devices via `SHELLY_HOST_*` variables and a shared
   `SHELLY_PASSWORD=secret`; `INFLUX_MODE=essential`.
-- **MQTT collector** with ~37 mappings for an Altherma heat pump (espaltherma),
-  exercising `JSON_KEY`, `JSON_PATH` and complex `JSON_FORMULA` expressions
-  (e.g. heat calculation and a derived `current_state`).
+- **MQTT collector** with 34 mappings (sparse `MAPPING_*` indices 1–37) for an
+  Altherma heat pump (espaltherma), exercising `JSON_KEY`, `JSON_PATH` and
+  complex `JSON_FORMULA` expressions (e.g. heat calculation and a derived
+  `current_state`).
 - Collector images use the `develop` tag.
