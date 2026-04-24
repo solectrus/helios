@@ -25,7 +25,14 @@ class ApplicationController < ActionController::Base
   end
 
   def existing_stack_files?
-    File.exist?(Compose.path) && File.exist?(Env.path)
+    return false unless File.exist?(Compose.path) && File.exist?(Env.path)
+
+    # A fresh install via bootstrap/install.sh creates a compose.yaml that
+    # only declares the helios service — there is nothing to import yet.
+    services = YAML.safe_load_file(Compose.path)&.dig('services')
+    services.present? && services.keys != ['helios']
+  rescue Psych::Exception
+    false
   end
 
   def require_authentication

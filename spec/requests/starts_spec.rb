@@ -20,6 +20,39 @@ RSpec.describe 'Starts' do
     end
   end
 
+  describe 'fresh-install detection on protected routes' do
+    let(:dir) { with_config_yaml }
+
+    before do
+      File.write(File.join(dir, '.env'), "ADMIN_PASSWORD=x\nSECRET_KEY_BASE=y\n")
+    end
+
+    it 'does not redirect to /start when compose.yaml only contains the helios service' do
+      File.write(File.join(dir, 'compose.yaml'),
+                 "name: solectrus\nservices:\n  helios:\n    image: ghcr.io/solectrus/helios:develop\n")
+
+      get services_path
+
+      expect(response).not_to redirect_to(start_path)
+    end
+
+    it 'redirects to /start when compose.yaml contains other services' do
+      File.write(File.join(dir, 'compose.yaml'), "services:\n  dashboard:\n    image: foo:latest\n")
+
+      get services_path
+
+      expect(response).to redirect_to(start_path)
+    end
+
+    it 'does not redirect to /start when compose.yaml is malformed' do
+      File.write(File.join(dir, 'compose.yaml'), "services:\n  : : invalid\n")
+
+      get services_path
+
+      expect(response).not_to redirect_to(start_path)
+    end
+  end
+
   describe 'POST /start' do
     context 'when config.yaml already exists' do
       before { with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' }) }
