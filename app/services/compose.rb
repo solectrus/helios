@@ -1,5 +1,5 @@
 module Compose
-  FILENAMES = %w[compose.yaml docker-compose.yaml docker-compose.yml].freeze
+  FILENAMES = %w[compose.yaml compose.yml docker-compose.yaml docker-compose.yml].freeze
 
   # Ensure Docker image references always include an explicit tag.
   # Docker treats "nginx" and "nginx:latest" as identical,
