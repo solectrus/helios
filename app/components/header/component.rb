@@ -2,7 +2,12 @@ module Header
   class Component < ViewComponent::Base
     TAB_DEFINITIONS = [
       { id: :configuration, path_helper: :sensors_path, icon: 'fa-solid fa-wrench' },
-      { id: :services, path_helper: :services_path, icon: 'fa-solid fa-server' },
+      {
+        id: :services,
+        path_helper: :services_path,
+        icon: 'fa-solid fa-server',
+        visible_if: -> { Configuration.current.setup_completed? },
+      },
     ].freeze
 
     TAB_BASE_CLASSES = 'flex items-center gap-2 rounded-full px-4 py-2 text-sm ' \
@@ -18,7 +23,9 @@ module Header
     attr_reader :active_tab
 
     def tabs
-      TAB_DEFINITIONS.map { |tab| tab.merge(path: send(tab[:path_helper]), label: t(".#{tab[:id]}")) }
+      TAB_DEFINITIONS
+        .select { |tab| tab[:visible_if].nil? || tab[:visible_if].call }
+        .map { |tab| tab.merge(path: send(tab[:path_helper]), label: t(".#{tab[:id]}")) }
     end
 
     def tab_classes(tab)

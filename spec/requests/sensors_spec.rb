@@ -30,5 +30,21 @@ RSpec.describe 'Sensors', :with_admin_password do
 
       expect(response.body).to include('inverter_power')
     end
+
+    it 'hides the services nav tab and start button when no sensors are configured' do
+      get sensors_path
+
+      expect(response.body).not_to match(/href="#{services_path}"/)
+      expect(response.body).not_to match(/fa-solid fa-play/)
+    end
+
+    it 'shows the services nav tab and start button once a sensor is configured' do
+      Configuration.current.update_sensor('inverter_power', { 'source' => 'senec' })
+
+      get sensors_path
+
+      expect(response.body).to match(/href="#{services_path}"/)
+      expect(response.body).to match(/fa-solid fa-play/)
+    end
   end
 end
