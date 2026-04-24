@@ -1,6 +1,10 @@
 module Export
   module Services
     class PowerSplitter < Base
+      # Required by power-splitter/lib/config.rb#validate_sensors! — without
+      # these mappings the container aborts on startup.
+      MANDATORY_SENSORS = %w[grid_import_power house_power].freeze
+
       def self.service_name
         'power-splitter'
       end
@@ -10,7 +14,10 @@ module Export
       end
 
       def self.enabled?(configuration)
-        !configuration.collectors_only?
+        return false if configuration.collectors_only?
+
+        mappings = configuration.effective_sensor_mappings
+        MANDATORY_SENSORS.all? { |name| mappings[name].present? }
       end
 
       def to_h

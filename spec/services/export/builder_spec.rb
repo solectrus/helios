@@ -43,10 +43,14 @@ RSpec.describe Export::Builder do
         'redis',
         'influxdb',
         'dashboard',
-        'power-splitter',
         'watchtower',
         'helios',
       )
+    end
+
+    it 'omits power-splitter when its mandatory sensor mappings are missing' do
+      compose = Compose.load
+      expect(compose.services.names).not_to include('power-splitter')
     end
 
     it 'configures postgresql with healthcheck' do
@@ -969,6 +973,7 @@ RSpec.describe Export::Builder do
                              'interval' => '5',
                            })
       configuration.update_sensor('inverter_power', { 'source' => 'senec' })
+      configuration.update_sensor('grid_import_power', { 'source' => 'senec' })
       configuration.update_sensor('house_power', { 'source' => 'senec' })
       configuration.update_sensor('inverter_power_2', {
                                     'source' => 'external',
@@ -1113,6 +1118,7 @@ RSpec.describe Export::Builder do
         expect(sensor_vars).to contain_exactly(
           'INFLUX_SENSOR_INVERTER_POWER',
           'INFLUX_SENSOR_INVERTER_POWER_2',
+          'INFLUX_SENSOR_GRID_IMPORT_POWER',
           'INFLUX_SENSOR_HOUSE_POWER',
         )
       end

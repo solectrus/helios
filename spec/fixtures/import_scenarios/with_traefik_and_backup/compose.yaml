@@ -156,41 +156,6 @@ services:
         max-file: '3'
 
   # ┌──────────────────────────────────────────────────────────┐
-  # │  Power Splitter — Calculates derived power values        │
-  # └──────────────────────────────────────────────────────────┘
-  #
-  power-splitter:
-    image: ghcr.io/solectrus/power-splitter:latest
-    environment:
-    - TZ
-    - INSTALLATION_DATE
-    - INFLUX_TOKEN
-    - INFLUX_ORG
-    - INFLUX_BUCKET
-    - POSTGRES_PASSWORD
-    - INFLUX_HOST=influxdb
-    - REDIS_URL=redis://redis:6379/1
-    - DB_HOST=postgresql
-    - DB_USER=postgres
-    - DB_PASSWORD=${POSTGRES_PASSWORD}
-    - POWER_SPLITTER_INTERVAL=300
-    labels:
-    - com.centurylinklabs.watchtower.scope=solectrus
-    depends_on:
-      influxdb:
-        condition: service_healthy
-      postgresql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
-        max-file: '3'
-
-  # ┌──────────────────────────────────────────────────────────┐
   # │  Traefik — Reverse proxy with automatic HTTPS            │
   # └──────────────────────────────────────────────────────────┘
   #
