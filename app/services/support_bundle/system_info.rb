@@ -18,7 +18,9 @@ module SupportBundle
         'Operating System' => operating_system(docker),
         'CPU' => cpu,
         'Memory' => memory,
+        'Uptime' => capture('uptime'),
         'Disk' => disk,
+        'Data Volumes' => data_volumes,
         'Docker Engine' => docker_engine(docker),
         'Docker Compose' => docker_compose,
         'Containers' => containers(docker),
@@ -97,12 +99,22 @@ module SupportBundle
       end
 
       {
-        'Total' => entries['MemTotal'] || 'unknown',
-        'Free' => entries['MemAvailable'] || 'unknown',
-        'Swap' => entries['SwapTotal'] || 'unknown',
+        'Total' => format_meminfo(entries['MemTotal']),
+        'Available' => format_meminfo(entries['MemAvailable']),
+        'Swap total' => format_meminfo(entries['SwapTotal']),
+        'Swap free' => format_meminfo(entries['SwapFree']),
       }
     rescue StandardError => e
       { 'Status' => "unavailable: #{e.class}: #{e.message}" }
+    end
+
+    # /proc/meminfo reports values as "<kibibytes> kB"; convert to bytes
+    # and reuse format_bytes so the unit auto-scales (e.g. "15.4 GB").
+    def format_meminfo(raw)
+      match = raw.to_s.match(/\A(\d+)\s*kB\z/)
+      return 'unknown' unless match
+
+      format_bytes((match[1].to_i * 1024).to_s)
     end
 
     def memory_from_sysctl
@@ -112,7 +124,7 @@ module SupportBundle
 
       {
         'Total' => format_bytes(memsize),
-        'Free' => sysctl_free_memory(pagesize),
+        'Available' => sysctl_free_memory(pagesize),
       }
     end
 
@@ -133,10 +145,39 @@ module SupportBundle
 
     def disk
       path = Rails.configuration.data_path.to_s
+      # `-P` keeps the row on a single line even when the filesystem name
+      # is long (e.g. `/dev/mapper/pve-vm--115--disk--0`), which otherwise
+      # wraps and misaligns under `df -h` defaults.
       {
         'Data path' => path,
-        'Usage' => capture('df', '-h', path),
+        'Usage' => capture('df', '-hP', path),
       }
+    end
+
+    # Per-subdirectory sizes of the HELIOS data path, so support can see
+    # at a glance which service (influxdb, postgresql, redis, …) is
+    # consuming the volume.
+    def data_volumes
+      path = Rails.configuration.data_path.to_s
+      return { 'Status' => 'data path unavailable' } unless File.directory?(path)
+
+      entries = Dir.children(path).select { |name| File.directory?(File.join(path, name)) }.sort
+      return { 'Status' => 'no data directories found' } if entries.empty?
+
+      entries.index_with { |name| directory_size(File.join(path, name)) }
+    end
+
+    def directory_size(path)
+      # `-k` is POSIX and reports in 1024-byte blocks on both BSD and GNU
+      # du, so we get a portable integer we can feed through format_bytes
+      # for consistent units with the Memory section.
+      output = capture('du', '-sk', path)
+      return output if output.start_with?('failed', 'unavailable')
+
+      blocks = output.split(/\s+/, 2).first
+      return 'unknown' unless blocks.to_s.match?(/\A\d+\z/)
+
+      format_bytes((blocks.to_i * 1024).to_s)
     end
 
     def fetch_docker_snapshot
@@ -277,8 +318,8 @@ module SupportBundle
       return raw unless raw.to_s.match?(/\A\d+\z/)
 
       bytes = raw.to_i
-      %w[B KiB MiB GiB TiB].each do |unit|
-        return "#{format('%.1f', bytes)} #{unit}" if bytes < 1024 || unit == 'TiB'
+      %w[B KB MB GB TB].each do |unit|
+        return "#{format('%.1f', bytes)} #{unit}" if bytes < 1024 || unit == 'TB'
 
         bytes = bytes.to_f / 1024
       end
