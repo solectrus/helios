@@ -16,8 +16,21 @@ RSpec.describe SensorMappings do
       expect(described_class.default_measurement('unknown', 'forecast')).to eq('forecast')
     end
 
-    it 'returns sensor_name for other sources' do
-      expect(described_class.default_measurement('heatpump_power', 'shelly')).to eq('heatpump_power')
+    {
+      %w[heatpump_power shelly] => 'heatpump',
+      %w[inverter_power mqtt] => 'inverter',
+      %w[inverter_power_2 external] => 'inverter_2',
+      %w[house_power mqtt] => 'house',
+      %w[case_temp mqtt] => 'case',
+      %w[custom_power_03 shelly] => 'custom_03',
+    }.each do |(sensor, source), expected|
+      it "returns '#{expected}' for #{sensor} with #{source} source" do
+        expect(described_class.default_measurement(sensor, source)).to eq(expected)
+      end
+    end
+
+    it 'falls back to sensor_name for unknown sensors' do
+      expect(described_class.default_measurement('unknown', 'mqtt')).to eq('unknown')
     end
   end
 
@@ -34,12 +47,23 @@ RSpec.describe SensorMappings do
       expect(described_class.default_field('inverter_power_forecast', 'forecast')).to eq('watt')
     end
 
-    it 'returns power for shelly source' do
-      expect(described_class.default_field('heatpump_power', 'shelly')).to eq('power')
+    {
+      %w[heatpump_power shelly] => 'power',
+      %w[inverter_power mqtt] => 'power',
+      %w[inverter_power_2 external] => 'power',
+      %w[battery_soc mqtt] => 'soc',
+      %w[grid_import_power mqtt] => 'import_power',
+      %w[wallbox_car_connected mqtt] => 'connected',
+      %w[case_temp mqtt] => 'temperature',
+      %w[custom_power_03 shelly] => 'power',
+    }.each do |(sensor, source), expected|
+      it "returns '#{expected}' for #{sensor} with #{source} source" do
+        expect(described_class.default_field(sensor, source)).to eq(expected)
+      end
     end
 
-    it 'returns value for mqtt source' do
-      expect(described_class.default_field('inverter_power', 'mqtt')).to eq('value')
+    it 'falls back to value for unknown sensors' do
+      expect(described_class.default_field('unknown', 'mqtt')).to eq('value')
     end
   end
 

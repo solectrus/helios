@@ -94,8 +94,7 @@ module Import
         return unless defaults
 
         measurement, field = mapping.split(':', 2)
-        default_mapping = "#{defaults[:measurement]}:#{defaults[:field]}"
-        return if mapping == default_mapping
+        return if mapping == defaults.join(':')
 
         data['measurement'] = measurement
         data['field'] = field
