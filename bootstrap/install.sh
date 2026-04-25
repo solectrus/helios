@@ -179,6 +179,15 @@ ENV
   )
 }
 
+# Backfill ADMIN_PASSWORD / SECRET_KEY_BASE in an existing .env. Collector-only
+# stacks lack both — without SECRET_KEY_BASE the helios container can't boot.
+ensure_helios_secrets() {
+  grep -qE '^ADMIN_PASSWORD=.+' "$ENV_FILE" \
+    || printf 'ADMIN_PASSWORD=%s\n' "$(generate_password)" >> "$ENV_FILE"
+  grep -qE '^SECRET_KEY_BASE=.+' "$ENV_FILE" \
+    || printf 'SECRET_KEY_BASE=%s\n' "$(generate_secret)" >> "$ENV_FILE"
+}
+
 ensure_project_name() {
   # Let `docker compose config` canonicalize the YAML so we don't have to
   # worry about quoting variants. The top-level `name:` is unindented;
@@ -281,9 +290,10 @@ main() {
 
     ensure_project_name
     append_helios_service
+    ensure_helios_secrets
 
     green "$COMPOSE_FILE updated — added 'helios' service."
-    yellow "ADMIN_PASSWORD and SECRET_KEY_BASE are reused from your existing $ENV_FILE."
+    yellow "ADMIN_PASSWORD and SECRET_KEY_BASE live in $ENV_FILE."
     start_stack
     green "HELIOS is running at $(helios_url)"
     return
