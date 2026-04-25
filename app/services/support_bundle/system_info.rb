@@ -6,6 +6,19 @@ module SupportBundle
   module SystemInfo # rubocop:disable Metrics/ModuleLength
     module_function
 
+    # /proc files are not namespaced on unprivileged LXC, so /proc/meminfo,
+    # /proc/cpuinfo and the uptime binary leak the Proxmox host's view (e.g.
+    # 15 GB RAM, 4 CPUs, multi-day uptime) instead of the LXC's enforced
+    # limits. cgroup v2/v1 files are namespaced and report the real limits
+    # the container actually runs against, so we prefer them when present.
+    CGROUP_ROOT = '/sys/fs/cgroup'.freeze
+
+    # cgroup v1 represents "no memory limit" as PAGE_COUNTER_MAX rounded to
+    # page size — values close to 2**63. Anything beyond ~1 PiB is treated
+    # as "unlimited" so we fall back to /proc/meminfo on hosts without a
+    # real cap.
+    CGROUP_V1_MEMORY_UNLIMITED = (1 << 50)
+
     def collect
       sections.map { |title, body| format_section(title, body) }.join("\n")
     end
@@ -18,7 +31,7 @@ module SupportBundle
         'Operating System' => operating_system(docker),
         'CPU' => cpu,
         'Memory' => memory,
-        'Uptime' => capture('uptime'),
+        'Uptime' => uptime,
         'Disk' => disk,
         'Data Volumes' => data_volumes,
         'Docker Engine' => docker_engine(docker),
@@ -35,14 +48,21 @@ module SupportBundle
       }
     end
 
-    # HELIOS usually runs inside a container itself, so `uname`/`/etc/os-release`
-    # describe the HELIOS image, not the box the user actually administers.
-    # Docker's /info endpoint reports the daemon host (the Proxmox LXC, a VM,
-    # or bare metal), which is what support needs.
+    # When HELIOS runs inside a Docker container, `uname`/`/etc/os-release`
+    # describe the image, not the box the user administers; Docker's /info
+    # endpoint reports the daemon host (Proxmox LXC, VM, bare metal), which
+    # is what support needs. When HELIOS runs natively (e.g. development on
+    # macOS), the Docker daemon may be a local VM (Docker Desktop's LinuxKit)
+    # that has nothing to do with the user's actual host — so we read local
+    # /etc/os-release or sw_vers instead and show Docker host details only
+    # in the Docker Engine section.
     def operating_system(docker)
-      return local_os unless docker[:info]
+      return docker_host_os(docker[:info]) if containerized? && docker[:info]
 
-      info = docker[:info]
+      local_os
+    end
+
+    def docker_host_os(info)
       {
         'Operating system' => info['OperatingSystem'],
         'Kernel' => info['KernelVersion'],
@@ -52,31 +72,62 @@ module SupportBundle
     end
 
     def local_os
+      kernel, arch = capture('uname', '-sm').split(/\s+/, 2)
       {
-        'uname' => capture('uname', '-a'),
-        'Release' => os_release,
+        'Operating system' => os_release,
+        'Kernel' => kernel || 'unknown',
+        'Architecture' => arch || 'unknown',
         'Hostname' => Socket.gethostname,
-        'Note' => 'Docker host unavailable; showing HELIOS container info',
       }
     end
 
+    # /.dockerenv is dropped into every Docker container by the daemon;
+    # /proc/1/cgroup leaks the container runtime in PID 1's cgroup path on
+    # most setups. Either signal alone is enough — we are containerized
+    # whenever one of them matches.
+    def containerized?
+      return true if File.exist?('/.dockerenv')
+      return false unless File.exist?('/proc/1/cgroup')
+
+      File.read('/proc/1/cgroup').match?(/docker|containerd|kubepods|libpod/)
+    rescue StandardError
+      false
+    end
+
     def cpu
-      cpu_from_proc || cpu_from_sysctl || { 'Status' => 'unavailable' }
+      cpu_from_cgroup || cpu_from_proc || cpu_from_sysctl || { 'Status' => 'unavailable' }
+    end
+
+    def cpu_from_cgroup
+      cores = [cgroup_cpu_quota_cores, cgroup_cpuset_cores].compact.min
+      return nil unless cores
+
+      {
+        'Model' => proc_cpuinfo&.dig(:model) || 'unknown',
+        'Cores' => format_cores(cores),
+        'Source' => cgroup_source,
+      }
     end
 
     def cpu_from_proc
+      info = proc_cpuinfo
+      return nil unless info
+
+      { 'Model' => info[:model] || 'unknown', 'Cores' => info[:count] }
+    end
+
+    def proc_cpuinfo
       return nil unless File.exist?('/proc/cpuinfo')
 
-      cores = 0
+      count = 0
       model = nil
       File.foreach('/proc/cpuinfo') do |line|
-        cores += 1 if line.start_with?('processor')
+        count += 1 if line.start_with?('processor')
         model ||= value_after(line, ':') if line.start_with?('model name')
       end
-
-      { 'Model' => model || 'unknown', 'Cores' => cores }
-    rescue StandardError => e
-      { 'Status' => "unavailable: #{e.class}: #{e.message}" }
+      count.positive? ? { count: count, model: model } : nil
+    rescue StandardError
+      nil
     end
 
     def cpu_from_sysctl
@@ -87,7 +138,21 @@ module SupportBundle
     end
 
     def memory
-      memory_from_proc || memory_from_sysctl || { 'Status' => 'unavailable' }
+      memory_from_cgroup || memory_from_proc || memory_from_sysctl || { 'Status' => 'unavailable' }
+    end
+
+    def memory_from_cgroup
+      limit = cgroup_memory_limit
+      return nil unless limit
+
+      current = cgroup_memory_current
+      result = { 'Total' => human_bytes(limit) }
+      if current
+        result['Used'] = human_bytes(current)
+        result['Available'] = human_bytes([limit - current, 0].max)
+      end
+      result['Source'] = cgroup_source
+      result
     end
 
     def memory_from_proc
@@ -109,12 +174,12 @@ module SupportBundle
     end
 
     # /proc/meminfo reports values as "<kibibytes> kB"; convert to bytes
-    # and reuse format_bytes so the unit auto-scales (e.g. "15.4 GB").
+    # so the unit auto-scales like every other size in the report.
     def format_meminfo(raw)
       match = raw.to_s.match(/\A(\d+)\s*kB\z/)
       return 'unknown' unless match
 
-      format_bytes((match[1].to_i * 1024).to_s)
+      human_bytes(match[1].to_i * 1024)
     end
 
     def memory_from_sysctl
@@ -123,7 +188,7 @@ module SupportBundle
       memsize, pagesize = capture('sysctl', '-n', 'hw.memsize', 'hw.pagesize').split("\n", 2)
 
       {
-        'Total' => format_bytes(memsize),
+        'Total' => human_bytes(memsize.to_i),
         'Available' => sysctl_free_memory(pagesize),
       }
     end
@@ -140,23 +205,89 @@ module SupportBundle
         line.to_s[/\d+/].to_i
       end
 
-      format_bytes((pages * page_size.to_i).to_s)
+      human_bytes(pages * page_size.to_i)
+    end
+
+    def uptime
+      uptime_from_proc || capture('uptime')
+    end
+
+    # Reading /proc/uptime directly avoids the uptime(1) binary, which on some
+    # distributions parses /var/run/utmp and reports the host boot time when
+    # run inside a Docker container on an unprivileged LXC. /proc/uptime is
+    # namespaced for the container and gives the value the user expects.
+    def uptime_from_proc
+      return nil unless File.exist?('/proc/uptime')
+
+      seconds = File.read('/proc/uptime').split.first.to_f
+      return nil if seconds <= 0
+
+      load_avg = read_loadavg
+      base = "up #{format_uptime(seconds)}"
+      load_avg ? "#{base}, load average: #{load_avg}" : base
+    rescue StandardError
+      nil
+    end
+
+    def read_loadavg
+      return nil unless File.exist?('/proc/loadavg')
+
+      File.read('/proc/loadavg').split[0, 3].join(', ')
+    rescue StandardError
+      nil
+    end
+
+    def format_uptime(seconds)
+      total = seconds.to_i
+      days = total / 86_400
+      hours = (total % 86_400) / 3600
+      minutes = (total % 3600) / 60
+
+      parts = []
+      parts << "#{days}d" if days.positive?
+      parts << "#{hours}h" if hours.positive?
+      parts << "#{minutes}min" if minutes.positive? || parts.empty?
+      parts.join(' ')
     end
 
     def disk
       path = Rails.configuration.data_path.to_s
-      # `-P` keeps the row on a single line even when the filesystem name
-      # is long (e.g. `/dev/mapper/pve-vm--115--disk--0`), which otherwise
-      # wraps and misaligns under `df -h` defaults.
+      base = { 'Data path' => path }
+      parsed = parse_df(path)
+      return base.merge('Usage' => capture('df', '-kP', path)) unless parsed
+
+      base.merge(parsed)
+    end
+
+    # `-kP` is portable: POSIX format (single line, no wrapping for long
+    # device names like `/dev/mapper/pve-vm--115--disk--0`) and 1024-byte
+    # blocks on both BSD (macOS) and GNU df. Parsing the values ourselves
+    # avoids the BSD quirk where `df -hP` ignores `-h` and prints raw
+    # 512-byte blocks.
+    def parse_df(path)
+      output = capture('df', '-kP', path)
+      return nil if output.start_with?('failed', 'unavailable')
+
+      filesystem, blocks, used, available, capacity = output.lines.last.to_s.split(/\s+/).first(5)
+      return nil unless [blocks, used, available].all? { |v| v.to_s.match?(/\A\d+\z/) }
+
       {
-        'Data path' => path,
-        'Usage' => capture('df', '-hP', path),
+        'Filesystem' => filesystem,
+        'Total' => kb_to_human(blocks),
+        'Used' => kb_to_human(used),
+        'Available' => kb_to_human(available),
+        'Capacity' => capacity,
       }
+    end
+
+    def kb_to_human(kibibytes)
+      human_bytes(kibibytes.to_i * 1024)
     end
 
     # Per-subdirectory sizes of the HELIOS data path, so support can see
     # at a glance which service (influxdb, postgresql, redis, …) is
-    # consuming the volume.
+    # consuming the volume. A single du call is much faster than one per
+    # directory when the volumes contain many files.
     def data_volumes
       path = Rails.configuration.data_path.to_s
       return { 'Status' => 'data path unavailable' } unless File.directory?(path)
@@ -164,20 +295,21 @@ module SupportBundle
       entries = Dir.children(path).select { |name| File.directory?(File.join(path, name)) }.sort
       return { 'Status' => 'no data directories found' } if entries.empty?
 
-      entries.index_with { |name| directory_size(File.join(path, name)) }
+      sizes = directory_sizes(entries.map { |name| File.join(path, name) })
+      entries.index_with { |name| sizes[File.join(path, name)] || 'unknown' }
     end
 
-    def directory_size(path)
-      # `-k` is POSIX and reports in 1024-byte blocks on both BSD and GNU
-      # du, so we get a portable integer we can feed through format_bytes
-      # for consistent units with the Memory section.
-      output = capture('du', '-sk', path)
-      return output if output.start_with?('failed', 'unavailable')
+    # `-k` is POSIX and reports in 1024-byte blocks on both BSD and GNU du.
+    def directory_sizes(paths)
+      output = capture('du', '-sk', *paths)
+      return {} if output.start_with?('failed', 'unavailable')
 
-      blocks = output.split(/\s+/, 2).first
-      return 'unknown' unless blocks.to_s.match?(/\A\d+\z/)
+      output.lines.each_with_object({}) do |line, acc|
+        blocks, dir = line.split(/\s+/, 2)
+        next unless blocks&.match?(/\A\d+\z/) && dir
 
-      format_bytes((blocks.to_i * 1024).to_s)
+        acc[dir.strip] = human_bytes(blocks.to_i * 1024)
+      end
     end
 
     def fetch_docker_snapshot
@@ -215,7 +347,7 @@ module SupportBundle
       list = docker[:containers]
       return 'No containers found.' if list.empty?
 
-      [containers_summary(docker[:info]), '', render_container_table(list)].join("\n")
+      [containers_summary(list), '', render_container_table(list)].join("\n")
     end
 
     def render_container_table(list)
@@ -251,10 +383,13 @@ module SupportBundle
       row.each_with_index.map { |cell, i| cell.to_s.ljust(widths[i]) }.join('  ').rstrip
     end
 
-    def containers_summary(info)
-      "#{info['Containers']} total " \
-        "(running: #{info['ContainersRunning']}, " \
-        "stopped: #{info['ContainersStopped']})"
+    # Counting from the actual list we just fetched keeps the summary
+    # consistent with the table below. /info's container counters can drift
+    # on Docker Desktop/LinuxKit and report numbers that contradict the
+    # real list, so we derive everything from one source.
+    def containers_summary(list)
+      running = list.count { |c| c.info['State'] == 'running' }
+      "#{list.size} total (running: #{running}, stopped: #{list.size - running})"
     end
 
     def format_section(title, body)
@@ -271,7 +406,6 @@ module SupportBundle
     def format_value(value)
       return value.to_s unless value.is_a?(String) && value.include?("\n")
 
-      # Multi-line values (e.g. df output) are indented under the key.
       "\n#{value.chomp.lines.map { |l| "  #{l}" }.join}"
     end
 
@@ -291,11 +425,12 @@ module SupportBundle
     def linux_os_release
       return nil unless File.exist?('/etc/os-release')
 
-      line = File.read('/etc/os-release').lines.find { |l| l.start_with?('PRETTY_NAME=') }
-      raw = value_after(line, '=')
-      return nil unless raw
+      File.foreach('/etc/os-release') do |line|
+        next unless line.start_with?('PRETTY_NAME=')
 
-      raw.delete_prefix('"').delete_suffix('"')
+        return value_after(line, '=').to_s.delete_prefix('"').delete_suffix('"')
+      end
+      nil
     rescue StandardError
       nil
     end
@@ -314,15 +449,110 @@ module SupportBundle
       %w[/usr/sbin/sysctl /sbin/sysctl].any? { |p| File.exist?(p) }
     end
 
-    def format_bytes(raw)
-      return raw unless raw.to_s.match?(/\A\d+\z/)
+    def cgroup_v2?
+      File.exist?(File.join(CGROUP_ROOT, 'cgroup.controllers'))
+    end
 
-      bytes = raw.to_i
-      %w[B KB MB GB TB].each do |unit|
-        return "#{format('%.1f', bytes)} #{unit}" if bytes < 1024 || unit == 'TB'
+    def cgroup_path(*segments)
+      File.join(CGROUP_ROOT, *segments)
+    end
 
-        bytes = bytes.to_f / 1024
+    def cgroup_source
+      "cgroup #{cgroup_v2? ? 'v2' : 'v1'} (container limit)"
+    end
+
+    def cgroup_memory_limit
+      v2 = cgroup_v2?
+      raw = read_first_line(v2 ? cgroup_path('memory.max') : cgroup_path('memory', 'memory.limit_in_bytes'))
+      return nil unless raw
+      return nil if v2 && raw == 'max'
+      return nil unless raw.match?(/\A\d+\z/)
+
+      value = raw.to_i
+      v2 || value < CGROUP_V1_MEMORY_UNLIMITED ? value : nil
+    end
+
+    def cgroup_memory_current
+      raw = read_first_line(
+        cgroup_v2? ? cgroup_path('memory.current') : cgroup_path('memory', 'memory.usage_in_bytes'),
+      )
+      raw.to_i if raw&.match?(/\A\d+\z/)
+    end
+
+    def cgroup_cpu_quota_cores
+      quota, period = cgroup_cpu_quota_period
+      return nil unless quota && period && quota.positive? && period.positive?
+
+      quota.to_f / period
+    end
+
+    def cgroup_cpu_quota_period
+      if cgroup_v2?
+        raw = read_first_line(cgroup_path('cpu.max'))
+        quota, period = raw&.split
+        quota == 'max' ? [nil, nil] : [int_or_nil(quota), int_or_nil(period)]
+      else
+        [int_or_nil(read_first_line(cgroup_path('cpu', 'cpu.cfs_quota_us'))),
+         int_or_nil(read_first_line(cgroup_path('cpu', 'cpu.cfs_period_us')))]
       end
+    end
+
+    def cgroup_cpuset_cores
+      raw = read_cpuset
+      return nil unless raw
+
+      count = parse_cpuset_count(raw)
+      # A cpuset that covers every host CPU is not a real container
+      # restriction; fall back to /proc/cpuinfo in that case.
+      host = proc_cpuinfo&.dig(:count)
+      return nil if !count.positive? || (host && count >= host)
+
+      count.to_f
+    end
+
+    def read_cpuset
+      paths =
+        cgroup_v2? ? %w[cpuset.cpus.effective cpuset.cpus] : %w[cpuset/cpuset.effective_cpus cpuset/cpuset.cpus]
+      paths.filter_map { |p| read_first_line(cgroup_path(p)) }.find(&:present?)
+    end
+
+    # cpuset format is a comma-separated list of CPU ids and ranges, e.g.
+    # "0-1", "0,2,4-5". Empty string means "no CPUs", which we treat as
+    # "no restriction known" rather than zero cores.
+    def parse_cpuset_count(raw)
+      raw.split(',').sum do |part|
+        if part.include?('-')
+          from, to = part.split('-', 2).map(&:to_i)
+          [to - from + 1, 0].max
+        elsif part.match?(/\A\d+\z/)
+          1
+        else
+          0
+        end
+      end
+    end
+
+    def format_cores(cores)
+      whole = cores.round
+      (cores - whole).abs < 0.05 ? whole.to_s : format('%.2f', cores)
+    end
+
+    def read_first_line(path)
+      return nil unless File.exist?(path)
+
+      File.open(path, &:readline).strip
+    rescue StandardError
+      nil
+    end
+
+    def int_or_nil(raw)
+      raw.to_s.match?(/\A-?\d+\z/) ? raw.to_i : nil
+    end
+
+    def human_bytes(bytes)
+      return 'unknown' unless bytes.is_a?(Numeric)
+
+      ActiveSupport::NumberHelper.number_to_human_size(bytes)
     end
 
     def value_after(line, separator)
