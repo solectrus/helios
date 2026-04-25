@@ -40,7 +40,21 @@ Web-based bootstrap helper and management interface for [SOLECTRUS](https://sole
 
 HELIOS runs as one service inside your SOLECTRUS Docker Compose stack. The bootstrap script handles everything — whether you're setting up SOLECTRUS for the first time or adding HELIOS to a host that already runs it.
 
-`cd` into an empty directory (new install) or into your existing SOLECTRUS stack's directory, then run:
+Pick the case that matches your setup:
+
+**a) New install** — pick a permanent location on a disk with enough free space (the databases will live here long-term, e.g. `/opt/solectrus` or `~/solectrus`), create the directory and `cd` into it:
+
+```bash
+mkdir -p /opt/solectrus && cd /opt/solectrus
+```
+
+**b) Existing SOLECTRUS stack** — `cd` into the directory that holds your current `compose.yaml` and `.env`:
+
+```bash
+cd /path/to/your/solectrus
+```
+
+Then run the bootstrap script:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/solectrus/helios/develop/bootstrap/install.sh | bash
