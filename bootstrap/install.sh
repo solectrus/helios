@@ -143,6 +143,14 @@ welcome() {
   yellow "  ⚠  Developer preview — work in progress, for experienced users only."
   yellow "     Not recommended for production use yet."
   printf '\n'
+  # Synchronous GitHub fetch (up to 3s). Placed here so the timestamp sits
+  # next to the description of what the script does, rather than dangling
+  # under "Working directory".
+  local last_updated
+  last_updated="$(fetch_last_updated)"
+  if [ -n "$last_updated" ]; then
+    printf '  Script last updated at: %s\n\n' "$last_updated"
+  fi
   cat <<TEXT
   This installer will:
     • Install Docker if missing (Linux only, via https://get.docker.com)
@@ -151,15 +159,11 @@ welcome() {
     • Pull and start HELIOS, reachable at http://<host>:3999
 
   Recommended host: ≥ ${MIN_DISK_GB} GB free disk, ≥ $((RECOMMENDED_RAM_MB / 1024)) GB RAM, Linux x86_64 or arm64
-  Working directory: $(pwd)
-TEXT
-  # Print the timestamp last so the synchronous GitHub fetch (up to 3s) only
-  # delays a single line, not the whole banner.
-  local last_updated
-  last_updated="$(fetch_last_updated)"
-  [ -n "$last_updated" ] && printf '  Script last updated at: %s\n' "$last_updated"
-  printf '\n'
 
+TEXT
+  # Highlighted separately so we can embed ANSI escapes (heredocs pass them
+  # through verbatim).
+  printf '  HELIOS will be installed into \033[1;36m%s\033[0m\n\n' "$(pwd)"
   prompt_yn "  Continue? [y/N] " || { yellow "  Aborted."; exit 0; }
   printf '\n'
 }
@@ -412,10 +416,21 @@ helios_url() {
 }
 
 main() {
+  COMPOSE_FILE="$(detect_compose_file)" || COMPOSE_FILE=""
+
+  # Short-circuit when HELIOS is already declared, before showing the welcome
+  # banner — otherwise we'd ask "Continue?" only to immediately tell the user
+  # there's nothing to do. Requires docker, so a missing-docker edge case
+  # falls through to the normal flow (and is caught by the inner check below).
+  if [ -n "$COMPOSE_FILE" ] && command -v docker >/dev/null 2>&1 \
+     && helios_service_present; then
+    yellow "HELIOS is already declared in $COMPOSE_FILE — nothing to do."
+    green "Visit HELIOS at $(helios_url)"
+    return
+  fi
+
   welcome
   ensure_docker
-
-  COMPOSE_FILE="$(detect_compose_file)" || COMPOSE_FILE=""
 
   if [ -n "$COMPOSE_FILE" ] || [ -e "$ENV_FILE" ]; then
     bold "Existing stack detected — adding HELIOS"
