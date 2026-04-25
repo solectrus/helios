@@ -46,23 +46,34 @@ detect_compose_file() {
   return 1
 }
 
-bold()   { printf '\033[1m%s\033[0m\n' "$*"; }
-green()  { printf '\033[32m%s\033[0m\n' "$*"; }
-yellow() { printf '\033[33m%s\033[0m\n' "$*"; }
-red()    { printf '\033[31m%s\033[0m\n' "$*" >&2; }
-cyan()   { printf '\033[36m%s\033[0m\n' "$*"; }
-dim()    { printf '\033[2m%s\033[0m\n' "$*"; }
+ANSI_RESET=$'\033[0m'
+ANSI_BOLD=$'\033[1m'
+ANSI_DIM=$'\033[2m'
+ANSI_RED=$'\033[31m'
+ANSI_GREEN=$'\033[32m'
+ANSI_YELLOW=$'\033[33m'
+ANSI_CYAN=$'\033[36m'
+ANSI_CLEAR_SCREEN=$'\033[2J\033[H'
+
+paintln() { printf '%s%s%s\n' "$1" "$2" "$ANSI_RESET"; }
+
+bold()      { paintln "$ANSI_BOLD"   "$*"; }
+dim()       { paintln "$ANSI_DIM"    "$*"; }
+success()   { paintln "$ANSI_GREEN"  "$*"; }
+warn()      { paintln "$ANSI_YELLOW" "$*"; }
+error()     { paintln "$ANSI_RED"    "$*" >&2; }
+highlight() { paintln "$ANSI_CYAN"   "$*"; }
 
 clear_screen() {
   [ -t 1 ] || return 0
   if command -v tput >/dev/null 2>&1; then
     tput clear
   else
-    printf '\033[2J\033[H'
+    printf '%s' "$ANSI_CLEAR_SCREEN"
   fi
 }
 
-die() { red "Error: $*"; exit 1; }
+die() { error "Error: $*"; exit 1; }
 
 need() { command -v "$1" >/dev/null 2>&1 || die "'$1' is required but not installed."; }
 
@@ -81,8 +92,8 @@ prompt_yn() {
 # Soft-fail preflight: print a warning, ask for confirmation, abort cleanly
 # on no. Used by the "below recommended threshold" branches in disk/RAM checks.
 warn_or_abort() {
-  yellow "$1"
-  prompt_yn "    Continue anyway? [y/N] " || { yellow "Aborted."; exit 0; }
+  warn "$1"
+  prompt_yn "    Continue anyway? [y/N] " || { warn "Aborted."; exit 0; }
   printf '\n'
 }
 
@@ -130,18 +141,18 @@ fetch_last_updated() {
 welcome() {
   clear_screen
   printf '\n'
-  cyan "  ███████╗ ██████╗ ██╗     ███████╗ ██████╗████████╗██████╗ ██╗   ██╗███████╗"
-  cyan "  ██╔════╝██╔═══██╗██║     ██╔════╝██╔════╝╚══██╔══╝██╔══██╗██║   ██║██╔════╝"
-  cyan "  ███████╗██║   ██║██║     █████╗  ██║        ██║   ██████╔╝██║   ██║███████╗"
-  cyan "  ╚════██║██║   ██║██║     ██╔══╝  ██║        ██║   ██╔══██╗██║   ██║╚════██║"
-  cyan "  ███████║╚██████╔╝███████╗███████╗╚██████╗   ██║   ██║  ██║╚██████╔╝███████║"
-  cyan "  ╚══════╝ ╚═════╝ ╚══════╝╚══════╝ ╚═════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝"
+  highlight "  ███████╗ ██████╗ ██╗     ███████╗ ██████╗████████╗██████╗ ██╗   ██╗███████╗"
+  highlight "  ██╔════╝██╔═══██╗██║     ██╔════╝██╔════╝╚══██╔══╝██╔══██╗██║   ██║██╔════╝"
+  highlight "  ███████╗██║   ██║██║     █████╗  ██║        ██║   ██████╔╝██║   ██║███████╗"
+  highlight "  ╚════██║██║   ██║██║     ██╔══╝  ██║        ██║   ██╔══██╗██║   ██║╚════██║"
+  highlight "  ███████║╚██████╔╝███████╗███████╗╚██████╗   ██║   ██║  ██║╚██████╔╝███████║"
+  highlight "  ╚══════╝ ╚═════╝ ╚══════╝╚══════╝ ╚═════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝"
   dim  "  https://solectrus.de                  Copyright © 2020-2026 Georg Ledermann"
   printf '\n'
   bold "  Installing HELIOS — your SOLECTRUS configuration manager"
   printf '\n'
-  yellow "  ⚠  Developer preview — work in progress, for experienced users only."
-  yellow "     Not recommended for production use yet."
+  warn "  ⚠  Developer preview — work in progress, for experienced users only."
+  warn "     Not recommended for production use yet."
   printf '\n'
   # Synchronous GitHub fetch (up to 3s). Placed here so the timestamp sits
   # next to the description of what the script does, rather than dangling
@@ -160,11 +171,11 @@ welcome() {
 
   Recommended host: ≥ ${MIN_DISK_GB} GB free disk, ≥ $((RECOMMENDED_RAM_MB / 1024)) GB RAM, Linux x86_64 or arm64
 
+  HELIOS will be installed into:
 TEXT
-  # Highlighted separately so we can embed ANSI escapes (heredocs pass them
-  # through verbatim).
-  printf '  HELIOS will be installed into \033[1;36m%s\033[0m\n\n' "$(pwd)"
-  prompt_yn "  Continue? [y/N] " || { yellow "  Aborted."; exit 0; }
+  highlight "    $(pwd)"
+  printf '\n'
+  prompt_yn "  Continue? [y/N] " || { warn "  Aborted."; exit 0; }
   printf '\n'
 }
 
@@ -202,11 +213,11 @@ ensure_disk_space() {
   fi
 
   if [ "$available" -lt "$MIN_DISK_GB" ]; then
-    red   "  ✗ Disk: ${available} GB free at ${path} (need ≥ ${MIN_DISK_GB} GB)"
+    error "  ✗ Disk: ${available} GB free at ${path} (need ≥ ${MIN_DISK_GB} GB)"
     die "Free up disk space and retry."
   fi
 
-  green "  ✓ Disk: ${available} GB free at ${path}"
+  success "  ✓ Disk: ${available} GB free at ${path}"
 }
 
 # Total RAM in whole megabytes. /proc/meminfo's MemTotal is reported
@@ -234,7 +245,7 @@ ensure_ram() {
   [ "$mb" -gt 0 ] || return 0
 
   if [ "$mb" -lt "$MIN_RAM_MB" ]; then
-    red   "  ✗ RAM: ${mb} MB (need ≥ ${MIN_RAM_MB} MB)"
+    error "  ✗ RAM: ${mb} MB (need ≥ ${MIN_RAM_MB} MB)"
     die "Add more RAM and retry."
   fi
 
@@ -243,13 +254,13 @@ ensure_ram() {
     return
   fi
 
-  green "  ✓ RAM: ${mb} MB"
+  success "  ✓ RAM: ${mb} MB"
 }
 
 ensure_docker() {
   command -v docker >/dev/null 2>&1 && return
 
-  yellow "Docker is not installed."
+  warn "Docker is not installed."
 
   if [ "$(uname -s)" != "Linux" ]; then
     die "Install Docker manually: https://docs.docker.com/get-docker/"
@@ -269,7 +280,7 @@ ensure_docker() {
   bold "Installing Docker..."
   curl -fsSL https://get.docker.com | $sudo_cmd sh
   command -v docker >/dev/null 2>&1 || die "Docker installation failed."
-  green "Docker installed."
+  success "Docker installed."
 }
 
 generate_secret() { openssl rand -hex 64; }
@@ -424,8 +435,8 @@ main() {
   # falls through to the normal flow (and is caught by the inner check below).
   if [ -n "$COMPOSE_FILE" ] && command -v docker >/dev/null 2>&1 \
      && helios_service_present; then
-    yellow "HELIOS is already declared in $COMPOSE_FILE — nothing to do."
-    green "Visit HELIOS at $(helios_url)"
+    warn "HELIOS is already declared in $COMPOSE_FILE — nothing to do."
+    success "Visit HELIOS at $(helios_url)"
     return
   fi
 
@@ -441,8 +452,8 @@ main() {
     [ -e "$ENV_FILE" ] || die "$COMPOSE_FILE exists but $ENV_FILE is missing. Refusing to guess."
 
     if helios_service_present; then
-      yellow "HELIOS is already declared in $COMPOSE_FILE — nothing to do."
-      green "Visit HELIOS at $(helios_url)"
+      warn "HELIOS is already declared in $COMPOSE_FILE — nothing to do."
+      success "Visit HELIOS at $(helios_url)"
       return
     fi
 
@@ -452,10 +463,10 @@ main() {
     append_helios_service
     ensure_helios_secrets
 
-    green "$COMPOSE_FILE updated — added 'helios' service."
-    yellow "ADMIN_PASSWORD and SECRET_KEY_BASE live in $ENV_FILE."
+    success "$COMPOSE_FILE updated — added 'helios' service."
+    warn "ADMIN_PASSWORD and SECRET_KEY_BASE live in $ENV_FILE."
     start_stack
-    green "HELIOS is running at $(helios_url)"
+    success "HELIOS is running at $(helios_url)"
     return
   fi
 
@@ -473,7 +484,7 @@ main() {
   write_compose_fresh
   write_env_fresh "$password" "$secret"
 
-  green "Created $COMPOSE_FILE and $ENV_FILE."
+  success "Created $COMPOSE_FILE and $ENV_FILE."
   start_stack
 
   cat <<MSG
