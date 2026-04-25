@@ -111,11 +111,11 @@ sensors:
   inverter_power_forecast:
     field: power
     measurement: inverter_forecast
-    source: forecast
+    source: external
   inverter_power_forecast_clearsky:
     field: power
     measurement: inverter_forecast_clearsky
-    source: forecast
+    source: external
   outdoor_temp:
     field: temperature
     measurement: outdoor
@@ -123,7 +123,7 @@ sensors:
   outdoor_temp_forecast:
     field: temperature
     measurement: outdoor_forecast
-    source: forecast
+    source: external
   system_status:
     field: status
     measurement: system

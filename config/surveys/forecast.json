@@ -40,13 +40,6 @@
             {
               "value": "pvnode",
               "text": "pvnode.com"
-            },
-            {
-              "value": "none",
-              "text": {
-                "de": "Keine Prognose",
-                "default": "No forecast"
-              }
             }
           ]
         }

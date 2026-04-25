@@ -25,10 +25,11 @@ module Import
       # are type-specific slots on inverter/wallbox/heatpump/battery devices.
       SOURCE_FIELDS = %w[data_source wallbox_vendor heatpump_access battery_vendor].freeze
 
-      def initialize(sensors_data:, devices:, senec_enabled:, mqtt_mappings:)
+      def initialize(sensors_data:, devices:, senec_enabled:, forecast_enabled:, mqtt_mappings:)
         @sensors_data = sensors_data
         @devices = devices
         @senec_enabled = senec_enabled
+        @forecast_enabled = forecast_enabled
         @mqtt_mappings = mqtt_mappings
       end
 
@@ -50,7 +51,7 @@ module Import
       def infer_source_for_sensor(sensor_name)
         return 'mqtt' if mqtt_mapping_details.key?(sensor_name)
         return 'senec' if SensorMappings::SENEC_DEFAULTS.key?(sensor_name) && @senec_enabled
-        return 'forecast' if SensorMappings::FORECAST_DEFAULTS.key?(sensor_name)
+        return 'forecast' if SensorMappings::FORECAST_DEFAULTS.key?(sensor_name) && @forecast_enabled
         return 'shelly' if shelly_device_provides_sensor?(sensor_name)
 
         'external'

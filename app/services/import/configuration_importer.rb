@@ -79,6 +79,7 @@ module Import
         sensors_data:,
         devices: result[:devices],
         senec_enabled: senec_extractor.enabled?,
+        forecast_enabled: forecast_extractor.enabled?,
         mqtt_mappings: mqtt_extractor.enabled? ? mqtt_extractor.mappings : [],
       )
     end

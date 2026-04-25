@@ -184,7 +184,7 @@ module Export
 
     def forecast_section(env)
       fcast = configuration.forecast
-      return if fcast.forecast.blank? || fcast.forecast == 'none'
+      return if fcast.forecast.blank?
 
       env.add_section('Forecast')
       forecast_base_entries(env, fcast)
