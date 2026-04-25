@@ -18,6 +18,14 @@ set -euo pipefail
 HELIOS_IMAGE="${HELIOS_IMAGE:-ghcr.io/solectrus/helios:develop}"
 ENV_FILE=".env"
 
+# Preflight thresholds. ABORT = the install will fail without this.
+# RECOMMENDED = it will work but the user runs out of headroom soon.
+# Calibrated against a real-world stack on a 16 GB / 2 GiB Proxmox VM.
+MIN_DISK_GB=5
+RECOMMENDED_DISK_GB=10
+MIN_RAM_MB=1024
+RECOMMENDED_RAM_MB=2048
+
 # Docker Compose file name precedence (matches Compose CLI search order).
 # First entry is the default when creating a fresh stack.
 COMPOSE_CANDIDATES=(compose.yaml compose.yml docker-compose.yaml docker-compose.yml)
@@ -91,12 +99,101 @@ welcome() {
       by adding HELIOS as a new service
     • Pull and start HELIOS, reachable at http://<host>:3999
 
+  Recommended host: ≥ 10 GB free disk, ≥ 2 GB RAM, Linux x86_64 or arm64
   Working directory: $(pwd)
 
 TEXT
 
   prompt_yn "  Continue? [y/N] " || { yellow "  Aborted."; exit 0; }
   printf '\n'
+}
+
+# Free space in whole gigabytes for the filesystem holding `path`. Uses
+# `df -kP` (1024-byte blocks, POSIX format) so it parses identically on
+# BSD and GNU userlands. Returns 0 on any failure so callers err on the
+# safe side and treat unreadable paths as "out of space".
+free_gb() {
+  local path="$1" kb
+  kb="$(df -kP "$path" 2>/dev/null | awk 'END {print $4}')"
+  if [[ "$kb" =~ ^[0-9]+$ ]]; then
+    printf '%d\n' $((kb / 1024 / 1024))
+  else
+    printf '0\n'
+  fi
+}
+
+# A full SOLECTRUS stack pulls ~3-4 GB of images (Dashboard, HELIOS,
+# Postgres, InfluxDB, Redis, Traefik, several collectors, Watchtower)
+# plus log + DB volumes. Below MIN_DISK_GB the install fails mid-pull;
+# below RECOMMENDED_DISK_GB the user runs out of headroom shortly after.
+ensure_disk_space() {
+  local cwd_gb docker_gb available path
+  cwd_gb="$(free_gb "$(pwd)")"
+  available="$cwd_gb"
+  path="$(pwd)"
+
+  # /var/lib/docker may sit on a different filesystem than $(pwd); when
+  # it does and is tighter, use those numbers instead.
+  if [ -d /var/lib/docker ]; then
+    docker_gb="$(free_gb /var/lib/docker)"
+    if [ "$docker_gb" -lt "$available" ]; then
+      available="$docker_gb"
+      path="/var/lib/docker"
+    fi
+  fi
+
+  if [ "$available" -lt "$MIN_DISK_GB" ]; then
+    red   "  ✗ Disk: ${available} GB free at ${path} (need ≥ ${MIN_DISK_GB} GB)"
+    die "Free up disk space and retry."
+  fi
+
+  if [ "$available" -lt "$RECOMMENDED_DISK_GB" ]; then
+    yellow "  ⚠ Disk: ${available} GB free at ${path} (recommended ≥ ${RECOMMENDED_DISK_GB} GB)"
+    prompt_yn "    Continue anyway? [y/N] " || { yellow "Aborted."; exit 0; }
+    printf '\n'
+    return
+  fi
+
+  green "  ✓ Disk: ${available} GB free at ${path}"
+}
+
+# Total RAM in whole megabytes. /proc/meminfo's MemTotal is reported
+# in kibibytes; we divide to get MB and return 0 when /proc/meminfo is
+# unreadable (e.g. on macOS), letting callers skip the check there.
+total_ram_mb() {
+  local kb
+  kb="$(awk '/^MemTotal:/ {print $2; exit}' /proc/meminfo 2>/dev/null)"
+  if [[ "$kb" =~ ^[0-9]+$ ]] && [ "$kb" -gt 0 ]; then
+    printf '%d\n' $((kb / 1024))
+  else
+    printf '0\n'
+  fi
+}
+
+# Below MIN_RAM_MB the Rails apps (HELIOS + Dashboard) get OOM-killed
+# before the stack finishes booting.
+ensure_ram() {
+  local mb
+  mb="$(total_ram_mb)"
+
+  # 0 means we couldn't read /proc/meminfo at all — most likely macOS.
+  # Skip rather than error out, since this script is Linux-targeted and
+  # macOS users are doing local development against a remote daemon.
+  [ "$mb" -gt 0 ] || return 0
+
+  if [ "$mb" -lt "$MIN_RAM_MB" ]; then
+    red   "  ✗ RAM: ${mb} MB (need ≥ ${MIN_RAM_MB} MB)"
+    die "Add more RAM and retry."
+  fi
+
+  if [ "$mb" -lt "$RECOMMENDED_RAM_MB" ]; then
+    yellow "  ⚠ RAM: ${mb} MB (recommended ≥ ${RECOMMENDED_RAM_MB} MB)"
+    prompt_yn "    Continue anyway? [y/N] " || { yellow "Aborted."; exit 0; }
+    printf '\n'
+    return
+  fi
+
+  green "  ✓ RAM: ${mb} MB"
 }
 
 ensure_docker() {
@@ -270,6 +367,8 @@ helios_url() {
 
 main() {
   welcome
+  ensure_disk_space
+  ensure_ram
   ensure_docker
 
   COMPOSE_FILE="$(detect_compose_file)" || COMPOSE_FILE=""
