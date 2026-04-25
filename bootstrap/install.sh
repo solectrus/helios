@@ -28,7 +28,6 @@ HELIOS_REF="${HELIOS_REF:-develop}"
 # RECOMMENDED = it will work but the user runs out of headroom soon.
 # Calibrated against a real-world stack on a 16 GB / 2 GiB Proxmox VM.
 MIN_DISK_GB=5
-RECOMMENDED_DISK_GB=10
 MIN_RAM_MB=1024
 RECOMMENDED_RAM_MB=2048
 
@@ -151,7 +150,7 @@ welcome() {
       by adding HELIOS as a new service
     • Pull and start HELIOS, reachable at http://<host>:3999
 
-  Recommended host: ≥ 10 GB free disk, ≥ 2 GB RAM, Linux x86_64 or arm64
+  Recommended host: ≥ ${MIN_DISK_GB} GB free disk, ≥ $((RECOMMENDED_RAM_MB / 1024)) GB RAM, Linux x86_64 or arm64
   Working directory: $(pwd)
 TEXT
   # Print the timestamp last so the synchronous GitHub fetch (up to 3s) only
@@ -181,8 +180,7 @@ free_gb() {
 
 # A full SOLECTRUS stack pulls ~3-4 GB of images (Dashboard, HELIOS,
 # Postgres, InfluxDB, Redis, Traefik, several collectors, Watchtower)
-# plus log + DB volumes. Below MIN_DISK_GB the install fails mid-pull;
-# below RECOMMENDED_DISK_GB the user runs out of headroom shortly after.
+# plus log + DB volumes. Below MIN_DISK_GB the install fails mid-pull.
 ensure_disk_space() {
   local cwd_gb docker_gb available path
   cwd_gb="$(free_gb "$(pwd)")"
@@ -202,11 +200,6 @@ ensure_disk_space() {
   if [ "$available" -lt "$MIN_DISK_GB" ]; then
     red   "  ✗ Disk: ${available} GB free at ${path} (need ≥ ${MIN_DISK_GB} GB)"
     die "Free up disk space and retry."
-  fi
-
-  if [ "$available" -lt "$RECOMMENDED_DISK_GB" ]; then
-    warn_or_abort "  ⚠ Disk: ${available} GB free at ${path} (recommended ≥ ${RECOMMENDED_DISK_GB} GB)"
-    return
   fi
 
   green "  ✓ Disk: ${available} GB free at ${path}"
@@ -420,8 +413,6 @@ helios_url() {
 
 main() {
   welcome
-  ensure_disk_space
-  ensure_ram
   ensure_docker
 
   COMPOSE_FILE="$(detect_compose_file)" || COMPOSE_FILE=""
@@ -440,6 +431,8 @@ main() {
       return
     fi
 
+    ensure_disk_space
+    ensure_ram
     ensure_project_name
     append_helios_service
     ensure_helios_secrets
@@ -452,6 +445,9 @@ main() {
   fi
 
   bold "No existing stack found — performing fresh install"
+
+  ensure_disk_space
+  ensure_ram
 
   COMPOSE_FILE="${COMPOSE_CANDIDATES[0]}"
 

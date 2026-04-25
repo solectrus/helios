@@ -24,26 +24,8 @@ setup() { in_tmpdir; }
   [[ "$output" == *"100 GB free"* ]]
 }
 
-@test "ensure_disk_space warns and continues when user accepts" {
-  free_gb() { echo 7; }
-  prompt_yn() { return 0; }
-  run ensure_disk_space
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"⚠"* ]]
-  [[ "$output" == *"GB free"* ]]
-}
-
-@test "ensure_disk_space exits cleanly when user declines warning" {
-  free_gb() { echo 7; }
-  prompt_yn() { return 1; }
-  run ensure_disk_space
-  [ "$status" -eq 0 ]
-  [[ "$output" == *"⚠"* ]]
-  [[ "$output" == *"Aborted"* ]]
-}
-
-@test "ensure_disk_space passes at exactly the recommended threshold" {
-  free_gb() { echo "$RECOMMENDED_DISK_GB"; }
+@test "ensure_disk_space passes at exactly the minimum threshold" {
+  free_gb() { echo "$MIN_DISK_GB"; }
   run ensure_disk_space
   [ "$status" -eq 0 ]
   [[ "$output" == *"✓"* ]]
