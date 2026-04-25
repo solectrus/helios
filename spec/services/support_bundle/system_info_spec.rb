@@ -111,6 +111,49 @@ RSpec.describe SupportBundle::SystemInfo do
         expect(described_class.memory_from_cgroup).to be_nil
       end
     end
+
+    # Docker on a Proxmox LXC: lxcfs overlays /proc/meminfo in the LXC but
+    # not inside Docker containers, so /proc/meminfo leaks the Proxmox host
+    # (e.g. 16 GB) while the Docker daemon's /info reports the LXC limit
+    # (e.g. 1 GB). We trust the smaller daemon value.
+    context 'when the Docker daemon reports less RAM than /proc/meminfo' do
+      before do
+        stub_cgroup(v2: true, '/sys/fs/cgroup/memory.max' => 'max')
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with('/proc/meminfo').and_return(true)
+        allow(File).to receive(:foreach).with('/proc/meminfo').and_return(
+          ["MemTotal:       16110000 kB\n", "MemAvailable:    5000000 kB\n",
+           "SwapTotal:       8000000 kB\n", "SwapFree:        6000000 kB\n"],
+        )
+      end
+
+      it 'overrides /proc/meminfo with the daemon value' do
+        result =
+          described_class.memory(info: { 'MemTotal' => 1_073_741_824 })
+
+        expect(result).to eq('Total' => '1 GB', 'Source' => 'docker daemon')
+      end
+    end
+
+    context 'when the Docker daemon reports the same RAM as /proc/meminfo' do
+      before do
+        stub_cgroup(v2: true, '/sys/fs/cgroup/memory.max' => 'max')
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with('/proc/meminfo').and_return(true)
+        allow(File).to receive(:foreach).with('/proc/meminfo').and_return(
+          ["MemTotal:       1048576 kB\n", "MemAvailable:    500000 kB\n",
+           "SwapTotal:       1048576 kB\n", "SwapFree:        1000000 kB\n"],
+        )
+      end
+
+      it 'keeps the /proc/meminfo values (no LXC leak suspected)' do
+        result = described_class.memory(info: { 'MemTotal' => 1_073_741_824 })
+
+        expect(result).not_to have_key('Source')
+        expect(result['Total']).to eq('1 GB')
+        expect(result['Swap total']).to eq('1 GB')
+      end
+    end
   end
 
   describe '.cpu' do

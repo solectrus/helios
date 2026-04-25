@@ -30,7 +30,7 @@ module SupportBundle
         'HELIOS' => helios,
         'Operating System' => operating_system(docker),
         'CPU' => cpu,
-        'Memory' => memory,
+        'Memory' => memory(docker),
         'Uptime' => uptime,
         'Disk' => disk,
         'Data Volumes' => data_volumes,
@@ -137,8 +137,9 @@ module SupportBundle
       { 'Model' => model || 'unknown', 'Cores' => cores || 'unknown' }
     end
 
-    def memory
-      memory_from_cgroup || memory_from_proc || memory_from_sysctl || { 'Status' => 'unavailable' }
+    def memory(docker = nil)
+      memory_from_cgroup || memory_from_proc(docker) || memory_from_sysctl ||
+        { 'Status' => 'unavailable' }
     end
 
     def memory_from_cgroup
@@ -155,7 +156,7 @@ module SupportBundle
       result
     end
 
-    def memory_from_proc
+    def memory_from_proc(docker = nil)
       return nil unless File.exist?('/proc/meminfo')
 
       entries = File.foreach('/proc/meminfo').each_with_object({}) do |line, acc|
@@ -163,7 +164,7 @@ module SupportBundle
         acc[key] = value.strip if value
       end
 
-      {
+      docker_daemon_meminfo_override(docker, entries) || {
         'Total' => format_meminfo(entries['MemTotal']),
         'Available' => format_meminfo(entries['MemAvailable']),
         'Swap total' => format_meminfo(entries['SwapTotal']),
@@ -171,6 +172,32 @@ module SupportBundle
       }
     rescue StandardError => e
       { 'Status' => "unavailable: #{e.class}: #{e.message}" }
+    end
+
+    # When HELIOS runs in a container whose /proc/meminfo is not namespaced
+    # — e.g. Docker on a Proxmox LXC, where lxcfs overlays the LXC's /proc
+    # but not the inner container's, or some Kubernetes nodes — MemTotal
+    # reflects the physical host instead of the container's real limit.
+    # The Docker daemon sits one layer above the container and reports its
+    # own cgroup view, so when it sees a smaller MemTotal, /proc/meminfo
+    # (and its MemAvailable/Swap fields) are leaking host numbers and we
+    # surface only the daemon value rather than mixing the two.
+    def docker_daemon_meminfo_override(docker, entries)
+      daemon_total = docker_info_mem_total(docker)
+      return nil unless daemon_total
+
+      proc_total = entries['MemTotal'].to_i * 1024
+      return nil unless proc_total.positive? && daemon_total < proc_total
+
+      { 'Total' => human_bytes(daemon_total), 'Source' => 'docker daemon' }
+    end
+
+    def docker_info_mem_total(docker)
+      return nil unless docker.is_a?(Hash)
+
+      info = docker[:info]
+      total = info.is_a?(Hash) ? info['MemTotal'] : nil
+      total if total.is_a?(Numeric) && total.positive?
     end
 
     # /proc/meminfo reports values as "<kibibytes> kB"; convert to bytes
