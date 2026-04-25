@@ -62,6 +62,16 @@ RSpec.describe InfluxDb::Client do
       expect(result['system_status'][:value]).to eq('INITIAL')
     end
 
+    it 'decodes binary HTTP bodies with multibyte characters as UTF-8' do
+      # Net::HTTP returns the body as ASCII-8BIT, regardless of what the server sent.
+      csv = ",_time,_value\n,2026-03-21T10:00:00Z,LÄDT ⚡\n"
+      stub_request(:post, query_url).to_return(status: 200, body: csv.b)
+
+      value = client.query_all_latest('system_status' => 'SENEC:current_state')['system_status'][:value]
+
+      expect(value).to eq('LÄDT ⚡')
+    end
+
     it 'returns nil and logs warning on HTTP error' do
       stub_request(:post, query_url).to_return(status: 500, body: 'Internal Server Error')
 

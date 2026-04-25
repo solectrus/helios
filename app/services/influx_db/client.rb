@@ -99,7 +99,10 @@ module InfluxDb
     def parse_csv(body)
       return [] if body.blank?
 
-      lines = body.lines.map(&:strip).reject { |l| l.empty? || l.start_with?('#') }
+      # Net::HTTP returns ASCII-8BIT; InfluxDB sends UTF-8. `scrub` guards
+      # against malformed bytes so a bad response cannot crash ERB rendering.
+      utf8_body = body.dup.force_encoding(Encoding::UTF_8).scrub
+      lines = utf8_body.lines.map(&:strip).reject { |l| l.empty? || l.start_with?('#') }
       return [] if lines.size < 2
 
       headers = lines.first.split(',')
