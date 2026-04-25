@@ -18,6 +18,11 @@ set -euo pipefail
 HELIOS_IMAGE="${HELIOS_IMAGE:-ghcr.io/solectrus/helios:develop}"
 ENV_FILE=".env"
 
+# GitHub repo + branch the installer was published from. Used to fetch the
+# script's last-update timestamp from the GitHub API on welcome.
+HELIOS_REPO="${HELIOS_REPO:-solectrus/helios}"
+HELIOS_REF="${HELIOS_REF:-develop}"
+
 # Preflight thresholds. ABORT = the install will fail without this.
 # RECOMMENDED = it will work but the user runs out of headroom soon.
 # Calibrated against a real-world stack on a 16 GB / 2 GiB Proxmox VM.
@@ -76,6 +81,42 @@ prompt_yn() {
 need openssl
 need awk
 
+# Best-effort: prints nothing on network failure, missing curl, or
+# unparseable response so a flaky network can't stall the install — the
+# welcome banner simply omits the line.
+fetch_last_updated() {
+  command -v curl >/dev/null 2>&1 || return 0
+  local response iso
+  response="$(
+    curl -fsSL --max-time 3 \
+      "https://api.github.com/repos/${HELIOS_REPO}/commits?path=bootstrap/install.sh&sha=${HELIOS_REF}&per_page=1" \
+      2>/dev/null
+  )" || return 0
+  # GitHub returns both author.date and committer.date; we want the latter
+  # so rebased commits show the rebase time, not the original authoring time.
+  iso="$(printf '%s' "$response" \
+    | awk -F'"' '/"committer":/{c=1} c && /"date":/ {print $4; exit}')"
+  [ -n "$iso" ] || return 0
+
+  # GNU `date -d` (Linux) parses the trailing Z natively; BSD `date` (macOS)
+  # ignores it and treats the parsed time as local, so on macOS we parse
+  # under TZ=UTC to get the correct epoch, then re-format in the host TZ.
+  local formatted epoch
+  formatted="$(date -d "$iso" +'%Y-%m-%d %H:%M %Z' 2>/dev/null)" || true
+  if [ -z "$formatted" ]; then
+    epoch="$(TZ=UTC date -j -f '%Y-%m-%dT%H:%M:%SZ' "$iso" +%s 2>/dev/null)" || true
+    [ -n "$epoch" ] && formatted="$(date -r "$epoch" +'%Y-%m-%d %H:%M %Z' 2>/dev/null)" || true
+  fi
+
+  if [ -n "$formatted" ]; then
+    printf '%s\n' "$formatted"
+    return 0
+  fi
+
+  printf '%s' "$iso" \
+    | awk -F'[T:Z]' '{ printf "%s %s:%s UTC\n", $1, $2, $3 }'
+}
+
 welcome() {
   clear_screen
   printf '\n'
@@ -92,6 +133,8 @@ welcome() {
   yellow "  ⚠  Developer preview — work in progress, for experienced users only."
   yellow "     Not recommended for production use yet."
   printf '\n'
+  local last_updated
+  last_updated="$(fetch_last_updated)"
   cat <<TEXT
   This installer will:
     • Install Docker if missing (Linux only, via https://get.docker.com)
@@ -101,8 +144,9 @@ welcome() {
 
   Recommended host: ≥ 10 GB free disk, ≥ 2 GB RAM, Linux x86_64 or arm64
   Working directory: $(pwd)
-
 TEXT
+  [ -n "$last_updated" ] && printf '  Script last updated at: %s\n' "$last_updated"
+  printf '\n'
 
   prompt_yn "  Continue? [y/N] " || { yellow "  Aborted."; exit 0; }
   printf '\n'
