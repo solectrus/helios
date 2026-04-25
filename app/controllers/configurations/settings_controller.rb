@@ -95,6 +95,7 @@ module Configurations
       if sensor_setting?
         normalize_fixed_source_mapping!(data)
         @configuration.update_sensor(sensor_name, data)
+        @configuration.auto_enable_senec_sensors! if data['source'] == 'senec'
       else
         persist_setting(data)
       end

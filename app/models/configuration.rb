@@ -123,6 +123,18 @@ class Configuration # rubocop:disable Metrics/ClassLength
     true
   end
 
+  def auto_enable_senec_sensors!
+    candidates = SensorRegistry::SENSORS.each_key.select do |name|
+      SensorRegistry.sources_for(name).include?('senec') && !sensor_enabled?(name)
+    end
+    return [] if candidates.empty?
+
+    @data['sensors'] ||= {}
+    candidates.each { |name| @data['sensors'][name] = { 'source' => 'senec' } }
+    save!
+    candidates
+  end
+
   # Disable/remove a sensor
   def remove_sensor(name)
     @data['sensors']&.delete(name.to_s)

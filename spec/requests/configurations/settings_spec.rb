@@ -63,6 +63,15 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(config.sensor_config('inverter_power').field).to eq('inverter_power')
     end
 
+    it 'auto-activates other SENEC-capable sensors that are not yet configured' do
+      post configuration_settings_path,
+           params: { setting: 'sensor', name: 'inverter_power', data: { 'source' => 'senec' }.to_json }
+
+      config = Configuration.current
+      expect(config.sensor_config('grid_import_power').source).to eq('senec')
+      expect(config.sensor_config('battery_soc').source).to eq('senec')
+    end
+
     it 'creates a singleton and redirects to the advanced page' do
       post configuration_settings_path,
            params: { setting: 'system', data: { timezone: 'Europe/Berlin' }.to_json }

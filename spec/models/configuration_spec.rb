@@ -157,6 +157,55 @@ RSpec.describe Configuration do
         expect(senec_sensors.keys).to eq(['inverter_power'])
       end
     end
+
+    describe '#auto_enable_senec_sensors!' do
+      it 'activates every SENEC-capable sensor that is not yet configured' do
+        config = described_class.current
+
+        activated = config.auto_enable_senec_sensors!
+
+        expected = SensorRegistry::SENSORS.each_key
+                                          .select { |n| SensorRegistry.sources_for(n).include?('senec') }
+        expect(activated).to match_array(expected)
+        expected.each do |name|
+          expect(config.sensor_config(name).source).to eq('senec')
+        end
+      end
+
+      it 'does not touch sensors that already have a different source' do
+        config = described_class.current
+        config.update_sensor('wallbox_power', { 'source' => 'mqtt', 'mqtt_topic' => 'wb/p' })
+
+        activated = config.auto_enable_senec_sensors!
+
+        expect(activated).not_to include('wallbox_power')
+        expect(config.sensor_config('wallbox_power').source).to eq('mqtt')
+      end
+
+      it 'does not touch sensors that are already SENEC' do
+        config = described_class.current
+        config.update_sensor('inverter_power', { 'source' => 'senec' })
+
+        activated = config.auto_enable_senec_sensors!
+
+        expect(activated).not_to include('inverter_power')
+      end
+
+      it 'returns an empty array when nothing changes' do
+        config = described_class.current
+        config.auto_enable_senec_sensors!
+
+        expect(config.auto_enable_senec_sensors!).to eq([])
+      end
+
+      it 'ignores non-SENEC-capable sensors' do
+        config = described_class.current
+        config.auto_enable_senec_sensors!
+
+        expect(config.sensor_enabled?('heatpump_power')).to be false
+        expect(config.sensor_enabled?('car_battery_soc')).to be false
+      end
+    end
   end
 
   describe '#mqtt_required?' do
