@@ -138,7 +138,7 @@ fetch_last_updated() {
     | awk -F'[T:Z]' '{ printf "%s %s:%s UTC\n", $1, $2, $3 }'
 }
 
-welcome() {
+banner() {
   clear_screen
   printf '\n'
   highlight "  ███████╗ ██████╗ ██╗     ███████╗ ██████╗████████╗██████╗ ██╗   ██╗███████╗"
@@ -149,6 +149,10 @@ welcome() {
   highlight "  ╚══════╝ ╚═════╝ ╚══════╝╚══════╝ ╚═════╝   ╚═╝   ╚═╝  ╚═╝ ╚═════╝ ╚══════╝"
   dim  "  https://solectrus.de                  Copyright © 2020-2026 Georg Ledermann"
   printf '\n'
+}
+
+welcome() {
+  banner
   bold "  Installing HELIOS — your SOLECTRUS configuration manager"
   printf '\n'
   warn "  ⚠  Developer preview — work in progress, for experienced users only."
@@ -435,8 +439,10 @@ main() {
   # falls through to the normal flow (and is caught by the inner check below).
   if [ -n "$COMPOSE_FILE" ] && command -v docker >/dev/null 2>&1 \
      && helios_service_present; then
-    warn "HELIOS is already declared in $COMPOSE_FILE — nothing to do."
-    success "Visit HELIOS at $(helios_url)"
+    banner
+    bold "  HELIOS is already installed."
+    success "  Visit HELIOS at $(helios_url)"
+    printf '\n'
     return
   fi
 
