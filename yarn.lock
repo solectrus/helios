@@ -1537,7 +1537,7 @@ __metadata:
     highlight.js: "npm:^11.11.1"
     playwright: "npm:^1.59.1"
     prettier: "npm:^3.8.3"
-    prettier-plugin-tailwindcss: "npm:^0.7.2"
+    prettier-plugin-tailwindcss: "npm:^0.7.3"
     rails-vite-plugin: "npm:^0.2.4"
     size-limit: "npm:^12.1.0"
     stimulus-vite-helpers: "npm:^3.1.0"
@@ -2076,7 +2076,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier-plugin-tailwindcss@npm:^0.7.2":
+"prettier-plugin-tailwindcss@npm:^0.7.3":
   version: 0.7.3
   resolution: "prettier-plugin-tailwindcss@npm:0.7.3"
   peerDependencies:
