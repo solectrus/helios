@@ -17,6 +17,7 @@ set -euo pipefail
 
 HELIOS_IMAGE="${HELIOS_IMAGE:-ghcr.io/solectrus/helios:develop}"
 ENV_FILE=".env"
+PROJECT_NAME="solectrus"
 
 # GitHub repo + branch the installer was published from. Used to fetch the
 # script's last-update timestamp from the GitHub API on welcome.
@@ -78,6 +79,14 @@ prompt_yn() {
   esac
 }
 
+# Soft-fail preflight: print a warning, ask for confirmation, abort cleanly
+# on no. Used by the "below recommended threshold" branches in disk/RAM checks.
+warn_or_abort() {
+  yellow "$1"
+  prompt_yn "    Continue anyway? [y/N] " || { yellow "Aborted."; exit 0; }
+  printf '\n'
+}
+
 need openssl
 need awk
 
@@ -102,10 +111,12 @@ fetch_last_updated() {
   # ignores it and treats the parsed time as local, so on macOS we parse
   # under TZ=UTC to get the correct epoch, then re-format in the host TZ.
   local formatted epoch
-  formatted="$(date -d "$iso" +'%Y-%m-%d %H:%M %Z' 2>/dev/null)" || true
+  formatted="$(date -d "$iso" +'%Y-%m-%d %H:%M %Z' 2>/dev/null)" || formatted=""
   if [ -z "$formatted" ]; then
-    epoch="$(TZ=UTC date -j -f '%Y-%m-%dT%H:%M:%SZ' "$iso" +%s 2>/dev/null)" || true
-    [ -n "$epoch" ] && formatted="$(date -r "$epoch" +'%Y-%m-%d %H:%M %Z' 2>/dev/null)" || true
+    epoch="$(TZ=UTC date -j -f '%Y-%m-%dT%H:%M:%SZ' "$iso" +%s 2>/dev/null)" || epoch=""
+    if [ -n "$epoch" ]; then
+      formatted="$(date -r "$epoch" +'%Y-%m-%d %H:%M %Z' 2>/dev/null)" || formatted=""
+    fi
   fi
 
   if [ -n "$formatted" ]; then
@@ -133,8 +144,6 @@ welcome() {
   yellow "  ⚠  Developer preview — work in progress, for experienced users only."
   yellow "     Not recommended for production use yet."
   printf '\n'
-  local last_updated
-  last_updated="$(fetch_last_updated)"
   cat <<TEXT
   This installer will:
     • Install Docker if missing (Linux only, via https://get.docker.com)
@@ -145,6 +154,10 @@ welcome() {
   Recommended host: ≥ 10 GB free disk, ≥ 2 GB RAM, Linux x86_64 or arm64
   Working directory: $(pwd)
 TEXT
+  # Print the timestamp last so the synchronous GitHub fetch (up to 3s) only
+  # delays a single line, not the whole banner.
+  local last_updated
+  last_updated="$(fetch_last_updated)"
   [ -n "$last_updated" ] && printf '  Script last updated at: %s\n' "$last_updated"
   printf '\n'
 
@@ -192,9 +205,7 @@ ensure_disk_space() {
   fi
 
   if [ "$available" -lt "$RECOMMENDED_DISK_GB" ]; then
-    yellow "  ⚠ Disk: ${available} GB free at ${path} (recommended ≥ ${RECOMMENDED_DISK_GB} GB)"
-    prompt_yn "    Continue anyway? [y/N] " || { yellow "Aborted."; exit 0; }
-    printf '\n'
+    warn_or_abort "  ⚠ Disk: ${available} GB free at ${path} (recommended ≥ ${RECOMMENDED_DISK_GB} GB)"
     return
   fi
 
@@ -231,9 +242,7 @@ ensure_ram() {
   fi
 
   if [ "$mb" -lt "$RECOMMENDED_RAM_MB" ]; then
-    yellow "  ⚠ RAM: ${mb} MB (recommended ≥ ${RECOMMENDED_RAM_MB} MB)"
-    prompt_yn "    Continue anyway? [y/N] " || { yellow "Aborted."; exit 0; }
-    printf '\n'
+    warn_or_abort "  ⚠ RAM: ${mb} MB (recommended ≥ ${RECOMMENDED_RAM_MB} MB)"
     return
   fi
 
@@ -303,7 +312,7 @@ YAML
 
 write_compose_fresh() {
   {
-    printf 'name: solectrus\n\nservices:\n'
+    printf 'name: %s\n\nservices:\n' "$PROJECT_NAME"
     helios_service_yaml
   } > "$COMPOSE_FILE"
 }
@@ -344,24 +353,24 @@ ensure_project_name() {
   # in the file, or falling back to the directory name. Grep the raw file to
   # tell those two cases apart.
   if grep -qE '^name:' "$COMPOSE_FILE"; then
-    [ "$effective_name" = "solectrus" ] && return
-    die "$COMPOSE_FILE has 'name: $effective_name' — HELIOS requires 'solectrus'. Fix manually and re-run."
+    [ "$effective_name" = "$PROJECT_NAME" ] && return
+    die "$COMPOSE_FILE has 'name: $effective_name' — HELIOS requires '$PROJECT_NAME'. Fix manually and re-run."
   fi
 
-  # No explicit `name:`. If the current (CWD-derived) name differs from
-  # `solectrus`, stop the old project first — otherwise the upcoming rename
-  # would orphan any running containers under the old project name.
-  if [ "$effective_name" != "solectrus" ] \
+  # No explicit `name:`. If the current (CWD-derived) name differs, stop the
+  # old project first — otherwise the upcoming rename would orphan any
+  # running containers under the old project name.
+  if [ "$effective_name" != "$PROJECT_NAME" ] \
      && [ -n "$(docker compose -f "$COMPOSE_FILE" ps -q 2>/dev/null)" ]; then
-    bold "Renaming project '$effective_name' → 'solectrus'. Stopping old project..."
+    bold "Renaming project '$effective_name' → '$PROJECT_NAME'. Stopping old project..."
     docker compose -f "$COMPOSE_FILE" down
   fi
 
-  # Prepend `name: solectrus` so the project name no longer depends on CWD.
+  # Prepend `name:` so the project name no longer depends on CWD.
   local tmp
   tmp="$(mktemp "./${COMPOSE_FILE}.XXXXXX")"
   {
-    printf 'name: solectrus\n\n'
+    printf 'name: %s\n\n' "$PROJECT_NAME"
     cat "$COMPOSE_FILE"
   } > "$tmp"
   mv "$tmp" "$COMPOSE_FILE"
