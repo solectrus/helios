@@ -1,11 +1,11 @@
 module SensorRow
   class Component < ViewComponent::Base
     SOURCE_BADGES = {
-      'senec' => 'badge-primary',
-      'shelly' => 'badge-secondary',
-      'mqtt' => 'badge-accent',
-      'forecast' => 'badge-info',
-      'external' => 'badge-warning',
+      'senec' => 'badge-outline text-cyan-300',
+      'shelly' => 'badge-outline text-pink-300',
+      'mqtt' => 'badge-outline text-amber-300',
+      'forecast' => 'badge-outline text-sky-300',
+      'external' => 'badge-outline text-slate-300',
     }.freeze
 
     attr_reader :sensor_name, :configuration, :reading
