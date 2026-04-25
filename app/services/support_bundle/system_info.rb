@@ -189,7 +189,14 @@ module SupportBundle
       proc_total = entries['MemTotal'].to_i * 1024
       return nil unless proc_total.positive? && daemon_total < proc_total
 
-      { 'Total' => human_bytes(daemon_total), 'Source' => 'docker daemon' }
+      result = { 'Total' => human_bytes(daemon_total) }
+      current = cgroup_memory_current
+      if current&.positive?
+        result['Used'] = human_bytes(current)
+        result['Available'] = human_bytes([daemon_total - current, 0].max)
+      end
+      result['Source'] = 'docker daemon'
+      result
     end
 
     def docker_info_mem_total(docker)

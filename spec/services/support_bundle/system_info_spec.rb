@@ -118,7 +118,11 @@ RSpec.describe SupportBundle::SystemInfo do
     # (e.g. 1 GB). We trust the smaller daemon value.
     context 'when the Docker daemon reports less RAM than /proc/meminfo' do
       before do
-        stub_cgroup(v2: true, '/sys/fs/cgroup/memory.max' => 'max')
+        stub_cgroup(
+          v2: true,
+          '/sys/fs/cgroup/memory.max' => 'max',
+          '/sys/fs/cgroup/memory.current' => '268435456',
+        )
         allow(File).to receive(:exist?).and_call_original
         allow(File).to receive(:exist?).with('/proc/meminfo').and_return(true)
         allow(File).to receive(:foreach).with('/proc/meminfo').and_return(
@@ -127,9 +131,31 @@ RSpec.describe SupportBundle::SystemInfo do
         )
       end
 
-      it 'overrides /proc/meminfo with the daemon value' do
+      it 'overrides /proc/meminfo with the daemon value plus cgroup usage' do
         result =
           described_class.memory(info: { 'MemTotal' => 1_073_741_824 })
+
+        expect(result).to eq(
+          'Total' => '1 GB',
+          'Used' => '256 MB',
+          'Available' => '768 MB',
+          'Source' => 'docker daemon',
+        )
+      end
+    end
+
+    context 'when the daemon overrides but cgroup memory.current is missing' do
+      before do
+        stub_cgroup(v2: true, '/sys/fs/cgroup/memory.max' => 'max')
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with('/proc/meminfo').and_return(true)
+        allow(File).to receive(:foreach).with('/proc/meminfo').and_return(
+          ["MemTotal:       16110000 kB\n"],
+        )
+      end
+
+      it 'still reports Total without Used/Available' do
+        result = described_class.memory(info: { 'MemTotal' => 1_073_741_824 })
 
         expect(result).to eq('Total' => '1 GB', 'Source' => 'docker daemon')
       end
