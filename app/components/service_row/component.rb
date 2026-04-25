@@ -150,7 +150,14 @@ module ServiceRow
     end
 
     def start_disabled?
-      lazy || pending || running?
+      lazy || pending || running? || incomplete_source?
+    end
+
+    def incomplete_source?
+      return false unless service_name.end_with?('-collector')
+
+      source = service_name.delete_suffix('-collector')
+      Configuration.current.incomplete_sources.include?(source)
     end
 
     def stop_disabled?

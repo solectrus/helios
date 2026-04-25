@@ -40,6 +40,7 @@ RSpec.describe 'Sensors', :with_admin_password do
 
     it 'shows the services nav tab and start button once a sensor is configured' do
       Configuration.current.update_sensor('inverter_power', { 'source' => 'senec' })
+      Configuration.current.update(:senec, { 'version' => 4 })
 
       get sensors_path
 

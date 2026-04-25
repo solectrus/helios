@@ -41,6 +41,7 @@ de:
   configurations:
     show:
       configured: 'Konfiguriert'
+      incomplete: 'Konfiguration unvollständig'
     settings:
       senec:
         title: 'SENEC-Collector'

@@ -152,6 +152,26 @@ class Configuration # rubocop:disable Metrics/ClassLength
     sensors_with_source('forecast').any?
   end
 
+  # Field that must be set for the source's collector to start. Listed per
+  # source to avoid treating a partially-filled section ({measurement: 'foo'})
+  # as configured.
+  SOURCE_REQUIRED_FIELDS = {
+    'senec' => 'version',
+    'mqtt' => 'mqtt_host',
+    'shelly' => 'connection',
+    'forecast' => 'forecast',
+  }.freeze
+
+  def incomplete_sources
+    @incomplete_sources ||= active_sources.select do |source|
+      SOURCE_CONFIGS.include?(source) && !source_complete?(source)
+    end
+  end
+
+  def incomplete?
+    incomplete_sources.any?
+  end
+
   # Ingest recalculates house_power when a balcony power plant feeds into
   # the home grid and distorts the inverter-reported value. It runs alongside
   # the local InfluxDB only — in collectors_only mode there is nothing to
@@ -257,6 +277,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     @enabled_sensors = nil
     @balcony_sensors = nil
     @effective_sensor_mappings = nil
+    @incomplete_sources = nil
     @mode = nil
     Current.configuration = nil
   end
@@ -289,6 +310,10 @@ class Configuration # rubocop:disable Metrics/ClassLength
   }.freeze
 
   private
+
+  def source_complete?(source)
+    setting_data(source)[SOURCE_REQUIRED_FIELDS.fetch(source)].present?
+  end
 
   def sanitize_sections!(result)
     result.each do |section, data|

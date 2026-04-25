@@ -73,5 +73,17 @@ RSpec.describe 'Services::Rows', :with_admin_password do
 
       expect(response).to redirect_to(services_path)
     end
+
+    it 'disables the start button and shows a warning link when the collector source is incompletely configured' do
+      Configuration.current.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      mock_compose_service('forecast-collector')
+      allow(Orchestration::Container).to receive(:find).with('forecast-collector').and_return(nil)
+
+      get service_row_path(service_id: 'forecast-collector'), headers: turbo_frame_headers
+
+      expect(response.body).to include(I18n.t('configurations.show.incomplete'))
+      expect(response.body).to include(%(href="#{datasources_path}"))
+      expect(response.body).to match(/<button[^>]*\bdisabled\b/)
+    end
   end
 end

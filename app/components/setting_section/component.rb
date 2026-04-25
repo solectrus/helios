@@ -33,5 +33,9 @@ module SettingSection
     def singleton_configured?
       singleton_data.present?
     end
+
+    def incomplete?
+      configuration.incomplete_sources.include?(setting)
+    end
   end
 end

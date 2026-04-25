@@ -32,6 +32,17 @@
           <% if !lazy && version %>
             <span class="text-base-content/50 ml-1 font-normal tabular-nums"><%= version %></span>
           <% end %>
+
+          <% if !lazy && incomplete_source? %>
+            <span
+              class="tooltip tooltip-right tooltip-warning font-normal"
+              data-tip="<%= t('configurations.show.incomplete') %>"
+            >
+              <a href="<%= datasources_path %>" class="hover:underline">
+                <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+              </a>
+            </span>
+          <% end %>
         </div>
 
         <div class="text-base-content/50 text-xs">

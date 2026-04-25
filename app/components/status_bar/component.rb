@@ -58,7 +58,9 @@ module StatusBar
     end
 
     def show_start?
-      @status.in?(%i[stopped partial error]) && Configuration.current.setup_completed?
+      @status.in?(%i[stopped partial error]) &&
+        Configuration.current.setup_completed? &&
+        !Configuration.current.incomplete?
     end
 
     def show_stop?

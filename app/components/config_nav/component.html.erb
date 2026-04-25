@@ -7,6 +7,15 @@
         </span>
 
         <span class="text-base font-medium"><%= tab[:label] %></span>
+
+        <% if show_warning?(tab) %>
+          <span
+            class="tooltip tooltip-right tooltip-warning ml-auto"
+            data-tip="<%= t('configurations.show.incomplete') %>"
+          >
+            <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+          </span>
+        <% end %>
       <% end %>
     <% end %>
 

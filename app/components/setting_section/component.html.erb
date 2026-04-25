@@ -12,7 +12,12 @@
 
       <%# Singleton status %>
       <div class="flex items-center justify-between py-2">
-        <% if singleton_configured? %>
+        <% if incomplete? %>
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-triangle-exclamation text-warning text-xs"></i>
+            <span class="text-warning text-sm"><%= t('configurations.show.incomplete') %></span>
+          </div>
+        <% elsif singleton_configured? %>
           <div class="flex items-center gap-2">
             <i class="fa-solid fa-check text-success text-xs"></i>
             <span class="text-base-content/70 text-sm"><%= t('configurations.show.configured') %></span>

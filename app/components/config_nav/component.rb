@@ -38,5 +38,9 @@ module ConfigNav
         'bg-base-300/70 text-base-content/60 group-hover:text-base-content': !active?(tab),
       )
     end
+
+    def show_warning?(tab)
+      tab[:id] == :datasources && Configuration.current.incomplete?
+    end
   end
 end
