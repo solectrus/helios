@@ -66,7 +66,25 @@ jobs:
       - name: Shellcheck shell scripts
         run: shellcheck $(git ls-files '*.sh')
 
-  test:
+  bats:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install bats
+        uses: bats-core/bats-action@4.0.0
+        with:
+          support-install: false
+          assert-install: false
+          detik-install: false
+          file-install: false
+
+      - name: Run bats tests
+        run: bats --recursive spec/bats/
+
+  rspec:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
 
@@ -123,7 +141,7 @@ jobs:
       - name: Setup Database
         run: bin/rails db:setup
 
-      - name: Run Ruby Tests
+      - name: Run RSpec tests
         run: bin/rspec
         env:
           SKIP_VITE_BUILD: 1
@@ -220,7 +238,7 @@ jobs:
 
     if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags')
 
-    needs: [lint, test, build]
+    needs: [lint, bats, rspec, build]
 
     steps:
       - name: Download digests

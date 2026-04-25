@@ -324,4 +324,11 @@ Keep this password safe — it is also stored in $ENV_FILE
 MSG
 }
 
-main "$@"
+# Run main unless we are being sourced (e.g. by bats tests in spec/bats/bootstrap/).
+# Three invocations to consider:
+#   bash install.sh      → BASH_SOURCE[0]=install.sh, $0=install.sh   → run
+#   curl … | bash        → BASH_SOURCE[0]=<unset>,    $0=bash         → run
+#   source install.sh    → BASH_SOURCE[0]=install.sh, $0=<caller>     → skip
+if [ -z "${BASH_SOURCE[0]:-}" ] || [ "${BASH_SOURCE[0]}" = "$0" ]; then
+  main "$@"
+fi

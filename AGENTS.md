@@ -7,7 +7,7 @@ Rails 8.1 web-based management tool for SOLECTRUS Docker hosts. HELIOS removes t
 - Ruby 4.0, SQLite3
 - Hotwire (Turbo + Stimulus), TypeScript, Vite, ViewComponent
 - Tailwind CSS v4, ERB templates, daisyUI
-- RSpec + Playwright
+- RSpec + Playwright, Bats for shell scripts
 
 ## Documentation
 
@@ -86,6 +86,7 @@ After creating or modifying code, **always** run the relevant linter(s) before c
 - Model specs: `bin/rspec spec/models/<model>_spec.rb`
 - Request specs: `bin/rspec spec/requests/<feature>_spec.rb`
 - System specs: `bin/rspec spec/system/<feature>_spec.rb`
+- Shell script specs: `bats --recursive spec/bats/`
 
 **System specs are slow** (Playwright browser automation). Only run when:
 

@@ -25,5 +25,6 @@ CI.run do
   #   failure "Signoff: CI failed. Do not merge or deploy.", "Fix the issues and try again."
   # end
 
-  step 'Tests', 'bin/rspec'
+  step 'Test: Bats', 'bats --recursive spec/bats/'
+  step 'Test: RSpec', 'bin/rspec'
 end

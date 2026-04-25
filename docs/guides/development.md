@@ -55,7 +55,7 @@ Both modes use the same hybrid Docker access (docker-api gem + `docker compose` 
 
 ## Testing
 
-**Framework:** RSpec
+**Frameworks:** RSpec for Ruby code, Bats for shell scripts
 
 ### Test Strategy
 
@@ -87,6 +87,7 @@ Both modes use the same hybrid Docker access (docker-api gem + `docker compose` 
 | Request tests | Controllers, auth, HTTP integration | RSpec                         | High     |
 | Job tests     | Background job behavior             | RSpec                         | Medium   |
 | System tests  | UI flows, JS-heavy interactions     | RSpec + Capybara + Playwright | Medium   |
+| Shell tests   | Bootstrap installer, shell scripts  | Bats                          | Medium   |
 
 **System tests** use `capybara-playwright-driver`: Capybara's DSL with a real Chromium browser powered by Playwright. This covers both server-rendered flows and JS-heavy interactions (SurveyJS forms, real-time updates, Stimulus controllers).
 
@@ -104,6 +105,9 @@ bin/rspec spec/system/
 
 # Run system tests with visible browser (for debugging)
 HEADLESS=false bin/rspec spec/system/
+
+# Run shell script tests (Bats)
+bats --recursive spec/bats/
 ```
 
 SimpleCov runs unconditionally from [`spec/spec_helper.rb`](../../spec/spec_helper.rb) and writes the coverage report to `coverage/index.html`.
@@ -116,6 +120,7 @@ SimpleCov runs unconditionally from [`spec/spec_helper.rb`](../../spec/spec_help
 - `spec/requests/` — HTTP-level specs per controller (plus nested folders for nested controllers)
 - `spec/system/` — Playwright-driven smoke coverage; keep thin, most flows are covered at the request level
 - `spec/frontend/` — Vitest specs for Stimulus controllers and frontend utils
+- `spec/bats/` — Bats specs for shell scripts (e.g. `spec/bats/bootstrap/` for the bootstrap installer)
 - `spec/fixtures/import_scenarios/` — real `compose.yaml` / `.env` samples driving the Scenario C auto-import tests
 - `spec/support/` — RSpec helpers and shared setup
 
