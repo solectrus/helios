@@ -232,13 +232,28 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+  ci-success:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+
+    needs: [lint, bats, rspec, build]
+    if: always()
+
+    steps:
+      - name: Check job results
+        run: |
+          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+            echo "Some jobs failed or were cancelled"
+            exit 1
+          fi
+
   merge:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
 
     if: github.ref == 'refs/heads/develop' || github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags')
 
-    needs: [lint, bats, rspec, build]
+    needs: [ci-success]
 
     steps:
       - name: Download digests
