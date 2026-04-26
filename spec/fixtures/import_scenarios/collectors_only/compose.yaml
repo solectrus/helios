@@ -272,6 +272,7 @@ services:
     command: "--scope solectrus --cleanup"
     environment:
     - TZ
+    - WATCHTOWER_POLL_INTERVAL
     volumes:
     - "/var/run/docker.sock:/var/run/docker.sock"
     labels:

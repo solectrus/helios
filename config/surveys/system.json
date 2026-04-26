@@ -208,6 +208,49 @@
           }
         }
       ]
+    },
+    {
+      "name": "p_updates",
+      "title": {
+        "de": "Automatische Updates",
+        "default": "Automatic updates"
+      },
+      "elements": [
+        {
+          "type": "html",
+          "name": "update_interval_info",
+          "html": {
+            "de": "<p>Neue Versionen der Dienste werden automatisch installiert, sobald sie verfügbar sind.</p>",
+            "default": "<p>New versions of the services are installed automatically as soon as they become available.</p>"
+          }
+        },
+        {
+          "type": "radiogroup",
+          "name": "update_interval",
+          "title": {
+            "de": "Prüfintervall",
+            "default": "Check interval"
+          },
+          "isRequired": true,
+          "defaultValue": "86400",
+          "choices": [
+            {
+              "value": "86400",
+              "text": {
+                "de": "Täglich (empfohlen)",
+                "default": "Daily (recommended)"
+              }
+            },
+            {
+              "value": "3600",
+              "text": {
+                "de": "Stündlich",
+                "default": "Hourly"
+              }
+            }
+          ]
+        }
+      ]
     }
   ],
   "showQuestionNumbers": "off",

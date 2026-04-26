@@ -225,6 +225,7 @@ module Import
         'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
         'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],
         'network_name' => imported_network_name,
+        'update_interval' => watchtower_interval,
       }
     end
 
@@ -263,6 +264,19 @@ module Import
 
     def watchtower_data
       image_data_for('watchtower')
+    end
+
+    # WATCHTOWER_POLL_INTERVAL takes precedence; some installations configure
+    # the interval as a `--interval N` argument on the watchtower service
+    # command instead, which is equally valid for Watchtower itself.
+    def watchtower_interval
+      env_value = @reader.raw_env['WATCHTOWER_POLL_INTERVAL'].presence
+      return env_value if env_value
+
+      command = @reader.service('watchtower')&.dig('command')
+      tokens = Array(command).flat_map { |part| part.to_s.split }
+      index = tokens.index('--interval')
+      tokens[index + 1] if index && tokens[index + 1]
     end
 
     def postgresql_data

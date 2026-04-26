@@ -14,6 +14,7 @@ system:
   secret_key_base: very_secret_key_base
   timezone: Europe/Berlin
   ui_theme: light
+  update_interval: '3600'
 dashboard:
   image: ghcr.io/solectrus/solectrus:latest
 postgresql:

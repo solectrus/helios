@@ -147,7 +147,7 @@ services:
       - TZ
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
-    command: "--scope solectrus --cleanup"
+    command: "--interval 3600 --scope solectrus --cleanup"
     restart: unless-stopped
     logging:
       driver: json-file

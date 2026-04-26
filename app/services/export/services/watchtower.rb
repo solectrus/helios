@@ -16,7 +16,7 @@ module Export
       def to_h
         {
           image: configuration.watchtower.image,
-          environment: ['TZ'],
+          environment: %w[TZ WATCHTOWER_POLL_INTERVAL],
           volumes: ['/var/run/docker.sock:/var/run/docker.sock'],
           command: '--scope solectrus --cleanup',
           restart: 'unless-stopped',

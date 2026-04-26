@@ -153,6 +153,31 @@ RSpec.describe Export::Builder do
       end
     end
 
+    it 'always declares WATCHTOWER_POLL_INTERVAL on the watchtower service' do
+      compose = Compose.load
+      watchtower = compose.services.find('watchtower')
+      expect(watchtower.environment).to include('WATCHTOWER_POLL_INTERVAL')
+    end
+
+    context 'when the update interval is configured' do
+      before do
+        configuration.update('system', configuration.system.merge('update_interval' => '3600'))
+        described_class.new(configuration).write!
+      end
+
+      it 'writes the configured value to .env' do
+        env = Env.load
+        expect(env['WATCHTOWER_POLL_INTERVAL']).to eq('3600')
+      end
+    end
+
+    context 'when the update interval is not configured' do
+      it 'falls back to the daily default in .env' do
+        env = Env.load
+        expect(env['WATCHTOWER_POLL_INTERVAL']).to eq(ConfigSchema::DEFAULT_UPDATE_INTERVAL)
+      end
+    end
+
     it 'configures dashboard with depends_on' do
       compose = Compose.load
       dashboard = compose.services.find('dashboard')

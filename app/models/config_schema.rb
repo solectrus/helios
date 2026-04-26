@@ -11,6 +11,7 @@ class ConfigSchema
     ui_theme
     lockup_codeword
     network_name
+    update_interval
   ].freeze
 
   # Default Docker network name. Compose's auto-generated default is
@@ -89,6 +90,10 @@ class ConfigSchema
   REDIS_ALL = (STORAGE_FIELDS + REDIS_DEFAULTS.keys).uniq.freeze
 
   # --- Watchtower ---
+
+  # Default WATCHTOWER_POLL_INTERVAL (in seconds) when the user has not
+  # picked an interval — keep in sync with surveys/system.json.
+  DEFAULT_UPDATE_INTERVAL = '86400'.freeze
 
   WATCHTOWER_DEFAULTS = {
     'image' => DockerImages.current(:WATCHTOWER),

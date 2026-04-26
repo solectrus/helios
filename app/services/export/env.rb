@@ -37,8 +37,15 @@ module Export
       mqtt_section(env) if Services::MqttCollector.enabled?(configuration)
       shelly_section(env) if Services::ShellyCollector.enabled?(configuration)
       ingest_section(env) if configuration.ingest_required?
+      watchtower_section(env)
       sensor_section(env)
       unmanaged_section(env)
+    end
+
+    def watchtower_section(env)
+      interval = configuration.system.update_interval.presence || ConfigSchema::DEFAULT_UPDATE_INTERVAL
+      env.add_section('Watchtower (automatic Docker image updates)')
+      entry(env, 'WATCHTOWER_POLL_INTERVAL', interval, 'Interval between update checks (in seconds)')
     end
 
     def header_comment
