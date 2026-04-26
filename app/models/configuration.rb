@@ -267,7 +267,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   # Create or update a singleton setting. Returns true if data changed.
   def update(setting, data) # rubocop:disable Naming/PredicateMethod
-    raw = data.is_a?(Data) ? data.to_h : data
+    raw = deep_unwrap(data)
     return false if @data[setting.to_s] == raw
 
     @data[setting.to_s] = raw
@@ -338,6 +338,16 @@ class Configuration # rubocop:disable Metrics/ClassLength
   }.freeze
 
   private
+
+  # Recursively converts Configuration::Data (and any nested Data) back into
+  # plain Hash/Array structures so YAML.safe_load can read them back.
+  def deep_unwrap(value)
+    case value
+    when Hash then value.each_with_object({}) { |(k, v), h| h[k.to_s] = deep_unwrap(v) }
+    when Array then value.map { |v| deep_unwrap(v) }
+    else value
+    end
+  end
 
   def source_complete?(source)
     setting_data(source)[SOURCE_REQUIRED_FIELDS.fetch(source)].present?

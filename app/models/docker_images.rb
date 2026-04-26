@@ -14,7 +14,7 @@
 # https://github.com/solectrus/hosting
 # https://github.com/solectrus/configurator
 
-module DockerImages
+module DockerImages # rubocop:disable Metrics/ModuleLength
   INFLUXDB = {
     current: 'influxdb:2.8-alpine',
 
@@ -120,10 +120,49 @@ module DockerImages
   POWER_SPLITTER = { current: 'ghcr.io/solectrus/power-splitter:latest' }.freeze
   TRAEFIK = { current: 'traefik:v3.6' }.freeze
 
-  BACKUP_INFLUXDB = { current: 'ghcr.io/solectrus/influxdb2-s3-backup:latest' }.freeze
-  BACKUP_POSTGRESQL = { current: 'ghcr.io/solectrus/postgres-s3-backup:18' }.freeze
+  INFLUXDB_BACKUP = { current: 'ghcr.io/solectrus/influxdb2-s3-backup:latest' }.freeze
+  POSTGRESQL_BACKUP = { current: 'ghcr.io/solectrus/postgres-s3-backup:18' }.freeze
+
+  # Compose-service-name → registry-constant lookup. Built once at load time so
+  # per-render lookups (one per service row, ~15 rows per dashboard) are O(1)
+  # hash hits instead of repeated reflection.
+  REGISTRY_BY_SERVICE = constants.each_with_object({}) do |const_name, hash|
+    next unless const_get(const_name).is_a?(Hash)
+
+    hash[const_name.to_s.downcase.tr('_', '-')] = const_name
+  end.freeze
 
   def self.current(name)
     const_get(name).fetch(:current)
   end
+
+  # Recommended image tag for a compose-service, or nil if the service has
+  # no entry in this registry (e.g. unmanaged / unknown service).
+  def self.recommended_for(service_name)
+    name = REGISTRY_BY_SERVICE[service_name.to_s]
+    current(name) if name
+  end
+
+  # True when the image is on the registry's `:legacy` list for the service
+  # AND differs from the recommended `:current` tag. Tagged legacy entries
+  # (e.g. `redis:7-alpine`) require an exact match; untagged entries
+  # (e.g. `containrrr/watchtower`) match the repo with any tag.
+  def self.legacy?(service_name, image)
+    return false if image.nil?
+
+    name = REGISTRY_BY_SERVICE[service_name.to_s]
+    return false unless name
+
+    data = const_get(name)
+    return false if image == data[:current]
+
+    Array(data[:legacy]).any? { |entry| matches_legacy?(image, entry) }
+  end
+
+  def self.matches_legacy?(image, entry)
+    return image == entry if entry.include?(':')
+
+    image == entry || image.start_with?("#{entry}:")
+  end
+  private_class_method :matches_legacy?
 end

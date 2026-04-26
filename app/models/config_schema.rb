@@ -101,8 +101,8 @@ class ConfigSchema
   # --- Backup image defaults ---
 
   BACKUP_DEFAULTS = {
-    'influxdb' => { 'image' => DockerImages.current(:BACKUP_INFLUXDB) }.freeze,
-    'postgresql' => { 'image' => DockerImages.current(:BACKUP_POSTGRESQL) }.freeze,
+    'influxdb' => { 'image' => DockerImages.current(:INFLUXDB_BACKUP) }.freeze,
+    'postgresql' => { 'image' => DockerImages.current(:POSTGRESQL_BACKUP) }.freeze,
   }.freeze
 
   # Combined auto-generated defaults keyed by section

@@ -36,6 +36,7 @@ Rails.application.routes.draw do
     resource :row, only: :show, module: :services
     resource :log, only: :show, module: :services
     resource :task, only: %i[create update destroy], module: :services
+    resource :image, only: :update, module: :services
     resource :orphaned_task, only: :destroy, module: :services
 
     collection do

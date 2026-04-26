@@ -27,5 +27,38 @@ module Services
     def helios?
       compose_service&.helios?
     end
+
+    def reject_helios
+      head :forbidden if helios?
+    end
+
+    def respond_with_pending_status(status_bar: nil)
+      respond_to do |format|
+        format.turbo_stream { render turbo_stream: turbo_stream_updates(status_bar:) }
+        format.html { redirect_to services_path }
+      end
+    end
+
+    def turbo_stream_updates(status_bar: nil)
+      updates = [morph_replace("service-#{service_name}", pending_service_row_component)]
+      if status_bar
+        updates << turbo_stream.replace('status-bar', StatusBar::Component.new(status: status_bar))
+      end
+      updates
+    end
+
+    def morph_replace(target, component)
+      html = render_to_string(component, layout: false)
+      view_context.turbo_stream_action_tag(:replace, target:, method: :morph, template: html)
+    end
+
+    def pending_service_row_component
+      ServiceRow::Component.new(
+        compose_service:,
+        container:,
+        pending: true,
+        lazy: false,
+      )
+    end
   end
 end

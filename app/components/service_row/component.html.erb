@@ -48,12 +48,18 @@
         <div class="text-base-content/50 text-xs">
           <span class="truncate"><%= compose_service.image %></span>
 
-          <% if !lazy && image_mismatch? %>
+          <% if !lazy && legacy_image? %>
             <span
               class="tooltip tooltip-right tooltip-warning"
-              data-tip="<%= t('.image_mismatch', image: container.image) %>"
+              data-tip="<%= t('.legacy_image', image: recommended_image) %>"
             >
-              <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+              <%= button_to service_image_path(service_name),
+                            method: :patch,
+                            disabled: pending,
+                            class: "btn btn-ghost btn-xs btn-circle text-warning",
+                            form: { class: "inline-block align-middle", data: { turbo_confirm: t('.legacy_image_confirm', image: recommended_image) } } do %>
+                <i class="fa-solid fa-circle-up"></i>
+              <% end %>
             </span>
           <% end %>
         </div>
@@ -110,11 +116,11 @@
 
           <div
             id="<%= dom_id %>-recreate"
-            class="tooltip join-item <%= restart_pending? ? 'tooltip-warning' : 'tooltip-info' %>"
-            data-tip="<%= restart_pending? ? t('.restart_pending') : t('.recreate') %>"
+            class="tooltip join-item <%= recreate_warning? ? 'tooltip-warning' : 'tooltip-info' %>"
+            data-tip="<%= recreate_warning? ? t('.recreate_pending') : t('.recreate') %>"
           >
             <%= button_to service_task_path(service_name), method: :patch, disabled: recreate_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "recreateButton" } do %>
-              <i class="fa-solid fa-arrows-rotate <%= 'text-warning' if restart_pending? %>"></i>
+              <i class="fa-solid fa-arrows-rotate <%= 'text-warning' if recreate_warning? %>"></i>
             <% end %>
           </div>
         </div>

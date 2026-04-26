@@ -143,10 +143,31 @@ module ServiceRow
       health.nil? || health == 'healthy'
     end
 
-    def image_mismatch?
+    def legacy_image?
+      return false if helios?
+
+      DockerImages.legacy?(service_name, compose_service.image)
+    end
+
+    # True when the running container's image hash differs from the image
+    # configured in compose.yaml — typically because a mutable tag (e.g.
+    # `:latest`, `:develop`, `:2-alpine`) was repulled and the container is
+    # still on the previous digest. A recreate brings it onto the new image.
+    # Suppressed while a legacy upgrade is offered, since recreating now
+    # would only entrench the legacy tag.
+    def outdated_image?
+      return false if helios? || legacy_image?
       return false unless container&.running?
 
       compose_service.image != container.image
+    end
+
+    def recommended_image
+      @recommended_image ||= DockerImages.recommended_for(service_name)
+    end
+
+    def recreate_warning?
+      restart_pending? || outdated_image?
     end
 
     def start_disabled?
