@@ -132,6 +132,48 @@ RSpec.describe Orchestration::Runner do
         expect(result.success?).to be true
       end
     end
+
+    context 'with a renamed service leaving an orphan container' do
+      before do
+        File.write(File.join(data_path, 'compose.yaml'), <<~YAML)
+          name: helios-test
+          services:
+            old:
+              image: alpine:latest
+              command: sleep 30
+        YAML
+        system(
+          'docker compose up -d',
+          chdir: data_path,
+          out: File::NULL,
+          err: File::NULL,
+        )
+        File.write(File.join(data_path, 'compose.yaml'), <<~YAML)
+          name: helios-test
+          services:
+            new:
+              image: alpine:latest
+              command: sleep 30
+        YAML
+      end
+
+      after do
+        system(
+          'docker compose down -v',
+          chdir: data_path,
+          out: File::NULL,
+          err: File::NULL,
+        )
+      end
+
+      it 'removes orphaned containers from the previous service definition' do
+        described_class.up
+
+        format = '{{.Label "com.docker.compose.service"}}'
+        running = `docker ps --filter label=com.docker.compose.project=helios-test --format '#{format}'`
+        expect(running.split("\n")).to contain_exactly('new')
+      end
+    end
   end
 
   describe '.down' do

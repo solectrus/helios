@@ -19,7 +19,11 @@ module Orchestration
       def up(detach: true)
         validate_data_path!
 
-        args = %w[up --no-build]
+        # --remove-orphans clears containers that linger after a service
+        # rename (e.g. legacy 'app' → canonical 'dashboard' from import).
+        # Compose only deletes containers carrying its own project label,
+        # so user-launched sidecars are not affected.
+        args = %w[up --no-build --remove-orphans]
         args << '-d' if detach
         args.concat(services_except_self)
         run_compose(*args)
