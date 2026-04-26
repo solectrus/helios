@@ -17,6 +17,10 @@ module Export
         'ingest'
       end
 
+      def self.config_keys
+        ['ingest']
+      end
+
       def self.comment
         'Ingest — Ingestion proxy that recalculates house_power for balcony power plants'
       end

@@ -5,6 +5,10 @@ module Export
         'senec-collector'
       end
 
+      def self.config_keys
+        ['senec']
+      end
+
       def self.comment
         'SENEC Collector — Reads data from SENEC battery storage systems'
       end

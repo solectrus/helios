@@ -5,6 +5,10 @@ module Export
         'forecast-collector'
       end
 
+      def self.config_keys
+        ['forecast']
+      end
+
       def self.comment
         'Forecast Collector — Fetches solar production forecasts'
       end
@@ -17,7 +21,7 @@ module Export
 
       def to_h
         {
-          image: DockerImages.current(:FORECAST_COLLECTOR),
+          image: configuration.forecast.image.presence || DockerImages.current(:FORECAST_COLLECTOR),
           environment: forecast_environment,
           depends_on: forecast_depends_on,
           restart: 'unless-stopped',

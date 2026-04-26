@@ -5,6 +5,10 @@ module Export
         'postgresql'
       end
 
+      def self.config_keys
+        ['postgresql']
+      end
+
       def self.comment
         'PostgreSQL — Relational database for daily summaries, electricity prices, and settings'
       end

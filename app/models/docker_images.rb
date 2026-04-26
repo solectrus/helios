@@ -118,6 +118,7 @@ module DockerImages
   SHELLY_COLLECTOR = { current: 'ghcr.io/solectrus/shelly-collector:latest' }.freeze
   FORECAST_COLLECTOR = { current: 'ghcr.io/solectrus/forecast-collector:latest' }.freeze
   POWER_SPLITTER = { current: 'ghcr.io/solectrus/power-splitter:latest' }.freeze
+  TRAEFIK = { current: 'traefik:v3.6' }.freeze
 
   BACKUP_INFLUXDB = { current: 'ghcr.io/solectrus/influxdb2-s3-backup:latest' }.freeze
   BACKUP_POSTGRESQL = { current: 'ghcr.io/solectrus/postgres-s3-backup:18' }.freeze

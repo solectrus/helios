@@ -199,12 +199,16 @@ class ConfigSchema
     forecast_pvnode_extra_params3
     forecast_pvnode_extra_params4
     measurement
+    image
   ].freeze
+
+  POWER_SPLITTER_FIELDS = %w[image].freeze
 
   REVERSE_PROXY_FIELDS = (STORAGE_FIELDS + %w[
     app_domain
     letsencrypt_email
     trusted_proxy_ranges
+    image
   ]).uniq.freeze
 
   BACKUP_FIELDS = %w[
@@ -237,6 +241,7 @@ class ConfigSchema
     'reverse_proxy' => REVERSE_PROXY_FIELDS,
     'backup' => BACKUP_ALL,
     'sensors' => SENSORS_FIELDS,
+    'power_splitter' => POWER_SPLITTER_FIELDS,
   }.freeze
 
   def self.fields_for(setting)

@@ -5,6 +5,10 @@ module Export
         'influxdb-backup'
       end
 
+      def self.config_keys
+        %w[backup influxdb]
+      end
+
       def self.comment
         'InfluxDB Backup — Automated backup to S3'
       end

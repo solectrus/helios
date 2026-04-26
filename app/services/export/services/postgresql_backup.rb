@@ -5,6 +5,10 @@ module Export
         'postgresql-backup'
       end
 
+      def self.config_keys
+        %w[backup postgresql]
+      end
+
       def self.comment
         'PostgreSQL Backup — Automated backup to S3'
       end

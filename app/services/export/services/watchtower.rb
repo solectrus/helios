@@ -5,6 +5,10 @@ module Export
         'watchtower'
       end
 
+      def self.config_keys
+        ['watchtower']
+      end
+
       def self.comment
         'Watchtower — Automatic Docker image updates'
       end

@@ -262,7 +262,7 @@ RSpec.describe Export::Builder do
     it 'configures traefik with correct image' do
       compose = Compose.load
       traefik = compose.services.find('traefik')
-      expect(traefik.image).to eq('traefik:v3')
+      expect(traefik.image).to eq(DockerImages.current(:TRAEFIK))
     end
 
     it 'removes dashboard ports' do

@@ -17,6 +17,13 @@ module Export
         raise NotImplementedError
       end
 
+      # Hash-key path locating this service's settings in `config.yaml`,
+      # e.g. `['backup', 'influxdb']`. Nil opts the service out of in-place
+      # updates (HELIOS uses self-recreate instead).
+      def self.config_keys
+        nil
+      end
+
       def data_directories
         []
       end

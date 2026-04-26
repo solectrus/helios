@@ -5,6 +5,10 @@ module Export
         'traefik'
       end
 
+      def self.config_keys
+        ['reverse_proxy']
+      end
+
       def self.comment
         'Traefik — Reverse proxy with automatic HTTPS'
       end
@@ -24,7 +28,7 @@ module Export
 
       def to_h
         {
-          image: 'traefik:v3',
+          image: configuration.reverse_proxy.image.presence || DockerImages.current(:TRAEFIK),
           command: traefik_command,
           ports: %w[80:80 443:443],
           volumes: [

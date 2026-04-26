@@ -21,6 +21,10 @@ module Export
       Services::Helios,
     ].freeze
 
+    def self.find_service(name)
+      SERVICE_ORDER.find { |klass| klass.service_name == name.to_s }
+    end
+
     def initialize(configuration)
       @configuration = configuration
     end

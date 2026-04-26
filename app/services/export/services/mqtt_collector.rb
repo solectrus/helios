@@ -19,6 +19,10 @@ module Export
         'mqtt-collector'
       end
 
+      def self.config_keys
+        ['mqtt']
+      end
+
       def self.comment
         'MQTT Collector — Receives sensor data via MQTT protocol'
       end

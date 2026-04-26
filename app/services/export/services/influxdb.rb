@@ -5,6 +5,10 @@ module Export
         'influxdb'
       end
 
+      def self.config_keys
+        ['influxdb']
+      end
+
       def self.comment
         'InfluxDB — Time-series database for sensor measurements'
       end

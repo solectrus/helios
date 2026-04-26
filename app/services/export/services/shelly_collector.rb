@@ -5,6 +5,10 @@ module Export
         'shelly-collector'
       end
 
+      def self.config_keys
+        ['shelly']
+      end
+
       def self.comment
         'Shelly Collector — Reads data from Shelly energy meters'
       end

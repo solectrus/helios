@@ -160,7 +160,7 @@ services:
   # └──────────────────────────────────────────────────────────┘
   #
   traefik:
-    image: traefik:v3
+    image: traefik:v3.6
     command:
     - "--providers.docker=true"
     - "--providers.docker.exposedbydefault=false"

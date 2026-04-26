@@ -5,6 +5,10 @@ module Export
         'redis'
       end
 
+      def self.config_keys
+        ['redis']
+      end
+
       def self.comment
         'Redis — In-memory store for caching'
       end

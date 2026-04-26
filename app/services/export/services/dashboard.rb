@@ -5,6 +5,10 @@ module Export
         'dashboard'
       end
 
+      def self.config_keys
+        ['dashboard']
+      end
+
       def self.comment
         'SOLECTRUS — Web application'
       end

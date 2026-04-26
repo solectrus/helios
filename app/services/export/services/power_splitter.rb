@@ -9,6 +9,10 @@ module Export
         'power-splitter'
       end
 
+      def self.config_keys
+        ['power_splitter']
+      end
+
       def self.comment
         'Power Splitter — Calculates derived power values'
       end
@@ -22,7 +26,7 @@ module Export
 
       def to_h
         {
-          image: DockerImages.current(:POWER_SPLITTER),
+          image: configuration.power_splitter.image.presence || DockerImages.current(:POWER_SPLITTER),
           environment: power_splitter_environment,
           depends_on: healthy_depends_on(%i[influxdb postgresql redis]),
           restart: 'unless-stopped',
