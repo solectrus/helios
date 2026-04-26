@@ -240,15 +240,11 @@ module Import
     # --- Infrastructure services ---
 
     def redis_data
-      data = image_data_for('redis').merge(volume_path_data('redis')).compact
-      data['image'] = DockerImages.upgrade_legacy(:REDIS, data['image'])
-      data
+      image_data_for('redis').merge(volume_path_data('redis')).compact
     end
 
     def watchtower_data
-      data = image_data_for('watchtower')
-      data['image'] = DockerImages.upgrade_legacy(:WATCHTOWER, data['image'])
-      data
+      image_data_for('watchtower')
     end
 
     def postgresql_data
@@ -263,9 +259,8 @@ module Import
     end
 
     def local_influxdb_data
-      image = Compose.normalize_image(@reader.service('influxdb')&.dig('image'))
       {
-        'image' => DockerImages.upgrade_legacy(:INFLUXDB, image),
+        'image' => Compose.normalize_image(@reader.service('influxdb')&.dig('image')),
         'password' => @reader.raw_env['INFLUX_PASSWORD'],
         'org' => @reader.raw_env['INFLUX_ORG'],
         'bucket' => @reader.raw_env['INFLUX_BUCKET'],

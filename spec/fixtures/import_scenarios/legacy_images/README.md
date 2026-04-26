@@ -1,30 +1,31 @@
 # legacy_images
 
-Round-trip fixture that exercises the **legacy-image upgrade policy**
-defined in [`DockerImages`](../../../../app/models/docker_images.rb).
-Every infrastructure service in `compose.yaml.bak` carries a tag from
-the `:legacy` list — import (and the next render) must rewrite each
-one to its `:current` default.
+Round-trip fixture that exercises the **image-preservation policy**: HELIOS
+imports every image tag exactly as it appears in `compose.yaml.bak`, even
+when the tag is on the `:legacy` list defined in
+[`DockerImages`](../../../../app/models/docker_images.rb).
+
+The legacy entries do not trigger an automatic rewrite — they only power
+the "Update available" hint in the service row UI, which the user opts
+into manually.
 
 ## Highlights
 
-- **Dashboard preview tag** `ghcr.io/solectrus/solectrus:pr-4588`
-  → upgraded to `:latest` on the next stack render. The dashboard
-  upgrade is applied by `Export::Builder#upgrade_managed_images!`,
-  not by the importer, so `config.yaml` still records `pr-4588`
-  while `compose.yaml` already shows `:latest`.
-- **Old InfluxDB tag** `influxdb:2.5-alpine` → `:2.8-alpine`. Force
-  upgrade on import — InfluxDB 2.x storage is forward-compatible, so
-  HELIOS lifts every entry on `DockerImages::INFLUXDB[:legacy]` to
-  the current default regardless of what the user had pinned.
-- **Old Redis tag** `redis:6-alpine` → `:8-alpine`. Same force-upgrade
-  rationale: in-memory cache, no persistence concerns.
+- **Dashboard preview tag** `ghcr.io/solectrus/solectrus:pr-4588` →
+  preserved. The tag is on `DockerImages::DASHBOARD[:legacy]`, so the
+  service row shows an "Update available" badge that recommends
+  `:latest` once the user clicks it.
+- **Old InfluxDB tag** `influxdb:2.5-alpine` → preserved. Listed under
+  `DockerImages::INFLUXDB[:legacy]`; the user is offered an upgrade to
+  `:2.8-alpine` via the badge.
+- **Old Redis tag** `redis:6-alpine` → preserved. Listed under
+  `DockerImages::REDIS[:legacy]`; the user is offered an upgrade to
+  `:8-alpine`.
 - **Deprecated Watchtower repo** `containrrr/watchtower:1.7.1` →
-  `nickfedor/watchtower:latest`. The legacy entry is the bare repo
-  name (no tag), so any tag from the unmaintained repo is migrated
-  to the maintained fork.
-- **PostgreSQL preserved** — `postgres:16-alpine` is kept verbatim
-  even though `:current` is `postgres:18-alpine`.
+  preserved. The legacy entry is the bare repo name (no tag), so any
+  tag from the unmaintained repo is flagged with the badge and can be
+  swapped for `nickfedor/watchtower:latest`.
+- **PostgreSQL preserved** — `postgres:16-alpine` is kept verbatim.
   `DockerImages::POSTGRESQL[:legacy]` is empty by design: a major-
-  version bump is not safe in place, so HELIOS leaves the user's
-  pinned tag alone and lets them migrate manually.
+  version bump is not safe in place, so HELIOS leaves the user's pinned
+  tag alone and never even surfaces an upgrade hint.

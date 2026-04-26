@@ -59,49 +59,28 @@ RSpec.describe Export::Builder do
     end
   end
 
-  describe 'managed image upgrades on write!' do
+  describe 'managed image preservation on write!' do
     let(:builder) { described_class.new(configuration) }
 
-    it 'upgrades a known legacy image to the current default' do
+    it 'preserves a legacy InfluxDB image instead of auto-upgrading it' do
       stub_const('DockerImages::INFLUXDB',
                  { current: 'influxdb:9-alpine', legacy: ['influxdb:8-alpine'].freeze }.freeze)
       configuration.update('influxdb', configuration.influxdb.merge('image' => 'influxdb:8-alpine'))
       builder.write!
-      expect(Configuration.current.influxdb.image).to eq('influxdb:9-alpine')
+      expect(Configuration.current.influxdb.image).to eq('influxdb:8-alpine')
+      expect(File.read(compose_path)).to include('influxdb:8-alpine')
     end
 
-    it 'preserves a user-pinned image not on the legacy list' do
-      stub_const('DockerImages::INFLUXDB',
-                 { current: 'influxdb:9-alpine', legacy: ['influxdb:8-alpine'].freeze }.freeze)
+    it 'preserves the unmaintained containrrr Watchtower repo verbatim' do
+      configuration.update('watchtower', { 'image' => 'containrrr/watchtower:latest' })
+      builder.write!
+      expect(Configuration.current.watchtower.image).to eq('containrrr/watchtower:latest')
+    end
+
+    it 'preserves a user-pinned image' do
       configuration.update('influxdb', configuration.influxdb.merge('image' => 'influxdb:8.5-alpine'))
       builder.write!
       expect(Configuration.current.influxdb.image).to eq('influxdb:8.5-alpine')
-    end
-
-    it 'migrates the unmaintained containrrr Watchtower repo to the current default' do
-      configuration.update('watchtower', { 'image' => 'containrrr/watchtower:latest' })
-      builder.write!
-      expect(Configuration.current.watchtower.image).to eq(DockerImages.current(:WATCHTOWER))
-    end
-
-    it 'does not touch a Watchtower image from the maintained fork' do
-      configuration.update('watchtower', { 'image' => 'nickfedor/watchtower:1.5.0' })
-      builder.write!
-      expect(Configuration.current.watchtower.image).to eq('nickfedor/watchtower:1.5.0')
-    end
-
-    it 'triggers compose.yaml regeneration via write_if_stale! after a HELIOS update' do
-      stub_const('DockerImages::INFLUXDB',
-                 { current: 'influxdb:9-alpine', legacy: ['influxdb:8-alpine'].freeze }.freeze)
-      builder.write!
-      configuration.update('influxdb', configuration.influxdb.merge('image' => 'influxdb:8-alpine'))
-      File.utime(File.mtime(compose_path), File.mtime(compose_path), Configuration.path)
-      expect(builder.stale?).to be(false)
-
-      builder.write_if_stale!
-
-      expect(Configuration.current.influxdb.image).to eq('influxdb:9-alpine')
-      expect(File.read(compose_path)).to include('influxdb:9-alpine')
     end
   end
 

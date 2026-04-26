@@ -1,14 +1,20 @@
-# Each image is a hash with `:current` (used as the default) and optionally
-# `:legacy` — older HELIOS defaults that are force-upgraded to `:current`
-# on import and on HELIOS update. A legacy entry without a tag matches the
-# repo with any tag (used to migrate away from a deprecated repo, e.g.
-# `containrrr/watchtower`).
+# Each image is a hash with `:current` (the recommended default, used as the
+# initial value for newly generated configs) and optionally `:legacy` —
+# images for which HELIOS surfaces an "update available" hint to the user.
 #
-# Legacy entries originate from the (old) hosting guide or Configurator
+# Nothing here is ever rewritten automatically: `:current` is only consulted
+# when generating defaults for a fresh setup; `:legacy` only powers the UI
+# hint. The user decides when to switch.
+#
+# A legacy entry without a tag matches the repo with any tag (used to flag
+# moves away from a deprecated repo, e.g. `containrrr/watchtower`).
+#
+# Legacy entries originate from the (old) hosting guide, the Configurator, or
+# previous HELIOS recommendations:
 # https://github.com/solectrus/hosting
 # https://github.com/solectrus/configurator
 
-module DockerImages # rubocop:disable Metrics/ModuleLength
+module DockerImages
   INFLUXDB = {
     current: 'influxdb:2.8-alpine',
 
@@ -100,8 +106,8 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
   WATCHTOWER = {
     current: 'nickfedor/watchtower:latest',
 
-    # containrrr/watchtower repo is unmaintained,
-    # so any tag from it is migrated to the nickfedor fork.
+    # The containrrr/watchtower repo is unmaintained — any tag from it is
+    # surfaced as an "update available" hint to migrate to the nickfedor fork.
     legacy: %w[
       containrrr/watchtower
     ],
@@ -119,28 +125,4 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
   def self.current(name)
     const_get(name).fetch(:current)
   end
-
-  # Replaces an image with the current default if it matches a known legacy
-  # entry. Tagged entries (e.g. `redis:7-alpine`) require an exact match;
-  # untagged entries (e.g. `containrrr/watchtower`) match the repo with any
-  # tag. Otherwise the image is returned unchanged so user-pinned versions
-  # are preserved.
-  def self.upgrade_legacy(name, image)
-    return image if image.nil?
-
-    data = const_get(name)
-    return image if image == data[:current]
-
-    legacy = data[:legacy]
-    return data[:current] if legacy&.any? { |entry| matches_legacy?(image, entry) }
-
-    image
-  end
-
-  def self.matches_legacy?(image, entry)
-    return image == entry if entry.include?(':')
-
-    image == entry || image.start_with?("#{entry}:")
-  end
-  private_class_method :matches_legacy?
 end

@@ -19,12 +19,12 @@ postgresql:
   password: secret_postgres_password
 influxdb:
   bucket: solectrus
-  image: influxdb:2.8-alpine
+  image: influxdb:2.5-alpine
   org: solectrus
   password: secret_influx_password
   token: secret_influx_token
 redis:
-  image: redis:8-alpine
+  image: redis:6-alpine
 watchtower:
-  image: nickfedor/watchtower:latest
+  image: containrrr/watchtower:1.7.1
 sensors: {}

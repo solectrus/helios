@@ -18,14 +18,14 @@ postgresql:
   password: my-secret-db-password
 influxdb:
   bucket: solectrus
-  image: influxdb:2.8-alpine
+  image: influxdb:2.7-alpine
   org: solectrus
   password: ExAmPl3PA55W0rD
   token: my-super-secret-admin-token
 redis:
-  image: redis:8-alpine
+  image: redis:7-alpine
 watchtower:
-  image: nickfedor/watchtower:latest
+  image: containrrr/watchtower:latest
 forecast:
   forecast: forecast.solar
   forecast_azimuth1: '20'

@@ -20,16 +20,16 @@ postgresql:
   volume_path: "/volume1/docker/solectrus/postgresql"
 influxdb:
   bucket: klushygel-pv
-  image: influxdb:2.8-alpine
+  image: influxdb:2.7-alpine
   org: solectrus
   password: XXXXXXX
   token: XXXXXX
   volume_path: "/volume1/docker/solectrus/influxdb"
 redis:
-  image: redis:8-alpine
+  image: redis:7-alpine
   volume_path: "/volume1/docker/solectrus/redis"
 watchtower:
-  image: nickfedor/watchtower:latest
+  image: containrrr/watchtower:latest
 forecast:
   forecast_azimuth1: "-85"
   forecast_azimuth2: '95'

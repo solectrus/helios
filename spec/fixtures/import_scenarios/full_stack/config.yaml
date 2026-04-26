@@ -21,7 +21,7 @@ postgresql:
   password: secret_postgres_password
 influxdb:
   bucket: solectrus
-  image: influxdb:2.8-alpine
+  image: influxdb:2-alpine
   org: solectrus
   password: secret_influx_password
   token: secret_influx_token

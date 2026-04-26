@@ -77,7 +77,7 @@ services:
   # └───────────────────────────────────────────────────────────┘
   #
   influxdb:
-    image: influxdb:2.8-alpine
+    image: influxdb:2.7-alpine
     environment:
     - DOCKER_INFLUXDB_INIT_MODE=setup
     - DOCKER_INFLUXDB_INIT_USERNAME=admin
@@ -142,7 +142,7 @@ services:
   # └──────────────────────────────────────────────────────────┘
   #
   redis:
-    image: redis:8-alpine
+    image: redis:7-alpine
     volumes:
     - "./redis:/data"
     labels:
@@ -279,7 +279,7 @@ services:
   # └──────────────────────────────────────────────────────────┘
   #
   watchtower:
-    image: nickfedor/watchtower:latest
+    image: containrrr/watchtower:latest
     command: "--scope solectrus --cleanup"
     environment:
     - TZ
