@@ -1,0 +1,23 @@
+---
+system:
+  admin_password: secret_admin_password
+  app_host: solectrus.local
+  installation_date: '2024-06-01'
+  secret_key_base: very_secret_key_base
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:pr-4588
+postgresql:
+  image: postgres:16-alpine
+  password: secret_postgres_password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2.8-alpine
+  org: solectrus
+  password: secret_influx_password
+  token: secret_influx_token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+sensors: {}
