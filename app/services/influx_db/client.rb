@@ -3,7 +3,23 @@ require 'uri'
 
 module InfluxDb
   class Client
-    TIMEOUT = 10
+    OPEN_TIMEOUT = 2
+    READ_TIMEOUT = 10
+
+    # Connection-level errors abort the whole batch — once name resolution
+    # or TCP connect fails, retrying for every remaining sensor only stacks
+    # up timeouts (with ~25 sensors, that turns a 2s outage into 30s+ per
+    # poll). Per-query failures (HTTP 5xx, parse errors) are rescued below
+    # and degrade just that one sensor.
+    CONNECTION_ERRORS = [
+      SocketError,
+      Errno::ECONNREFUSED,
+      Errno::EHOSTUNREACH,
+      Errno::ENETUNREACH,
+      Errno::ETIMEDOUT,
+      Net::OpenTimeout,
+      Net::ReadTimeout,
+    ].freeze
 
     def initialize(token:, org:, bucket:, host: nil, port: 8086)
       @token = token
@@ -25,12 +41,26 @@ module InfluxDb
 
     # Fast query: only latest value per sensor (for polling)
     def query_all_latest(sensor_mappings)
-      each_sensor(sensor_mappings) { |m, f| query_latest(m, f) }
+      return {} if sensor_mappings.blank?
+
+      with_http do |http|
+        each_sensor(sensor_mappings) { |m, f| query_latest(http, m, f) }
+      end
     end
 
     private
 
     attr_reader :token, :org, :bucket, :host, :port
+
+    # One Net::HTTP session is reused across the whole batch: saves N-1 DNS
+    # lookups and TCP handshakes per poll, and turns an outage into a single
+    # fast-fail instead of N timeouts back-to-back.
+    def with_http(&)
+      Net::HTTP.start(host, port, open_timeout: OPEN_TIMEOUT, read_timeout: READ_TIMEOUT, &)
+    rescue *CONNECTION_ERRORS => e
+      Rails.logger.warn("InfluxDB unreachable at #{host}:#{port}: #{e.message}")
+      {}
+    end
 
     def each_sensor(sensor_mappings)
       sensor_mappings.each_with_object({}) do |(sensor_name, mapping), results|
@@ -41,44 +71,31 @@ module InfluxDb
       end
     end
 
-    def query_latest(measurement, field)
-      rows = execute_query(flux_latest_query(measurement, field))
+    def query_latest(http, measurement, field)
+      rows = execute_query(http, flux_latest_query(measurement, field))
       return nil if rows.empty?
 
       row = rows.first
       { value: parse_value(row['_value']), time: Time.zone.parse(row['_time']) }
+    rescue *CONNECTION_ERRORS
+      raise
     rescue StandardError => e
       Rails.logger.warn("InfluxDB query failed for #{measurement}:#{field}: #{e.message}")
       nil
     end
 
-    def flux_latest_query(measurement, field)
-      <<~FLUX
-        from(bucket: "#{bucket}")
-          |> range(start: -24h, stop: 1h)
-          |> filter(fn: (r) => r._measurement == "#{measurement}" and r._field == "#{field}")
-          |> last()
-      FLUX
-    end
-
-    def execute_query(flux)
-      response = perform_request(flux)
-
-      unless response.is_a?(Net::HTTPSuccess)
-        raise InfluxDb::ConnectionError, "InfluxDB returned #{response.code}: #{response.body}"
-      end
+    def execute_query(http, flux)
+      response = http.request(build_request(flux))
+      raise InfluxDb::ConnectionError, "InfluxDB returned #{response.code}: #{response.body}" unless response.is_a?(Net::HTTPSuccess)
 
       parse_csv(response.body)
-    rescue Errno::ECONNREFUSED, Errno::EHOSTUNREACH, Net::OpenTimeout, Net::ReadTimeout => e
-      raise InfluxDb::ConnectionError, "Cannot connect to InfluxDB: #{e.message}"
     end
 
-    def perform_request(flux)
-      uri = query_uri
-      request = build_request(uri, flux)
-
-      Net::HTTP.start(uri.hostname, uri.port, read_timeout: TIMEOUT, open_timeout: TIMEOUT) do |http|
-        http.request(request)
+    def build_request(flux)
+      Net::HTTP::Post.new(query_uri).tap do |req|
+        req['Authorization'] = "Token #{token}"
+        req['Content-Type'] = 'application/vnd.flux'
+        req.body = flux
       end
     end
 
@@ -88,12 +105,13 @@ module InfluxDb
       end
     end
 
-    def build_request(uri, flux)
-      Net::HTTP::Post.new(uri).tap do |req|
-        req['Authorization'] = "Token #{token}"
-        req['Content-Type'] = 'application/vnd.flux'
-        req.body = flux
-      end
+    def flux_latest_query(measurement, field)
+      <<~FLUX
+        from(bucket: "#{bucket}")
+          |> range(start: -24h, stop: 1h)
+          |> filter(fn: (r) => r._measurement == "#{measurement}" and r._field == "#{field}")
+          |> last()
+      FLUX
     end
 
     def parse_csv(body)

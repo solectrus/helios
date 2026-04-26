@@ -88,6 +88,30 @@ RSpec.describe InfluxDb::Client do
       expect(result['inverter_power']).to be_nil
     end
 
+    # When the host is unreachable, retrying for every remaining sensor
+    # only piles timeout on timeout. We want a single fast-fail so polling
+    # stays responsive even with a broken InfluxDB.
+    it 'aborts the batch on the first connection error and logs once' do
+      stub_request(:post, query_url).to_raise(SocketError.new('getaddrinfo failed'))
+      allow(Rails.logger).to receive(:warn)
+
+      result = client.query_all_latest('a' => 'm:f1', 'b' => 'm:f2', 'c' => 'm:f3')
+
+      expect(result).to eq({})
+      expect(WebMock).to have_requested(:post, query_url).once
+      expect(Rails.logger).to have_received(:warn)
+        .with(/InfluxDB unreachable at influxdb\.test:8086/).once
+    end
+
+    it 'reuses one HTTP session across multiple sensors' do
+      csv = ",result,table,_time,_value,_field,_measurement\n,_result,0,2026-03-21T10:00:00Z,1,f,m\n"
+      stub_request(:post, query_url).to_return(status: 200, body: csv)
+
+      client.query_all_latest('a' => 'm:f1', 'b' => 'm:f2', 'c' => 'm:f3')
+
+      expect(WebMock).to have_requested(:post, query_url).times(3)
+    end
+
     it 'returns nil and logs warning on timeout' do
       stub_request(:post, query_url).to_raise(Net::ReadTimeout)
 
