@@ -44,6 +44,8 @@ module Export
         add_unmanaged_services(compose)
       end
 
+      add_default_network(compose)
+
       compose.to_yaml
     end
 
@@ -92,6 +94,19 @@ module Export
 
     def default_logging
       { logging: { driver: 'json-file', options: { 'max-size' => '10m', 'max-file' => '3' } } }
+    end
+
+    # An explicit network name decouples the bridge from Compose's auto-naming
+    # convention "<project>_default". Without this block, renaming or migrating
+    # the stack creates a fresh network and leaves the previous one orphaned —
+    # any container still attached to the old one (e.g. a long-running helios
+    # not recreated by `compose up`) loses peer DNS resolution.
+    def add_default_network(compose)
+      compose.networks['default'] = { 'name' => network_name }
+    end
+
+    def network_name
+      configuration.system['network_name'].presence || ConfigSchema::DEFAULT_NETWORK_NAME
     end
 
     def compose_header_comment

@@ -228,3 +228,7 @@ services:
     ports:
     - 8080:80
     restart: unless-stopped
+
+networks:
+  default:
+    name: solectrus_default

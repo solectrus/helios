@@ -223,3 +223,7 @@ services:
       influxdb:
         condition: service_healthy
     restart: unless-stopped
+
+networks:
+  default:
+    name: solectrus_default

@@ -101,11 +101,13 @@ module Compose
     def insert_blank_lines_between_services(yaml)
       lines = yaml.lines
       result = [lines.first]
+      in_services = lines.first.start_with?('services:')
 
       lines.drop(1).each do |line|
         if line.match?(/\A\w/)
+          in_services = line.start_with?('services:')
           result << "\n"
-        elsif (match = line.match(/\A {2}([\w-]+):/))
+        elsif in_services && (match = line.match(/\A {2}([\w-]+):/))
           result << "\n"
           comment = @service_comments[match[1]]
           result.concat(service_comment_box(comment)) if comment

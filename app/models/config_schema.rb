@@ -10,7 +10,15 @@ class ConfigSchema
     frame_ancestors
     ui_theme
     lockup_codeword
+    network_name
   ].freeze
+
+  # Default Docker network name. Compose's auto-generated default is
+  # "<project>_default" with an underscore, so HELIOS sticks with that
+  # to stay compatible with vanilla compose installs. Imports preserve
+  # any explicit override (e.g. "solectrus-default" with a hyphen) so
+  # the regenerated stack does not leave the existing network orphaned.
+  DEFAULT_NETWORK_NAME = 'solectrus_default'.freeze
 
   # Deployment mode: which set of services HELIOS generates.
   #   full             — dashboard, databases, collectors, and supporting services (default)

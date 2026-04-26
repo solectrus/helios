@@ -224,7 +224,17 @@ module Import
         'installation_date' => dashboard_env['INSTALLATION_DATE'],
         'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
         'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],
+        'network_name' => imported_network_name,
       }
+    end
+
+    # Picks up an explicit `networks: default: name:` override from the
+    # imported compose. Without an override, leave it nil so HELIOS falls
+    # back to its default — Docker would have auto-named the network the
+    # same way for the imported stack.
+    def imported_network_name
+      name = @reader.raw_compose.dig('networks', 'default', 'name')
+      name.presence
     end
 
     # --- Dashboard ---
