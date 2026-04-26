@@ -41,7 +41,7 @@ namespace :fixtures do
     # sort nested keys so diffs stay stable across importer reshuffles.
     data = YAML.safe_load_file(Configuration.path, permitted_classes: [Date])
     sorted = data.transform_values { |v| deep_sort_keys(v) }
-    File.write(scenario_path.join('config.yaml'), YAML.dump(sorted))
+    File.write(scenario_path.join('config.yaml'), Configuration.dump(sorted))
 
     Export::Builder.new(config).write!
     FileUtils.cp(Compose.path, scenario_path.join('compose.yaml'))

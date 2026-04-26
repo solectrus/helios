@@ -32,6 +32,16 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # Canonical order for config.yaml output
   YAML_ORDER = SINGLETONS.freeze
 
+  YAML_HEADER = <<~HEADER.freeze
+    # ============================================================
+    # Managed by HELIOS — DO NOT EDIT MANUALLY!
+    #
+    # This file stores your HELIOS configuration.
+    # It is rewritten whenever you apply changes in HELIOS.
+    # Use the HELIOS web interface to modify your configuration.
+    # ============================================================
+  HEADER
+
   # Hash wrapper that allows method-style access: config.system.timezone
   class Data < Hash
     def self.wrap(hash)
@@ -53,6 +63,12 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   def self.path
     File.join(Rails.configuration.data_path, 'helios', YAML_FILENAME)
+  end
+
+  # Serialize a config hash to the canonical YAML representation, including
+  # the header comment. Used by save! and by fixture-generation tasks.
+  def self.dump(data)
+    YAML_HEADER + YAML.dump(data)
   end
 
   def self.current
@@ -283,7 +299,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     FileUtils.mkdir_p(dir) unless File.directory?(dir)
 
     tmp_path = "#{@path}.tmp"
-    File.write(tmp_path, YAML.dump(ordered_data))
+    File.write(tmp_path, self.class.dump(ordered_data))
     File.rename(tmp_path, @path)
 
     @enabled_sensors = nil
