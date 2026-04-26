@@ -177,7 +177,7 @@ RSpec.describe ConfigSchema do
       config = Configuration.current
       # Populate all auto-generated defaults
       ConfigSchema::AUTO_GENERATED.each do |section, defaults|
-        config.update(section, defaults.transform_values(&:call))
+        config.update(section, defaults.transform_values { |v| described_class.resolve_default(v) })
       end
 
       missing = described_class.missing_auto_generated(config)

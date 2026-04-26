@@ -1,7 +1,6 @@
 module Export
   module Services
     class Helios < Base
-      IMAGE = 'ghcr.io/solectrus/helios:develop'.freeze
       ENVIRONMENT = %w[
         ADMIN_PASSWORD
         SECRET_KEY_BASE
@@ -21,7 +20,7 @@ module Export
 
       def to_h
         {
-          image: IMAGE,
+          image: DockerImages.current(:HELIOS),
           environment: ENVIRONMENT,
           volumes: [
             '.:/data',

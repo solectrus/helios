@@ -13,7 +13,7 @@ postgresql:
   password: test-db-password
 influxdb:
   bucket: solectrus
-  image: influxdb:2-alpine
+  image: influxdb:2.8-alpine
   org: solectrus
   password: test-influx-pw
   token: test-influx-token

@@ -17,7 +17,7 @@ module Export
 
       def to_h
         {
-          image: 'ghcr.io/solectrus/forecast-collector:latest',
+          image: DockerImages.current(:FORECAST_COLLECTOR),
           environment: forecast_environment,
           depends_on: forecast_depends_on,
           restart: 'unless-stopped',

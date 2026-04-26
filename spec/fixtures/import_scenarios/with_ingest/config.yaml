@@ -12,7 +12,7 @@ postgresql:
   password: my-secret-db-password
 influxdb:
   bucket: my-solectrus-bucket
-  image: influxdb:2-alpine
+  image: influxdb:2.8-alpine
   org: solectrus
   password: password
   token: my-super-secret-admin-token

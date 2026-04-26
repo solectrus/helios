@@ -27,7 +27,7 @@ module Export
 
       def to_h
         {
-          image: shelly_defaults&.image.presence || 'ghcr.io/solectrus/shelly-collector:latest',
+          image: shelly_defaults&.image.presence || DockerImages.current(:SHELLY_COLLECTOR),
           environment: shelly_environment,
           depends_on: collector_depends_on,
           restart: 'unless-stopped',

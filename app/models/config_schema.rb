@@ -34,7 +34,7 @@ class ConfigSchema
   # --- Dashboard ---
 
   DASHBOARD_DEFAULTS = {
-    'image' => -> { 'ghcr.io/solectrus/solectrus:latest' },
+    'image' => DockerImages.current(:DASHBOARD),
   }.freeze
 
   DASHBOARD_ALL = DASHBOARD_DEFAULTS.keys.freeze
@@ -48,7 +48,7 @@ class ConfigSchema
   # --- PostgreSQL ---
 
   POSTGRESQL_DEFAULTS = {
-    'image' => -> { 'postgres:18-alpine' },
+    'image' => DockerImages.current(:POSTGRESQL),
     'password' => -> { SecureRandom.alphanumeric(32) },
   }.freeze
 
@@ -57,9 +57,9 @@ class ConfigSchema
   # --- InfluxDB ---
 
   INFLUXDB_DEFAULTS = {
-    'image' => -> { 'influxdb:2-alpine' },
-    'org' => -> { 'solectrus' },
-    'bucket' => -> { 'solectrus' },
+    'image' => DockerImages.current(:INFLUXDB),
+    'org' => 'solectrus',
+    'bucket' => 'solectrus',
     'password' => -> { SecureRandom.alphanumeric(32) },
     'token' => -> { SecureRandom.hex(32) },
   }.freeze
@@ -75,7 +75,7 @@ class ConfigSchema
   # --- Redis ---
 
   REDIS_DEFAULTS = {
-    'image' => -> { 'redis:8-alpine' },
+    'image' => DockerImages.current(:REDIS),
   }.freeze
 
   REDIS_ALL = (STORAGE_FIELDS + REDIS_DEFAULTS.keys).uniq.freeze
@@ -83,7 +83,7 @@ class ConfigSchema
   # --- Watchtower ---
 
   WATCHTOWER_DEFAULTS = {
-    'image' => -> { 'nickfedor/watchtower:latest' },
+    'image' => DockerImages.current(:WATCHTOWER),
   }.freeze
 
   WATCHTOWER_ALL = WATCHTOWER_DEFAULTS.keys.freeze
@@ -91,7 +91,7 @@ class ConfigSchema
   # --- Ingest: proxy that recalculates house_power for balcony power plants ---
 
   INGEST_DEFAULTS = {
-    'image' => -> { 'ghcr.io/solectrus/ingest:latest' },
+    'image' => DockerImages.current(:INGEST),
   }.freeze
 
   INGEST_FIELDS = %w[retention_hours].freeze
@@ -101,8 +101,8 @@ class ConfigSchema
   # --- Backup image defaults ---
 
   BACKUP_DEFAULTS = {
-    'influxdb' => -> { { 'image' => 'ghcr.io/solectrus/influxdb2-s3-backup:latest' } },
-    'postgresql' => -> { { 'image' => 'ghcr.io/solectrus/postgres-s3-backup:18' } },
+    'influxdb' => { 'image' => DockerImages.current(:BACKUP_INFLUXDB) }.freeze,
+    'postgresql' => { 'image' => DockerImages.current(:BACKUP_POSTGRESQL) }.freeze,
   }.freeze
 
   # Combined auto-generated defaults keyed by section
@@ -251,12 +251,19 @@ class ConfigSchema
     field.to_s.in?(fields)
   end
 
-  # Returns { section => { key => lambda } } for all missing auto-generated values
+  # Returns { section => { key => default } } for all missing auto-generated values.
+  # Defaults may be plain values or lambdas (used when the value must be lazily
+  # generated, e.g. SecureRandom). Use `.resolve_default` to materialize them.
   def self.missing_auto_generated(configuration)
     AUTO_GENERATED.each_with_object({}) do |(section, defaults), result|
       section_data = configuration.respond_to?(section) ? configuration.send(section) : {}
       missing = defaults.reject { |key, _| section_data[key] }
       result[section] = missing unless missing.empty?
     end
+  end
+
+  # Materializes a default value: calls lambdas, returns plain values as-is.
+  def self.resolve_default(value)
+    value.respond_to?(:call) ? value.call : value
   end
 end

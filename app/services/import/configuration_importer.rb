@@ -241,16 +241,13 @@ module Import
 
     def redis_data
       data = image_data_for('redis').merge(volume_path_data('redis')).compact
-      # Force upgrade to current Redis image, regardless of the tag the user had pinned.
-      data['image'] = 'redis:8-alpine' if data['image']
+      data['image'] = DockerImages.upgrade_legacy(:REDIS, data['image'])
       data
     end
 
     def watchtower_data
       data = image_data_for('watchtower')
-      # containrrr/watchtower is unmaintained — migrate legacy installs to the
-      # nickfedor fork at :latest, regardless of the tag the user had pinned.
-      data['image'] = 'nickfedor/watchtower:latest' if data['image']&.start_with?('containrrr/watchtower')
+      data['image'] = DockerImages.upgrade_legacy(:WATCHTOWER, data['image'])
       data
     end
 
@@ -267,10 +264,8 @@ module Import
 
     def local_influxdb_data
       image = Compose.normalize_image(@reader.service('influxdb')&.dig('image'))
-      # Force upgrade to current InfluxDB image, regardless of the tag the user had pinned.
-      image = 'influxdb:2-alpine' if image
       {
-        'image' => image,
+        'image' => DockerImages.upgrade_legacy(:INFLUXDB, image),
         'password' => @reader.raw_env['INFLUX_PASSWORD'],
         'org' => @reader.raw_env['INFLUX_ORG'],
         'bucket' => @reader.raw_env['INFLUX_BUCKET'],

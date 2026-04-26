@@ -13,7 +13,7 @@ postgresql:
   volume_path: "/opt/solectrus/postgresql"
 influxdb:
   bucket: solectrus
-  image: influxdb:2-alpine
+  image: influxdb:2.8-alpine
   org: solectrus
   password: example-influx-password
   token: example-influx-admin-token

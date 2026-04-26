@@ -22,7 +22,7 @@ module Export
 
       def to_h
         {
-          image: 'ghcr.io/solectrus/power-splitter:latest',
+          image: DockerImages.current(:POWER_SPLITTER),
           environment: power_splitter_environment,
           depends_on: healthy_depends_on(%i[influxdb postgresql redis]),
           restart: 'unless-stopped',

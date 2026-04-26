@@ -18,6 +18,7 @@ module Export
     end
 
     def write!
+      upgrade_managed_images!
       ensure_defaults!
       create_data_directories!
       write_compose!
@@ -28,6 +29,7 @@ module Export
     # them (or they're missing). Catches drift from direct edits to config.yaml
     # without paying the write cost on every render.
     def write_if_stale!
+      upgrade_managed_images!
       write! if stale?
     end
 
@@ -85,6 +87,22 @@ module Export
       nil
     end
 
+    # Mirrors Importer's upgrade policy so HELIOS image bumps carry forward to
+    # already-installed instances. User pins outside the legacy list are preserved.
+    def upgrade_managed_images!
+      DockerImages.constants.each do |name|
+        section = name.to_s.downcase
+        next unless @configuration.respond_to?(section)
+
+        current = @configuration.send(section)
+        current_image = current['image']
+        upgraded = DockerImages.upgrade_legacy(name, current_image)
+        next if upgraded == current_image
+
+        @configuration.update(section, current.merge('image' => upgraded))
+      end
+    end
+
     def ensure_defaults!
       missing = ConfigSchema.missing_auto_generated(@configuration)
       return if missing.empty?
@@ -94,7 +112,7 @@ module Export
         next if gate && !gate.call(@configuration)
 
         current = @configuration.send(section)
-        updates = defaults.transform_values(&:call)
+        updates = defaults.transform_values { |v| ConfigSchema.resolve_default(v) }
         @configuration.update(section, current.merge(updates))
       end
     end

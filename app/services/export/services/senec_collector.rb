@@ -17,7 +17,7 @@ module Export
 
       def to_h
         {
-          image: configuration.senec.image.presence || 'ghcr.io/solectrus/senec-collector:latest',
+          image: configuration.senec.image.presence || DockerImages.current(:SENEC_COLLECTOR),
           environment: senec_environment,
           depends_on: collector_depends_on,
           restart: 'unless-stopped',

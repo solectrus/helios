@@ -13,7 +13,7 @@ postgresql:
   volume_path: "/volume1/docker/solectrus/postgresql"
 influxdb:
   bucket: klushygel-pv
-  image: influxdb:2-alpine
+  image: influxdb:2.8-alpine
   org: solectrus
   password: XXXXXXX
   token: XXXXXX

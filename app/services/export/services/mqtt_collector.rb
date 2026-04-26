@@ -35,7 +35,7 @@ module Export
 
       def to_h
         {
-          image: mqtt_config&.image.presence || 'ghcr.io/solectrus/mqtt-collector:latest',
+          image: mqtt_config&.image.presence || DockerImages.current(:MQTT_COLLECTOR),
           environment: mqtt_environment,
           depends_on: collector_depends_on,
           restart: 'unless-stopped',

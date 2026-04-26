@@ -15,7 +15,7 @@ services:
   # └──────────────────────────────────────────────────────────┘
   #
   dashboard:
-    image: ghcr.io/solectrus/solectrus:1-0-beta
+    image: ghcr.io/solectrus/solectrus:latest
     environment:
     - TZ
     - INSTALLATION_DATE
@@ -79,7 +79,7 @@ services:
   # └───────────────────────────────────────────────────────────┘
   #
   influxdb:
-    image: influxdb:2-alpine
+    image: influxdb:2.8-alpine
     environment:
     - DOCKER_INFLUXDB_INIT_MODE=setup
     - DOCKER_INFLUXDB_INIT_USERNAME=admin
