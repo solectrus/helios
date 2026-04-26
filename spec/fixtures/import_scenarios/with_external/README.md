@@ -16,6 +16,9 @@ HELIOS itself is already part of the stack.
   config carries no top-level `forecast:` block.
 - **No SENEC / Shelly / MQTT collectors at all** — dashboard relies purely on
   pre-existing InfluxDB data.
+- **`INFLUX_EXCLUDE_FROM_HOUSE_POWER=HEATPUMP_POWER`** carried through to
+  `heatpump_power.exclude_from_house_power: true` despite `source: external` —
+  ensures the flag survives import for non-Shelly sensors too.
 - **Custom volume paths** `/opt/solectrus/{postgresql,influxdb,redis}` (via
   `DB_VOLUME_PATH`, `INFLUX_VOLUME_PATH`, `REDIS_VOLUME_PATH`).
 - Dashboard uses the `develop` tag (`solectrus:develop`).

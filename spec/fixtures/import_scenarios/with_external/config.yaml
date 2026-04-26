@@ -84,6 +84,7 @@ sensors:
     measurement: heatpump
     source: external
   heatpump_power:
+    exclude_from_house_power: true
     field: power
     measurement: heatpump
     source: external

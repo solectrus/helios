@@ -25,3 +25,6 @@ fallbacks).
   tests quoted-string handling in `.env`.
 - No Shelly collector in `compose.yaml`, despite `SHELLY_HOST` being set —
   `shelly:` block is imported but no device list.
+- **`INFLUX_EXCLUDE_FROM_HOUSE_POWER=HEATPUMP_POWER`** carried through to
+  `heatpump_power.exclude_from_house_power: true` even though the heat pump
+  is `source: external`.

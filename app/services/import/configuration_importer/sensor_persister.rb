@@ -25,12 +25,12 @@ module Import
       # are type-specific slots on inverter/wallbox/heatpump/battery devices.
       SOURCE_FIELDS = %w[data_source wallbox_vendor heatpump_access battery_vendor].freeze
 
-      def initialize(sensors_data:, devices:, senec_enabled:, forecast_enabled:, mqtt_mappings:)
+      def initialize(sensors_data:, devices:, enabled_collectors:, mqtt_mappings:, excluded_sensors: [])
         @sensors_data = sensors_data
         @devices = devices
-        @senec_enabled = senec_enabled
-        @forecast_enabled = forecast_enabled
+        @enabled_collectors = enabled_collectors
         @mqtt_mappings = mqtt_mappings
+        @excluded_sensors = excluded_sensors
       end
 
       def persist!(config)
@@ -38,7 +38,9 @@ module Import
           source = infer_source_for_sensor(sensor_name)
           next unless source
 
-          config.update_sensor(sensor_name, build_sensor_data(sensor_name, source))
+          data = build_sensor_data(sensor_name, source)
+          data['exclude_from_house_power'] = true if @excluded_sensors.include?(sensor_name)
+          config.update_sensor(sensor_name, data)
         end
       end
 
@@ -50,8 +52,8 @@ module Import
       # third-party inverter), and the explicit mapping is authoritative.
       def infer_source_for_sensor(sensor_name)
         return 'mqtt' if mqtt_mapping_details.key?(sensor_name)
-        return 'senec' if SensorMappings::SENEC_DEFAULTS.key?(sensor_name) && @senec_enabled
-        return 'forecast' if SensorMappings::FORECAST_DEFAULTS.key?(sensor_name) && @forecast_enabled
+        return 'senec' if @enabled_collectors.include?(:senec) && SensorMappings::SENEC_DEFAULTS.key?(sensor_name)
+        return 'forecast' if @enabled_collectors.include?(:forecast) && SensorMappings::FORECAST_DEFAULTS.key?(sensor_name)
         return 'shelly' if shelly_device_provides_sensor?(sensor_name)
 
         'external'
@@ -126,7 +128,6 @@ module Import
         data['shelly_interval'] = device_data['shelly_interval']
         data['shelly_password'] = device_data['shelly_password']
         data['shelly_device_id'] = device_data['shelly_device_id']
-        data['exclude_from_house_power'] = true if device_data['exclude_from_house_power']
       end
 
       def find_shelly_device_for_sensor(sensor_name)

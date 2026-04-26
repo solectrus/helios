@@ -1,5 +1,7 @@
 module Import
   class ConfigurationImporter # rubocop:disable Metrics/ClassLength
+    include Helpers
+
     # Env var that carries the absolute host path for each service's data dir
     # in legacy SOLECTRUS installs, plus the relative bind mount HELIOS defaults
     # to — used to decide if a preserved path is equivalent to the default.
@@ -78,10 +80,17 @@ module Import
       @sensor_persister ||= SensorPersister.new(
         sensors_data:,
         devices: result[:devices],
-        senec_enabled: senec_extractor.enabled?,
-        forecast_enabled: forecast_extractor.enabled?,
+        enabled_collectors: enabled_collectors,
         mqtt_mappings: mqtt_extractor.enabled? ? mqtt_extractor.mappings : [],
+        excluded_sensors: excluded_sensor_names,
       )
+    end
+
+    def enabled_collectors
+      [
+        (:senec if senec_extractor.enabled?),
+        (:forecast if forecast_extractor.enabled?),
+      ].compact
     end
 
     # The imported stack has an ingest service and at least one individual
@@ -172,7 +181,6 @@ module Import
       devices << senec_extractor.device_data if senec_extractor.enabled?
       devices.concat(shelly_extractor.device_data) if shelly_extractor.enabled?
       devices.concat(mqtt_extractor.device_data) if mqtt_extractor.enabled?
-      distribute_house_power_exclusions(devices)
       devices
     end
 
@@ -347,36 +355,8 @@ module Import
       end
     end
 
-    # --- House power exclusions ---
-
-    def distribute_house_power_exclusions(devices)
-      excluded = excluded_sensor_names
-      return if excluded.empty?
-
-      consumer_index = 0
-      devices.each do |device|
-        sensor = sensor_name_for_device(device, consumer_index)
-        consumer_index += 1 if device[:type] == 'consumer'
-        next unless sensor
-
-        device[:data]['exclude_from_house_power'] = true if excluded.include?(sensor.upcase)
-      end
-    end
-
     def excluded_sensor_names
-      dashboard_env = service_env('dashboard')
-      value = dashboard_env['INFLUX_EXCLUDE_FROM_HOUSE_POWER']
-      return [] if value.blank?
-
-      value.to_s.split(',').map(&:strip)
-    end
-
-    def sensor_name_for_device(device, consumer_index)
-      case device[:type]
-      when 'heatpump' then 'HEATPUMP_POWER'
-      when 'wallbox' then 'WALLBOX_POWER'
-      when 'consumer' then format('CUSTOM_POWER_%02d', consumer_index + 1)
-      end
+      csv_split(service_env('dashboard')['INFLUX_EXCLUDE_FROM_HOUSE_POWER']).map(&:downcase)
     end
 
     # --- Backup ---
@@ -409,18 +389,6 @@ module Import
         'image' => Compose.normalize_image(@reader.service('ingest')&.dig('image')),
         'retention_hours' => ingest_env['RETENTION_HOURS'],
       }.merge(volume_path_data('ingest')).compact
-    end
-
-    # --- Shared helpers ---
-
-    def service_env(name)
-      @service_envs ||= {}
-      @service_envs[name] ||= @reader.service(name)&.dig('environment') || {}
-    end
-
-    def image_data_for(service_name)
-      image = Compose.normalize_image(@reader.service(service_name)&.dig('image'))
-      { 'image' => image }.compact
     end
   end
 end

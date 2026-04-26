@@ -93,6 +93,7 @@ sensors:
     mqtt_topic: evcc/site/gridPower
     source: mqtt
   heatpump_power:
+    exclude_from_house_power: true
     field: heatpump_power
     measurement: klushygel-pv-messung
     source: external

@@ -97,6 +97,7 @@ sensors:
     mqtt_topic: go-eCharger/123456/car
     source: mqtt
   wallbox_power:
+    exclude_from_house_power: true
     field: power
     measurement: go-eCharger
     mqtt_json_key: p
