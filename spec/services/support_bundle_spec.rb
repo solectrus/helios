@@ -63,9 +63,9 @@ RSpec.describe SupportBundle do
       expect(os_section).not_to include('uname')
     end
 
-    it 'includes a Containers section' do
+    it 'includes a Docker Containers section' do
       report = entries['system-info.txt']
-      containers_section = report[/=== Containers ===\n.*?(?=\n===|\z)/m]
+      containers_section = report[/=== Docker Containers ===\n.*?(?=\n===|\z)/m]
 
       expect(containers_section).to be_present
       # Either a table header (when containers exist) or the empty-state note.

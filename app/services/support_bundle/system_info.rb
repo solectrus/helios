@@ -36,7 +36,8 @@ module SupportBundle
         'Data Volumes' => data_volumes,
         'Docker Engine' => docker_engine(docker),
         'Docker Compose' => docker_compose,
-        'Containers' => containers(docker),
+        'Docker Containers' => containers(docker),
+        'Docker Networks' => docker_networks(docker),
       }
     end
 
@@ -389,7 +390,7 @@ module SupportBundle
         list
         .sort_by { |c| [c.info['State'] == 'running' ? 0 : 1, container_name(c)] }
         .map { |c| container_row(c) }
-      render_table(%w[NAME STATE STATUS IMAGE], rows)
+      render_table(%w[NAME STATE STATUS IMAGE NETWORKS], rows)
     end
 
     def container_name(container)
@@ -399,7 +400,38 @@ module SupportBundle
 
     def container_row(container)
       info = container.info
-      [container_name(container), info['State'], info['Status'], info['Image']]
+      [container_name(container), info['State'], info['Status'], info['Image'],
+       container_networks(container).presence || '-']
+    end
+
+    def container_networks(container)
+      networks = container.info.dig('NetworkSettings', 'Networks') || {}
+      networks.keys.sort.join(',')
+    end
+
+    # Service-name resolution between containers depends on every peer being
+    # attached to the same Docker network. When that breaks (e.g. a container
+    # was recreated outside the compose project, or networks were renamed),
+    # peers fall back to host-only DNS, which fails. Listing membership here
+    # makes the mismatch visible at a glance: the outlier sits in its own row.
+    def docker_networks(docker)
+      return docker[:error] if docker[:error]
+
+      list = docker[:containers]
+      return 'No networks found.' if list.blank?
+
+      membership = network_membership(list)
+      return 'No networks found.' if membership.empty?
+
+      rows = membership.sort.map { |name, names| [name, names.size.to_s, names.sort.join(', ')] }
+      render_table(%w[NAME CONTAINERS NAMES], rows)
+    end
+
+    def network_membership(containers)
+      containers.each_with_object(Hash.new { |h, k| h[k] = [] }) do |c, acc|
+        networks = c.info.dig('NetworkSettings', 'Networks') || {}
+        networks.each_key { |name| acc[name] << container_name(c) }
+      end
     end
 
     def render_table(headers, rows)
