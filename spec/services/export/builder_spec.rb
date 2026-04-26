@@ -28,6 +28,37 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe '#write_if_stale!' do
+    let(:builder) { described_class.new(configuration) }
+
+    before { builder.write! }
+
+    it 'is a no-op when targets are newer than config.yaml' do
+      original_mtime = File.mtime(compose_path)
+      builder.write_if_stale!
+      expect(File.mtime(compose_path)).to eq(original_mtime)
+    end
+
+    it 'regenerates when config.yaml is newer than compose.yaml' do
+      sleep 0.01
+      FileUtils.touch(Configuration.path)
+
+      expect { builder.write_if_stale! }.to(change { File.mtime(compose_path) })
+    end
+
+    it 'regenerates when compose.yaml is missing' do
+      File.delete(compose_path)
+      builder.write_if_stale!
+      expect(File.exist?(compose_path)).to be true
+    end
+
+    it 'regenerates when .env is missing' do
+      File.delete(env_path)
+      builder.write_if_stale!
+      expect(File.exist?(env_path)).to be true
+    end
+  end
+
   describe 'compose file generation' do
     before { described_class.new(configuration).write! }
 

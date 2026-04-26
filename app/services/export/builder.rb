@@ -24,6 +24,23 @@ module Export
       write_env!
     end
 
+    # Regenerate compose.yaml/.env only if config.yaml is newer than either of
+    # them (or they're missing). Catches drift from direct edits to config.yaml
+    # without paying the write cost on every render.
+    def write_if_stale!
+      write! if stale?
+    end
+
+    def stale?
+      source_mtime = mtime(Configuration.path)
+      return false unless source_mtime
+
+      [::Compose.path, ::Env.path].any? do |target|
+        target_mtime = mtime(target)
+        target_mtime.nil? || source_mtime > target_mtime
+      end
+    end
+
     def compose_content
       compose_builder.to_yaml
     end
@@ -60,6 +77,12 @@ module Export
       tmp_path = "#{path}.tmp"
       ::File.write(tmp_path, content)
       ::File.rename(tmp_path, path)
+    end
+
+    def mtime(path)
+      ::File.mtime(path)
+    rescue Errno::ENOENT
+      nil
     end
 
     def ensure_defaults!

@@ -2,6 +2,7 @@ class ServicesController < ApplicationController
   def index
     return redirect_to sensors_path unless Configuration.current.setup_completed?
 
+    Export::Builder.new(Configuration.current).write_if_stale!
     compose = Compose.load
     @compose_services = compose.services.sorted
 
