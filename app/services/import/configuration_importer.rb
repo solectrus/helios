@@ -267,10 +267,12 @@ module Import
     end
 
     # WATCHTOWER_POLL_INTERVAL takes precedence; some installations configure
-    # the interval as a `--interval N` argument on the watchtower service
-    # command instead, which is equally valid for Watchtower itself.
+    # the interval inline on the watchtower service (`environment:` block) or
+    # as a `--interval N` argument on its command, which are equally valid for
+    # Watchtower itself.
     def watchtower_interval
-      env_value = @reader.raw_env['WATCHTOWER_POLL_INTERVAL'].presence
+      env_value = @reader.raw_env['WATCHTOWER_POLL_INTERVAL'].presence ||
+                  service_env('watchtower')['WATCHTOWER_POLL_INTERVAL'].presence
       return env_value if env_value
 
       command = @reader.service('watchtower')&.dig('command')

@@ -242,6 +242,13 @@
               }
             },
             {
+              "value": "28800",
+              "text": {
+                "de": "Alle 8 Stunden",
+                "default": "Every 8 hours"
+              }
+            },
+            {
               "value": "3600",
               "text": {
                 "de": "Stündlich",

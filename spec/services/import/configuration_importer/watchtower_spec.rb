@@ -38,6 +38,39 @@ RSpec.describe 'Import::ConfigurationImporter watchtower interval' do
     end
   end
 
+  context 'when the interval is set inline on the watchtower service' do
+    let(:services) do
+      {
+        'dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:latest' },
+        'watchtower' => {
+          'image' => 'nickfedor/watchtower:latest',
+          'environment' => { 'WATCHTOWER_POLL_INTERVAL' => '28800' },
+        },
+      }
+    end
+
+    it 'extracts the interval from the service environment' do
+      expect(importer.result[:system]).to include('update_interval' => '28800')
+    end
+  end
+
+  context 'when both .env and an inline service environment provide an interval' do
+    let(:raw_env) { { 'WATCHTOWER_POLL_INTERVAL' => '86400' } }
+    let(:services) do
+      {
+        'dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:latest' },
+        'watchtower' => {
+          'image' => 'nickfedor/watchtower:latest',
+          'environment' => { 'WATCHTOWER_POLL_INTERVAL' => '28800' },
+        },
+      }
+    end
+
+    it 'prefers the value from .env' do
+      expect(importer.result[:system]).to include('update_interval' => '86400')
+    end
+  end
+
   context 'when the interval is encoded as a --interval command argument' do
     let(:services) do
       {
