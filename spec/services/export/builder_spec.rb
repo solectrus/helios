@@ -691,7 +691,7 @@ RSpec.describe Export::Builder do
                              'forecast_latitude' => '51.3',
                              'forecast_longitude' => '9.5',
                              'forecast_declination1' => '30',
-                             'forecast_azimuth1' => '180',
+                             'forecast_pvnode_azimuth1' => '180',
                              'forecast_kwp1' => '10',
                              'forecast_pvnode_apikey' => 'pvnode-key',
                              'forecast_pvnode_paid' => 'true',
@@ -710,6 +710,10 @@ RSpec.describe Export::Builder do
       expect(env['PVNODE_EXTRA_PARAMS']).to eq('extra=1')
     end
 
+    it 'writes the pvnode azimuth (north-based) to FORECAST_AZIMUTH' do
+      expect(Env.load['FORECAST_AZIMUTH']).to eq('180')
+    end
+
     it 'includes pvnode vars in compose environment' do
       compose = Compose.load
       forecast = compose.services.find('forecast-collector')
@@ -725,7 +729,7 @@ RSpec.describe Export::Builder do
                              'forecast_latitude' => '51.3',
                              'forecast_longitude' => '9.5',
                              'forecast_declination1' => '30',
-                             'forecast_azimuth1' => '180',
+                             'forecast_pvnode_azimuth1' => '180',
                              'forecast_kwp1' => '10',
                              'forecast_pvnode_apikey' => 'pvnode-key',
                              'forecast_pvnode_paid' => 'nowcast',
@@ -754,7 +758,7 @@ RSpec.describe Export::Builder do
                              'forecast_latitude' => '51.3',
                              'forecast_longitude' => '9.5',
                              'forecast_declination1' => '30',
-                             'forecast_azimuth1' => '180',
+                             'forecast_pvnode_azimuth1' => '180',
                              'forecast_kwp1' => '10',
                              'forecast_pvnode_apikey' => 'pvnode-key',
                              'forecast_pvnode_paid' => 'false',
@@ -785,10 +789,10 @@ RSpec.describe Export::Builder do
                              'forecast_longitude' => '9.5',
                              'forecast_roofs' => '2',
                              'forecast_declination1' => '30',
-                             'forecast_azimuth1' => '180',
+                             'forecast_pvnode_azimuth1' => '180',
                              'forecast_kwp1' => '10',
                              'forecast_declination2' => '20',
-                             'forecast_azimuth2' => '90',
+                             'forecast_pvnode_azimuth2' => '90',
                              'forecast_kwp2' => '5',
                              'forecast_pvnode_apikey' => 'pvnode-key',
                              'forecast_pvnode_extra_params' => 'global=1',

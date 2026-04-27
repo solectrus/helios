@@ -30,10 +30,6 @@ watchtower:
   image: nickfedor/watchtower:latest
 forecast:
   forecast: pvnode
-  forecast_azimuth1: '180'
-  forecast_azimuth2: '180'
-  forecast_azimuth3: '90'
-  forecast_azimuth4: '270'
   forecast_declination1: '45'
   forecast_declination2: '38'
   forecast_declination3: '38'
@@ -46,6 +42,10 @@ forecast:
   forecast_latitude: '50.123'
   forecast_longitude: '11.456'
   forecast_pvnode_apikey: pvn_example-pvnode-api-key
+  forecast_pvnode_azimuth1: '180'
+  forecast_pvnode_azimuth2: '180'
+  forecast_pvnode_azimuth3: '90'
+  forecast_pvnode_azimuth4: '270'
   forecast_pvnode_extra_params: diffuse_radiation_model=perez
   forecast_pvnode_paid: 'true'
   forecast_roofs: '4'

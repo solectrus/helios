@@ -129,6 +129,7 @@
         {
           "type": "text",
           "name": "forecast_azimuth1",
+          "visibleIf": "{forecast} = 'forecast.solar'",
           "title": {
             "de": "Ausrichtung",
             "default": "Azimuth"
@@ -141,6 +142,23 @@
           "inputType": "number",
           "min": -180,
           "max": 180
+        },
+        {
+          "type": "text",
+          "name": "forecast_pvnode_azimuth1",
+          "visibleIf": "{forecast} = 'pvnode'",
+          "title": {
+            "de": "Ausrichtung",
+            "default": "Azimuth"
+          },
+          "description": {
+            "de": "0 = Nord, 90 = Ost, 180 = Süd, 270 = West",
+            "default": "0 = north, 90 = east, 180 = south, 270 = west"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": 0,
+          "max": 360
         },
         {
           "type": "text",
@@ -182,6 +200,7 @@
         {
           "type": "text",
           "name": "forecast_azimuth2",
+          "visibleIf": "{forecast} = 'forecast.solar'",
           "title": {
             "de": "Ausrichtung",
             "default": "Azimuth"
@@ -194,6 +213,23 @@
           "inputType": "number",
           "min": -180,
           "max": 180
+        },
+        {
+          "type": "text",
+          "name": "forecast_pvnode_azimuth2",
+          "visibleIf": "{forecast} = 'pvnode'",
+          "title": {
+            "de": "Ausrichtung",
+            "default": "Azimuth"
+          },
+          "description": {
+            "de": "0 = Nord, 90 = Ost, 180 = Süd, 270 = West",
+            "default": "0 = north, 90 = east, 180 = south, 270 = west"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": 0,
+          "max": 360
         },
         {
           "type": "text",
@@ -235,6 +271,7 @@
         {
           "type": "text",
           "name": "forecast_azimuth3",
+          "visibleIf": "{forecast} = 'forecast.solar'",
           "title": {
             "de": "Ausrichtung",
             "default": "Azimuth"
@@ -247,6 +284,23 @@
           "inputType": "number",
           "min": -180,
           "max": 180
+        },
+        {
+          "type": "text",
+          "name": "forecast_pvnode_azimuth3",
+          "visibleIf": "{forecast} = 'pvnode'",
+          "title": {
+            "de": "Ausrichtung",
+            "default": "Azimuth"
+          },
+          "description": {
+            "de": "0 = Nord, 90 = Ost, 180 = Süd, 270 = West",
+            "default": "0 = north, 90 = east, 180 = south, 270 = west"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": 0,
+          "max": 360
         },
         {
           "type": "text",
@@ -288,6 +342,7 @@
         {
           "type": "text",
           "name": "forecast_azimuth4",
+          "visibleIf": "{forecast} = 'forecast.solar'",
           "title": {
             "de": "Ausrichtung",
             "default": "Azimuth"
@@ -300,6 +355,23 @@
           "inputType": "number",
           "min": -180,
           "max": 180
+        },
+        {
+          "type": "text",
+          "name": "forecast_pvnode_azimuth4",
+          "visibleIf": "{forecast} = 'pvnode'",
+          "title": {
+            "de": "Ausrichtung",
+            "default": "Azimuth"
+          },
+          "description": {
+            "de": "0 = Nord, 90 = Ost, 180 = Süd, 270 = West",
+            "default": "0 = north, 90 = east, 180 = south, 270 = west"
+          },
+          "isRequired": true,
+          "inputType": "number",
+          "min": 0,
+          "max": 360
         },
         {
           "type": "text",

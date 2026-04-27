@@ -48,7 +48,7 @@ module Import
         {
           'forecast_roofs' => '1',
           'forecast_declination1' => fc_env['FORECAST_DECLINATION'],
-          'forecast_azimuth1' => fc_env['FORECAST_AZIMUTH'],
+          azimuth_field(fc_env, 1) => fc_env['FORECAST_AZIMUTH'],
           'forecast_kwp1' => fc_env['FORECAST_KWP'],
         }
       end
@@ -57,10 +57,18 @@ module Import
         data = { 'forecast_roofs' => configs.to_s }
         configs.times do |i|
           data["forecast_declination#{i + 1}"] = fc_env["FORECAST_#{i}_DECLINATION"]
-          data["forecast_azimuth#{i + 1}"] = fc_env["FORECAST_#{i}_AZIMUTH"]
+          data[azimuth_field(fc_env, i + 1)] = fc_env["FORECAST_#{i}_AZIMUTH"]
           data["forecast_kwp#{i + 1}"] = fc_env["FORECAST_#{i}_KWP"]
         end
         data
+      end
+
+      def azimuth_field(fc_env, index)
+        if fc_env['FORECAST_PROVIDER'] == 'pvnode'
+          "forecast_pvnode_azimuth#{index}"
+        else
+          "forecast_azimuth#{index}"
+        end
       end
 
       def provider_data(fc_env)

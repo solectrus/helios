@@ -211,6 +211,10 @@ class ConfigSchema
     forecast_pvnode_extra_params2
     forecast_pvnode_extra_params3
     forecast_pvnode_extra_params4
+    forecast_pvnode_azimuth1
+    forecast_pvnode_azimuth2
+    forecast_pvnode_azimuth3
+    forecast_pvnode_azimuth4
     measurement
     image
   ].freeze

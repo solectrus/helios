@@ -32,13 +32,13 @@ watchtower:
   image: nickfedor/watchtower:latest
 forecast:
   forecast: pvnode
-  forecast_azimuth1: '0'
   forecast_declination1: '27'
   forecast_interval: '900'
   forecast_kwp1: '9.24'
   forecast_latitude: '50.12345'
   forecast_longitude: '6.12345'
   forecast_pvnode_apikey: pvn_secret_1234567890abcdef
+  forecast_pvnode_azimuth1: '0'
   forecast_roofs: '1'
   measurement: Forecast
 senec:

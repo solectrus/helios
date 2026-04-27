@@ -229,7 +229,7 @@ module Export
 
     def forecast_single_roof_entries(env, fcast)
       entry(env, 'FORECAST_DECLINATION', fcast.forecast_declination1, 'Roof tilt angle')
-      entry(env, 'FORECAST_AZIMUTH', fcast.forecast_azimuth1, 'Roof orientation')
+      entry(env, 'FORECAST_AZIMUTH', forecast_azimuth_value(fcast, 1), 'Roof orientation')
       entry(env, 'FORECAST_KWP', fcast.forecast_kwp1, 'System capacity in kWp')
     end
 
@@ -238,10 +238,21 @@ module Export
       roofs.times do |i|
         entry(env, "FORECAST_#{i}_DECLINATION", fcast.send("forecast_declination#{i + 1}"),
               "Roof surface #{i + 1} tilt angle")
-        entry(env, "FORECAST_#{i}_AZIMUTH", fcast.send("forecast_azimuth#{i + 1}"),
+        entry(env, "FORECAST_#{i}_AZIMUTH", forecast_azimuth_value(fcast, i + 1),
               "Roof surface #{i + 1} orientation")
         entry(env, "FORECAST_#{i}_KWP", fcast.send("forecast_kwp#{i + 1}"),
               "Roof surface #{i + 1} capacity in kWp")
+      end
+    end
+
+    # Pv-Node uses azimuth from north (0..360); Forecast.Solar uses
+    # azimuth from south (-180..180). The fields are stored separately so
+    # bounds and hints match the provider.
+    def forecast_azimuth_value(fcast, index)
+      if fcast.forecast == 'pvnode'
+        fcast.send("forecast_pvnode_azimuth#{index}")
+      else
+        fcast.send("forecast_azimuth#{index}")
       end
     end
 
