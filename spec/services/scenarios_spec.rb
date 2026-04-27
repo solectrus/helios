@@ -4,18 +4,26 @@
 #   <compose>.bak + .env.bak     →  Import  →  config.yaml
 #   config.yaml                  →  Export  →  compose.yaml + .env
 #
+# Synthetic scenarios live directly under import_scenarios/. Anonymized
+# real-world snapshots from actual users live under import_scenarios/real_world/
+# and appear in the spec output as "real_world/<name>".
+#
 # The source compose file may be any of compose.yaml, docker-compose.yaml, or
 # docker-compose.yml (with the .bak suffix), matching what HELIOS accepts at
 # import time.
 #
 # Regenerate the expected fixtures with `RAILS_ENV=test bin/rake fixtures:regenerate`.
+def scenarios_root
+  Rails.root.join('spec/fixtures/import_scenarios')
+end
+
 RSpec.describe 'Scenario round-trip' do
-  Pathname.glob(Rails.root.join('spec/fixtures/import_scenarios/*/config.yaml'))
-          .map { |p| p.dirname.basename.to_s }
+  Pathname.glob(scenarios_root.join('**/config.yaml'))
+          .map { |p| p.dirname.relative_path_from(scenarios_root).to_s }
           .sort
           .each do |name|
     context "with scenario '#{name}'" do
-      let(:scenario_path) { Rails.root.join('spec/fixtures/import_scenarios', name) }
+      let(:scenario_path) { scenarios_root.join(name) }
       let(:compose_backup_path) do
         Compose::FILENAMES.lazy.map { |f| scenario_path.join("#{f}.bak") }.find(&:file?)
       end

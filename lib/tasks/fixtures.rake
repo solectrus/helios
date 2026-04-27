@@ -68,8 +68,8 @@ namespace :fixtures do
   task regenerate: :environment do
     with_scenario_sandbox do |scenarios_dir|
       names = Pathname
-              .glob(scenarios_dir.join('*/config.yaml'))
-              .map { |p| p.dirname.basename.to_s }
+              .glob(scenarios_dir.join('**/config.yaml'))
+              .map { |p| p.dirname.relative_path_from(scenarios_dir).to_s }
               .sort
 
       names.each do |name|
