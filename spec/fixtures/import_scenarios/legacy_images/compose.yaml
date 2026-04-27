@@ -157,10 +157,11 @@ services:
   #
   watchtower:
     image: containrrr/watchtower:1.7.1
-    command: "--scope solectrus --cleanup"
     environment:
     - TZ
     - WATCHTOWER_POLL_INTERVAL
+    - WATCHTOWER_SCOPE
+    - WATCHTOWER_CLEANUP
     volumes:
     - "/var/run/docker.sock:/var/run/docker.sock"
     labels:

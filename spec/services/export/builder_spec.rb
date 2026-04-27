@@ -153,10 +153,21 @@ RSpec.describe Export::Builder do
       end
     end
 
-    it 'always declares WATCHTOWER_POLL_INTERVAL on the watchtower service' do
+    it 'declares scope, cleanup, and interval as env vars on the watchtower service' do
       compose = Compose.load
       watchtower = compose.services.find('watchtower')
-      expect(watchtower.environment).to include('WATCHTOWER_POLL_INTERVAL')
+      expect(watchtower.environment).to include(
+        'WATCHTOWER_POLL_INTERVAL',
+        'WATCHTOWER_SCOPE',
+        'WATCHTOWER_CLEANUP',
+      )
+      expect(watchtower.config).not_to have_key('command')
+    end
+
+    it 'writes WATCHTOWER_SCOPE and WATCHTOWER_CLEANUP to .env' do
+      env = Env.load
+      expect(env['WATCHTOWER_SCOPE']).to eq('solectrus')
+      expect(env['WATCHTOWER_CLEANUP']).to eq('true')
     end
 
     context 'when the update interval is configured' do
