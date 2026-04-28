@@ -187,9 +187,9 @@ RSpec.describe ConfigSchema do
 
   describe 'consistency with surveys' do
     survey_settings = (Configuration::ALL - Configuration::HIDDEN)
-    survey_settings.select { |s| Rails.root.join("config/surveys/#{s}.json").exist? }.each do |setting|
-      it "#{setting}.json fields are all in described_class" do
-        survey = JSON.parse(Rails.root.join("config/surveys/#{setting}.json").read)
+    survey_settings.select { |s| Rails.root.join("app/services/surveys/#{s}/survey.json").exist? }.each do |setting|
+      it "#{setting}/survey.json fields are all in described_class" do
+        survey = JSON.parse(Rails.root.join("app/services/surveys/#{setting}/survey.json").read)
         survey_fields = extract_survey_field_names(survey)
 
         schema_fields = described_class.fields_for(setting)

@@ -122,7 +122,7 @@ module Configurations
     # Ensure measurement/field match the collector config for fixed sources
     def normalize_fixed_source_mapping!(data)
       source = data['source'].to_s
-      return unless source.in?(SensorMappingInjection::FIXED_FIELD_SOURCES)
+      return unless source.in?(SensorMappings::FIXED_SOURCES)
 
       data['measurement'] = collector_measurement(source)
       data['field'] = SensorMappings.default_field(sensor_name, source)
@@ -156,7 +156,7 @@ module Configurations
 
     def collector_measurement(source)
       @configuration.setting_data(source).measurement.presence ||
-        SensorMappingInjection::DEFAULT_MEASUREMENTS[source]
+        SensorMappings::DEFAULT_MEASUREMENTS[source]
     end
   end
 end

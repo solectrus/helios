@@ -1,5 +1,15 @@
 # Derives InfluxDB measurement:field mappings from sensor configuration
 class SensorMappings
+  # Sources whose measurement+field are fixed by the collector configuration
+  # rather than chosen per-sensor.
+  FIXED_SOURCES = %w[senec forecast].freeze
+
+  # Fallback measurement when a fixed-source collector has no measurement set yet.
+  DEFAULT_MEASUREMENTS = {
+    'senec' => 'SENEC',
+    'forecast' => 'forecast',
+  }.freeze
+
   # Each mapping is [measurement, field].
 
   # SENEC collector mappings
