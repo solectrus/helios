@@ -203,6 +203,59 @@ RSpec.describe Orchestration::Runner do
     end
   end
 
+  describe '.recreate' do
+    before { skip_without_docker }
+
+    context 'when the user changes a service tag' do
+      let(:project) { 'helios-recreate-test' }
+
+      before do
+        File.write(File.join(data_path, 'compose.yaml'), <<~YAML)
+          name: #{project}
+          services:
+            test:
+              image: alpine:3.18
+              command: sleep 30
+        YAML
+        described_class.up
+
+        File.write(File.join(data_path, 'compose.yaml'), <<~YAML)
+          name: #{project}
+          services:
+            test:
+              image: alpine:3.19
+              command: sleep 30
+        YAML
+      end
+
+      after do
+        system(
+          'docker compose down -v',
+          chdir: data_path,
+          out: File::NULL,
+          err: File::NULL,
+        )
+        system('docker', 'image', 'rm', 'alpine:3.19', out: File::NULL, err: File::NULL)
+      end
+
+      it 'removes the previously deployed image' do
+        previous = instance_double(Orchestration::Container, image: 'alpine:3.18')
+        allow(Orchestration::Container).to receive(:find).with('test').and_return(previous)
+
+        expect(image_exists?('alpine:3.18')).to be(true)
+
+        described_class.recreate('test')
+
+        expect(image_exists?('alpine:3.18')).to be(false)
+        expect(image_exists?('alpine:3.19')).to be(true)
+      end
+    end
+
+    def image_exists?(image)
+      system('docker', 'image', 'inspect', image, out: File::NULL, err: File::NULL)
+    end
+  end
+
   describe '.ps' do
     before { skip_without_docker }
 

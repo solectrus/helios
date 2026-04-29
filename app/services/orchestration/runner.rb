@@ -26,7 +26,9 @@ module Orchestration
         args = %w[up --no-build --remove-orphans]
         args << '-d' if detach
         args.concat(services_except_self)
-        run_compose(*args)
+        result = run_compose(*args)
+        cleanup_images!
+        result
       end
 
       def down(remove_volumes: false)
@@ -43,9 +45,12 @@ module Orchestration
       end
 
       def recreate(service)
+        previous_image = Orchestration::Container.find(service)&.image
         pull(service:)
         run_compose('down', service.to_s)
-        run_compose('up', '--no-build', '-d', service.to_s)
+        result = run_compose('up', '--no-build', '-d', service.to_s)
+        cleanup_images!(previous_image:)
+        result
       end
 
       # Self-update: pull new image, then delegate the recreate to
@@ -224,6 +229,25 @@ module Orchestration
 
       def services_except_self
         ::Compose.load.services.names - [SELF_SERVICE]
+      end
+
+      # Remove images left behind after a redeploy:
+      # 1. The previous tag if the user changed it (e.g. :develop → :latest).
+      # 2. Dangling layers from `compose pull` (same tag, new digest).
+      #
+      # `docker image rm` (without --force) refuses to remove images still
+      # referenced by any container, so unrelated workloads on the host are safe.
+      def cleanup_images!(previous_image: nil)
+        remove_image(previous_image) if previous_image.present?
+        prune_dangling_images
+      end
+
+      def remove_image(image)
+        Open3.capture2e('docker', 'image', 'rm', image)
+      end
+
+      def prune_dangling_images
+        Open3.capture2e('docker', 'image', 'prune', '-f')
       end
     end
   end
