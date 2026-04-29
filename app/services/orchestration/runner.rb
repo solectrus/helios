@@ -67,15 +67,15 @@ module Orchestration
         compose = ::Compose.load
         image = compose.services.find(SELF_SERVICE).image
         host_path = host_data_path
-        compose_args = self_recreate_compose_args(host_path)
+        script = "docker #{self_recreate_compose_args(host_path).join(' ')} && docker image prune -f"
 
         cmd = [
           'docker', 'run', '--rm', '-d',
-          '--entrypoint', 'docker',
+          '--entrypoint', 'sh',
           '-v', '/var/run/docker.sock:/var/run/docker.sock',
           '-v', "#{host_path}:#{host_path}",
           image,
-          *compose_args
+          '-c', script
         ]
         run_docker(*cmd)
       end
