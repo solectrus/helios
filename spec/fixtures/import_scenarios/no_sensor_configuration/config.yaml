@@ -6,13 +6,14 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
+_schema_version: 1
 system:
   admin_password: xxxx
   app_host: 192.168.178.10
-  frame_ancestors: https://192.168.178.10:8123
   installation_date: '2024-02-03'
   secret_key_base: XXXXXXXXX6c0e3f1a5bc028d74e9a6b3c870d92f5e1f6c82549e5d30a71f8b7d39eac57d80a693fcb29e8d3a5f70334e81b6d2f4e91755fb8e84dc69b4
 dashboard:
+  frame_ancestors: https://192.168.178.10:8123
   image: ghcr.io/solectrus/solectrus:latest
 postgresql:
   image: postgres:16-alpine

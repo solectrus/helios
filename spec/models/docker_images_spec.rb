@@ -1,7 +1,12 @@
 RSpec.describe DockerImages do
   describe '.current' do
-    it 'returns the current default for a known constant' do
+    it 'returns the :current string for single-version services' do
       expect(described_class.current(:INFLUXDB)).to eq('influxdb:2.8-alpine')
+    end
+
+    it 'unwraps the first `{image:, label:}` hash for multi-version services' do
+      expect(described_class.current(:DASHBOARD))
+        .to eq(DockerImages::DASHBOARD[:current].first[:image])
     end
   end
 
@@ -64,6 +69,47 @@ RSpec.describe DockerImages do
     it 'returns false when the registry entry has no legacy list' do
       stub_const('DockerImages::INGEST', { current: 'ghcr.io/solectrus/ingest:latest' }.freeze)
       expect(described_class.legacy?('ingest', 'ghcr.io/solectrus/ingest:1.0.0')).to be false
+    end
+
+    context 'with a multi-version registry entry (DASHBOARD)' do
+      it 'is false for the recommended image' do
+        expect(described_class.legacy?('dashboard', described_class.current(:DASHBOARD))).to be false
+      end
+
+      it 'is false for a non-default selectable variant' do
+        variant = DockerImages::DASHBOARD[:current].last[:image]
+        expect(described_class.legacy?('dashboard', variant)).to be false
+      end
+
+      it 'is true for an explicit legacy entry' do
+        legacy = DockerImages::DASHBOARD[:legacy].first
+        expect(described_class.legacy?('dashboard', legacy)).to be true
+      end
+
+      it 'is true for an unknown custom tag (e.g. PR build)' do
+        expect(described_class.legacy?('dashboard', 'ghcr.io/solectrus/solectrus:pr-9999')).to be true
+      end
+    end
+  end
+
+  describe '.choices' do
+    it 'returns nil for single-version services' do
+      expect(described_class.choices(:INFLUXDB)).to be_nil
+    end
+
+    it 'returns the :current array verbatim for multi-version services' do
+      expect(described_class.choices(:DASHBOARD)).to eq(DockerImages::DASHBOARD[:current])
+    end
+  end
+
+  describe '.selectable' do
+    it 'wraps the :current string in an array for single-version services' do
+      expect(described_class.selectable(:INFLUXDB)).to eq(['influxdb:2.8-alpine'])
+    end
+
+    it 'unwraps every `{image:, label:}` hash for multi-version services' do
+      expect(described_class.selectable(:DASHBOARD))
+        .to eq(DockerImages::DASHBOARD[:current].pluck(:image))
     end
   end
 end

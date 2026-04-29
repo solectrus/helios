@@ -207,16 +207,22 @@ RSpec.describe ConfigSchema do
   # Extract all question "name" values from a SurveyJS JSON
   def extract_survey_field_names(survey)
     names = []
-    survey['pages']&.each do |page|
-      page['elements']&.each do |element|
-        name = element['name']
-        # Skip non-data elements (comments, info panels)
-        next if %w[comment html].include?(element['type'])
-        next if element['readOnly'] == true
+    survey['pages']&.each { |page| collect_question_names(page['elements'], names) }
+    names
+  end
 
-        names << name if name
+  def collect_question_names(elements, names)
+    elements&.each do |element|
+      # Skip non-data elements (comments, info text)
+      next if %w[comment html].include?(element['type'])
+      next if element['readOnly'] == true
+
+      # Panels are layout containers; recurse into their nested elements
+      if element['type'] == 'panel'
+        collect_question_names(element['elements'], names)
+      elsif element['name']
+        names << element['name']
       end
     end
-    names
   end
 end

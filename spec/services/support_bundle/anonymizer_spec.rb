@@ -134,8 +134,10 @@ RSpec.describe SupportBundle::Anonymizer do
           system:
             admin_password: adminpw
             secret_key_base: 31daffd9
-            lockup_codeword: letmein
             timezone: Europe/Berlin
+          dashboard:
+            lockup_codeword: letmein
+            ui_theme: light
           postgresql: { password: pgpw }
           influxdb: { token: influxtoken, password: influxpw, org: solectrus }
           mqtt: { mqtt_password: mqttpw, mqtt_username: admin }
@@ -147,8 +149,14 @@ RSpec.describe SupportBundle::Anonymizer do
         expect(parsed['system']).to eq(
           'admin_password' => 'dummy_admin_password',
           'secret_key_base' => 'dummy_secret_key_base',
-          'lockup_codeword' => 'dummy_lockup_codeword',
           'timezone' => 'Europe/Berlin',
+        )
+      end
+
+      it 'redacts the dashboard lockup codeword and keeps non-secret fields' do
+        expect(parsed['dashboard']).to eq(
+          'lockup_codeword' => 'dummy_lockup_codeword',
+          'ui_theme' => 'light',
         )
       end
 

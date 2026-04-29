@@ -1,10 +1,11 @@
-# Each image is a hash with `:current` (the recommended default, used as the
-# initial value for newly generated configs) and optionally `:legacy` —
-# images for which HELIOS surfaces an "update available" hint to the user.
+# Each entry has `:current` (the recommended default) and optionally
+# `:legacy` — images that surface as an "update available" hint in the UI.
+# `:current` is either a tag string, or an Array of `{image:, label:}`
+# hashes when the user can pick a variant (first entry is the default).
 #
-# Nothing here is ever rewritten automatically: `:current` is only consulted
-# when generating defaults for a fresh setup; `:legacy` only powers the UI
-# hint. The user decides when to switch.
+# Nothing here is ever rewritten automatically: `:current` is only
+# consulted when generating defaults for a fresh setup; `:legacy` only
+# powers the UI hint. The user decides when to switch.
 #
 # A legacy entry without a tag matches the repo with any tag (used to flag
 # moves away from a deprecated repo, e.g. `containrrr/watchtower`).
@@ -50,7 +51,26 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
   }.freeze
 
   DASHBOARD = {
-    current: 'ghcr.io/solectrus/solectrus:latest',
+    current: [
+      {
+        image: 'ghcr.io/solectrus/solectrus:latest',
+        label: {
+          de: "Stabil (empfohlen)\n\n" \
+              'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
+          en: "Stable (recommended)\n\n" \
+              'Tested releases — only updated when a new version ships, predictable and reliable.',
+        }.freeze,
+      }.freeze,
+      {
+        image: 'ghcr.io/solectrus/solectrus:develop',
+        label: {
+          de: "Entwicklung\n\n" \
+              'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
+          en: "Development\n\n" \
+              'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
+        }.freeze,
+      }.freeze,
+    ].freeze,
 
     legacy: %w[
       ghcr.io/solectrus/solectrus:1-0-beta
@@ -132,8 +152,27 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
     hash[const_name.to_s.downcase.tr('_', '-')] = const_name
   end.freeze
 
+  # Normalized variant list — single-string `:current` is wrapped as
+  # `[{image:}]` so callers don't branch on shape.
+  def self.variants(name)
+    value = const_get(name).fetch(:current)
+    value.is_a?(Array) ? value : [{ image: value }]
+  end
+  private_class_method :variants
+
   def self.current(name)
-    const_get(name).fetch(:current)
+    variants(name).first.fetch(:image)
+  end
+
+  # Survey choices for multi-version services, or nil when the registry
+  # declares a single-version `:current` — the UI suppresses the chooser.
+  def self.choices(name)
+    value = const_get(name).fetch(:current)
+    value if value.is_a?(Array)
+  end
+
+  def self.selectable(name)
+    variants(name).pluck(:image)
   end
 
   # Recommended image tag for a compose-service, or nil if the service has
@@ -143,10 +182,11 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
     current(name) if name
   end
 
-  # True when the image is on the registry's `:legacy` list for the service
-  # AND differs from the recommended `:current` tag. Tagged legacy entries
-  # (e.g. `redis:7-alpine`) require an exact match; untagged entries
-  # (e.g. `containrrr/watchtower`) match the repo with any tag.
+  # True when the image should surface as "outdated / update available" in
+  # the UI. Tagged legacy entries (e.g. `redis:7-alpine`) require an exact
+  # match; untagged entries (e.g. `containrrr/watchtower`) match the repo
+  # with any tag. For multi-version services, any non-listed image is also
+  # treated as legacy — catches imported custom tags (e.g. PR builds).
   def self.legacy?(service_name, image)
     return false if image.nil?
 
@@ -154,9 +194,14 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
     return false unless name
 
     data = const_get(name)
-    return false if image == data[:current]
+    current = data[:current]
+    multi_version = current.is_a?(Array)
+    selectable_images = multi_version ? current.pluck(:image) : [current]
 
-    Array(data[:legacy]).any? { |entry| matches_legacy?(image, entry) }
+    return false if selectable_images.include?(image)
+    return true if Array(data[:legacy]).any? { |entry| matches_legacy?(image, entry) }
+
+    multi_version
   end
 
   def self.matches_legacy?(image, entry)

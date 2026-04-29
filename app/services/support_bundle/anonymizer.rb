@@ -30,7 +30,8 @@ module SupportBundle
     ].to_set.freeze
 
     YAML_KEYS = {
-      'system' => %w[admin_password secret_key_base lockup_codeword],
+      'system' => %w[admin_password secret_key_base],
+      'dashboard' => %w[lockup_codeword],
       'postgresql' => %w[password],
       'influxdb' => %w[password token],
       'mqtt' => %w[mqtt_username mqtt_password],

@@ -6,6 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
+_schema_version: 1
 system:
   admin_password: test-admin
   installation_date: '2023-06-15'

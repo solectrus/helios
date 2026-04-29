@@ -21,6 +21,8 @@ Introduce ActiveRecord-style migrations for `config.yaml`:
 
 Testing strategy mirrors Rails: the DSL on `ConfigurationMigrations::Base` is unit-tested thoroughly, individual migrations are not. The `ConfigurationMigrator` itself is tested with a stand-in migration so its behavior stays independent of which real migrations happen to be registered.
 
+The first concrete migration, `ConfigurationMigrations::CreateDashboardSection` (version 1), moves the fields introduced for the dashboard configuration survey (`co2_emission_factor`, `frame_ancestors`, `ui_theme`, `lockup_codeword` from `system`, and `trusted_proxy_ranges` from `reverse_proxy`) into the new `dashboard` section.
+
 ## Consequences
 
 **Positive:**

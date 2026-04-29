@@ -1,4 +1,4 @@
-class ConfigSchema
+class ConfigSchema # rubocop:disable Metrics/ClassLength
   # Fields configurable via the setup wizard or system survey
   SYSTEM_FIELDS = %w[
     mode
@@ -6,10 +6,6 @@ class ConfigSchema
     installation_date
     app_host
     admin_password
-    co2_emission_factor
-    frame_ancestors
-    ui_theme
-    lockup_codeword
     network_name
     update_interval
   ].freeze
@@ -46,7 +42,18 @@ class ConfigSchema
     'image' => DockerImages.current(:DASHBOARD),
   }.freeze
 
-  DASHBOARD_ALL = DASHBOARD_DEFAULTS.keys.freeze
+  # Dashboard-specific fields the user configures via the dashboard survey.
+  # These end up as Dashboard environment variables (CO2_EMISSION_FACTOR,
+  # UI_THEME, FRAME_ANCESTORS, LOCKUP_CODEWORD, TRUSTED_PROXY_RANGES).
+  DASHBOARD_FIELDS = %w[
+    co2_emission_factor
+    ui_theme
+    frame_ancestors
+    lockup_codeword
+    trusted_proxy_ranges
+  ].freeze
+
+  DASHBOARD_ALL = (DASHBOARD_FIELDS + DASHBOARD_DEFAULTS.keys).uniq.freeze
 
   # Optional absolute host path for the service's data directory. When unset,
   # the service uses the default bind mount `./<service>` inside the stack dir.
@@ -224,7 +231,6 @@ class ConfigSchema
   REVERSE_PROXY_FIELDS = (STORAGE_FIELDS + %w[
     app_domain
     letsencrypt_email
-    trusted_proxy_ranges
     image
   ]).uniq.freeze
 

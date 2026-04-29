@@ -65,18 +65,6 @@
             "default": "For certificate notifications. Default: webmaster@{domain}"
           },
           "inputType": "email"
-        },
-        {
-          "type": "text",
-          "name": "trusted_proxy_ranges",
-          "title": {
-            "de": "Vertrauenswürdige Proxy-Bereiche (optional)",
-            "default": "Trusted proxy ranges (optional)"
-          },
-          "description": {
-            "de": "Kommaseparierte IP-Bereiche in CIDR-Notation, z.B. für Cloudflare",
-            "default": "Comma-separated IP ranges in CIDR notation, e.g. for Cloudflare"
-          }
         }
       ]
     }

@@ -6,6 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
+_schema_version: 1
 system:
   admin_password: my-secret-login-password
   app_host: my-little-raspberry.local

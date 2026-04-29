@@ -3,6 +3,7 @@ module SettingSection
     ICONS = {
       'forecast' => 'fa-cloud-sun',
       'system' => 'fa-gear',
+      'dashboard' => 'fa-chart-line',
       'reverse_proxy' => 'fa-shield-halved',
       'backup' => 'fa-cloud-arrow-up',
       'senec' => 'fa-bolt',

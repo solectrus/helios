@@ -6,14 +6,15 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
+_schema_version: 1
 system:
   admin_password: test-admin
   app_host: myhost
-  co2_emission_factor: '401'
   installation_date: '2024-01-15'
   secret_key_base: test-secret-key
   timezone: Europe/Berlin
 dashboard:
+  co2_emission_factor: '401'
   image: ghcr.io/solectrus/solectrus:latest
 postgresql:
   image: postgres:18-alpine

@@ -68,12 +68,13 @@ module Export
       end
 
       def optional_system_vars
+        dashboard = configuration.dashboard
         {
-          'CO2_EMISSION_FACTOR' => configuration.system.co2_emission_factor,
-          'FRAME_ANCESTORS' => configuration.system.frame_ancestors,
-          'UI_THEME' => configuration.system.ui_theme,
-          'LOCKUP_CODEWORD' => configuration.system.lockup_codeword,
-          'TRUSTED_PROXY_RANGES' => configuration.reverse_proxy.trusted_proxy_ranges,
+          'CO2_EMISSION_FACTOR' => dashboard.co2_emission_factor,
+          'FRAME_ANCESTORS' => dashboard.frame_ancestors,
+          'UI_THEME' => dashboard.ui_theme,
+          'LOCKUP_CODEWORD' => dashboard.lockup_codeword,
+          'TRUSTED_PROXY_RANGES' => dashboard.trusted_proxy_ranges,
         }.filter_map { |key, value| key if value.present? }
       end
 

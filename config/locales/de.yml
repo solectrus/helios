@@ -58,6 +58,9 @@ de:
       system:
         title: 'System'
         description: 'Allgemeine Einstellungen für SOLECTRUS'
+      dashboard:
+        title: 'Dashboard'
+        description: 'Software-Stand, Anzeige- und Sicherheitsoptionen für das SOLECTRUS-Dashboard'
       reverse_proxy:
         title: 'Reverse Proxy'
         description: 'Domain & HTTPS mit Traefik'

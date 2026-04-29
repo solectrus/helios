@@ -6,15 +6,16 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
+_schema_version: 1
 system:
   admin_password: example-admin-password
   app_host: solectrus.example.com
   installation_date: '2024-01-01'
-  lockup_codeword: sonne
   secret_key_base: 12e336f0dda1f5878bf24e60529b8980d972e67384efd32c0665d39593e407c7c9c66cee3eedbdd9b5a1012e0522c252a6ddf4f7ea568052e1ad8101e7e1219f
   timezone: Europe/Berlin
 dashboard:
   image: ghcr.io/solectrus/solectrus:latest
+  lockup_codeword: sonne
 postgresql:
   image: postgres:18-alpine
   password: my-secret-db-password

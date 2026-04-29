@@ -8,10 +8,10 @@ class Configuration # rubocop:disable Metrics/ClassLength
   ].freeze
 
   # Sections hidden from the configuration UI (auto-managed)
-  HIDDEN = %w[dashboard postgresql influxdb redis watchtower ingest power_splitter].freeze
+  HIDDEN = %w[postgresql influxdb redis watchtower ingest power_splitter].freeze
 
   # Settings shown in the configuration UI in full mode
-  SETTINGS = %w[system reverse_proxy backup].freeze
+  SETTINGS = %w[system dashboard reverse_proxy backup].freeze
 
   # Settings shown in the configuration UI in collectors_only mode
   # (reverse_proxy/backup target the local dashboard/postgres, which don't exist here)

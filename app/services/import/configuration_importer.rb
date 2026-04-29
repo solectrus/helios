@@ -161,16 +161,16 @@ module Import
     def collectors_only_mqtt_data
       broker = mqtt_extractor.broker_data
       mappings = mqtt_extractor.raw_mappings
-      image = Compose.normalize_image(@reader.service('mqtt-collector')&.dig('image'))
-      data = (broker || {}).merge('image' => image, 'mappings' => mappings.presence).compact
+      data = (broker || {}).merge(image_data_for('mqtt-collector'),
+                                  'mappings' => mappings.presence).compact
       data.presence
     end
 
     def collectors_only_shelly_data
       section = shelly_extractor.section_data
       devices = shelly_extractor.raw_devices
-      image = Compose.normalize_image(@reader.service('shelly-collector')&.dig('image'))
-      data = (section || {}).merge('image' => image, 'mode' => shelly_extractor.influx_mode,
+      data = (section || {}).merge(image_data_for('shelly-collector'),
+                                   'mode' => shelly_extractor.influx_mode,
                                    'password' => shelly_extractor.shared_password,
                                    'devices' => devices.presence).compact
       data.presence
@@ -208,7 +208,7 @@ module Import
     # --- System ---
 
     def system_data
-      data = system_core_data.merge(system_dashboard_data)
+      data = system_core_data.merge('app_host' => service_env('dashboard')['APP_HOST'])
       data['mode'] = ConfigSchema::MODE_COLLECTORS_ONLY if collectors_only?
       data.compact
     end
@@ -241,19 +241,15 @@ module Import
     # --- Dashboard ---
 
     def dashboard_data
-      image_data_for('dashboard')
-    end
-
-    def system_dashboard_data
       dashboard_env = service_env('dashboard')
 
-      {
-        'app_host' => dashboard_env['APP_HOST'],
+      image_data_for('dashboard').merge(
         'co2_emission_factor' => dashboard_env['CO2_EMISSION_FACTOR'],
         'frame_ancestors' => dashboard_env['FRAME_ANCESTORS'],
         'ui_theme' => dashboard_env['UI_THEME'],
         'lockup_codeword' => dashboard_env['LOCKUP_CODEWORD'],
-      }
+        'trusted_proxy_ranges' => dashboard_env['TRUSTED_PROXY_RANGES'],
+      ).compact
     end
 
     # --- Infrastructure services ---
@@ -282,10 +278,9 @@ module Import
     end
 
     def postgresql_data
-      {
-        'image' => Compose.normalize_image(@reader.service('postgresql')&.dig('image')),
+      image_data_for('postgresql').merge(
         'password' => @reader.raw_env['POSTGRES_PASSWORD'],
-      }.merge(volume_path_data('postgresql')).compact
+      ).merge(volume_path_data('postgresql')).compact
     end
 
     def influxdb_data
@@ -293,13 +288,12 @@ module Import
     end
 
     def local_influxdb_data
-      {
-        'image' => Compose.normalize_image(@reader.service('influxdb')&.dig('image')),
+      image_data_for('influxdb').merge(
         'password' => @reader.raw_env['INFLUX_PASSWORD'],
         'org' => @reader.raw_env['INFLUX_ORG'],
         'bucket' => @reader.raw_env['INFLUX_BUCKET'],
         'token' => influxdb_token,
-      }.merge(volume_path_data('influxdb')).compact
+      ).merge(volume_path_data('influxdb')).compact
     end
 
     def external_influxdb_data
@@ -353,16 +347,15 @@ module Import
     # --- Reverse Proxy ---
 
     def reverse_proxy_data
-      dashboard_env = service_env('dashboard')
-      data = { 'trusted_proxy_ranges' => dashboard_env['TRUSTED_PROXY_RANGES'] }
+      return nil unless @reader.services.key?('traefik')
 
-      if @reader.services.key?('traefik') && (domain = extract_domain_from_dashboard_labels)
-        data['app_domain'] = domain
-        data['letsencrypt_email'] = @reader.raw_env['LETSENCRYPT_EMAIL']
-        data.merge!(volume_path_data('reverse_proxy'))
-      end
+      domain = extract_domain_from_dashboard_labels
+      return nil unless domain
 
-      data.compact.presence
+      {
+        'app_domain' => domain,
+        'letsencrypt_email' => @reader.raw_env['LETSENCRYPT_EMAIL'],
+      }.merge(volume_path_data('reverse_proxy')).compact.presence
     end
 
     def extract_domain_from_dashboard_labels
@@ -391,18 +384,13 @@ module Import
       return unless @reader.services.key?('postgresql-backup')
 
       {
-        'postgresql' => image_hash_for('postgresql-backup'),
-        'influxdb' => image_hash_for('influxdb-backup'),
+        'postgresql' => image_data_for('postgresql-backup').presence,
+        'influxdb' => image_data_for('influxdb-backup').presence,
         'aws_access_key_id' => @reader.raw_env['AWS_ACCESS_KEY_ID'],
         'aws_secret_access_key' => @reader.raw_env['AWS_SECRET_ACCESS_KEY'],
         'aws_region' => @reader.raw_env['AWS_REGION'],
         'aws_bucket' => @reader.raw_env['AWS_BUCKET'],
       }.compact
-    end
-
-    def image_hash_for(service_name)
-      image = Compose.normalize_image(@reader.service(service_name)&.dig('image'))
-      { 'image' => image } if image
     end
 
     # --- Ingest ---
@@ -411,10 +399,9 @@ module Import
       return unless balcony_sensor_name
 
       ingest_env = service_env('ingest')
-      {
-        'image' => Compose.normalize_image(@reader.service('ingest')&.dig('image')),
+      image_data_for('ingest').merge(
         'retention_hours' => ingest_env['RETENTION_HOURS'],
-      }.merge(volume_path_data('ingest')).compact
+      ).merge(volume_path_data('ingest')).compact
     end
   end
 end

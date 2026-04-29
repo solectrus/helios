@@ -1,0 +1,137 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Dashboard",
+    "default": "Dashboard"
+  },
+  "description": {
+    "de": "Software-Stand, Anzeige- und Sicherheitsoptionen für das SOLECTRUS-Dashboard",
+    "default": "Release channel, display and security options for the SOLECTRUS dashboard"
+  },
+  "pages": [
+    {
+      "name": "p_image",
+      "title": {
+        "de": "Software-Stand",
+        "default": "Release channel"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "image",
+          "title": {
+            "de": "Welchen Stand möchtest du verwenden?",
+            "default": "Which release should be used?"
+          },
+          "isRequired": true,
+          "choices": []
+        }
+      ]
+    },
+    {
+      "name": "p_display",
+      "title": {
+        "de": "Anzeige & Zugriff",
+        "default": "Display & access"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "co2_emission_factor",
+          "title": {
+            "de": "CO₂-Emissionsfaktor (g/kWh)",
+            "default": "CO₂ emission factor (g/kWh)"
+          },
+          "description": {
+            "de": "Faktor zur Berechnung der CO₂-Einsparung. Der Standardwert 401 entspricht dem deutschen Strommix (Quelle: Umweltbundesamt). Für andere Länder ggf. anpassen.",
+            "default": "Factor for calculating CO₂ savings. The default of 401 reflects the German power grid mix (source: German Environment Agency). Adjust for other countries."
+          },
+          "defaultValue": "401",
+          "inputType": "number",
+          "min": 0
+        },
+        {
+          "type": "dropdown",
+          "name": "ui_theme",
+          "title": {
+            "de": "Farbschema",
+            "default": "Color theme"
+          },
+          "description": {
+            "de": "Lass das Feld leer, damit jeder Nutzer das Farbschema selbst wählen kann.",
+            "default": "Leave empty so each user can choose their own color theme."
+          },
+          "choices": [
+            { "value": "light", "text": { "de": "Hell", "default": "Light" } },
+            { "value": "dark", "text": { "de": "Dunkel", "default": "Dark" } }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "lockup_codeword",
+          "title": {
+            "de": "Zugangscode für die Weboberfläche (optional)",
+            "default": "Access code for the web interface (optional)"
+          },
+          "description": {
+            "de": "Sperrt die gesamte Weboberfläche mit einem Codewort. Lass das Feld leer, wenn kein zusätzlicher Schutz nötig ist.",
+            "default": "Locks the entire web interface with a codeword. Leave empty if no additional protection is needed."
+          }
+        },
+        {
+          "type": "panel",
+          "name": "p_advanced",
+          "title": {
+            "de": "Erweitert",
+            "default": "Advanced"
+          },
+          "description": {
+            "de": "Diese Einstellungen brauchst du nur in Spezialfällen — etwa wenn du SOLECTRUS in eine andere Webseite einbetten oder hinter einem Reverse Proxy wie Cloudflare betreiben willst. Sonst lass die Felder leer.",
+            "default": "These settings are only needed in special cases — for example, embedding SOLECTRUS in another website or running it behind a reverse proxy like Cloudflare. Otherwise leave empty."
+          },
+          "state": "collapsed",
+          "elements": [
+            {
+              "type": "text",
+              "name": "frame_ancestors",
+              "title": {
+                "de": "Einbettung in andere Webseite erlauben (optional)",
+                "default": "Allow embedding into another website (optional)"
+              },
+              "description": {
+                "de": "URL der Webseite, in die das Dashboard per iFrame eingebettet werden soll, z.B. https://example.com",
+                "default": "URL of the website that should embed the dashboard via iFrame, e.g. https://example.com"
+              }
+            },
+            {
+              "type": "text",
+              "name": "trusted_proxy_ranges",
+              "title": {
+                "de": "IP-Bereiche eines vorgelagerten Proxys (optional)",
+                "default": "IP ranges of an upstream proxy (optional)"
+              },
+              "description": {
+                "de": "Nur ausfüllen, wenn ein Reverse Proxy (z.B. Cloudflare) vor SOLECTRUS steht. Kommaseparierte IP-Bereiche im Format 198.51.100.0/24, 2001:db8::/32.",
+                "default": "Only fill in if a reverse proxy (e.g. Cloudflare) sits in front of SOLECTRUS. Comma-separated IP ranges in the format 198.51.100.0/24, 2001:db8::/32."
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  },
+  "showCompletePage": false
+}

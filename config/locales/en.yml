@@ -87,6 +87,9 @@ en:
       system:
         title: 'System'
         description: 'General settings for SOLECTRUS'
+      dashboard:
+        title: 'Dashboard'
+        description: 'Release channel, display and security options for the SOLECTRUS dashboard'
       reverse_proxy:
         title: 'Reverse Proxy'
         description: 'Domain & HTTPS with Traefik'
