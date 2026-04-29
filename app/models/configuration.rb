@@ -29,6 +29,9 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # Key for unmanaged services and env vars (preserved from existing installations)
   UNMANAGED_KEY = '_unmanaged'.freeze
 
+  # Top-level key tracking the schema version for migrations (see ConfigurationMigrator)
+  SCHEMA_VERSION_KEY = '_schema_version'.freeze
+
   # Canonical order for config.yaml output
   YAML_ORDER = SINGLETONS.freeze
 
@@ -75,6 +78,15 @@ class Configuration # rubocop:disable Metrics/ClassLength
     Current.configuration ||= new(path)
   end
 
+  # Load and parse a config.yaml file from disk, returning the raw hash. Returns
+  # an empty hash when the file is missing or empty. Centralizes the YAML
+  # loader options (permitted classes) shared with ConfigurationMigrator.
+  def self.load_file(path)
+    return {} unless File.exist?(path)
+
+    YAML.safe_load_file(path, permitted_classes: [Date]) || {}
+  end
+
   def self.singleton?(setting)
     setting.to_s.in?(SINGLETONS)
   end
@@ -89,7 +101,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   def initialize(path)
     @path = path
-    @data = File.exist?(path) ? YAML.safe_load_file(path, permitted_classes: [Date]) || {} : {}
+    @data = self.class.load_file(path)
   end
 
   # Dynamic singleton accessors: config.system, config.forecast, config.senec, etc.
@@ -311,13 +323,23 @@ class Configuration # rubocop:disable Metrics/ClassLength
   end
 
   def ordered_data
-    result = YAML_ORDER.each_with_object({}) do |key, hash|
-      hash[key] = @data[key] if @data.key?(key)
-    end
+    result = {}
+    stamp_schema_version!(result)
+    YAML_ORDER.each { |key| result[key] = @data[key] if @data.key?(key) }
     sanitize_all_sensors!(result) if result.key?('sensors')
     sanitize_sections!(result)
     result[UNMANAGED_KEY] = @data[UNMANAGED_KEY] if @data.key?(UNMANAGED_KEY)
     result
+  end
+
+  # Preserve a higher version that may already be stored (e.g. file written
+  # by a newer HELIOS) instead of silently downgrading the stamp. Skipped
+  # while no migrations are registered, so legacy files stay untouched until
+  # the first migration ships.
+  def stamp_schema_version!(result)
+    existing = @data[SCHEMA_VERSION_KEY].to_i
+    target = [existing, ConfigurationMigrations.current_version].max
+    result[SCHEMA_VERSION_KEY] = target if target.positive?
   end
 
   SENSOR_FIELDS_BY_SOURCE = {

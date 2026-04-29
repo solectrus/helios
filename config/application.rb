@@ -30,6 +30,12 @@ module Helios
     # Common ones are `templates`, `generators`, or `middleware`, for example.
     config.autoload_lib(ignore: %w[assets tasks])
 
+    # Migration files in app/services/configuration_migrations/ use a numeric
+    # filename prefix (`001_*.rb`) for chronological ordering. That prefix
+    # breaks Zeitwerk's filename-to-constant mapping, so the directory is
+    # excluded from autoload and required explicitly by ConfigurationMigrations.
+    Rails.autoloaders.main.ignore(Rails.root.join('app/services/configuration_migrations'))
+
     # Configuration for the application, engines, and railties goes here.
     #
     # These settings can be overridden in specific environments using the files
