@@ -13,6 +13,8 @@ module Header
     TAB_BASE_CLASSES = 'flex items-center gap-2 rounded-full px-4 py-2 text-sm ' \
                        'font-semibold tracking-wider uppercase transition-colors'.freeze
 
+    DRAWER_BASE_CLASSES = 'flex items-center gap-3 rounded-lg px-3 py-2 text-base'.freeze
+
     def initialize(active_tab:)
       super()
       @active_tab = active_tab
@@ -23,7 +25,8 @@ module Header
     attr_reader :active_tab
 
     def tabs
-      TAB_DEFINITIONS
+      @tabs ||=
+        TAB_DEFINITIONS
         .select { |tab| tab[:visible_if].nil? || tab[:visible_if].call }
         .map { |tab| tab.merge(path: send(tab[:path_helper]), label: t(".#{tab[:id]}")) }
     end
@@ -33,6 +36,14 @@ module Header
         TAB_BASE_CLASSES,
         'bg-primary/15 text-primary': tab[:id] == active_tab,
         'text-base-content/60 hover:bg-base-content/5 hover:text-base-content': tab[:id] != active_tab,
+      )
+    end
+
+    def drawer_item_classes(tab)
+      class_names(
+        DRAWER_BASE_CLASSES,
+        'bg-primary/15 text-primary font-semibold': tab[:id] == active_tab,
+        'text-base-content/80 hover:bg-base-content/5': tab[:id] != active_tab,
       )
     end
   end

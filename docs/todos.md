@@ -16,5 +16,4 @@ Remaining work, grouped by area.
 
 ## User experience
 
-- **Mobile-responsive polish.** The layout works on desktop today; revisit narrow viewports once the above features land.
 - **Link from Dashboard back to HELIOS.** Expose HELIOS' URL to the Dashboard service (e.g. as an env var) so Dashboard can show a "configure" link — users who start in Dashboard should be able to jump straight to the settings UI without knowing the HELIOS URL by heart.

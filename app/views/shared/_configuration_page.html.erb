@@ -3,13 +3,22 @@
   <meta name="turbo-refresh-scroll" content="preserve">
 <% end %>
 
+<% content_for :active_tab, "configuration" %>
+
 <%= turbo_frame_tag "tab-content" do %>
-  <%= render Header::Component.new(active_tab: :configuration) %>
+  <div class="md:flex md:items-start">
+    <aside
+      class="
+        bg-base-200/40 border-base-content/10 hidden md:sticky md:top-16 md:block md:w-72 md:shrink-0 md:self-start
+        md:border-r
+      "
+    >
+      <div class="p-8">
+        <%= render ConfigNav::Component.new(active_tab:) %>
+      </div>
+    </aside>
 
-  <div class="flex items-start">
-    <%= render ConfigNav::Component.new(active_tab:) %>
-
-    <div class="min-w-0 flex-1 p-8">
+    <div class="min-w-0 flex-1 p-4 md:p-8">
       <div class="mx-auto max-w-4xl">
         <%= yield %>
 
@@ -17,20 +26,4 @@
       </div>
     </div>
   </div>
-
-  <dialog id="file-modal" class="modal" data-controller="log-modal">
-    <div class="modal-box relative max-h-[95vh] w-[95vw] max-w-[95vw] overflow-y-auto p-6">
-      <%= turbo_frame_tag "file-modal-content", data: { log_modal_target: "frame" } do %>
-        <div class="flex justify-center py-8"><span class="loading loading-spinner loading-lg"></span></div>
-      <% end %>
-
-      <form method="dialog" class="absolute top-2 right-2">
-        <button class="btn btn-circle btn-ghost btn-sm"><i class="fa-solid fa-xmark"></i></button>
-      </form>
-    </div>
-
-    <form method="dialog" class="modal-backdrop">
-      <button>close</button>
-    </form>
-  </dialog>
 <% end %>

@@ -1,6 +1,6 @@
 <dialog id="<%= id %>" class="modal" data-controller="dialog-modal">
   <div
-    class="modal-box relative max-h-[95vh] max-w-5xl overflow-y-auto p-6"
+    class="modal-box modal-box-responsive relative overflow-y-auto sm:w-11/12! sm:max-w-5xl!"
     tabindex="-1"
     data-dialog-modal-target="box"
   >
@@ -8,7 +8,7 @@
       <div class="flex justify-center py-8"><span class="loading loading-spinner loading-lg"></span></div>
     <% end %>
 
-    <form method="dialog" class="absolute top-8 right-8">
+    <form method="dialog" class="fixed top-2 right-2 z-10 sm:absolute sm:top-8 sm:right-8">
       <button class="btn btn-circle btn-ghost"><i class="fa-solid fa-xmark"></i></button>
     </form>
   </div>

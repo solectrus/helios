@@ -1,9 +1,10 @@
-<%= turbo_frame_tag "file-modal-content" do %>
-  <div data-controller="stack-preview">
-    <h3 class="mb-4 text-lg font-bold"><%= @label %></h3>
+<%= turbo_frame_tag "file-modal-content", class: "flex h-full flex-col" do %>
+  <h3 class="mb-4 px-4 pt-4 text-lg font-bold sm:px-0 sm:pt-0"><%= @label %></h3>
 
-    <div class="bg-base-300 max-h-[70vh] overflow-auto rounded-lg p-4">
-      <pre class="text-xs leading-relaxed"><code class="<%= @language_class %>" data-stack-preview-target="code"><%= @content %></code></pre>
-    </div>
+  <div
+    data-controller="stack-preview"
+    class="bg-base-300 min-h-0 flex-1 overflow-auto p-4 sm:max-h-[70vh] sm:flex-initial sm:rounded-lg"
+  >
+    <pre class="text-xs leading-relaxed"><code class="<%= @language_class %>" data-stack-preview-target="code"><%= @content %></code></pre>
   </div>
 <% end %>

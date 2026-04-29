@@ -9,8 +9,8 @@
                                visibility_target: "frame",
                                src: helpers.service_row_path(service_name),
                              } do %>
-  <div class="flex items-center justify-between">
-    <div class="flex items-center gap-4">
+  <div class="flex flex-wrap items-center justify-between gap-y-3">
+    <div class="flex min-w-0 flex-1 items-center gap-4">
       <% if lazy %>
         <%# Skeleton placeholder for lazy loading %>
         <div class="flex h-3 w-3 items-center justify-center">
@@ -25,8 +25,8 @@
         </div>
       <% end %>
 
-      <div>
-        <div class="text-base font-semibold">
+      <div class="min-w-0 flex-1">
+        <div class="truncate text-base font-semibold">
           <%= compose_service.display_name %>
 
           <% if !lazy && version %>
@@ -45,8 +45,8 @@
           <% end %>
         </div>
 
-        <div class="text-base-content/50 text-xs">
-          <span class="truncate"><%= compose_service.image %></span>
+        <div class="text-base-content/50 truncate text-xs">
+          <span><%= compose_service.image %></span>
 
           <% if !lazy && legacy_image? %>
             <span
@@ -66,7 +66,7 @@
       </div>
     </div>
 
-    <div class="flex items-center gap-4">
+    <div class="flex shrink-0 items-center gap-4">
       <% unless helios? %>
         <% if public_port %>
           <button

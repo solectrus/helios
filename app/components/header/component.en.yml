@@ -3,3 +3,5 @@ en:
   configuration: 'Configuration'
   services: 'Services'
   support: 'Support'
+  menu: 'Menu'
+  close_menu: 'Close menu'

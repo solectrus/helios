@@ -1,0 +1,16 @@
+<%# locals: (id:, turbo_frame:, box_classes:) %>
+<dialog id="<%= id %>" class="modal" data-controller="log-modal">
+  <div class="modal-box modal-box-responsive relative <%= box_classes %>">
+    <%= turbo_frame_tag turbo_frame, class: "flex h-full flex-col", data: { log_modal_target: "frame" } do %>
+      <div class="flex justify-center py-8"><span class="loading loading-spinner loading-lg"></span></div>
+    <% end %>
+
+    <form method="dialog" class="fixed top-2 right-2 z-10 sm:absolute">
+      <button class="btn btn-circle btn-ghost btn-sm"><i class="fa-solid fa-xmark"></i></button>
+    </form>
+  </div>
+
+  <form method="dialog" class="modal-backdrop">
+    <button>close</button>
+  </form>
+</dialog>

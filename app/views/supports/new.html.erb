@@ -1,5 +1,5 @@
 <%= turbo_frame_tag "support-modal-content" do %>
-  <div class="space-y-7 p-2">
+  <div class="space-y-7 p-4 sm:p-2">
     <header>
       <h3 class="text-xl font-semibold tracking-tight"><%= t(".title") %></h3>
       <p class="text-base-content/70 mt-1 text-sm"><%= t(".subtitle") %></p>
@@ -58,10 +58,13 @@
             href="https://github.com/orgs/solectrus/discussions/new?category=q-a"
             target="_blank"
             rel="noopener"
-            class="link link-primary inline-flex items-center gap-1.5 font-mono text-sm break-all"
+            class="
+              link link-primary inline-flex max-w-full items-center gap-1.5 font-mono text-xs wrap-break-word
+              sm:text-sm
+            "
           >
-            github.com/orgs/solectrus/discussions/new
-            <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+            <span>github.com/orgs/solectrus/discussions/new</span>
+            <i class="fa-solid fa-arrow-up-right-from-square shrink-0 text-xs"></i>
           </a>
 
           <p class="text-base-content/60 text-xs"><%= t(".step_forum.account_hint") %></p>

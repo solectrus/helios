@@ -1,10 +1,9 @@
 <% content_for :title, t('.title') %>
+<% content_for :active_tab, "services" %>
 
 <div>
   <%= turbo_frame_tag "tab-content", data: { controller: "visibility" } do %>
-    <%= render Header::Component.new(active_tab: :services) %>
-
-    <div class="mx-auto max-w-4xl p-8">
+    <div class="mx-auto max-w-4xl p-4 md:p-8">
       <%= turbo_stream_from "services" %>
 
       <% regular, tail = @compose_services.partition { |s| !s.helios? } %>
@@ -32,20 +31,9 @@
       </div>
     </div>
 
-    <dialog id="log-modal" class="modal" data-controller="log-modal">
-      <div class="modal-box relative max-h-[95vh] w-[95vw] max-w-[95vw] overflow-y-auto p-6">
-        <%= turbo_frame_tag "log-modal-content", data: { log_modal_target: "frame" } do %>
-          <div class="flex justify-center py-8"><span class="loading loading-spinner loading-lg"></span></div>
-        <% end %>
-
-        <form method="dialog" class="absolute top-2 right-2">
-          <button class="btn btn-circle btn-ghost btn-sm"><i class="fa-solid fa-xmark"></i></button>
-        </form>
-      </div>
-
-      <form method="dialog" class="modal-backdrop">
-        <button>close</button>
-      </form>
-    </dialog>
+    <%= render "shared/log_modal",
+               id: "log-modal",
+               turbo_frame: "log-modal-content",
+               box_classes: "overflow-hidden sm:w-[95vw]! sm:max-w-[95vw]! sm:overflow-y-auto" %>
   <% end %>
 </div>

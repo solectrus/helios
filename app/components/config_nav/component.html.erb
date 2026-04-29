@@ -1,12 +1,16 @@
-<aside class="bg-base-200/40 border-base-content/10 sticky top-16 min-h-[calc(100dvh-6.5rem)] w-72 shrink-0 self-start border-r">
-  <nav class="flex flex-col gap-2 p-8">
+<nav class="flex flex-col <%= compact? ? 'gap-1' : 'gap-2' %>">
+  <% if show_tabs? %>
     <% tabs.each do |tab| %>
       <%= link_to tab[:path], class: item_classes(tab), data: { turbo_frame: "_top" } do %>
-        <span class="<%= icon_box_classes(tab) %>">
-          <i class="<%= tab[:icon] %>"></i>
-        </span>
+        <% if compact? %>
+          <i class="<%= icon_box_classes(tab) %> <%= tab[:icon] %>"></i>
+        <% else %>
+          <span class="<%= icon_box_classes(tab) %>">
+            <i class="<%= tab[:icon] %>"></i>
+          </span>
+        <% end %>
 
-        <span class="text-base font-medium"><%= tab[:label] %></span>
+        <span class="<%= compact? ? 'font-medium' : 'text-base font-medium' %>"><%= tab[:label] %></span>
 
         <% if show_warning?(tab) %>
           <span
@@ -18,25 +22,24 @@
         <% end %>
       <% end %>
     <% end %>
+  <% end %>
 
-    <div class="divider my-2"></div>
+  <% if show_tabs? && show_files? %>
+    <div class="divider <%= compact? ? 'my-1' : 'my-2' %>"></div>
+  <% end %>
 
+  <% if show_files? %>
     <a
       href="<%= helpers.file_path('compose') %>"
       data-turbo-frame="file-modal-content"
-      class="btn btn-ghost btn-block bg-base-content/5 hover:bg-base-content/10 justify-start gap-3 font-mono"
+      class="<%= file_link_classes %>"
     >
-      <i class="fa-solid fa-file-code opacity-70"></i>
-      compose.yaml
+      <i class="fa-solid fa-file-code <%= compact? ? 'w-5 text-center text-base-content/60' : 'opacity-70' %>"></i>
+      <span class="<%= compact? ? 'font-mono text-base' : '' %>">compose.yaml</span>
     </a>
-
-    <a
-      href="<%= helpers.file_path('env') %>"
-      data-turbo-frame="file-modal-content"
-      class="btn btn-ghost btn-block bg-base-content/5 hover:bg-base-content/10 justify-start gap-3 font-mono"
-    >
-      <i class="fa-solid fa-file-lines opacity-70"></i>
-      .env
+    <a href="<%= helpers.file_path('env') %>" data-turbo-frame="file-modal-content" class="<%= file_link_classes %>">
+      <i class="fa-solid fa-file-lines <%= compact? ? 'w-5 text-center text-base-content/60' : 'opacity-70' %>"></i>
+      <span class="<%= compact? ? 'font-mono text-base' : '' %>">.env</span>
     </a>
-  </nav>
-</aside>
+  <% end %>
+</nav>

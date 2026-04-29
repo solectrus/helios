@@ -113,5 +113,5 @@ with live status bar and log viewer, full stack generation (~15 service definiti
 sensor mapping with InfluxDB latest-value readings, DE/EN localization.
 
 Remaining work is tracked by area in `docs/todos.md` — auto-import review screen, InfluxDB
-discovery during import, "Update now" trigger for Watchtower, mobile polish, and a link
-from Dashboard back to HELIOS.
+discovery during import, "Update now" trigger for Watchtower, and a link from Dashboard
+back to HELIOS.

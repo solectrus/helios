@@ -22,13 +22,20 @@
     <%= vite_stylesheet_tag 'application.css' %>
   </head>
 
-  <body class="bg-base-200 min-h-dvh pb-10">
+  <body class="bg-base-200 min-h-dvh md:pb-14">
     <% { alert: "alert-error", notice: "alert-success" }.each do |key, alert_class| %>
       <% if flash[key] %>
         <div class="toast toast-top toast-center z-50">
           <div class="alert <%= alert_class %>"><span><%= flash[key] %></span></div>
         </div>
       <% end %>
+    <% end %>
+
+    <% if authorized? && config_yaml_exists? %>
+      <%= render Header::Component.new(active_tab: content_for(:active_tab).presence&.to_sym) %>
+      <%# Spacer for fixed navbar (always) and mobile fixed status bar %>
+      <div class="h-16" aria-hidden="true"></div>
+      <div class="h-12 md:hidden" aria-hidden="true"></div>
     <% end %>
 
     <%= yield %>
@@ -51,21 +58,14 @@
     <% if authorized? && config_yaml_exists? %>
       <%= turbo_stream_from "status_bar" %>
       <%= render StatusBar::Component.new %>
-      <dialog id="support-modal" class="modal" data-controller="log-modal">
-        <div class="modal-box relative max-h-[95vh] max-w-2xl overflow-y-auto p-6">
-          <%= turbo_frame_tag "support-modal-content", data: { log_modal_target: "frame" } do %>
-            <div class="flex justify-center py-8"><span class="loading loading-spinner loading-lg"></span></div>
-          <% end %>
-
-          <form method="dialog" class="absolute top-2 right-2">
-            <button class="btn btn-circle btn-ghost btn-sm"><i class="fa-solid fa-xmark"></i></button>
-          </form>
-        </div>
-
-        <form method="dialog" class="modal-backdrop">
-          <button>close</button>
-        </form>
-      </dialog>
+      <%= render "shared/log_modal",
+                 id: "support-modal",
+                 turbo_frame: "support-modal-content",
+                 box_classes: "overflow-y-auto sm:max-w-2xl!" %>
+      <%= render "shared/log_modal",
+                 id: "file-modal",
+                 turbo_frame: "file-modal-content",
+                 box_classes: "overflow-hidden sm:w-[95vw]! sm:max-w-[95vw]! sm:overflow-y-auto" %>
     <% end %>
   </body>
 </html>

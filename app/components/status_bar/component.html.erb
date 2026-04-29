@@ -1,7 +1,7 @@
 <%= helpers.turbo_frame_tag "status-bar" do %>
-  <div class="fixed right-0 bottom-0 left-0 z-40">
-    <div class="grid min-h-12 grid-cols-3 items-center px-4 py-2 text-sm font-medium <%= bar_class %>">
-      <div class="cursor-default text-xs">
+  <div class="fixed top-16 right-0 left-0 z-30 md:top-auto md:bottom-0">
+    <div class="grid min-h-12 grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-2 text-sm font-medium sm:grid-cols-3 <%= bar_class %>">
+      <div class="hidden cursor-default text-xs sm:block">
         <%= Rails.configuration.x.git.commit_version %>
 
         <span class="opacity-60">
@@ -14,11 +14,11 @@
         </span>
       </div>
 
-      <div class="flex items-center justify-center gap-3">
+      <div class="flex min-w-0 items-center justify-start gap-3 sm:justify-center">
         <i class="<%= icon_class %>"></i>
 
         <% labels.each do |locale, text| %>
-          <span data-locale="<%= locale %>" class="status-bar-label"><%= text %></span>
+          <span data-locale="<%= locale %>" class="status-bar-label truncate"><%= text %></span>
         <% end %>
       </div>
 
@@ -26,19 +26,19 @@
         <% if show_start? %>
           <%= button_to batch_path, method: :post, class: "btn btn-outline btn-sm" do %>
             <i class="fa-solid fa-play"></i>
-            <%= t(".start") %>
+            <span class="hidden sm:inline"><%= t(".start") %></span>
           <% end %>
         <% end %>
 
         <% if show_restart? %>
           <%= button_to batch_path, method: :post, class: "btn btn-outline btn-sm" do %>
             <i class="fa-solid fa-arrows-rotate"></i>
-            <%= t(".restart") %>
+            <span class="hidden sm:inline"><%= t(".restart") %></span>
           <% end %>
         <% elsif show_stop? %>
           <%= button_to batch_path, method: :delete, class: "btn btn-outline btn-sm" do %>
             <i class="fa-solid fa-stop"></i>
-            <%= t(".stop") %>
+            <span class="hidden sm:inline"><%= t(".stop") %></span>
           <% end %>
         <% end %>
       </div>
