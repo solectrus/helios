@@ -2,14 +2,12 @@
 
 Web-based control panel for [SOLECTRUS](https://solectrus.de). HELIOS installs the SOLECTRUS stack on your Docker host and lets you configure and operate it through a browser, replacing manual edits to `compose.yaml` / `.env` and `docker compose` commands.
 
-> [!CAUTION]
-> **DO NOT USE — WORK IN PROGRESS**
+> [!WARNING]
+> **Pre-1.0 — early release, test environments only**
 >
-> This project is **not ready for public use**. It is under active development and is **not intended for installation or testing** — not even for evaluation, demos, or experiments.
+> HELIOS is usable but unfinished. Expect rough edges, missing end-user documentation, and breaking changes between 0.x releases without migration paths. There is no stability guarantee yet.
 >
-> **Do not install, run, deploy, or promote HELIOS** unless you have been **personally invited and guided by the maintainer ([@ledermann](https://github.com/ledermann))**. There is no support, no documentation for end users, no stability guarantee, and breaking changes happen without notice.
->
-> If you stumbled upon this repository: please wait for an official announcement before trying anything.
+> **Do not use in production.** Run HELIOS only against test or evaluation stacks where data loss or downtime is acceptable. If you want to try it, you should be comfortable inspecting `compose.yaml` / `.env` yourself in case something goes wrong. For production stacks, wait for 1.0.
 
 ## Screenshots
 
