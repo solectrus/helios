@@ -18,16 +18,20 @@
 .vscode
 .yarnclean
 **/*.DS_Store
+AGENTS.md
 bin/brakeman
 bin/bundler-audit
 bin/ci
 bin/dev
+bin/herb
 bin/open
 bin/rspec
 bin/rubocop
 bin/setup
 bin/yarn
+bootstrap
 Brewfile
+Caddyfile
 CLAUDE.md
 config/brakeman.ignore
 config/bundler-audit.yml
@@ -42,10 +46,13 @@ Guardfile
 log/*
 node_modules
 Procfile*
+README.md
+screenshot-*.jpg
 spec
 stack
 storage/development*
 storage/test*
+vitest.config.mts
 yarn-error.log
 
 tmp/*
