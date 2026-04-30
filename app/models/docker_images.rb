@@ -182,6 +182,17 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
     current(name) if name
   end
 
+  # Bare-repo legacy entries (e.g. "containrrr/watchtower") are returned
+  # untagged; the caller expands them against tags present on the host.
+  def self.known_for(service_name)
+    name = REGISTRY_BY_SERVICE[service_name.to_s]
+    return [] unless name
+
+    data = const_get(name)
+    list = Array(data[:current]).map { |entry| entry.is_a?(Hash) ? entry.fetch(:image) : entry }
+    list + Array(data[:legacy])
+  end
+
   # True when the image should surface as "outdated / update available" in
   # the UI. Tagged legacy entries (e.g. `redis:7-alpine`) require an exact
   # match; untagged entries (e.g. `containrrr/watchtower`) match the repo

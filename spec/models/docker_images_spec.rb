@@ -112,4 +112,30 @@ RSpec.describe DockerImages do
         .to eq(DockerImages::DASHBOARD[:current].pluck(:image))
     end
   end
+
+  describe '.known_for' do
+    it 'returns current + tagged legacy for a single-version service' do
+      expect(described_class.known_for('redis')).to include('redis:8-alpine', 'redis:7-alpine')
+    end
+
+    it 'returns every variant for a multi-version service' do
+      expect(described_class.known_for('dashboard')).to include(
+        'ghcr.io/solectrus/solectrus:latest',
+        'ghcr.io/solectrus/solectrus:develop',
+      )
+    end
+
+    it 'preserves bare-repo legacy entries verbatim' do
+      expect(described_class.known_for('watchtower')).to include('containrrr/watchtower')
+    end
+
+    it 'derives the registry name from a hyphenated compose name' do
+      expect(described_class.known_for('senec-collector'))
+        .to include(described_class.current(:SENEC_COLLECTOR))
+    end
+
+    it 'returns an empty array for unknown services' do
+      expect(described_class.known_for('foobar')).to eq([])
+    end
+  end
 end
