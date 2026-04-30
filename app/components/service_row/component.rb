@@ -126,7 +126,7 @@ module ServiceRow
 
     def row_class
       base =
-        'block rounded-lg border border-base-300 p-4 shadow-sm transition-shadow'
+        'block rounded-lg border border-base-300 p-3 sm:p-4 shadow-sm transition-shadow'
 
       if helios?
         "#{base} bg-base-300 mt-6"

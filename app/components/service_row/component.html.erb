@@ -9,8 +9,8 @@
                                visibility_target: "frame",
                                src: helpers.service_row_path(service_name),
                              } do %>
-  <div class="flex flex-wrap items-center justify-between gap-y-3">
-    <div class="flex min-w-0 flex-1 items-center gap-4">
+  <div class="flex items-center justify-between gap-2 sm:gap-4">
+    <div class="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
       <% if lazy %>
         <%# Skeleton placeholder for lazy loading %>
         <div class="flex h-3 w-3 items-center justify-center">
@@ -26,11 +26,13 @@
       <% end %>
 
       <div class="min-w-0 flex-1">
-        <div class="truncate text-base font-semibold">
-          <%= compose_service.display_name %>
+        <div class="flex flex-wrap items-baseline gap-x-2 text-base font-semibold sm:flex-nowrap sm:truncate">
+          <span class="truncate"><%= compose_service.display_name %></span>
 
           <% if !lazy && version %>
-            <span class="text-base-content/50 ml-1 font-normal tabular-nums"><%= version %></span>
+            <span class="text-base-content/50 text-sm font-normal wrap-anywhere tabular-nums sm:text-base">
+              <%= version %>
+            </span>
           <% end %>
 
           <% if !lazy && incomplete_source? %>
@@ -45,7 +47,7 @@
           <% end %>
         </div>
 
-        <div class="text-base-content/50 truncate text-xs">
+        <div class="text-base-content/50 hidden truncate text-xs sm:block">
           <span><%= compose_service.image %></span>
 
           <% if !lazy && legacy_image? %>
@@ -66,20 +68,21 @@
       </div>
     </div>
 
-    <div class="flex shrink-0 items-center gap-4">
+    <div class="flex shrink-0 items-center gap-1 sm:gap-4">
       <% unless helios? %>
         <% if public_port %>
           <button
             type="button"
             data-action="click->service-row--component#open"
             data-port="<%= public_port %>"
-            class="btn btn-sm"
+            aria-label="<%= t('.open') %>"
+            class="btn btn-sm max-sm:btn-square"
             <% unless open_button_enabled? %>
               disabled
             <% end %>
           >
             <i class="fa-solid fa-up-right-from-square"></i>
-            <%= t('.open') %>
+            <span class="hidden sm:inline"><%= t('.open') %></span>
           </button>
         <% end %>
         <div id="<%= dom_id %>-logs" class="tooltip tooltip-info" data-tip="<%= t('.logs') %>">
