@@ -7,6 +7,6 @@ describe 'Smoke test', :with_admin_password do
   end
 
   it 'loads the services page' do
-    expect(page).to have_content('SOLECTRUS')
+    expect(page).to have_text('SOLECTRUS')
   end
 end
