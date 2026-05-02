@@ -32,15 +32,19 @@ module Import
         SHELLY_HOST SHELLY_INTERVAL SHELLY_PASSWORD
         SHELLY_CLOUD_SERVER SHELLY_AUTH_KEY SHELLY_DEVICE_ID SHELLY_INVERT_POWER
         MQTT_HOST MQTT_PORT MQTT_SSL MQTT_USERNAME MQTT_PASSWORD
+        PGDATA INFLUXD_USE_HASHED_TOKENS
       ].freeze
 
       # Infrastructure .env keys that HELIOS doesn't generate but are well-known
-      # SOLECTRUS vars. These are suppressed from unmanaged to avoid noise.
+      # SOLECTRUS vars. These are suppressed from unmanaged to avoid noise — HELIOS
+      # bakes the corresponding service hostnames/ports/paths directly into compose,
+      # so any user-supplied .env values here are dead weight after import.
       INFRASTRUCTURE_ENV_KEYS = %w[
         INFLUX_HOST INFLUX_SCHEMA INFLUX_PORT INFLUX_VOLUME_PATH INFLUX_USERNAME
         DB_HOST DB_USER DB_PASSWORD DB_VOLUME_PATH DB_DATABASE
-        REDIS_URL REDIS_VOLUME_PATH
-        INGEST_VOLUME_PATH TRAEFIK_VOLUME_PATH
+        REDIS_URL REDIS_HOST REDIS_PORT REDIS_VOLUME_PATH
+        INGEST_HOST INGEST_PORT INGEST_VOLUME_PATH TRAEFIK_VOLUME_PATH
+        POSTGRES_HOST POSTGRES_USERNAME
       ].freeze
 
       # Legacy SOLECTRUS keys that HELIOS absorbs at import time via
@@ -50,6 +54,10 @@ module Import
       LEGACY_CONSUMED_ENV_KEYS = %w[
         INFLUX_MEASUREMENT_PV
         MQTT_FLIP_GRID_POW MQTT_FLIP_BAT_POWER
+        DOCKER_INFLUXDB_INIT_MODE DOCKER_INFLUXDB_INIT_USERNAME
+        DOCKER_INFLUXDB_INIT_PASSWORD DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+        DOCKER_INFLUXDB_INIT_ORG DOCKER_INFLUXDB_INIT_BUCKET
+        POSTGRES_ADMIN_PASSWORD
       ].freeze
 
       INTERPOLATION_RE = /\$\{([A-Z_][A-Z0-9_]*)\}/
@@ -79,7 +87,7 @@ module Import
 
       def normalized_unmanaged_services
         raw = @reader.raw_compose['services'] || {}
-        unmanaged = raw.reject { |_name, config| managed_service?(config) }
+        unmanaged = raw.reject { |name, config| managed_service?(name, config) }
 
         pre = unmanaged.transform_values { |config| extract_referenced(config) }
         distribute_env_file_orphans!(pre)
@@ -96,9 +104,10 @@ module Import
       #               but must not be injected into the compose environment)
       def extract_referenced(config)
         result = config.dup
+        result['environment'] = normalize_environment(result['environment'])
         env_file_used = expand_env_file!(result)
         declared = declared_env_names(result['environment'])
-        referenced = referenced_env_names(result).subtract(HELIOS_CORE_ENV_KEYS)
+        referenced = referenced_env_names(result['environment']).subtract(HELIOS_CORE_ENV_KEYS)
 
         {
           raw: result,
@@ -155,6 +164,21 @@ module Import
         names
       end
 
+      # Convert hash-style `environment:` (key/value mapping with optional nil values
+      # for bare references) into the canonical array-style HELIOS uses everywhere
+      # else. Real-world stacks frequently use the hash form together with `<<:`
+      # YAML merges; downstream methods only know the array form.
+      def normalize_environment(env)
+        return env unless env.is_a?(Hash)
+
+        env.filter_map do |key, value|
+          name = key.to_s
+          next unless valid_env_name?(name)
+
+          value.nil? ? name : "#{name}=#{value}"
+        end
+      end
+
       # Detach env_file: .env. Returns true if it was present.
       def expand_env_file!(config)
         files = Array(config['env_file'])
@@ -167,9 +191,9 @@ module Import
 
       # Names referenced either directly in environment entries or via
       # ${VAR} interpolations inside their values.
-      def referenced_env_names(config)
+      def referenced_env_names(environment)
         names = Set.new
-        Array(config['environment']).each do |entry|
+        Array(environment).each do |entry|
           case entry
           when String
             name, value = entry.split('=', 2)
@@ -252,16 +276,50 @@ module Import
         attached = services.values.flat_map { |cfg| Array(cfg['env_values']&.keys) }.to_set
         managed = managed_env_keys_set + attached
 
-        @reader
-          .raw_env
-          .to_h
-          .reject do |key, value|
-            managed.include?(key) ||
-              managed_shelly_env_key?(key) ||
-              deprecated_mqtt_collector_var?(key) ||
-              redundant_measurement_alias?(key, value)
-          end
-          .presence
+        @reader.raw_env.to_h.reject { |key, value| suppress_orphan?(managed, key, value) }.presence
+      end
+
+      def suppress_orphan?(managed, key, value)
+        managed.include?(key) ||
+          managed_shelly_env_key?(key) ||
+          deprecated_mqtt_collector_var?(key) ||
+          referenced_only_by_managed_services?(key) ||
+          redundant_measurement_alias?(key, value) ||
+          unreferenced_in_stack?(key)
+      end
+
+      # True if no service can read this var: not interpolated as ${VAR}
+      # anywhere in compose or .env, and not bare-listed in any service's
+      # environment block. Catches stale leftovers like FS_FORECAST_* after a
+      # forecast.solar → pvnode migration, or PYTHONUNBUFFERED for a container
+      # that no longer exists.
+      def unreferenced_in_stack?(key)
+        @referenced_vars ||= collect_referenced_vars
+        @referenced_vars.exclude?(key)
+      end
+
+      def collect_referenced_vars
+        vars = Set.new
+        scan_strings(@reader.raw_compose) { |s| vars.merge(scan_interpolations(s)) }
+        @reader.raw_env.to_h.each_value { |v| vars.merge(scan_interpolations(v.to_s)) }
+        each_service_environment { |env| vars.merge(declared_env_names(env) - value_carrying_names(env)) }
+        vars
+      end
+
+      def each_service_environment
+        (@reader.raw_compose['services'] || {}).each_value do |cfg|
+          next unless cfg.is_a?(Hash)
+
+          yield normalize_environment(cfg['environment'])
+        end
+      end
+
+      def scan_strings(obj, &)
+        case obj
+        when Hash then obj.each_value { |v| scan_strings(v, &) }
+        when Array then obj.each { |v| scan_strings(v, &) }
+        when String then yield obj
+        end
       end
 
       # mqtt-collector's pre-MAPPING-style env var namespace. Vars HELIOS
@@ -273,6 +331,56 @@ module Import
         key.start_with?('MQTT_TOPIC_', 'MQTT_FLIP_')
       end
 
+      # Indirection vars (e.g. ${PN_INFLUX_TOKEN} feeding `INFLUX_TOKEN: ${PN_INFLUX_TOKEN}`)
+      # are dead weight after import: HELIOS rewrites the consuming environment block
+      # to canonical names, and the value survives via the canonical config. Only
+      # suppress when every consumer is canonical — otherwise an unmanaged service
+      # still reads the var and would silently lose its value.
+      def referenced_only_by_managed_services?(key)
+        names = service_env_references[key]
+        return false if names.blank?
+
+        names.all? { |name| canonically_managed_service_names.include?(name) }
+      end
+
+      # Service names HELIOS will re-emit canonically. Built from @reader.services,
+      # which has already resolved image aliases (incl. via `<<:` YAML merge keys),
+      # so services like `app` (→ solectrus) or `pvnode_collector` (→ forecast-collector)
+      # match. When multiple services share one image, only the first wins the alias
+      # — the rest stay unmanaged so their referenced vars survive round-trip.
+      def canonically_managed_service_names
+        @canonically_managed_service_names ||= compute_canonically_managed_service_names
+      end
+
+      def compute_canonically_managed_service_names
+        services = @reader.services
+        canonical_ids =
+          services.values_at(*StackReader::SERVICE_IMAGE_PREFIXES.keys).compact.to_set(&:object_id)
+        services.each_with_object(Set.new) do |(name, cfg), result|
+          result << name if canonical_ids.include?(cfg.object_id)
+        end
+      end
+
+      # Map of env_var_name => [service_name, ...] built from `${VAR}`
+      # interpolations inside each service's `environment:` block. Only
+      # interpolations count as indirections — bare names (e.g. `- MY_VAR`)
+      # mean the service reads the var directly under its own name and the
+      # value still belongs to that service after HELIOS takes over.
+      def service_env_references
+        @service_env_references ||= build_service_env_references
+      end
+
+      def build_service_env_references
+        refs = Hash.new { |h, k| h[k] = [] }
+        (@reader.raw_compose['services'] || {}).each do |name, config|
+          next unless config.is_a?(Hash)
+
+          env = normalize_environment(config['environment'])
+          (referenced_env_names(env) - declared_env_names(env)).each { |var| refs[var] << name }
+        end
+        refs
+      end
+
       # User-defined INFLUX_MEASUREMENT_* vars are pure naming aliases — the
       # SOLECTRUS stack never reads them. If the value is already captured as
       # a measurement in the imported sensor config, the alias is redundant
@@ -281,11 +389,12 @@ module Import
         key.start_with?('INFLUX_MEASUREMENT_') && @known_measurements.include?(value)
       end
 
-      # Detect by image rather than service name, so legacy installations that use
-      # historical names like 'app' (for SOLECTRUS) or 'db' (for PostgreSQL) are
-      # recognized as managed and get migrated to canonical names on export.
-      def managed_service?(config)
-        StackReader.managed_image?(config['image']) ||
+      # A service is "managed" iff HELIOS will re-emit it on export. Shelly
+      # instances always qualify (regenerated from shelly.devices). Other services
+      # match by canonical name only — image-only duplicates (e.g. a second
+      # mqtt-collector for ingest) stay in _unmanaged so they survive round-trip.
+      def managed_service?(name, config)
+        canonically_managed_service_names.include?(name) ||
           ShellyExtractor.shelly_image?(config['image'])
       end
 

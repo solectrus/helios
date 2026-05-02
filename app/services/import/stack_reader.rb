@@ -82,9 +82,13 @@ module Import
     end
     private_class_method :image_matches_prefix?
 
-    # Raw (unresolved) compose config parsed from YAML, preserving ${VAR} references
+    # Raw (unresolved) compose config parsed from YAML, preserving ${VAR} references.
+    # Aliases are allowed (real-world compose files lean on `<<: *anchor` heavily) and
+    # the parsed tree is deep-duped so identical sub-hashes from resolved aliases
+    # don't share object identity — otherwise YAML.dump would re-emit anchors when
+    # downstream consumers persist this data into config.yaml.
     def raw_compose
-      @raw_compose ||= YAML.safe_load_file(@compose_path, permitted_classes: [Symbol]) || {}
+      @raw_compose ||= (YAML.safe_load_file(@compose_path, permitted_classes: [Symbol], aliases: true) || {}).deep_dup
     end
 
     # Raw environment variables from .env file (unresolved, preserving original values)
@@ -103,9 +107,11 @@ module Import
         next if resolved_services.key?(canonical_name)
 
         matches = resolved_services.select { |_, cfg| self.class.image_matches?(cfg['image'], prefix) }
-        # Only alias when exactly one candidate exists — ambiguous matches (e.g. multiple
-        # shelly-collector services) are resolved by image-walking callers instead.
-        result[canonical_name] = matches.values.first if matches.size == 1
+        # When multiple services share the same image (e.g. two mqtt-collector
+        # instances, or per-device shelly-collectors), the first one wins the
+        # canonical alias — HELIOS re-emits it under the canonical name, while
+        # the rest stay in _unmanaged.services with their original names.
+        result[canonical_name] = matches.values.first if matches.any?
       end
     end
 

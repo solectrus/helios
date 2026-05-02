@@ -101,6 +101,8 @@ module Export
       env.add_section('PostgreSQL database')
       entry(env, 'POSTGRES_PASSWORD', configuration.postgresql.password,
             'Database password — auto-generated, do not change after first start')
+      optional_entry(env, 'PGDATA', configuration.postgresql.pgdata,
+                     'Postgres data directory inside the container (imported from existing installation)')
     end
 
     def influxdb_section(env)
@@ -113,6 +115,12 @@ module Export
 
     def local_influxdb_section(env)
       env.add_section('InfluxDB time-series database')
+      local_influxdb_required_entries(env)
+      optional_entry(env, 'INFLUXD_USE_HASHED_TOKENS', configuration.influxdb.use_hashed_tokens,
+                     'Store API tokens as bcrypt hashes (imported from existing installation)')
+    end
+
+    def local_influxdb_required_entries(env)
       entry(env, 'INFLUX_PASSWORD', configuration.influxdb.password,
             'Admin password — auto-generated, do not change after first start')
       entry(env, 'INFLUX_ORG', configuration.influxdb.org, 'Organization name')

@@ -279,7 +279,8 @@ module Import
 
     def postgresql_data
       image_data_for('postgresql').merge(
-        'password' => @reader.raw_env['POSTGRES_PASSWORD'],
+        'password' => env_first('POSTGRES_PASSWORD', 'POSTGRES_ADMIN_PASSWORD'),
+        'pgdata' => @reader.raw_env['PGDATA'],
       ).merge(volume_path_data('postgresql')).compact
     end
 
@@ -289,10 +290,11 @@ module Import
 
     def local_influxdb_data
       image_data_for('influxdb').merge(
-        'password' => @reader.raw_env['INFLUX_PASSWORD'],
-        'org' => @reader.raw_env['INFLUX_ORG'],
-        'bucket' => @reader.raw_env['INFLUX_BUCKET'],
+        'password' => env_first('INFLUX_PASSWORD', 'DOCKER_INFLUXDB_INIT_PASSWORD'),
+        'org' => env_first('INFLUX_ORG', 'DOCKER_INFLUXDB_INIT_ORG'),
+        'bucket' => env_first('INFLUX_BUCKET', 'DOCKER_INFLUXDB_INIT_BUCKET'),
         'token' => influxdb_token,
+        'use_hashed_tokens' => @reader.raw_env['INFLUXD_USE_HASHED_TOKENS'],
       ).merge(volume_path_data('influxdb')).compact
     end
 
@@ -307,11 +309,17 @@ module Import
       }.compact
     end
 
-    # Support token aliasing: prefer INFLUX_TOKEN, fallback to INFLUX_ADMIN_TOKEN or INFLUX_TOKEN_WRITE
     def influxdb_token
-      @reader.raw_env['INFLUX_TOKEN'].presence ||
-        @reader.raw_env['INFLUX_ADMIN_TOKEN'].presence ||
-        @reader.raw_env['INFLUX_TOKEN_WRITE']
+      env_first('INFLUX_TOKEN', 'INFLUX_ADMIN_TOKEN', 'INFLUX_TOKEN_WRITE', 'DOCKER_INFLUXDB_INIT_ADMIN_TOKEN')
+    end
+
+    # First non-blank value across env keys, preferring earlier ones. Real-world
+    # stacks routinely use non-canonical names (POSTGRES_ADMIN_PASSWORD,
+    # DOCKER_INFLUXDB_INIT_*, INFLUX_ADMIN_TOKEN, ...) — without the fallback
+    # the importer would persist nil and ensure_defaults! would generate a
+    # fresh random secret on every export, breaking round-trip stability.
+    def env_first(*keys)
+      keys.lazy.filter_map { |k| @reader.raw_env[k].presence }.first
     end
 
     # Preserve absolute host paths (e.g. Synology `/volume1/...`) so the stack

@@ -108,6 +108,3 @@ sensors:
     source: mqtt
 ingest:
   image: ghcr.io/solectrus/ingest:latest
-_unmanaged:
-  env_vars:
-    INFLUX_MEASUREMENT_TIBBER: my-tibber

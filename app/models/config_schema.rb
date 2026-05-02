@@ -68,7 +68,12 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     'password' => -> { SecureRandom.alphanumeric(32) },
   }.freeze
 
-  POSTGRESQL_ALL = (STORAGE_FIELDS + POSTGRESQL_DEFAULTS.keys).uniq.freeze
+  # Optional Postgres settings imported verbatim from existing installations.
+  # No default, no UI — only persisted when present in the original .env so
+  # that re-export does not silently drop a custom setup.
+  POSTGRESQL_OPTIONAL_FIELDS = %w[pgdata].freeze
+
+  POSTGRESQL_ALL = (STORAGE_FIELDS + POSTGRESQL_OPTIONAL_FIELDS + POSTGRESQL_DEFAULTS.keys).uniq.freeze
 
   # --- InfluxDB ---
 
@@ -86,7 +91,14 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   # Matching .env keys for the external-InfluxDB connection fields.
   INFLUXDB_EXTERNAL_ENV_KEYS = INFLUXDB_EXTERNAL_FIELDS.map { |f| "INFLUX_#{f.upcase}" }.freeze
 
-  INFLUXDB_ALL = (STORAGE_FIELDS + INFLUXDB_EXTERNAL_FIELDS + INFLUXDB_DEFAULTS.keys).uniq.freeze
+  # Optional InfluxDB settings imported verbatim from existing installations.
+  # No default, no UI — only persisted when present in the original .env so
+  # that re-export does not silently drop a custom setup.
+  INFLUXDB_OPTIONAL_FIELDS = %w[use_hashed_tokens].freeze
+
+  INFLUXDB_ALL = (
+    STORAGE_FIELDS + INFLUXDB_EXTERNAL_FIELDS + INFLUXDB_OPTIONAL_FIELDS + INFLUXDB_DEFAULTS.keys
+  ).uniq.freeze
 
   # --- Redis ---
 

@@ -1,0 +1,543 @@
+x-deploy-collector: &deploy_collector
+  deploy:
+    resources:
+      limits:
+        cpus: "0.35"
+        memory: 100M
+
+x-environment-influxdb: &environment_influxdb
+  INFLUX_HOST:
+  INFLUX_ORG:
+  INFLUX_PORT:
+  INFLUX_SCHEMA:
+
+x-environment-ingest: &environment_ingest
+  INFLUX_HOST: ${INGEST_HOST}
+  INFLUX_PORT: ${INGEST_PORT}
+
+x-image-adminer: &image_adminer
+  image: adminer:4.8.1-standalone
+x-image-forecast-collector: &image_forecast_collector
+  image: ghcr.io/solectrus/forecast-collector:0.7.1
+#x-image-forecast-collector_develop: &image_forecast_collector_develop
+#  image: ghcr.io/solectrus/forecast-collector:develop
+x-image-grafana: &image_grafana
+  image: grafana/grafana:12.3.1-ubuntu
+x-image-influxdb: &image_influxdb
+  image: influxdb:2.8
+x-image-ingest: &image_ingest
+#  image: ghcr.io/solectrus/ingest:0.3.1
+  image: ghcr.io/solectrus/ingest:develop
+x-image-mariadb: &image_mariadb
+  image: mariadb:12.1-noble
+x-image-mosquitto: &image_mosquitto
+  image: eclipse-mosquitto:2.0
+x-image-mqtt-collector: &image_mqtt_collector
+#  image: ghcr.io/solectrus/mqtt-collector:develop
+  image: ghcr.io/solectrus/mqtt-collector:0.7.4
+x-image-nodered: &image_nodered
+  image: nodered/node-red:4.1.3-22
+x-image-postgres: &image_postgres
+  image: postgres:16.11-trixie
+x-image-power-splitter: &image_power_splitter
+#  image: ghcr.io/solectrus/power-splitter:pr-233
+  image: ghcr.io/solectrus/power-splitter:0.7.1
+x-image-redis: &image_redis
+  image: redis:8.4-bookworm
+x-image-redis_ui: &image_redis_ui
+  image: ghcr.io/joeferner/redis-commander:latest
+#x-image-senec-charger: &image_senec_charger
+#  image: ghcr.io/solectrus/senec-charger:0.7.0
+x-image-senec-collector: &image_senec_collector
+  image: ghcr.io/solectrus/senec-collector:0.19.3
+x-image-solectrus: &image_solectrus
+#  image: ghcr.io/solectrus/solectrus:0.20.2
+#  image: ghcr.io/solectrus/solectrus:develop
+  image: ghcr.io/solectrus/solectrus:power-balance-chart
+x-image-tibber-collector: &image_tibber_collector
+  image: ghcr.io/solectrus/tibber-collector:0.4.1
+
+x-logging: &logging
+  logging:
+    options:
+      max-size: "10m"
+      max-file: "3"
+x-networks: &networks
+  networks:
+    - default
+x-restart: &restart
+  restart: unless-stopped
+
+services:
+  dashboard:
+    environment:
+      ADMIN_PASSWORD:
+      APP_HOST:
+      CO2_EMISSION_FACTOR:
+      DB_HOST: ${POSTGRES_HOST}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_USER: ${POSTGRES_USERNAME}
+      FORCE_SSL:
+      # FRAME_ANCESTORS:
+      <<: *environment_influxdb
+      INFLUX_BUCKET:
+      INFLUX_EXCLUDE_FROM_HOUSE_POWER:
+      INFLUX_MEASUREMENT:
+      INFLUX_POLL_INTERVAL:
+      INFLUX_SENSOR_BATTERY_CHARGING_POWER: ${INFLUX_SENSOR_BATTERY_CHARGING_POWER_CALCULATED}
+      INFLUX_SENSOR_BATTERY_DISCHARGING_POWER: ${INFLUX_SENSOR_BATTERY_DISCHARGING_POWER_CALCULATED}
+      INFLUX_SENSOR_BATTERY_SOC:
+      INFLUX_SENSOR_CAR_BATTERY_SOC:
+      #INFLUX_SENSOR_CAR_MILEAGE:
+      INFLUX_SENSOR_CASE_TEMP:
+      # Custom sensors
+      INFLUX_SENSOR_CUSTOM_POWER_01:
+      INFLUX_SENSOR_CUSTOM_POWER_02:
+      INFLUX_SENSOR_CUSTOM_POWER_03:
+      INFLUX_SENSOR_CUSTOM_POWER_04:
+      INFLUX_SENSOR_CUSTOM_POWER_05:
+      INFLUX_SENSOR_CUSTOM_POWER_06:
+      INFLUX_SENSOR_CUSTOM_POWER_07:
+      INFLUX_SENSOR_CUSTOM_POWER_08:
+      INFLUX_SENSOR_CUSTOM_POWER_09:
+      INFLUX_SENSOR_CUSTOM_POWER_10:
+      INFLUX_SENSOR_CUSTOM_POWER_11:
+      INFLUX_SENSOR_CUSTOM_POWER_12:
+      INFLUX_SENSOR_CUSTOM_POWER_13:
+      INFLUX_SENSOR_GRID_EXPORT_LIMIT:
+      INFLUX_SENSOR_GRID_EXPORT_POWER:
+      INFLUX_SENSOR_GRID_IMPORT_POWER:
+      INFLUX_SENSOR_HEATPUMP_HEATING_POWER:
+      #INFLUX_SENSOR_HEATPUMP_LEAVING_TEMP:
+      INFLUX_SENSOR_HEATPUMP_POWER:
+      #INFLUX_SENSOR_HEATPUMP_SCORE:
+      INFLUX_SENSOR_HEATPUMP_STATUS:
+      INFLUX_SENSOR_HEATPUMP_TANK_TEMP:
+      INFLUX_SENSOR_HOUSE_POWER: ${INFLUX_SENSOR_HOUSE_POWER_CALCULATED}
+      INFLUX_SENSOR_INVERTER_POWER:
+      INFLUX_SENSOR_INVERTER_POWER_1:
+      INFLUX_SENSOR_INVERTER_POWER_2:
+      INFLUX_SENSOR_INVERTER_POWER_3:
+      INFLUX_SENSOR_INVERTER_POWER_4:
+      INFLUX_SENSOR_INVERTER_POWER_5:
+      INFLUX_SENSOR_INVERTER_POWER_FORECAST:
+      INFLUX_SENSOR_INVERTER_POWER_FORECAST_CLEARSKY:
+      INFLUX_SENSOR_OUTDOOR_TEMP:
+      INFLUX_SENSOR_OUTDOOR_TEMP_FORECAST:
+      INFLUX_SENSOR_SYSTEM_STATUS_OK:
+      INFLUX_SENSOR_SYSTEM_STATUS:
+      INFLUX_SENSOR_WALLBOX_CAR_CONNECTED:
+      INFLUX_SENSOR_WALLBOX_POWER:
+      INFLUX_TOKEN:
+      INSTALLATION_DATE:
+      REDIS_URL:
+      SECRET_KEY_BASE:
+      TZ:
+      WEB_CONCURRENCY:
+    expose:
+      - "3000"
+    labels:
+      - "traefik.docker.network=traefik"
+      - "traefik.enable=true"
+      - "traefik.http.routers.to-solectrus.middlewares=ipallowlist@file"
+      - "traefik.http.routers.to-solectrus.rule=Host(`solectrus.${DOMAIN}`)"
+      - "traefik.http.routers.to-solectrus.service=solectrus"
+      - "traefik.http.services.solectrus.loadbalancer.passhostheader=true"
+      - "traefik.http.services.solectrus.loadbalancer.server.port=3000"
+    links:
+      - postgres
+      - influxdb
+      - redis
+    networks:
+      - default
+      - traefik
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 3000 || exit 1"]
+    <<: [*image_solectrus, *logging, *restart]
+
+  influxdb:
+    command: influxd run --bolt-path /var/lib/influxdb2/influxd.bolt --engine-path /var/lib/influxdb2/engine --store disk
+    environment:
+      DOCKER_INFLUXDB_INIT_ADMIN_TOKEN:
+      DOCKER_INFLUXDB_INIT_BUCKET: ${INFLUX_BUCKET}
+      DOCKER_INFLUXDB_INIT_MODE:
+      DOCKER_INFLUXDB_INIT_ORG: ${INFLUX_ORG}
+      DOCKER_INFLUXDB_INIT_PASSWORD:
+      DOCKER_INFLUXDB_INIT_USERNAME:
+      INFLUXD_USE_HASHED_TOKENS:
+      TZ:
+    expose:
+      - "8086"
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8086/ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    labels:
+      - "traefik.docker.network=traefik"
+      - "traefik.enable=true"
+      - "traefik.http.routers.to-influxdb.middlewares=ipallowlist@file"
+      - "traefik.http.routers.to-influxdb.rule=Host(`influxdb.${DOMAIN}`)"
+      - "traefik.http.routers.to-influxdb.service=influxdb"
+      - "traefik.http.services.influxdb.loadbalancer.passhostheader=true"
+      - "traefik.http.services.influxdb.loadbalancer.server.port=${INFLUX_PORT}"
+    networks:
+      default:
+        aliases:
+          - influxdb
+      traefik:
+    volumes:
+      - ${BASE_DIR}/influxdb/data:/var/lib/influxdb2
+      - ${BASE_DIR}/influxdb/config:/etc/influxdb2
+      - ${HOST_DUMP}:${CONTAINER_DUMP}
+    <<: [*image_influxdb, *logging, *restart]
+
+  ingest:
+    environment:
+      INFLUX_EXCLUDE_FROM_HOUSE_POWER:
+      <<: *environment_influxdb
+      INFLUX_SENSOR_BATTERY_CHARGING_POWER: ${INFLUX_SENSOR_BATTERY_CHARGING_POWER_CALCULATED}
+      INFLUX_SENSOR_BATTERY_DISCHARGING_POWER: ${INFLUX_SENSOR_BATTERY_DISCHARGING_POWER_CALCULATED}
+      INFLUX_SENSOR_GRID_EXPORT_POWER:
+      INFLUX_SENSOR_GRID_IMPORT_POWER:
+      INFLUX_SENSOR_HEATPUMP_POWER:
+      INFLUX_SENSOR_HOUSE_POWER:
+      INFLUX_SENSOR_HOUSE_POWER_CALCULATED:
+      INFLUX_SENSOR_INVERTER_POWER:
+      INFLUX_SENSOR_INVERTER_POWER_1:
+      INFLUX_SENSOR_INVERTER_POWER_2:
+      INFLUX_SENSOR_INVERTER_POWER_3:
+      INFLUX_SENSOR_INVERTER_POWER_4:
+      INFLUX_SENSOR_INVERTER_POWER_5:
+      INFLUX_SENSOR_WALLBOX_POWER:
+      RETENTION_HOURS:
+      STATS_PASSWORD: ${ADMIN_PASSWORD}
+      STATS_USERNAME: "admin"
+      TZ:
+    expose:
+      - "${INGEST_PORT}"
+    labels:
+      - "traefik.docker.network=traefik"
+      - "traefik.enable=true"
+      - "traefik.http.routers.to-ingest.middlewares=ipallowlist@file"
+      - "traefik.http.routers.to-ingest.rule=Host(`ingest.${DOMAIN}`)"
+      - "traefik.http.routers.to-ingest.service=ingest"
+      - "traefik.http.services.ingest.loadbalancer.passhostheader=true"
+      - "traefik.http.services.ingest.loadbalancer.server.port=${INGEST_PORT}"
+    networks:
+      default:
+        aliases:
+          - ingest
+      traefik:
+    volumes:
+      - ${INGEST_VOLUME_PATH}:/app/data
+    <<: [*image_ingest, *logging, *restart]
+
+  mosquitto:
+    environment:
+      TZ:
+    expose:
+      - "1883"
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-p", "1880", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck", "-W", "3"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    labels:
+      - "traefik.docker.network=traefik"
+      - "traefik.enable=true"
+      - "traefik.tcp.routers.to-mosquittoTls.entrypoints=mqtt"
+      - "traefik.tcp.routers.to-mosquittoTls.rule=HostSNI(`ds-mosquitto.${DOMAIN}`)"
+      - "traefik.tcp.routers.to-mosquittoTls.service=mosquitto"
+      - "traefik.tcp.routers.to-mosquittoTls.tls=true"
+      - "traefik.tcp.routers.to-mosquittoTls.tls.passthrough=false"
+      - "traefik.tcp.services.mosquitto.loadbalancer.server.port=1883"
+    networks:
+      default:
+        aliases:
+          - mosquitto
+      traefik:
+    user: "1000:1000"
+    volumes:
+      - ${BASE_DIR}/mosquitto/config:/mosquitto/config
+      - ${BASE_DIR}/mosquitto/data:/mosquitto/data
+      - type: tmpfs
+        target: /mosquitto/log
+        tmpfs:
+          mode: 0777
+          size: 100M
+    <<: [*image_mosquitto, *logging, *restart]
+
+  mqtt_collector_influxdb:
+    environment:
+      <<: *environment_influxdb
+      INFLUX_BUCKET:
+      INFLUX_TOKEN: ${MQTT_COLLECTOR_INFLUX_TOKEN}
+      MAPPING_0_TOPIC:
+      MAPPING_0_JSON_PATH:
+      MAPPING_0_MEASUREMENT:
+      MAPPING_0_FIELD:
+      MAPPING_0_TYPE:
+      MAPPING_0_MAX:
+      MAPPING_0_MIN:
+      MAPPING_1_TOPIC:
+      MAPPING_1_JSON_PATH:
+      MAPPING_1_MEASUREMENT:
+      MAPPING_1_FIELD:
+      MAPPING_1_TYPE:
+      MAPPING_1_MAX:
+      MAPPING_1_MIN:
+      MAPPING_2_TOPIC:
+      MAPPING_2_JSON_PATH:
+      MAPPING_2_MEASUREMENT:
+      MAPPING_2_FIELD:
+      MAPPING_2_TYPE:
+      MAPPING_2_MAX:
+      MAPPING_2_MIN:
+      MAPPING_3_TOPIC:
+      MAPPING_3_JSON_PATH:
+      MAPPING_3_MEASUREMENT:
+      MAPPING_3_FIELD:
+      MAPPING_3_TYPE:
+      MAPPING_3_MAX:
+      MAPPING_3_MIN:
+      MAPPING_4_TOPIC:
+      MAPPING_4_JSON_PATH:
+      MAPPING_4_MEASUREMENT:
+      MAPPING_4_FIELD:
+      MAPPING_4_TYPE:
+      MAPPING_4_MAX:
+      MAPPING_4_MIN:
+      MAPPING_5_TOPIC:
+      MAPPING_5_JSON_KEY:
+      MAPPING_5_MEASUREMENT:
+      MAPPING_5_FIELD:
+      MAPPING_5_TYPE:
+      MAPPING_5_MAX:
+      MAPPING_5_MIN:
+      MAPPING_6_TOPIC:
+      MAPPING_6_JSON_FORMULA:
+      MAPPING_6_MEASUREMENT:
+      MAPPING_6_FIELD:
+      MAPPING_6_TYPE:
+      MAPPING_6_MAX:
+      MAPPING_6_MIN:
+      MAPPING_7_TOPIC:
+      MAPPING_7_JSON_KEY:
+      MAPPING_7_MEASUREMENT:
+      MAPPING_7_FIELD:
+      MAPPING_7_TYPE:
+      MAPPING_7_MAX:
+      MAPPING_7_MIN:
+      MAPPING_8_TOPIC:
+      MAPPING_8_JSON_FORMULA:
+      MAPPING_8_MEASUREMENT:
+      MAPPING_8_FIELD:
+      MAPPING_8_TYPE:
+      MAPPING_8_MAX:
+      MAPPING_8_MIN:
+      MAPPING_9_TOPIC:
+      MAPPING_9_JSON_PATH:
+      MAPPING_9_MEASUREMENT:
+      MAPPING_9_FIELD:
+      MAPPING_9_TYPE:
+      MAPPING_9_MAX:
+      MAPPING_9_MIN:
+      MQTT_HOST:
+      MQTT_PASSWORD:
+      MQTT_PORT:
+      MQTT_SSL:
+      MQTT_USERNAME:
+      TZ:
+    links:
+      - influxdb
+      - mosquitto
+    <<: [*image_mqtt_collector, *logging, *networks, *restart]
+
+  mqtt_collector_ingest:
+    environment:
+      INFLUX_BUCKET:
+      INFLUX_HOST: ${INGEST_HOST}
+      INFLUX_ORG:
+      INFLUX_PORT: ${INGEST_PORT}
+      INFLUX_SCHEMA:
+      INFLUX_TOKEN: ${MQTT_COLLECTOR_INFLUX_TOKEN}
+      MAPPING_0_TOPIC: ${INGEST_MAPPING_0_TOPIC}
+      MAPPING_0_JSON_PATH: ${INGEST_MAPPING_0_JSON_PATH}
+      MAPPING_0_MEASUREMENT_POSITIVE: ${INGEST_MAPPING_0_MEASUREMENT_POSITIVE}
+      MAPPING_0_MEASUREMENT_NEGATIVE: ${INGEST_MAPPING_0_MEASUREMENT_NEGATIVE}
+      MAPPING_0_FIELD_POSITIVE: ${INGEST_MAPPING_0_FIELD_POSITIVE}
+      MAPPING_0_FIELD_NEGATIVE: ${INGEST_MAPPING_0_FIELD_NEGATIVE}
+      MAPPING_0_TYPE: ${INGEST_MAPPING_0_TYPE}
+      MAPPING_0_MAX: ${INGEST_MAPPING_0_MAX}
+      MAPPING_0_MIN: ${INGEST_MAPPING_0_MIN}
+      MQTT_HOST:
+      MQTT_PASSWORD:
+      MQTT_PORT:
+      MQTT_SSL:
+      MQTT_USERNAME:
+      TZ:
+    links:
+      - influxdb
+      - ingest
+      - mosquitto
+    <<: [*image_mqtt_collector, *logging, *networks, *restart]
+
+  postgres:
+    environment:
+      PGDATA:
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD}
+      TZ:
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+    volumes:
+      - ${BASE_DIR}/postgres/16/data/:${PGDATA}
+      - ${HOST_DUMP}:${CONTAINER_DUMP}
+    <<: [*image_postgres, *logging, *networks, *restart]
+
+  power_splitter:
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DB_HOST: ${POSTGRES_HOST}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_USER: ${POSTGRES_USERNAME}
+      INFLUX_BUCKET:
+      INFLUX_EXCLUDE_FROM_HOUSE_POWER:
+      INFLUX_HOST:
+      INFLUX_ORG:
+      INFLUX_PORT:
+      INFLUX_SCHEMA:
+      INFLUX_SENSOR_BATTERY_CHARGING_POWER: ${INFLUX_SENSOR_BATTERY_CHARGING_POWER_CALCULATED}
+      # Custom sensors
+      INFLUX_SENSOR_CUSTOM_POWER_01:
+      INFLUX_SENSOR_CUSTOM_POWER_02:
+      INFLUX_SENSOR_CUSTOM_POWER_03:
+      INFLUX_SENSOR_CUSTOM_POWER_04:
+      INFLUX_SENSOR_CUSTOM_POWER_05:
+      INFLUX_SENSOR_CUSTOM_POWER_06:
+      INFLUX_SENSOR_CUSTOM_POWER_07:
+      INFLUX_SENSOR_CUSTOM_POWER_08:
+      INFLUX_SENSOR_CUSTOM_POWER_09:
+      INFLUX_SENSOR_CUSTOM_POWER_10:
+      INFLUX_SENSOR_CUSTOM_POWER_11:
+      INFLUX_SENSOR_CUSTOM_POWER_12:
+      INFLUX_SENSOR_CUSTOM_POWER_13:
+      INFLUX_SENSOR_GRID_IMPORT_POWER:
+      INFLUX_SENSOR_HEATPUMP_POWER:
+      INFLUX_SENSOR_HOUSE_POWER: ${INFLUX_SENSOR_HOUSE_POWER_CALCULATED}
+      INFLUX_SENSOR_WALLBOX_POWER:
+      INFLUX_TOKEN: ${POWER_SPLITTER_INFLUX_TOKEN}
+      INSTALLATION_DATE:
+      POWER_SPLITTER_INTERVAL:
+      REDIS_URL:
+      TZ:
+    links:
+      - influxdb
+      - redis
+    <<: [*image_power_splitter, *logging, *networks, *restart]
+
+  pvnode_collector:
+    environment:
+      <<: *environment_influxdb
+      FORECAST_CONFIGURATIONS: ${PN_FORECAST_CONFIGURATIONS}
+      FORECAST_INTERVAL: ${PN_FORECAST_INTERVAL}
+      FORECAST_LATITUDE: ${PN_FORECAST_LATITUDE}
+      FORECAST_LONGITUDE: ${PN_FORECAST_LONGITUDE}
+      FORECAST_PROVIDER: ${PN_FORECAST_PROVIDER}
+      # Seite Pavillion
+      FORECAST_AZIMUTH: ${PN_FORECAST_0_AZIMUTH}
+      FORECAST_DECLINATION: ${PN_FORECAST_0_DECLINATION}
+      FORECAST_KWP: ${PN_FORECAST_0_KWP}
+      # Seite Pavillion
+      FORECAST_0_AZIMUTH: ${PN_FORECAST_0_AZIMUTH}
+      FORECAST_0_DECLINATION: ${PN_FORECAST_0_DECLINATION}
+      FORECAST_0_KWP: ${PN_FORECAST_0_KWP}
+      # Seite Spielstrasse
+      FORECAST_1_AZIMUTH: ${PN_FORECAST_1_AZIMUTH}
+      FORECAST_1_DECLINATION: ${PN_FORECAST_1_DECLINATION}
+      FORECAST_1_KWP: ${PN_FORECAST_1_KWP}
+      # Seite Schule
+      FORECAST_2_AZIMUTH: ${PN_FORECAST_2_AZIMUTH}
+      FORECAST_2_DECLINATION: ${PN_FORECAST_2_DECLINATION}
+      FORECAST_2_KWP: ${PN_FORECAST_2_KWP}
+      # Seite Pavillion neu
+      FORECAST_3_AZIMUTH: ${PN_FORECAST_3_AZIMUTH}
+      FORECAST_3_DECLINATION: ${PN_FORECAST_3_DECLINATION}
+      FORECAST_3_KWP: ${PN_FORECAST_3_KWP}
+      INFLUX_BUCKET:
+      INFLUX_MEASUREMENT: ${PN_INFLUX_MEASUREMENT}
+      INFLUX_TOKEN: ${PN_INFLUX_TOKEN}
+      PVNODE_APIKEY:
+      PVNODE_PAID:
+      PVNODE_0_EXTRA_PARAMS:
+      PVNODE_1_EXTRA_PARAMS:
+      PVNODE_2_EXTRA_PARAMS:
+      PVNODE_3_EXTRA_PARAMS:
+      TZ:
+    links:
+      - influxdb
+    <<: [*deploy_collector, *image_forecast_collector, *logging, *networks, *restart]
+
+  redis:
+    environment:
+      TZ:
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 20s
+      retries: 5
+      start_period: 60s
+    volumes:
+      - ${BASE_DIR}/redis:/data
+      - ${HOST_DUMP}:${CONTAINER_DUMP}
+    <<: [*image_redis, *logging, *networks, *restart]
+
+  senec_collector:
+    environment:
+      <<: [*environment_ingest, *environment_influxdb]
+#      <<: [*environment_influxdb]
+      INFLUX_BUCKET:
+      INFLUX_MEASUREMENT:
+      INFLUX_TOKEN: ${SENEC_COLLECTOR_INFLUX_TOKEN}
+      SENEC_ADAPTER:
+      SENEC_HOST:
+      SENEC_IGNORE:
+      SENEC_INTERVAL:
+      SENEC_LANGUAGE:
+      SENEC_PASSWORD:
+      SENEC_SCHEMA:
+      SENEC_USERNAME:
+      TZ:
+    links:
+      - ingest
+    <<: [*deploy_collector, *image_senec_collector, *logging, *networks, *restart]
+
+  tibber_collector:
+    environment:
+      <<: *environment_influxdb
+      INFLUX_BUCKET:
+      INFLUX_MEASUREMENT: ${TIBBER_INFLUX_MEASUREMENT}
+      INFLUX_TOKEN: ${TIBBER_INFLUX_TOKEN}
+      TIBBER_INTERVAL:
+      TIBBER_TOKEN:
+      TZ:
+    links:
+      - influxdb
+    <<: [*deploy_collector, *image_tibber_collector, *logging, *networks, *restart]
+
+networks:
+  default:
+    driver: bridge
+  traefik:
+    external: true

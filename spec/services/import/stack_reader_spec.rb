@@ -87,17 +87,22 @@ RSpec.describe Import::StackReader do
       expect(reader.service('dashboard')).to include('image' => 'ghcr.io/solectrus/solectrus:develop')
     end
 
-    it 'refuses to alias when multiple services share the prefix' do
-      # Two shelly-collector services — ambiguous, so no alias is added.
+    it 'aliases the first service when multiple share the prefix' do
+      # Two services share the mqtt-collector image. The first one in source
+      # order wins the canonical alias; the second keeps its own name and is
+      # treated as unmanaged downstream.
       File.write(compose_path, <<~YAML)
         services:
-          shelly-fridge:
-            image: ghcr.io/solectrus/shelly-collector:latest
-          shelly-washer:
-            image: ghcr.io/solectrus/shelly-collector:latest
+          mqtt-primary:
+            image: ghcr.io/solectrus/mqtt-collector:0.7.4
+          mqtt-secondary:
+            image: ghcr.io/solectrus/mqtt-collector:0.7.4
       YAML
 
-      expect(reader.services).not_to have_key('shelly-collector')
+      expect(reader.service('mqtt-collector'))
+        .to include('image' => 'ghcr.io/solectrus/mqtt-collector:0.7.4')
+      expect(reader.service('mqtt-collector').object_id)
+        .to eq(reader.service('mqtt-primary').object_id)
     end
   end
 end

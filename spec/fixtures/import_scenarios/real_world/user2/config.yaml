@@ -1,0 +1,390 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 1
+system:
+  admin_password: my-admin-password
+  app_host: solectrus.my-domain.com
+  installation_date: '2022-04-28'
+  secret_key_base: my-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  co2_emission_factor: '258'
+  image: ghcr.io/solectrus/solectrus:power-balance-chart
+postgresql:
+  image: postgres:16.11-trixie
+  password: my-postgres-password
+  pgdata: "/var/lib/postgresql/data/"
+influxdb:
+  bucket: my-solectrus-bucket
+  image: influxdb:2.8
+  org: my-influx-org
+  password: my-influx-password
+  token: my-influx-read-token
+  use_hashed_tokens: 'true'
+redis:
+  image: redis:8.4-bookworm
+watchtower: {}
+forecast:
+  forecast: pvnode
+  forecast_declination1: '53'
+  forecast_declination2: '53'
+  forecast_declination3: '90'
+  forecast_declination4: '12.67'
+  forecast_interval: '900'
+  forecast_kwp1: '6.375'
+  forecast_kwp2: '6.375'
+  forecast_kwp3: '1.305'
+  forecast_kwp4: '3.28'
+  forecast_latitude: '52.009085'
+  forecast_longitude: '11.737578'
+  forecast_pvnode_apikey: my-pvnode-apikey
+  forecast_pvnode_azimuth1: '135'
+  forecast_pvnode_azimuth2: '315'
+  forecast_pvnode_azimuth3: '225'
+  forecast_pvnode_azimuth4: '135'
+  forecast_pvnode_extra_params1: diffuse_radiation_model=perez&mounting_type=isol&terrain_based_horizon_coverage=true&sky_obstruction_config=85:95:17_240:280:24
+  forecast_pvnode_extra_params2: diffuse_radiation_model=perez&mounting_type=isol&terrain_based_horizon_coverage=true&sky_obstruction_config=85:95:17_240:280:24
+  forecast_pvnode_extra_params3: diffuse_radiation_model=perez&mounting_type=isol&terrain_based_horizon_coverage=true&sky_obstruction_config=85:95:17_240:280:24
+  forecast_pvnode_extra_params4: diffuse_radiation_model=perez&mounting_type=isol&terrain_based_horizon_coverage=true&sky_obstruction_config=85:95:17_240:280:24
+  forecast_pvnode_paid: 'true'
+  forecast_roofs: '4'
+senec:
+  adapter: local
+  host: senec.local
+  ignore: ev_connected,wallbox_charge_power,wallbox_charge_power0,wallbox_charge_power1,wallbox_charge_power2,wallbox_charge_power3
+  interval: '7'
+  language: de
+  schema: https
+  version: v3
+mqtt:
+  mqtt_host: mosquitto
+  mqtt_password: my-mqtt-password
+  mqtt_port: '1883'
+  mqtt_ssl: 'false'
+  mqtt_username: my-mqtt-username
+sensors:
+  battery_charging_power:
+    field: charging_power
+    measurement: batteries
+    source: senec
+  battery_discharging_power:
+    field: discharging_power
+    measurement: batteries
+    source: senec
+  battery_soc:
+    source: senec
+  car_battery_soc:
+    field: soc
+    measurement: sax
+    source: external
+  case_temp:
+    source: senec
+  custom_power_01:
+    exclude_from_house_power: true
+    field: power
+    measurement: heatpump
+    source: external
+  custom_power_02:
+    field: power
+    measurement: freezer
+    source: external
+  custom_power_03:
+    field: power
+    measurement: ac_bedroom
+    mqtt_json_key: apower
+    mqtt_max: '3500'
+    mqtt_min: '0'
+    mqtt_payload_type: float
+    mqtt_topic: ac_bedroom/status/switch:0
+    source: mqtt
+  custom_power_04:
+    field: power
+    measurement: ac_veranda
+    mqtt_json_path: "$$.ENERGY.Power"
+    mqtt_max: '2300'
+    mqtt_min: '0'
+    mqtt_payload_type: float
+    mqtt_topic: ac_veranda/tele/SENSOR
+    source: mqtt
+  custom_power_05:
+    field: power
+    measurement: ac_living_room
+    mqtt_json_path: "$$.ENERGY.Power"
+    mqtt_max: '2300'
+    mqtt_min: '0'
+    mqtt_payload_type: float
+    mqtt_topic: ac_living_room/tele/SENSOR
+    source: mqtt
+  custom_power_06:
+    field: power
+    measurement: fridge_basement
+    source: external
+  custom_power_07:
+    field: power
+    measurement: microwave
+    mqtt_json_path: "$$.ENERGY.Power"
+    mqtt_max: '2300'
+    mqtt_min: '0'
+    mqtt_payload_type: float
+    mqtt_topic: microwave/tele/SENSOR
+    source: mqtt
+  custom_power_08:
+    exclude_from_house_power: true
+    field: power
+    measurement: well_pump
+    source: external
+  custom_power_09:
+    field: power
+    measurement: washing_machine
+    mqtt_json_path: "$$.ENERGY.Power"
+    mqtt_max: '2300'
+    mqtt_min: '0'
+    mqtt_payload_type: float
+    mqtt_topic: washing_machine/tele/SENSOR
+    source: mqtt
+  custom_power_10:
+    field: power
+    measurement: dryer
+    mqtt_json_path: "$$.ENERGY.Power"
+    mqtt_max: '3450'
+    mqtt_min: '0'
+    mqtt_payload_type: float
+    mqtt_topic: dryer/tele/SENSOR
+    source: mqtt
+  custom_power_11:
+    field: power
+    measurement: dish_washer
+    mqtt_json_key: act_power
+    mqtt_max: '35000'
+    mqtt_min: '0'
+    mqtt_payload_type: float
+    mqtt_topic: dish_washer/status/em1:0
+    source: mqtt
+  custom_power_12:
+    field: power
+    measurement: multimedia
+    mqtt_json_path: "$$.ENERGY.Power"
+    mqtt_max: '2300'
+    mqtt_min: '0'
+    mqtt_payload_type: float
+    mqtt_topic: multimedia/tele/SENSOR
+    source: mqtt
+  custom_power_13:
+    exclude_from_house_power: true
+    field: power
+    measurement: anker-akku
+    source: external
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    field: power_out
+    measurement: powermeter
+    source: senec
+  grid_import_power:
+    field: power_in
+    measurement: powermeter
+    source: senec
+  heatpump_heating_power:
+    field: heat_output
+    measurement: thermav
+    source: external
+  heatpump_power:
+    exclude_from_house_power: true
+    field: power
+    measurement: sdm72d-m
+    source: external
+  heatpump_status:
+    field: current_state
+    measurement: thermav
+    source: external
+  heatpump_tank_temp:
+    field: temperature
+    measurement: watertemp
+    source: external
+  house_power:
+    field: house_power
+    measurement: Calculated
+    source: senec
+  inverter_power_1:
+    field: inverter_power
+    measurement: SENEC
+    source: senec
+  inverter_power_2:
+    field: power
+    measurement: balcony
+    source: senec
+  inverter_power_3:
+    field: power_out
+    is_balcony: true
+    measurement: anker-akku
+    source: senec
+  inverter_power_forecast:
+    field: watt
+    measurement: Pvnode
+    source: forecast
+  inverter_power_forecast_clearsky:
+    field: watt_clearsky
+    measurement: Pvnode
+    source: forecast
+  outdoor_temp:
+    field: temperature
+    measurement: netatmo
+    source: external
+  outdoor_temp_forecast:
+    field: temp
+    measurement: Pvnode
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_car_connected:
+    source: senec
+  wallbox_power:
+    source: senec
+ingest:
+  image: ghcr.io/solectrus/ingest:develop
+  retention_hours: '24'
+_unmanaged:
+  env_vars:
+    BASE_DIR: "/home/user2/docker/solectrus"
+    CONTAINER_DUMP: "/dump"
+    DOMAIN: my-domain.com
+    HOST_DUMP: "${BASE_DIR}/db_dumps"
+  services:
+    mosquitto:
+      environment:
+      - TZ
+      expose:
+      - '1883'
+      healthcheck:
+        interval: 30s
+        retries: 5
+        start_period: 20s
+        test:
+        - CMD
+        - mosquitto_sub
+        - "-p"
+        - '1880'
+        - "-t"
+        - "$$SYS/#"
+        - "-C"
+        - '1'
+        - "-i"
+        - healthcheck
+        - "-W"
+        - '3'
+        timeout: 10s
+      image: eclipse-mosquitto:2.0
+      labels:
+      - traefik.docker.network=traefik
+      - traefik.enable=true
+      - traefik.tcp.routers.to-mosquittoTls.entrypoints=mqtt
+      - traefik.tcp.routers.to-mosquittoTls.rule=HostSNI(`ds-mosquitto.${DOMAIN}`)
+      - traefik.tcp.routers.to-mosquittoTls.service=mosquitto
+      - traefik.tcp.routers.to-mosquittoTls.tls=true
+      - traefik.tcp.routers.to-mosquittoTls.tls.passthrough=false
+      - traefik.tcp.services.mosquitto.loadbalancer.server.port=1883
+      logging:
+        options:
+          max-file: '3'
+          max-size: 10m
+      networks:
+        default:
+          aliases:
+          - mosquitto
+        traefik:
+      restart: unless-stopped
+      user: 1000:1000
+      volumes:
+      - "${BASE_DIR}/mosquitto/config:/mosquitto/config"
+      - "${BASE_DIR}/mosquitto/data:/mosquitto/data"
+      - target: "/mosquitto/log"
+        tmpfs:
+          mode: 511
+          size: 100M
+        type: tmpfs
+    mqtt_collector_ingest:
+      env_values:
+        INGEST_MAPPING_0_FIELD_NEGATIVE: charging_power
+        INGEST_MAPPING_0_FIELD_POSITIVE: discharging_power
+        INGEST_MAPPING_0_JSON_PATH: "$.power"
+        INGEST_MAPPING_0_MAX: '25000'
+        INGEST_MAPPING_0_MEASUREMENT_NEGATIVE: batteries
+        INGEST_MAPPING_0_MEASUREMENT_POSITIVE: batteries
+        INGEST_MAPPING_0_MIN: "-25000"
+        INGEST_MAPPING_0_TOPIC: batteries/tele/SENSOR
+        INGEST_MAPPING_0_TYPE: float
+        MQTT_COLLECTOR_INFLUX_TOKEN: my-influx-write-token
+      environment:
+      - TZ
+      - INFLUX_BUCKET
+      - INFLUX_HOST=${INGEST_HOST}
+      - INFLUX_ORG
+      - INFLUX_PORT=${INGEST_PORT}
+      - INFLUX_SCHEMA
+      - INFLUX_TOKEN=${MQTT_COLLECTOR_INFLUX_TOKEN}
+      - MAPPING_0_FIELD_NEGATIVE=${INGEST_MAPPING_0_FIELD_NEGATIVE}
+      - MAPPING_0_FIELD_POSITIVE=${INGEST_MAPPING_0_FIELD_POSITIVE}
+      - MAPPING_0_JSON_PATH=${INGEST_MAPPING_0_JSON_PATH}
+      - MAPPING_0_MAX=${INGEST_MAPPING_0_MAX}
+      - MAPPING_0_MEASUREMENT_NEGATIVE=${INGEST_MAPPING_0_MEASUREMENT_NEGATIVE}
+      - MAPPING_0_MEASUREMENT_POSITIVE=${INGEST_MAPPING_0_MEASUREMENT_POSITIVE}
+      - MAPPING_0_MIN=${INGEST_MAPPING_0_MIN}
+      - MAPPING_0_TOPIC=${INGEST_MAPPING_0_TOPIC}
+      - MAPPING_0_TYPE=${INGEST_MAPPING_0_TYPE}
+      - MQTT_HOST
+      - MQTT_PASSWORD
+      - MQTT_PORT
+      - MQTT_SSL
+      - MQTT_USERNAME
+      image: ghcr.io/solectrus/mqtt-collector:0.7.4
+      links:
+      - influxdb
+      - ingest
+      - mosquitto
+      logging:
+        options:
+          max-file: '3'
+          max-size: 10m
+      networks:
+      - default
+      restart: unless-stopped
+    tibber_collector:
+      deploy:
+        resources:
+          limits:
+            cpus: '0.35'
+            memory: 100M
+      env_values:
+        TIBBER_INFLUX_MEASUREMENT: smard-tibber
+        TIBBER_INFLUX_TOKEN: my-influx-write-token
+        TIBBER_INTERVAL: '3600'
+        TIBBER_TOKEN: my-tibber-token
+      environment:
+      - TZ
+      - INFLUX_BUCKET
+      - INFLUX_HOST
+      - INFLUX_MEASUREMENT=${TIBBER_INFLUX_MEASUREMENT}
+      - INFLUX_ORG
+      - INFLUX_PORT
+      - INFLUX_SCHEMA
+      - INFLUX_TOKEN=${TIBBER_INFLUX_TOKEN}
+      - TIBBER_INTERVAL
+      - TIBBER_TOKEN
+      image: ghcr.io/solectrus/tibber-collector:0.4.1
+      links:
+      - influxdb
+      logging:
+        options:
+          max-file: '3'
+          max-size: 10m
+      networks:
+      - default
+      restart: unless-stopped
