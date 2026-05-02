@@ -1,0 +1,252 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 1
+system:
+  admin_password: my-admin-password
+  app_host: 192.168.1.91
+  installation_date: '2022-09-01'
+  secret_key_base: my-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  frame_ancestors: http://192.168.1.90:8123
+  image: ghcr.io/solectrus/solectrus:develop
+postgresql:
+  image: postgres:18-alpine
+  password: my-secret-db-password
+  volume_path: "/home/pi/solectrus/postgresql"
+influxdb:
+  bucket: my-solectrus-bucket
+  image: influxdb:2.7-alpine
+  org: solectrus
+  password: my-influxdb-password
+  token: my-influxdb-token
+  volume_path: "/home/pi/solectrus/influxdb"
+redis:
+  image: redis:7-alpine
+  volume_path: "/home/pi/solectrus/redis"
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: pvnode
+  forecast_declination1: '24'
+  forecast_declination2: '24'
+  forecast_declination3: '30'
+  forecast_interval: '3600'
+  forecast_kwp1: '8.910'
+  forecast_kwp2: '2.835'
+  forecast_kwp3: '0.820'
+  forecast_latitude: '48.12345'
+  forecast_longitude: '9.12345'
+  forecast_pvnode_apikey: my-pvnode-apikey
+  forecast_pvnode_azimuth1: '87'
+  forecast_pvnode_azimuth2: '267'
+  forecast_pvnode_azimuth3: '180'
+  forecast_pvnode_paid: 'TRUE'
+  forecast_roofs: '3'
+  measurement: forecast
+senec:
+  adapter: local
+  host: 192.168.108.200
+  interval: '5'
+  language: de
+  schema: https
+  version: v3
+mqtt:
+  mqtt_host: 192.168.1.90
+  mqtt_password: my-mqtt-password
+  mqtt_port: '1883'
+  mqtt_username: my-mqtt-username
+shelly:
+  connection: local
+  interval: '5'
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  custom_power_01:
+    field: power
+    measurement: Gefrierschrank
+    mqtt_json_key: power
+    mqtt_payload_type: float
+    mqtt_topic: zigbee2mqtt/Gefrierschrank
+    source: mqtt
+  custom_power_02:
+    field: power
+    measurement: Waschmaschine
+    mqtt_json_key: power
+    mqtt_payload_type: float
+    mqtt_topic: zigbee2mqtt/Waschmaschine
+    source: mqtt
+  custom_power_03:
+    field: power
+    measurement: Trockner
+    mqtt_json_key: power
+    mqtt_payload_type: float
+    mqtt_topic: zigbee2mqtt/Trockner
+    source: mqtt
+  custom_power_04:
+    field: power
+    measurement: Kuehlschrank
+    mqtt_json_key: power
+    mqtt_payload_type: float
+    mqtt_topic: zigbee2mqtt/Kuehlschrank
+    source: mqtt
+  custom_power_05:
+    field: power
+    measurement: Heissluftfritteuse
+    mqtt_json_key: power
+    mqtt_payload_type: float
+    mqtt_topic: zigbee2mqtt/Heissluftfritteuse
+    source: mqtt
+  custom_power_06:
+    field: power
+    measurement: Spuelmaschine
+    mqtt_json_key: power
+    mqtt_payload_type: float
+    mqtt_topic: zigbee2mqtt/Spuelmaschine
+    source: mqtt
+  custom_power_07:
+    field: power
+    measurement: Wasserkocher
+    mqtt_json_key: power
+    mqtt_payload_type: float
+    mqtt_topic: zigbee2mqtt/Wasserkocher
+    source: mqtt
+  custom_power_08:
+    field: power
+    measurement: Kaffeemaschine
+    mqtt_json_key: power
+    mqtt_payload_type: float
+    mqtt_topic: zigbee2mqtt/Kaffeemaschine
+    source: mqtt
+  custom_power_09:
+    field: power
+    measurement: Backofen
+    mqtt_json_key: power
+    mqtt_payload_type: float
+    mqtt_topic: zigbee2mqtt/Backofen
+    source: mqtt
+  custom_power_10:
+    field: power
+    measurement: Buegeleisen
+    mqtt_json_key: power
+    mqtt_payload_type: float
+    mqtt_topic: zigbee2mqtt/Buegeleisen
+    source: mqtt
+  custom_power_11:
+    field: power
+    measurement: AUFZUG
+    name: AUFZUG
+    shelly_connection: local
+    shelly_host: 192.168.1.243
+    shelly_interval: '5'
+    source: shelly
+  custom_power_12:
+    field: power
+    measurement: THERME
+    name: THERME
+    shelly_connection: local
+    shelly_host: 192.168.1.244
+    shelly_interval: '5'
+    source: shelly
+  custom_power_13:
+    field: power
+    measurement: IT
+    mqtt_payload_type: float
+    mqtt_topic: homeassistant/sensor/it_gerate/state
+    source: mqtt
+  custom_power_14:
+    field: power_a
+    measurement: TERRASSE
+    name: TERRASSE
+    shelly_connection: local
+    shelly_host: 192.168.1.241
+    shelly_interval: '5'
+    source: shelly
+  custom_power_15:
+    field: power
+    measurement: HERD
+    name: HERD
+    shelly_connection: local
+    shelly_host: 192.168.1.246
+    shelly_interval: '5'
+    source: shelly
+  custom_power_16:
+    field: power
+    measurement: Multimedia_Geraete
+    mqtt_payload_type: float
+    mqtt_topic: homeassistant/sensor/multimedia_gerate/state
+    source: mqtt
+  custom_power_17:
+    field: power
+    measurement: summe_kameras
+    mqtt_payload_type: float
+    mqtt_topic: homeassistant/sensor/summe_kameras/state
+    source: mqtt
+  custom_power_18:
+    field: power
+    measurement: senec_eigenverbrauch
+    mqtt_payload_type: float
+    mqtt_topic: homeassistant/sensor/senec_eigenverbrauch/state
+    source: mqtt
+  custom_power_19:
+    field: power
+    measurement: summe_l2_terrasse_garage
+    mqtt_payload_type: float
+    mqtt_topic: homeassistant/sensor/summe_l2_terrasse_garage/state
+    source: mqtt
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power_1:
+    field: inverter_power
+    measurement: SENEC
+    source: senec
+  inverter_power_2:
+    field: power_c
+    is_balcony: true
+    measurement: TERRASSE
+    source: senec
+  inverter_power_forecast:
+    source: forecast
+  inverter_power_forecast_clearsky:
+    source: forecast
+  outdoor_temp_forecast:
+    field: temp
+    measurement: forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+ingest:
+  image: ghcr.io/solectrus/ingest:latest
+  volume_path: "/home/pi/solectrus/ingest"
+_unmanaged:
+  services:
+    dozzle:
+      environment: []
+      image: amir20/dozzle:latest
+      labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+      ports:
+      - 8080:8080
+      restart: unless-stopped
+      volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
