@@ -107,6 +107,7 @@ class SensorMappings
     case source
     when 'senec' then SENEC_DEFAULTS.dig(sensor_name, 1) || sensor_name
     when 'forecast' then FORECAST_DEFAULTS.dig(sensor_name, 1) || 'value'
+    when 'shelly' then DEFAULTS.dig(sensor_name, 1) || 'power'
     else DEFAULTS.dig(sensor_name, 1) || 'value'
     end
   end

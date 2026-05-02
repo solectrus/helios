@@ -178,18 +178,18 @@ module Import
       end
 
       def infer_device_type(measurement_name)
-        mapping = "#{measurement_name}:power"
-        return 'inverter' if inverter_sensor?(mapping)
-        return 'heatpump' if @sensors_data['heatpump_power'] == mapping
-        return 'wallbox' if @sensors_data['wallbox_power'] == mapping
+        mappings = SHELLY_POWER_FIELDS.map { |f| "#{measurement_name}:#{f}" }
+        return 'inverter' if inverter_sensor?(mappings)
+        return 'heatpump' if mappings.include?(@sensors_data['heatpump_power'])
+        return 'wallbox' if mappings.include?(@sensors_data['wallbox_power'])
 
         'consumer'
       end
 
-      def inverter_sensor?(mapping)
+      def inverter_sensor?(mappings)
         %w[inverter_power inverter_power_1 inverter_power_2
            inverter_power_3 inverter_power_4 inverter_power_5].any? do |key|
-          @sensors_data[key] == mapping
+          mappings.include?(@sensors_data[key])
         end
       end
     end

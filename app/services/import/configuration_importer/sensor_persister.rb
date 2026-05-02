@@ -59,11 +59,11 @@ module Import
         'external'
       end
 
-      # The shelly-collector always writes its reading into the `power` field of
-      # its configured measurement. Matching only `{measurement}:power` prevents
-      # a shelly device from stealing unrelated sensors when an mqtt-collector
-      # (or another collector) writes other fields into the same measurement
-      # — a common setup in pre-HELIOS SOLECTRUS installs.
+      # A shelly device claims a sensor whose mapping is
+      # `{measurement}:{power|power_a|power_b|power_c}` — `power` for the
+      # device total, the per-phase fields for 3-phase Shellys (Pro/Plus 3EM).
+      # Restricting to this fixed set avoids stealing unrelated sensors that
+      # an mqtt-collector writes into the same measurement.
       def shelly_device_provides_sensor?(sensor_name)
         sensor_mapping = @sensors_data[sensor_name]
         return false unless sensor_mapping
@@ -71,7 +71,7 @@ module Import
         @devices.any? do |device|
           next unless device[:data].values_at(*SOURCE_FIELDS).include?('shelly')
 
-          sensor_mapping == "#{device[:name]}:power"
+          SHELLY_POWER_FIELDS.any? { |f| sensor_mapping == "#{device[:name]}:#{f}" }
         end
       end
 

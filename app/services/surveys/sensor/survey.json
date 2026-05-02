@@ -346,6 +346,8 @@
         {
           "type": "text",
           "name": "field",
+          "visibleIf": "{source} <> 'shelly'",
+          "clearIfInvisible": "none",
           "title": {
             "de": "Field",
             "default": "Field"
@@ -355,6 +357,59 @@
             "default": "Name of the InfluxDB field within the measurement"
           },
           "isRequired": true
+        }
+      ]
+    },
+    {
+      "name": "p_shelly_phase",
+      "visibleIf": "{source} = 'shelly'",
+      "title": {
+        "de": "Shelly — Phase",
+        "default": "Shelly — Phase"
+      },
+      "description": {
+        "de": "Bitte beachten: Einige Shelly-Modelle messen nur die Summe",
+        "default": "Note: some Shelly models only measure the total"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "field_shelly",
+          "valueName": "field",
+          "clearIfInvisible": "none",
+          "titleLocation": "hidden",
+          "isRequired": true,
+          "defaultValue": "power",
+          "choices": [
+            {
+              "value": "power",
+              "text": {
+                "de": "Summe",
+                "default": "Total"
+              }
+            },
+            {
+              "value": "power_a",
+              "text": {
+                "de": "Phase A",
+                "default": "Phase A"
+              }
+            },
+            {
+              "value": "power_b",
+              "text": {
+                "de": "Phase B",
+                "default": "Phase B"
+              }
+            },
+            {
+              "value": "power_c",
+              "text": {
+                "de": "Phase C",
+                "default": "Phase C"
+              }
+            }
+          ]
         }
       ]
     }

@@ -381,12 +381,15 @@ module Import
         refs
       end
 
-      # User-defined INFLUX_MEASUREMENT_* vars are pure naming aliases — the
-      # SOLECTRUS stack never reads them. If the value is already captured as
-      # a measurement in the imported sensor config, the alias is redundant
-      # and would only clutter the unmanaged section.
+      # User-defined INFLUX_MEASUREMENT_* / SHELLY_MEASUREMENT_* vars are pure
+      # naming aliases — the SOLECTRUS stack never reads them directly, only the
+      # value they expand to. If the value is already captured as a measurement
+      # in the imported sensor config, the alias is redundant and would only
+      # clutter the unmanaged section.
       def redundant_measurement_alias?(key, value)
-        key.start_with?('INFLUX_MEASUREMENT_') && @known_measurements.include?(value)
+        return false unless key.start_with?('INFLUX_MEASUREMENT_', 'SHELLY_MEASUREMENT_')
+
+        @known_measurements.include?(value)
       end
 
       # A service is "managed" iff HELIOS will re-emit it on export. Shelly
