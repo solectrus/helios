@@ -222,4 +222,3 @@ sensors:
 _unmanaged:
   env_vars:
     FORECAST_INFLUX_MEASUREMENT: forecast
-    MQTT_TOPIC_BAT_VOLTAGE: evcc/site/homePower

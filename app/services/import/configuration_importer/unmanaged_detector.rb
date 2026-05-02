@@ -258,9 +258,19 @@ module Import
           .reject do |key, value|
             managed.include?(key) ||
               managed_shelly_env_key?(key) ||
+              deprecated_mqtt_collector_var?(key) ||
               redundant_measurement_alias?(key, value)
           end
           .presence
+      end
+
+      # mqtt-collector's pre-MAPPING-style env var namespace. Vars HELIOS
+      # recognizes (DEPRECATED_TOPIC_VARS / DEPRECATED_SPLIT_VARS) are
+      # translated into canonical sensors.* mappings on import; anything else
+      # under the same prefix is silently ignored by mqtt-collector itself,
+      # so preserving it as `_unmanaged` would only carry dead weight forward.
+      def deprecated_mqtt_collector_var?(key)
+        key.start_with?('MQTT_TOPIC_', 'MQTT_FLIP_')
       end
 
       # User-defined INFLUX_MEASUREMENT_* vars are pure naming aliases — the

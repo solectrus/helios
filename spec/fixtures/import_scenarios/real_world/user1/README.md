@@ -28,8 +28,9 @@ typos, and inline literals — exercises the importer's resilience.
   dropped (data isn't displayed by the dashboard either; bringing them back
   later requires a managed sensor).
 - **`MQTT_TOPIC_BAT_VOLTAGE=evcc/site/homePower`** — legacy MQTT-collector
-  variable HELIOS no longer manages, preserved as `_unmanaged.env_vars` so the
-  user's (intentional or accidental) value is not lost.
+  variable outside the deprecated allowlist (DEPRECATED_TOPIC_VARS). The
+  modern mqtt-collector ignores it, so the importer drops it silently
+  rather than carrying dead weight forward as `_unmanaged.env_vars`.
 - **Duplicate `FORECAST_INFLUX_MEASUREMENT=forecast`** — redundant with the
   canonical `INFLUX_MEASUREMENT_FORECAST`, kept as unmanaged for safety.
 - **Auto-default sensors** — `INFLUX_MEASUREMENT_PV=my-pv-measurement` triggers
