@@ -89,7 +89,7 @@ services:
     - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
     - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
     volumes:
-    - "/volume1/docker/solectrus/influxdb:/var/lib/influxdb2"
+    - "${INFLUX_VOLUME_PATH}:/var/lib/influxdb2"
     ports:
     - 8086:8086
     labels:
@@ -121,7 +121,7 @@ services:
     - POSTGRES_PASSWORD
     - POSTGRES_DB=solectrus
     volumes:
-    - "/volume1/docker/solectrus/postgresql:/var/lib/postgresql"
+    - "${DB_VOLUME_PATH}:/var/lib/postgresql"
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     healthcheck:
@@ -147,7 +147,7 @@ services:
   redis:
     image: redis:7-alpine
     volumes:
-    - "/volume1/docker/solectrus/redis:/data"
+    - "${REDIS_VOLUME_PATH}:/data"
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     healthcheck:

@@ -21,6 +21,10 @@ module Export
         ['ingest']
       end
 
+      def self.volume_env_key
+        'INGEST_VOLUME_PATH'
+      end
+
       def self.comment
         'Ingest — Ingestion proxy that recalculates house_power for balcony power plants'
       end

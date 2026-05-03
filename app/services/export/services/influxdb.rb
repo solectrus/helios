@@ -9,6 +9,10 @@ module Export
         ['influxdb']
       end
 
+      def self.volume_env_key
+        'INFLUX_VOLUME_PATH'
+      end
+
       def self.comment
         'InfluxDB — Time-series database for sensor measurements'
       end

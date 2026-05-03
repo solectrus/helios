@@ -9,6 +9,10 @@ module Export
         ['postgresql']
       end
 
+      def self.volume_env_key
+        'DB_VOLUME_PATH'
+      end
+
       def self.comment
         'PostgreSQL — Relational database for daily summaries, electricity prices, and settings'
       end

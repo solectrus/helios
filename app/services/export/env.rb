@@ -24,12 +24,13 @@ module Export
 
     attr_reader :configuration
 
-    def build(env) # rubocop:disable Metrics/AbcSize,Metrics/PerceivedComplexity
+    def build(env) # rubocop:disable Metrics/AbcSize,Metrics/CyclomaticComplexity,Metrics/MethodLength,Metrics/PerceivedComplexity
       general_section(env)
       security_section(env)
       dashboard_section(env) unless configuration.collectors_only?
       postgresql_section(env) unless configuration.collectors_only?
       influxdb_section(env)
+      redis_section(env) unless configuration.collectors_only?
       reverse_proxy_section(env) if Services::Traefik.enabled?(configuration)
       backup_section(env) if Services::PostgresqlBackup.enabled?(configuration)
       senec_section(env) if Services::SenecCollector.enabled?(configuration)
@@ -40,6 +41,12 @@ module Export
       watchtower_section(env)
       sensor_section(env)
       unmanaged_section(env)
+    end
+
+    def volume_path_entry(env, service_class, label)
+      section = configuration.public_send(service_class.config_keys.first)
+      host_path = section.volume_path.presence || "./#{service_class.service_name}"
+      entry(env, service_class.volume_env_key, host_path, "Volume path for storing the #{label}")
     end
 
     def watchtower_section(env)
@@ -103,6 +110,7 @@ module Export
             'Database password — auto-generated, do not change after first start')
       optional_entry(env, 'PGDATA', configuration.postgresql.pgdata,
                      'Postgres data directory inside the container (imported from existing installation)')
+      volume_path_entry(env, Services::Postgresql, 'PostgreSQL data')
     end
 
     def influxdb_section(env)
@@ -118,6 +126,12 @@ module Export
       local_influxdb_required_entries(env)
       optional_entry(env, 'INFLUXD_USE_HASHED_TOKENS', configuration.influxdb.use_hashed_tokens,
                      'Store API tokens as bcrypt hashes (imported from existing installation)')
+      volume_path_entry(env, Services::Influxdb, 'InfluxDB data')
+    end
+
+    def redis_section(env)
+      env.add_section('Redis cache')
+      volume_path_entry(env, Services::Redis, 'Redis data')
     end
 
     def local_influxdb_required_entries(env)
@@ -147,6 +161,7 @@ module Export
             'Domain for HTTPS access via Traefik')
       entry(env, 'LETSENCRYPT_EMAIL', Services::Traefik.letsencrypt_email(configuration),
             "Email for Let's Encrypt certificate notifications")
+      volume_path_entry(env, Services::Traefik, "Let's Encrypt certificates")
     end
 
     def backup_section(env)
@@ -468,6 +483,7 @@ module Export
 
       entry(env, 'RETENTION_HOURS', configuration.ingest.retention_hours.presence || '12',
             'Hours of measurement data Ingest buffers in its SQLite store')
+      volume_path_entry(env, Services::Ingest, 'Ingest data')
     end
 
     def sensor_section(env)

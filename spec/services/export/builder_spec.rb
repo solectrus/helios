@@ -340,7 +340,9 @@ RSpec.describe Export::Builder do
     it 'mounts the default relative bind path for /letsencrypt' do
       compose = Compose.load
       traefik = compose.services.find('traefik')
-      expect(traefik.config['volumes']).to include('./traefik:/letsencrypt')
+      expect(traefik.config['volumes']).to include('${TRAEFIK_VOLUME_PATH}:/letsencrypt')
+      env = Env.load
+      expect(env['TRAEFIK_VOLUME_PATH']).to eq('./traefik')
     end
   end
 
@@ -358,7 +360,9 @@ RSpec.describe Export::Builder do
     it 'mounts the configured host path in compose.yaml' do
       compose = Compose.load
       traefik = compose.services.find('traefik')
-      expect(traefik.config['volumes']).to include('/volume1/docker/solectrus/traefik:/letsencrypt')
+      expect(traefik.config['volumes']).to include('${TRAEFIK_VOLUME_PATH}:/letsencrypt')
+      env = Env.load
+      expect(env['TRAEFIK_VOLUME_PATH']).to eq('/volume1/docker/solectrus/traefik')
     end
 
     it 'does not create the default traefik data directory' do
@@ -1100,7 +1104,9 @@ RSpec.describe Export::Builder do
     it 'mounts a bind volume for the SQLite buffer' do
       compose = Compose.load
       ingest = compose.services.find('ingest')
-      expect(ingest.config['volumes']).to include('./ingest:/app/data')
+      expect(ingest.config['volumes']).to include('${INGEST_VOLUME_PATH}:/app/data')
+      env = Env.load
+      expect(env['INGEST_VOLUME_PATH']).to eq('./ingest')
     end
 
     it 'exposes the web UI on port 4567' do
@@ -1250,7 +1256,9 @@ RSpec.describe Export::Builder do
     it 'mounts the configured host path in compose.yaml' do
       compose = Compose.load
       ingest = compose.services.find('ingest')
-      expect(ingest.config['volumes']).to eq(['/volume1/docker/solectrus/ingest:/app/data'])
+      expect(ingest.config['volumes']).to eq(['${INGEST_VOLUME_PATH}:/app/data'])
+      env = Env.load
+      expect(env['INGEST_VOLUME_PATH']).to eq('/volume1/docker/solectrus/ingest')
     end
 
     it 'does not create the default ingest data directory' do
@@ -1313,14 +1321,19 @@ RSpec.describe Export::Builder do
 
     it_behaves_like 'valid Docker Compose configuration'
 
-    it 'mounts the configured host paths in compose.yaml' do
+    it 'mounts the configured host paths in compose.yaml' do # rubocop:disable RSpec/MultipleExpectations
       compose = Compose.load
       expect(compose.services.find('postgresql').config['volumes'])
-        .to eq(['/volume1/docker/solectrus/postgresql:/var/lib/postgresql'])
+        .to eq(['${DB_VOLUME_PATH}:/var/lib/postgresql'])
       expect(compose.services.find('influxdb').config['volumes'])
-        .to eq(['/volume1/docker/solectrus/influxdb:/var/lib/influxdb2'])
+        .to eq(['${INFLUX_VOLUME_PATH}:/var/lib/influxdb2'])
       expect(compose.services.find('redis').config['volumes'])
-        .to eq(['/volume1/docker/solectrus/redis:/data'])
+        .to eq(['${REDIS_VOLUME_PATH}:/data'])
+
+      env = Env.load
+      expect(env['DB_VOLUME_PATH']).to eq('/volume1/docker/solectrus/postgresql')
+      expect(env['INFLUX_VOLUME_PATH']).to eq('/volume1/docker/solectrus/influxdb')
+      expect(env['REDIS_VOLUME_PATH']).to eq('/volume1/docker/solectrus/redis')
     end
 
     it 'does not create default data directories when volume paths are external' do

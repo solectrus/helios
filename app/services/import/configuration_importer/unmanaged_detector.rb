@@ -1,6 +1,10 @@
 module Import
   class ConfigurationImporter
     class UnmanagedDetector # rubocop:disable Metrics/ClassLength
+      # Reference the parent class's regex explicitly. Ruby's lexical
+      # constant lookup would resolve it via Module.nesting, but spelling
+      # it out keeps the dependency visible inside this file.
+      INTERPOLATION_RE = ConfigurationImporter::INTERPOLATION_RE
       # All .env variable keys that HELIOS manages (generates in .env)
       MANAGED_ENV_KEYS = %w[
         TZ INSTALLATION_DATE ADMIN_PASSWORD SECRET_KEY_BASE
@@ -33,17 +37,19 @@ module Import
         SHELLY_CLOUD_SERVER SHELLY_AUTH_KEY SHELLY_DEVICE_ID SHELLY_INVERT_POWER
         MQTT_HOST MQTT_PORT MQTT_SSL MQTT_USERNAME MQTT_PASSWORD
         PGDATA INFLUXD_USE_HASHED_TOKENS
+        DB_VOLUME_PATH INFLUX_VOLUME_PATH REDIS_VOLUME_PATH
+        INGEST_VOLUME_PATH TRAEFIK_VOLUME_PATH
       ].freeze
 
       # Infrastructure .env keys that HELIOS doesn't generate but are well-known
       # SOLECTRUS vars. These are suppressed from unmanaged to avoid noise — HELIOS
-      # bakes the corresponding service hostnames/ports/paths directly into compose,
-      # so any user-supplied .env values here are dead weight after import.
+      # bakes the corresponding service hostnames/ports directly into compose, so
+      # any user-supplied .env values here are dead weight after import.
       INFRASTRUCTURE_ENV_KEYS = %w[
-        INFLUX_HOST INFLUX_SCHEMA INFLUX_PORT INFLUX_VOLUME_PATH INFLUX_USERNAME
-        DB_HOST DB_USER DB_PASSWORD DB_VOLUME_PATH DB_DATABASE
-        REDIS_URL REDIS_HOST REDIS_PORT REDIS_VOLUME_PATH
-        INGEST_HOST INGEST_PORT INGEST_VOLUME_PATH TRAEFIK_VOLUME_PATH
+        INFLUX_HOST INFLUX_SCHEMA INFLUX_PORT INFLUX_USERNAME
+        DB_HOST DB_USER DB_PASSWORD DB_DATABASE
+        REDIS_URL REDIS_HOST REDIS_PORT
+        INGEST_HOST INGEST_PORT
         POSTGRES_HOST POSTGRES_USERNAME
       ].freeze
 

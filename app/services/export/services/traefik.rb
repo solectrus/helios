@@ -9,6 +9,10 @@ module Export
         ['reverse_proxy']
       end
 
+      def self.volume_env_key
+        'TRAEFIK_VOLUME_PATH'
+      end
+
       def self.comment
         'Traefik — Reverse proxy with automatic HTTPS'
       end

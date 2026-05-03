@@ -100,11 +100,11 @@ Anonymized but otherwise untouched.
 - **`INFLUX_PORT=8086` / `INFLUX_SCHEMA=http`** in `.env` — dropped on
   re-export because HELIOS uses internal `influxdb` service-network
   addressing for the dashboard, ingest, and power-splitter.
-- **`INFLUXDB_VOLUME_PATH` and `INFLUXDB_BACKUP_VOLUME_PATH` duplicated
-  into `_unmanaged.env_vars`** — the volume path was already extracted as
-  `influxdb.volume_path`, but the source variable still propagates as
-  unmanaged. Backup-volume path has no managed consumer (fluxbackup uses
-  an inline literal `BACKUP_PATH`), so it stays as raw env.
+- **`INFLUXDB_VOLUME_PATH` and `INFLUXDB_BACKUP_VOLUME_PATH` preserved as
+  unmanaged.** The InfluxDB data path is also captured as
+  `influxdb.volume_path` (re-emitted as `${INFLUX_VOLUME_PATH}` on export);
+  the unmanaged copies survive the round-trip because HELIOS doesn't
+  recognize the donor's non-canonical names.
 
 ## Round-trip stabilizer
 

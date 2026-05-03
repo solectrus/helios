@@ -9,6 +9,10 @@ module Export
         ['redis']
       end
 
+      def self.volume_env_key
+        'REDIS_VOLUME_PATH'
+      end
+
       def self.comment
         'Redis — In-memory store for caching'
       end

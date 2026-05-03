@@ -80,19 +80,16 @@ module Export
         configuration.collectors_only? ? nil : healthy_depends_on([collector_influx_target])
       end
 
-      # Bind mount honoring an optional `volume_path` override from config.yaml.
-      # Defaults to `./<service_name>`; pair with `managed_data_directory` to
-      # skip creating the default dir when the user pointed the mount elsewhere.
+      # Bind mount referencing the service's volume env var; the actual host
+      # path is emitted in .env (see `Export::Env#volume_path_entry`). Pair
+      # with `managed_data_directory` to skip creating the default dir when
+      # the user pointed the mount elsewhere.
       def bind_mount(container_path)
-        "#{volume_host_path}:#{container_path}"
+        "${#{self.class.volume_env_key}}:#{container_path}"
       end
 
       def managed_data_directory
         volume_section.volume_path.present? ? [] : [self.class.service_name]
-      end
-
-      def volume_host_path
-        volume_section.volume_path.presence || "./#{self.class.service_name}"
       end
 
       def volume_section
