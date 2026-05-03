@@ -47,6 +47,12 @@ module SupportBundle
     # Per-sensor fields to redact inside the dynamic `sensors:` section.
     SENSOR_KEYS = %w[shelly_password].freeze
 
+    # Coordinates are stored as user-entered decimals but logged with full
+    # Float precision (e.g. config 50.92264 → log 50.922642249999996), so
+    # they need a regex with optional trailing digits instead of a literal
+    # match when scrubbing log output.
+    NUMERIC_KEYS = %w[FORECAST_LATITUDE FORECAST_LONGITUDE].to_set.freeze
+
     # Non-string fields need realistic dummies so the replayed stack can
     # parse them. Listed under both the ENV and YAML spelling because the
     # env var (SENEC_SYSTEM_ID) and the YAML leaf (senec.system_id) reach
@@ -57,6 +63,11 @@ module SupportBundle
       'senec_system_id' => '0',
       'system_id' => '0',
     }.freeze
+
+    # Values shorter than this are skipped when scrubbing log content to
+    # avoid false positives on common words (e.g. a 3-letter username
+    # would otherwise be replaced everywhere it appears as plain text).
+    LOG_REDACTION_MIN_LENGTH = 4
 
     ENV_LINE = /\A(?<prefix>\s*-?\s*)(?<key>[A-Za-z_][A-Za-z0-9_]*)=(?<value>.*?)(?<trailing>\s*)\z/
 
@@ -99,6 +110,45 @@ module SupportBundle
     def placeholder_for(key)
       normalized = key.to_s.downcase
       DUMMY_VALUES[normalized] || "dummy_#{normalized}"
+    end
+
+    # Extracts (pattern, placeholder) pairs for every whitelisted env value
+    # that should be scrubbed from container log output. Coordinates use a
+    # regex tolerant to Float-precision tails; opaque secrets use literal
+    # substring matches.
+    def log_redactions(env_content)
+      env_content.each_line.filter_map { |line| line_redaction(line) }
+    end
+
+    # Applies redaction pairs to free-form text (e.g. container logs) so
+    # the same secrets present in .env are masked when they leak through
+    # other channels.
+    def anonymize_text(content, redactions)
+      redactions.reduce(content) do |result, (pattern, replacement)|
+        result.gsub(pattern, replacement)
+      end
+    end
+
+    def line_redaction(line)
+      return nil if line.lstrip.start_with?('#')
+
+      match = line.match(ENV_LINE)
+      return nil unless match
+
+      key = match[:key].upcase
+      value = match[:value]
+      return nil unless ENV_KEYS.include?(key)
+      return nil if value.empty? || value.start_with?('${')
+
+      pattern = redaction_pattern(key, value)
+      pattern && [pattern, placeholder_for(key)]
+    end
+
+    def redaction_pattern(key, value)
+      return /\b#{Regexp.escape(value)}\d*\b/ if NUMERIC_KEYS.include?(key)
+      return nil if value.length < LOG_REDACTION_MIN_LENGTH
+
+      value
     end
   end
 end

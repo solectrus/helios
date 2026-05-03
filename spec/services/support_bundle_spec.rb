@@ -48,6 +48,25 @@ RSpec.describe SupportBundle do
       expect(entries['logs/postgresql.log']).to eq("2026-04-23T10:00:00Z ready\n")
     end
 
+    it 'scrubs coordinates and secrets from container logs' do
+      File.write(
+        File.join(data_path, '.env'),
+        "FORECAST_LATITUDE=50.92264\nFORECAST_LONGITUDE=6.407\nINFLUX_TOKEN=NWD3vfbwdz8kKXiz\n",
+      )
+      allow(SupportBundle::ContainerLogs).to receive(:collect).and_return(
+        'logs/forecast-collector.log' =>
+          "fetching https://api.forecast.solar/estimate/50.922642249999996/6.407003707805423/29\n" \
+          "Authorization=Token NWD3vfbwdz8kKXiz\n",
+      )
+
+      log = entries['logs/forecast-collector.log']
+      expect(log).not_to include('50.92264')
+      expect(log).not_to include('6.407')
+      expect(log).not_to include('NWD3vfbwdz8kKXiz')
+      expect(log).to include('forecast.solar/estimate/50.0/10.0/29')
+      expect(log).to include('dummy_influx_token')
+    end
+
     it 'includes a non-empty system-info report' do
       expect(entries['system-info.txt']).to include('=== HELIOS ===')
       expect(entries['system-info.txt']).to include('=== Docker Engine ===')

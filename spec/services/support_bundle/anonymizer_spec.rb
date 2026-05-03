@@ -252,4 +252,64 @@ RSpec.describe SupportBundle::Anonymizer do
       expect(parsed['senec']['password']).to be_nil
     end
   end
+
+  describe '.anonymize_text' do
+    let(:env) do
+      <<~ENV
+        FORECAST_LATITUDE=50.92264
+        FORECAST_LONGITUDE=6.407
+        INFLUX_TOKEN=NWD3vfbwdz8kKXiz
+        SENEC_PASSWORD=s3cretpw
+        TZ=Europe/Berlin
+        # SOLCAST_APIKEY=commented-out
+        SHELLY_PASSWORD=${SHELLY_PASSWORD}
+      ENV
+    end
+    let(:redactions) { described_class.log_redactions(env) }
+
+    it 'replaces coordinates that are logged with extra Float precision' do
+      log = <<~LOG
+        Fetching forecast at 2026-05-02T07:38:06+02:00
+          0: https://api.forecast.solar/estimate/50.922642249999996/6.407003707805423/29/-50/9.75 ... OK
+      LOG
+
+      result = described_class.anonymize_text(log, redactions)
+
+      expect(result).not_to include('50.92264')
+      expect(result).not_to include('6.407')
+      expect(result).to include('https://api.forecast.solar/estimate/50.0/10.0/29/-50/9.75')
+    end
+
+    it 'preserves the surrounding ISO timestamp when scrubbing coordinates' do
+      log = "ts=2026-05-02T07:38:06+02:00 lat=50.92264 lon=6.407\n"
+
+      result = described_class.anonymize_text(log, redactions)
+
+      expect(result).to eq("ts=2026-05-02T07:38:06+02:00 lat=50.0 lon=10.0\n")
+    end
+
+    it 'replaces opaque tokens that leak into log lines' do
+      log = "POST /api/v2/write Authorization=Token NWD3vfbwdz8kKXiz failed\n"
+
+      result = described_class.anonymize_text(log, redactions)
+
+      expect(result).to eq("POST /api/v2/write Authorization=Token dummy_influx_token failed\n")
+    end
+
+    it 'leaves coordinates alone when only an unrelated number is present' do
+      log = "Sleeping until 2026-05-02 08:38:07 +0200\n"
+
+      expect(described_class.anonymize_text(log, redactions)).to eq(log)
+    end
+
+    it 'ignores commented and unset values when building redactions' do
+      log = "key=commented-out fallback=${SHELLY_PASSWORD}\n"
+
+      expect(described_class.anonymize_text(log, redactions)).to eq(log)
+    end
+
+    it 'leaves logs untouched when no redactions apply' do
+      expect(described_class.anonymize_text("nothing to redact\n", [])).to eq("nothing to redact\n")
+    end
+  end
 end

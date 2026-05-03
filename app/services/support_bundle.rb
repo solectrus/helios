@@ -18,9 +18,10 @@ module SupportBundle
       zip.put_next_entry('system-info.txt')
       zip.write(SystemInfo.collect)
 
+      redactions = log_redactions
       ContainerLogs.collect.each do |entry_name, content|
         zip.put_next_entry(entry_name)
-        zip.write(content)
+        zip.write(Anonymizer.anonymize_text(content, redactions))
       end
     end
 
@@ -33,6 +34,16 @@ module SupportBundle
     else
       Anonymizer.anonymize_env_style(content)
     end
+  end
+
+  # Container logs run through the live .env so any secret a service
+  # echoes (forecast collector logging the URL with lat/lng, MQTT clients
+  # logging credentials on connect failures, …) gets masked with the same
+  # placeholders used in the .env entry.
+  def log_redactions
+    return [] unless File.exist?(Env.path)
+
+    Anonymizer.log_redactions(File.read(Env.path))
   end
 
   def filename
