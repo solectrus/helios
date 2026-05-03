@@ -1,0 +1,250 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 1
+system:
+  admin_password: my-admin-password
+  app_host: demo.example.com
+  installation_date: '2022-10-01'
+  secret_key_base: my-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  frame_ancestors: https://iframetester.com/
+  image: ghcr.io/solectrus/solectrus:develop
+  trusted_proxy_ranges: 10.0.0.0/8,192.0.2.1
+postgresql:
+  image: postgres:18-alpine
+  password: my-postgres-password
+  volume_path: "/my-volumes/solectrus/postgresql18"
+influxdb:
+  bucket: solectrus
+  image: influxdb:2.8-alpine
+  org: solectrus
+  password: my-influx-admin-password
+  token: my-influx-write-token
+  volume_path: "/my-volumes/solectrus/influxdb"
+redis:
+  image: redis:8-alpine
+  volume_path: "/my-volumes/solectrus/redis"
+watchtower: {}
+forecast:
+  forecast: forecast.solar
+  forecast_azimuth1: '35'
+  forecast_declination1: '29.1'
+  forecast_interval: '5400'
+  forecast_kwp1: '8.75'
+  forecast_latitude: '50.12345'
+  forecast_longitude: '6.12345'
+  forecast_roofs: '1'
+backup:
+  influxdb:
+    image: ghcr.io/solectrus/influxdb2-s3-backup:latest
+  postgresql:
+    image: ghcr.io/solectrus/postgres-s3-backup:18
+sensors:
+  battery_charging_power:
+    field: bat_power_plus
+    measurement: SENEC
+    source: external
+  battery_discharging_power:
+    field: bat_power_minus
+    measurement: SENEC
+    source: external
+  battery_soc:
+    field: bat_fuel_charge
+    measurement: SENEC
+    source: external
+  car_battery_soc:
+    field: battery_level
+    measurement: Car
+    source: external
+  case_temp:
+    field: case_temp
+    measurement: SENEC
+    source: external
+  custom_power_01:
+    field: power
+    measurement: Washer
+    name: Washer
+    source: external
+  custom_power_02:
+    field: power
+    measurement: Fridge
+    name: Fridge
+    source: external
+  custom_power_06:
+    field: power
+    measurement: Dishwasher
+    name: Dishwasher
+    source: external
+  custom_power_08:
+    field: power
+    measurement: TV
+    name: TV
+    source: external
+  custom_power_09:
+    field: power
+    measurement: IT
+    name: IT
+    source: external
+  grid_export_limit:
+    field: power_ratio
+    measurement: SENEC
+    source: external
+  grid_export_power:
+    field: grid_power_minus
+    measurement: SENEC
+    source: external
+  grid_import_power:
+    field: grid_power_plus
+    measurement: SENEC
+    source: external
+  heatpump_heating_power:
+    field: heat
+    measurement: ALTHERMA
+    source: external
+  heatpump_power:
+    exclude_from_house_power: true
+    field: power
+    measurement: Consumer
+    source: external
+  heatpump_status:
+    field: current_state
+    measurement: ALTHERMA
+    source: external
+  heatpump_tank_temp:
+    field: r5t_tank_temp
+    measurement: ALTHERMA
+    source: external
+  heatpump_tank_temp_setpoint:
+    field: setpoint_tank_water
+    measurement: ALTHERMA
+    source: external
+  house_power:
+    field: house_power
+    measurement: SENEC
+    source: external
+  inverter_power:
+    field: inverter_power
+    measurement: SENEC
+    source: external
+  inverter_power_1:
+    field: mpp1_power
+    measurement: SENEC
+    source: external
+  inverter_power_2:
+    field: mpp2_power
+    measurement: SENEC
+    source: external
+  inverter_power_3:
+    field: mpp3_power
+    measurement: SENEC
+    source: external
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  inverter_power_forecast_clearsky:
+    field: watt_clearsky
+    measurement: Forecast
+    source: forecast
+  outdoor_temp:
+    field: r6t_outdoor_temp
+    measurement: ALTHERMA
+    source: external
+  outdoor_temp_forecast:
+    field: temp
+    measurement: Forecast
+    source: forecast
+  system_status:
+    field: current_state
+    measurement: SENEC
+    source: external
+  system_status_ok:
+    field: current_state_ok
+    measurement: SENEC
+    source: external
+  wallbox_car_connected:
+    field: ev_connected
+    measurement: SENEC
+    source: external
+  wallbox_power:
+    field: wallbox_charge_power
+    measurement: SENEC
+    source: external
+ingest:
+  image: ghcr.io/solectrus/ingest:develop
+  retention_hours: '36'
+  volume_path: "/my-volumes/solectrus/ingest"
+_unmanaged:
+  env_vars:
+    ASSET_HOST: https://d12345.cloudfront.net
+    DOCKER_IMAGE: ghcr.io/solectrus/solectrus:develop
+    HONEYBADGER_API_KEY: my-honeybadger-api-key
+    INFLUXDB_BACKUP_VOLUME_PATH: "/mnt/HC_Volume_12345/influxdb-backup"
+    INFLUXDB_VOLUME_PATH: "/my-volumes/solectrus/influxdb"
+    PLAUSIBLE_URL: https://p.example.com
+    RORVSWILD_API_KEY: my-rorvswild-api-key
+  services:
+    forecast-collector-pvnode:
+      deploy:
+        placement:
+          constraints:
+          - node.labels.type==stateless
+        update_config:
+          order: stop-first
+      environment:
+      - TZ
+      - INFLUX_BUCKET
+      - INFLUX_HOST=influxdb
+      - INFLUX_MEASUREMENT=Forecast
+      - INFLUX_ORG
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - FORECAST_AZIMUTH=209
+      - FORECAST_DECLINATION
+      - FORECAST_INTERVAL
+      - FORECAST_KWP
+      - FORECAST_LATITUDE
+      - FORECAST_LONGITUDE
+      - FORECAST_PROVIDER=pvnode
+      - PVNODE_APIKEY
+      - PVNODE_EXTRA_PARAMS
+      - PVNODE_PAID=nowcast
+      hostname: forecast-collector.${APP_HOST}
+      image: ghcr.io/solectrus/forecast-collector:develop
+      links:
+      - influxdb
+      restart: unless-stopped
+    forecast-collector-solcast:
+      deploy:
+        placement:
+          constraints:
+          - node.labels.type==stateless
+        update_config:
+          order: stop-first
+      environment:
+      - TZ
+      - INFLUX_BUCKET
+      - INFLUX_HOST=influxdb
+      - INFLUX_MEASUREMENT=Forecast-Solcast
+      - INFLUX_ORG
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - FORECAST_AZIMUTH
+      - FORECAST_DECLINATION
+      - FORECAST_INTERVAL
+      - FORECAST_KWP
+      - FORECAST_LATITUDE
+      - FORECAST_LONGITUDE
+      - FORECAST_PROVIDER=solcast
+      - SOLCAST_APIKEY
+      - SOLCAST_SITE
+      hostname: forecast-collector.${APP_HOST}
+      image: ghcr.io/solectrus/forecast-collector:develop
+      links:
+      - influxdb
+      restart: unless-stopped
