@@ -96,11 +96,11 @@ module Export
       { logging: { driver: 'json-file', options: { 'max-size' => '10m', 'max-file' => '3' } } }
     end
 
-    # An explicit network name decouples the bridge from Compose's auto-naming
-    # convention "<project>_default". Without this block, renaming or migrating
-    # the stack creates a fresh network and leaves the previous one orphaned —
-    # any container still attached to the old one (e.g. a long-running helios
-    # not recreated by `compose up`) loses peer DNS resolution.
+    # Pin the bridge network to a stable name so it stays the same if the
+    # compose project is ever renamed (which would otherwise change Compose's
+    # auto-name `<project>_default`). Unmanaged services only reference the
+    # compose-internal `default` alias, so the actual Docker network name is
+    # transparent to them.
     def add_default_network(compose)
       compose.networks['default'] = { 'name' => network_name }
     end

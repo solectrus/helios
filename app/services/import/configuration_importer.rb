@@ -240,8 +240,12 @@ module Import
 
     # Picks up an explicit `networks: default: name:` override from the
     # imported compose. Without an override, leave it nil so HELIOS falls
-    # back to its default — Docker would have auto-named the network the
-    # same way for the imported stack.
+    # back to its default (`solectrus_default`). If the imported stack ran
+    # under a differently-named auto-network (e.g. `senec_default` from a
+    # directory named `senec`), `compose up` will create the new network
+    # and leave the old one orphaned — harmless, since unmanaged services
+    # only reference the compose-internal `default` alias, not the Docker
+    # network name. The orphan is cleaned up by `docker network prune`.
     def imported_network_name
       name = @reader.raw_compose.dig('networks', 'default', 'name')
       name.presence
