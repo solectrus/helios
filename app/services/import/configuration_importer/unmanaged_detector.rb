@@ -50,7 +50,9 @@ module Import
       # Legacy SOLECTRUS keys that HELIOS absorbs at import time via
       # LegacySensorAdapter and MqttExtractor::DEPRECATED_TOPIC_VARS — once
       # translated into sensors/mappings, the originals would only cause noise
-      # if re-emitted.
+      # if re-emitted. Also includes dashboard env vars superseded by UI-managed
+      # settings (e.g. historical prices), which would otherwise leak into
+      # _unmanaged.env_vars.
       LEGACY_CONSUMED_ENV_KEYS = %w[
         INFLUX_MEASUREMENT_PV
         MQTT_FLIP_GRID_POW MQTT_FLIP_BAT_POWER
@@ -58,6 +60,7 @@ module Import
         DOCKER_INFLUXDB_INIT_PASSWORD DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
         DOCKER_INFLUXDB_INIT_ORG DOCKER_INFLUXDB_INIT_BUCKET
         POSTGRES_ADMIN_PASSWORD
+        ELECTRICITY_PRICE FEED_IN_TARIFF
       ].freeze
 
       INTERPOLATION_RE = /\$\{([A-Z_][A-Z0-9_]*)\}/

@@ -128,9 +128,6 @@ sensors:
   wallbox_power:
     source: senec
 _unmanaged:
-  env_vars:
-    ELECTRICITY_PRICE: '0.11'
-    FEED_IN_TARIFF: '0.11'
   services:
     dozzle:
       environment: []

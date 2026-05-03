@@ -78,9 +78,9 @@ DB service it depends on. Anonymized but otherwise untouched.
   `.env` — a leftover note from manual configuration. Ignored by the
   parser, dropped on re-export.
 - **`ELECTRICITY_PRICE=0.11` / `FEED_IN_TARIFF=0.11`** — legacy
-  dashboard-only env vars (today managed via the UI as historical prices).
-  Preserved under `_unmanaged.env_vars` so the user's price feed survives
-  re-export.
+  dashboard-only env vars, today managed via the UI as historical prices.
+  Listed in `LEGACY_CONSUMED_ENV_KEYS` so they're silently dropped on
+  import rather than carried forward as `_unmanaged.env_vars` noise.
 - **Trailing tabs/spaces on label values** — `shelly-collector-002`
   and `-004` end with stray whitespace, `-005` has a tab between
   `solectrus` and end-of-line. YAML round-trips these without complaint.
