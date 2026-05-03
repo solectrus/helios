@@ -1,0 +1,144 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 1
+system:
+  admin_password: my-secret-admin-password
+  app_host: 192.168.108.250
+  installation_date: '2020-01-01'
+  secret_key_base: my-secret-key-base
+dashboard:
+  image: ghcr.io/solectrus/solectrus:1-0-beta
+postgresql:
+  image: postgres:15-alpine
+  password: my-secret-db-password
+  volume_path: "/home/pi/solectrus/postgresql"
+influxdb:
+  bucket: my-solectrus-bucket
+  image: influxdb:2.7-alpine
+  org: solectrus
+  password: my-secret-influx-password
+  token: my-super-secret-admin-token
+  volume_path: "/home/pi/solectrus/influxdb"
+redis:
+  image: redis:7-alpine
+  volume_path: "/home/pi/solectrus/redis"
+watchtower:
+  image: containrrr/watchtower:latest
+forecast:
+  forecast: forecast.solar
+  forecast_azimuth1: "-115"
+  forecast_azimuth2: '65'
+  forecast_declination1: '42'
+  forecast_declination2: '42'
+  forecast_interval: '1800'
+  forecast_kwp1: '3.52'
+  forecast_kwp2: '5.5'
+  forecast_latitude: '59.12345'
+  forecast_longitude: '8.12345'
+  forecast_roofs: '2'
+  measurement: Forecast
+senec:
+  adapter: local
+  host: 192.168.108.41
+  interval: '5'
+  schema: https
+  version: v3
+shelly:
+  connection: local
+  interval: '5'
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  custom_power_01:
+    field: power
+    measurement: Gefrierschrank
+    name: Gefrierschrank
+    shelly_connection: local
+    shelly_host: 192.168.108.71
+    shelly_interval: '5'
+    source: shelly
+  custom_power_02:
+    field: power
+    measurement: Waschmaschine
+    name: Waschmaschine
+    shelly_connection: local
+    shelly_host: 192.168.108.72
+    shelly_interval: '5'
+    source: shelly
+  custom_power_03:
+    field: power
+    measurement: Trockner
+    name: Trockner
+    shelly_connection: local
+    shelly_host: 192.168.108.73
+    shelly_interval: '5'
+    source: shelly
+  custom_power_04:
+    field: power
+    measurement: Buero
+    name: Buero
+    shelly_connection: local
+    shelly_host: 192.168.108.74
+    shelly_interval: '5'
+    source: shelly
+  custom_power_05:
+    field: power
+    measurement: Spare
+    name: Spare
+    shelly_connection: local
+    shelly_host: 192.168.108.75
+    shelly_interval: '5'
+    source: shelly
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_1:
+    source: senec
+  inverter_power_2:
+    source: senec
+  inverter_power_3:
+    source: senec
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_power:
+    source: senec
+_unmanaged:
+  env_vars:
+    ELECTRICITY_PRICE: '0.11'
+    FEED_IN_TARIFF: '0.11'
+  services:
+    dozzle:
+      environment: []
+      image: amir20/dozzle:latest
+      labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+      ports:
+      - 8080:8080
+      restart: unless-stopped
+      volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
