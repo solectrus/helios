@@ -74,3 +74,46 @@ forecasts, and a Tibber price feed. Anonymized but otherwise untouched.
   active, `:0.20.2` and `:develop` commented). The importer follows the
   active line; comments are not preserved on re-export (acceptable per
   CLAUDE.md).
+- **Custom healthchecks replaced by HELIOS defaults** — e.g. influxdb's
+  curl-based ping is replaced by `influx ping`. Deliberate: HELIOS uses
+  the native CLI bundled with the image instead of requiring `curl`,
+  which is more robust and avoids assumptions about HTTP-API exposure.
+- **Redundant `command:` overrides dropped** — influxdb's
+  `influxd run --bolt-path /var/lib/influxdb2/influxd.bolt
+  --engine-path /var/lib/influxdb2/engine --store disk` only respells
+  the official image's built-in defaults (`INFLUXD_BOLT_PATH` /
+  `INFLUXD_ENGINE_PATH` env vars; `disk` is the production default for
+  `--store`). Same pattern in user1's `watchtower` (`--scope solectrus
+  --cleanup` duplicates the `WATCHTOWER_SCOPE` / `WATCHTOWER_CLEANUP`
+  env vars HELIOS already renders). Dropping these on re-export is
+  lossless and intentional.
+
+## Compose keys dropped on re-export
+
+The fixture also documents what HELIOS currently *cannot* round-trip on
+managed services. Diffing `compose.yaml.bak` against the regenerated
+`compose.yaml` shows several keys that are silently lost because
+`config.yaml` doesn't model them:
+
+- **Traefik labels and the `traefik` external network** — multiple
+  managed services (dashboard, influxdb, ingest, …) had `traefik.*`
+  labels and were attached to a second `traefik` network. After regen:
+  labels gone, services exposed via direct `ports:` on the host instead
+  of `expose:`. Breaks reverse-proxy routing.
+- **Custom bind-mount paths** — InfluxDB / Postgres / Redis pointed at
+  `${BASE_DIR}/...` outside the stack directory. HELIOS rewrites these
+  to relative `./service/...` paths (per ADR-0003). After regen,
+  containers mount empty directories — the original data still exists
+  on disk but is no longer visible to the running container.
+- **Backup / dump volumes** — `${HOST_DUMP}:${CONTAINER_DUMP}` on
+  postgres / influxdb / redis is dropped entirely.
+- **`deploy.resources.limits` on managed services** — `cpus` / `memory`
+  caps on the forecast and senec collectors are dropped (kept correctly
+  for unmanaged services like `tibber_collector`).
+- **Externally published ports** — e.g. `ports: "5432:5432"` on
+  postgres is dropped if HELIOS doesn't model an external port for that
+  service.
+
+Surfacing these in the auto-import review screen (or a per-service
+`_overrides` block in `config.yaml`) is out of scope until users run
+into the warning in the wild.
