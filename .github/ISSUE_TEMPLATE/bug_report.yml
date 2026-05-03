@@ -1,0 +1,92 @@
+name: Bug report
+description: Report a problem with HELIOS (the installer / control panel for SOLECTRUS).
+type: "Bug"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug in **HELIOS**.
+
+        > [!TIP]
+        > You are welcome to write this issue in **German** — both languages are fine.
+
+        > [!IMPORTANT]
+        > This tracker is **only for HELIOS** — the web-based control panel that installs and manages a SOLECTRUS stack.
+        > For issues with any **SOLECTRUS component** itself (`solectrus`, `mqtt-collector`, `senec-collector`,
+        > `shelly-collector`, `forecast-collector`, `tibber-collector`, `ingest`, …) please open them in the
+        > corresponding repository under the [solectrus organization](https://github.com/solectrus) instead.
+        >
+        > **However**, if a SOLECTRUS component misbehaves **because of how HELIOS configured or installed it**
+        > (wrong env vars, missing service, broken `compose.yaml`, incorrect sensor mapping, …), then **this is the
+        > right tracker** — please report it here.
+
+        > [!CAUTION]
+        > **One issue = one bug.** Please do **not** combine multiple unrelated bugs into a single issue.
+        > If you want to report several problems, open a separate issue for each one — that way each can be
+        > triaged, discussed and closed independently.
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: A clear and concise description of the problem and what you expected to happen instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: How can the problem be reproduced? Please be as specific as possible.
+      placeholder: |
+        1. Go to '…'
+        2. Click on '…'
+        3. See error
+    validations:
+      required: true
+
+  - type: input
+    id: helios-version
+    attributes:
+      label: HELIOS version
+      description: The version string shown in the status bar at the bottom of the HELIOS UI.
+      placeholder: "e.g. v0.1.1-5-g7ff2980"
+    validations:
+      required: true
+
+  - type: input
+    id: host
+    attributes:
+      label: Host / environment
+      description: Where is HELIOS running?
+      placeholder: "e.g. Raspberry Pi 5 (ARM64) / Synology DS (AMD64) / Proxmox LXC (AMD64) / Ubuntu 24.04 VPS (AMD64)"
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Support bundle
+
+        HELIOS can produce a **support bundle ZIP** with `compose.yaml`, `.env`, `config.yaml`, system info
+        and the last log lines per container. **Passwords, tokens and coordinates are anonymized
+        automatically**, so the archive is safe to share publicly.
+
+        Generate it via the *Download support bundle* action in the HELIOS UI and **drag & drop the ZIP
+        file into the comment box below** before submitting this issue.
+
+  - type: checkboxes
+    id: support-bundle
+    attributes:
+      label: Support bundle attached
+      options:
+        - label: I have attached a support bundle ZIP to this issue (or I cannot, and will explain why in the description).
+          required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else that helps — screenshots, error messages, browser console output, related discussions, …
+    validations:
+      required: false

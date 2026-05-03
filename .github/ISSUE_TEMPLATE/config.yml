@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: SOLECTRUS component bug or feature request
+    url: https://github.com/solectrus
+    about: This tracker is only for HELIOS (the installer / control panel). For issues with any SOLECTRUS component itself (solectrus, mqtt-collector, senec-collector, shelly-collector, forecast-collector, tibber-collector, ingest, …) please open them in the corresponding repository under the solectrus organization.
+  - name: Question or general support
+    url: https://github.com/orgs/solectrus/discussions
+    about: For setup questions, "how do I…" topics or general help, please use GitHub Discussions instead of opening an issue.

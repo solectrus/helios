@@ -1,0 +1,71 @@
+name: Feature request
+description: Suggest an idea or improvement for HELIOS (the installer / control panel for SOLECTRUS).
+type: "Feature"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting an improvement to **HELIOS**.
+
+        > [!TIP]
+        > You are welcome to write this issue in **German** — both languages are fine.
+
+        > [!IMPORTANT]
+        > This tracker is **only for HELIOS** — the web-based control panel that installs and manages a SOLECTRUS stack.
+        > For feature requests targeting any **SOLECTRUS component** itself (`solectrus`, `mqtt-collector`,
+        > `senec-collector`, `shelly-collector`, `forecast-collector`, `tibber-collector`, `ingest`, …) please open
+        > them in the corresponding repository under the [solectrus organization](https://github.com/solectrus) instead.
+        >
+        > **However**, if your idea is about how HELIOS configures, installs or wires up a SOLECTRUS component
+        > (env vars, sensor mapping, default services, `compose.yaml` generation, …), then **this is the right
+        > tracker** — please file it here.
+
+        > [!CAUTION]
+        > **One issue = one idea.** Please do **not** bundle multiple unrelated suggestions into a single issue.
+        > If you have several ideas, open a separate issue for each one — that way each can be discussed,
+        > scoped and decided independently.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / motivation
+      description: What problem are you trying to solve? Which workflow is currently painful or impossible?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: How should HELIOS behave? Sketch the UI, the flow or the configuration option you have in mind.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches you thought about, and why they were not sufficient.
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Anything else that helps — screenshots, references to other tools, related discussions, …
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        ## Support bundle (optional)
+
+        If your suggestion relates to your specific setup (current configuration, installed services,
+        host environment), attaching a **support bundle ZIP** can help illustrate the context.
+        It is generated via the *Download support bundle* action in the HELIOS UI and contains
+        `compose.yaml`, `.env`, `config.yaml`, system info and recent container logs — passwords,
+        tokens and coordinates are anonymized automatically.
+
+        Drag & drop the ZIP into the comment box below if you think it would be useful. Not required.
