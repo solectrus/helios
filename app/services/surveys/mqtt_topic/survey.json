@@ -1,0 +1,96 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "MQTT-Topic",
+    "default": "MQTT mapping"
+  },
+  "clearInvisibleValues": "onHidden",
+  "pages": [
+    {
+      "name": "p_topic",
+      "title": {
+        "de": "Quelle",
+        "default": "Source"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "topic",
+          "title": {
+            "de": "MQTT-Topic",
+            "default": "MQTT topic"
+          },
+          "description": {
+            "de": "Das Topic, auf dem der Messwert veröffentlicht wird",
+            "default": "The topic where the measurement value is published"
+          },
+          "isRequired": true,
+          "placeholder": {
+            "de": "z.B. evcc/site/pv/1/Power",
+            "default": "e.g. evcc/site/pv/1/Power"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_extraction_method",
+      "title": {
+        "de": "Wertgewinnung",
+        "default": "Value extraction"
+      },
+      "elements": []
+    },
+    {
+      "name": "p_extraction_value",
+      "title": {
+        "de": "Wertgewinnung — Details",
+        "default": "Value extraction — details"
+      },
+      "elements": []
+    },
+    {
+      "name": "p_filters",
+      "visibleIf": "{type} = 'float' or {type} = 'integer'",
+      "title": {
+        "de": "Filter (optional)",
+        "default": "Filters (optional)"
+      },
+      "elements": []
+    },
+    {
+      "name": "p_target",
+      "title": {
+        "de": "InfluxDB-Ziel",
+        "default": "InfluxDB target"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "measurement",
+          "title": {
+            "de": "InfluxDB Measurement",
+            "default": "InfluxDB measurement"
+          },
+          "isRequired": true,
+          "placeholder": "my_measurement"
+        },
+        {
+          "type": "text",
+          "name": "field",
+          "title": {
+            "de": "InfluxDB Field",
+            "default": "InfluxDB field"
+          },
+          "isRequired": true,
+          "placeholder": "power"
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

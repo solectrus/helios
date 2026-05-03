@@ -18,6 +18,40 @@ de:
     show:
       title: 'Datenquellen'
       empty: 'Keine Datenquellen in Verwendung. Aktiviere Sensoren, um Quellen zu konfigurieren.'
+    mqtt_topics:
+      index:
+        title: 'Zusätzliche MQTT-Topics'
+        description: 'Weitere Topics abonnieren und in InfluxDB ablegen — ohne dass SOLECTRUS sie als Sensor anzeigt.'
+        empty: 'Keine zusätzlichen Topics konfiguriert.'
+        add: 'Topic hinzufügen'
+        back: 'Zurück zu den Datenquellen'
+        delete_confirm: 'Topic wirklich entfernen?'
+      table:
+        topic: 'Topic'
+        target: 'InfluxDB-Ziel'
+        extraction: 'Wertgewinnung'
+        actions: 'Aktionen'
+        edit: 'Topic bearbeiten'
+        delete: 'Topic entfernen'
+      extraction:
+        json_key: 'JSON-Schlüssel'
+        json_path: 'JSON-Path'
+        json_formula: 'JSON-Formel'
+        formula: 'Formel'
+        plain: 'unverändert'
+      filters:
+        label: 'Filter'
+        null_to_zero: 'NULL → 0'
+      target:
+        measurement: 'Measurement'
+        field: 'Field'
+        type: 'Typ'
+      inline:
+        label: 'Zusätzliche Topics'
+        count:
+          one: '%{count} Topic'
+          other: '%{count} Topics'
+          zero: 'Keine'
 
   advanced:
     show:

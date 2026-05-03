@@ -1,0 +1,109 @@
+<% if empty? %>
+  <div class="border-base-content/10 flex flex-col items-center gap-4 rounded-2xl border border-dashed px-6 py-16 text-center">
+    <div class="bg-base-200 text-base-content/60 flex h-12 w-12 items-center justify-center rounded-full">
+      <i aria-hidden="true" class="fa-solid fa-tower-broadcast text-lg"></i>
+    </div>
+
+    <p class="text-base-content/70 max-w-sm text-sm"><%= t('datasources.mqtt_topics.index.empty') %></p>
+  </div>
+<% else %>
+  <ul
+    class="border-base-content/10 divide-base-content/15 divide-y overflow-hidden rounded-2xl border"
+    data-controller="sensors-polling"
+    data-sensors-polling-url-value="<%= helpers.datasources_mqtt_topics_readings_path %>"
+    data-sensors-polling-enabled-value="<%= polling_enabled? %>"
+  >
+    <% topics.each_with_index do |topic, index| %>
+      <% extraction = extraction_for(topic) %>
+      <% filters = filters_for(topic) %>
+
+      <li class="group bg-base-100/40 hover:bg-base-100/80 transition-colors">
+        <div class="space-y-3 px-6 py-5">
+          <div class="flex items-start justify-between gap-4">
+            <h2 class="min-w-0 flex-1 font-mono text-base leading-tight font-medium break-all">
+              <%= topic['topic'] %>
+            </h2>
+
+            <div
+              class="
+                text-base-content/40 group-hover:text-base-content/80 flex shrink-0 items-center gap-0.5
+                transition-opacity
+              "
+            >
+              <%= link_to helpers.edit_datasources_mqtt_topic_path(index),
+                          class: "btn btn-ghost btn-xs btn-square",
+                          aria: { label: t('datasources.mqtt_topics.table.edit') },
+                          data: { turbo_frame: "setting-modal-content" } do %>
+                <i aria-hidden="true" class="fa-solid fa-pen-to-square"></i>
+              <% end %>
+
+              <%= button_to helpers.datasources_mqtt_topic_path(index),
+                            method: :delete,
+                            class: "btn btn-ghost btn-xs btn-square hover:text-error",
+                            aria: { label: t('datasources.mqtt_topics.table.delete') },
+                            data: { turbo_confirm: t('datasources.mqtt_topics.index.delete_confirm'), turbo_frame: "_top" } do %>
+                <i aria-hidden="true" class="fa-solid fa-trash-can"></i>
+              <% end %>
+            </div>
+          </div>
+
+          <% if extraction[:value] || filters.any? %>
+            <dl class="text-base-content/70 grid grid-cols-[7rem_1fr] gap-x-4 gap-y-1.5 text-sm">
+              <% if extraction[:value] %>
+                <dt class="text-base-content/40 self-baseline text-[10px] tracking-wider uppercase">
+                  <%= extraction[:label] %>
+                </dt>
+                <dd class="text-base-content/90 font-mono break-all"><%= extraction[:value] %></dd>
+              <% end %>
+
+              <% if filters.any? %>
+                <dt class="text-base-content/40 self-baseline text-[10px] tracking-wider uppercase">
+                  <%= t('datasources.mqtt_topics.filters.label') %>
+                </dt>
+                <dd class="text-base-content/90 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono">
+                  <% filters.each do |chip| %>
+                    <span><%= chip %></span>
+                  <% end %>
+                </dd>
+              <% end %>
+            </dl>
+          <% end %>
+
+          <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <i aria-hidden="true" class="fa-solid fa-arrow-right text-primary text-lg"></i>
+
+            <span class="inline-flex items-baseline gap-1.5">
+              <span class="text-base-content/40 text-[10px] tracking-wider uppercase">
+                <%= t('datasources.mqtt_topics.target.measurement') %>
+              </span>
+
+              <span class="text-base-content font-mono text-sm font-medium break-all"><%= topic['measurement'] %></span>
+            </span>
+
+            <span class="inline-flex items-baseline gap-1.5">
+              <span class="text-base-content/40 text-[10px] tracking-wider uppercase">
+                <%= t('datasources.mqtt_topics.target.field') %>
+              </span>
+
+              <span class="text-base-content font-mono text-sm font-medium break-all"><%= topic['field'] %></span>
+            </span>
+
+            <% if topic['type'].present? %>
+              <span class="inline-flex items-baseline gap-1.5">
+                <span class="text-base-content/40 text-[10px] tracking-wider uppercase">
+                  <%= t('datasources.mqtt_topics.target.type') %>
+                </span>
+
+                <span class="text-base-content font-mono text-sm font-medium"><%= topic['type'] %></span>
+              </span>
+            <% end %>
+
+            <div class="ml-auto">
+              <%= render MqttTopicsTable::ValueCell::Component.new(index: index, reading: reading_for(index)) %>
+            </div>
+          </div>
+        </div>
+      </li>
+    <% end %>
+  </ul>
+<% end %>

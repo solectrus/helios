@@ -38,5 +38,13 @@ module SettingSection
     def incomplete?
       configuration.incomplete_sources.include?(setting)
     end
+
+    def show_mqtt_topics_link?
+      setting == 'mqtt'
+    end
+
+    def mqtt_topics_count
+      configuration.mqtt_topics.size
+    end
   end
 end

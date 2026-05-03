@@ -14,7 +14,16 @@ Rails.application.routes.draw do
   resource :sensors, only: :show do
     resource :readings, only: :show, module: :sensors
   end
-  resource :datasources, only: :show
+  resource :datasources, only: :show do
+    scope module: :datasources do
+      namespace :mqtt_topics, path: 'mqtt-topics' do
+        resource :readings, only: :show
+      end
+      resources :mqtt_topics,
+                only: %i[index new create edit update destroy],
+                path: 'mqtt-topics'
+    end
+  end
   resource :advanced, only: :show, controller: 'advanced'
   resource :support, only: %i[new create]
 

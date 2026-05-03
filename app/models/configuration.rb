@@ -133,9 +133,12 @@ class Configuration # rubocop:disable Metrics/ClassLength
     (@data['sensors'] || {}).select { |_name, config| config['source'] == source.to_s }
   end
 
-  # Sources currently in use by at least one sensor
+  # Sources currently in use by at least one sensor — plus `mqtt` whenever
+  # standalone mappings exist, so the broker stays editable in the UI even
+  # when no HELIOS sensor consumes them.
   def active_sources
     used = (@data['sensors'] || {}).each_value.filter_map { |config| config['source'] }.to_set
+    used << 'mqtt' if mqtt_topics.any?
     ALL_SOURCES.select { |source| used.include?(source) }
   end
 
@@ -176,9 +179,32 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   # Standalone topics that mqtt-collector writes into InfluxDB without
   # feeding a HELIOS sensor. Stored under mqtt.mappings (mqtt-collector's
-  # native key).
+  # native key); addressed by zero-based index.
   def mqtt_topics
     Array(@data.dig('mqtt', 'mappings'))
+  end
+
+  def mqtt_topic(index)
+    mqtt_topics[index.to_i]
+  end
+
+  def add_mqtt_topic(data)
+    write_mqtt_topics(mqtt_topics + [sanitize_mqtt_topic(data)])
+  end
+
+  def update_mqtt_topic(index, data)
+    list = mqtt_topics.dup
+    return unless list[index.to_i]
+
+    list[index.to_i] = sanitize_mqtt_topic(data)
+    write_mqtt_topics(list)
+  end
+
+  def remove_mqtt_topic(index)
+    list = mqtt_topics.dup
+    return unless list.delete_at(index.to_i)
+
+    write_mqtt_topics(list)
   end
 
   # --- Source requirements ---
@@ -208,6 +234,12 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'shelly' => 'connection',
     'forecast' => 'forecast',
   }.freeze
+
+  MQTT_TOPIC_FIELDS = %w[
+    topic measurement field type
+    json_key json_path json_formula formula
+    min max null_to_zero
+  ].freeze
 
   def incomplete_sources
     @incomplete_sources ||= active_sources.select do |source|
@@ -367,6 +399,20 @@ class Configuration # rubocop:disable Metrics/ClassLength
   }.freeze
 
   private
+
+  def sanitize_mqtt_topic(data)
+    deep_unwrap(data).slice(*MQTT_TOPIC_FIELDS).compact_blank
+  end
+
+  def write_mqtt_topics(list)
+    @data['mqtt'] ||= {}
+    if list.empty?
+      @data['mqtt'].delete('mappings')
+    else
+      @data['mqtt']['mappings'] = list
+    end
+    save!
+  end
 
   # Recursively converts Configuration::Data (and any nested Data) back into
   # plain Hash/Array structures so YAML.safe_load can read them back.

@@ -40,6 +40,22 @@
           <% end %>
         <% end %>
       </div>
+
+      <% if show_mqtt_topics_link? %>
+        <%= link_to helpers.datasources_mqtt_topics_path,
+                    data: { turbo_frame: "_top" },
+                    class: "group border-base-content/10 text-base-content/70 hover:text-primary focus-visible:text-primary mt-2 flex items-center justify-between gap-2 border-t py-3 text-sm" do %>
+          <span><%= t('datasources.mqtt_topics.inline.label') %></span>
+
+          <span class="flex items-center gap-2">
+            <span class="text-base-content/50 group-hover:text-primary/80 group-focus-visible:text-primary/80 tabular-nums">
+              <%= t('datasources.mqtt_topics.inline.count', count: mqtt_topics_count) %>
+            </span>
+
+            <i class="fa-solid fa-chevron-right text-xs transition-transform duration-150 group-hover:translate-x-0.5"></i>
+          </span>
+        <% end %>
+      <% end %>
     </div>
   </div>
 </div>

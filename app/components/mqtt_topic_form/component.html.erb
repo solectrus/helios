@@ -1,0 +1,16 @@
+<%= helpers.turbo_frame_tag "setting-modal-content" do %>
+  <%= form_with url: form_url,
+                method: form_method,
+                id: "mqtt-topic-form",
+                data: { turbo_frame: "_top" } do |f| %>
+    <div
+      data-controller="survey"
+      data-survey-url-value="<%= survey_url %>"
+      data-survey-form-id-value="mqtt-topic-form"
+      data-survey-field-name-value="data"
+      data-survey-initial-data-value="<%= setting_data_json %>"
+    >
+      <div data-survey-target="container" class="bg-base-100 rounded-lg"></div>
+    </div>
+  <% end %>
+<% end %>

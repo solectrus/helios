@@ -10,11 +10,21 @@ module SensorReadings
   end
 
   def fetch_readings(configuration:)
-    sensor_mappings = configuration.effective_sensor_mappings
-    return {} unless influxdb_running?
-    return {} if sensor_mappings.blank?
+    fetch_readings_for(configuration.effective_sensor_mappings, configuration:)
+  end
 
-    InfluxDb::Client.from_configuration(configuration).query_all_latest(sensor_mappings)
+  def fetch_topic_readings(configuration:)
+    mappings = configuration.mqtt_topics.each_with_index.to_h do |topic, index|
+      [index.to_s, "#{topic['measurement']}:#{topic['field']}"]
+    end
+    fetch_readings_for(mappings, configuration:)
+  end
+
+  def fetch_readings_for(mappings, configuration:)
+    return {} unless influxdb_running?
+    return {} if mappings.blank?
+
+    InfluxDb::Client.from_configuration(configuration).query_all_latest(mappings)
   rescue InfluxDb::ConnectionError => e
     Rails.logger.warn("InfluxDB query failed: #{e.message}")
     {}

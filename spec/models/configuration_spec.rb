@@ -66,6 +66,84 @@ RSpec.describe Configuration do
     end
   end
 
+  describe 'mqtt_topics CRUD' do
+    let(:basic_topic) do
+      { 'topic' => 'sensors/power', 'measurement' => 'house', 'field' => 'power', 'type' => 'integer' }
+    end
+
+    it 'returns an empty list when no topics are configured' do
+      expect(described_class.current.mqtt_topics).to eq([])
+    end
+
+    it 'persists added topics under mqtt.mappings' do
+      config = described_class.current
+      config.add_mqtt_topic(basic_topic)
+
+      expect(config.mqtt_topics).to contain_exactly(basic_topic)
+    end
+
+    it 'returns a single topic by index' do
+      config = described_class.current
+      config.add_mqtt_topic(basic_topic)
+
+      expect(config.mqtt_topic(0)).to eq(basic_topic)
+    end
+
+    it 'updates an existing topic by index' do
+      config = described_class.current
+      config.add_mqtt_topic(basic_topic)
+      config.update_mqtt_topic(0, basic_topic.merge('field' => 'energy'))
+
+      expect(config.mqtt_topic(0)['field']).to eq('energy')
+    end
+
+    it 'leaves the list untouched when updating an unknown index' do
+      config = described_class.current
+      expect { config.update_mqtt_topic(99, basic_topic) }.not_to(change { config.mqtt_topics })
+    end
+
+    it 'removes a topic by index' do
+      config = described_class.current
+      config.add_mqtt_topic(basic_topic)
+      config.remove_mqtt_topic(0)
+
+      expect(config.mqtt_topics).to be_empty
+    end
+
+    it 'drops the mappings key entirely once empty' do
+      config = described_class.current
+      config.add_mqtt_topic(basic_topic)
+      config.remove_mqtt_topic(0)
+
+      expect(YAML.load_file(described_class.path)['mqtt']).not_to include('mappings')
+    end
+
+    it 'strips unknown keys on save' do
+      config = described_class.current
+      config.add_mqtt_topic(basic_topic.merge('attacker' => 'value'))
+
+      expect(config.mqtt_topic(0)).not_to include('attacker')
+    end
+  end
+
+  describe '#active_sources' do
+    it 'lists sources used by at least one sensor' do
+      with_config_yaml('sensors' => { 'inverter_power' => { 'source' => 'senec' } })
+      expect(described_class.current.active_sources).to eq(%w[senec])
+    end
+
+    it 'includes mqtt when standalone mappings are configured without an MQTT sensor' do
+      mappings = [{ 'topic' => 't', 'measurement' => 'm', 'field' => 'f' }]
+      with_config_yaml('mqtt' => { 'mqtt_host' => 'broker', 'mappings' => mappings })
+      expect(described_class.current.active_sources).to eq(%w[mqtt])
+    end
+
+    it 'omits mqtt when only the broker is set without mappings or sensors' do
+      with_config_yaml('mqtt' => { 'mqtt_host' => 'broker' })
+      expect(described_class.current.active_sources).to be_empty
+    end
+  end
+
   describe '#update' do
     it 'creates a new singleton entry' do
       config = described_class.current

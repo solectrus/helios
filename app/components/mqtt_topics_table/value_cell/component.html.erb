@@ -1,0 +1,13 @@
+<div id="<%= dom_id %>" class="inline-flex items-baseline">
+  <% if timestamp_iso %>
+    <span
+      class="tooltip tooltip-left cursor-default before:text-xs before:normal-case"
+      data-controller="relative-time"
+      data-relative-time-datetime-value="<%= timestamp_iso %>"
+    >
+      <span class="font-mono text-lg font-semibold tabular-nums <%= freshness_class %>"><%= formatted_value %></span>
+    </span>
+  <% else %>
+    <span class="font-mono text-lg font-semibold tabular-nums <%= freshness_class %>"><%= formatted_value %></span>
+  <% end %>
+</div>
