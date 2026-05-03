@@ -63,8 +63,6 @@ module Import
         ELECTRICITY_PRICE FEED_IN_TARIFF
       ].freeze
 
-      INTERPOLATION_RE = /\$\{([A-Z_][A-Z0-9_]*)\}/
-
       # HELIOS-core env vars that belong to the helios container only —
       # never attach them to an unmanaged service even if it uses env_file.
       HELIOS_CORE_ENV_KEYS = %w[ADMIN_PASSWORD SECRET_KEY_BASE].freeze

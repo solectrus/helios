@@ -74,6 +74,26 @@ forecasts, and a Tibber price feed. Anonymized but otherwise untouched.
   active, `:0.20.2` and `:develop` commented). The importer follows the
   active line; comments are not preserved on re-export (acceptable per
   CLAUDE.md).
+- **Custom bind-mount paths preserved** — InfluxDB, Redis, Ingest, and
+  Postgres source the host side of their data volume from
+  `${BASE_DIR}/...` outside the stack directory, either inline in
+  `volumes:` or via `*_VOLUME_PATH` env vars that themselves use
+  `${VAR}` interpolation (e.g. `INGEST_VOLUME_PATH=${BASE_DIR}/ingest`).
+  The importer resolves the chain against `.env` and stores the
+  resulting absolute path as `<section>.volume_path` so the regenerated
+  stack keeps pointing at the existing data dir.
+- **Postgres PGDATA-subpath mount transformed to parent-mount** — this
+  fixture mounts `${BASE_DIR}/postgres/16/data/` directly at the PGDATA
+  container path (`/var/lib/postgresql/data`). HELIOS bind-mounts the
+  parent (`/var/lib/postgresql`) and lets PGDATA point into a `data/`
+  subdir, so the importer strips the trailing `/data` segment from the
+  host source: `volume_path: ${BASE_DIR}/postgres/16`, and the preserved
+  `pgdata` env var still resolves to the same bytes on disk.
+- **Service name `postgres:` aliased to `postgresql`** — the source
+  compose names the service `postgres:`, not the canonical
+  `postgresql:`. Bind-mount detection follows the same image-prefix
+  alias as `SERVICE_IMAGE_PREFIXES` so the volume lookup works under
+  the renamed service.
 - **Custom healthchecks replaced by HELIOS defaults** — e.g. influxdb's
   curl-based ping is replaced by `influx ping`. Deliberate: HELIOS uses
   the native CLI bundled with the image instead of requiring `curl`,
@@ -100,11 +120,6 @@ managed services. Diffing `compose.yaml.bak` against the regenerated
   labels and were attached to a second `traefik` network. After regen:
   labels gone, services exposed via direct `ports:` on the host instead
   of `expose:`. Breaks reverse-proxy routing.
-- **Custom bind-mount paths** — InfluxDB / Postgres / Redis pointed at
-  `${BASE_DIR}/...` outside the stack directory. HELIOS rewrites these
-  to relative `./service/...` paths (per ADR-0003). After regen,
-  containers mount empty directories — the original data still exists
-  on disk but is no longer visible to the running container.
 - **Backup / dump volumes** — `${HOST_DUMP}:${CONTAINER_DUMP}` on
   postgres / influxdb / redis is dropped entirely.
 - **`deploy.resources.limits` on managed services** — `cpus` / `memory`

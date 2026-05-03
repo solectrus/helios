@@ -20,6 +20,7 @@ postgresql:
   image: postgres:16.11-trixie
   password: my-postgres-password
   pgdata: "/var/lib/postgresql/data/"
+  volume_path: "/home/user2/docker/solectrus/postgres/16"
 influxdb:
   bucket: my-solectrus-bucket
   image: influxdb:2.8
@@ -27,8 +28,10 @@ influxdb:
   password: my-influx-password
   token: my-influx-read-token
   use_hashed_tokens: 'true'
+  volume_path: "/home/user2/docker/solectrus/influxdb/data"
 redis:
   image: redis:8.4-bookworm
+  volume_path: "/home/user2/docker/solectrus/redis"
 watchtower: {}
 forecast:
   forecast: pvnode
@@ -279,6 +282,7 @@ sensors:
 ingest:
   image: ghcr.io/solectrus/ingest:develop
   retention_hours: '24'
+  volume_path: "/home/user2/docker/solectrus/ingest"
 _unmanaged:
   env_vars:
     BASE_DIR: "/home/user2/docker/solectrus"
