@@ -81,7 +81,7 @@ mqtt:
     topic: espaltherma/ATTR
     type: float
   - field: water_pressure
-    json_path: "$$.Water pressure"
+    json_path: "$.Water pressure"
     measurement: ALTHERMA
     topic: espaltherma/ATTR
     type: float

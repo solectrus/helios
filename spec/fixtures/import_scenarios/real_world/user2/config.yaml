@@ -65,14 +65,14 @@ senec:
 mqtt:
   mappings:
   - field: energy_in
-    json_formula: "{$$.aenergy.total}/1000.0"
+    json_formula: "{$.aenergy.total}/1000.0"
     max: '999999'
     measurement: ac_bedroom
     min: '0'
     topic: ac_bedroom/status/switch:0
     type: float
   - field: energy_in
-    json_formula: "{$$.total_act_energy}/1000.0"
+    json_formula: "{$.total_act_energy}/1000.0"
     max: '999999'
     measurement: dish_washer
     min: '0'
@@ -121,7 +121,7 @@ sensors:
   custom_power_04:
     field: power
     measurement: ac_veranda
-    mqtt_json_path: "$$.ENERGY.Power"
+    mqtt_json_path: "$.ENERGY.Power"
     mqtt_max: '2300'
     mqtt_min: '0'
     mqtt_payload_type: float
@@ -130,7 +130,7 @@ sensors:
   custom_power_05:
     field: power
     measurement: ac_living_room
-    mqtt_json_path: "$$.ENERGY.Power"
+    mqtt_json_path: "$.ENERGY.Power"
     mqtt_max: '2300'
     mqtt_min: '0'
     mqtt_payload_type: float
@@ -143,7 +143,7 @@ sensors:
   custom_power_07:
     field: power
     measurement: microwave
-    mqtt_json_path: "$$.ENERGY.Power"
+    mqtt_json_path: "$.ENERGY.Power"
     mqtt_max: '2300'
     mqtt_min: '0'
     mqtt_payload_type: float
@@ -157,7 +157,7 @@ sensors:
   custom_power_09:
     field: power
     measurement: washing_machine
-    mqtt_json_path: "$$.ENERGY.Power"
+    mqtt_json_path: "$.ENERGY.Power"
     mqtt_max: '2300'
     mqtt_min: '0'
     mqtt_payload_type: float
@@ -166,7 +166,7 @@ sensors:
   custom_power_10:
     field: power
     measurement: dryer
-    mqtt_json_path: "$$.ENERGY.Power"
+    mqtt_json_path: "$.ENERGY.Power"
     mqtt_max: '3450'
     mqtt_min: '0'
     mqtt_payload_type: float
@@ -184,7 +184,7 @@ sensors:
   custom_power_12:
     field: power
     measurement: multimedia
-    mqtt_json_path: "$$.ENERGY.Power"
+    mqtt_json_path: "$.ENERGY.Power"
     mqtt_max: '2300'
     mqtt_min: '0'
     mqtt_payload_type: float

@@ -17,10 +17,21 @@ module Import
 
       private
 
-      # Environment of a specific service (memoized per service name)
+      # Environment of a specific service (memoized per service name).
+      #
+      # `docker compose config` re-emits literal `$` as `$$` in its output so
+      # the JSON could be re-fed to compose without re-interpreting variable
+      # references. We undo that here to recover the actual runtime string the
+      # container would see (e.g. JSONPath `$.foo` instead of `$$.foo`).
       def service_env(name)
         @service_envs ||= {}
-        @service_envs[name] ||= @reader.service(name)&.dig('environment') || {}
+        @service_envs[name] ||= unescape_compose_dollars(
+          @reader.service(name)&.dig('environment') || {},
+        )
+      end
+
+      def unescape_compose_dollars(env)
+        env.transform_values { |v| v.is_a?(String) ? v.gsub('$$', '$') : v }
       end
 
       def csv_split(value)
