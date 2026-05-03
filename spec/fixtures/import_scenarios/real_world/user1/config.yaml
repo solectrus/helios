@@ -99,50 +99,62 @@ sensors:
   custom_power_01:
     field: power
     measurement: Fridge
+    name: Fridge
     source: external
   custom_power_02:
     field: power
     measurement: Washer
+    name: Washer
     source: external
   custom_power_03:
     field: power
     measurement: Dishwasher
+    name: Dishwasher
     source: external
   custom_power_04:
     field: power
     measurement: Bosch
+    name: Bosch
     source: external
   custom_power_05:
     field: power
     measurement: Foo
+    name: Foo
     source: external
   custom_power_06:
     field: power
     measurement: Bunker
+    name: Bunker
     source: external
   custom_power_07:
     field: power
     measurement: ArcadeBox
+    name: ArcadeBox
     source: external
   custom_power_08:
     field: power
     measurement: ToastMaster
+    name: ToastMaster
     source: external
   custom_power_09:
     field: power
     measurement: PC3
+    name: PC3
     source: external
   custom_power_10:
     field: power
     measurement: Drucker
+    name: Drucker
     source: external
   custom_power_11:
     field: power
     measurement: SockEater
+    name: SockEater
     source: external
   custom_power_12:
     field: power
     measurement: JungleSprinkler
+    name: JungleSprinkler
     source: external
   grid_export_limit:
     field: power_ratio

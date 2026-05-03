@@ -104,10 +104,12 @@ sensors:
     exclude_from_house_power: true
     field: power
     measurement: heatpump
+    name: heatpump
     source: external
   custom_power_02:
     field: power
     measurement: freezer
+    name: freezer
     source: external
   custom_power_03:
     field: power
@@ -117,6 +119,7 @@ sensors:
     mqtt_min: '0'
     mqtt_payload_type: float
     mqtt_topic: ac_bedroom/status/switch:0
+    name: ac_bedroom
     source: mqtt
   custom_power_04:
     field: power
@@ -126,6 +129,7 @@ sensors:
     mqtt_min: '0'
     mqtt_payload_type: float
     mqtt_topic: ac_veranda/tele/SENSOR
+    name: ac_veranda
     source: mqtt
   custom_power_05:
     field: power
@@ -135,10 +139,12 @@ sensors:
     mqtt_min: '0'
     mqtt_payload_type: float
     mqtt_topic: ac_living_room/tele/SENSOR
+    name: ac_living_room
     source: mqtt
   custom_power_06:
     field: power
     measurement: fridge_basement
+    name: fridge_basement
     source: external
   custom_power_07:
     field: power
@@ -148,11 +154,13 @@ sensors:
     mqtt_min: '0'
     mqtt_payload_type: float
     mqtt_topic: microwave/tele/SENSOR
+    name: microwave
     source: mqtt
   custom_power_08:
     exclude_from_house_power: true
     field: power
     measurement: well_pump
+    name: well_pump
     source: external
   custom_power_09:
     field: power
@@ -162,6 +170,7 @@ sensors:
     mqtt_min: '0'
     mqtt_payload_type: float
     mqtt_topic: washing_machine/tele/SENSOR
+    name: washing_machine
     source: mqtt
   custom_power_10:
     field: power
@@ -171,6 +180,7 @@ sensors:
     mqtt_min: '0'
     mqtt_payload_type: float
     mqtt_topic: dryer/tele/SENSOR
+    name: dryer
     source: mqtt
   custom_power_11:
     field: power
@@ -180,6 +190,7 @@ sensors:
     mqtt_min: '0'
     mqtt_payload_type: float
     mqtt_topic: dish_washer/status/em1:0
+    name: dish_washer
     source: mqtt
   custom_power_12:
     field: power
@@ -189,11 +200,13 @@ sensors:
     mqtt_min: '0'
     mqtt_payload_type: float
     mqtt_topic: multimedia/tele/SENSOR
+    name: multimedia
     source: mqtt
   custom_power_13:
     exclude_from_house_power: true
     field: power
     measurement: anker-akku
+    name: anker-akku
     source: external
   grid_export_limit:
     source: senec

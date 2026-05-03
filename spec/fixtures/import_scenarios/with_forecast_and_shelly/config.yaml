@@ -69,7 +69,6 @@ sensors:
   heatpump_power:
     field: power
     measurement: HeatPump
-    name: HeatPump
     shelly_connection: local
     shelly_host: shelly-hp.local
     shelly_interval: '5'

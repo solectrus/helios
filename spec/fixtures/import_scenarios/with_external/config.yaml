@@ -55,18 +55,22 @@ sensors:
   custom_power_01:
     field: power
     measurement: custom_01
+    name: custom_01
     source: external
   custom_power_02:
     field: power
     measurement: custom_02
+    name: custom_02
     source: external
   custom_power_03:
     field: power
     measurement: custom_03
+    name: custom_03
     source: external
   custom_power_04:
     field: power
     measurement: custom_04
+    name: custom_04
     source: external
   grid_export_limit:
     field: export_limit

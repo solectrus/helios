@@ -40,11 +40,23 @@ module Import
 
           data = build_sensor_data(sensor_name, source)
           data['exclude_from_house_power'] = true if @excluded_sensors.include?(sensor_name)
+          prefill_custom_label!(data, sensor_name)
           config.update_sensor(sensor_name, data)
         end
       end
 
       private
+
+      # Pre-fill the HELIOS-only label for custom_power_* sensors with the
+      # measurement, which is the user-chosen device label in the source stack
+      # (e.g. "Gefrierschrank", "TERRASSE"). Saves the user from re-typing it.
+      def prefill_custom_label!(data, sensor_name)
+        return unless sensor_name.start_with?('custom_power_')
+        return if data['name'].present?
+
+        data['name'] = data['measurement'].presence
+        data.compact!
+      end
 
       # A concrete MQTT mapping (MAPPING_N writing into this sensor's
       # measurement:field) wins over SENEC defaults — legacy installs route
@@ -122,7 +134,6 @@ module Import
 
       def merge_shelly_device_fields!(data, device)
         device_data = device[:data]
-        data['name'] = device_data['name'] || device[:name]
         data['shelly_connection'] = device_data['shelly_device_id'].present? ? 'cloud' : 'local'
         data['shelly_host'] = device_data['shelly_host']
         data['shelly_interval'] = device_data['shelly_interval']

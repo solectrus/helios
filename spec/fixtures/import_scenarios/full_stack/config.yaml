@@ -173,7 +173,6 @@ sensors:
     exclude_from_house_power: true
     field: power
     measurement: Consumer
-    name: Consumer
     shelly_connection: local
     shelly_host: shelly-heatpump.fritz.box
     shelly_interval: '5'

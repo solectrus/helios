@@ -23,7 +23,7 @@ module Surveys
         inject_source_choices!(data)
         inject_mqtt_fields!(data)
         MappingInjector.new(sensor_name).call(data)
-        inject_name_page!(data) if custom_power_sensor?
+        inject_label_page!(data) if custom_power_sensor?
         inject_shelly_connection_page!(data)
         inject_shelly_invert_power!(data) if invert_power_relevant?
         inject_house_power_page!(data) if exclude_from_house_power_relevant?
@@ -82,28 +82,23 @@ module Surveys
         { 'value' => source, 'text' => SOURCE_LABELS[source] || source }
       end
 
-      def inject_name_page!(data)
-        name_page = {
+      def inject_label_page!(data)
+        label_page = {
           'name' => 'p_name',
-          'title' => self.class.localized(en: 'Display name', de: 'Anzeigename'),
-          'elements' => [name_element],
+          'title' => self.class.localized(en: 'Label', de: 'Bezeichnung'),
+          'elements' => [label_element],
         }
-        data['pages'].insert(1, name_page)
+        data['pages'].insert(1, label_page)
       end
 
-      def name_element
+      def label_element
         {
           'type' => 'text',
           'name' => 'name',
           'title' => self.class.localized(
-            en: 'Name for this consumer',
-            de: 'Name für diesen Verbraucher',
+            en: 'Label for this sensor',
+            de: 'Bezeichnung für diesen Sensor',
           ),
-          'description' => self.class.localized(
-            en: 'Displayed as label in the dashboard',
-            de: 'Wird im Dashboard als Bezeichnung angezeigt',
-          ),
-          'isRequired' => true,
           'placeholder' => self.class.localized(en: 'e.g. Fridge', de: 'z.B. Kühlschrank'),
         }
       end

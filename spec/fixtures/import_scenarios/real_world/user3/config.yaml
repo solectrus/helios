@@ -85,6 +85,7 @@ sensors:
     mqtt_json_key: power
     mqtt_payload_type: float
     mqtt_topic: zigbee2mqtt/Gefrierschrank
+    name: Gefrierschrank
     source: mqtt
   custom_power_02:
     field: power
@@ -92,6 +93,7 @@ sensors:
     mqtt_json_key: power
     mqtt_payload_type: float
     mqtt_topic: zigbee2mqtt/Waschmaschine
+    name: Waschmaschine
     source: mqtt
   custom_power_03:
     field: power
@@ -99,6 +101,7 @@ sensors:
     mqtt_json_key: power
     mqtt_payload_type: float
     mqtt_topic: zigbee2mqtt/Trockner
+    name: Trockner
     source: mqtt
   custom_power_04:
     field: power
@@ -106,6 +109,7 @@ sensors:
     mqtt_json_key: power
     mqtt_payload_type: float
     mqtt_topic: zigbee2mqtt/Kuehlschrank
+    name: Kuehlschrank
     source: mqtt
   custom_power_05:
     field: power
@@ -113,6 +117,7 @@ sensors:
     mqtt_json_key: power
     mqtt_payload_type: float
     mqtt_topic: zigbee2mqtt/Heissluftfritteuse
+    name: Heissluftfritteuse
     source: mqtt
   custom_power_06:
     field: power
@@ -120,6 +125,7 @@ sensors:
     mqtt_json_key: power
     mqtt_payload_type: float
     mqtt_topic: zigbee2mqtt/Spuelmaschine
+    name: Spuelmaschine
     source: mqtt
   custom_power_07:
     field: power
@@ -127,6 +133,7 @@ sensors:
     mqtt_json_key: power
     mqtt_payload_type: float
     mqtt_topic: zigbee2mqtt/Wasserkocher
+    name: Wasserkocher
     source: mqtt
   custom_power_08:
     field: power
@@ -134,6 +141,7 @@ sensors:
     mqtt_json_key: power
     mqtt_payload_type: float
     mqtt_topic: zigbee2mqtt/Kaffeemaschine
+    name: Kaffeemaschine
     source: mqtt
   custom_power_09:
     field: power
@@ -141,6 +149,7 @@ sensors:
     mqtt_json_key: power
     mqtt_payload_type: float
     mqtt_topic: zigbee2mqtt/Backofen
+    name: Backofen
     source: mqtt
   custom_power_10:
     field: power
@@ -148,6 +157,7 @@ sensors:
     mqtt_json_key: power
     mqtt_payload_type: float
     mqtt_topic: zigbee2mqtt/Buegeleisen
+    name: Buegeleisen
     source: mqtt
   custom_power_11:
     field: power
@@ -170,6 +180,7 @@ sensors:
     measurement: IT
     mqtt_payload_type: float
     mqtt_topic: homeassistant/sensor/it_gerate/state
+    name: IT
     source: mqtt
   custom_power_14:
     field: power_a
@@ -192,24 +203,28 @@ sensors:
     measurement: Multimedia_Geraete
     mqtt_payload_type: float
     mqtt_topic: homeassistant/sensor/multimedia_gerate/state
+    name: Multimedia_Geraete
     source: mqtt
   custom_power_17:
     field: power
     measurement: summe_kameras
     mqtt_payload_type: float
     mqtt_topic: homeassistant/sensor/summe_kameras/state
+    name: summe_kameras
     source: mqtt
   custom_power_18:
     field: power
     measurement: senec_eigenverbrauch
     mqtt_payload_type: float
     mqtt_topic: homeassistant/sensor/senec_eigenverbrauch/state
+    name: senec_eigenverbrauch
     source: mqtt
   custom_power_19:
     field: power
     measurement: summe_l2_terrasse_garage
     mqtt_payload_type: float
     mqtt_topic: homeassistant/sensor/summe_l2_terrasse_garage/state
+    name: summe_l2_terrasse_garage
     source: mqtt
   grid_export_limit:
     source: senec

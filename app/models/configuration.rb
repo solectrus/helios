@@ -295,14 +295,6 @@ class Configuration # rubocop:disable Metrics/ClassLength
     end
   end
 
-  # Device names for each sensor (display name or sensor name)
-  def sensor_device_names
-    enabled_sensors.each_with_object({}) do |name, names|
-      config = sensor_config(name)
-      names[name] = config.name.presence || name
-    end
-  end
-
   # Sensor names excluded from house power calculation
   def excluded_from_house_power
     enabled_sensors.select do |name|
