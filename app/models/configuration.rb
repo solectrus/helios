@@ -254,9 +254,11 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # Ingest recalculates house_power when a balcony power plant feeds into
   # the home grid and distorts the inverter-reported value. It runs alongside
   # the local InfluxDB only — in collectors_only mode there is nothing to
-  # recalculate.
+  # recalculate. A balcony sensor activates ingest automatically; an
+  # explicitly configured `ingest:` section keeps it deployed even without
+  # a balcony sensor (testing or pre-balcony staging).
   def ingest_required?
-    !collectors_only? && balcony_sensors.any?
+    !collectors_only? && (balcony_sensors.any? || ingest.present?)
   end
 
   # --- Deployment mode ---
