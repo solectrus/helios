@@ -101,17 +101,39 @@ module Import
       ].compact
     end
 
-    # The imported stack has an ingest service and at least one individual
-    # inverter sensor we can flag as balcony power plant. The highest-numbered
-    # sensor wins — main roof inverters are typically the lowest slot;
-    # balcony generators get added later.
+    # A balcony generator feeds a different InfluxDB measurement (e.g.
+    # `Garage:`, `anker-akku:`) than the main roof inverter. The
+    # highest-numbered populated slot wins; with a single populated slot the
+    # user is treated as balcony-only.
     def balcony_sensor_name
-      return @balcony_sensor_name if defined?(@balcony_sensor_name)
+      @balcony_sensor_name ||= detect_balcony_sensor
+    end
 
-      @balcony_sensor_name =
-        if @reader.services.key?('ingest')
-          SensorRegistry::BALCONY_CAPABLE_SENSORS.rfind { |name| sensors_data.key?(name) }
-        end
+    def detect_balcony_sensor
+      return nil unless split_inverter_present?
+      return nil if mppt_only?
+
+      populated_balcony_sensors.last
+    end
+
+    # Multiple `inverter_power_N` slots sharing a single InfluxDB measurement
+    # are the MPPTs of one multi-string inverter (e.g. SENEC X3), not a
+    # separate balcony generator.
+    def mppt_only?
+      populated_balcony_sensors.size > 1 && populated_measurements.size == 1
+    end
+
+    def populated_measurements
+      populated_balcony_sensors.map { |name| sensors_data[name].to_s.split(':', 2).first }.uniq
+    end
+
+    def split_inverter_present?
+      @reader.services.key?('ingest') && populated_balcony_sensors.any?
+    end
+
+    def populated_balcony_sensors
+      @populated_balcony_sensors ||=
+        SensorRegistry::BALCONY_CAPABLE_SENSORS.select { |name| sensors_data[name].present? }
     end
 
     # --- Result building ---
@@ -498,7 +520,7 @@ module Import
     # --- Ingest ---
 
     def ingest_section_data
-      return unless balcony_sensor_name
+      return unless split_inverter_present?
 
       ingest_env = service_env('ingest')
       image_data_for('ingest').merge(

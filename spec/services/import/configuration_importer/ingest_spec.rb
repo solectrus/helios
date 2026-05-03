@@ -134,6 +134,62 @@ RSpec.describe 'Import::ConfigurationImporter Ingest handling' do
     end
   end
 
+  context 'with an Ingest service and a multi-MPPT inverter (shared measurement)' do
+    let(:stack_reader) do
+      stub_stack_reader({
+                          'dashboard' => {
+                            'environment' => {
+                              'INFLUX_SENSOR_INVERTER_POWER_1' => 'SENEC:mpp1_power',
+                              'INFLUX_SENSOR_INVERTER_POWER_2' => 'SENEC:mpp2_power',
+                              'INFLUX_SENSOR_INVERTER_POWER_3' => 'SENEC:mpp3_power',
+                              'INFLUX_SENSOR_HOUSE_POWER' => 'SENEC:house_power',
+                            },
+                          },
+                          'ingest' => {
+                            'image' => 'ghcr.io/solectrus/ingest:latest',
+                            'environment' => { 'RETENTION_HOURS' => '48' },
+                          },
+                        })
+    end
+
+    it 'recognizes the slots as one multi-string inverter, not a balcony generator' do
+      config = importer.import!
+      expect(config.sensor_config('inverter_power_3').is_balcony).to be_nil
+    end
+
+    it 'still imports the ingest section (split inverters present, even if no balcony)' do
+      expect(importer.result[:ingest]).to include('image' => 'ghcr.io/solectrus/ingest:latest')
+    end
+  end
+
+  context 'with an Ingest service and a multi-string inverter plus a balcony generator' do
+    let(:stack_reader) do
+      stub_stack_reader({
+                          'dashboard' => {
+                            'environment' => {
+                              'INFLUX_SENSOR_INVERTER_POWER_1' => 'SENEC:mpp1_power',
+                              'INFLUX_SENSOR_INVERTER_POWER_2' => 'SENEC:mpp2_power',
+                              'INFLUX_SENSOR_INVERTER_POWER_3' => 'Garage:power',
+                              'INFLUX_SENSOR_HOUSE_POWER' => 'SENEC:house_power',
+                            },
+                          },
+                          'ingest' => {
+                            'image' => 'ghcr.io/solectrus/ingest:latest',
+                            'environment' => {},
+                          },
+                        })
+    end
+
+    it 'flags the highest-numbered slot (different measurement) as balcony' do
+      config = importer.import!
+      expect(config.sensor_config('inverter_power_3').is_balcony).to be true
+    end
+
+    it 'imports the ingest section' do
+      expect(importer.result[:ingest]).to include('image' => 'ghcr.io/solectrus/ingest:latest')
+    end
+  end
+
   context 'with an Ingest service but no individual inverter sensors' do
     let(:stack_reader) do
       stub_stack_reader({
