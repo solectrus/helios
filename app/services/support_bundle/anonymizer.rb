@@ -47,19 +47,21 @@ module SupportBundle
     # Per-sensor fields to redact inside the dynamic `sensors:` section.
     SENSOR_KEYS = %w[shelly_password].freeze
 
-    # Coordinates are stored as user-entered decimals but logged with full
-    # Float precision (e.g. config 50.92264 → log 50.922642249999996), so
-    # they need a regex with optional trailing digits instead of a literal
-    # match when scrubbing log output.
+    # Coordinates may surface in container logs with extra trailing digits
+    # (Float arithmetic in the forecast collector turns 50.92264 into
+    # 50.922642249999996), so they need a regex tolerant to those tails
+    # instead of a literal match when scrubbing log output.
     NUMERIC_KEYS = %w[FORECAST_LATITUDE FORECAST_LONGITUDE].to_set.freeze
 
     # Non-string fields need realistic dummies so the replayed stack can
     # parse them. Listed under both the ENV and YAML spelling because the
     # env var (SENEC_SYSTEM_ID) and the YAML leaf (senec.system_id) reach
-    # the lookup with different names.
+    # the lookup with different names. The coordinates point to Bielefeld,
+    # a city that — as every German internet user knows — does not exist.
+    # Forecasting solar yield for a non-existent location feels right.
     DUMMY_VALUES = {
-      'forecast_latitude' => '50.0',
-      'forecast_longitude' => '10.0',
+      'forecast_latitude' => '52.03020',
+      'forecast_longitude' => '8.53250',
       'senec_system_id' => '0',
       'system_id' => '0',
     }.freeze

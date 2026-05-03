@@ -18,8 +18,8 @@ RSpec.describe SupportBundle::Anonymizer do
         SENEC_SYSTEM_ID=12345
         SHELLY_AUTH_KEY=abc123
         SHELLY_PASSWORD=shellypw,shellypw2
-        FORECAST_LATITUDE=50.92264
-        FORECAST_LONGITUDE=6.407
+        FORECAST_LATITUDE=52.51627
+        FORECAST_LONGITUDE=13.37774
         FORECAST_SOLAR_APIKEY=solar-key
         SOLCAST_APIKEY=solcast-key
         PVNODE_APIKEY=pvnode-key
@@ -36,8 +36,8 @@ RSpec.describe SupportBundle::Anonymizer do
     it 'uses realistic dummies for non-string env variables' do
       result = described_class.anonymize_env_style(all_secrets_env)
 
-      expect(result).to include('FORECAST_LATITUDE=50.0')
-      expect(result).to include('FORECAST_LONGITUDE=10.0')
+      expect(result).to include('FORECAST_LATITUDE=52.03020')
+      expect(result).to include('FORECAST_LONGITUDE=8.53250')
       expect(result).to include('SENEC_SYSTEM_ID=0')
     end
 
@@ -114,16 +114,16 @@ RSpec.describe SupportBundle::Anonymizer do
     it 'redacts forecast coordinates and leaves other forecast fields alone' do
       yaml = <<~YAML
         forecast:
-          forecast_latitude: '50.92264'
-          forecast_longitude: '6.407'
+          forecast_latitude: '52.51627'
+          forecast_longitude: '13.37774'
           forecast_roofs: '1'
       YAML
 
       parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
 
       expect(parsed['forecast']).to eq(
-        'forecast_latitude' => '50.0',
-        'forecast_longitude' => '10.0',
+        'forecast_latitude' => '52.03020',
+        'forecast_longitude' => '8.53250',
         'forecast_roofs' => '1',
       )
     end
@@ -256,8 +256,8 @@ RSpec.describe SupportBundle::Anonymizer do
   describe '.anonymize_text' do
     let(:env) do
       <<~ENV
-        FORECAST_LATITUDE=50.92264
-        FORECAST_LONGITUDE=6.407
+        FORECAST_LATITUDE=52.51627
+        FORECAST_LONGITUDE=13.37774
         INFLUX_TOKEN=NWD3vfbwdz8kKXiz
         SENEC_PASSWORD=s3cretpw
         TZ=Europe/Berlin
@@ -267,25 +267,31 @@ RSpec.describe SupportBundle::Anonymizer do
     end
     let(:redactions) { described_class.log_redactions(env) }
 
-    it 'replaces coordinates that are logged with extra Float precision' do
+    it 'replaces coordinates inside a forecast collector URL' do
       log = <<~LOG
         Fetching forecast at 2026-05-02T07:38:06+02:00
-          0: https://api.forecast.solar/estimate/50.922642249999996/6.407003707805423/29/-50/9.75 ... OK
+          0: https://api.forecast.solar/estimate/52.51627/13.37774/29/-50/9.75 ... OK
       LOG
 
       result = described_class.anonymize_text(log, redactions)
 
-      expect(result).not_to include('50.92264')
-      expect(result).not_to include('6.407')
-      expect(result).to include('https://api.forecast.solar/estimate/50.0/10.0/29/-50/9.75')
+      expect(result).not_to include('52.51627')
+      expect(result).not_to include('13.37774')
+      expect(result).to include('https://api.forecast.solar/estimate/52.03020/8.53250/29/-50/9.75')
+    end
+
+    it 'also catches coordinates that gained extra Float-precision digits' do
+      log = "lat=52.51627999 lon=13.37774001\n"
+
+      expect(described_class.anonymize_text(log, redactions)).to eq("lat=52.03020 lon=8.53250\n")
     end
 
     it 'preserves the surrounding ISO timestamp when scrubbing coordinates' do
-      log = "ts=2026-05-02T07:38:06+02:00 lat=50.92264 lon=6.407\n"
+      log = "ts=2026-05-02T07:38:06+02:00 lat=52.51627 lon=13.37774\n"
 
       result = described_class.anonymize_text(log, redactions)
 
-      expect(result).to eq("ts=2026-05-02T07:38:06+02:00 lat=50.0 lon=10.0\n")
+      expect(result).to eq("ts=2026-05-02T07:38:06+02:00 lat=52.03020 lon=8.53250\n")
     end
 
     it 'replaces opaque tokens that leak into log lines' do
