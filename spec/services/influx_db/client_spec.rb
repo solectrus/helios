@@ -32,8 +32,8 @@ RSpec.describe InfluxDb::Client do
 
       result = client.query_all_latest('inverter_power' => 'SENEC:inverter_power')
 
-      expect(result['inverter_power'][:value]).to eq(4200.5)
-      expect(result['inverter_power'][:time]).to be_a(ActiveSupport::TimeWithZone)
+      expect(result['inverter_power'].value).to eq(4200.5)
+      expect(result['inverter_power'].time).to be_a(ActiveSupport::TimeWithZone)
     end
 
     it 'skips invalid mappings without field separator' do
@@ -59,7 +59,7 @@ RSpec.describe InfluxDb::Client do
 
       result = client.query_all_latest('system_status' => 'SENEC:current_state')
 
-      expect(result['system_status'][:value]).to eq('INITIAL')
+      expect(result['system_status'].value).to eq('INITIAL')
     end
 
     it 'decodes binary HTTP bodies with multibyte characters as UTF-8' do
@@ -67,7 +67,7 @@ RSpec.describe InfluxDb::Client do
       csv = ",_time,_value\n,2026-03-21T10:00:00Z,LÄDT ⚡\n"
       stub_request(:post, query_url).to_return(status: 200, body: csv.b)
 
-      value = client.query_all_latest('system_status' => 'SENEC:current_state')['system_status'][:value]
+      value = client.query_all_latest('system_status' => 'SENEC:current_state')['system_status'].value
 
       expect(value).to eq('LÄDT ⚡')
     end

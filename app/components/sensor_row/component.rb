@@ -63,34 +63,14 @@ module SensorRow
       helpers.configuration_setting_path(setting: 'sensor', name: sensor_name)
     end
 
+    delegate :value?, :timestamp_iso, :freshness_class, :boolean_label, to: :reading, allow_nil: true
+
     def boolean_value?
-      raw_value.is_a?(String) && raw_value.match?(/\A(?:true|false)\z/i)
-    end
-
-    def boolean_label
-      raw_value&.casecmp('true')&.zero? ? I18n.t('common.boolean_yes') : I18n.t('common.boolean_no')
-    end
-
-    def value?
-      raw_value.present?
+      reading&.boolean? || false
     end
 
     def formatted_value
-      @formatted_value ||=
-        if raw_value.nil?
-          '—'
-        elsif raw_value.is_a?(Numeric)
-          raw_value == raw_value.to_i ? raw_value.to_i.to_s : format('%.1f', raw_value)
-        else
-          raw_value.to_s
-        end
-    end
-
-    def freshness_class
-      return 'text-base-content/30' if raw_value.nil?
-      return 'text-warning' if reading&.dig(:time)&.< 1.hour.ago
-
-      'text-success'
+      reading&.formatted(precision: 1) || Reading::EMPTY_DISPLAY
     end
 
     # Sensors excluded from house power in SOLECTRUS
@@ -107,20 +87,6 @@ module SensorRow
     def house_power_exclusion_tooltip
       names = excluded_power_sensors.map(&:upcase).join(', ')
       I18n.t('sensors.house_power_exclusion_hint', sensors: names)
-    end
-
-    def timestamp
-      reading&.dig(:time)
-    end
-
-    def timestamp_iso
-      timestamp&.iso8601
-    end
-
-    private
-
-    def raw_value
-      reading&.dig(:value)
     end
   end
 end

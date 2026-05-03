@@ -76,7 +76,7 @@ module InfluxDb
       return nil if rows.empty?
 
       row = rows.first
-      { value: parse_value(row['_value']), time: Time.zone.parse(row['_time']) }
+      Reading.new(value: parse_value(row['_value']), time: Time.zone.parse(row['_time']))
     rescue *CONNECTION_ERRORS
       raise
     rescue StandardError => e
