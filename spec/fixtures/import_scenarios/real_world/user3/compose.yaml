@@ -377,6 +377,10 @@ services:
     - MAPPING_14_MEASUREMENT
     - MAPPING_14_FIELD
     - MAPPING_14_TYPE
+    - MAPPING_15_TOPIC
+    - MAPPING_15_MEASUREMENT
+    - MAPPING_15_FIELD
+    - MAPPING_15_TYPE
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:

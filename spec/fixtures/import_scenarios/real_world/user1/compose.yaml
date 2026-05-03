@@ -216,6 +216,18 @@ services:
     - MAPPING_1_MEASUREMENT
     - MAPPING_1_FIELD
     - MAPPING_1_TYPE
+    - MAPPING_2_TOPIC
+    - MAPPING_2_MEASUREMENT
+    - MAPPING_2_FIELD
+    - MAPPING_2_TYPE
+    - MAPPING_3_TOPIC
+    - MAPPING_3_MEASUREMENT
+    - MAPPING_3_FIELD
+    - MAPPING_3_TYPE
+    - MAPPING_4_TOPIC
+    - MAPPING_4_MEASUREMENT
+    - MAPPING_4_FIELD
+    - MAPPING_4_TYPE
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:

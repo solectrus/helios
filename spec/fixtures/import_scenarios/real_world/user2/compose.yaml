@@ -348,6 +348,20 @@ services:
     - MAPPING_7_JSON_PATH
     - MAPPING_7_MIN
     - MAPPING_7_MAX
+    - MAPPING_8_TOPIC
+    - MAPPING_8_MEASUREMENT
+    - MAPPING_8_FIELD
+    - MAPPING_8_TYPE
+    - MAPPING_8_JSON_FORMULA
+    - MAPPING_8_MIN
+    - MAPPING_8_MAX
+    - MAPPING_9_TOPIC
+    - MAPPING_9_MEASUREMENT
+    - MAPPING_9_FIELD
+    - MAPPING_9_TYPE
+    - MAPPING_9_JSON_FORMULA
+    - MAPPING_9_MIN
+    - MAPPING_9_MAX
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:

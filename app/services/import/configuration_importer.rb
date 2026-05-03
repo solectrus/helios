@@ -112,7 +112,7 @@ module Import
       collectors_only? ? collectors_only_result : full_result
     end
 
-    def full_result # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
+    def full_result # rubocop:disable Metrics/MethodLength
       {
         system: system_data,
         dashboard: dashboard_data,
@@ -124,7 +124,7 @@ module Import
         sensors: sensors_data,
         forecast: forecast_extractor.section_data,
         senec: senec_extractor.section_data,
-        mqtt: mqtt_extractor.broker_data,
+        mqtt: mqtt_section_data,
         shelly: shelly_extractor.section_data,
         reverse_proxy: reverse_proxy_data,
         backup: backup_data,
@@ -163,6 +163,15 @@ module Import
       mappings = mqtt_extractor.raw_mappings
       data = (broker || {}).merge(image_data_for('mqtt-collector'),
                                   'mappings' => mappings.presence).compact
+      data.presence
+    end
+
+    # Full-mode mqtt section: broker plus orphan mappings (preserved so the
+    # InfluxDB time series stays gap-free across re-export).
+    def mqtt_section_data
+      broker = mqtt_extractor.broker_data
+      orphans = mqtt_extractor.orphan_mappings
+      data = (broker || {}).merge('mappings' => orphans.presence).compact
       data.presence
     end
 

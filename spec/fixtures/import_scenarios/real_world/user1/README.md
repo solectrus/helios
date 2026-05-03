@@ -24,9 +24,11 @@ typos, and inline literals — exercises the importer's resilience.
 - **Empty `INFLUX_SENSOR_INVERTER_POWER_5=`** — must be dropped, not
   exported as an empty mapping.
 - **Orphan MQTT mappings** — `MAPPING_5/6/7` push `mpp1/2/3_power` into
-  `my-pv-measurement`, but no HELIOS sensor matches. They are intentionally
-  dropped (data isn't displayed by the dashboard either; bringing them back
-  later requires a managed sensor).
+  `my-pv-measurement`, but no HELIOS sensor matches. Preserved under
+  `mqtt.mappings:` and re-emitted as `MAPPING_2/3/4 (additional)` after the
+  sensor-backed mappings, so the mqtt-collector keeps ingesting the topics
+  into InfluxDB. The list is editable via the MQTT settings UI — users can
+  rename, re-target, or delete entries without hand-editing config.yaml.
 - **`MQTT_TOPIC_BAT_VOLTAGE=evcc/site/homePower`** — legacy MQTT-collector
   variable outside the deprecated allowlist (DEPRECATED_TOPIC_VARS). The
   modern mqtt-collector ignores it, so the importer drops it silently

@@ -55,6 +55,19 @@ forecast:
   forecast_roofs: '3'
   measurement: forecast
 mqtt:
+  mappings:
+  - field: mpp1_power
+    measurement: my-pv-measurement
+    topic: evcc/site/pv/1/Power
+    type: integer
+  - field: mpp2_power
+    measurement: my-pv-measurement
+    topic: evcc/site/pv/2/Power
+    type: integer
+  - field: mpp3_power
+    measurement: my-pv-measurement
+    topic: evcc/site/pv/3/Power
+    type: integer
   mqtt_host: 192.168.0.124
   mqtt_password: dummy_mqtt_password
   mqtt_port: '1883'

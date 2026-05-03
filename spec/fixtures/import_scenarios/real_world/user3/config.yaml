@@ -58,6 +58,11 @@ senec:
   schema: https
   version: v3
 mqtt:
+  mappings:
+  - field: temperature
+    measurement: ws2900_v2_01_18_outdoor_temperature
+    topic: homeassistant/sensor/ws2900_v2_01_18_outdoor_temperature/state
+    type: float
   mqtt_host: 192.168.1.90
   mqtt_password: my-mqtt-password
   mqtt_port: '1883'

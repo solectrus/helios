@@ -331,8 +331,14 @@ module Export
       return raw_mqtt_mapping_entries(env) if configuration.collectors_only?
 
       sensors = configuration.sensors_with_source('mqtt')
-      return if sensors.blank?
+      additional = configuration.mqtt_topics
+      return if sensors.blank? && additional.empty?
 
+      sensor_mqtt_mapping_entries(env, sensors)
+      additional_mqtt_mapping_entries(env, additional, sensors.size)
+    end
+
+    def sensor_mqtt_mapping_entries(env, sensors)
       sensors.each_with_index do |(sensor_name, config), index|
         env.add_comment("--- Mapping #{index} for #{sensor_name.upcase}")
         written = false
@@ -348,26 +354,37 @@ module Export
       end
     end
 
+    # Numbering continues after sensor mappings so MAPPING_0..N stays one
+    # contiguous range (mqtt-collector requires no gaps).
+    def additional_mqtt_mapping_entries(env, mappings, sensor_count)
+      mappings.each_with_index do |mapping, offset|
+        emit_raw_mapping(env, mapping, sensor_count + offset, suffix: ' (additional)')
+      end
+    end
+
     # Raw mappings (no sensor name) — one block per entry, numbered from 1 to
     # match how hand-maintained mqtt-collector configs look in the wild.
     def raw_mqtt_mapping_entries(env)
-      mappings = Array(configuration.mqtt.mappings)
+      mappings = configuration.mqtt_topics
       return if mappings.empty?
 
-      mappings.each_with_index do |mapping, index|
-        i = index + 1
-        env.add_comment("--- Mapping #{i}")
-        written = false
-        Services::MqttCollector::COLLECTORS_ONLY_MAPPING_KEYS.each do |key, env_suffix|
-          value = mapping[key]
-          next if value.to_s.blank?
-
-          env.add_blank_line unless written
-          env["MAPPING_#{i}_#{env_suffix}"] = value
-          written = true
-        end
-        env.add_blank_line
+      mappings.each_with_index do |mapping, offset|
+        emit_raw_mapping(env, mapping, offset + 1)
       end
+    end
+
+    def emit_raw_mapping(env, mapping, index, suffix: nil)
+      env.add_comment("--- Mapping #{index}#{suffix}")
+      written = false
+      Services::MqttCollector::COLLECTORS_ONLY_MAPPING_KEYS.each do |key, env_suffix|
+        value = mapping[key]
+        next if value.to_s.blank?
+
+        env.add_blank_line unless written
+        env["MAPPING_#{index}_#{env_suffix}"] = value
+        written = true
+      end
+      env.add_blank_line
     end
 
     def shelly_section(env)

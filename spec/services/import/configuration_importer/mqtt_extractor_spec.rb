@@ -261,4 +261,57 @@ RSpec.describe Import::ConfigurationImporter::MqttExtractor do
       end
     end
   end
+
+  describe '#orphan_mappings' do
+    subject(:extractor) { described_class.new(reader, sensors_data) }
+
+    let(:env) do
+      {
+        'MAPPING_0_TOPIC' => 'house/topic',
+        'MAPPING_0_MEASUREMENT' => 'house',
+        'MAPPING_0_FIELD' => 'power',
+        'MAPPING_0_TYPE' => 'integer',
+        'MAPPING_1_TOPIC' => 'weather/topic',
+        'MAPPING_1_MEASUREMENT' => 'weather',
+        'MAPPING_1_FIELD' => 'temperature',
+        'MAPPING_1_TYPE' => 'float',
+      }
+    end
+
+    context 'when every mapping feeds a sensor' do
+      let(:sensors_data) { { 'house_power' => 'house:power', 'outdoor_temp' => 'weather:temperature' } }
+
+      it 'returns an empty list' do
+        expect(extractor.orphan_mappings).to be_empty
+      end
+    end
+
+    context 'when one mapping has no sensor consumer' do
+      let(:sensors_data) { { 'house_power' => 'house:power' } }
+
+      it 'returns the unmatched raw mapping' do
+        expect(extractor.orphan_mappings).to contain_exactly(
+          hash_including('topic' => 'weather/topic', 'measurement' => 'weather', 'field' => 'temperature'),
+        )
+      end
+    end
+
+    context 'with a sign-split mapping where one side is consumed' do
+      let(:env) do
+        {
+          'MAPPING_0_TOPIC' => 'grid/topic',
+          'MAPPING_0_TYPE' => 'integer',
+          'MAPPING_0_MEASUREMENT_POSITIVE' => 'grid',
+          'MAPPING_0_FIELD_POSITIVE' => 'import_power',
+          'MAPPING_0_MEASUREMENT_NEGATIVE' => 'grid',
+          'MAPPING_0_FIELD_NEGATIVE' => 'export_power',
+        }
+      end
+      let(:sensors_data) { { 'grid_import_power' => 'grid:import_power' } }
+
+      it 'is considered consumed (not an orphan) — the raw entry round-trips through the matched sensor' do
+        expect(extractor.orphan_mappings).to be_empty
+      end
+    end
+  end
 end

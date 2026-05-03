@@ -122,6 +122,21 @@ module Import
       # mqtt.mappings in collectors_only mode where HELIOS cannot (and does
       # not try to) map them back to canonical sensor names.
       def raw_mappings
+        @raw_mappings ||= build_raw_mappings
+      end
+
+      # Orphan = no HELIOS sensor reads it. Preserved so the user's
+      # mqtt-collector keeps writing the topic to InfluxDB after re-export,
+      # avoiding a gap in the time series.
+      def orphan_mappings
+        return [] unless enabled?
+
+        raw_mappings.reject { |raw| raw_mapping_consumed?(raw) }
+      end
+
+      private
+
+      def build_raw_mappings
         return [] unless enabled?
 
         mqtt_env = service_env('mqtt-collector')
@@ -133,7 +148,19 @@ module Import
         end.reject(&:empty?)
       end
 
-      private
+      # Sign-split mappings (FIELD_POSITIVE/_NEGATIVE) round-trip through the
+      # matched sensor on either side, so a single side-match counts as
+      # consumed for the whole raw entry.
+      def raw_mapping_consumed?(raw)
+        symbolized = raw.transform_keys(&:to_sym)
+        expand_sign_split(symbolized).any? do |expanded|
+          measurement = expanded[:measurement]
+          field = expanded[:field]
+          next false if measurement.blank? || field.blank?
+
+          find_sensor_for_candidate(@sensors_data, "#{measurement}:#{field}")
+        end
+      end
 
       def parse_mappings(mqtt_env)
         raw = mapping_indices(mqtt_env).map do |i|

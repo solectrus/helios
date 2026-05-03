@@ -79,8 +79,10 @@ otherwise untouched.
   `forecast.measurement: forecast`.
 - **Orphan MQTT mapping `MAPPING_15`** — points at a Weather-Station
   outdoor-temperature topic (`ws2900_v2_01_18_outdoor_temperature:temperature`),
-  but `INFLUX_SENSOR_OUTDOOR_TEMP=` is empty so no sensor consumes the
-  mapping. Dropped silently — same policy as user1's orphan MQTT mappings.
+  but `INFLUX_SENSOR_OUTDOOR_TEMP=` is empty so no HELIOS sensor consumes
+  the mapping. Preserved under `mqtt.mappings:` and re-emitted as the
+  trailing `(additional)` entry so the user's mqtt-collector keeps writing the
+  topic into InfluxDB after import. Editable via the MQTT settings UI.
 - **Sixteen MQTT mappings, mixed JSON-key vs. flat payloads** — mappings
   0–9 (zigbee2mqtt) carry `MAPPING_N_JSON_KEY=power`, while mappings
   10–15 (homeassistant scalar topics) deliberately omit `_JSON_KEY`.

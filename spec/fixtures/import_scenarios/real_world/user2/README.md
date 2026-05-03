@@ -33,6 +33,13 @@ forecasts, and a Tibber price feed. Anonymized but otherwise untouched.
   `INGEST_MAPPING_0_*` env vars are attached there as `env_values` so the
   relationship stays explicit on re-export instead of leaking into orphan
   `_unmanaged.env_vars`.
+- **Energy-tracking orphan mappings** — `MAPPING_6` (`ac_bedroom:energy_in`)
+  and `MAPPING_8` (`dish_washer:energy_in`) collect kWh totals via
+  `JSON_FORMULA` divisions; no HELIOS sensor consumes the
+  `measurement:energy_in` pair (only `:power` is bound). Preserved under
+  `mqtt.mappings:` and re-emitted as trailing `(additional)` entries so the
+  energy time series keeps growing in InfluxDB. Editable via the MQTT
+  settings UI.
 - **Hash-style `environment:` blocks** — every service in the source compose
   uses the `KEY: ${VAR}` mapping form (often combined with `<<:` merges),
   not the `- KEY=value` array form. The importer normalizes hash environments

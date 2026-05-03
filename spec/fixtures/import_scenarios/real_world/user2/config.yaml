@@ -63,6 +63,21 @@ senec:
   schema: https
   version: v3
 mqtt:
+  mappings:
+  - field: energy_in
+    json_formula: "{$$.aenergy.total}/1000.0"
+    max: '999999'
+    measurement: ac_bedroom
+    min: '0'
+    topic: ac_bedroom/status/switch:0
+    type: float
+  - field: energy_in
+    json_formula: "{$$.total_act_energy}/1000.0"
+    max: '999999'
+    measurement: dish_washer
+    min: '0'
+    topic: dish_washer/status/em1data:0
+    type: float
   mqtt_host: mosquitto
   mqtt_password: my-mqtt-password
   mqtt_port: '1883'

@@ -174,6 +174,13 @@ class Configuration # rubocop:disable Metrics/ClassLength
     (@data['sensors'] || {}).key?(name.to_s)
   end
 
+  # Standalone topics that mqtt-collector writes into InfluxDB without
+  # feeding a HELIOS sensor. Stored under mqtt.mappings (mqtt-collector's
+  # native key).
+  def mqtt_topics
+    Array(@data.dig('mqtt', 'mappings'))
+  end
+
   # --- Source requirements ---
 
   def senec_required?

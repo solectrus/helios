@@ -27,14 +27,13 @@ module Export
         'MQTT Collector — Receives sensor data via MQTT protocol'
       end
 
+      # Standalone topics (full mode) keep the collector running even when
+      # no HELIOS sensor consumes MQTT — drop the gate and the collector
+      # stops ingesting, leaving a gap in InfluxDB.
       def self.enabled?(configuration)
         return false if configuration.dashboard_only?
 
-        configuration.mqtt_required? || (configuration.collectors_only? && collectors_only_enabled?(configuration))
-      end
-
-      def self.collectors_only_enabled?(configuration)
-        Array(configuration.mqtt&.mappings).any?
+        configuration.mqtt_required? || configuration.mqtt_topics.any?
       end
 
       def to_h
@@ -89,11 +88,7 @@ module Export
       end
 
       def raw_mapping_vars
-        Array(mqtt_config.mappings).each_with_index.flat_map do |mapping, index|
-          COLLECTORS_ONLY_MAPPING_KEYS.filter_map do |key, env_suffix|
-            "MAPPING_#{index + 1}_#{env_suffix}" if mapping[key].to_s.present?
-          end
-        end
+        raw_mapping_var_names(start_index: 1)
       end
 
       def passthrough_vars
@@ -107,9 +102,26 @@ module Export
       end
 
       def mapping_vars
+        sensor_mapping_vars + additional_mapping_vars
+      end
+
+      def sensor_mapping_vars
         mqtt_sensors.each_with_index.flat_map do |(_, config), index|
           MAPPING_FIELDS.filter_map do |config_key, env_suffix|
             "MAPPING_#{index}_#{env_suffix}" if config[config_key].present?
+          end
+        end
+      end
+
+      def additional_mapping_vars
+        raw_mapping_var_names(start_index: mqtt_sensors.size)
+      end
+
+      def raw_mapping_var_names(start_index:)
+        configuration.mqtt_topics.each_with_index.flat_map do |mapping, offset|
+          index = start_index + offset
+          COLLECTORS_ONLY_MAPPING_KEYS.filter_map do |key, env_suffix|
+            "MAPPING_#{index}_#{env_suffix}" if mapping[key].to_s.present?
           end
         end
       end
