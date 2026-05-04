@@ -1,27 +1,18 @@
 module Import
-  class ConfigurationImporter # rubocop:disable Metrics/ClassLength
+  class ConfigurationImporter
     include Helpers
 
-    # Per-section bind-mount detection metadata. `container_target` matches
-    # against the user's inline `volumes:` block when the host source isn't
-    # exposed via `*_VOLUME_PATH`. Postgres opts in to a PGDATA-subpath
-    # fallback (`<host>/data:/var/lib/postgresql/data`) handled in
-    # `pgdata_subpath_source`.
-    VOLUME_PATH_ENVS = {
-      'postgresql' => { env_key: 'DB_VOLUME_PATH', default_dir: 'postgresql',
-                        container_target: '/var/lib/postgresql', pgdata_fallback: true },
-      'influxdb' => { env_key: 'INFLUX_VOLUME_PATH', default_dir: 'influxdb',
-                      container_target: '/var/lib/influxdb2' },
-      'redis' => { env_key: 'REDIS_VOLUME_PATH', default_dir: 'redis',
-                   container_target: '/data' },
-      'ingest' => { env_key: 'INGEST_VOLUME_PATH', default_dir: 'ingest',
-                    container_target: '/app/data' },
-      'reverse_proxy' => { env_key: 'TRAEFIK_VOLUME_PATH', default_dir: 'traefik',
-                           container_target: '/letsencrypt', service_name: 'traefik' },
-    }.freeze
-
-    INTERPOLATION_RE = /\$\{([A-Z_][A-Z0-9_]*)\}/
-    INTERPOLATION_MAX_DEPTH = 10
+    # Sections whose data comes from a uniform `section_data` extractor call.
+    # The remaining keys (sensors, senec, mqtt, shelly, devices, unmanaged)
+    # need custom handling because of mode differences or non-extractor
+    # sources, so they're merged in inside `full_result` / `collectors_only_result`.
+    UNIFORM_FULL_EXTRACTORS = %i[
+      system dashboard postgresql influxdb redis watchtower ingest
+      forecast reverse_proxy backup
+    ].freeze
+    UNIFORM_COLLECTORS_ONLY_EXTRACTORS = %i[
+      system influxdb watchtower forecast
+    ].freeze
 
     def initialize(stack_reader)
       @reader = stack_reader
@@ -74,8 +65,64 @@ module Import
       @forecast_extractor ||= ForecastExtractor.new(@reader)
     end
 
+    def watchtower_extractor
+      @watchtower_extractor ||= WatchtowerExtractor.new(@reader)
+    end
+
+    def system_extractor
+      @system_extractor ||= SystemExtractor.new(
+        @reader,
+        collectors_only: collectors_only?,
+        watchtower_interval: watchtower_extractor.interval,
+      )
+    end
+
+    def dashboard_extractor
+      @dashboard_extractor ||= DashboardExtractor.new(@reader)
+    end
+
+    def redis_extractor
+      @redis_extractor ||= RedisExtractor.new(@reader, volume_resolver)
+    end
+
+    def postgresql_extractor
+      @postgresql_extractor ||= PostgresqlExtractor.new(@reader, volume_resolver)
+    end
+
+    def influxdb_extractor
+      @influxdb_extractor ||= InfluxdbExtractor.new(@reader, volume_resolver, collectors_only: collectors_only?)
+    end
+
+    def reverse_proxy_extractor
+      @reverse_proxy_extractor ||= ReverseProxyExtractor.new(@reader, volume_resolver)
+    end
+
+    def backup_extractor
+      @backup_extractor ||= BackupExtractor.new(@reader)
+    end
+
+    def ingest_extractor
+      @ingest_extractor ||= IngestExtractor.new(@reader, volume_resolver, balcony_detector)
+    end
+
+    def sensors_extractor
+      @sensors_extractor ||= SensorsExtractor.new(@reader)
+    end
+
     def unmanaged_detector
       @unmanaged_detector ||= UnmanagedDetector.new(@reader, known_measurements:)
+    end
+
+    def volume_resolver
+      @volume_resolver ||= VolumeResolver.new(@reader)
+    end
+
+    def balcony_detector
+      @balcony_detector ||= BalconyDetector.new(@reader, sensors_data)
+    end
+
+    def sensors_data
+      sensors_extractor.sensors_data
     end
 
     def known_measurements
@@ -90,7 +137,7 @@ module Import
         devices: result[:devices],
         enabled_collectors: enabled_collectors,
         mqtt_mappings: mqtt_extractor.enabled? ? mqtt_extractor.mappings : [],
-        excluded_sensors: excluded_sensor_names,
+        excluded_sensors: sensors_extractor.excluded_sensor_names,
       )
     end
 
@@ -101,66 +148,21 @@ module Import
       ].compact
     end
 
-    # A balcony generator feeds a different InfluxDB measurement (e.g.
-    # `Garage:`, `anker-akku:`) than the main roof inverter. The
-    # highest-numbered populated slot wins; with a single populated slot the
-    # user is treated as balcony-only.
-    def balcony_sensor_name
-      @balcony_sensor_name ||= detect_balcony_sensor
-    end
-
-    def detect_balcony_sensor
-      return nil unless split_inverter_present?
-      return nil if mppt_only?
-
-      populated_balcony_sensors.last
-    end
-
-    # Multiple `inverter_power_N` slots sharing a single InfluxDB measurement
-    # are the MPPTs of one multi-string inverter (e.g. SENEC X3), not a
-    # separate balcony generator.
-    def mppt_only?
-      populated_balcony_sensors.size > 1 && populated_measurements.size == 1
-    end
-
-    def populated_measurements
-      populated_balcony_sensors.map { |name| sensors_data[name].to_s.split(':', 2).first }.uniq
-    end
-
-    def split_inverter_present?
-      @reader.services.key?('ingest') && populated_balcony_sensors.any?
-    end
-
-    def populated_balcony_sensors
-      @populated_balcony_sensors ||=
-        SensorRegistry::BALCONY_CAPABLE_SENSORS.select { |name| sensors_data[name].present? }
-    end
-
     # --- Result building ---
 
     def build_result
       collectors_only? ? collectors_only_result : full_result
     end
 
-    def full_result # rubocop:disable Metrics/MethodLength
-      {
-        system: system_data,
-        dashboard: dashboard_data,
-        postgresql: postgresql_data,
-        influxdb: influxdb_data,
-        redis: redis_data,
-        watchtower: watchtower_data,
-        ingest: ingest_section_data,
+    def full_result
+      uniform_sections(UNIFORM_FULL_EXTRACTORS).merge(
         sensors: sensors_data,
-        forecast: forecast_extractor.section_data,
         senec: senec_extractor.section_data,
         mqtt: mqtt_section_data,
         shelly: shelly_extractor.section_data,
-        reverse_proxy: reverse_proxy_data,
-        backup: backup_data,
         devices: build_devices,
         unmanaged: unmanaged_detector.detect,
-      }
+      )
     end
 
     # Sensor canonicalization lives on the remote dashboard host, so HELIOS
@@ -169,16 +171,16 @@ module Import
     # usual senec/shelly/mqtt sections; the opaque mapping payload is kept
     # as a raw list in mqtt.mappings and shelly.devices.
     def collectors_only_result
-      {
-        system: system_data,
-        influxdb: influxdb_data,
-        watchtower: watchtower_data,
-        forecast: forecast_extractor.section_data,
+      uniform_sections(UNIFORM_COLLECTORS_ONLY_EXTRACTORS).merge(
         senec: collectors_only_senec_data,
         mqtt: collectors_only_mqtt_data,
         shelly: collectors_only_shelly_data,
         unmanaged: unmanaged_detector.detect,
-      }
+      )
+    end
+
+    def uniform_sections(keys)
+      keys.index_with { |key| send("#{key}_extractor").section_data }
     end
 
     def collectors_only_senec_data
@@ -238,294 +240,11 @@ module Import
     end
 
     def mark_balcony_sensor!(config)
-      return unless balcony_sensor_name
+      name = balcony_detector.sensor_name
+      return unless name
 
-      existing = config.sensor_config(balcony_sensor_name).to_h
-      config.update_sensor(balcony_sensor_name, existing.merge('is_balcony' => true))
-    end
-
-    # --- System ---
-
-    def system_data
-      data = system_core_data.merge('app_host' => service_env('dashboard')['APP_HOST'])
-      data['mode'] = ConfigSchema::MODE_COLLECTORS_ONLY if collectors_only?
-      data.compact
-    end
-
-    def system_core_data
-      dashboard_env = service_env('dashboard')
-
-      # Legacy compose files often define TZ in .env but don't reference it
-      # from the dashboard service — fall back to raw_env so the user's
-      # timezone survives the round-trip.
-      {
-        'timezone' => dashboard_env['TZ'].presence || @reader.raw_env['TZ'].presence,
-        'installation_date' => dashboard_env['INSTALLATION_DATE'],
-        'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
-        'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],
-        'network_name' => imported_network_name,
-        'update_interval' => watchtower_interval,
-      }
-    end
-
-    # Picks up an explicit `networks: default: name:` override from the
-    # imported compose. Without an override, leave it nil so HELIOS falls
-    # back to its default (`solectrus_default`). If the imported stack ran
-    # under a differently-named auto-network (e.g. `senec_default` from a
-    # directory named `senec`), `compose up` will create the new network
-    # and leave the old one orphaned — harmless, since unmanaged services
-    # only reference the compose-internal `default` alias, not the Docker
-    # network name. The orphan is cleaned up by `docker network prune`.
-    def imported_network_name
-      name = @reader.raw_compose.dig('networks', 'default', 'name')
-      name.presence
-    end
-
-    # --- Dashboard ---
-
-    def dashboard_data
-      dashboard_env = service_env('dashboard')
-
-      image_data_for('dashboard').merge(
-        'co2_emission_factor' => dashboard_env['CO2_EMISSION_FACTOR'],
-        'frame_ancestors' => dashboard_env['FRAME_ANCESTORS'],
-        'ui_theme' => dashboard_env['UI_THEME'],
-        'lockup_codeword' => dashboard_env['LOCKUP_CODEWORD'],
-        'trusted_proxy_ranges' => dashboard_env['TRUSTED_PROXY_RANGES'],
-      ).compact
-    end
-
-    # --- Infrastructure services ---
-
-    def redis_data
-      image_data_for('redis').merge(volume_path_data('redis')).compact
-    end
-
-    def watchtower_data
-      image_data_for('watchtower')
-    end
-
-    # WATCHTOWER_POLL_INTERVAL takes precedence; some installations configure
-    # the interval inline on the watchtower service (`environment:` block) or
-    # as a `--interval N` argument on its command, which are equally valid for
-    # Watchtower itself.
-    def watchtower_interval
-      env_value = @reader.raw_env['WATCHTOWER_POLL_INTERVAL'].presence ||
-                  service_env('watchtower')['WATCHTOWER_POLL_INTERVAL'].presence
-      return env_value if env_value
-
-      command = @reader.service('watchtower')&.dig('command')
-      tokens = Array(command).flat_map { |part| part.to_s.split }
-      index = tokens.index('--interval')
-      tokens[index + 1] if index && tokens[index + 1]
-    end
-
-    def postgresql_data
-      image_data_for('postgresql').merge(
-        'password' => env_first('POSTGRES_PASSWORD', 'POSTGRES_ADMIN_PASSWORD'),
-        'pgdata' => @reader.raw_env['PGDATA'],
-      ).merge(volume_path_data('postgresql')).compact
-    end
-
-    def influxdb_data
-      collectors_only? ? external_influxdb_data : local_influxdb_data
-    end
-
-    def local_influxdb_data
-      image_data_for('influxdb').merge(
-        'password' => env_first('INFLUX_PASSWORD', 'DOCKER_INFLUXDB_INIT_PASSWORD'),
-        'org' => env_first('INFLUX_ORG', 'DOCKER_INFLUXDB_INIT_ORG'),
-        'bucket' => env_first('INFLUX_BUCKET', 'DOCKER_INFLUXDB_INIT_BUCKET'),
-        'token' => influxdb_token,
-        'use_hashed_tokens' => @reader.raw_env['INFLUXD_USE_HASHED_TOKENS'],
-      ).merge(volume_path_data('influxdb')).compact
-    end
-
-    def external_influxdb_data
-      {
-        'host' => @reader.raw_env['INFLUX_HOST'],
-        'port' => @reader.raw_env['INFLUX_PORT'],
-        'schema' => @reader.raw_env['INFLUX_SCHEMA'],
-        'org' => @reader.raw_env['INFLUX_ORG'],
-        'bucket' => @reader.raw_env['INFLUX_BUCKET'],
-        'token' => influxdb_token,
-      }.compact
-    end
-
-    def influxdb_token
-      env_first('INFLUX_TOKEN', 'INFLUX_ADMIN_TOKEN', 'INFLUX_TOKEN_WRITE', 'DOCKER_INFLUXDB_INIT_ADMIN_TOKEN')
-    end
-
-    # First non-blank value across env keys, preferring earlier ones. Real-world
-    # stacks routinely use non-canonical names (POSTGRES_ADMIN_PASSWORD,
-    # DOCKER_INFLUXDB_INIT_*, INFLUX_ADMIN_TOKEN, ...) — without the fallback
-    # the importer would persist nil and ensure_defaults! would generate a
-    # fresh random secret on every export, breaking round-trip stability.
-    def env_first(*keys)
-      keys.lazy.filter_map { |k| @reader.raw_env[k].presence }.first
-    end
-
-    # Preserve absolute host paths (e.g. Synology `/volume1/...`, or
-    # `${BASE_DIR}/influxdb/data` resolved against .env) so the stack keeps
-    # pointing at the existing data directory after import. Inline `volumes:`
-    # bindings take precedence over the legacy `*_VOLUME_PATH` env var because
-    # the inline form is more common in real-world installs and absorbs
-    # `${VAR}` interpolation that the env var alone can't express. Relative
-    # values and absolute paths that resolve to the default bind mount next
-    # to compose.yaml are dropped — they match HELIOS's default anyway.
-    def volume_path_data(section)
-      mapping = VOLUME_PATH_ENVS.fetch(section)
-      value = inline_volume_source(section, mapping) ||
-              (mapping[:pgdata_fallback] && pgdata_subpath_source) ||
-              resolve_interpolation(@reader.raw_env[mapping[:env_key]])
-      return {} unless value&.start_with?('/')
-      return {} if File.expand_path(value) == File.expand_path(mapping[:default_dir], @reader.stack_dir)
-
-      { 'volume_path' => value }
-    end
-
-    def inline_volume_source(section, mapping)
-      target = mapping[:container_target]
-      target && resolved_volume_source(mapping[:service_name] || section, target)
-    end
-
-    # Resolved absolute host path of the volume entry whose container target
-    # matches `target`, or nil if no entry matches or the source is relative.
-    def resolved_volume_source(service_name, target)
-      raw_volumes = Array(raw_service_config(service_name)&.dig('volumes'))
-      raw_source = raw_volumes.lazy.filter_map { |entry| volume_source_for_target(entry, target) }.first
-      resolved = resolve_interpolation(raw_source)
-      resolved if resolved&.start_with?('/')
-    end
-
-    # Image-prefix alias fallback so installs that renamed the service (e.g.
-    # `postgres:` instead of `postgresql:`) still resolve.
-    def raw_service_config(canonical_name)
-      raw = @reader.raw_compose['services'] || {}
-      return raw[canonical_name] if raw.key?(canonical_name)
-
-      prefixes = StackReader::SERVICE_IMAGE_PREFIXES[canonical_name]
-      return nil unless prefixes
-
-      raw.each_value.find { |cfg| cfg.is_a?(Hash) && StackReader.image_matches?(cfg['image'], prefixes) }
-    end
-
-    def volume_source_for_target(entry, target)
-      return nil unless entry.is_a?(String)
-
-      source, mounted_target, = entry.split(':', 3)
-      return nil unless mounted_target
-
-      resolved = resolve_interpolation(mounted_target).to_s.chomp('/')
-      source if resolved == target.to_s.chomp('/')
-    end
-
-    # Stacks that bind-mount the PGDATA subpath
-    # (`<host>/data:/var/lib/postgresql/data`) instead of the parent dir.
-    # Only safe to transform if the host source ends in `/data` — strip it
-    # so HELIOS's parent-mount strategy (`<host>:/var/lib/postgresql`) lines
-    # up; PGDATA stays at `/var/lib/postgresql/data` via the preserved env
-    # var, so the container still finds the same bytes on disk.
-    def pgdata_subpath_source
-      pgdata = resolve_interpolation(@reader.raw_env['PGDATA']).presence ||
-               '/var/lib/postgresql/data'
-      resolved = resolved_volume_source('postgresql', pgdata)
-      return nil unless resolved
-
-      parent = resolved.sub(%r{/data/?\z}, '')
-      parent unless parent == resolved
-    end
-
-    # Recursive `${VAR}` substitution against raw .env, with cycle protection.
-    # Real-world stacks chain references (e.g. `HOST_DUMP=${BASE_DIR}/db_dumps`),
-    # so a single-pass gsub isn't enough.
-    def resolve_interpolation(value, depth = 0, seen = Set.new)
-      return value if depth > INTERPOLATION_MAX_DEPTH || value.nil?
-
-      value.to_s.gsub(INTERPOLATION_RE) do
-        var = ::Regexp.last_match(1)
-        next '' if seen.include?(var)
-
-        raw = @reader.raw_env[var]
-        raw.nil? ? '' : resolve_interpolation(raw, depth + 1, seen + [var])
-      end
-    end
-
-    # --- Sensors ---
-
-    def sensors_data
-      @sensors_data ||= begin
-        dashboard_env = service_env('dashboard')
-        explicit = dashboard_env
-                   .select { |k, _| k.start_with?('INFLUX_SENSOR_') }
-                   .compact_blank
-                   .transform_keys { |k| k.delete_prefix('INFLUX_SENSOR_').downcase }
-        # Legacy stacks omit most INFLUX_SENSOR_* and rely on the dashboard's
-        # built-in fallback table — replicate it so the imported config matches
-        # what the dashboard actually serves.
-        LegacySensorAdapter.synthesize(dashboard_env).merge(explicit)
-                           .select { |name, _| SensorRegistry.valid?(name) }
-      end
-    end
-
-    # --- Reverse Proxy ---
-
-    def reverse_proxy_data
-      return nil unless @reader.services.key?('traefik')
-
-      domain = extract_domain_from_dashboard_labels
-      return nil unless domain
-
-      {
-        'app_domain' => domain,
-        'letsencrypt_email' => @reader.raw_env['LETSENCRYPT_EMAIL'],
-      }.merge(volume_path_data('reverse_proxy')).compact.presence
-    end
-
-    def extract_domain_from_dashboard_labels
-      rule_value = find_traefik_rule_label
-      match = rule_value&.match(/Host\(`([^`]+)`\)/)
-      match && match[1]
-    end
-
-    def find_traefik_rule_label
-      labels = @reader.service('dashboard')&.dig('labels') || {}
-
-      if labels.is_a?(Hash)
-        labels.find { |k, _| k.include?('routers.dashboard.rule') }&.last
-      else
-        labels.find { |v| v.to_s.include?('routers.dashboard.rule') }
-      end
-    end
-
-    def excluded_sensor_names
-      csv_split(service_env('dashboard')['INFLUX_EXCLUDE_FROM_HOUSE_POWER']).map(&:downcase)
-    end
-
-    # --- Backup ---
-
-    def backup_data
-      return unless @reader.services.key?('postgresql-backup')
-
-      {
-        'postgresql' => image_data_for('postgresql-backup').presence,
-        'influxdb' => image_data_for('influxdb-backup').presence,
-        'aws_access_key_id' => @reader.raw_env['AWS_ACCESS_KEY_ID'],
-        'aws_secret_access_key' => @reader.raw_env['AWS_SECRET_ACCESS_KEY'],
-        'aws_region' => @reader.raw_env['AWS_REGION'],
-        'aws_bucket' => @reader.raw_env['AWS_BUCKET'],
-      }.compact
-    end
-
-    # --- Ingest ---
-
-    def ingest_section_data
-      return unless split_inverter_present?
-
-      ingest_env = service_env('ingest')
-      image_data_for('ingest').merge(
-        'retention_hours' => ingest_env['RETENTION_HOURS'],
-      ).merge(volume_path_data('ingest')).compact
+      existing = config.sensor_config(name).to_h
+      config.update_sensor(name, existing.merge('is_balcony' => true))
     end
   end
 end

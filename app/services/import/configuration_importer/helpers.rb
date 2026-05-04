@@ -38,6 +38,15 @@ module Import
         value.to_s.split(',').map(&:strip)
       end
 
+      # First non-blank value across env keys, preferring earlier ones. Real-world
+      # stacks routinely use non-canonical names (POSTGRES_ADMIN_PASSWORD,
+      # DOCKER_INFLUXDB_INIT_*, INFLUX_ADMIN_TOKEN, ...) — without the fallback
+      # the importer would persist nil and ensure_defaults! would generate a
+      # fresh random secret on every export, breaking round-trip stability.
+      def env_first(*keys)
+        keys.lazy.filter_map { |k| @reader.raw_env[k].presence }.first
+      end
+
       def image_data_for(service_name)
         image = Compose.normalize_image(@reader.service(service_name)&.dig('image'))
         { 'image' => image }.compact

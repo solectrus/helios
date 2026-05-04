@@ -1,10 +1,7 @@
 module Import
   class ConfigurationImporter
     class UnmanagedDetector # rubocop:disable Metrics/ClassLength
-      # Reference the parent class's regex explicitly. Ruby's lexical
-      # constant lookup would resolve it via Module.nesting, but spelling
-      # it out keeps the dependency visible inside this file.
-      INTERPOLATION_RE = ConfigurationImporter::INTERPOLATION_RE
+      INTERPOLATION_RE = VolumeResolver::INTERPOLATION_RE
       # All .env variable keys that HELIOS manages (generates in .env)
       MANAGED_ENV_KEYS = %w[
         TZ INSTALLATION_DATE ADMIN_PASSWORD SECRET_KEY_BASE
