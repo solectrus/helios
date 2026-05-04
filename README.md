@@ -32,7 +32,7 @@ Web-based control panel for [SOLECTRUS](https://solectrus.de). HELIOS installs t
 - Docker and Docker Compose (v2)
 - Architecture: AMD64 or ARM64 (Raspberry Pi 3/4/5, NAS, VPS, any Linux host)
 - Port 3999 available on the host
-- ~256 MB RAM for the HELIOS container
+- ~384 MB RAM for the HELIOS container
 
 ## Installation
 
