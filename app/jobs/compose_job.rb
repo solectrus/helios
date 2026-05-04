@@ -41,6 +41,13 @@ class ComposeJob < ApplicationJob
     elsif service_name
       affected = extract_affected_service(error) || service_name
       Orchestration::ErrorStore.set(affected, extract_error_details(error))
+
+      if affected != service_name
+        Orchestration::ErrorStore.set(
+          service_name,
+          dependency_error_message(affected),
+        )
+      end
     end
   end
 
@@ -153,7 +160,7 @@ class ComposeJob < ApplicationJob
     display_name =
       compose_file.services.find(dependency_name)&.display_name ||
       dependency_name
-    "Blocked: #{display_name} failed to start"
+    I18n.t('services.errors.blocked_by_dependency', dependency: display_name)
   end
 
   def extract_service_from_image(error)

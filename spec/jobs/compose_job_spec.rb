@@ -141,8 +141,12 @@ RSpec.describe ComposeJob do
   end
 
   describe 'affected service extraction' do
-    let(:requested_service) { instance_double(Compose::Service, name: 'dashboard', depends_on: {}) }
-    let(:affected_service) { instance_double(Compose::Service, name: 'influxdb', depends_on: {}) }
+    let(:requested_service) do
+      instance_double(Compose::Service, name: 'dashboard', depends_on: {}, display_name: 'Dashboard')
+    end
+    let(:affected_service) do
+      instance_double(Compose::Service, name: 'influxdb', depends_on: {}, display_name: 'InfluxDB')
+    end
     let(:services_collection) { instance_double(Compose::ServiceCollection) }
     let(:compose_file) { instance_double(Compose::File, services: services_collection) }
 
@@ -194,6 +198,15 @@ RSpec.describe ComposeJob do
         )
 
         expect(Orchestration::ErrorStore.get('influxdb')).to include('already in use')
+      end
+
+      it 'stores dependency error for the requested service' do
+        perform_with_error(
+          'Error response from daemon: Conflict. The container name "/solectrus-influxdb-1" is already in use',
+        )
+
+        expect(Orchestration::ErrorStore.get('dashboard')).to eq(I18n.t('services.errors.blocked_by_dependency',
+                                                                        dependency: 'InfluxDB'))
       end
     end
 
@@ -354,7 +367,8 @@ RSpec.describe ComposeJob do
         'Error: container /solectrus-influxdb-1 port is already allocated',
       )
 
-      expect(Orchestration::ErrorStore.get('dashboard')).to eq('Blocked: InfluxDB failed to start')
+      expect(Orchestration::ErrorStore.get('dashboard')).to eq(I18n.t('services.errors.blocked_by_dependency',
+                                                                      dependency: 'InfluxDB'))
     end
 
     it 'does not store error for unrelated services' do
@@ -373,7 +387,7 @@ RSpec.describe ComposeJob do
       expect(ApplicationController).to have_received(:render).with(
         an_object_having_attributes(
           class: ServiceRow::Component,
-          error_message: 'Blocked: InfluxDB failed to start',
+          error_message: I18n.t('services.errors.blocked_by_dependency', dependency: 'InfluxDB'),
         ),
         { layout: false },
       )

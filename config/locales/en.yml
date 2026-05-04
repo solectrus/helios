@@ -42,6 +42,8 @@ en:
       show:
         title: '%{name} — Logs'
         connecting: 'Connecting…'
+    errors:
+      blocked_by_dependency: 'Blocked: %{dependency} failed to start'
 
   datasources:
     show:
