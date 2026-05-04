@@ -193,6 +193,12 @@ module ServiceRow
       container&.stoppable?
     end
 
+    def logs_available?
+      return false unless container
+
+      %w[created removing].exclude?(status)
+    end
+
     private
 
     def indicator_class

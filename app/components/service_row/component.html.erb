@@ -86,7 +86,7 @@
           </button>
         <% end %>
         <div id="<%= dom_id %>-logs" class="tooltip tooltip-info" data-tip="<%= t('.logs') %>">
-          <% if container %>
+          <% if logs_available? %>
             <a
               href="<%= service_log_path(service_name) %>"
               data-turbo-frame="log-modal-content"

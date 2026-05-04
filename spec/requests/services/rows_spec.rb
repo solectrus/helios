@@ -21,12 +21,13 @@ RSpec.describe 'Services::Rows', :with_admin_password do
     service
   end
 
-  def mock_container(service_name, running: true)
+  def mock_container(service_name, running: true, status: nil)
+    effective_status = status || (running ? 'running' : 'exited')
     instance_double(
       Orchestration::Container,
       service_name: service_name,
       running?: running,
-      status: running ? 'running' : 'exited',
+      status: effective_status,
       health_status: nil,
       version: '1.0.0',
       public_port: nil,
@@ -72,6 +73,26 @@ RSpec.describe 'Services::Rows', :with_admin_password do
       get service_row_path(service_id: 'influxdb')
 
       expect(response).to redirect_to(services_path)
+    end
+
+    it 'disables the logs button when the container is in created state' do
+      mock_compose_service('influxdb')
+      container = mock_container('influxdb', running: false, status: 'created')
+      allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(container)
+
+      get service_row_path(service_id: 'influxdb'), headers: turbo_frame_headers
+
+      expect(response.body).to match(/<span[^>]*\bbtn-disabled\b[^>]*>\s*<i[^>]*fa-file-lines/)
+    end
+
+    it 'enables the logs button for an exited container' do
+      mock_compose_service('influxdb')
+      container = mock_container('influxdb', running: false, status: 'exited')
+      allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(container)
+
+      get service_row_path(service_id: 'influxdb'), headers: turbo_frame_headers
+
+      expect(response.body).to include(service_log_path('influxdb'))
     end
 
     it 'disables the start button and shows a warning link when the collector source is incompletely configured' do
