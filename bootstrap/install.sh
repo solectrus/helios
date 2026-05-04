@@ -27,7 +27,15 @@ HELIOS_REF="${HELIOS_REF:-develop}"
 # Preflight thresholds. ABORT = the install will fail without this.
 # RECOMMENDED = it will work but the user runs out of headroom soon.
 # Calibrated against a real-world stack on a 16 GB / 2 GiB Proxmox VM.
-MIN_DISK_GB=5
+#
+# Disk floor at 1 GB covers the HELIOS image (~250 MB on disk) plus
+# log/DB headroom and a safety margin for Docker overhead. The 5 GB
+# recommendation is the comfortable target for a full stack (Dashboard +
+# Postgres + InfluxDB + Redis + Traefik + collectors) that pulls 3-4 GB
+# of images on first start. Collector-only hosts sit comfortably between
+# the two.
+MIN_DISK_GB=1
+RECOMMENDED_DISK_GB=5
 MIN_RAM_MB=1024
 RECOMMENDED_RAM_MB=2048
 
@@ -173,7 +181,7 @@ welcome() {
       by adding HELIOS as a new service
     • Pull and start HELIOS, reachable at http://<host>:3999
 
-  Recommended host: ≥ ${MIN_DISK_GB} GB free disk, ≥ $((RECOMMENDED_RAM_MB / 1024)) GB RAM, Linux x86_64 or arm64
+  Recommended host: ≥ ${RECOMMENDED_DISK_GB} GB free disk, ≥ $((RECOMMENDED_RAM_MB / 1024)) GB RAM, Linux x86_64 or arm64
 
   HELIOS will be installed into:
 TEXT
@@ -197,10 +205,18 @@ free_gb() {
   fi
 }
 
-# A full SOLECTRUS stack pulls ~3-4 GB of images (Dashboard, HELIOS,
-# Postgres, InfluxDB, Redis, Traefik, several collectors, Watchtower)
-# plus log + DB volumes. Below MIN_DISK_GB the install fails mid-pull.
+# Two callsites, two thresholds:
+#   - "fresh":    user starts from nothing; the next steps will likely pull a
+#                 full stack (~3-4 GB of images: Dashboard, Postgres, InfluxDB,
+#                 Redis, Traefik, collectors, Watchtower) plus log/DB volumes,
+#                 so we recommend RECOMMENDED_DISK_GB.
+#   - "existing": stack is already running, its images are already on disk
+#                 and Docker is paid for; we only add the HELIOS image
+#                 (~250 MB on disk) on top, so MIN_DISK_GB is enough.
+# In both modes, falling below MIN_DISK_GB is a hard fail because the HELIOS
+# image won't fit otherwise.
 ensure_disk_space() {
+  local mode="${1:-fresh}"
   local cwd_gb docker_gb available path
   cwd_gb="$(free_gb "$(pwd)")"
   available="$cwd_gb"
@@ -219,6 +235,11 @@ ensure_disk_space() {
   if [ "$available" -lt "$MIN_DISK_GB" ]; then
     error "  ✗ Disk: ${available} GB free at ${path} (need ≥ ${MIN_DISK_GB} GB)"
     die "Free up disk space and retry."
+  fi
+
+  if [ "$mode" = "fresh" ] && [ "$available" -lt "$RECOMMENDED_DISK_GB" ]; then
+    warn_or_abort "  ⚠ Disk: ${available} GB free at ${path} (recommended ≥ ${RECOMMENDED_DISK_GB} GB)"
+    return
   fi
 
   success "  ✓ Disk: ${available} GB free at ${path}"
@@ -463,7 +484,7 @@ main() {
       return
     fi
 
-    ensure_disk_space
+    ensure_disk_space existing
     ensure_ram
     ensure_project_name
     append_helios_service
@@ -478,7 +499,7 @@ main() {
 
   bold "No existing stack found — performing fresh install"
 
-  ensure_disk_space
+  ensure_disk_space fresh
   ensure_ram
 
   COMPOSE_FILE="${COMPOSE_CANDIDATES[0]}"

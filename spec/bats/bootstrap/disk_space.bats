@@ -24,15 +24,41 @@ setup() { in_tmpdir; }
   [[ "$output" == *"100 GB free"* ]]
 }
 
-@test "ensure_disk_space passes at exactly the minimum threshold" {
-  free_gb() { echo "$MIN_DISK_GB"; }
+@test "ensure_disk_space passes at exactly the recommended threshold" {
+  free_gb() { echo "$RECOMMENDED_DISK_GB"; }
   run ensure_disk_space
   [ "$status" -eq 0 ]
   [[ "$output" == *"✓"* ]]
 }
 
+@test "ensure_disk_space warns and continues when user accepts (fresh)" {
+  free_gb() { echo "$MIN_DISK_GB"; }
+  prompt_yn() { return 0; }
+  run ensure_disk_space fresh
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"⚠"* ]]
+  [[ "$output" == *"recommended"* ]]
+}
+
+@test "ensure_disk_space exits cleanly when user declines warning (fresh)" {
+  free_gb() { echo "$MIN_DISK_GB"; }
+  prompt_yn() { return 1; }
+  run ensure_disk_space fresh
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"⚠"* ]]
+  [[ "$output" == *"Aborted"* ]]
+}
+
+@test "ensure_disk_space passes silently between MIN and RECOMMENDED in existing mode" {
+  free_gb() { echo "$MIN_DISK_GB"; }
+  run ensure_disk_space existing
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"✓"* ]]
+  [[ "$output" != *"⚠"* ]]
+}
+
 @test "ensure_disk_space dies hard below the abort threshold" {
-  free_gb() { echo 3; }
+  free_gb() { echo 0; }
   run ensure_disk_space
   [ "$status" -ne 0 ]
   [[ "$output" == *"✗"* ]]
@@ -46,12 +72,12 @@ setup() { in_tmpdir; }
 
   free_gb() {
     case "$1" in
-      /var/lib/docker) echo 4 ;;
+      /var/lib/docker) echo 0 ;;
       *) echo 50 ;;
     esac
   }
 
   run ensure_disk_space
   [ "$status" -ne 0 ]
-  [[ "$output" == *"4 GB free at /var/lib/docker"* ]]
+  [[ "$output" == *"0 GB free at /var/lib/docker"* ]]
 }
