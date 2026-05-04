@@ -3,26 +3,20 @@ import consumer from '../channels/consumer';
 import type { Subscription } from '@rails/actioncable';
 
 export default class LogViewerController extends Controller {
-  static targets = [
-    'output',
-    'scrollContainer',
-    'streamingDot',
-    'streamingLabel',
-    'loader',
-  ];
+  static targets = ['output', 'scrollContainer', 'status', 'loader'];
   static values = {
     service: String,
+    streaming: { type: String, default: 'connecting' },
   };
 
   declare outputTarget: HTMLPreElement;
   declare scrollContainerTarget: HTMLElement;
   declare loaderTarget: HTMLElement;
   declare hasLoaderTarget: boolean;
-  declare streamingDotTarget: HTMLElement;
-  declare streamingLabelTarget: HTMLElement;
-  declare hasStreamingDotTarget: boolean;
-  declare hasStreamingLabelTarget: boolean;
+  declare statusTarget: HTMLElement;
+  declare hasStatusTarget: boolean;
   declare serviceValue: string;
+  declare streamingValue: 'connecting' | 'connected' | 'disconnected';
 
   private static readonly MAX_LINES = 5000;
 
@@ -60,6 +54,12 @@ export default class LogViewerController extends Controller {
     }
   }
 
+  streamingValueChanged() {
+    if (!this.hasStatusTarget) return;
+
+    this.statusTarget.dataset.state = this.streamingValue;
+  }
+
   private subscribe() {
     this.subscription = consumer.subscriptions.create(
       { channel: 'LogsChannel', service: this.serviceValue },
@@ -69,10 +69,10 @@ export default class LogViewerController extends Controller {
           this.insertLine(html);
         },
         connected: () => {
-          this.setStreamingStatus(true);
+          this.streamingValue = 'connected';
         },
         disconnected: () => {
-          this.setStreamingStatus(false);
+          this.streamingValue = 'disconnected';
         },
       },
     );
@@ -201,27 +201,6 @@ export default class LogViewerController extends Controller {
   private showLoader(visible: boolean) {
     if (this.hasLoaderTarget) {
       this.loaderTarget.classList.toggle('hidden', !visible);
-    }
-  }
-
-  private setStreamingStatus(connected: boolean) {
-    if (!this.hasStreamingDotTarget || !this.hasStreamingLabelTarget) return;
-
-    const dot = this.streamingDotTarget;
-    const label = this.streamingLabelTarget;
-
-    if (connected) {
-      dot.className = 'relative mr-2 flex h-2 w-2';
-      dot.innerHTML =
-        '<span class="absolute h-full w-full animate-ping rounded-full bg-success/75"></span>' +
-        '<span class="h-2 w-2 rounded-full bg-success"></span>';
-      label.textContent = 'Live';
-      label.className = 'text-success';
-    } else {
-      dot.className = 'mr-2 inline-block h-2 w-2 rounded-full bg-error';
-      dot.innerHTML = '';
-      label.textContent = 'Disconnected';
-      label.className = 'text-error';
     }
   }
 }

@@ -13,6 +13,8 @@ de:
       show:
         title: '%{name} — Logs'
         connecting: 'Verbinden…'
+        live: 'Live'
+        disconnected: 'Getrennt'
     errors:
       blocked_by_dependency: 'Blockiert: %{dependency} konnte nicht gestartet werden'
 

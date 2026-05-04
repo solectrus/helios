@@ -10,11 +10,29 @@
     data-log-viewer-service-value="<%= params[:service_id] %>"
   >
     <div class="mb-4 flex items-center gap-3 px-4 pt-4 sm:px-0 sm:pt-0">
-      <h3 class="text-lg font-bold"><%= t('.title', name: @service_display_name) %></h3>
+      <h3 class="text-lg font-bold tracking-tight"><%= t('.title', name: @service_display_name) %></h3>
 
-      <span class="text-base-content/50 ml-auto flex items-center gap-2 text-xs">
-        <span data-log-viewer-target="streamingDot" class="inline-block h-2 w-2 rounded-full bg-current"></span>
-        <span data-log-viewer-target="streamingLabel"><%= t('.connecting') %></span>
+      <span
+        class="
+          group bg-base-200/60 text-base-content/60 data-[state=connected]:text-success
+          data-[state=disconnected]:text-error inline-flex items-center gap-2 rounded-full px-3 py-0.5 text-sm
+          font-medium tracking-wide tabular-nums transition-colors
+        "
+        data-log-viewer-target="status"
+        data-state="connecting"
+      >
+        <span class="relative inline-block h-2 w-2 rounded-full bg-current">
+          <span
+            class="
+              bg-success absolute inset-0 hidden animate-ping rounded-full opacity-75
+              group-data-[state=connected]:block
+            "
+          ></span>
+        </span>
+
+        <span class="hidden group-data-[state=connecting]:inline"><%= t('.connecting') %></span>
+        <span class="hidden group-data-[state=connected]:inline"><%= t('.live') %></span>
+        <span class="hidden group-data-[state=disconnected]:inline"><%= t('.disconnected') %></span>
       </span>
     </div>
 
