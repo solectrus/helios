@@ -79,5 +79,21 @@ RSpec.describe 'Services', :with_admin_password do
         expect(response).to redirect_to(sensors_path)
       end
     end
+
+    context 'when in collectors_only mode with a configured source' do
+      before do
+        with_config_yaml(
+          'system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+          'senec' => { 'version' => '4', 'host' => '10.0.0.10' },
+        )
+        allow(Orchestration::Container).to receive(:all).and_return([])
+        mock_compose_services
+      end
+
+      it 'shows the services page even without logical sensors' do
+        get services_path
+        expect(response).to have_http_status(:ok)
+      end
+    end
   end
 end

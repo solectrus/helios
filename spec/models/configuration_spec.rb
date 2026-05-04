@@ -142,6 +142,15 @@ RSpec.describe Configuration do
       with_config_yaml('mqtt' => { 'mqtt_host' => 'broker' })
       expect(described_class.current.active_sources).to be_empty
     end
+
+    it 'lists configured collector sections in collectors_only mode even without sensors' do
+      with_config_yaml(
+        'system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+        'senec' => { 'version' => '4', 'host' => '10.0.0.10' },
+        'shelly' => { 'connection' => 'cloud' },
+      )
+      expect(described_class.current.active_sources).to eq(%w[senec shelly])
+    end
   end
 
   describe '#update' do
@@ -362,6 +371,19 @@ RSpec.describe Configuration do
       config.update_sensor('inverter_power', { 'source' => 'senec' })
 
       expect(config.setup_completed?).to be true
+    end
+
+    it 'returns true in collectors_only mode when an active source is configured' do
+      with_config_yaml(
+        'system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+        'senec' => { 'version' => '4', 'host' => '10.0.0.10' },
+      )
+      expect(described_class.current.setup_completed?).to be true
+    end
+
+    it 'returns false in collectors_only mode without any active source' do
+      with_config_yaml('system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      expect(described_class.current.setup_completed?).to be false
     end
   end
 end
