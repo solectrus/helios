@@ -44,3 +44,21 @@ EOF
 
   grep -qE '^ADMIN_PASSWORD=.{32}$' "$ENV_FILE"
 }
+
+@test "exposes generated ADMIN_PASSWORD via GENERATED_ADMIN_PASSWORD" {
+  : > "$ENV_FILE"
+
+  ensure_helios_secrets
+
+  [ -n "$GENERATED_ADMIN_PASSWORD" ]
+  [ "${#GENERATED_ADMIN_PASSWORD}" -eq 32 ]
+  grep -qE "^ADMIN_PASSWORD=${GENERATED_ADMIN_PASSWORD}$" "$ENV_FILE"
+}
+
+@test "leaves GENERATED_ADMIN_PASSWORD empty when ADMIN_PASSWORD already exists" {
+  printf 'ADMIN_PASSWORD=existing-pw\n' > "$ENV_FILE"
+
+  ensure_helios_secrets
+
+  [ -z "$GENERATED_ADMIN_PASSWORD" ]
+}

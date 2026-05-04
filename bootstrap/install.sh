@@ -364,9 +364,14 @@ ENV
 
 # Backfill ADMIN_PASSWORD / SECRET_KEY_BASE in an existing .env. Collector-only
 # stacks lack both — without SECRET_KEY_BASE the helios container can't boot.
+# Sets GENERATED_ADMIN_PASSWORD when a new password was created so the caller
+# can show it to the user (otherwise it would only live in .env, undiscovered).
 ensure_helios_secrets() {
-  grep -qE '^ADMIN_PASSWORD=.+' "$ENV_FILE" \
-    || printf 'ADMIN_PASSWORD=%s\n' "$(generate_password)" >> "$ENV_FILE"
+  GENERATED_ADMIN_PASSWORD=""
+  if ! grep -qE '^ADMIN_PASSWORD=.+' "$ENV_FILE"; then
+    GENERATED_ADMIN_PASSWORD="$(generate_password)"
+    printf 'ADMIN_PASSWORD=%s\n' "$GENERATED_ADMIN_PASSWORD" >> "$ENV_FILE"
+  fi
   grep -qE '^SECRET_KEY_BASE=.+' "$ENV_FILE" \
     || printf 'SECRET_KEY_BASE=%s\n' "$(generate_secret)" >> "$ENV_FILE"
 }
@@ -491,9 +496,22 @@ main() {
     ensure_helios_secrets
 
     success "$COMPOSE_FILE updated — added 'helios' service."
-    warn "ADMIN_PASSWORD and SECRET_KEY_BASE live in $ENV_FILE."
     start_stack
-    success "HELIOS is running at $(helios_url)"
+
+    if [ -n "${GENERATED_ADMIN_PASSWORD:-}" ]; then
+      cat <<MSG
+
+================================================================
+  HELIOS is running at $(helios_url)
+  Initial admin password:  ${GENERATED_ADMIN_PASSWORD}
+================================================================
+Keep this password safe — it is also stored in $ENV_FILE
+(key ADMIN_PASSWORD) on this host.
+MSG
+    else
+      success "HELIOS is running at $(helios_url)"
+      warn "ADMIN_PASSWORD and SECRET_KEY_BASE live in $ENV_FILE."
+    fi
     return
   fi
 

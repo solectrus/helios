@@ -231,6 +231,7 @@ de:
       subtitle: 'Konfiguration von SOLECTRUS'
       password_label: 'Passwort'
       password_placeholder: 'Passwort eingeben'
+      password_hint_html: 'Das Passwort findest Du auf dem Host in der Datei <code class="rounded bg-base-300 px-1 font-mono">.env</code> unter <code class="rounded bg-base-300 px-1 font-mono">ADMIN_PASSWORD</code>.'
       login: 'Anmelden'
 
   flash:
