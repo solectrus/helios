@@ -47,26 +47,26 @@
             </div>
           </div>
 
-          <% if extraction[:value] || filters.any? %>
-            <dl class="text-base-content/70 grid grid-cols-[7rem_1fr] gap-x-4 gap-y-1.5 text-sm">
-              <% if extraction[:value] %>
-                <dt class="text-base-content/40 self-baseline text-[10px] tracking-wider uppercase">
-                  <%= extraction[:label] %>
-                </dt>
-                <dd class="text-base-content/90 font-mono break-all"><%= extraction[:value] %></dd>
-              <% end %>
+          <% if extraction[:value] %>
+            <div class="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-sm">
+              <span class="text-base-content/40 text-[10px] tracking-wider uppercase"><%= extraction[:label] %></span>
 
-              <% if filters.any? %>
-                <dt class="text-base-content/40 self-baseline text-[10px] tracking-wider uppercase">
-                  <%= t('datasources.mqtt_topics.filters.label') %>
-                </dt>
-                <dd class="text-base-content/90 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono">
-                  <% filters.each do |chip| %>
-                    <span><%= chip %></span>
-                  <% end %>
-                </dd>
-              <% end %>
-            </dl>
+              <span class="text-base-content/90 font-mono break-all"><%= extraction[:value] %></span>
+            </div>
+          <% end %>
+
+          <% if filters.any? %>
+            <div class="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-sm">
+              <span class="text-base-content/40 text-[10px] tracking-wider uppercase">
+                <%= t('datasources.mqtt_topics.filters.label') %>
+              </span>
+
+              <span class="text-base-content/90 flex flex-wrap items-center gap-x-4 gap-y-1 font-mono">
+                <% filters.each do |chip| %>
+                  <span><%= chip %></span>
+                <% end %>
+              </span>
+            </div>
           <% end %>
 
           <div class="flex flex-wrap items-center gap-x-3 gap-y-1">
