@@ -46,6 +46,7 @@ services:
   shelly-collector:
     image: ghcr.io/solectrus/shelly-collector:develop
     environment:
+    - TZ
     - INFLUX_HOST
     - INFLUX_PORT
     - INFLUX_SCHEMA

@@ -208,6 +208,7 @@ services:
   shelly-collector:
     image: ghcr.io/solectrus/shelly-collector:latest
     environment:
+    - TZ
     - INFLUX_TOKEN
     - INFLUX_ORG
     - INFLUX_BUCKET
