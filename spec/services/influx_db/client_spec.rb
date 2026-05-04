@@ -19,6 +19,23 @@ RSpec.describe InfluxDb::Client do
 
       expect(client).to be_a(described_class)
     end
+
+    it 'targets the external InfluxDB in collectors_only mode' do
+      with_config_yaml(
+        'system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+        'influxdb' => {
+          'token' => 'tok', 'org' => 'org', 'bucket' => 'bkt',
+          'host' => 'remote.example', 'port' => '9000', 'schema' => 'https'
+        },
+      )
+      stub_request(:post, 'https://remote.example:9000/api/v2/query?org=org')
+        .to_return(status: 200, body: '')
+
+      described_class.from_configuration(Configuration.current)
+                     .query_all_latest('p' => 'm:f')
+
+      expect(WebMock).to have_requested(:post, 'https://remote.example:9000/api/v2/query?org=org')
+    end
   end
 
   describe '#query_all_latest' do
@@ -100,7 +117,7 @@ RSpec.describe InfluxDb::Client do
       expect(result).to eq({})
       expect(WebMock).to have_requested(:post, query_url).once
       expect(Rails.logger).to have_received(:warn)
-        .with(/InfluxDB unreachable at influxdb\.test:8086/).once
+        .with(%r{InfluxDB unreachable at http://influxdb\.test:8086}).once
     end
 
     it 'reuses one HTTP session across multiple sensors' do

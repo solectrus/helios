@@ -21,14 +21,20 @@ module InfluxDb
       Net::ReadTimeout,
     ].freeze
 
-    def initialize(token:, org:, bucket:, host: nil, port: 8086)
+    def initialize(token:, org:, bucket:, host: nil, port: nil, schema: nil) # rubocop:disable Metrics/ParameterLists
       @token = token
       @org = org
       @bucket = bucket
-      @host = host || ENV.fetch('INFLUX_HOST', default_host)
-      @port = port
+      @host = host.presence || ENV.fetch('INFLUX_HOST', default_host)
+      @port = (port.presence || ENV.fetch('INFLUX_PORT', 8086)).to_i
+      @schema = (schema.presence || ENV.fetch('INFLUX_SCHEMA', 'http')).to_s
     end
 
+    # config.yaml is the single source of truth: host/port/schema are read
+    # straight from the `influxdb` section so credential or URL edits take
+    # effect immediately, without recreating the HELIOS container. In full
+    # mode the section has no host/port/schema and the constructor falls
+    # back to the in-stack defaults (container name `influxdb` on http:8086).
     def self.from_configuration(configuration = Configuration.current)
       influx = configuration.influxdb
 
@@ -36,6 +42,9 @@ module InfluxDb
         token: influx.token,
         org: influx.org,
         bucket: influx.bucket,
+        host: influx.host,
+        port: influx.port,
+        schema: influx.schema,
       )
     end
 
@@ -50,15 +59,21 @@ module InfluxDb
 
     private
 
-    attr_reader :token, :org, :bucket, :host, :port
+    attr_reader :token, :org, :bucket, :host, :port, :schema
 
     # One Net::HTTP session is reused across the whole batch: saves N-1 DNS
     # lookups and TCP handshakes per poll, and turns an outage into a single
     # fast-fail instead of N timeouts back-to-back.
     def with_http(&)
-      Net::HTTP.start(host, port, open_timeout: OPEN_TIMEOUT, read_timeout: READ_TIMEOUT, &)
+      Net::HTTP.start(
+        host, port,
+        use_ssl: schema == 'https',
+        open_timeout: OPEN_TIMEOUT,
+        read_timeout: READ_TIMEOUT,
+        &
+      )
     rescue *CONNECTION_ERRORS => e
-      Rails.logger.warn("InfluxDB unreachable at #{host}:#{port}: #{e.message}")
+      Rails.logger.warn("InfluxDB unreachable at #{schema}://#{host}:#{port}: #{e.message}")
       {}
     end
 
@@ -100,7 +115,7 @@ module InfluxDb
     end
 
     def query_uri
-      URI("http://#{host}:#{port}/api/v2/query").tap do |uri|
+      URI("#{schema}://#{host}:#{port}/api/v2/query").tap do |uri|
         uri.query = URI.encode_www_form(org:)
       end
     end
