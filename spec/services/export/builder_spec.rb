@@ -917,6 +917,52 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'in collectors_only mode with cloud-shellies' do
+    before do
+      configuration.update('system', { 'installation_date' => '2024-01-15',
+                                       'timezone' => 'Europe/Berlin',
+                                       'mode' => 'collectors_only' })
+      configuration.update('influxdb', { 'host' => 'ingest.example.com', 'port' => '443',
+                                         'schema' => 'https', 'org' => 'solectrus',
+                                         'bucket' => 'solectrus', 'token' => 't' })
+      configuration.update('shelly', {
+                             'connection' => 'cloud',
+                             'interval' => '5',
+                             'cloud_server' => 'https://shelly-42-eu.shelly.cloud',
+                             'auth_key' => 'cloud-key',
+                             'devices' => [
+                               { 'name' => 'heatpump', 'device_id' => 'aabbccdd0001',
+                                 'measurement' => 'Heatpump' },
+                               { 'name' => 'fridge', 'device_id' => 'aabbccdd0002',
+                                 'measurement' => 'Fridge' },
+                             ],
+                           })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'writes SHELLY_DEVICE_ID instead of SHELLY_HOST' do
+      env = Env.load
+      expect(env['SHELLY_DEVICE_ID']).to eq('aabbccdd0001,aabbccdd0002')
+      expect(env['INFLUX_MEASUREMENT']).to eq('Heatpump,Fridge')
+      expect(env['SHELLY_HOST']).to be_nil
+    end
+
+    it 'writes the cloud credentials' do
+      env = Env.load
+      expect(env['SHELLY_CLOUD_SERVER']).to eq('https://shelly-42-eu.shelly.cloud')
+      expect(env['SHELLY_AUTH_KEY']).to eq('cloud-key')
+    end
+
+    it 'lists SHELLY_DEVICE_ID and the cloud vars in the compose environment' do
+      compose = Compose.load
+      shelly = compose.services.find('shelly-collector')
+      expect(shelly.environment).to include('SHELLY_DEVICE_ID',
+                                            'SHELLY_CLOUD_SERVER',
+                                            'SHELLY_AUTH_KEY')
+      expect(shelly.environment).not_to include('SHELLY_HOST')
+    end
+  end
+
   describe 'with MQTT configured' do
     before do
       configuration.update('mqtt', {

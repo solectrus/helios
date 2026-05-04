@@ -33,14 +33,21 @@ module Export
 
         env.add_section('Shelly collector')
         entry('SHELLY_INTERVAL', shelly.interval || '5', 'Polling interval in seconds')
-        collectors_only_device_entries(devices)
+        collectors_only_device_entries(devices, shelly)
         collectors_only_extra_entries(shelly)
+        global_optional_entries(shelly)
       end
 
-      def collectors_only_device_entries(devices)
-        hosts = devices.filter_map { |d| d['host'].presence }.join(',')
+      def collectors_only_device_entries(devices, shelly)
+        if shelly&.connection == 'cloud'
+          ids = devices.filter_map { |d| d['device_id'].presence }.join(',')
+          optional_entry('SHELLY_DEVICE_ID', ids, 'Shelly cloud device IDs (comma-separated)')
+        else
+          hosts = devices.filter_map { |d| d['host'].presence }.join(',')
+          optional_entry('SHELLY_HOST', hosts, 'Shelly device hostnames (comma-separated)')
+        end
+
         measurements = devices.filter_map { |d| d['measurement'].presence }.join(',')
-        optional_entry('SHELLY_HOST', hosts, 'Shelly device hostnames (comma-separated)')
         optional_entry('INFLUX_MEASUREMENT', measurements,
                        'InfluxDB measurement names (comma-separated)')
       end

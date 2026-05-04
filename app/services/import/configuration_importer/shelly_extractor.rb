@@ -44,27 +44,37 @@ module Import
         shelly_service_names.flat_map { |name| devices_for_service(name) }
       end
 
-      # Raw device list for collectors_only mode: one hash per Shelly host,
-      # name derived from the SHELLY_HOST_<NAME> env var suffix when present,
-      # otherwise a sequential fallback. The measurement aligns by index with
-      # the comma-separated INFLUX_MEASUREMENT list the collector consumes.
+      # Raw device list for collectors_only mode: one hash per Shelly device.
+      # Local-mode uses SHELLY_HOST and a "host" field; cloud-mode uses
+      # SHELLY_DEVICE_ID and a "device_id" field. The measurement aligns by
+      # index with the comma-separated INFLUX_MEASUREMENT list the collector
+      # consumes. In local-mode, names are derived from ${SHELLY_HOST_<NAME>}
+      # references in the raw compose; cloud-mode falls back to a sequential
+      # placeholder.
       def raw_devices
         return [] unless enabled?
 
-        service = shelly_service_names.first
-        env = service_env(service)
-        compose_env = raw_compose_env(service)
-        hosts = csv_split(env['SHELLY_HOST'])
-        measurements = csv_split(env['INFLUX_MEASUREMENT'])
-        names = shelly_host_names(compose_env, hosts.size)
-
-        hosts.each_with_index.map do |host, i|
+        ctx = raw_devices_context
+        ctx[:identifiers].each_with_index.map do |id, i|
           {
-            'name' => names[i] || "device#{i + 1}",
-            'host' => host,
-            'measurement' => measurements[i],
+            'name' => ctx[:names][i] || "device#{i + 1}",
+            ctx[:field] => id,
+            'measurement' => ctx[:measurements][i],
           }.compact
         end
+      end
+
+      def raw_devices_context
+        service = shelly_service_names.first
+        env = service_env(service)
+        cloud = env['SHELLY_CLOUD_SERVER'].present?
+        identifiers = csv_split(env[cloud ? 'SHELLY_DEVICE_ID' : 'SHELLY_HOST'])
+        {
+          identifiers: identifiers,
+          measurements: csv_split(env['INFLUX_MEASUREMENT']),
+          names: cloud ? Array.new(identifiers.size) : shelly_host_names(raw_compose_env(service), identifiers.size),
+          field: cloud ? 'device_id' : 'host',
+        }
       end
 
       # INFLUX_MODE passthrough — optional "essential"/"full" hint the

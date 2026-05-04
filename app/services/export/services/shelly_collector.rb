@@ -55,8 +55,9 @@ module Export
       end
 
       # In collectors_only mode the compose only lists env names; the values
-      # (SHELLY_HOST / INFLUX_MEASUREMENT CSVs, optional INFLUX_MODE and
-      # SHELLY_PASSWORD) are written to the .env by Export::Env.
+      # (SHELLY_HOST / SHELLY_DEVICE_ID / INFLUX_MEASUREMENT CSVs, optional
+      # INFLUX_MODE, SHELLY_PASSWORD, and cloud credentials) are written to
+      # the .env by Export::Env.
       def collectors_only_environment
         base = %w[TZ] + ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS +
                %w[INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SHELLY_INTERVAL]
@@ -65,16 +66,31 @@ module Export
 
       def collectors_only_device_vars
         devices = Array(shelly_defaults&.devices)
-        vars = []
-        vars << 'SHELLY_HOST' if devices.any? { |d| d['host'].present? }
+        vars = [collectors_only_identifier_var(devices)].compact
         vars << 'INFLUX_MEASUREMENT' if devices.any? { |d| d['measurement'].present? }
         vars
+      end
+
+      def collectors_only_identifier_var(devices)
+        if cloud_mode?
+          'SHELLY_DEVICE_ID' if devices.any? { |d| d['device_id'].present? }
+        elsif devices.any? { |d| d['host'].present? }
+          'SHELLY_HOST'
+        end
       end
 
       def collectors_only_extra_vars
         vars = []
         vars << 'INFLUX_MODE' if shelly_defaults&.mode.present?
         vars << 'SHELLY_PASSWORD' if shelly_defaults&.password.present?
+        vars.concat(collectors_only_cloud_vars) if cloud_mode?
+        vars
+      end
+
+      def collectors_only_cloud_vars
+        vars = []
+        vars << 'SHELLY_CLOUD_SERVER' if shelly_defaults&.cloud_server.present?
+        vars << 'SHELLY_AUTH_KEY' if shelly_defaults&.auth_key.present?
         vars
       end
 
