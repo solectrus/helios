@@ -33,6 +33,7 @@ Web-based control panel for [SOLECTRUS](https://solectrus.de). HELIOS installs t
 - Architecture: AMD64 or ARM64 (Raspberry Pi 3/4/5, NAS, VPS, any Linux host)
 - Port 3999 available on the host
 - ~384 MB RAM for the HELIOS container
+- A directory of your choice on the host with writable `compose.yaml` and `.env` for the SOLECTRUS stack (HELIOS regenerates both)
 
 ## Installation
 
