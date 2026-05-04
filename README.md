@@ -35,6 +35,9 @@ Web-based control panel for [SOLECTRUS](https://solectrus.de). HELIOS installs t
 - ~384 MB RAM for the HELIOS container
 - A directory of your choice on the host with writable `compose.yaml` and `.env` for the SOLECTRUS stack (HELIOS regenerates both)
 
+> [!NOTE]
+> **Using Portainer or a similar Docker management tool?** HELIOS needs full control over the SOLECTRUS stack's `compose.yaml` and `.env`, so that stack must not be managed by such a tool. A mixed setup works fine: HELIOS owns the SOLECTRUS stack, the other tool keeps managing everything else. Take the SOLECTRUS stack out of the other tool and run it as a local directory containing `compose.yaml` and `.env`. Portainer, for example, will still list it, but mark it as _"This stack was created outside of Portainer. Control over this stack is limited."_ — exactly what you need.
+
 ## Installation
 
 HELIOS runs as one service inside your SOLECTRUS Docker Compose stack. The bootstrap script handles everything — whether you're setting up SOLECTRUS for the first time or adding HELIOS to a host that already runs it.
