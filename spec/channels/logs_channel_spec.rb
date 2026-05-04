@@ -15,7 +15,9 @@ RSpec.describe LogsChannel do
     )
     allow(Compose).to receive(:load).and_return(compose_file)
     allow(Orchestration::Runner).to receive(:stream_logs).and_return([fake_io, fake_pid])
-    allow(Process).to receive(:wait)
+    # Truthy return simulates the process having exited so wait_for_exit's
+    # loop ends on the first iteration instead of waiting out the timeout.
+    allow(Process).to receive(:wait).and_return(fake_pid)
     allow(Process).to receive(:kill)
   end
 
@@ -76,8 +78,24 @@ RSpec.describe LogsChannel do
     it 'stops the streaming process' do
       subscribe(service: service_name)
       subscription.unsubscribe_from_channel
+      subscription.instance_variable_get(:@cleanup_future)&.wait(5)
 
       expect(Process).to have_received(:kill).with('TERM', fake_pid)
+    end
+
+    # Regression: blocking #unsubscribed kept the previous subscription in the
+    # connection's hash. Rails dropped the new subscribe with the same
+    # identifier, no confirmation came back, and the UI hung on "Connecting…".
+    it 'returns immediately even when process cleanup is slow' do
+      allow(Process).to receive(:kill) { sleep 1 }
+
+      subscribe(service: service_name)
+
+      started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      subscription.unsubscribe_from_channel
+      elapsed = Process.clock_gettime(Process::CLOCK_MONOTONIC) - started_at
+
+      expect(elapsed).to be < 0.2
     end
   end
 end

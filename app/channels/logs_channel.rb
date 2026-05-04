@@ -60,13 +60,22 @@ class LogsChannel < ApplicationCable::Channel
     reap_process(pid)
   end
 
+  # Runs from #unsubscribed, which is called on the connection's single thread
+  # and blocks all other commands (including new subscribes with the same
+  # identifier) until it returns. Reopening the modal would otherwise see its
+  # subscribe ignored — Rails drops duplicate identifiers — and never receive
+  # a confirmation, leaving the UI on "Connecting…". Hand off to a background
+  # future so #unsubscribed returns immediately.
   def stop_streaming
-    @io&.close unless @io&.closed?
-    @reader_future&.wait(5)
+    io = @io
+    pid = @pid
+    future = @reader_future
 
-    return unless @pid
-
-    kill_process(@pid)
+    @cleanup_future = Concurrent::Promises.future do
+      io&.close unless io&.closed?
+      future&.wait(5)
+      kill_process(pid) if pid
+    end
   end
 
   def kill_process(pid)
