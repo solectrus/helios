@@ -47,5 +47,21 @@ RSpec.describe 'Sensors', :with_admin_password do
       expect(response.body).to match(/href="#{services_path}"/)
       expect(response.body).to match(/fa-solid fa-play/)
     end
+
+    # The remote read endpoint is often unavailable (write-only Ingest
+    # service, reverse proxy without /api/v2, etc.) — skipping the query
+    # avoids one 404 per mapping per request.
+    it 'does not query InfluxDB in collectors_only mode' do
+      with_config_yaml(
+        'system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+        'influxdb' => { 'host' => 'remote.example', 'port' => '443', 'schema' => 'https',
+                        'token' => 't', 'org' => 'o', 'bucket' => 'b' },
+        'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
+      )
+
+      get sensors_path
+
+      expect(WebMock).not_to have_requested(:post, /remote\.example/)
+    end
   end
 end

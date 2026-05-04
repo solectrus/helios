@@ -3,11 +3,16 @@ module SensorReadings
 
   private
 
-  # Skipped in collectors_only mode: there is no local InfluxDB container,
-  # the target lives on a remote host. Connection failures degrade gracefully
-  # via InfluxDb::Client's CONNECTION_ERRORS rescue, so the gate is unneeded.
-  def influxdb_reachable?(configuration)
-    return true if configuration.collectors_only?
+  # In collectors_only mode the configured target is whatever the user
+  # points the collectors at — often a write-only Ingest service, sometimes
+  # a reverse proxy that exposes only /api/v1, occasionally a reachable
+  # InfluxDB. We have no way to tell from outside, and an unreachable read
+  # endpoint produces one 404 per mapping per request. Skip polling
+  # entirely; values live in the remote dashboard.
+  # In full mode we still gate on the local InfluxDB container so a stopped
+  # DB does not produce a flood of connection errors.
+  def readings_available?(configuration)
+    return false if configuration.collectors_only?
 
     Orchestration::Container.find('influxdb')&.running? || false
   rescue Orchestration::ConnectionError
@@ -26,7 +31,7 @@ module SensorReadings
   end
 
   def fetch_readings_for(mappings, configuration:)
-    return {} unless influxdb_reachable?(configuration)
+    return {} unless readings_available?(configuration)
     return {} if mappings.blank?
 
     InfluxDb::Client.from_configuration(configuration).query_all_latest(mappings)
