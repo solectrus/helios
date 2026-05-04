@@ -30,16 +30,34 @@ export default class LogViewerController extends Controller {
   private isScrolledToBottom = true;
   private isLoadingOlder = false;
   private hasMoreLogs = true;
+  private initialScrollDone = false;
+  private resizeObserver?: ResizeObserver;
 
   connect() {
-    this.scrollToBottom();
+    // The container has zero size until the surrounding <dialog> opens via
+    // showModal(), which happens after Stimulus connect(). Observe size to
+    // trigger the initial scroll-to-bottom once the dialog is visible.
+    this.resizeObserver = new ResizeObserver(() => this.handleResize());
+    this.resizeObserver.observe(this.scrollContainerTarget);
     this.scrollContainerTarget.addEventListener('scroll', this.handleScroll);
     this.subscribe();
   }
 
   disconnect() {
+    this.resizeObserver?.disconnect();
+    this.resizeObserver = undefined;
     this.scrollContainerTarget.removeEventListener('scroll', this.handleScroll);
     this.unsubscribe();
+  }
+
+  private handleResize() {
+    if (
+      !this.initialScrollDone &&
+      this.scrollContainerTarget.scrollHeight > 0
+    ) {
+      this.initialScrollDone = true;
+      this.scrollToBottom();
+    }
   }
 
   private subscribe() {

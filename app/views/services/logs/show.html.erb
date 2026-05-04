@@ -1,23 +1,32 @@
-<%= turbo_frame_tag "log-modal-content",
-                    class: "flex h-full flex-col",
-                    data: { controller: "log-viewer", log_viewer_service_value: params[:service_id] } do %>
-  <div class="mb-4 flex items-center gap-3 px-4 pt-4 sm:px-0 sm:pt-0">
-    <h3 class="text-lg font-bold"><%= t('.title', name: @service_display_name) %></h3>
+<%#
+  Stimulus attributes must live on an inner element: Turbo replaces frame
+  contents but keeps the outer turbo-frame attributes from the layout.
+%>
 
-    <span class="text-base-content/50 ml-auto flex items-center gap-2 text-xs">
-      <span data-log-viewer-target="streamingDot" class="inline-block h-2 w-2 rounded-full bg-current"></span>
-      <span data-log-viewer-target="streamingLabel"><%= t('.connecting') %></span>
-    </span>
-  </div>
-
+<%= turbo_frame_tag "log-modal-content", class: "flex h-full flex-col" do %>
   <div
-    data-log-viewer-target="scrollContainer"
-    class="bg-base-300 min-h-0 flex-1 overflow-auto p-4 sm:max-h-[70vh] sm:flex-initial sm:rounded-lg"
+    class="flex h-full flex-col"
+    data-controller="log-viewer"
+    data-log-viewer-service-value="<%= params[:service_id] %>"
   >
-    <span data-log-viewer-target="loader" class="text-base-content/50 mb-2 hidden text-center">
-      <span class="loading loading-dots loading-xs"></span>
-    </span>
+    <div class="mb-4 flex items-center gap-3 px-4 pt-4 sm:px-0 sm:pt-0">
+      <h3 class="text-lg font-bold"><%= t('.title', name: @service_display_name) %></h3>
 
-    <pre data-log-viewer-target="output" class="font-mono text-xs leading-relaxed"><%= @log_html %></pre>
+      <span class="text-base-content/50 ml-auto flex items-center gap-2 text-xs">
+        <span data-log-viewer-target="streamingDot" class="inline-block h-2 w-2 rounded-full bg-current"></span>
+        <span data-log-viewer-target="streamingLabel"><%= t('.connecting') %></span>
+      </span>
+    </div>
+
+    <div
+      data-log-viewer-target="scrollContainer"
+      class="bg-base-300 min-h-0 flex-1 overflow-auto p-4 sm:max-h-[70vh] sm:flex-initial sm:rounded-lg"
+    >
+      <span data-log-viewer-target="loader" class="text-base-content/50 mb-2 hidden text-center">
+        <span class="loading loading-dots loading-xs"></span>
+      </span>
+
+      <pre data-log-viewer-target="output" class="font-mono text-xs leading-relaxed"><%= @log_html %></pre>
+    </div>
   </div>
 <% end %>
