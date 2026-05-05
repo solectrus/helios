@@ -34,6 +34,8 @@ watchtower:
 forecast:
   forecast_azimuth1: "-85"
   forecast_azimuth2: '95'
+  forecast_declination1: '20'
+  forecast_declination2: '20'
   forecast_interval: '900'
   forecast_kwp1: '5.04'
   forecast_kwp2: '5.04'

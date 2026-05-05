@@ -61,8 +61,13 @@ MQTT mapping table. Anonymized but otherwise untouched.
   service's `environment:` block (same pattern as user3..user5).
 - **`INFLUX_MEASUREMENT_FORECAST=Forecast`** — preserved as
   `forecast.measurement: Forecast` and re-emitted on export.
+- **Global `FORECAST_DECLINATION=30` fanned out per roof.** Donor
+  declared a single unprefixed declination shared by both roofs;
+  `ForecastExtractor#multi_roof_data` now falls back to the global
+  value when per-roof `FORECAST_#{i}_DECLINATION` is missing, so
+  `forecast_declination1`/`_2` both round-trip as `30`.
 
-## Lost or degraded on re-export (data loss)
+## Lost or degraded on re-export (real data loss)
 
 - **Traefik reverse-proxy and Let's Encrypt setup gone.** All
   per-service `traefik.http.routers.*-solectrus.rule=Host(...)`,
@@ -73,43 +78,44 @@ MQTT mapping table. Anonymized but otherwise untouched.
   middleware (`test-ratelimit.ratelimit.average=100`) — all dropped.
   HELIOS doesn't model an external reverse proxy. The user must
   re-attach Traefik manually after import.
-- **Global `FORECAST_DECLINATION=30` lost.** Donor declared a single
-  unprefixed declination shared by both roofs; HELIOS expects per-roof
-  `FORECAST_0_DECLINATION` / `FORECAST_1_DECLINATION` and emits both as
-  empty strings. The user must re-enter the tilt angle for each roof
-  via the HELIOS UI.
-- **`FORCE_SSL=true` dropped.** HELIOS doesn't expose this setting.
-- **`INFLUX_PORT=8086` / `INFLUX_SCHEMA=http` / `INFLUX_HOST=influxdb`
-  dropped** — HELIOS uses internal `influxdb` service-network
-  addressing for the dashboard, mqtt-collector, forecast-collector,
-  and power-splitter (same as user5).
-- **`INFLUX_USERNAME=admin` dropped.** HELIOS uses the default
-  `solectrus` username during InfluxDB initialization. Harmless against
-  an already-initialized volume.
-- **Three InfluxDB tokens consolidated.** `INFLUX_ADMIN_TOKEN`,
-  `INFLUX_TOKEN_WRITE`, and `INFLUX_TOKEN_READ` all hold the same
-  value (`influx-token`) in the donor; HELIOS exports a single
-  `INFLUX_TOKEN`. Lossless here because the values are identical
-  (unlike user5 where consolidation caused privilege escalation).
-- **Custom-power slots `_08..10` referenced but undefined** — listed
-  in the dashboard and power-splitter `environment:` blocks but with
-  no `INFLUX_SENSOR_CUSTOM_POWER_08/09/10` in `.env`; silently dropped
-  on re-export. The user runs only seven custom plugs.
-- **InfluxDB `command:` override dropped.** Donor ran InfluxDB with
-  `influxd run --bolt-path /var/lib/influxdb2/influxd.bolt --engine-path
-  /var/lib/influxdb2/engine --store disk`; replaced by the image
-  default. Same loss as user5.
+- **`FORCE_SSL=true` dropped.** HELIOS doesn't expose this setting,
+  so HTTPS-redirect behavior at the Rails layer changes after import.
 - **`mqtt-collector` `privileged: true` dropped.** Donor ran the
-  collector with elevated privileges (no operational reason apparent);
-  HELIOS doesn't model `privileged:` and silently drops it.
-- **3-space-indented `volumes:` block in `mosquitto`** — donor's YAML
-  had unusual indentation; the importer normalizes to 2-space. Cosmetic
-  only.
+  collector with elevated privileges (no operational reason apparent,
+  but a deliberate setting nonetheless); HELIOS doesn't model
+  `privileged:` and silently drops it.
+
+## Equivalent on re-export (no operational impact)
+
+These look like changes in the diff but don't alter what the stack
+actually does — HELIOS's defaults match the donor's explicit values,
+or the value is simply re-spelled.
+
+- **`INFLUX_PORT=8086` / `INFLUX_SCHEMA=http` / `INFLUX_HOST=influxdb`
+  dropped** — HELIOS bakes these into compose service-network
+  addressing for dashboard, mqtt-collector, forecast-collector, and
+  power-splitter, so the runtime endpoint is unchanged.
+- **`INFLUX_USERNAME=admin` dropped.** HELIOS initializes with the
+  default `solectrus` username; harmless against an already-initialized
+  volume (the donor's running InfluxDB ignores `DOCKER_INFLUXDB_INIT_*`).
+- **Three identical InfluxDB tokens consolidated.** `INFLUX_ADMIN_TOKEN`,
+  `INFLUX_TOKEN_WRITE`, and `INFLUX_TOKEN_READ` all hold the same value
+  in the donor, so HELIOS's single `INFLUX_TOKEN` is lossless here
+  (contrast user5 where divergent token values caused privilege
+  escalation).
+- **InfluxDB `command:` override dropped.** Donor spelled out
+  `influxd run --bolt-path /var/lib/influxdb2/influxd.bolt --engine-path
+  /var/lib/influxdb2/engine --store disk` — these are the InfluxDB 2.x
+  defaults, so the image default produces identical behavior.
 - **Inline literal `INFLUX_TOKEN=${INFLUX_TOKEN_READ}` (dashboard) /
   `=${INFLUX_TOKEN_WRITE}` (forecast-collector, mqtt-collector) /
-  `=${INFLUX_ADMIN_TOKEN}` (power-splitter)** — all three rewritten
-  to plain `INFLUX_TOKEN` (no value), pulling from the consolidated
-  `INFLUX_TOKEN` in `.env`.
+  `=${INFLUX_ADMIN_TOKEN}` (power-splitter)** rewritten to plain
+  `INFLUX_TOKEN`, pulling from the consolidated value above.
+- **Custom-power slots `_08..10` referenced but undefined** — already
+  dead refs in the donor (`environment:` lists them, `.env` doesn't
+  define them); silent drop matches what the running stack saw.
+- **3-space-indented `volumes:` in `mosquitto`** normalized to
+  2-space. Pure formatting.
 
 ## Unmanaged services preserved
 

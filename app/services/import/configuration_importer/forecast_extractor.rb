@@ -54,9 +54,14 @@ module Import
       end
 
       def multi_roof_data(fc_env, configs)
+        # Donors sometimes set a single unprefixed FORECAST_DECLINATION shared by
+        # every roof while keeping AZIMUTH/KWP per-roof — fan it out so the value
+        # survives the round-trip instead of producing empty per-roof slots.
+        global_declination = fc_env['FORECAST_DECLINATION']
         data = { 'forecast_roofs' => configs.to_s }
         configs.times do |i|
-          data["forecast_declination#{i + 1}"] = fc_env["FORECAST_#{i}_DECLINATION"]
+          data["forecast_declination#{i + 1}"] =
+            fc_env["FORECAST_#{i}_DECLINATION"].presence || global_declination
           data[azimuth_field(fc_env, i + 1)] = fc_env["FORECAST_#{i}_AZIMUTH"]
           data["forecast_kwp#{i + 1}"] = fc_env["FORECAST_#{i}_KWP"]
         end
