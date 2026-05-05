@@ -60,8 +60,8 @@ module SupportBundle
       'compose.yaml' => compose_path,
       '.env' => env_path,
       'config.yaml' => Configuration.path,
-      'compose.yaml.bak' => "#{compose_path}.bak",
-      '.env.bak' => "#{env_path}.bak",
+      'compose.yaml.bak' => StackBackup.backup_path(compose_path),
+      '.env.bak' => StackBackup.backup_path(env_path),
     }
   end
 end

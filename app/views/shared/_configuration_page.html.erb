@@ -9,11 +9,11 @@
   <div class="md:flex md:items-start">
     <aside
       class="
-        bg-base-200/40 border-base-content/10 hidden md:sticky md:top-16 md:block md:w-72 md:shrink-0 md:self-start
-        md:border-r
+        bg-base-200/40 border-base-content/10 hidden md:sticky md:top-16 md:block md:h-[calc(100vh-7rem)] md:w-72
+        md:shrink-0 md:border-r
       "
     >
-      <div class="p-8">
+      <div class="flex h-full flex-col p-8">
         <%= render ConfigNav::Component.new(active_tab:) %>
       </div>
     </aside>
@@ -26,4 +26,6 @@
       </div>
     </div>
   </div>
+
+  <%= render ResetDialogs::Component.new %>
 <% end %>

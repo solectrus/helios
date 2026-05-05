@@ -119,6 +119,12 @@ de:
       discard_discard: 'Verwerfen'
       configure: 'Konfigurieren'
       not_configured: 'Noch nicht konfiguriert'
+    resets:
+      create:
+        success: 'Import wurde erfolgreich zurückgesetzt.'
+        unavailable: 'Reset nicht verfügbar — keine Sicherungsdateien gefunden.'
+      destroy:
+        success: 'Sicherungsdateien wurden gelöscht.'
 
   external_input_info:
     component:

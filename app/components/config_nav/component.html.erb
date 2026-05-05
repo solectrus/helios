@@ -1,4 +1,4 @@
-<nav class="flex flex-col <%= compact? ? 'gap-1' : 'gap-2' %>">
+<nav class="flex h-full flex-col <%= compact? ? 'gap-1' : 'gap-2' %>">
   <% if show_tabs? %>
     <% tabs.each do |tab| %>
       <%= link_to tab[:path], class: item_classes(tab), data: { turbo_frame: "_top" } do %>
@@ -41,5 +41,21 @@
       <i class="fa-solid fa-file-lines <%= compact? ? 'w-5 text-center text-base-content/60' : 'opacity-70' %>"></i>
       <span class="<%= compact? ? 'font-mono text-base' : '' %>">.env</span>
     </a>
+  <% end %>
+
+  <% if show_reset? %>
+    <div class="flex flex-col gap-1 pt-4 <%= 'mt-auto' unless compact? %>" data-controller="modal-opener">
+      <% reset_actions.each do |action| %>
+        <button
+          type="button"
+          data-action="modal-opener#open"
+          data-modal-opener-id-param="<%= action[:id] %>"
+          class="<%= reset_link_classes %>"
+        >
+          <i class="fa-solid w-5 text-center <%= action[:icon] %>"></i>
+          <span class="truncate font-medium"><%= t(".#{action[:key]}") %></span>
+        </button>
+      <% end %>
+    </div>
   <% end %>
 </nav>

@@ -22,4 +22,8 @@ module Compose
     end
     ::File.join(data_path, 'compose.yaml')
   end
+
+  def self.filename
+    ::File.basename(path)
+  end
 end

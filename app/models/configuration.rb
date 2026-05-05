@@ -68,6 +68,11 @@ class Configuration # rubocop:disable Metrics/ClassLength
     File.join(Rails.configuration.data_path, 'helios', YAML_FILENAME)
   end
 
+  def self.delete!
+    FileUtils.rm_f(path)
+    Current.configuration = nil
+  end
+
   # Serialize a config hash to the canonical YAML representation, including
   # the header comment. Used by save! and by fixture-generation tasks.
   def self.dump(data)

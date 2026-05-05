@@ -2,3 +2,5 @@ de:
   sensors: 'Sensoren'
   datasources: 'Datenquellen'
   advanced: 'Erweitert'
+  reset: 'Zurücksetzen'
+  discard: 'Sicherungen löschen'

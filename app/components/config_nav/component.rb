@@ -82,5 +82,18 @@ module ConfigNav
     def show_warning?(tab)
       tab[:id] == :datasources && Configuration.current.incomplete?
     end
+
+    def show_reset?
+      only != :tabs && StackBackup.exist?
+    end
+
+    def reset_actions
+      ResetDialogs::Component::DIALOGS
+    end
+
+    def reset_link_classes
+      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ' \
+        'text-error/80 hover:bg-error/10 hover:text-error'
+    end
   end
 end

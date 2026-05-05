@@ -30,6 +30,7 @@ Rails.application.routes.draw do
   scope 'configuration', as: :configuration do
     resources :settings, only: %i[new create], module: :configurations
     resources :surveys, only: :show, module: :configurations
+    resource :reset, only: %i[create destroy], module: :configurations
   end
 
   scope 'configuration/:setting/:name',

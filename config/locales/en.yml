@@ -148,6 +148,12 @@ en:
       discard_discard: 'Discard'
       configure: 'Configure'
       not_configured: 'Not configured yet'
+    resets:
+      create:
+        success: 'Import was successfully reset.'
+        unavailable: 'Reset unavailable — no backup files found.'
+      destroy:
+        success: 'Backup files have been deleted.'
 
   external_input_info:
     component:

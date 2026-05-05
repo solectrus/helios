@@ -1,0 +1,41 @@
+<% DIALOGS.each do |dialog| %>
+  <dialog id="<%= dialog[:id] %>" class="modal">
+    <div class="modal-box max-w-md">
+      <h3 class="text-error text-center text-lg font-bold">
+        <%= t(".#{dialog[:key]}") %>
+      </h3>
+
+      <p class="mt-4 text-sm"><%= t(".#{dialog[:key]}_what_html", compose: compose_filename) %></p>
+
+      <p class="mt-4 text-sm font-semibold"><%= t(".#{dialog[:key]}_when") %></p>
+
+      <div class="mt-2 space-y-1 text-sm">
+        <% dialog[:reasons].each_with_index do |reason, i| %>
+          <% if i.positive? %>
+            <p class="text-base-content/60 italic"><%= t('.or') %></p>
+          <% end %>
+
+          <p>… <%= t(".#{reason}") %></p>
+        <% end %>
+      </div>
+
+      <div class="modal-action gap-3">
+        <form method="dialog">
+          <button class="btn"><%= t('.cancel') %></button>
+        </form>
+
+        <%= form_with url: helpers.configuration_reset_path,
+                      method: dialog[:method],
+                      data: { turbo_frame: "_top", controller: "modal-opener" } do %>
+          <button type="submit" class="btn btn-error">
+            <i class="fa-solid <%= dialog[:icon] %>"></i> <%= t(".#{dialog[:key]}_confirm_button") %>
+          </button>
+        <% end %>
+      </div>
+    </div>
+
+    <form method="dialog" class="modal-backdrop">
+      <button>close</button>
+    </form>
+  </dialog>
+<% end %>
