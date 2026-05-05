@@ -11,7 +11,7 @@ Anonymized but otherwise untouched.
 - **Legacy service names `app:` and `db:`** — renamed to `dashboard:` and
   `postgresql:` on re-export via `SERVICE_IMAGE_PREFIXES` (same as user4).
 - **No false-positive balcony detection** — `inverter_power_1/_2/_3` all
-  share the `SENEC` measurement (a SENEC X3's three MPPTs); the importer's
+  share the `SENEC` measurement (a SENEC V3's three MPPTs); the importer's
   measurement-divergence heuristic recognizes this as one multi-string
   inverter and skips the `is_balcony: true` flag. Real balcony setups
   (user2, user3, synthetic `with_ingest`) keep their flag because their

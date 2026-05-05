@@ -6,7 +6,7 @@ module Import
     # user is treated as balcony-only.
     #
     # Multiple `inverter_power_N` slots sharing a single InfluxDB measurement
-    # are the MPPTs of one multi-string inverter (e.g. SENEC X3), not a
+    # are the MPPTs of one multi-string inverter (e.g. SENEC V3), not a
     # separate balcony generator.
     class BalconyDetector
       def initialize(reader, sensors_data)
