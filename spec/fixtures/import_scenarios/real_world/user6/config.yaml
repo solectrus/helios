@@ -1,0 +1,292 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 1
+system:
+  admin_password: admin_password
+  app_host: solectrus.example.com
+  installation_date: '2023-08-01'
+  secret_key_base: 745xyz
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:develop
+postgresql:
+  image: postgres:18-alpine
+  password: my-secret-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2.8-alpine
+  org: solectrus
+  password: influx-password
+  token: influx-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: pvnode
+  forecast_interval: '900'
+  forecast_kwp1: '4.45'
+  forecast_kwp2: '4.86'
+  forecast_latitude: '50'
+  forecast_longitude: '7'
+  forecast_pvnode_apikey: pvn_apikey
+  forecast_pvnode_azimuth1: '267.5'
+  forecast_pvnode_azimuth2: '87.5'
+  forecast_pvnode_extra_params: diffuse_radiation_model=perez&mounting_type=isol&shading_config=5:3:1:3_2:2:0:1_5:3:1:3&panel_age_years=2
+  forecast_pvnode_paid: 'true'
+  forecast_roofs: '2'
+  measurement: Forecast
+mqtt:
+  mappings:
+  - field: mileage
+    measurement: car
+    topic: ds3/mileage
+    type: integer
+  - field: compressor_starts
+    measurement: viessmann
+    topic: viessmann/compressorStarts
+    type: float
+  - field: compressor_hours
+    measurement: viessmann
+    topic: viessmann/compressorHours
+    type: float
+  mqtt_host: mosquitto
+  mqtt_password: mqtt-password
+  mqtt_port: '1883'
+  mqtt_ssl: 'false'
+  mqtt_username: mqtt-user
+sensors:
+  battery_charging_power:
+    field: bat_power_plus
+    measurement: SENEC
+    source: external
+  battery_discharging_power:
+    field: bat_power_minus
+    measurement: SENEC
+    source: external
+  battery_soc:
+    field: bat_fuel_charge
+    measurement: SENEC
+    source: external
+  car_battery_soc:
+    field: soc
+    measurement: car
+    mqtt_payload_type: integer
+    mqtt_topic: ds3/soc
+    source: mqtt
+  case_temp:
+    field: case_temp
+    measurement: SENEC
+    source: external
+  custom_power_01:
+    field: hifi_power
+    measurement: shellies
+    mqtt_json_key: apower
+    mqtt_payload_type: float
+    mqtt_topic: plug3/status/switch:0
+    name: shellies
+    source: mqtt
+  custom_power_02:
+    field: fridge_power
+    measurement: shellies
+    mqtt_json_key: apower
+    mqtt_payload_type: float
+    mqtt_topic: plug1/status/switch:0
+    name: shellies
+    source: mqtt
+  custom_power_03:
+    field: computer_power
+    measurement: shellies
+    mqtt_json_key: apower
+    mqtt_payload_type: float
+    mqtt_topic: plug2/status/switch:0
+    name: shellies
+    source: mqtt
+  custom_power_04:
+    field: washing_power
+    measurement: shellies
+    mqtt_json_path: "$.ENERGY.Power"
+    mqtt_payload_type: float
+    mqtt_topic: tele/tasmota_1/SENSOR
+    name: shellies
+    source: mqtt
+  custom_power_05:
+    field: dryer_power
+    measurement: shellies
+    mqtt_json_path: "$.ENERGY.Power"
+    mqtt_payload_type: float
+    mqtt_topic: tele/tasmota_2/SENSOR
+    name: shellies
+    source: mqtt
+  custom_power_06:
+    field: freezer_power
+    measurement: shellies
+    mqtt_json_key: apower
+    mqtt_payload_type: float
+    mqtt_topic: plug4/status/switch:0
+    name: shellies
+    source: mqtt
+  custom_power_07:
+    field: fridge2_power
+    measurement: shellies
+    mqtt_json_key: apower
+    mqtt_payload_type: float
+    mqtt_topic: plug5/status/switch:0
+    name: shellies
+    source: mqtt
+  grid_export_limit:
+    field: power_ratio
+    measurement: SENEC
+    source: external
+  grid_export_power:
+    field: grid_power_minus
+    measurement: SENEC
+    source: external
+  grid_import_power:
+    field: grid_power_plus
+    measurement: SENEC
+    source: external
+  heatpump_heating_power:
+    field: generated_heat
+    measurement: viessmann
+    mqtt_payload_type: float
+    mqtt_topic: viessmann/generatedHeat
+    source: mqtt
+  heatpump_power:
+    exclude_from_house_power: true
+    field: heatpump_power
+    measurement: shellies
+    mqtt_json_key: total_act_power
+    mqtt_payload_type: float
+    mqtt_topic: shellypro3em/status/em:0
+    source: mqtt
+  heatpump_tank_temp:
+    field: tank_temp
+    measurement: viessmann
+    mqtt_payload_type: float
+    mqtt_topic: viessmann/tankTemp
+    source: mqtt
+  house_power:
+    field: house_power
+    measurement: SENEC
+    source: external
+  inverter_power_1:
+    field: mpp1_power
+    measurement: SENEC
+    source: external
+  inverter_power_2:
+    field: mpp3_power
+    measurement: SENEC
+    source: external
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  inverter_power_forecast_clearsky:
+    field: watt_clearsky
+    measurement: Forecast
+    source: forecast
+  outdoor_temp:
+    field: outside_temp
+    measurement: viessmann
+    mqtt_payload_type: float
+    mqtt_topic: viessmann/outsideTemp
+    source: mqtt
+  outdoor_temp_forecast:
+    field: temp
+    measurement: Forecast
+    source: forecast
+  system_status:
+    field: current_state
+    measurement: SENEC
+    source: external
+  system_status_ok:
+    field: current_state_ok
+    measurement: SENEC
+    source: external
+  wallbox_car_connected:
+    field: ev_connected
+    measurement: SENEC
+    source: external
+  wallbox_power:
+    field: wallbox_charge_power
+    measurement: SENEC
+    source: external
+_unmanaged:
+  env_vars:
+    WATCHTOWER_SCHEDULE: 0 5 2 * * *
+  services:
+    dozzle:
+      environment:
+      - DOZZLE_AUTH_PROVIDER=simple
+      image: amir20/dozzle:latest
+      labels:
+      - traefik.enable=true
+      - traefik.http.routers.dozzle-solectrus.rule=Host(`solectrus.example.com`)
+      - traefik.http.routers.dozzle-solectrus.entrypoints=dozzle
+      - traefik.http.routers.dozzle-solectrus.tls.certresolver=myresolver
+      - traefik.http.routers.dozzle-solectrus.tls=true
+      - com.centurylinklabs.watchtower.scope=solectrus
+      logging:
+        options:
+          max-file: '3'
+          max-size: 10m
+      restart: always
+      volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./dozzle/data:/data"
+    mosquitto:
+      environment:
+      - TZ
+      expose:
+      - 1883
+      - 8883
+      image: eclipse-mosquitto
+      labels:
+      - traefik.enable=true
+      - traefik.tcp.routers.mqtt.rule=HostSNI(`solectrus.example.com`)
+      - traefik.tcp.routers.mqtt.entrypoints=mqtt
+      - traefik.tcp.routers.mqtt.service=mqttservice
+      - traefik.tcp.routers.mqtt.tls=true
+      - traefik.tcp.services.mqttservice.loadbalancer.server.port=8883
+      - com.centurylinklabs.watchtower.scope=solectrus
+      logging:
+        options:
+          max-file: '3'
+          max-size: 10m
+      restart: always
+      volumes:
+      - "./mosquitto:/mosquitto"
+      - "./mosquitto/data:/mosquitto/data"
+    pgadmin:
+      depends_on:
+        postgresql:
+          condition: service_healthy
+      environment:
+      - TZ
+      - PGADMIN_DEFAULT_EMAIL=pgadmin_email
+      - PGADMIN_DEFAULT_PASSWORD=pgadmin_password
+      - PGADMIN_ENABLE_TLS
+      image: dpage/pgadmin4
+      labels:
+      - traefik.enable=true
+      - traefik.http.routers.pgadmin-solectrus.rule=Host(`solectrus.example.com`)
+      - traefik.http.routers.pgadmin-solectrus.entrypoints=pgadmin
+      - traefik.http.routers.pgadmin-solectrus.tls.certresolver=myresolver
+      - traefik.http.routers.pgadmin-solectrus.tls=true
+      - traefik.tcp.routers.pgadmin.service=pgadminservice
+      - traefik.tcp.services.pgadminservice.loadbalancer.server.port=80
+      - com.centurylinklabs.watchtower.scope=solectrus
+      logging:
+        options:
+          max-file: '3'
+          max-size: 10m
+      restart: always
+      volumes:
+      - "./pgAdmin:/var/lib/pgadmin"
