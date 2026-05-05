@@ -72,7 +72,7 @@ module Export
       service_hash = service_class.new(configuration).to_h.compact.reverse_merge(default_logging)
       service_hash[:image] = ::Compose.normalize_image(service_hash[:image])
       ServiceOverrides.apply(configuration, service_class.service_name, service_hash)
-      service_hash[:labels] = Array(service_hash[:labels]) + [WATCHTOWER_LABEL]
+      service_hash[:labels] = (Array(service_hash[:labels]) + [WATCHTOWER_LABEL]).uniq
       service_hash
     end
 

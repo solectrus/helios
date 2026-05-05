@@ -435,7 +435,6 @@ services:
     - 8888:8888
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
-    - com.centurylinklabs.watchtower.scope=solectrus
     restart: always
     logging:
       driver: json-file

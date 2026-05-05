@@ -368,7 +368,6 @@ services:
     - 8086:8086
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
-    - com.centurylinklabs.watchtower.scope=solectrus
     restart: unless-stopped
     logging:
       driver: json-file
