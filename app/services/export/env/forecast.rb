@@ -43,7 +43,7 @@ module Export
 
       def single_roof_entries(fcast)
         entry('FORECAST_DECLINATION', fcast.forecast_declination1, 'Roof tilt angle')
-        entry('FORECAST_AZIMUTH', azimuth_value(fcast, 1), 'Roof orientation')
+        entry('FORECAST_AZIMUTH', azimuth_value(fcast, 1), azimuth_comment(fcast))
         entry('FORECAST_KWP', fcast.forecast_kwp1, 'System capacity in kWp')
       end
 
@@ -53,7 +53,7 @@ module Export
           entry("FORECAST_#{i}_DECLINATION", fcast.send("forecast_declination#{i + 1}"),
                 "Roof surface #{i + 1} tilt angle")
           entry("FORECAST_#{i}_AZIMUTH", azimuth_value(fcast, i + 1),
-                "Roof surface #{i + 1} orientation")
+                "Roof surface #{i + 1} orientation (#{azimuth_range(fcast)})")
           entry("FORECAST_#{i}_KWP", fcast.send("forecast_kwp#{i + 1}"),
                 "Roof surface #{i + 1} capacity in kWp")
         end
@@ -67,6 +67,18 @@ module Export
           fcast.send("forecast_pvnode_azimuth#{index}")
         else
           fcast.send("forecast_azimuth#{index}")
+        end
+      end
+
+      def azimuth_comment(fcast)
+        "Roof orientation (#{azimuth_range(fcast)})"
+      end
+
+      def azimuth_range(fcast)
+        if fcast.forecast == 'pvnode'
+          '0=N, 90=E, 180=S, 270=W'
+        else
+          '-180=N, -90=E, 0=S, 90=W, 180=N'
         end
       end
 
