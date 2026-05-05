@@ -29,6 +29,7 @@ module Import
           'app_domain' => domain,
           'letsencrypt_email' => @reader.raw_env['LETSENCRYPT_EMAIL'],
           'image' => @reader.service('traefik')&.dig('image'),
+          'service_labels' => extract_service_labels.presence,
         }
           .merge(passthrough_data)
           .merge(@volume_resolver.path_data('reverse_proxy'))
@@ -37,6 +38,32 @@ module Import
       end
 
       private
+
+      # Capture per-service `traefik.*` labels for managed services other
+      # than the dashboard (HELIOS regenerates dashboard's routing from
+      # `app_domain`). Labels on unmanaged services (dozzle, pgadmin,
+      # mosquitto, ...) survive the round-trip via _unmanaged.services and
+      # don't need a separate carrier.
+      def extract_service_labels
+        managed = StackReader::SERVICE_IMAGE_PREFIXES.keys - %w[dashboard]
+        raw_services = @reader.raw_compose['services'] || {}
+        managed.each_with_object({}) do |name, result|
+          labels = traefik_labels_of(raw_services[name])
+          result[name] = labels if labels.any?
+        end
+      end
+
+      def traefik_labels_of(service_config)
+        labels = service_config&.dig('labels')
+        case labels
+        when Array
+          labels.select { |l| l.to_s.start_with?('traefik.') }
+        when Hash
+          labels.select { |k, _| k.to_s.start_with?('traefik.') }.map { |k, v| "#{k}=#{v}" }
+        else
+          []
+        end
+      end
 
       def passthrough_data
         # Use the raw (unresolved) compose so ports/volumes stay in their

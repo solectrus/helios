@@ -118,6 +118,11 @@ services:
     ports:
     - 8086:8086
     labels:
+    - traefik.enable=true
+    - traefik.http.routers.influxdb-solectrus.rule=Host(`solectrus.example.com`)
+    - traefik.http.routers.influxdb-solectrus.entrypoints=influxdb
+    - traefik.http.routers.influxdb-solectrus.tls.certresolver=myresolver
+    - traefik.http.routers.influxdb-solectrus.tls=true
     - com.centurylinklabs.watchtower.scope=solectrus
     healthcheck:
       interval: 10s

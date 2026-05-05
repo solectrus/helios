@@ -250,6 +250,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     restart
     labels
     environment
+    service_labels
   ]).uniq.freeze
 
   BACKUP_FIELDS = %w[

@@ -82,14 +82,14 @@ MQTT mapping table. Anonymized but otherwise untouched.
 
 ## Lost or degraded on re-export (real data loss)
 
-- **Per-service Traefik routing labels on non-dashboard managed
-  services stripped.** Donor routed `influxdb` (entrypoint `influxdb`),
-  `pgadmin` (entrypoint `pgadmin`), and `mosquitto` (TCP/SNI rule)
-  through Traefik via per-service labels, plus a `test-ratelimit`
-  middleware on the dashboard. HELIOS regenerates these services from
-  its managed templates, so the extra label sets don't survive. The
-  dashboard's own Host rule round-trips fine — only the auxiliary
-  services lose their routing.
+- **Dashboard `test-ratelimit` middleware lost.** Donor attached
+  `traefik.http.middlewares.test-ratelimit.ratelimit.average=100` /
+  `.burst=200` labels to the dashboard. HELIOS owns the dashboard's
+  Traefik routing and regenerates a clean label set, so middleware
+  labels on the dashboard are dropped. (Per-service `traefik.*` labels
+  on other managed services like `influxdb` survive via
+  `reverse_proxy.service_labels`; only the dashboard exception applies
+  here.)
 - **`mqtt-collector` `privileged: true` dropped.** Donor ran the
   collector with elevated privileges (no operational reason apparent,
   but a deliberate setting nonetheless); HELIOS doesn't model
