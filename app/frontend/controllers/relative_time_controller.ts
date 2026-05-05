@@ -11,14 +11,21 @@ export default class extends Controller {
   declare targetValue: string;
 
   private intervalId?: number;
+  private boundUpdate = () => this.update();
 
   connect() {
     this.update();
-    this.intervalId = window.setInterval(() => this.update(), 60_000);
+    this.intervalId = window.setInterval(this.boundUpdate, 60_000);
+    // Turbo morph preserves this element but resets its textContent to the
+    // (empty) server-rendered version, and Stimulus skips `connect`/value
+    // callbacks because nothing on the controller changed. Re-run after
+    // morph to repaint our text.
+    this.element.addEventListener('turbo:morph-element', this.boundUpdate);
   }
 
   disconnect() {
     window.clearInterval(this.intervalId);
+    this.element.removeEventListener('turbo:morph-element', this.boundUpdate);
   }
 
   datetimeValueChanged() {
