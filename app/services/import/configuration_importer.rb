@@ -97,6 +97,10 @@ module Import
       @reverse_proxy_extractor ||= ReverseProxyExtractor.new(@reader, volume_resolver)
     end
 
+    def service_overrides_extractor
+      @service_overrides_extractor ||= ServiceOverridesExtractor.new(@reader)
+    end
+
     def backup_extractor
       @backup_extractor ||= BackupExtractor.new(@reader)
     end
@@ -166,6 +170,7 @@ module Import
         mqtt: mqtt_section_data,
         shelly: shelly_extractor.section_data,
         devices: build_devices,
+        service_overrides: service_overrides_extractor.section_data,
         unmanaged: unmanaged_detector.detect,
       )
     end
@@ -180,6 +185,7 @@ module Import
         senec: collectors_only_senec_data,
         mqtt: collectors_only_mqtt_data,
         shelly: collectors_only_shelly_data,
+        service_overrides: service_overrides_extractor.section_data,
         unmanaged: unmanaged_detector.detect,
       )
     end
@@ -234,7 +240,7 @@ module Import
 
     def persist_singletons!(config)
       %i[system dashboard postgresql influxdb redis watchtower ingest sensors forecast senec mqtt
-         shelly reverse_proxy backup].each do |key|
+         shelly reverse_proxy backup service_overrides].each do |key|
         config.update(key.to_s, result[key]) if result[key]
       end
     end

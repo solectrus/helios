@@ -7,6 +7,7 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
   describe 'GET /configuration/surveys/:id' do
     (Configuration::ALL - Configuration::HIDDEN).each do |setting|
       next if setting == 'sensors' # sensors is dynamic, no survey file
+      next if setting == 'service_overrides' # advanced overrides edited inline, no survey
 
       it "returns JSON for #{setting} survey" do
         get configuration_survey_path(id: setting)

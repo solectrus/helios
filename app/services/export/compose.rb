@@ -71,18 +71,9 @@ module Export
     def build_service_hash(service_class)
       service_hash = service_class.new(configuration).to_h.compact.reverse_merge(default_logging)
       service_hash[:image] = ::Compose.normalize_image(service_hash[:image])
-      service_hash[:labels] =
-        Array(service_hash[:labels]) +
-        extra_traefik_labels_for(service_class.service_name) +
-        [WATCHTOWER_LABEL]
+      ServiceOverrides.apply(configuration, service_class.service_name, service_hash)
+      service_hash[:labels] = Array(service_hash[:labels]) + [WATCHTOWER_LABEL]
       service_hash
-    end
-
-    # Traefik labels imported verbatim for managed services other than the
-    # dashboard — preserves wild-Traefik per-service routing (custom
-    # entrypoints, resolver names) when HELIOS regenerates the service.
-    def extra_traefik_labels_for(service_name)
-      Array(configuration.reverse_proxy.service_labels.to_h[service_name])
     end
 
     def active_service_classes

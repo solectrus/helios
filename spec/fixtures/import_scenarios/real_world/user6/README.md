@@ -79,21 +79,27 @@ MQTT mapping table. Anonymized but otherwise untouched.
   `ForecastExtractor#multi_roof_data` now falls back to the global
   value when per-roof `FORECAST_#{i}_DECLINATION` is missing, so
   `forecast_declination1`/`_2` both round-trip as `30`.
+- **Dashboard `test-ratelimit` middleware preserved.** Donor attached
+  `traefik.http.middlewares.test-ratelimit.ratelimit.average=100` /
+  `.burst=200` labels to the dashboard. HELIOS owns the dashboard's
+  router itself, but routes everything outside its own
+  `routers.<n>.{rule,entrypoints,tls}` /
+  `services.<n>.loadbalancer.server.port` pattern into
+  `service_overrides[dashboard].labels` (ADR-0015), so the rate-limit
+  middleware re-emits cleanly after HELIOS's generated labels.
+- **`influxdb` Traefik routing preserved.** Donor's per-service
+  `traefik.*` labels (`influxdb-solectrus` router on the custom
+  `influxdb` entrypoint with `myresolver`) round-trip via
+  `service_overrides[influxdb].labels` — the same generic mechanism
+  used for the dashboard middleware.
 
 ## Lost or degraded on re-export (real data loss)
 
-- **Dashboard `test-ratelimit` middleware lost.** Donor attached
-  `traefik.http.middlewares.test-ratelimit.ratelimit.average=100` /
-  `.burst=200` labels to the dashboard. HELIOS owns the dashboard's
-  Traefik routing and regenerates a clean label set, so middleware
-  labels on the dashboard are dropped. (Per-service `traefik.*` labels
-  on other managed services like `influxdb` survive via
-  `reverse_proxy.service_labels`; only the dashboard exception applies
-  here.)
 - **`mqtt-collector` `privileged: true` dropped.** Donor ran the
   collector with elevated privileges (no operational reason apparent,
-  but a deliberate setting nonetheless); HELIOS doesn't model
-  `privileged:` and silently drops it.
+  but a deliberate setting nonetheless); HELIOS deliberately keeps
+  `privileged` outside the `service_overrides` allowlist (ADR-0015),
+  so it is silently dropped on re-export.
 
 ## Equivalent on re-export (no operational impact)
 

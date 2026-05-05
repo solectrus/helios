@@ -76,6 +76,8 @@ services:
     - traefik.http.routers.dashboard.entrypoints=websecure
     - traefik.http.routers.dashboard.tls.certresolver=letsencrypt
     - traefik.http.services.dashboard.loadbalancer.server.port=3000
+    - traefik.http.middlewares.test-ratelimit.ratelimit.average=100
+    - traefik.http.middlewares.test-ratelimit.ratelimit.burst=200
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
       postgresql:

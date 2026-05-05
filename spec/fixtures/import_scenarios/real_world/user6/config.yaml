@@ -94,13 +94,6 @@ reverse_proxy:
   - 8883:8883
   - 8888:8888
   restart: always
-  service_labels:
-    influxdb:
-    - traefik.enable=true
-    - traefik.http.routers.influxdb-solectrus.rule=Host(`solectrus.example.com`)
-    - traefik.http.routers.influxdb-solectrus.entrypoints=influxdb
-    - traefik.http.routers.influxdb-solectrus.tls.certresolver=myresolver
-    - traefik.http.routers.influxdb-solectrus.tls=true
   volumes:
   - "./letsencrypt:/letsencrypt"
   - "/var/run/docker.sock:/var/run/docker.sock:ro"
@@ -261,6 +254,18 @@ sensors:
     field: wallbox_charge_power
     measurement: SENEC
     source: external
+service_overrides:
+  dashboard:
+    labels:
+    - traefik.http.middlewares.test-ratelimit.ratelimit.average=100
+    - traefik.http.middlewares.test-ratelimit.ratelimit.burst=200
+  influxdb:
+    labels:
+    - traefik.enable=true
+    - traefik.http.routers.influxdb-solectrus.rule=Host(`solectrus.example.com`)
+    - traefik.http.routers.influxdb-solectrus.entrypoints=influxdb
+    - traefik.http.routers.influxdb-solectrus.tls.certresolver=myresolver
+    - traefik.http.routers.influxdb-solectrus.tls=true
 _unmanaged:
   env_vars:
     WATCHTOWER_SCHEDULE: 0 5 2 * * *

@@ -147,3 +147,8 @@ sensors:
     source: senec
   wallbox_power:
     source: senec
+service_overrides:
+  dashboard:
+    labels:
+    - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+    - traefik.http.routers.redirs.middlewares=redirect-to-https

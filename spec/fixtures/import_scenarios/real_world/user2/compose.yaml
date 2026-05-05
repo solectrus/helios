@@ -82,6 +82,10 @@ services:
     ports:
     - 3000:3000
     labels:
+    - traefik.docker.network=traefik
+    - traefik.http.routers.to-solectrus.middlewares=ipallowlist@file
+    - traefik.http.routers.to-solectrus.service=solectrus
+    - traefik.http.services.solectrus.loadbalancer.passhostheader=true
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
       postgresql:
@@ -125,6 +129,13 @@ services:
     ports:
     - 8086:8086
     labels:
+    - traefik.docker.network=traefik
+    - traefik.enable=true
+    - traefik.http.routers.to-influxdb.middlewares=ipallowlist@file
+    - traefik.http.routers.to-influxdb.rule=Host(`influxdb.${DOMAIN}`)
+    - traefik.http.routers.to-influxdb.service=influxdb
+    - traefik.http.services.influxdb.loadbalancer.passhostheader=true
+    - traefik.http.services.influxdb.loadbalancer.server.port=${INFLUX_PORT}
     - com.centurylinklabs.watchtower.scope=solectrus
     healthcheck:
       interval: 10s
@@ -173,6 +184,13 @@ services:
     ports:
     - 4567:4567
     labels:
+    - traefik.docker.network=traefik
+    - traefik.enable=true
+    - traefik.http.routers.to-ingest.middlewares=ipallowlist@file
+    - traefik.http.routers.to-ingest.rule=Host(`ingest.${DOMAIN}`)
+    - traefik.http.routers.to-ingest.service=ingest
+    - traefik.http.services.ingest.loadbalancer.passhostheader=true
+    - traefik.http.services.ingest.loadbalancer.server.port=${INGEST_PORT}
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
       influxdb:

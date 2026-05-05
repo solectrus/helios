@@ -66,6 +66,8 @@ services:
     - traefik.http.routers.dashboard.entrypoints=websecure
     - traefik.http.routers.dashboard.tls.certresolver=letsencrypt
     - traefik.http.services.dashboard.loadbalancer.server.port=3000
+    - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+    - traefik.http.routers.redirs.middlewares=redirect-to-https
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
       postgresql:

@@ -283,6 +283,31 @@ ingest:
   image: ghcr.io/solectrus/ingest:develop
   retention_hours: '24'
   volume_path: "/home/user2/docker/solectrus/ingest"
+service_overrides:
+  dashboard:
+    labels:
+    - traefik.docker.network=traefik
+    - traefik.http.routers.to-solectrus.middlewares=ipallowlist@file
+    - traefik.http.routers.to-solectrus.service=solectrus
+    - traefik.http.services.solectrus.loadbalancer.passhostheader=true
+  influxdb:
+    labels:
+    - traefik.docker.network=traefik
+    - traefik.enable=true
+    - traefik.http.routers.to-influxdb.middlewares=ipallowlist@file
+    - traefik.http.routers.to-influxdb.rule=Host(`influxdb.${DOMAIN}`)
+    - traefik.http.routers.to-influxdb.service=influxdb
+    - traefik.http.services.influxdb.loadbalancer.passhostheader=true
+    - traefik.http.services.influxdb.loadbalancer.server.port=${INFLUX_PORT}
+  ingest:
+    labels:
+    - traefik.docker.network=traefik
+    - traefik.enable=true
+    - traefik.http.routers.to-ingest.middlewares=ipallowlist@file
+    - traefik.http.routers.to-ingest.rule=Host(`ingest.${DOMAIN}`)
+    - traefik.http.routers.to-ingest.service=ingest
+    - traefik.http.services.ingest.loadbalancer.passhostheader=true
+    - traefik.http.services.ingest.loadbalancer.server.port=${INGEST_PORT}
 _unmanaged:
   env_vars:
     BASE_DIR: "/home/user2/docker/solectrus"
