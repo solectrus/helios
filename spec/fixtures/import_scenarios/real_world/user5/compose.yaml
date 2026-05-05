@@ -33,7 +33,7 @@ services:
     - ADMIN_PASSWORD
     - APP_HOST
     - FORCE_SSL
-    - REDIS_URL=redis://redis:6379
+    - REDIS_URL=redis://redis:6379/1
     - INFLUX_HOST=influxdb
     - DB_HOST=postgresql
     - DB_USER=postgres

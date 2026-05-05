@@ -52,7 +52,7 @@ module Export
       # Variables with service-specific values (internal Docker references, remappings)
       def explicit_vars
         %w[
-          REDIS_URL=redis://redis:6379
+          REDIS_URL=redis://redis:6379/1
           INFLUX_HOST=influxdb
           DB_HOST=postgresql
           DB_USER=postgres
