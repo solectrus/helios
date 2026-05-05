@@ -220,8 +220,8 @@ Defaults live in [`ConfigSchema`](../../app/models/config_schema.rb); per-servic
 | PostgreSQL Backup   | `ghcr.io/solectrus/postgres-s3-backup:18`      | Own service, pinned to Postgres `18` |
 | PostgreSQL          | `postgres:18-alpine`                           | Major version pinned                 |
 | Redis               | `redis:8-alpine`                               | Major version pinned                 |
-| InfluxDB            | `influxdb:2-alpine`                            | Major version pinned                 |
-| Traefik             | `traefik:v3`                                   | Major version pinned                 |
+| InfluxDB            | `influxdb:2.8-alpine`                          | Minor version pinned                 |
+| Traefik             | `traefik:v3.6`                                 | Minor version pinned                 |
 | Watchtower          | `nickfedor/watchtower:latest`                  | Fork with additional features        |
 
 **Rationale:**
