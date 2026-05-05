@@ -60,9 +60,12 @@ services:
     - INFLUX_SENSOR_SYSTEM_STATUS_OK
     - INFLUX_SENSOR_WALLBOX_CAR_CONNECTED
     - INFLUX_SENSOR_WALLBOX_POWER
-    ports:
-    - 3000:3000
     labels:
+    - traefik.enable=true
+    - traefik.http.routers.dashboard.rule=Host(`solectrus.example.com`)
+    - traefik.http.routers.dashboard.entrypoints=websecure
+    - traefik.http.routers.dashboard.tls.certresolver=letsencrypt
+    - traefik.http.services.dashboard.loadbalancer.server.port=3000
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
       postgresql:
@@ -330,6 +333,40 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  # ┌──────────────────────────────────────────────────────────┐
+  # │  Traefik — Reverse proxy with automatic HTTPS            │
+  # └──────────────────────────────────────────────────────────┘
+  #
+  traefik:
+    image: traefik:v3.6
+    command:
+    - "--providers.docker=true"
+    - "--providers.docker.exposedbydefault=false"
+    - "--entrypoints.web.address=:80"
+    - "--entrypoints.websecure.address=:443"
+    - "--entrypoints.influxdb.address=:8086"
+    - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+    - "--certificatesresolvers.myresolver.acme.email=${LETSENCRYPT_EMAIL}"
+    - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    environment:
+    - TZ
+    volumes:
+    - "${TRAEFIK_VOLUME_PATH}:/letsencrypt"
+    - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    ports:
+    - 80:80
+    - 443:443
+    - 8086:8086
+    labels:
+    - com.centurylinklabs.watchtower.scope=solectrus
+    - com.centurylinklabs.watchtower.scope=solectrus
     restart: unless-stopped
     logging:
       driver: json-file

@@ -63,6 +63,40 @@ mqtt:
   mqtt_port: '1883'
   mqtt_ssl: 'false'
   mqtt_username: mqtt-user
+reverse_proxy:
+  app_domain: solectrus.example.com
+  command:
+  - "--log.level=DEBUG"
+  - "--api.insecure=false"
+  - "--providers.docker=true"
+  - "--providers.docker.exposedbydefault=false"
+  - "--entrypoints.web.address=:80"
+  - "--entrypoints.websecure.address=:443"
+  - "--entrypoints.influxdb.address=:8086"
+  - "--entrypoints.pgadmin.address=:8888"
+  - "--entrypoints.dozzle.address=:9090"
+  - "--entrypoints.mqtt.address=:8883"
+  - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+  - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+  - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+  - "--certificatesresolvers.myresolver.acme.email=postmaster@example.com"
+  - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+  environment:
+  - TZ
+  image: traefik:v3
+  labels:
+  - com.centurylinklabs.watchtower.scope=solectrus
+  ports:
+  - 80:80
+  - 443:443
+  - 8086:8086
+  - 9090:9090
+  - 8883:8883
+  - 8888:8888
+  restart: always
+  volumes:
+  - "./letsencrypt:/letsencrypt"
+  - "/var/run/docker.sock:/var/run/docker.sock:ro"
 sensors:
   battery_charging_power:
     field: bat_power_plus

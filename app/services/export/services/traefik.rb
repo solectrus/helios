@@ -33,17 +33,27 @@ module Export
       def to_h
         {
           image: configuration.reverse_proxy.image.presence || DockerImages.current(:TRAEFIK),
-          command: traefik_command,
-          ports: %w[80:80 443:443],
-          volumes: [
-            '/var/run/docker.sock:/var/run/docker.sock:ro',
-            bind_mount('/letsencrypt'),
-          ],
-          restart: 'unless-stopped',
-        }
+          command: override_or(:command, traefik_command),
+          environment: override_or(:environment, nil),
+          ports: override_or(:ports, %w[80:80 443:443]),
+          volumes: override_or(:volumes, [
+                                 '/var/run/docker.sock:/var/run/docker.sock:ro',
+                                 bind_mount('/letsencrypt'),
+                               ]),
+          labels: override_or(:labels, nil),
+          restart: override_or(:restart, 'unless-stopped'),
+        }.compact
       end
 
       private
+
+      # Use the imported value when present, falling back to HELIOS's
+      # generated default. Keeps quirky in-the-wild Traefik setups
+      # (custom entrypoints, resolver names, extra ports, label sets)
+      # round-tripping cleanly.
+      def override_or(key, default)
+        configuration.reverse_proxy[key.to_s].presence || default
+      end
 
       # Traefik lives under the reverse_proxy config section — override the
       # default `configuration.<service_name>` lookup used by bind_mount.

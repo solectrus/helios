@@ -61,6 +61,19 @@ MQTT mapping table. Anonymized but otherwise untouched.
   service's `environment:` block (same pattern as user3..user5).
 - **`INFLUX_MEASUREMENT_FORECAST=Forecast`** — preserved as
   `forecast.measurement: Forecast` and re-emitted on export.
+- **External Traefik adopted as managed reverse proxy with
+  pass-through overrides.** Donor's `traefik:` service uses custom
+  entrypoints (`influxdb:8086` / `pgadmin:8888` / `dozzle:9090` /
+  `mqtt:8883`), a custom resolver name (`myresolver`), ACME email
+  `postmaster@example.com`, `./letsencrypt` volume, `restart: always`,
+  and a router named `app-solectrus` on the dashboard.
+  `ReverseProxyExtractor` accepts any `routers.<name>.rule` (not only
+  `routers.dashboard.rule`), extracts the host `solectrus.example.com`,
+  and captures `command`, `ports`, `volumes`, `restart`, `labels`,
+  `environment` verbatim into `reverse_proxy.*` whenever a custom
+  `command` is present. The exported `compose.yaml` reproduces the
+  donor's Traefik service exactly, `Traefik.enabled?` returns `true`,
+  and `FORCE_SSL=true` follows automatically.
 - **Global `FORECAST_DECLINATION=30` fanned out per roof.** Donor
   declared a single unprefixed declination shared by both roofs;
   `ForecastExtractor#multi_roof_data` now falls back to the global
@@ -69,21 +82,14 @@ MQTT mapping table. Anonymized but otherwise untouched.
 
 ## Lost or degraded on re-export (real data loss)
 
-- **Traefik reverse-proxy and Let's Encrypt setup gone.** All
-  per-service `traefik.http.routers.*-solectrus.rule=Host(...)`,
-  `entrypoints`, `tls.certresolver=myresolver`, plus the `traefik`
-  service itself with its `--certificatesresolvers.myresolver.acme.*`
-  command flags, port mappings (`80`, `443`, `8086`, `9090`, `8883`,
-  `8888`), `./letsencrypt` volume, and the dashboard rate-limit
-  middleware (`test-ratelimit.ratelimit.average=100`) — all dropped.
-  HELIOS doesn't model an external reverse proxy. The user must
-  re-attach Traefik manually after import.
-- **`FORCE_SSL=true` flipped to `false`.** Donor terminates TLS via
-  external Traefik, so the dashboard expects `FORCE_SSL=true`. HELIOS
-  derives the value strictly from its own managed Traefik service,
-  which is absent here (Traefik is the unmanaged setup it stripped),
-  so the re-export emits `FORCE_SSL=false`. The user must flip it back
-  manually after re-attaching Traefik.
+- **Per-service Traefik routing labels on non-dashboard managed
+  services stripped.** Donor routed `influxdb` (entrypoint `influxdb`),
+  `pgadmin` (entrypoint `pgadmin`), and `mosquitto` (TCP/SNI rule)
+  through Traefik via per-service labels, plus a `test-ratelimit`
+  middleware on the dashboard. HELIOS regenerates these services from
+  its managed templates, so the extra label sets don't survive. The
+  dashboard's own Host rule round-trips fine — only the auxiliary
+  services lose their routing.
 - **`mqtt-collector` `privileged: true` dropped.** Donor ran the
   collector with elevated privileges (no operational reason apparent,
   but a deliberate setting nonetheless); HELIOS doesn't model

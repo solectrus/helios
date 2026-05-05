@@ -63,6 +63,31 @@ shelly:
   cloud_server: https://shelly-123-eu.shelly.cloud
   connection: cloud
   interval: '20'
+reverse_proxy:
+  app_domain: solectrus.example.com
+  command:
+  - "--providers.docker=true"
+  - "--providers.docker.exposedbydefault=false"
+  - "--entrypoints.web.address=:80"
+  - "--entrypoints.websecure.address=:443"
+  - "--entrypoints.influxdb.address=:8086"
+  - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+  - "--certificatesresolvers.myresolver.acme.email=${LETSENCRYPT_EMAIL}"
+  - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+  environment:
+  - TZ
+  image: traefik:v3.6
+  labels:
+  - com.centurylinklabs.watchtower.scope=solectrus
+  letsencrypt_email: mail@example.org
+  ports:
+  - 80:80
+  - 443:443
+  - 8086:8086
+  restart: unless-stopped
+  volumes:
+  - "${TRAEFIK_VOLUME_PATH}:/letsencrypt"
+  - "/var/run/docker.sock:/var/run/docker.sock:ro"
 sensors:
   battery_charging_power:
     source: senec

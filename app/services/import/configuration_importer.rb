@@ -110,7 +110,11 @@ module Import
     end
 
     def unmanaged_detector
-      @unmanaged_detector ||= UnmanagedDetector.new(@reader, known_measurements:)
+      @unmanaged_detector ||= UnmanagedDetector.new(
+        @reader,
+        known_measurements:,
+        traefik_adopted: reverse_proxy_extractor.section_data.present?,
+      )
     end
 
     def volume_resolver

@@ -70,9 +70,12 @@ services:
     - INFLUX_SENSOR_SYSTEM_STATUS_OK
     - INFLUX_SENSOR_WALLBOX_CAR_CONNECTED
     - INFLUX_SENSOR_WALLBOX_POWER
-    ports:
-    - 3000:3000
     labels:
+    - traefik.enable=true
+    - traefik.http.routers.dashboard.rule=Host(`solectrus.example.com`)
+    - traefik.http.routers.dashboard.entrypoints=websecure
+    - traefik.http.routers.dashboard.tls.certresolver=letsencrypt
+    - traefik.http.services.dashboard.loadbalancer.server.port=3000
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
       postgresql:
@@ -383,6 +386,50 @@ services:
       redis:
         condition: service_healthy
     restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  # ┌──────────────────────────────────────────────────────────┐
+  # │  Traefik — Reverse proxy with automatic HTTPS            │
+  # └──────────────────────────────────────────────────────────┘
+  #
+  traefik:
+    image: traefik:v3
+    command:
+    - "--log.level=DEBUG"
+    - "--api.insecure=false"
+    - "--providers.docker=true"
+    - "--providers.docker.exposedbydefault=false"
+    - "--entrypoints.web.address=:80"
+    - "--entrypoints.websecure.address=:443"
+    - "--entrypoints.influxdb.address=:8086"
+    - "--entrypoints.pgadmin.address=:8888"
+    - "--entrypoints.dozzle.address=:9090"
+    - "--entrypoints.mqtt.address=:8883"
+    - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+    - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+    - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+    - "--certificatesresolvers.myresolver.acme.email=postmaster@example.com"
+    - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    environment:
+    - TZ
+    volumes:
+    - "./letsencrypt:/letsencrypt"
+    - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    ports:
+    - 80:80
+    - 443:443
+    - 8086:8086
+    - 9090:9090
+    - 8883:8883
+    - 8888:8888
+    labels:
+    - com.centurylinklabs.watchtower.scope=solectrus
+    - com.centurylinklabs.watchtower.scope=solectrus
+    restart: always
     logging:
       driver: json-file
       options:

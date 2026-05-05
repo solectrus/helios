@@ -29,6 +29,7 @@ watchtower:
   image: nickfedor/watchtower:latest
 reverse_proxy:
   app_domain: solar.example.com
+  image: traefik:v3
   letsencrypt_email: webmaster@solar.example.com
 backup:
   aws_access_key_id: AKIAEXAMPLE

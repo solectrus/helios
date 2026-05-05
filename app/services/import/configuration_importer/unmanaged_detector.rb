@@ -70,9 +70,10 @@ module Import
       # never attach them to an unmanaged service even if it uses env_file.
       HELIOS_CORE_ENV_KEYS = %w[ADMIN_PASSWORD SECRET_KEY_BASE].freeze
 
-      def initialize(reader, known_measurements: [])
+      def initialize(reader, known_measurements: [], traefik_adopted: true)
         @reader = reader
         @known_measurements = known_measurements.to_set
+        @traefik_adopted = traefik_adopted
       end
 
       def detect
@@ -415,6 +416,14 @@ module Import
       # match by canonical name only — image-only duplicates (e.g. a second
       # mqtt-collector for ingest) stay in _unmanaged so they survive round-trip.
       def managed_service?(name, config)
+        # In the wild, Traefik configs vary widely (custom entrypoints,
+        # resolver names, multi-host TCP routes) and rarely fit HELIOS's
+        # opinionated managed shape. When ReverseProxyExtractor can't
+        # adopt the imported Traefik (no Host(...) label on dashboard),
+        # let the service fall through to _unmanaged.services so its
+        # command/labels/volumes survive the round-trip instead of vanishing.
+        return false if name == 'traefik' && !@traefik_adopted
+
         canonically_managed_service_names.include?(name) ||
           ShellyExtractor.shelly_image?(config['image'])
       end

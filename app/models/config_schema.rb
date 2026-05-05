@@ -244,6 +244,12 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     app_domain
     letsencrypt_email
     image
+    command
+    ports
+    volumes
+    restart
+    labels
+    environment
   ]).uniq.freeze
 
   BACKUP_FIELDS = %w[
