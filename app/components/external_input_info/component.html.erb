@@ -9,13 +9,17 @@
         <h2 class="text-lg font-semibold"><%= t('.title') %></h2>
       </div>
 
-      <div class="flex items-center justify-between py-2">
+      <div class="flex items-center justify-between py-2" data-controller="modal-opener">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-check text-success text-xs"></i>
           <span class="text-base-content/70 text-sm"><%= t('.sensor_count', count: sensor_count) %></span>
         </div>
 
-        <button class="btn btn-ghost btn-lg btn-square" onclick="external_input_info_modal.showModal()">
+        <button
+          class="btn btn-ghost btn-lg btn-square"
+          data-action="modal-opener#open"
+          data-modal-opener-id-param="external_input_info_modal"
+        >
           <i class="fa-solid fa-circle-info text-xl"></i>
         </button>
       </div>
