@@ -208,6 +208,7 @@ services:
     - INFLUX_MEASUREMENT
     - SHELLY_HOST
     - INFLUX_HOST=influxdb
+    - SHELLY_PASSWORD
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:

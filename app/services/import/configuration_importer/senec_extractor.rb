@@ -29,6 +29,17 @@ module Import
         Compose.normalize_image(@reader.service('senec-collector')&.dig('image'))
       end
 
+      # InfluxDB measurement the senec-collector writes to. Default 'SENEC'.
+      # Used to distinguish sensors actually fed by the senec-collector from
+      # sensors that just happen to have a SENEC default mapping but point
+      # elsewhere (e.g. a custom `balcony:power` value coming from a Shelly
+      # or external writer).
+      def measurement
+        return nil unless enabled?
+
+        service_env('senec-collector')['INFLUX_MEASUREMENT'].presence || 'SENEC'
+      end
+
       def adapter_section_data(senec_env)
         if senec_env['SENEC_ADAPTER'] == 'cloud'
           { 'username' => senec_env['SENEC_USERNAME'], 'password' => senec_env['SENEC_PASSWORD'],

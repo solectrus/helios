@@ -138,6 +138,7 @@ module Import
         enabled_collectors: enabled_collectors,
         mqtt_mappings: mqtt_extractor.enabled? ? mqtt_extractor.mappings : [],
         excluded_sensors: sensors_extractor.excluded_sensor_names,
+        senec_measurement: senec_extractor.measurement,
       )
     end
 

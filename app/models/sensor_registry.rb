@@ -84,11 +84,11 @@ class SensorRegistry
   SENSORS = {
     # Inverter
     'inverter_power' => { unit: 'W', sources: %w[senec mqtt external] },
-    'inverter_power_1' => { unit: 'W', sources: %w[senec mqtt external] },
-    'inverter_power_2' => { unit: 'W', sources: %w[senec mqtt external] },
-    'inverter_power_3' => { unit: 'W', sources: %w[senec mqtt external] },
-    'inverter_power_4' => { unit: 'W', sources: %w[mqtt external] },
-    'inverter_power_5' => { unit: 'W', sources: %w[mqtt external] },
+    'inverter_power_1' => { unit: 'W', sources: %w[senec shelly mqtt external] },
+    'inverter_power_2' => { unit: 'W', sources: %w[senec shelly mqtt external] },
+    'inverter_power_3' => { unit: 'W', sources: %w[senec shelly mqtt external] },
+    'inverter_power_4' => { unit: 'W', sources: %w[shelly mqtt external] },
+    'inverter_power_5' => { unit: 'W', sources: %w[shelly mqtt external] },
 
     # Grid
     'grid_import_power' => { unit: 'W', sources: %w[senec mqtt external] },

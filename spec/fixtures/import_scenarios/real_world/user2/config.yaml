@@ -90,11 +90,11 @@ sensors:
   battery_charging_power:
     field: charging_power
     measurement: batteries
-    source: senec
+    source: external
   battery_discharging_power:
     field: discharging_power
     measurement: batteries
-    source: senec
+    source: external
   battery_soc:
     source: senec
   car_battery_soc:
@@ -216,11 +216,11 @@ sensors:
   grid_export_power:
     field: power_out
     measurement: powermeter
-    source: senec
+    source: external
   grid_import_power:
     field: power_in
     measurement: powermeter
-    source: senec
+    source: external
   heatpump_heating_power:
     field: heat_output
     measurement: thermav
@@ -241,7 +241,7 @@ sensors:
   house_power:
     field: house_power
     measurement: Calculated
-    source: senec
+    source: external
   inverter_power_1:
     field: inverter_power
     measurement: SENEC
@@ -249,12 +249,12 @@ sensors:
   inverter_power_2:
     field: power
     measurement: balcony
-    source: senec
+    source: external
   inverter_power_3:
     field: power_out
     is_balcony: true
     measurement: anker-akku
-    source: senec
+    source: external
   inverter_power_forecast:
     field: watt
     measurement: Pvnode

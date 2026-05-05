@@ -84,4 +84,8 @@ sensors:
   wallbox_power:
     field: power
     measurement: Wallbox
-    source: senec
+    shelly_connection: local
+    shelly_host: shelly-wb.local
+    shelly_interval: '5'
+    shelly_password: secret
+    source: shelly

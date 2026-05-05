@@ -242,7 +242,10 @@ sensors:
     field: power_c
     is_balcony: true
     measurement: TERRASSE
-    source: senec
+    shelly_connection: local
+    shelly_host: 192.168.1.241
+    shelly_interval: '5'
+    source: shelly
   inverter_power_forecast:
     source: forecast
   inverter_power_forecast_clearsky:

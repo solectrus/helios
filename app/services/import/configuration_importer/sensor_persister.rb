@@ -25,12 +25,14 @@ module Import
       # are type-specific slots on inverter/wallbox/heatpump/battery devices.
       SOURCE_FIELDS = %w[data_source wallbox_vendor heatpump_access battery_vendor].freeze
 
-      def initialize(sensors_data:, devices:, enabled_collectors:, mqtt_mappings:, excluded_sensors: [])
+      def initialize(sensors_data:, devices:, enabled_collectors:, mqtt_mappings:, # rubocop:disable Metrics/ParameterLists
+                     excluded_sensors: [], senec_measurement: nil)
         @sensors_data = sensors_data
         @devices = devices
         @enabled_collectors = enabled_collectors
         @mqtt_mappings = mqtt_mappings
         @excluded_sensors = excluded_sensors
+        @senec_measurement = senec_measurement
       end
 
       def persist!(config)
@@ -62,13 +64,36 @@ module Import
       # measurement:field) wins over SENEC defaults — legacy installs route
       # SENEC-default sensors through MQTT (e.g. via SENEC_IGNORE or a
       # third-party inverter), and the explicit mapping is authoritative.
+      # SENEC/forecast are only credited when the actual mapping points at
+      # their collector's measurement+field — otherwise a sensor that has a
+      # SENEC default but a custom value (e.g. inverter_power_2 → balcony:power
+      # served by a Shelly or external writer) would be misclassified.
       def infer_source_for_sensor(sensor_name)
         return 'mqtt' if mqtt_mapping_details.key?(sensor_name)
-        return 'senec' if @enabled_collectors.include?(:senec) && SensorMappings::SENEC_DEFAULTS.key?(sensor_name)
-        return 'forecast' if @enabled_collectors.include?(:forecast) && SensorMappings::FORECAST_DEFAULTS.key?(sensor_name)
+        return 'senec' if senec_provides_sensor?(sensor_name)
+        return 'forecast' if forecast_provides_sensor?(sensor_name)
         return 'shelly' if shelly_device_provides_sensor?(sensor_name)
 
         'external'
+      end
+
+      def senec_provides_sensor?(sensor_name)
+        return false unless @enabled_collectors.include?(:senec)
+        return false unless SensorMappings::SENEC_DEFAULTS.key?(sensor_name)
+
+        sensor_measurement(sensor_name) == @senec_measurement
+      end
+
+      # Forecast stays a broad check — multi-collector stacks (one per provider:
+      # pvnode + solcast + forecast.solar) write to different measurements but
+      # all map to the same FORECAST_DEFAULTS table, so narrowing by measurement
+      # would misclassify whichever collector loses the canonical alias.
+      def forecast_provides_sensor?(sensor_name)
+        @enabled_collectors.include?(:forecast) && SensorMappings::FORECAST_DEFAULTS.key?(sensor_name)
+      end
+
+      def sensor_measurement(sensor_name)
+        @sensors_data[sensor_name].to_s.split(':', 2).first
       end
 
       # A shelly device claims a sensor whose mapping is
