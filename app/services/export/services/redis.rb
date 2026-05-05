@@ -28,6 +28,7 @@ module Export
       def to_h
         {
           image: configuration.redis.image,
+          environment: ['TZ'],
           volumes: [bind_mount('/data')],
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD', 'redis-cli', 'ping', timeout: '3s', retries: 3, start_period: '10s'),

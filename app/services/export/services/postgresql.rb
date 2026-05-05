@@ -38,7 +38,7 @@ module Export
       private
 
       def postgres_environment
-        env = ['POSTGRES_PASSWORD', 'POSTGRES_DB=solectrus']
+        env = ['TZ', 'POSTGRES_PASSWORD', 'POSTGRES_DB=solectrus']
         env << 'PGDATA' if configuration.postgresql.pgdata.present?
         env
       end

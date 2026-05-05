@@ -40,6 +40,7 @@ module Export
 
       def influxdb_environment
         env = [
+          'TZ',
           'DOCKER_INFLUXDB_INIT_MODE=setup',
           'DOCKER_INFLUXDB_INIT_USERNAME=admin',
           'DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}',

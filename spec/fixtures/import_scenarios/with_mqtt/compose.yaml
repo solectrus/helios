@@ -90,6 +90,7 @@ services:
   influxdb:
     image: influxdb:2-alpine
     environment:
+    - TZ
     - DOCKER_INFLUXDB_INIT_MODE=setup
     - DOCKER_INFLUXDB_INIT_USERNAME=admin
     - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
@@ -126,6 +127,7 @@ services:
   postgresql:
     image: postgres:18-alpine
     environment:
+    - TZ
     - POSTGRES_PASSWORD
     - POSTGRES_DB=solectrus
     volumes:
@@ -154,6 +156,8 @@ services:
   #
   redis:
     image: redis:8-alpine
+    environment:
+    - TZ
     volumes:
     - "${REDIS_VOLUME_PATH}:/data"
     labels:
