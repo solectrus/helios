@@ -45,6 +45,7 @@ module Export
       end
 
       add_default_network(compose)
+      add_unmanaged_volumes(compose)
 
       compose.to_yaml
     end
@@ -107,6 +108,17 @@ module Export
 
     def network_name
       configuration.system['network_name'].presence || ConfigSchema::DEFAULT_NETWORK_NAME
+    end
+
+    # Top-level `volumes:` declarations carried over from the source compose
+    # (named volumes referenced by managed or unmanaged services). Without
+    # the declaration, Compose would create implicit anonymous volumes
+    # rather than reusing the existing ones.
+    def add_unmanaged_volumes(compose)
+      volumes = configuration.unmanaged.volumes
+      return if volumes.blank?
+
+      volumes.each { |name, config| compose.volumes[name] = config.to_h }
     end
 
     def compose_header_comment

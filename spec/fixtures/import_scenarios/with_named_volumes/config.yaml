@@ -1,0 +1,50 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 1
+system:
+  admin_password: test-admin
+  installation_date: '2024-01-20'
+  secret_key_base: test-secret-key
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: test-db-password
+  volume_path: postgres-data
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: test-influx-pw
+  token: test-influx-token
+  volume_path: influxdb-data
+redis:
+  image: redis:8-alpine
+  volume_path: redis-data
+watchtower:
+  image: nickfedor/watchtower:latest
+sensors: {}
+_unmanaged:
+  services:
+    dozzle:
+      environment: []
+      image: amir20/dozzle:latest
+      ports:
+      - 8082:8080
+      restart: unless-stopped
+      volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - dozzle-data:/data
+  volumes:
+    dozzle-data:
+      driver: local
+    influxdb-data: {}
+    postgres-data: {}
+    redis-data: {}

@@ -81,6 +81,9 @@ module Import
         services = normalized_unmanaged_services
         data['services'] = services if services.present?
 
+        volumes = top_level_volumes
+        data['volumes'] = volumes if volumes.present?
+
         orphaned = detect_orphaned_env_vars(services || {})
         data['env_vars'] = orphaned if orphaned.present?
 
@@ -88,6 +91,17 @@ module Import
       end
 
       private
+
+      # Top-level `volumes:` declarations from the source compose. Preserved
+      # verbatim so named volumes referenced by managed and unmanaged
+      # services (e.g. `influxdb-data:/var/lib/influxdb2`) keep resolving to
+      # the same Docker volume after HELIOS regenerates compose.yaml.
+      def top_level_volumes
+        raw = @reader.raw_compose['volumes']
+        return nil unless raw.is_a?(Hash)
+
+        raw.transform_values { |config| config.is_a?(Hash) ? config : {} }.presence
+      end
 
       def normalized_unmanaged_services
         raw = @reader.raw_compose['services'] || {}

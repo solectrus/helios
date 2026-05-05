@@ -1,0 +1,73 @@
+services:
+  dashboard:
+    image: ghcr.io/solectrus/solectrus:latest
+    ports:
+      - 3000:3000
+    environment:
+      - TZ
+      - INSTALLATION_DATE
+      - SECRET_KEY_BASE
+      - ADMIN_PASSWORD
+      - DB_HOST=postgresql
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_USER=postgres
+      - REDIS_URL=redis://redis:6379
+      - INFLUX_HOST=influxdb
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+  influxdb:
+    image: influxdb:2-alpine
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+    restart: unless-stopped
+  postgresql:
+    image: postgres:18-alpine
+    environment:
+      - POSTGRES_PASSWORD
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    restart: unless-stopped
+  redis:
+    image: redis:8-alpine
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+  watchtower:
+    image: nickfedor/watchtower
+    environment:
+      - TZ
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --scope solectrus --cleanup
+    restart: unless-stopped
+  dozzle:
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - dozzle-data:/data
+    ports:
+      - 8082:8080
+    restart: unless-stopped
+
+volumes:
+  influxdb-data:
+  postgres-data:
+  redis-data:
+  dozzle-data:
+    driver: local

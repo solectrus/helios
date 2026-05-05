@@ -26,24 +26,35 @@ module Import
       INTERPOLATION_RE = /\$\{([A-Z_][A-Z0-9_]*)\}/
       INTERPOLATION_MAX_DEPTH = 10
 
+      # Docker named-volume name: starts with alphanumeric, no slashes — the
+      # only form Compose accepts on the source side that isn't a host path.
+      NAMED_VOLUME_RE = /\A[a-zA-Z0-9][a-zA-Z0-9_.-]*\z/
+
       def initialize(reader)
         @reader = reader
       end
 
       # Preserve absolute host paths (e.g. Synology `/volume1/...`, or
-      # `${BASE_DIR}/influxdb/data` resolved against .env) so the stack keeps
-      # pointing at the existing data directory after import. Relative values
-      # and absolute paths that resolve to the default bind mount next to
-      # compose.yaml are dropped — they match HELIOS's default anyway.
+      # `${BASE_DIR}/influxdb/data` resolved against .env) and Docker named
+      # volume names (e.g. `influxdb-data`) so the stack keeps reusing the
+      # same storage after import. Relative bind mounts and absolute paths
+      # that resolve to the default bind mount next to compose.yaml are
+      # dropped — they match HELIOS's default anyway.
       def path_data(section)
         mapping = VOLUME_PATH_ENVS.fetch(section)
         value = inline_volume_source(section, mapping) ||
                 (mapping[:pgdata_fallback] && pgdata_subpath_source) ||
                 resolve_interpolation(@reader.raw_env[mapping[:env_key]])
-        return {} unless value&.start_with?('/')
-        return {} if File.expand_path(value) == File.expand_path(mapping[:default_dir], @reader.stack_dir)
+        return {} unless meaningful_volume_value?(value, mapping)
 
         { 'volume_path' => value }
+      end
+
+      def meaningful_volume_value?(value, mapping)
+        return false if value.blank?
+        return value.match?(NAMED_VOLUME_RE) unless value.start_with?('/')
+
+        File.expand_path(value) != File.expand_path(mapping[:default_dir], @reader.stack_dir)
       end
 
       # Recursive `${VAR}` substitution against raw .env, with cycle protection.
@@ -68,13 +79,17 @@ module Import
         target && resolved_volume_source(mapping[:service_name] || section, target)
       end
 
-      # Resolved absolute host path of the volume entry whose container target
-      # matches `target`, or nil if no entry matches or the source is relative.
+      # Resolved source of the volume entry whose container target matches
+      # `target` — either an absolute host path or a Docker named-volume
+      # name. Returns nil when no entry matches or the source is a relative
+      # bind mount (which HELIOS treats as the default and drops).
       def resolved_volume_source(service_name, target)
         raw_volumes = Array(raw_service_config(service_name)&.dig('volumes'))
         raw_source = raw_volumes.lazy.filter_map { |entry| volume_source_for_target(entry, target) }.first
         resolved = resolve_interpolation(raw_source)
-        resolved if resolved&.start_with?('/')
+        return nil if resolved.blank?
+
+        resolved if resolved.start_with?('/') || resolved.match?(NAMED_VOLUME_RE)
       end
 
       # Image-prefix alias fallback so installs that renamed the service (e.g.
@@ -109,7 +124,7 @@ module Import
         pgdata = resolve_interpolation(@reader.raw_env['PGDATA']).presence ||
                  '/var/lib/postgresql/data'
         resolved = resolved_volume_source('postgresql', pgdata)
-        return nil unless resolved
+        return nil unless resolved&.start_with?('/')
 
         parent = resolved.sub(%r{/data/?\z}, '')
         parent unless parent == resolved
