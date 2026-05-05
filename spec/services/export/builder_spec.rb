@@ -323,10 +323,15 @@ RSpec.describe Export::Builder do
       )
     end
 
-    it 'sets FORCE_SSL on dashboard' do
+    it 'sets FORCE_SSL=true in .env when Traefik is enabled' do
+      env = Env.load
+      expect(env['FORCE_SSL']).to eq('true')
+    end
+
+    it 'references FORCE_SSL in the dashboard environment' do
       compose = Compose.load
       dashboard = compose.services.find('dashboard')
-      expect(dashboard.environment).to include('FORCE_SSL=true')
+      expect(dashboard.environment).to include('FORCE_SSL')
     end
 
     it 'includes APP_DOMAIN in .env' do

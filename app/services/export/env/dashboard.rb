@@ -5,6 +5,8 @@ module Export
         env.add_section('Dashboard')
         entry('APP_HOST', configuration.system.app_host.presence || 'localhost',
               'Hostname for the SOLECTRUS web interface')
+        entry('FORCE_SSL', Services::Traefik.enabled?(configuration),
+              'Must be FALSE, unless Traefik terminates TLS in front of the dashboard')
         optional_entries(configuration.dashboard)
       end
 

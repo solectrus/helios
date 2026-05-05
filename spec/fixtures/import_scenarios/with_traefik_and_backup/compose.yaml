@@ -32,6 +32,7 @@ services:
     - SECRET_KEY_BASE
     - ADMIN_PASSWORD
     - APP_HOST
+    - FORCE_SSL
     - REDIS_URL=redis://redis:6379
     - INFLUX_HOST=influxdb
     - DB_HOST=postgresql
@@ -39,7 +40,6 @@ services:
     - DB_PASSWORD=${POSTGRES_PASSWORD}
     - DB_DATABASE=solectrus
     - WEB_CONCURRENCY=0
-    - FORCE_SSL=true
     labels:
     - traefik.enable=true
     - traefik.http.routers.dashboard.rule=Host(`solar.example.com`)

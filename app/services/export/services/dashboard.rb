@@ -28,7 +28,6 @@ module Export
 
         if Traefik.enabled?(configuration)
           config[:labels] = traefik_dashboard_labels
-          config[:environment] << 'FORCE_SSL=true'
         else
           config[:ports] = ['3000:3000']
         end
@@ -46,7 +45,7 @@ module Export
       def passthrough_vars
         %w[
           TZ INSTALLATION_DATE INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SECRET_KEY_BASE ADMIN_PASSWORD
-          APP_HOST
+          APP_HOST FORCE_SSL
         ]
       end
 

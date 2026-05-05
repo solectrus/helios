@@ -78,8 +78,12 @@ MQTT mapping table. Anonymized but otherwise untouched.
   middleware (`test-ratelimit.ratelimit.average=100`) — all dropped.
   HELIOS doesn't model an external reverse proxy. The user must
   re-attach Traefik manually after import.
-- **`FORCE_SSL=true` dropped.** HELIOS doesn't expose this setting,
-  so HTTPS-redirect behavior at the Rails layer changes after import.
+- **`FORCE_SSL=true` flipped to `false`.** Donor terminates TLS via
+  external Traefik, so the dashboard expects `FORCE_SSL=true`. HELIOS
+  derives the value strictly from its own managed Traefik service,
+  which is absent here (Traefik is the unmanaged setup it stripped),
+  so the re-export emits `FORCE_SSL=false`. The user must flip it back
+  manually after re-attaching Traefik.
 - **`mqtt-collector` `privileged: true` dropped.** Donor ran the
   collector with elevated privileges (no operational reason apparent,
   but a deliberate setting nonetheless); HELIOS doesn't model
