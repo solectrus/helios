@@ -36,8 +36,8 @@ RSpec.describe SupportBundle::Anonymizer do
     it 'uses realistic dummies for non-string env variables' do
       result = described_class.anonymize_env_style(all_secrets_env)
 
-      expect(result).to include('FORECAST_LATITUDE=52.03020')
-      expect(result).to include('FORECAST_LONGITUDE=8.53250')
+      expect(result).to include('FORECAST_LATITUDE=0.00000')
+      expect(result).to include('FORECAST_LONGITUDE=0.00000')
       expect(result).to include('SENEC_SYSTEM_ID=0')
     end
 
@@ -122,8 +122,8 @@ RSpec.describe SupportBundle::Anonymizer do
       parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
 
       expect(parsed['forecast']).to eq(
-        'forecast_latitude' => '52.03020',
-        'forecast_longitude' => '8.53250',
+        'forecast_latitude' => '0.00000',
+        'forecast_longitude' => '0.00000',
         'forecast_roofs' => '1',
       )
     end
@@ -277,13 +277,13 @@ RSpec.describe SupportBundle::Anonymizer do
 
       expect(result).not_to include('52.51627')
       expect(result).not_to include('13.37774')
-      expect(result).to include('https://api.forecast.solar/estimate/52.03020/8.53250/29/-50/9.75')
+      expect(result).to include('https://api.forecast.solar/estimate/0.00000/0.00000/29/-50/9.75')
     end
 
     it 'also catches coordinates that gained extra Float-precision digits' do
       log = "lat=52.51627999 lon=13.37774001\n"
 
-      expect(described_class.anonymize_text(log, redactions)).to eq("lat=52.03020 lon=8.53250\n")
+      expect(described_class.anonymize_text(log, redactions)).to eq("lat=0.00000 lon=0.00000\n")
     end
 
     it 'preserves the surrounding ISO timestamp when scrubbing coordinates' do
@@ -291,7 +291,7 @@ RSpec.describe SupportBundle::Anonymizer do
 
       result = described_class.anonymize_text(log, redactions)
 
-      expect(result).to eq("ts=2026-05-02T07:38:06+02:00 lat=52.03020 lon=8.53250\n")
+      expect(result).to eq("ts=2026-05-02T07:38:06+02:00 lat=0.00000 lon=0.00000\n")
     end
 
     it 'replaces opaque tokens that leak into log lines' do

@@ -63,7 +63,7 @@ RSpec.describe SupportBundle do
       expect(log).not_to include('52.51627')
       expect(log).not_to include('13.37774')
       expect(log).not_to include('NWD3vfbwdz8kKXiz')
-      expect(log).to include('forecast.solar/estimate/52.03020/8.53250/29')
+      expect(log).to include('forecast.solar/estimate/0.00000/0.00000/29')
       expect(log).to include('dummy_influx_token')
     end
 

@@ -53,15 +53,15 @@ module SupportBundle
     # instead of a literal match when scrubbing log output.
     NUMERIC_KEYS = %w[FORECAST_LATITUDE FORECAST_LONGITUDE].to_set.freeze
 
-    # Non-string fields need realistic dummies so the replayed stack can
-    # parse them. Listed under both the ENV and YAML spelling because the
+    # Non-string fields need parseable dummies so the replayed stack can
+    # load them. Listed under both the ENV and YAML spelling because the
     # env var (SENEC_SYSTEM_ID) and the YAML leaf (senec.system_id) reach
-    # the lookup with different names. The coordinates point to Bielefeld,
-    # a city that — as every German internet user knows — does not exist.
-    # Forecasting solar yield for a non-existent location feels right.
+    # the lookup with different names. Coordinates default to 0.00000 —
+    # a syntactically valid value that is obviously a placeholder at a
+    # glance, so reviewers don't mistake it for a real location.
     DUMMY_VALUES = {
-      'forecast_latitude' => '52.03020',
-      'forecast_longitude' => '8.53250',
+      'forecast_latitude' => '0.00000',
+      'forecast_longitude' => '0.00000',
       'senec_system_id' => '0',
       'system_id' => '0',
     }.freeze
