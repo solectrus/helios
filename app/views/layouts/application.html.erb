@@ -23,13 +23,7 @@
   </head>
 
   <body class="bg-base-200 min-h-dvh md:pb-14">
-    <% { alert: "alert-error", notice: "alert-success" }.each do |key, alert_class| %>
-      <% if flash[key] %>
-        <div class="toast toast-top toast-center z-50">
-          <div class="alert <%= alert_class %>"><span><%= flash[key] %></span></div>
-        </div>
-      <% end %>
-    <% end %>
+    <%= render Flash::Component.new(flash:) %>
 
     <% if authorized? && config_yaml_exists? %>
       <%= render Header::Component.new(active_tab: content_for(:active_tab).presence&.to_sym) %>

@@ -1,0 +1,11 @@
+<div class="toast toast-top toast-center z-50">
+  <% messages.each do |message, alert_class| %>
+    <div
+      class="alert <%= alert_class %>"
+      data-controller="flash--component"
+      data-flash--component-delay-value="<%= AUTO_DISMISS_MS %>"
+    >
+      <span><%= message %></span>
+    </div>
+  <% end %>
+</div>
