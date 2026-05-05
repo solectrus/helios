@@ -94,8 +94,11 @@ module Orchestration
       {}
     end
 
+    # Stored under data_path (the bind-mounted host directory) so the file
+    # survives a HELIOS self-update — the container is recreated from a
+    # fresh image, which would discard anything inside the image layers.
     def self.deployed_hashes_path
-      Rails.root.join('storage/deployed_config_hashes.json')
+      File.join(Rails.configuration.data_path, 'deployed_config_hashes.json')
     end
 
     def compute

@@ -46,8 +46,8 @@
 *.sqlite3-shm
 *.sqlite3-wal
 
-# Ignore deployed config hashes (runtime state)
-/storage/deployed_config_hashes.json
+# Ignore deployed config hashes (runtime state, lives under data_path)
+/stack/deployed_config_hashes.json
 
 # Ignore stack files
 /stack/postgresql
