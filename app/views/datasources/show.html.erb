@@ -24,7 +24,11 @@
         <% end %>
       </div>
     <% else %>
-      <p class="text-base-content/50 text-sm"><%= t('.empty') %></p>
+      <div class="flex flex-col items-center gap-3 py-12 text-center">
+        <i class="fa-solid fa-satellite-dish text-primary/30 mb-2 text-6xl"></i>
+        <h2 class="text-base-content text-lg font-semibold"><%= t('datasources.show.empty.title') %></h2>
+        <p class="text-base-content/60 max-w-sm text-sm"><%= t('datasources.show.empty.body') %></p>
+      </div>
     <% end %>
   <% end %>
 <% end %>

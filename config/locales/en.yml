@@ -51,7 +51,9 @@ en:
   datasources:
     show:
       title: 'Data Sources'
-      empty: 'No data sources in use. Enable sensors to configure sources.'
+      empty:
+        title: 'No data sources in use yet'
+        body: 'Once you enable sensors, their data sources will appear here for configuration.'
     mqtt_topics:
       index:
         title: 'MQTT topics'

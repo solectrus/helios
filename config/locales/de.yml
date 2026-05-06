@@ -22,7 +22,9 @@ de:
   datasources:
     show:
       title: 'Datenquellen'
-      empty: 'Keine Datenquellen in Verwendung. Aktiviere Sensoren, um Quellen zu konfigurieren.'
+      empty:
+        title: 'Noch keine Datenquellen in Verwendung'
+        body: 'Sobald du Sensoren aktivierst, erscheinen hier ihre Datenquellen zur Konfiguration.'
     mqtt_topics:
       index:
         title: 'MQTT-Topics'
