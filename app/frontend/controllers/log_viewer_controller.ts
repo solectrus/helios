@@ -25,22 +25,43 @@ export default class LogViewerController extends Controller {
   private isLoadingOlder = false;
   private hasMoreLogs = true;
   private initialScrollDone = false;
+  private isAutoScrolling = false;
+  private autoScrollTimer?: number;
   private resizeObserver?: ResizeObserver;
+  private prefersReducedMotion = false;
+  private scrollFrame?: number;
 
   connect() {
+    this.prefersReducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches;
+
     // The container has zero size until the surrounding <dialog> opens via
     // showModal(), which happens after Stimulus connect(). Observe size to
     // trigger the initial scroll-to-bottom once the dialog is visible.
     this.resizeObserver = new ResizeObserver(() => this.handleResize());
     this.resizeObserver.observe(this.scrollContainerTarget);
     this.scrollContainerTarget.addEventListener('scroll', this.handleScroll);
+    this.scrollContainerTarget.addEventListener(
+      'scrollend',
+      this.handleScrollEnd,
+    );
     this.subscribe();
   }
 
   disconnect() {
     this.resizeObserver?.disconnect();
     this.resizeObserver = undefined;
+    clearTimeout(this.autoScrollTimer);
+    if (this.scrollFrame !== undefined) {
+      cancelAnimationFrame(this.scrollFrame);
+      this.scrollFrame = undefined;
+    }
     this.scrollContainerTarget.removeEventListener('scroll', this.handleScroll);
+    this.scrollContainerTarget.removeEventListener(
+      'scrollend',
+      this.handleScrollEnd,
+    );
     this.unsubscribe();
   }
 
@@ -89,6 +110,15 @@ export default class LogViewerController extends Controller {
     const el = temp.content.firstElementChild as HTMLElement | null;
     if (!el) return;
 
+    if (!this.prefersReducedMotion) {
+      el.classList.add('log-line-enter');
+      el.addEventListener(
+        'animationend',
+        () => el.classList.remove('log-line-enter'),
+        { once: true },
+      );
+    }
+
     const ts = el.dataset.ts;
     const children = this.outputTarget.children;
 
@@ -113,23 +143,54 @@ export default class LogViewerController extends Controller {
       while (children.length > LogViewerController.MAX_LINES) {
         children[0].remove();
       }
-      this.scrollToBottom();
+      this.scrollToBottom({ smooth: true });
     }
   }
 
-  private scrollToBottom() {
-    this.scrollContainerTarget.scrollTop =
-      this.scrollContainerTarget.scrollHeight;
+  private scrollToBottom({ smooth = false }: { smooth?: boolean } = {}) {
+    if (smooth) {
+      // Suppress isScrolledToBottom updates while the smooth scroll runs;
+      // intermediate scroll events would otherwise mark us as "not at bottom"
+      // and break auto-follow on the next incoming line. scrollend resets it;
+      // the timer is a fallback for browsers without scrollend (Safari < 18.2)
+      // and bursts that cancel the scroll mid-flight, where scrollend may
+      // never fire and would leave isAutoScrolling stuck at true.
+      this.isAutoScrolling = true;
+      clearTimeout(this.autoScrollTimer);
+      this.autoScrollTimer = window.setTimeout(() => {
+        this.isAutoScrolling = false;
+      }, 1000);
+    }
+    this.scrollContainerTarget.scrollTo({
+      top: this.scrollContainerTarget.scrollHeight,
+      behavior: smooth ? 'smooth' : 'instant',
+    });
   }
 
   private handleScroll = () => {
-    const { scrollTop, scrollHeight, clientHeight } =
-      this.scrollContainerTarget;
-    this.isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 20;
+    // Coalesce bursts of scroll events into one read per frame; the geometry
+    // math is cheap, but smooth-scroll fires per-frame and we don't need to
+    // re-evaluate more often than the browser repaints.
+    if (this.scrollFrame !== undefined) return;
+    this.scrollFrame = requestAnimationFrame(() => {
+      this.scrollFrame = undefined;
 
-    if (scrollTop < 50 && !this.isLoadingOlder && this.hasMoreLogs) {
-      this.fetchOlderLogs();
-    }
+      const { scrollTop, scrollHeight, clientHeight } =
+        this.scrollContainerTarget;
+
+      if (!this.isAutoScrolling) {
+        this.isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 20;
+      }
+
+      if (scrollTop < 50 && !this.isLoadingOlder && this.hasMoreLogs) {
+        this.fetchOlderLogs();
+      }
+    });
+  };
+
+  private handleScrollEnd = () => {
+    this.isAutoScrolling = false;
+    clearTimeout(this.autoScrollTimer);
   };
 
   private getOldestTimestamp(): string | null {

@@ -75,6 +75,28 @@ table[data-hide-unused='true'] tr[data-sensor-enabled='false'] {
   background: transparent !important;
 }
 
+/* Log viewer: subtle fade-in for newly streamed lines. */
+.log-line-enter {
+  animation: log-line-enter 200ms ease-out;
+}
+
+@keyframes log-line-enter {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .log-line-enter {
+    animation: none;
+  }
+}
+
 /* Overrides daisyUI modal-box defaults so the modal is full-screen on mobile. */
 .modal-box-responsive {
   @apply bg-base-300 sm:bg-base-100 h-dvh! w-full! max-w-none! rounded-none p-0
