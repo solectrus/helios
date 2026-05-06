@@ -75,6 +75,12 @@ table[data-hide-unused='true'] tr[data-sensor-enabled='false'] {
   background: transparent !important;
 }
 
+/* Opt out of CSS scroll anchoring; useful when a controller owns the scroll
+   position and would otherwise be double-compensated by the browser. */
+@utility overflow-anchor-none {
+  overflow-anchor: none;
+}
+
 /* Log viewer: subtle fade-in for newly streamed lines. */
 .log-line-enter {
   animation: log-line-enter 200ms ease-out;

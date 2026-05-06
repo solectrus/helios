@@ -147,14 +147,29 @@ export default class LogViewerController extends Controller {
       }
     }
 
-    if (this.isScrolledToBottom) {
-      while (children.length > LogViewerController.MAX_LINES) {
-        children[0].remove();
-      }
-      this.scrollToBottom({ smooth: true });
-    } else {
-      this.showNewLinesIndicator(true);
+    // Trim oldest lines regardless of scroll position to bound DOM growth.
+    // When trimming, compensate scrollTop so the visible content does not
+    // jump as lines fall off the top. The container has overflow-anchor:none,
+    // so we own scroll position and the browser does not double-compensate.
+    // Reading scrollHeight forces layout — only do it when a trim is pending.
+    const needsTrim = children.length > LogViewerController.MAX_LINES;
+    const prevScrollHeight = needsTrim
+      ? this.scrollContainerTarget.scrollHeight
+      : 0;
+    while (children.length > LogViewerController.MAX_LINES) {
+      children[0].remove();
     }
+
+    if (this.isScrolledToBottom) {
+      this.scrollToBottom({ smooth: true });
+      return;
+    }
+
+    if (needsTrim) {
+      const delta = prevScrollHeight - this.scrollContainerTarget.scrollHeight;
+      if (delta > 0) this.scrollContainerTarget.scrollTop -= delta;
+    }
+    this.showNewLinesIndicator(true);
   }
 
   followBottom() {
@@ -245,8 +260,6 @@ export default class LogViewerController extends Controller {
         return;
       }
 
-      const prevScrollHeight = this.scrollContainerTarget.scrollHeight;
-
       const temp = document.createElement('template');
       temp.innerHTML = html;
       const fragment = temp.content;
@@ -261,6 +274,7 @@ export default class LogViewerController extends Controller {
         return;
       }
 
+      const prevScrollHeight = this.scrollContainerTarget.scrollHeight;
       this.outputTarget.prepend(fragment);
 
       // If oldest timestamp didn't change, we've reached the beginning
@@ -268,10 +282,10 @@ export default class LogViewerController extends Controller {
         this.hasMoreLogs = false;
       }
 
-      // Restore scroll position
-      const newScrollHeight = this.scrollContainerTarget.scrollHeight;
+      // Restore scroll position so the previously visible content stays put
+      // (the container has overflow-anchor:none).
       this.scrollContainerTarget.scrollTop +=
-        newScrollHeight - prevScrollHeight;
+        this.scrollContainerTarget.scrollHeight - prevScrollHeight;
 
       // Trim oldest lines from bottom if exceeding limit
       const children = this.outputTarget.children;
