@@ -124,10 +124,14 @@ en:
       step_download:
         title: 'Download support bundle'
         description: 'Includes configuration, system info and container logs. Passwords, tokens and coordinates are anonymized automatically.'
-      step_forum:
-        title: 'Ask in the forum'
-        description: 'Attach the ZIP file to your post – the community will help you.'
-        account_hint: 'Requires a (free) GitHub account.'
+      step_post:
+        title: 'Post your report'
+        description: 'Attach the ZIP file. Pick the channel that fits:'
+        discussion:
+          label: 'Question / help'
+        issue:
+          label: 'Bug / suggestion'
+        account_hint: 'Both require a (free) GitHub account.'
       download: 'Download ZIP'
       downloading: 'Preparing…'
       downloaded: 'Downloaded'

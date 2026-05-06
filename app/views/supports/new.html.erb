@@ -48,26 +48,49 @@
           2
         </span>
 
-        <div class="flex-1 space-y-3">
+        <div class="flex-1 space-y-4">
           <div>
-            <p class="font-semibold"><%= t(".step_forum.title") %></p>
-            <p class="text-base-content/70 text-sm"><%= t(".step_forum.description") %></p>
+            <p class="font-semibold"><%= t(".step_post.title") %></p>
+            <p class="text-base-content/70 text-sm"><%= t(".step_post.description") %></p>
           </div>
 
-          <a
-            href="https://github.com/orgs/solectrus/discussions/new?category=q-a"
-            target="_blank"
-            rel="noopener"
-            class="
-              link link-primary inline-flex max-w-full items-center gap-1.5 font-mono text-xs wrap-break-word
-              sm:text-sm
-            "
-          >
-            <span>github.com/orgs/solectrus/discussions/new</span>
-            <i class="fa-solid fa-arrow-up-right-from-square shrink-0 text-xs"></i>
-          </a>
+          <div class="space-y-3">
+            <div class="space-y-1">
+              <p class="text-sm font-medium"><%= t(".step_post.discussion.label") %></p>
 
-          <p class="text-base-content/60 text-xs"><%= t(".step_forum.account_hint") %></p>
+              <a
+                href="https://github.com/orgs/solectrus/discussions/new?category=q-a"
+                target="_blank"
+                rel="noopener"
+                class="
+                  link link-primary inline-flex max-w-full items-center gap-1.5 font-mono text-xs wrap-anywhere
+                  sm:text-sm
+                "
+              >
+                <span>github.com/orgs/solectrus/discussions/new</span>
+                <i class="fa-solid fa-arrow-up-right-from-square shrink-0 text-[0.65rem]"></i>
+              </a>
+            </div>
+
+            <div class="space-y-1">
+              <p class="text-sm font-medium"><%= t(".step_post.issue.label") %></p>
+
+              <a
+                href="https://github.com/solectrus/helios/issues/new/choose"
+                target="_blank"
+                rel="noopener"
+                class="
+                  link link-primary inline-flex max-w-full items-center gap-1.5 font-mono text-xs wrap-anywhere
+                  sm:text-sm
+                "
+              >
+                <span>github.com/solectrus/helios/issues</span>
+                <i class="fa-solid fa-arrow-up-right-from-square shrink-0 text-[0.65rem]"></i>
+              </a>
+            </div>
+          </div>
+
+          <p class="text-base-content/60 text-xs"><%= t(".step_post.account_hint") %></p>
         </div>
       </li>
     </ol>
