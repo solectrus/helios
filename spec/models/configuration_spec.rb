@@ -269,6 +269,81 @@ RSpec.describe Configuration do
       expect(reloaded.system).to include('timezone' => 'UTC')
       expect(reloaded.system).not_to have_key('unknown_field')
     end
+
+    context 'when switching to dashboard_only mode' do
+      before do
+        with_config_yaml(
+          'shelly' => { 'connection' => 'local' },
+          'senec' => { 'version' => '4', 'host' => '10.0.0.10' },
+          'mqtt' => { 'mqtt_host' => 'broker', 'mappings' => [{ 'topic' => 't' }] },
+          'forecast' => { 'forecast' => 'forecast.solar' },
+          'sensors' => {
+            'inverter_power' => { 'source' => 'senec' },
+            'custom_power_01' => { 'source' => 'shelly', 'shelly_host' => 'shelly.local',
+                                   'measurement' => 'fridge', 'field' => 'power' },
+            'inverter_power_forecast' => { 'source' => 'forecast' },
+          },
+        )
+        described_class.current.update('system',
+                                       { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY })
+      end
+
+      it 'drops device-collector sections' do
+        reloaded = described_class.current
+        expect(reloaded.shelly).to be_empty
+        expect(reloaded.senec).to be_empty
+        expect(reloaded.mqtt).to be_empty
+      end
+
+      it 'preserves the forecast section' do
+        expect(described_class.current.forecast.forecast).to eq('forecast.solar')
+      end
+
+      it 'rewrites device-source sensors to external, keeping mapping' do
+        config = described_class.current
+        custom = config.sensor_config('custom_power_01')
+        expect(custom.source).to eq('external')
+        expect(custom.measurement).to eq('fridge')
+        expect(custom.field).to eq('power')
+        expect(custom).not_to have_key('shelly_host')
+      end
+
+      it 'leaves forecast sensors alone' do
+        expect(described_class.current.sensor_config('inverter_power_forecast').source).to eq('forecast')
+      end
+    end
+
+    context 'when switching to collectors_only mode' do
+      before do
+        with_config_yaml(
+          'reverse_proxy' => { 'app_domain' => 'example.com' },
+          'backup' => { 'aws_bucket' => 'my-bucket' },
+          'postgresql' => { 'password' => 'keep-me' },
+          'shelly' => { 'connection' => 'cloud' },
+          'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
+        )
+        described_class.current.update('system',
+                                       { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      end
+
+      it 'drops dashboard-only sections' do
+        reloaded = described_class.current
+        expect(reloaded.reverse_proxy).to be_empty
+        expect(reloaded.backup).to be_empty
+      end
+
+      it 'drops sensors (canonicalization happens on the remote dashboard host)' do
+        expect(described_class.current.enabled_sensors).to be_empty
+      end
+
+      it 'preserves source-config sections (used as raw mappings here)' do
+        expect(described_class.current.shelly.connection).to eq('cloud')
+      end
+
+      it 'leaves auto-generated database passwords intact' do
+        expect(described_class.current.postgresql.password).to eq('keep-me')
+      end
+    end
   end
 
   describe '#configured?' do

@@ -367,6 +367,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     return false if @data[setting.to_s] == raw
 
     @data[setting.to_s] = raw
+    enforce_mode_constraints! if setting.to_s == 'system'
     save!
     true
   end
@@ -500,6 +501,36 @@ class Configuration # rubocop:disable Metrics/ClassLength
     used << 'mqtt' if mqtt_topics.any?
     SOURCE_CONFIGS.each { |source| used << source if configured?(source) } if collectors_only?
     used
+  end
+
+  # Drop config sections that are unreachable in the current mode and rewrite
+  # sensors when the mode restricts their sources. Idempotent — re-running on
+  # an already clean config is a no-op.
+  #
+  # Postgres/Redis/Influx data sections (and their auto-generated passwords)
+  # stay untouched on purpose: dropping them would orphan the on-disk volumes
+  # the next time the mode flips back.
+  def enforce_mode_constraints!
+    case @data.dig('system', 'mode')
+    when ConfigSchema::MODE_DASHBOARD_ONLY
+      %w[shelly senec mqtt].each { |key| @data.delete(key) }
+      rewrite_sensors_to_external!
+    when ConfigSchema::MODE_COLLECTORS_ONLY
+      %w[reverse_proxy backup sensors].each { |key| @data.delete(key) }
+    end
+  end
+
+  def rewrite_sensors_to_external!
+    sensors = @data['sensors']
+    return unless sensors.is_a?(Hash)
+
+    allowed = SENSOR_FIELDS_BY_SOURCE.fetch('external')
+    sensors.transform_values! do |config|
+      next config unless config.is_a?(Hash)
+      next config if %w[external forecast].include?(config['source'])
+
+      config.merge('source' => 'external').slice(*allowed)
+    end
   end
 
   def sanitize_sections!(result)
