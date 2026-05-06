@@ -46,5 +46,12 @@ module SettingSection
     def mqtt_topics_count
       configuration.mqtt_topics.size
     end
+
+    # In collectors_only mode the local InfluxDB target is typically
+    # write-only or unreachable for reads — values live on the remote
+    # dashboard host.
+    def show_dashboard_hint?
+      configuration.collectors_only?
+    end
   end
 end

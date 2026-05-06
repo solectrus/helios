@@ -52,11 +52,12 @@ en:
     show:
       title: 'Data Sources'
       empty: 'No data sources in use. Enable sensors to configure sources.'
+      dashboard_hint: 'Values appear on the Dashboard host.'
     mqtt_topics:
       index:
-        title: 'Additional MQTT topics'
-        description: 'Subscribe to additional topics and store them in InfluxDB — without SOLECTRUS displaying them as a sensor.'
-        empty: 'No additional topics configured.'
+        title: 'MQTT topics'
+        description: 'Subscribe to topics and store them in InfluxDB — without SOLECTRUS displaying them as a sensor.'
+        empty: 'No topics configured.'
         add: 'Add topic'
         back: 'Back to data sources'
         delete_confirm: 'Really remove this topic?'
@@ -81,7 +82,7 @@ en:
         field: 'Field'
         type: 'Type'
       inline:
-        label: 'Additional topics'
+        label: 'MQTT topics'
         count:
           one: '%{count} topic'
           other: '%{count} topics'

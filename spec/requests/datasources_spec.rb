@@ -56,5 +56,27 @@ RSpec.describe 'Datasources', :with_admin_password do
 
       expect(response.body).not_to match(/href="#{sensors_path}"/)
     end
+
+    context 'when in collectors_only mode' do
+      before { with_config_yaml('system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY }) }
+
+      it 'shows all four collector cards regardless of active_sources' do
+        expect(Configuration.current.active_sources).to be_empty
+
+        get datasources_path
+
+        Configuration::SOURCE_CONFIGS.each do |source|
+          title = I18n.t("configurations.settings.#{source}.title")
+          expect(response.body).to include(title)
+        end
+      end
+
+      it 'renders the dashboard hint on each card' do
+        get datasources_path
+
+        hint = I18n.t('datasources.show.dashboard_hint')
+        expect(response.body.scan(hint).size).to eq(Configuration::SOURCE_CONFIGS.size)
+      end
+    end
   end
 end

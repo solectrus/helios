@@ -1,19 +1,30 @@
 <% content_for :title, t('.title') %>
 
 <%= render "shared/configuration_page", active_tab: :datasources do %>
-  <% sources = @configuration.active_sources %>
-
-  <% if sources.any? %>
+  <% if @configuration.collectors_only? %>
+    <%#
+      Sensor canonicalization happens on the remote dashboard host, so
+      we always show one card per collector — even unconfigured ones.
+    %>
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      <% sources.each do |source| %>
-        <% if source == 'external' %>
-          <%= render ExternalInputInfo::Component.new(configuration: @configuration) %>
-        <% else %>
-          <%= render SettingSection::Component.new(setting: source, configuration: @configuration) %>
-        <% end %>
+      <% Configuration::SOURCE_CONFIGS.each do |source| %>
+        <%= render SettingSection::Component.new(setting: source, configuration: @configuration) %>
       <% end %>
     </div>
   <% else %>
-    <p class="text-base-content/50 text-sm"><%= t('.empty') %></p>
+    <% sources = @configuration.active_sources %>
+    <% if sources.any? %>
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <% sources.each do |source| %>
+          <% if source == 'external' %>
+            <%= render ExternalInputInfo::Component.new(configuration: @configuration) %>
+          <% else %>
+            <%= render SettingSection::Component.new(setting: source, configuration: @configuration) %>
+          <% end %>
+        <% end %>
+      </div>
+    <% else %>
+      <p class="text-base-content/50 text-sm"><%= t('.empty') %></p>
+    <% end %>
   <% end %>
 <% end %>

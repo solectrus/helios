@@ -56,6 +56,13 @@
           </span>
         <% end %>
       <% end %>
+
+      <% if show_dashboard_hint? %>
+        <p class="border-base-content/10 text-base-content/50 mt-2 flex items-center gap-2 border-t pt-3 text-xs">
+          <i class="fa-solid fa-circle-info text-xs"></i>
+          <span><%= t('datasources.show.dashboard_hint') %></span>
+        </p>
+      <% end %>
     </div>
   </div>
 </div>
