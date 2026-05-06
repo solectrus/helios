@@ -118,6 +118,13 @@ de:
       forecast:
         title: 'Forecast-Collector'
         description: 'Ertragsprognose für deine PV-Anlage'
+      deployment:
+        title: 'Betriebsmodus'
+        description: 'Welche Dienste HELIOS auf diesem Host betreibt'
+        modes:
+          full: 'Vollständig'
+          collectors_only: 'Nur Kollektoren'
+          dashboard_only: 'Nur Dashboard'
       system:
         title: 'System'
         description: 'Allgemeine Einstellungen für SOLECTRUS'

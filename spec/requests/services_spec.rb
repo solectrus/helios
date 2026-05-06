@@ -83,7 +83,7 @@ RSpec.describe 'Services', :with_admin_password do
     context 'when in collectors_only mode with a configured source' do
       before do
         with_config_yaml(
-          'system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+          'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
           'senec' => { 'version' => '4', 'host' => '10.0.0.10' },
         )
         allow(Orchestration::Container).to receive(:all).and_return([])

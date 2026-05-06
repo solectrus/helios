@@ -3,16 +3,13 @@ module Import
     class SystemExtractor
       include Helpers
 
-      def initialize(reader, collectors_only:, watchtower_interval:)
+      def initialize(reader, watchtower_interval:)
         @reader = reader
-        @collectors_only = collectors_only
         @watchtower_interval = watchtower_interval
       end
 
       def section_data
-        data = core_data.merge('app_host' => service_env('dashboard')['APP_HOST'])
-        data['mode'] = ConfigSchema::MODE_COLLECTORS_ONLY if @collectors_only
-        data.compact
+        core_data.merge('app_host' => service_env('dashboard')['APP_HOST']).compact
       end
 
       private

@@ -147,6 +147,13 @@ en:
       forecast:
         title: 'Forecast-Collector'
         description: 'Solar forecast data collector'
+      deployment:
+        title: 'Deployment mode'
+        description: 'Which services HELIOS runs on this host'
+        modes:
+          full: 'Complete'
+          collectors_only: 'Collectors only'
+          dashboard_only: 'Dashboard only'
       system:
         title: 'System'
         description: 'General settings for SOLECTRUS'

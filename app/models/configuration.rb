@@ -3,7 +3,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   # Singletons exist at most once per configuration
   SINGLETONS = %w[
-    system dashboard postgresql influxdb redis
+    deployment system dashboard postgresql influxdb redis
     watchtower forecast senec mqtt shelly reverse_proxy backup sensors ingest power_splitter
     service_overrides
   ].freeze
@@ -12,11 +12,11 @@ class Configuration # rubocop:disable Metrics/ClassLength
   HIDDEN = %w[postgresql influxdb redis watchtower ingest power_splitter].freeze
 
   # Settings shown in the configuration UI in full mode
-  SETTINGS = %w[system dashboard reverse_proxy backup].freeze
+  SETTINGS = %w[deployment system dashboard reverse_proxy backup].freeze
 
   # Settings shown in the configuration UI in collectors_only mode
   # (reverse_proxy/backup target the local dashboard/postgres, which don't exist here)
-  COLLECTORS_ONLY_SETTINGS = %w[system influxdb].freeze
+  COLLECTORS_ONLY_SETTINGS = %w[deployment system influxdb].freeze
 
   # Source configurations shown when at least one sensor uses that source
   SOURCE_CONFIGS = %w[senec mqtt shelly forecast].freeze
@@ -315,7 +315,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # --- Deployment mode ---
 
   def mode
-    @mode ||= system.mode.presence || ConfigSchema::MODE_FULL
+    @mode ||= deployment.mode.presence || ConfigSchema::MODE_FULL
   end
 
   def collectors_only?
@@ -367,7 +367,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     return false if @data[setting.to_s] == raw
 
     @data[setting.to_s] = raw
-    enforce_mode_constraints! if setting.to_s == 'system'
+    enforce_mode_constraints! if setting.to_s == 'deployment'
     save!
     true
   end
@@ -511,7 +511,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # stay untouched on purpose: dropping them would orphan the on-disk volumes
   # the next time the mode flips back.
   def enforce_mode_constraints!
-    case @data.dig('system', 'mode')
+    case @data.dig('deployment', 'mode')
     when ConfigSchema::MODE_DASHBOARD_ONLY
       %w[shelly senec mqtt].each { |key| @data.delete(key) }
       rewrite_sensors_to_external!

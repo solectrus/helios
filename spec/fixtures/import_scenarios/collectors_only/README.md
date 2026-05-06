@@ -6,7 +6,7 @@ InfluxDB instance (`INFLUX_HOST=ingest.example.com`, `INFLUX_PORT=443`).
 
 ## Highlights
 
-- **`system.mode: collectors_only`** — derived from the absence of the dashboard.
+- **`deployment.mode: collectors_only`** — derived from the absence of the dashboard.
 - **External InfluxDB** over HTTPS on port 443 (not the bundled `influxdb` container).
 - **SENEC collector** in `local` mode against `senec.fritz.box`.
 - **Shelly collector** with 11 devices via `SHELLY_HOST_*` variables and a shared

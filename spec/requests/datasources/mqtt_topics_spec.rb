@@ -25,7 +25,7 @@ RSpec.describe 'Datasources::MqttTopics', :with_admin_password do
     end
 
     it 'omits the polling controller wiring in collectors_only mode' do
-      with_config_yaml('system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
       Configuration.current.add_mqtt_topic(basic_topic)
 
       get datasources_mqtt_topics_path

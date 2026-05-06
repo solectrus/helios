@@ -22,7 +22,7 @@ RSpec.describe InfluxDb::Client do
 
     it 'targets the external InfluxDB in collectors_only mode' do
       with_config_yaml(
-        'system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+        'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
         'influxdb' => {
           'token' => 'tok', 'org' => 'org', 'bucket' => 'bkt',
           'host' => 'remote.example', 'port' => '9000', 'schema' => 'https'

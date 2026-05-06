@@ -1,7 +1,6 @@
 class ConfigSchema # rubocop:disable Metrics/ClassLength
   # Fields configurable via the setup wizard or system survey
   SYSTEM_FIELDS = %w[
-    mode
     timezone
     installation_date
     app_host
@@ -9,6 +8,11 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     network_name
     update_interval
   ].freeze
+
+  # Deployment-mode section. The operating mode lives in its own card on the
+  # configuration page so the system survey is not split between "what mode
+  # do I run" and "general settings".
+  DEPLOYMENT_FIELDS = %w[mode].freeze
 
   # Default Docker network name. Compose's auto-generated default is
   # "<project>_default" with an underscore, so HELIOS sticks with that
@@ -279,6 +283,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
 
   FIELDS = {
     'system' => SYSTEM_ALL,
+    'deployment' => DEPLOYMENT_FIELDS,
     'dashboard' => DASHBOARD_ALL,
     'postgresql' => POSTGRESQL_ALL,
     'influxdb' => INFLUXDB_ALL,

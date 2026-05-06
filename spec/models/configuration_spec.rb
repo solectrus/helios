@@ -215,7 +215,7 @@ RSpec.describe Configuration do
 
     it 'lists configured collector sections in collectors_only mode even without sensors' do
       with_config_yaml(
-        'system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+        'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
         'senec' => { 'version' => '4', 'host' => '10.0.0.10' },
         'shelly' => { 'connection' => 'cloud' },
       )
@@ -224,7 +224,7 @@ RSpec.describe Configuration do
 
     it 'drops device-collector sources in dashboard_only mode' do
       with_config_yaml(
-        'system' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY },
+        'deployment' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY },
         'sensors' => {
           'inverter_power' => { 'source' => 'external' },
           'custom_power_01' => { 'source' => 'shelly', 'shelly_host' => 'shelly.local' },
@@ -284,7 +284,7 @@ RSpec.describe Configuration do
             'inverter_power_forecast' => { 'source' => 'forecast' },
           },
         )
-        described_class.current.update('system',
+        described_class.current.update('deployment',
                                        { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY })
       end
 
@@ -322,7 +322,7 @@ RSpec.describe Configuration do
           'shelly' => { 'connection' => 'cloud' },
           'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
         )
-        described_class.current.update('system',
+        described_class.current.update('deployment',
                                        { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
       end
 
@@ -532,14 +532,14 @@ RSpec.describe Configuration do
 
     it 'returns true in collectors_only mode when an active source is configured' do
       with_config_yaml(
-        'system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+        'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
         'senec' => { 'version' => '4', 'host' => '10.0.0.10' },
       )
       expect(described_class.current.setup_completed?).to be true
     end
 
     it 'returns false in collectors_only mode without any active source' do
-      with_config_yaml('system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
       expect(described_class.current.setup_completed?).to be false
     end
   end

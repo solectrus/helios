@@ -8,7 +8,7 @@ RSpec.describe 'Datasources::ShellyDevices', :with_admin_password do
 
   before do
     with_config_yaml(
-      'system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+      'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
       'shelly' => { 'connection' => 'local' },
     )
     login

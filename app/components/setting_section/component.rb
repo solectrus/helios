@@ -2,6 +2,7 @@ module SettingSection
   class Component < ViewComponent::Base
     ICONS = {
       'forecast' => 'fa-cloud-sun',
+      'deployment' => 'fa-sitemap',
       'system' => 'fa-gear',
       'dashboard' => 'fa-chart-line',
       'reverse_proxy' => 'fa-shield-halved',
@@ -27,12 +28,24 @@ module SettingSection
       I18n.t("configurations.settings.#{setting}.title")
     end
 
+    # The deployment card always reflects an effective mode (full is the
+    # implicit default), so it is treated as configured even when the section
+    # is empty in config.yaml. Other cards remain "not configured" until the
+    # user opens them.
     def singleton_data
       @singleton_data ||= configuration.setting_data(setting)
     end
 
     def singleton_configured?
+      return true if setting == 'deployment'
+
       singleton_data.present?
+    end
+
+    def status_label
+      return I18n.t("configurations.settings.deployment.modes.#{configuration.mode}") if setting == 'deployment'
+
+      I18n.t('configurations.show.configured')
     end
 
     def incomplete?

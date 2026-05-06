@@ -6,10 +6,11 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 1
+_schema_version: 2
+deployment:
+  mode: collectors_only
 system:
   admin_password: secret_admin_password
-  mode: collectors_only
   secret_key_base: very_secret_key_base
   timezone: Europe/Berlin
 influxdb:

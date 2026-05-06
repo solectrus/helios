@@ -925,8 +925,8 @@ RSpec.describe Export::Builder do
   describe 'in collectors_only mode with cloud-shellies' do
     before do
       configuration.update('system', { 'installation_date' => '2024-01-15',
-                                       'timezone' => 'Europe/Berlin',
-                                       'mode' => 'collectors_only' })
+                                       'timezone' => 'Europe/Berlin' })
+      configuration.update('deployment', { 'mode' => 'collectors_only' })
       configuration.update('influxdb', { 'host' => 'ingest.example.com', 'port' => '443',
                                          'schema' => 'https', 'org' => 'solectrus',
                                          'bucket' => 'solectrus', 'token' => 't' })
@@ -970,7 +970,7 @@ RSpec.describe Export::Builder do
 
   describe 'in collectors_only mode with per-device shelly options' do
     before do
-      configuration.update('system', { 'mode' => 'collectors_only' })
+      configuration.update('deployment', { 'mode' => 'collectors_only' })
       configuration.update('influxdb', { 'host' => 'ingest.example.com', 'port' => '443',
                                          'schema' => 'https', 'org' => 'solectrus',
                                          'bucket' => 'solectrus', 'token' => 't' })
@@ -1002,7 +1002,7 @@ RSpec.describe Export::Builder do
 
   describe 'in collectors_only mode without per-device passwords' do
     before do
-      configuration.update('system', { 'mode' => 'collectors_only' })
+      configuration.update('deployment', { 'mode' => 'collectors_only' })
       configuration.update('influxdb', { 'host' => 'ingest.example.com', 'port' => '443',
                                          'schema' => 'https', 'org' => 'solectrus',
                                          'bucket' => 'solectrus', 'token' => 't' })
@@ -1032,8 +1032,8 @@ RSpec.describe Export::Builder do
   describe 'in dashboard_only mode' do
     before do
       configuration.update('system', { 'installation_date' => '2024-01-15',
-                                       'timezone' => 'Europe/Berlin',
-                                       'mode' => 'dashboard_only' })
+                                       'timezone' => 'Europe/Berlin' })
+      configuration.update('deployment', { 'mode' => 'dashboard_only' })
       configuration.update('shelly', { 'connection' => 'local', 'interval' => '5' })
       configuration.update_sensor('custom_power_01',
                                   { 'source' => 'shelly', 'shelly_host' => 'shelly.local' })

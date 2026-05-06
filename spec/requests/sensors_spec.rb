@@ -53,7 +53,7 @@ RSpec.describe 'Sensors', :with_admin_password do
     # avoids one 404 per mapping per request.
     it 'does not query InfluxDB in collectors_only mode' do
       with_config_yaml(
-        'system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+        'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
         'influxdb' => { 'host' => 'remote.example', 'port' => '443', 'schema' => 'https',
                         'token' => 't', 'org' => 'o', 'bucket' => 'b' },
         'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
@@ -67,7 +67,7 @@ RSpec.describe 'Sensors', :with_admin_password do
     # Sensor canonicalization happens on the remote dashboard host in
     # collectors_only mode, so /sensors has no meaning locally.
     it 'redirects to datasources in collectors_only mode' do
-      with_config_yaml('system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
 
       get sensors_path
 
