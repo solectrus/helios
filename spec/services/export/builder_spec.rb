@@ -968,6 +968,67 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'in collectors_only mode with per-device shelly options' do
+    before do
+      configuration.update('system', { 'mode' => 'collectors_only' })
+      configuration.update('influxdb', { 'host' => 'ingest.example.com', 'port' => '443',
+                                         'schema' => 'https', 'org' => 'solectrus',
+                                         'bucket' => 'solectrus', 'token' => 't' })
+      configuration.update('shelly', {
+                             'connection' => 'local',
+                             'interval' => '5',
+                             'devices' => [
+                               { 'name' => 'a', 'host' => 'a.local', 'measurement' => 'A',
+                                 'password' => 'pa', 'invert_power' => true },
+                               { 'name' => 'b', 'host' => 'b.local', 'measurement' => 'B',
+                                 'password' => 'pb' },
+                               { 'name' => 'c', 'host' => 'c.local', 'measurement' => 'C',
+                                 'invert_power' => true },
+                             ],
+                           })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'emits SHELLY_PASSWORD as a per-device CSV when devices carry their own' do
+      env = Env.load
+      expect(env['SHELLY_PASSWORD']).to eq('pa,pb,')
+    end
+
+    it 'emits SHELLY_INVERT_POWER aligned with the device order' do
+      env = Env.load
+      expect(env['SHELLY_INVERT_POWER']).to eq('true,,true')
+    end
+  end
+
+  describe 'in collectors_only mode without per-device passwords' do
+    before do
+      configuration.update('system', { 'mode' => 'collectors_only' })
+      configuration.update('influxdb', { 'host' => 'ingest.example.com', 'port' => '443',
+                                         'schema' => 'https', 'org' => 'solectrus',
+                                         'bucket' => 'solectrus', 'token' => 't' })
+      configuration.update('shelly', {
+                             'connection' => 'local',
+                             'interval' => '5',
+                             'password' => 'global',
+                             'devices' => [
+                               { 'name' => 'a', 'host' => 'a.local', 'measurement' => 'A' },
+                               { 'name' => 'b', 'host' => 'b.local', 'measurement' => 'B' },
+                             ],
+                           })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'falls back to the global password as a single value' do
+      env = Env.load
+      expect(env['SHELLY_PASSWORD']).to eq('global')
+    end
+
+    it 'omits SHELLY_INVERT_POWER when no device sets it' do
+      env = Env.load
+      expect(env['SHELLY_INVERT_POWER']).to be_nil
+    end
+  end
+
   describe 'with MQTT configured' do
     before do
       configuration.update('mqtt', {

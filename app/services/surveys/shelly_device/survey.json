@@ -1,0 +1,142 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Shelly-Gerät",
+    "default": "Shelly device"
+  },
+  "clearInvisibleValues": "onHidden",
+  "pages": [
+    {
+      "name": "p_name",
+      "title": {
+        "de": "Bezeichnung",
+        "default": "Label"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "name",
+          "title": {
+            "de": "Bezeichnung",
+            "default": "Label"
+          },
+          "description": {
+            "de": "Erscheint nur in HELIOS",
+            "default": "Shown only inside HELIOS"
+          },
+          "placeholder": {
+            "de": "z.B. Wärmepumpe",
+            "default": "e.g. Heat pump"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_connection",
+      "title": {
+        "de": "Verbindung",
+        "default": "Connection"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "host",
+          "title": {
+            "de": "Hostname / IP",
+            "default": "Hostname / IP"
+          },
+          "description": {
+            "de": "Lokale Adresse des Shelly-Geräts im Heimnetz",
+            "default": "Local address of the Shelly device on your network"
+          },
+          "isRequired": true,
+          "placeholder": {
+            "de": "z.B. shellyplug-s-AABBCC",
+            "default": "e.g. shellyplug-s-AABBCC"
+          }
+        },
+        {
+          "type": "text",
+          "name": "device_id",
+          "title": {
+            "de": "Cloud-Geräte-ID",
+            "default": "Cloud device ID"
+          },
+          "description": {
+            "de": "Die ID, unter der Shelly Cloud das Gerät führt",
+            "default": "The ID Shelly Cloud uses for this device"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "password",
+          "title": {
+            "de": "Gerätepasswort (optional)",
+            "default": "Device password (optional)"
+          },
+          "inputType": "password"
+        }
+      ]
+    },
+    {
+      "name": "p_options",
+      "title": {
+        "de": "Optionen",
+        "default": "Options"
+      },
+      "elements": [
+        {
+          "type": "boolean",
+          "name": "invert_power",
+          "title": {
+            "de": "Leistung invertieren",
+            "default": "Invert power"
+          },
+          "description": {
+            "de": "Vorzeichen umkehren — z.B. wenn das Gerät Einspeisung als positiv meldet.",
+            "default": "Flip the sign — e.g. when the device reports feed-in as positive."
+          },
+          "renderAs": "checkbox",
+          "defaultValue": false
+        }
+      ]
+    },
+    {
+      "name": "p_influxdb",
+      "title": {
+        "de": "InfluxDB",
+        "default": "InfluxDB"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "measurement",
+          "title": {
+            "de": "InfluxDB-Measurement",
+            "default": "InfluxDB measurement"
+          },
+          "description": {
+            "de": "Name der Tabelle in InfluxDB, in die der Collector die Messwerte schreibt.",
+            "default": "Name of the InfluxDB table the collector writes the readings to."
+          },
+          "isRequired": true,
+          "placeholder": "shelly_heatpump"
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  }
+}

@@ -34,7 +34,7 @@ module Export
         env.add_section('Shelly collector')
         entry('SHELLY_INTERVAL', shelly.interval || '5', 'Polling interval in seconds')
         collectors_only_device_entries(devices, shelly)
-        collectors_only_extra_entries(shelly)
+        collectors_only_extra_entries(devices, shelly)
         global_optional_entries(shelly)
       end
 
@@ -52,9 +52,30 @@ module Export
                        'InfluxDB measurement names (comma-separated)')
       end
 
-      def collectors_only_extra_entries(shelly)
+      def collectors_only_extra_entries(devices, shelly)
         optional_entry('INFLUX_MODE', shelly.mode, 'InfluxDB write mode (essential or full)')
-        optional_entry('SHELLY_PASSWORD', shelly.password, 'Shelly device password')
+        password_entry(devices, shelly)
+        invert_power_entry(devices)
+      end
+
+      # Per-device passwords win over the global one — the collector reads
+      # SHELLY_PASSWORD as CSV when the values per device differ. If no device
+      # carries its own password we fall back to the global default.
+      def password_entry(devices, shelly)
+        if devices.any? { |d| d['password'].present? }
+          csv = devices.map { |d| d['password'].to_s }.join(',')
+          entry('SHELLY_PASSWORD', csv, 'Shelly device passwords (comma-separated)')
+        else
+          optional_entry('SHELLY_PASSWORD', shelly.password, 'Shelly device password')
+        end
+      end
+
+      def invert_power_entry(devices)
+        return unless devices.any? { |d| d['invert_power'] }
+
+        csv = devices.map { |d| d['invert_power'] ? 'true' : '' }.join(',')
+        entry('SHELLY_INVERT_POWER', csv,
+              'Invert reported power per device (comma-separated)')
       end
 
       def optional_entries(sensors, shelly)

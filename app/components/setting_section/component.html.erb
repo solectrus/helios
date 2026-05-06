@@ -57,11 +57,20 @@
         <% end %>
       <% end %>
 
-      <% if show_dashboard_hint? %>
-        <p class="border-base-content/10 text-base-content/50 mt-2 flex items-center gap-2 border-t pt-3 text-xs">
-          <i class="fa-solid fa-circle-info text-xs"></i>
-          <span><%= t('datasources.show.dashboard_hint') %></span>
-        </p>
+      <% if show_shelly_devices_link? %>
+        <%= link_to helpers.datasources_shelly_devices_path,
+                    data: { turbo_frame: "_top" },
+                    class: "group border-base-content/10 text-base-content/70 hover:text-primary focus-visible:text-primary mt-2 flex items-center justify-between gap-2 border-t py-3 text-sm" do %>
+          <span><%= t('datasources.shelly_devices.inline.label') %></span>
+
+          <span class="flex items-center gap-2">
+            <span class="text-base-content/50 group-hover:text-primary/80 group-focus-visible:text-primary/80 tabular-nums">
+              <%= t('datasources.shelly_devices.inline.count', count: shelly_devices_count) %>
+            </span>
+
+            <i class="fa-solid fa-chevron-right text-xs transition-transform duration-150 group-hover:translate-x-0.5"></i>
+          </span>
+        <% end %>
       <% end %>
     </div>
   </div>

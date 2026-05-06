@@ -47,11 +47,15 @@ module SettingSection
       configuration.mqtt_topics.size
     end
 
-    # In collectors_only mode the local InfluxDB target is typically
-    # write-only or unreachable for reads — values live on the remote
-    # dashboard host.
-    def show_dashboard_hint?
-      configuration.collectors_only?
+    # Shelly devices live as a raw list under shelly.devices and only get a
+    # dedicated CRUD UI in collectors_only mode; in full mode they are
+    # derived from sensor configurations and edited on the Sensors screen.
+    def show_shelly_devices_link?
+      setting == 'shelly' && configuration.collectors_only?
+    end
+
+    def shelly_devices_count
+      configuration.shelly_devices.size
     end
   end
 end

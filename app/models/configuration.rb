@@ -201,14 +201,14 @@ class Configuration # rubocop:disable Metrics/ClassLength
   end
 
   def add_mqtt_topic(data)
-    write_mqtt_topics(mqtt_topics + [sanitize_mqtt_topic(data)])
+    write_mqtt_topics(mqtt_topics + [sanitize_fields(data, MQTT_TOPIC_FIELDS)])
   end
 
   def update_mqtt_topic(index, data)
     list = mqtt_topics.dup
     return unless list[index.to_i]
 
-    list[index.to_i] = sanitize_mqtt_topic(data)
+    list[index.to_i] = sanitize_fields(data, MQTT_TOPIC_FIELDS)
     write_mqtt_topics(list)
   end
 
@@ -217,6 +217,37 @@ class Configuration # rubocop:disable Metrics/ClassLength
     return unless list.delete_at(index.to_i)
 
     write_mqtt_topics(list)
+  end
+
+  def shelly_devices
+    Array(@data.dig('shelly', 'devices'))
+  end
+
+  def shelly_cloud?
+    shelly&.connection == 'cloud'
+  end
+
+  def shelly_device(index)
+    shelly_devices[index.to_i]
+  end
+
+  def add_shelly_device(data)
+    write_shelly_devices(shelly_devices + [sanitize_fields(data, SHELLY_DEVICE_FIELDS)])
+  end
+
+  def update_shelly_device(index, data)
+    list = shelly_devices.dup
+    return unless list[index.to_i]
+
+    list[index.to_i] = sanitize_fields(data, SHELLY_DEVICE_FIELDS)
+    write_shelly_devices(list)
+  end
+
+  def remove_shelly_device(index)
+    list = shelly_devices.dup
+    return unless list.delete_at(index.to_i)
+
+    write_shelly_devices(list)
   end
 
   # --- Source requirements ---
@@ -252,6 +283,8 @@ class Configuration # rubocop:disable Metrics/ClassLength
     json_key json_path json_formula formula
     min max null_to_zero
   ].freeze
+
+  SHELLY_DEVICE_FIELDS = %w[name measurement host device_id password invert_power].freeze
 
   def incomplete_sources
     @incomplete_sources ||= active_sources.select do |source|
@@ -418,8 +451,8 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   private
 
-  def sanitize_mqtt_topic(data)
-    deep_unwrap(data).slice(*MQTT_TOPIC_FIELDS).compact_blank
+  def sanitize_fields(data, fields)
+    deep_unwrap(data).slice(*fields).compact_blank
   end
 
   def write_mqtt_topics(list)
@@ -428,6 +461,16 @@ class Configuration # rubocop:disable Metrics/ClassLength
       @data['mqtt'].delete('mappings')
     else
       @data['mqtt']['mappings'] = list
+    end
+    save!
+  end
+
+  def write_shelly_devices(list)
+    @data['shelly'] ||= {}
+    if list.empty?
+      @data['shelly'].delete('devices')
+    else
+      @data['shelly']['devices'] = list
     end
     save!
   end

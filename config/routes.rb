@@ -22,6 +22,9 @@ Rails.application.routes.draw do
       resources :mqtt_topics,
                 only: %i[index new create edit update destroy],
                 path: 'mqtt-topics'
+      resources :shelly_devices,
+                only: %i[index new create edit update destroy],
+                path: 'shelly-devices'
     end
   end
   resource :advanced, only: :show, controller: 'advanced'

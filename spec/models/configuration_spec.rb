@@ -126,6 +126,76 @@ RSpec.describe Configuration do
     end
   end
 
+  describe 'shelly_devices CRUD' do
+    let(:basic_device) do
+      { 'name' => 'Heat pump', 'host' => 'shelly-hp.local', 'measurement' => 'shelly_hp' }
+    end
+
+    it 'returns an empty list when no devices are configured' do
+      expect(described_class.current.shelly_devices).to eq([])
+    end
+
+    it 'persists added devices under shelly.devices' do
+      config = described_class.current
+      config.add_shelly_device(basic_device)
+
+      expect(config.shelly_devices).to contain_exactly(basic_device)
+    end
+
+    it 'returns a single device by index' do
+      config = described_class.current
+      config.add_shelly_device(basic_device)
+
+      expect(config.shelly_device(0)).to eq(basic_device)
+    end
+
+    it 'updates an existing device by index' do
+      config = described_class.current
+      config.add_shelly_device(basic_device)
+      config.update_shelly_device(0, basic_device.merge('measurement' => 'shelly_hp_2'))
+
+      expect(config.shelly_device(0)['measurement']).to eq('shelly_hp_2')
+    end
+
+    it 'leaves the list untouched when updating an unknown index' do
+      config = described_class.current
+      expect { config.update_shelly_device(99, basic_device) }.not_to(change { config.shelly_devices })
+    end
+
+    it 'removes a device by index' do
+      config = described_class.current
+      config.add_shelly_device(basic_device)
+      config.remove_shelly_device(0)
+
+      expect(config.shelly_devices).to be_empty
+    end
+
+    it 'drops the devices key entirely once empty' do
+      config = described_class.current
+      config.update('shelly', { 'connection' => 'local' })
+      config.add_shelly_device(basic_device)
+      config.remove_shelly_device(0)
+
+      expect(YAML.load_file(described_class.path)['shelly']).not_to include('devices')
+    end
+
+    it 'strips unknown keys on save' do
+      config = described_class.current
+      config.add_shelly_device(basic_device.merge('attacker' => 'value'))
+
+      expect(config.shelly_device(0)).not_to include('attacker')
+    end
+
+    it 'preserves the cloud-mode device_id field' do
+      config = described_class.current
+      config.add_shelly_device(
+        { 'name' => 'Plug', 'device_id' => 'shellyplug-123', 'measurement' => 'plug' },
+      )
+
+      expect(config.shelly_device(0)).to include('device_id' => 'shellyplug-123')
+    end
+  end
+
   describe '#active_sources' do
     it 'lists sources used by at least one sensor' do
       with_config_yaml('sensors' => { 'inverter_power' => { 'source' => 'senec' } })

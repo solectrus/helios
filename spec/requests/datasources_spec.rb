@@ -71,12 +71,17 @@ RSpec.describe 'Datasources', :with_admin_password do
         end
       end
 
-      it 'renders the dashboard hint on each card' do
+      it 'links to the Shelly devices CRUD inside the Shelly card' do
         get datasources_path
 
-        hint = I18n.t('datasources.show.dashboard_hint')
-        expect(response.body.scan(hint).size).to eq(Configuration::SOURCE_CONFIGS.size)
+        expect(response.body).to match(/href="#{datasources_shelly_devices_path}"/)
       end
+    end
+
+    it 'does not link to the Shelly devices CRUD in full mode' do
+      get datasources_path
+
+      expect(response.body).not_to match(/href="#{datasources_shelly_devices_path}"/)
     end
   end
 end

@@ -52,11 +52,10 @@ en:
     show:
       title: 'Data Sources'
       empty: 'No data sources in use. Enable sensors to configure sources.'
-      dashboard_hint: 'Values appear on the Dashboard host.'
     mqtt_topics:
       index:
         title: 'MQTT topics'
-        description: 'Subscribe to topics and store them in InfluxDB — without SOLECTRUS displaying them as a sensor.'
+        description: 'Subscribe to topics and store their values in InfluxDB.'
         empty: 'No topics configured.'
         add: 'Add topic'
         back: 'Back to data sources'
@@ -86,6 +85,30 @@ en:
         count:
           one: '%{count} topic'
           other: '%{count} topics'
+          zero: 'None'
+    shelly_devices:
+      index:
+        title: 'Shelly devices'
+        description: 'Poll devices and store their readings in InfluxDB.'
+        empty: 'No devices configured.'
+        add: 'Add device'
+        back: 'Back to data sources'
+        delete_confirm: 'Really remove this device?'
+      table:
+        host: 'Host'
+        device_id: 'Cloud ID'
+        measurement: 'Measurement'
+        invert_power: 'Power inverted'
+        password_override: 'Custom password'
+        password_override_hint: 'Overrides the global Shelly password'
+        unnamed: '(unnamed)'
+        edit: 'Edit device'
+        delete: 'Remove device'
+      inline:
+        label: 'Devices'
+        count:
+          one: '%{count} device'
+          other: '%{count} devices'
           zero: 'None'
 
   advanced:

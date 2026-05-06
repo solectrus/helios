@@ -1,0 +1,76 @@
+<% if empty? %>
+  <div class="border-base-content/10 flex flex-col items-center gap-4 rounded-2xl border border-dashed px-6 py-16 text-center">
+    <div class="bg-base-200 text-base-content/60 flex h-12 w-12 items-center justify-center rounded-full">
+      <i aria-hidden="true" class="fa-solid fa-plug-circle-bolt text-lg"></i>
+    </div>
+
+    <p class="text-base-content/70 max-w-sm text-sm"><%= t('datasources.shelly_devices.index.empty') %></p>
+  </div>
+<% else %>
+  <ul class="border-base-content/10 divide-base-content/15 divide-y overflow-hidden rounded-2xl border">
+    <% devices.each_with_index do |device, index| %>
+      <li class="group bg-base-100/40 hover:bg-base-100/80 transition-colors">
+        <div class="space-y-3 px-6 py-5">
+          <div class="flex items-start justify-between gap-4">
+            <h2 class="min-w-0 flex-1 text-base leading-tight font-medium break-words">
+              <%= device['name'].presence || t('datasources.shelly_devices.table.unnamed') %>
+            </h2>
+
+            <div
+              class="
+                text-base-content/40 group-hover:text-base-content/80 flex shrink-0 items-center gap-0.5
+                transition-opacity
+              "
+            >
+              <%= link_to helpers.edit_datasources_shelly_device_path(index),
+                          class: "btn btn-ghost btn-xs btn-square",
+                          aria: { label: t('datasources.shelly_devices.table.edit') },
+                          data: { turbo_frame: "setting-modal-content" } do %>
+                <i aria-hidden="true" class="fa-solid fa-pen-to-square"></i>
+              <% end %>
+
+              <%= button_to helpers.datasources_shelly_device_path(index),
+                            method: :delete,
+                            class: "btn btn-ghost btn-xs btn-square hover:text-error",
+                            aria: { label: t('datasources.shelly_devices.table.delete') },
+                            data: { turbo_confirm: t('datasources.shelly_devices.index.delete_confirm'), turbo_frame: "_top" } do %>
+                <i aria-hidden="true" class="fa-solid fa-trash-can"></i>
+              <% end %>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
+            <span class="inline-flex items-baseline gap-1.5">
+              <span class="text-base-content/40 text-[10px] tracking-wider uppercase"><%= identifier_label %></span>
+              <span class="text-base-content/90 font-mono break-all"><%= identifier_for(device) %></span>
+            </span>
+
+            <span class="inline-flex items-baseline gap-1.5">
+              <span class="text-base-content/40 text-[10px] tracking-wider uppercase">
+                <%= t('datasources.shelly_devices.table.measurement') %>
+              </span>
+
+              <span class="text-base-content/90 font-mono break-all"><%= device['measurement'] %></span>
+            </span>
+
+            <% if device['invert_power'] %>
+              <span class="badge badge-sm badge-soft badge-warning">
+                <%= t('datasources.shelly_devices.table.invert_power') %>
+              </span>
+            <% end %>
+
+            <% if device['password'].present? %>
+              <span
+                class="badge badge-sm badge-soft badge-info"
+                title="<%= t('datasources.shelly_devices.table.password_override_hint') %>"
+              >
+                <i aria-hidden="true" class="fa-solid fa-key text-xs"></i>
+                <%= t('datasources.shelly_devices.table.password_override') %>
+              </span>
+            <% end %>
+          </div>
+        </div>
+      </li>
+    <% end %>
+  </ul>
+<% end %>

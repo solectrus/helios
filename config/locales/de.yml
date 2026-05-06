@@ -23,11 +23,10 @@ de:
     show:
       title: 'Datenquellen'
       empty: 'Keine Datenquellen in Verwendung. Aktiviere Sensoren, um Quellen zu konfigurieren.'
-      dashboard_hint: 'Werte siehst du im Dashboard.'
     mqtt_topics:
       index:
         title: 'MQTT-Topics'
-        description: 'Topics abonnieren und in InfluxDB ablegen — ohne dass SOLECTRUS sie als Sensor anzeigt.'
+        description: 'Topics abonnieren und deren Werte in InfluxDB ablegen.'
         empty: 'Keine Topics konfiguriert.'
         add: 'Topic hinzufügen'
         back: 'Zurück zu den Datenquellen'
@@ -57,6 +56,30 @@ de:
         count:
           one: '%{count} Topic'
           other: '%{count} Topics'
+          zero: 'Keine'
+    shelly_devices:
+      index:
+        title: 'Shelly-Geräte'
+        description: 'Geräte abfragen und deren Messwerte in InfluxDB ablegen.'
+        empty: 'Keine Geräte konfiguriert.'
+        add: 'Gerät hinzufügen'
+        back: 'Zurück zu den Datenquellen'
+        delete_confirm: 'Gerät wirklich entfernen?'
+      table:
+        host: 'Host'
+        device_id: 'Cloud-ID'
+        measurement: 'Measurement'
+        invert_power: 'Leistung invertiert'
+        password_override: 'Eigenes Passwort'
+        password_override_hint: 'Überschreibt das globale Shelly-Passwort'
+        unnamed: '(ohne Namen)'
+        edit: 'Gerät bearbeiten'
+        delete: 'Gerät entfernen'
+      inline:
+        label: 'Geräte'
+        count:
+          one: '%{count} Gerät'
+          other: '%{count} Geräte'
           zero: 'Keine'
 
   advanced:

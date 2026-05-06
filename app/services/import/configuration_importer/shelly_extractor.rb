@@ -50,7 +50,8 @@ module Import
       # index with the comma-separated INFLUX_MEASUREMENT list the collector
       # consumes. In local-mode, names are derived from ${SHELLY_HOST_<NAME>}
       # references in the raw compose; cloud-mode falls back to a sequential
-      # placeholder.
+      # placeholder. Per-device password and invert_power flags are picked up
+      # from their CSV env vars when present.
       def raw_devices
         return [] unless enabled?
 
@@ -60,6 +61,8 @@ module Import
             'name' => ctx[:names][i] || "device#{i + 1}",
             ctx[:field] => id,
             'measurement' => ctx[:measurements][i],
+            'password' => ctx[:passwords][i],
+            'invert_power' => ctx[:invert_powers][i],
           }.compact
         end
       end
@@ -74,7 +77,24 @@ module Import
           measurements: csv_split(env['INFLUX_MEASUREMENT']),
           names: cloud ? Array.new(identifiers.size) : shelly_host_names(raw_compose_env(service), identifiers.size),
           field: cloud ? 'device_id' : 'host',
+          passwords: per_device_passwords(env, identifiers.size),
+          invert_powers: invert_power_flags(env, identifiers.size),
         }
+      end
+
+      # Per-device passwords are only attributed to devices when the CSV
+      # holds genuinely different values; a single shared value is picked up
+      # by `shared_password` instead and stays on the global Shelly section.
+      def per_device_passwords(env, size)
+        passwords = csv_split(env['SHELLY_PASSWORD'])
+        return Array.new(size) if passwords.compact_blank.uniq.size <= 1
+
+        Array.new(size) { |i| passwords[i].presence }
+      end
+
+      def invert_power_flags(env, size)
+        flags = csv_split(env['SHELLY_INVERT_POWER'])
+        Array.new(size) { |i| flags[i].to_s.casecmp('true').zero? || nil }
       end
 
       # INFLUX_MODE passthrough — optional "essential"/"full" hint the
