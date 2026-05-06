@@ -26,7 +26,7 @@ module OrphanedServiceRow
       if pending
         'loading loading-spinner loading-xs text-primary'
       else
-        "inline-block w-3 h-3 rounded-full #{container.running? ? 'bg-success' : 'bg-neutral'}"
+        "inline-block size-4 rounded-full #{container.running? ? 'bg-success' : 'bg-neutral'}"
       end
     end
 

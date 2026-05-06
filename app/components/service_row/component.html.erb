@@ -13,14 +13,20 @@
     <div class="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
       <% if lazy %>
         <%# Skeleton placeholder for lazy loading %>
-        <div class="flex h-3 w-3 items-center justify-center">
+        <div class="flex size-4 items-center justify-center">
           <span class="loading loading-spinner loading-xs"></span>
         </div>
       <% else %>
         <%# Full content %>
         <div id="<%= dom_id %>-status" class="<%= tooltip_class %>" data-tip="<%= status_label %>">
-          <div class="flex h-3 w-3 items-center justify-center">
-            <span class="<%= status_indicator_class %>"></span>
+          <div class="flex size-4 items-center justify-center">
+            <% if healthcheck_passing? %>
+              <span class="bg-success flex size-4 items-center justify-center rounded-full">
+                <i class="fa-solid fa-check text-success-content text-[10px]"></i>
+              </span>
+            <% else %>
+              <span class="<%= status_indicator_class %>"></span>
+            <% end %>
           </div>
         </div>
       <% end %>

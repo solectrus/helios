@@ -83,7 +83,7 @@ module ServiceRow
         return 'loading loading-spinner loading-xs text-warning'
       end
 
-      dot = 'inline-block w-3 h-3 rounded-full'
+      dot = 'inline-block size-4 rounded-full'
       return "#{dot} bg-error" if error?
       return "#{dot} bg-warning" if start_pending?
       if healthcheck_starting?
@@ -100,7 +100,7 @@ module ServiceRow
         return start_pending? ? t('.start_pending') : t('.not_created')
       end
 
-      running? ? running_status_label : (status&.capitalize || t('.unknown'))
+      running? ? running_status_label : container_status_label
     end
 
     # Showing the running container's version while a recreate is in flight
@@ -117,6 +117,10 @@ module ServiceRow
 
     def healthcheck_starting?
       running? && health == 'starting'
+    end
+
+    def healthcheck_passing?
+      running? && health == 'healthy' && !pending && !error?
     end
 
     def tooltip_class
@@ -160,11 +164,7 @@ module ServiceRow
     end
 
     def open_button_enabled?
-      !pending && running? && healthy?
-    end
-
-    def healthy?
-      health.nil? || health == 'healthy'
+      !pending && running? && health != 'unhealthy'
     end
 
     def legacy_image?
@@ -259,8 +259,16 @@ module ServiceRow
 
     def running_status_label
       return t('.waiting_for_healthcheck') if health == 'starting'
+      return t('.unhealthy') if health == 'unhealthy'
+      return t('.healthy') if health == 'healthy'
 
-      health&.capitalize || t('.running')
+      t('.running')
+    end
+
+    def container_status_label
+      return t('.unknown') unless status
+
+      t(".statuses.#{status}", default: status.capitalize)
     end
   end
 end
