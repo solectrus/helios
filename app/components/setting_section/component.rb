@@ -10,6 +10,7 @@ module SettingSection
       'senec' => 'fa-bolt',
       'mqtt' => 'fa-tower-broadcast',
       'shelly' => 'fa-plug-circle-bolt',
+      'influxdb' => 'fa-database',
     }.freeze
 
     attr_reader :setting, :configuration
@@ -49,6 +50,8 @@ module SettingSection
     end
 
     def incomplete?
+      return configuration.incomplete_influxdb? if setting == 'influxdb'
+
       configuration.incomplete_sources.include?(setting)
     end
 

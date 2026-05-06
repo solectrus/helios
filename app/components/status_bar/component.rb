@@ -60,7 +60,8 @@ module StatusBar
     def show_start?
       @status.in?(%i[stopped partial error]) &&
         Configuration.current.setup_completed? &&
-        !Configuration.current.incomplete?
+        !Configuration.current.incomplete? &&
+        !Configuration.current.incomplete_influxdb?
     end
 
     def show_stop?

@@ -88,7 +88,10 @@ module ConfigNav
     end
 
     def show_warning?(tab)
-      tab[:id] == :datasources && Configuration.current.incomplete?
+      case tab[:id]
+      when :datasources then Configuration.current.incomplete?
+      when :advanced then Configuration.current.incomplete_influxdb?
+      end
     end
 
     def show_reset?

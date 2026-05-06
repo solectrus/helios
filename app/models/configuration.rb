@@ -302,6 +302,14 @@ class Configuration # rubocop:disable Metrics/ClassLength
     incomplete_sources.any?
   end
 
+  # In collectors_only mode the collectors push to an external InfluxDB; without
+  # a host they have nowhere to write. Local-mode fields (org/bucket/token) are
+  # auto-generated and survive a mode switch, so a plain "section configured?"
+  # check would mis-report a half-empty target as ready.
+  def incomplete_influxdb?
+    collectors_only? && influxdb.host.blank?
+  end
+
   # Ingest recalculates house_power when a balcony power plant feeds into
   # the home grid and distorts the inverter-reported value. It runs alongside
   # the local InfluxDB only — in collectors_only mode there is nothing to

@@ -517,6 +517,29 @@ RSpec.describe Configuration do
     end
   end
 
+  describe '#incomplete_influxdb?' do
+    it 'returns false in full mode regardless of host' do
+      with_config_yaml('influxdb' => { 'org' => 'solectrus' })
+      expect(described_class.current.incomplete_influxdb?).to be false
+    end
+
+    it 'returns true in collectors_only mode without a host' do
+      with_config_yaml(
+        'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+        'influxdb' => { 'org' => 'solectrus', 'bucket' => 'solectrus' },
+      )
+      expect(described_class.current.incomplete_influxdb?).to be true
+    end
+
+    it 'returns false in collectors_only mode once a host is set' do
+      with_config_yaml(
+        'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+        'influxdb' => { 'host' => 'influx.example.com', 'org' => 'solectrus' },
+      )
+      expect(described_class.current.incomplete_influxdb?).to be false
+    end
+  end
+
   describe '#setup_completed?' do
     it 'returns false when no sensors are configured' do
       config = described_class.current
