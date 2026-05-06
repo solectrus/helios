@@ -220,8 +220,8 @@ de:
 
   restarting:
     show:
-      title: 'Wird neu gestartet…'
-      heading: 'HELIOS wird neu gestartet…'
+      title: 'Wird aktualisiert…'
+      heading: 'HELIOS wird aktualisiert und neu gestartet…'
 
   starts:
     show:

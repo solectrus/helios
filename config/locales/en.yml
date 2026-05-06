@@ -249,8 +249,8 @@ en:
 
   restarting:
     show:
-      title: 'Restarting…'
-      heading: 'HELIOS is restarting…'
+      title: 'Updating…'
+      heading: 'HELIOS is updating and restarting…'
 
   starts:
     show:
