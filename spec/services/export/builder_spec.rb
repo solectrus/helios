@@ -1029,6 +1029,45 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'in dashboard_only mode' do
+    before do
+      configuration.update('system', { 'installation_date' => '2024-01-15',
+                                       'timezone' => 'Europe/Berlin',
+                                       'mode' => 'dashboard_only' })
+      configuration.update('shelly', { 'connection' => 'local', 'interval' => '5' })
+      configuration.update_sensor('custom_power_01',
+                                  { 'source' => 'shelly', 'shelly_host' => 'shelly.local' })
+      configuration.update('forecast', {
+                             'forecast' => 'forecast.solar',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_declination1' => '30',
+                             'forecast_azimuth1' => '180',
+                             'forecast_kwp1' => '10',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'omits device collectors even when sensors reference them' do
+      compose = Compose.load
+      expect(compose.services.names).not_to include('shelly-collector', 'senec-collector',
+                                                    'mqtt-collector')
+    end
+
+    it 'still ships the forecast-collector' do
+      compose = Compose.load
+      expect(compose.services.names).to include('forecast-collector')
+    end
+
+    it 'omits the Shelly collector section from .env' do
+      expect(Env.load['SHELLY_HOST']).to be_nil
+      expect(Env.load['SHELLY_INTERVAL']).to be_nil
+    end
+  end
+
   describe 'with MQTT configured' do
     before do
       configuration.update('mqtt', {

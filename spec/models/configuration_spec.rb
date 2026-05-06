@@ -221,6 +221,18 @@ RSpec.describe Configuration do
       )
       expect(described_class.current.active_sources).to eq(%w[senec shelly])
     end
+
+    it 'drops device-collector sources in dashboard_only mode' do
+      with_config_yaml(
+        'system' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY },
+        'sensors' => {
+          'inverter_power' => { 'source' => 'external' },
+          'custom_power_01' => { 'source' => 'shelly', 'shelly_host' => 'shelly.local' },
+          'inverter_power_forecast' => { 'source' => 'forecast' },
+        },
+      )
+      expect(described_class.current.active_sources).to eq(%w[forecast external])
+    end
   end
 
   describe '#update' do

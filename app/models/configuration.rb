@@ -24,6 +24,13 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # All data sources (SOURCE_CONFIGS + external sources without own configuration)
   ALL_SOURCES = (SOURCE_CONFIGS + %w[external]).freeze
 
+  # Sources allowed for sensors in dashboard_only mode. Device collectors
+  # (senec/shelly/mqtt) talk to local hardware and run on a remote
+  # collectors_only host that pushes into the dashboard's InfluxDB. The
+  # forecast collector only fetches from public APIs and may run alongside
+  # the dashboard, so it stays available together with `external`.
+  DASHBOARD_ONLY_SOURCES = %w[external forecast].freeze
+
   # All valid setting names
   ALL = SINGLETONS.freeze
 
@@ -148,9 +155,8 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # remote dashboard host), so we fall back to "section is configured" —
   # otherwise senec/shelly stay invisible despite running collectors.
   def active_sources
-    used = (@data['sensors'] || {}).each_value.filter_map { |config| config['source'] }.to_set
-    used << 'mqtt' if mqtt_topics.any?
-    SOURCE_CONFIGS.each { |source| used << source if configured?(source) } if collectors_only?
+    used = collected_sources
+    used &= DASHBOARD_ONLY_SOURCES if dashboard_only?
     ALL_SOURCES.select { |source| used.include?(source) }
   end
 
@@ -487,6 +493,13 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   def source_complete?(source)
     setting_data(source)[SOURCE_REQUIRED_FIELDS.fetch(source)].present?
+  end
+
+  def collected_sources
+    used = (@data['sensors'] || {}).each_value.filter_map { |config| config['source'] }.to_set
+    used << 'mqtt' if mqtt_topics.any?
+    SOURCE_CONFIGS.each { |source| used << source if configured?(source) } if collectors_only?
+    used
   end
 
   def sanitize_sections!(result)

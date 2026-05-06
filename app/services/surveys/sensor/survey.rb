@@ -70,12 +70,23 @@ module Surveys
 
       def inject_source_choices!(data)
         sources = SensorRegistry.sources_for(sensor_name)
+        sources &= Configuration::DASHBOARD_ONLY_SOURCES if Configuration.current.dashboard_only?
         return if sources.empty?
 
         element = find_element(data, 'source')
         return unless element
 
         element['choices'] = sources.map { |s| source_choice(s) }
+        element['description'] = dashboard_only_source_hint if Configuration.current.dashboard_only?
+      end
+
+      def dashboard_only_source_hint
+        self.class.localized(
+          en: 'In dashboard-only mode, device collectors (Shelly, SENEC, MQTT) run ' \
+              'on a separate HELIOS installation and are not available here.',
+          de: 'In diesem Betriebsmodus laufen Geräte-Kollektoren (Shelly, SENEC, MQTT) ' \
+              'auf einer separaten HELIOS-Installation und sind hier nicht verfügbar.',
+        )
       end
 
       def source_choice(source)

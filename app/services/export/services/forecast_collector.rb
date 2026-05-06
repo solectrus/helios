@@ -14,9 +14,7 @@ module Export
       end
 
       def self.enabled?(configuration)
-        !configuration.dashboard_only? &&
-          configuration.forecast_required? &&
-          configuration.forecast.forecast.present?
+        configuration.forecast_required? && configuration.forecast.forecast.present?
       end
 
       def to_h
