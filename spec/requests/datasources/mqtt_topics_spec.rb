@@ -23,6 +23,16 @@ RSpec.describe 'Datasources::MqttTopics', :with_admin_password do
 
       expect(response.body).to include('sensors/power').and include('house').and include('power')
     end
+
+    it 'omits the polling controller wiring in collectors_only mode' do
+      with_config_yaml('system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      Configuration.current.add_mqtt_topic(basic_topic)
+
+      get datasources_mqtt_topics_path
+
+      expect(response.body).not_to include('data-controller="sensors-polling"')
+      expect(response.body).not_to include('mqtt-topic-value-0')
+    end
   end
 
   describe 'GET /datasources/mqtt-topics/new' do

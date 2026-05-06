@@ -7,11 +7,16 @@
     <p class="text-base-content/70 max-w-sm text-sm"><%= t('datasources.mqtt_topics.index.empty') %></p>
   </div>
 <% else %>
+  <%#
+    When no readings are available (e.g. collectors_only or InfluxDB down)
+    we skip the polling controller entirely so it does not even initialize.
+  %>
   <ul
     class="border-base-content/10 divide-base-content/15 divide-y overflow-hidden rounded-2xl border"
-    data-controller="sensors-polling"
-    data-sensors-polling-url-value="<%= helpers.datasources_mqtt_topics_readings_path %>"
-    data-sensors-polling-enabled-value="<%= polling_enabled? %>"
+    <% if polling_enabled? %>
+      data-controller="sensors-polling"
+      data-sensors-polling-url-value="<%= helpers.datasources_mqtt_topics_readings_path %>"
+    <% end %>
   >
     <% topics.each_with_index do |topic, index| %>
       <% extraction = extraction_for(topic) %>
@@ -98,9 +103,11 @@
               </span>
             <% end %>
 
-            <div class="ml-auto">
-              <%= render MqttTopicsTable::ValueCell::Component.new(index: index, reading: reading_for(index)) %>
-            </div>
+            <% if polling_enabled? %>
+              <div class="ml-auto">
+                <%= render MqttTopicsTable::ValueCell::Component.new(index: index, reading: reading_for(index)) %>
+              </div>
+            <% end %>
           </div>
         </div>
       </li>
