@@ -42,5 +42,19 @@ RSpec.describe 'Datasources', :with_admin_password do
 
       expect(response.body).to include(I18n.t('configurations.show.incomplete'))
     end
+
+    it 'shows the Sensors nav tab in full mode' do
+      get datasources_path
+
+      expect(response.body).to match(/href="#{sensors_path}"/)
+    end
+
+    it 'hides the Sensors nav tab in collectors_only mode' do
+      with_config_yaml('system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+
+      get datasources_path
+
+      expect(response.body).not_to match(/href="#{sensors_path}"/)
+    end
   end
 end

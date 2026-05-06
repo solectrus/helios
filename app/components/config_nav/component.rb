@@ -37,7 +37,15 @@ module ConfigNav
     end
 
     def tabs
-      @tabs ||= TAB_DEFINITIONS.map { |tab| tab.merge(path: send(tab[:path_helper]), label: t(".#{tab[:id]}")) }
+      @tabs ||= visible_tab_definitions.map { |tab| tab.merge(path: send(tab[:path_helper]), label: t(".#{tab[:id]}")) }
+    end
+
+    # Sensors are managed on the remote dashboard host in collectors_only mode,
+    # so the local /sensors UI has no meaning here.
+    def visible_tab_definitions
+      return TAB_DEFINITIONS unless Configuration.current.collectors_only?
+
+      TAB_DEFINITIONS.reject { |tab| tab[:id] == :sensors }
     end
 
     def active?(tab)

@@ -28,7 +28,17 @@ module Header
       @tabs ||=
         TAB_DEFINITIONS
         .select { |tab| tab[:visible_if].nil? || tab[:visible_if].call }
-        .map { |tab| tab.merge(path: send(tab[:path_helper]), label: t(".#{tab[:id]}")) }
+        .map { |tab| tab.merge(path: tab_path(tab), label: t(".#{tab[:id]}")) }
+    end
+
+    # In collectors_only mode the Sensors page is unreachable; route the
+    # Configuration top-level tab straight to Datasources.
+    def tab_path(tab)
+      if tab[:id] == :configuration && Configuration.current.collectors_only?
+        datasources_path
+      else
+        send(tab[:path_helper])
+      end
     end
 
     def tab_classes(tab)

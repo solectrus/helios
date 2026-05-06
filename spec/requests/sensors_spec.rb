@@ -63,5 +63,15 @@ RSpec.describe 'Sensors', :with_admin_password do
 
       expect(WebMock).not_to have_requested(:post, /remote\.example/)
     end
+
+    # Sensor canonicalization happens on the remote dashboard host in
+    # collectors_only mode, so /sensors has no meaning locally.
+    it 'redirects to datasources in collectors_only mode' do
+      with_config_yaml('system' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+
+      get sensors_path
+
+      expect(response).to redirect_to(datasources_path)
+    end
   end
 end
