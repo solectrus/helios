@@ -5,6 +5,7 @@ module Services
     # POST /services/:service_id/task - Start
     def create
       Orchestration::StackStatus.mark_starting!
+      Orchestration::PendingOperations.set(service_name, :start)
       ComposeJob.perform_later(:start, service_name)
       respond_with_pending_status(status_bar: :starting)
     end
@@ -17,6 +18,7 @@ module Services
         ComposeJob.perform_later(:self_recreate, service_name)
         redirect_to restarting_path(boot_id: Rails.application.config.boot_id)
       else
+        Orchestration::PendingOperations.set(service_name, :recreate)
         ComposeJob.perform_later(:recreate, service_name)
         respond_with_pending_status(status_bar: :starting)
       end
@@ -24,6 +26,7 @@ module Services
 
     # DELETE /services/:service_id/task - Stop
     def destroy
+      Orchestration::PendingOperations.set(service_name, :stop)
       ComposeJob.perform_later(:stop, service_name)
       respond_with_pending_status
     end

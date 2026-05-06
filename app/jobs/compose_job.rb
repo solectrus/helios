@@ -12,6 +12,7 @@ class ComposeJob < ApplicationJob
     Rails.logger.error("ComposeJob failed: #{e.message}")
     store_errors(action, service_name, e)
   ensure
+    clear_pending_operations(action, service_name)
     broadcast_results(action, service_name)
   end
 
@@ -70,6 +71,17 @@ class ComposeJob < ApplicationJob
       Orchestration::ErrorStore.clear_all
     elsif service_name
       Orchestration::ErrorStore.clear(service_name)
+    end
+  end
+
+  # Clear pending operation flags before the final broadcast so the
+  # broadcast renders the row with its real status (running/healthy/…),
+  # not the spinner that the controller put up at click time.
+  def clear_pending_operations(action, service_name)
+    if batch_action?(action)
+      Orchestration::PendingOperations.clear_all
+    elsif service_name
+      Orchestration::PendingOperations.clear(service_name)
     end
   end
 

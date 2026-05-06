@@ -1,6 +1,6 @@
 module ServiceRow
   class Component < ViewComponent::Base
-    attr_reader :compose_service, :container, :pending, :error_message, :lazy
+    attr_reader :compose_service, :container, :error_message, :lazy
 
     def initialize(
       compose_service:,
@@ -15,6 +15,22 @@ module ServiceRow
       @pending = pending
       @error_message = error_message
       @lazy = lazy
+    end
+
+    # Combines the explicit @pending flag (set by controllers for instant
+    # click feedback) with the persisted PendingOperations store so polling,
+    # broadcasts and full-page reloads keep the spinner up for the whole
+    # duration of a long-running compose action — not just until the next
+    # render reveals the still-running old container.
+    def pending
+      @pending || pending_operation.present?
+    end
+    alias pending? pending
+
+    def pending_operation
+      return @pending_operation if defined?(@pending_operation)
+
+      @pending_operation = Orchestration::PendingOperations.get(service_name)
     end
 
     def dom_id
@@ -78,13 +94,21 @@ module ServiceRow
     end
 
     def status_label
-      return t('.processing') if pending
+      return pending_label if pending
       return error_message if error?
       if container.nil?
         return start_pending? ? t('.start_pending') : t('.not_created')
       end
 
       running? ? running_status_label : (status&.capitalize || t('.unknown'))
+    end
+
+    # Showing the running container's version while a recreate is in flight
+    # is misleading — the user just clicked "Update" and still sees the old
+    # version. Hide it until the operation finishes; the new version then
+    # animates in via the Turbo stream broadcast.
+    def show_version?
+      !lazy && !pending && version.present?
     end
 
     def status_starting?
@@ -200,6 +224,15 @@ module ServiceRow
     end
 
     private
+
+    def pending_label
+      return t('.processing') unless pending_operation
+
+      t(
+        ".pending_label.#{pending_operation}",
+        default: t('.processing'),
+      )
+    end
 
     def indicator_class
       return 'border-2 border-dashed border-base-content/30' if status.nil?

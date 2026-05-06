@@ -29,7 +29,7 @@
         <div class="flex flex-wrap items-baseline gap-x-2 text-base font-semibold sm:flex-nowrap sm:truncate">
           <span class="truncate"><%= compose_service.display_name %></span>
 
-          <% if !lazy && version %>
+          <% if show_version? %>
             <span class="text-base-content/50 text-sm font-normal wrap-anywhere tabular-nums sm:text-base">
               <%= version %>
             </span>

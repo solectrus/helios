@@ -1,5 +1,11 @@
 de:
   processing: 'Wird verarbeitet…'
+  pending_label:
+    recreate: 'Wird aktualisiert…'
+    start: 'Wird gestartet…'
+    stop: 'Wird gestoppt…'
+    up: 'Wird gestartet…'
+    down: 'Wird gestoppt…'
   not_created: 'Nicht erstellt'
   unknown: 'Unbekannt'
   waiting_for_healthcheck: 'Warte auf Healthcheck…'

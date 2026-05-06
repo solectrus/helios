@@ -6,6 +6,7 @@ RSpec.describe ComposeJob do
 
   after do
     Orchestration::ErrorStore.clear_all
+    Orchestration::PendingOperations.clear_all
     Orchestration::StackStatus.reset!
   end
 
@@ -31,6 +32,16 @@ RSpec.describe ComposeJob do
 
         expect(Orchestration::ErrorStore.get('redis')).to be_nil
         expect(Orchestration::ErrorStore.get('influxdb')).to eq('other error')
+      end
+
+      it 'clears the pending operation for the service it processed' do
+        Orchestration::PendingOperations.set('redis', :start)
+        Orchestration::PendingOperations.set('influxdb', :recreate)
+
+        described_class.perform_now(:start, 'redis')
+
+        expect(Orchestration::PendingOperations.get('redis')).to be_nil
+        expect(Orchestration::PendingOperations.get('influxdb')).to eq(:recreate)
       end
     end
 

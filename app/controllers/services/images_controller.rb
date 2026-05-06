@@ -10,6 +10,7 @@ module Services
       apply_image!(config_keys, recommended)
 
       Orchestration::StackStatus.mark_starting!
+      Orchestration::PendingOperations.set(service_name, :recreate)
       ComposeJob.perform_later(:recreate, service_name)
       respond_with_pending_status(status_bar: :starting)
     end
