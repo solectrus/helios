@@ -5,7 +5,7 @@
 
 <%= turbo_frame_tag "log-modal-content", class: "flex h-full flex-col" do %>
   <div
-    class="flex h-full flex-col"
+    class="relative flex h-full flex-col"
     data-controller="log-viewer"
     data-log-viewer-service-value="<%= params[:service_id] %>"
   >
@@ -46,5 +46,15 @@
 
       <pre data-log-viewer-target="output" class="font-mono text-xs leading-relaxed"><%= @log_html %></pre>
     </div>
+
+    <button
+      type="button"
+      data-log-viewer-target="newLines"
+      data-action="click->log-viewer#followBottom"
+      class="btn btn-sm btn-primary absolute right-4 bottom-4 hidden gap-2 shadow-lg"
+    >
+      <i class="fa-solid fa-arrow-down"></i>
+      <%= t('.new_lines') %>
+    </button>
   </div>
 <% end %>

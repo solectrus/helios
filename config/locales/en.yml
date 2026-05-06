@@ -44,6 +44,7 @@ en:
         connecting: 'Connecting…'
         live: 'Live'
         disconnected: 'Disconnected'
+        new_lines: 'New lines'
     errors:
       blocked_by_dependency: 'Blocked: %{dependency} failed to start'
 

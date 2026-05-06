@@ -3,7 +3,13 @@ import consumer from '../channels/consumer';
 import type { Subscription } from '@rails/actioncable';
 
 export default class LogViewerController extends Controller {
-  static targets = ['output', 'scrollContainer', 'status', 'loader'];
+  static targets = [
+    'output',
+    'scrollContainer',
+    'status',
+    'loader',
+    'newLines',
+  ];
   static values = {
     service: String,
     streaming: { type: String, default: 'connecting' },
@@ -15,6 +21,8 @@ export default class LogViewerController extends Controller {
   declare hasLoaderTarget: boolean;
   declare statusTarget: HTMLElement;
   declare hasStatusTarget: boolean;
+  declare newLinesTarget: HTMLButtonElement;
+  declare hasNewLinesTarget: boolean;
   declare serviceValue: string;
   declare streamingValue: 'connecting' | 'connected' | 'disconnected';
 
@@ -144,10 +152,26 @@ export default class LogViewerController extends Controller {
         children[0].remove();
       }
       this.scrollToBottom({ smooth: true });
+    } else {
+      this.showNewLinesIndicator(true);
     }
   }
 
+  followBottom() {
+    this.showNewLinesIndicator(false);
+    this.scrollToBottom({ smooth: true });
+  }
+
+  private showNewLinesIndicator(visible: boolean) {
+    if (!this.hasNewLinesTarget) return;
+    this.newLinesTarget.classList.toggle('hidden', !visible);
+  }
+
   private scrollToBottom({ smooth = false }: { smooth?: boolean } = {}) {
+    // Treat any auto-scroll as an intent to follow. Without this, clicking the
+    // "new lines" button would smooth-scroll down but leave isScrolledToBottom
+    // false, because handleScroll is gated by isAutoScrolling during the scroll.
+    this.isScrolledToBottom = true;
     if (smooth) {
       // Suppress isScrolledToBottom updates while the smooth scroll runs;
       // intermediate scroll events would otherwise mark us as "not at bottom"
@@ -180,6 +204,9 @@ export default class LogViewerController extends Controller {
 
       if (!this.isAutoScrolling) {
         this.isScrolledToBottom = scrollHeight - scrollTop - clientHeight < 20;
+        if (this.isScrolledToBottom) {
+          this.showNewLinesIndicator(false);
+        }
       }
 
       if (scrollTop < 50 && !this.isLoadingOlder && this.hasMoreLogs) {
@@ -260,8 +287,7 @@ export default class LogViewerController extends Controller {
   }
 
   private showLoader(visible: boolean) {
-    if (this.hasLoaderTarget) {
-      this.loaderTarget.classList.toggle('hidden', !visible);
-    }
+    if (!this.hasLoaderTarget) return;
+    this.loaderTarget.classList.toggle('hidden', !visible);
   }
 }
