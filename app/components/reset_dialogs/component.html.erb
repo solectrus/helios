@@ -1,11 +1,11 @@
 <% DIALOGS.each do |dialog| %>
   <dialog id="<%= dialog[:id] %>" class="modal">
     <div class="modal-box max-w-md">
-      <h3 class="text-error text-center text-lg font-bold">
+      <h3 class="text-base-content text-center text-lg font-semibold tracking-tight">
         <%= t(".#{dialog[:key]}") %>
       </h3>
 
-      <p class="mt-4 text-sm"><%= t(".#{dialog[:key]}_what_html", compose: compose_filename) %></p>
+      <p class="mt-5 text-sm"><%= t(".#{dialog[:key]}_what_html", compose: compose_filename) %></p>
 
       <p class="mt-4 text-sm font-semibold"><%= t(".#{dialog[:key]}_when") %></p>
 

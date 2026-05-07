@@ -55,7 +55,7 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
       editable_hint = mapping_page['elements'].find { |e| e['name'] == 'mapping_hint_editable' }
 
       expect(editable_hint['visibleIf']).to eq("{source} != 'senec'")
-      expect(editable_hint['html']['de']).to include('⚠️')
+      expect(editable_hint['html']['de']).to include('Measurement und Field')
     end
 
     it 'keeps static description for sensors without fixed sources' do

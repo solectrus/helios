@@ -101,23 +101,28 @@ module SettingSection
       configuration.incomplete_sources.include?(setting)
     end
 
-    def show_mqtt_topics_link?
-      setting == 'mqtt'
-    end
+    # Returns drill-down link metadata, or nil when the card has no follow-up
+    # screen. Shelly devices only get a dedicated CRUD UI in collectors_only
+    # mode; in full mode they are derived from sensor configurations and
+    # edited on the Sensors screen.
+    def drill_down
+      case setting
+      when 'mqtt'
+        # In full mode, sensors set on MQTT define their own topics. The ones
+        # listed here are extras the user adds explicitly — surface that.
+        count_key = configuration.collectors_only? ? 'count' : 'additional_count'
+        {
+          path: helpers.datasources_mqtt_topics_path,
+          count_text: I18n.t("datasources.mqtt_topics.inline.#{count_key}", count: configuration.mqtt_topics.size),
+        }
+      when 'shelly'
+        return unless configuration.collectors_only?
 
-    def mqtt_topics_count
-      configuration.mqtt_topics.size
-    end
-
-    # Shelly devices live as a raw list under shelly.devices and only get a
-    # dedicated CRUD UI in collectors_only mode; in full mode they are
-    # derived from sensor configurations and edited on the Sensors screen.
-    def show_shelly_devices_link?
-      setting == 'shelly' && configuration.collectors_only?
-    end
-
-    def shelly_devices_count
-      configuration.shelly_devices.size
+        {
+          path: helpers.datasources_shelly_devices_path,
+          count_text: I18n.t('datasources.shelly_devices.inline.count', count: configuration.shelly_devices.size),
+        }
+      end
     end
   end
 end

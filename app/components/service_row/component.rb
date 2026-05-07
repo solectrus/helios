@@ -153,13 +153,12 @@ module ServiceRow
     end
 
     def row_class
-      base =
-        'block rounded-lg border border-base-300 p-3 sm:p-4 shadow-sm transition-shadow'
+      base = 'block rounded-xl border border-base-content/10 p-3 sm:p-4 transition-colors duration-200'
 
       if helios?
-        "#{base} bg-base-300 mt-6"
+        "#{base} bg-base-300/60 mt-6"
       else
-        "#{base} bg-base-100 hover:shadow-md"
+        "#{base} bg-base-100 hover:border-base-content/25"
       end
     end
 

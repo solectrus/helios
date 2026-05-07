@@ -1,6 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 import consumer from '../channels/consumer';
 import type { Subscription } from '@rails/actioncable';
+import { prefersReducedMotion } from '../utils/prefers_reduced_motion';
 
 export default class LogViewerController extends Controller {
   static targets = [
@@ -40,9 +41,7 @@ export default class LogViewerController extends Controller {
   private scrollFrame?: number;
 
   connect() {
-    this.prefersReducedMotion = window.matchMedia(
-      '(prefers-reduced-motion: reduce)',
-    ).matches;
+    this.prefersReducedMotion = prefersReducedMotion();
 
     // The container has zero size until the surrounding <dialog> opens via
     // showModal(), which happens after Stimulus connect(). Observe size to

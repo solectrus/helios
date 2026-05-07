@@ -90,6 +90,10 @@ en:
           one: '%{count} topic'
           other: '%{count} topics'
           zero: 'None'
+        additional_count:
+          one: '%{count} additional topic'
+          other: '%{count} additional topics'
+          zero: 'None additional'
     shelly_devices:
       index:
         title: 'Shelly devices'

@@ -6,33 +6,32 @@
   </div>
 
   <div class="hero-content z-10 w-full max-w-md flex-col">
-    <div class="mb-4 text-center">
+    <div class="mb-6 text-center">
       <img src="/logo.svg" class="mx-auto mb-3 h-12" alt="HELIOS">
-      <p class="text-base-content/60 text-lg"><%= t('.subtitle') %></p>
+      <p class="text-base-content/65 text-lg"><%= t('.subtitle') %></p>
     </div>
 
-    <div class="card bg-base-100 w-full shadow-2xl">
-      <div class="card-body gap-6">
-        <%= form_with url: session_path, method: :post do %>
-          <fieldset class="fieldset">
-            <label class="label font-medium"><%= t('.password_label') %></label>
+    <div class="bg-base-100 border-base-content/10 w-full rounded-2xl border">
+      <div class="flex flex-col gap-5 p-7 sm:p-8">
+        <%= form_with url: session_path, method: :post, class: "flex flex-col gap-2" do %>
+          <label class="text-base-content/85 text-sm font-medium" for="password"><%= t('.password_label') %></label>
 
-            <input
-              type="password"
-              name="password"
-              class="input input-bordered w-full"
-              placeholder="<%= t('.password_placeholder') %>"
-              required
-              autofocus
-              autocomplete="off"
-            >
+          <input
+            id="password"
+            type="password"
+            name="password"
+            class="input input-bordered w-full"
+            placeholder="<%= t('.password_placeholder') %>"
+            required
+            autofocus
+            autocomplete="off"
+          >
 
-            <p class="text-base-content/60 mt-2 text-xs">
-              <%= t('.password_hint_html') %>
-            </p>
+          <p class="text-base-content/55 mt-1 text-xs leading-relaxed">
+            <%= t('.password_hint_html') %>
+          </p>
 
-            <button type="submit" class="btn btn-primary mt-6 w-full"><%= t('.login') %></button>
-          </fieldset>
+          <button type="submit" class="btn btn-primary mt-5 w-full"><%= t('.login') %></button>
         <% end %>
       </div>
     </div>

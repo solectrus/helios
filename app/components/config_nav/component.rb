@@ -53,28 +53,40 @@ module ConfigNav
     end
 
     def item_classes(tab)
-      base =
-        if compact?
-          'flex items-center gap-3 rounded-lg px-3 py-2 text-base transition-colors'
-        else
-          'group flex items-center gap-4 rounded-xl px-4 py-3 transition-colors'
-        end
+      active = active?(tab)
 
-      class_names(
-        base,
-        'bg-primary/15 text-primary font-semibold': active?(tab),
-        'text-base-content/70 hover:bg-base-content/5 hover:text-base-content': !active?(tab) && compact?,
-        'text-base-content/80 hover:bg-base-content/5 hover:text-base-content': !active?(tab) && !compact?,
-      )
+      if compact?
+        class_names(
+          item_base_classes,
+          'bg-primary/15 text-primary font-semibold': active,
+          'text-base-content/70 hover:bg-base-content/5 hover:text-base-content': !active,
+        )
+      else
+        class_names(
+          item_base_classes,
+          'bg-primary/10 text-primary font-semibold before:bg-primary': active,
+          'text-base-content/75 hover:bg-base-content/5 hover:text-base-content before:bg-transparent': !active,
+        )
+      end
+    end
+
+    def item_base_classes
+      if compact?
+        'flex items-center gap-3 rounded-lg px-3 py-2 text-base transition-colors'
+      else
+        'group relative flex items-center gap-3 rounded-lg px-3 py-2.5 text-base transition-colors ' \
+          'before:absolute before:top-2 before:bottom-2 before:left-0 before:w-0.5 before:rounded-full ' \
+          'before:transition-colors'
+      end
     end
 
     def icon_box_classes(tab)
       return 'w-5 text-center text-base' if compact?
 
       class_names(
-        'flex h-12 w-12 shrink-0 items-center justify-center rounded-lg text-2xl',
-        'bg-primary/20 text-primary': active?(tab),
-        'bg-base-300/70 text-base-content/60 group-hover:text-base-content': !active?(tab),
+        'w-5 shrink-0 text-center text-base',
+        'text-primary': active?(tab),
+        'text-base-content/55 group-hover:text-base-content': !active?(tab),
       )
     end
 
@@ -83,7 +95,8 @@ module ConfigNav
         'flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-base-content/5 ' \
           'text-base-content/70 transition-colors'
       else
-        'btn btn-ghost btn-block bg-base-content/5 hover:bg-base-content/10 justify-start gap-3 font-mono'
+        'flex items-center gap-3 rounded-lg px-3 py-2 font-mono text-[0.95rem] ' \
+          'text-base-content/70 hover:bg-base-content/5 hover:text-base-content transition-colors'
       end
     end
 
@@ -103,8 +116,8 @@ module ConfigNav
     end
 
     def reset_link_classes
-      'flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ' \
-        'text-error/80 hover:bg-error/10 hover:text-error'
+      'group/reset flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors ' \
+        'text-base-content/75 hover:bg-error/15 hover:text-base-content'
     end
   end
 end

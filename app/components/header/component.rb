@@ -10,8 +10,8 @@ module Header
       },
     ].freeze
 
-    TAB_BASE_CLASSES = 'flex items-center gap-2 rounded-full px-4 py-2 text-sm ' \
-                       'font-semibold tracking-wider uppercase transition-colors'.freeze
+    TAB_BASE_CLASSES = 'flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold ' \
+                       'tracking-[0.1em] uppercase transition-colors'.freeze
 
     DRAWER_BASE_CLASSES = 'flex items-center gap-3 rounded-lg px-3 py-2 text-base'.freeze
 
@@ -44,8 +44,8 @@ module Header
     def tab_classes(tab)
       class_names(
         TAB_BASE_CLASSES,
-        'bg-primary/15 text-primary': tab[:id] == active_tab,
-        'text-base-content/60 hover:bg-base-content/5 hover:text-base-content': tab[:id] != active_tab,
+        'text-primary bg-primary/10 font-semibold': tab[:id] == active_tab,
+        'text-base-content/65 hover:bg-base-content/5 hover:text-base-content': tab[:id] != active_tab,
       )
     end
 

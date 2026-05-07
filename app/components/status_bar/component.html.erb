@@ -1,7 +1,7 @@
 <%= helpers.turbo_frame_tag "status-bar" do %>
   <div class="fixed top-16 right-0 left-0 z-30 md:top-auto md:bottom-0">
     <div class="grid min-h-12 grid-cols-[auto_1fr_auto] items-center gap-3 px-4 py-2 text-sm font-medium sm:grid-cols-3 <%= bar_class %>">
-      <div class="hidden cursor-default text-xs sm:block">
+      <div class="hidden cursor-default font-mono text-[11px] tracking-tight sm:block">
         <%= Rails.configuration.x.git.commit_version %>
 
         <span class="opacity-60">

@@ -61,6 +61,10 @@ de:
           one: '%{count} Topic'
           other: '%{count} Topics'
           zero: 'Keine'
+        additional_count:
+          one: '%{count} zusätzlicher Topic'
+          other: '%{count} zusätzliche Topics'
+          zero: 'Keine zusätzlichen'
     shelly_devices:
       index:
         title: 'Shelly-Geräte'

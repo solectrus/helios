@@ -54,19 +54,19 @@ module Surveys
 
       def fixed_hint_html(labels)
         Survey.localized(
-          en: "<div class='alert alert-info'>Measurement and field are determined by the #{labels}. " \
-              'The measurement can be adjusted in the collector configuration.</div>',
-          de: "<div class='alert alert-info'>Measurement und Field werden vom #{labels} " \
-              'vorgegeben. Das Measurement kann in der Collector-Konfiguration angepasst werden.</div>',
+          en: "<p class='sd-mapping-hint'>Measurement and field are determined by the #{labels}. " \
+              'The measurement can be adjusted in the collector configuration.</p>',
+          de: "<p class='sd-mapping-hint'>Measurement und Field werden vom #{labels} " \
+              'vorgegeben. Das Measurement kann in der Collector-Konfiguration angepasst werden.</p>',
         )
       end
 
       def editable_hint_html
         Survey.localized(
-          en: "<div class='alert alert-warning'>⚠️ Measurement and field determine where data " \
-              'is stored in InfluxDB. Changing these later is very difficult.</div>',
-          de: "<div class='alert alert-warning'>⚠️ Measurement und Field legen fest, wo die Daten " \
-              'in InfluxDB gespeichert werden. Eine nachträgliche Änderung ist kaum möglich.</div>',
+          en: "<p class='sd-mapping-hint'>Measurement and field determine where data " \
+              'is stored in InfluxDB. Changing these later is very difficult.</p>',
+          de: "<p class='sd-mapping-hint'>Measurement und Field legen fest, wo die Daten " \
+              'in InfluxDB gespeichert werden. Eine nachträgliche Änderung ist kaum möglich.</p>',
         )
       end
 

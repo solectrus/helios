@@ -2,5 +2,7 @@ de:
   sensors: 'Sensoren'
   datasources: 'Datenquellen'
   advanced: 'Erweitert'
+  files_label: 'Generiert für Docker'
+  reset_label: 'Alte Konfiguration'
   reset: 'Zurücksetzen'
   discard: 'Sicherungen löschen'

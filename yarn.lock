@@ -109,6 +109,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@fontsource-variable/geist-mono@npm:^5.2.7":
+  version: 5.2.7
+  resolution: "@fontsource-variable/geist-mono@npm:5.2.7"
+  checksum: 10c0/f401fe26e9edeadbef79ab32afb03393d03908d16efa355b94cc7f0a68f5ea96adacd4a2b0724f11eff4cc0b7484693d10f3098cda769692e6497c05af274ad6
+  languageName: node
+  linkType: hard
+
+"@fontsource-variable/geist@npm:^5.2.8":
+  version: 5.2.8
+  resolution: "@fontsource-variable/geist@npm:5.2.8"
+  checksum: 10c0/be455d4498ab0323b45d8bb37698dca810ae761643e85583605e18fc4175dec9b5ca518193673544b32a096cb3073fec0df0ef5cec92ce6ab0f58b29cd7ba596
+  languageName: node
+  linkType: hard
+
 "@fortawesome/fontawesome-free@npm:^7.2.0":
   version: 7.2.0
   resolution: "@fortawesome/fontawesome-free@npm:7.2.0"
@@ -1520,6 +1534,8 @@ __metadata:
   resolution: "helios@workspace:."
   dependencies:
     "@eslint/js": "npm:^10.0.1"
+    "@fontsource-variable/geist": "npm:^5.2.8"
+    "@fontsource-variable/geist-mono": "npm:^5.2.7"
     "@fortawesome/fontawesome-free": "npm:^7.2.0"
     "@herb-tools/formatter": "npm:^0.10.1"
     "@herb-tools/linter": "npm:^0.10.1"

@@ -2,15 +2,9 @@
   <% if show_tabs? %>
     <% tabs.each do |tab| %>
       <%= link_to tab[:path], class: item_classes(tab), data: { turbo_frame: "_top" } do %>
-        <% if compact? %>
-          <i class="<%= icon_box_classes(tab) %> <%= tab[:icon] %>"></i>
-        <% else %>
-          <span class="<%= icon_box_classes(tab) %>">
-            <i class="<%= tab[:icon] %>"></i>
-          </span>
-        <% end %>
+        <i class="<%= icon_box_classes(tab) %> <%= tab[:icon] %>" aria-hidden="true"></i>
 
-        <span class="<%= compact? ? 'font-medium' : 'text-base font-medium' %>"><%= tab[:label] %></span>
+        <span><%= tab[:label] %></span>
 
         <% if show_warning?(tab) %>
           <span
@@ -24,37 +18,49 @@
     <% end %>
   <% end %>
 
-  <% if show_tabs? && show_files? %>
-    <div class="divider <%= compact? ? 'my-1' : 'my-2' %>"></div>
-  <% end %>
+  <% if show_files? || show_reset? %>
+    <div class="<%= compact? ? 'mt-3' : 'mt-auto pt-6' %>">
+      <% if show_files? %>
+        <div class="border-base-content/10 mb-3 border-t"></div>
+        <h3 class="text-base-content/50 mb-2 px-3 text-[0.7rem] font-semibold tracking-[0.14em] uppercase">
+          <%= t('.files_label') %>
+        </h3>
+        <% [['compose', 'fa-file-code', 'compose.yaml'], ['env', 'fa-file-lines', '.env']].each do |key, icon, label| %>
+          <a
+            href="<%= helpers.file_path(key) %>"
+            data-turbo-frame="file-modal-content"
+            class="<%= file_link_classes %>"
+          >
+            <i class="fa-solid text-base-content/55 w-5 shrink-0 text-center <%= icon %>" aria-hidden="true"></i>
+            <span><%= label %></span>
+          </a>
+        <% end %>
+      <% end %>
 
-  <% if show_files? %>
-    <a
-      href="<%= helpers.file_path('compose') %>"
-      data-turbo-frame="file-modal-content"
-      class="<%= file_link_classes %>"
-    >
-      <i class="fa-solid fa-file-code <%= compact? ? 'w-5 text-center text-base-content/60' : 'opacity-70' %>"></i>
-      <span class="<%= compact? ? 'font-mono text-base' : '' %>">compose.yaml</span>
-    </a>
-    <a href="<%= helpers.file_path('env') %>" data-turbo-frame="file-modal-content" class="<%= file_link_classes %>">
-      <i class="fa-solid fa-file-lines <%= compact? ? 'w-5 text-center text-base-content/60' : 'opacity-70' %>"></i>
-      <span class="<%= compact? ? 'font-mono text-base' : '' %>">.env</span>
-    </a>
-  <% end %>
+      <% if show_reset? %>
+        <div class="bg-base-content/4 border-base-content/10 rounded-xl border p-2.5 <%= show_files? ? 'mt-6' : '' %>">
+          <h3 class="text-base-content/55 mb-1.5 px-2 pt-1 text-[0.7rem] font-semibold tracking-[0.14em] uppercase">
+            <%= t('.reset_label') %>
+          </h3>
 
-  <% if show_reset? %>
-    <div class="flex flex-col gap-1 pt-4 <%= 'mt-auto' unless compact? %>" data-controller="modal-opener">
-      <% reset_actions.each do |action| %>
-        <button
-          type="button"
-          data-action="modal-opener#open"
-          data-modal-opener-id-param="<%= action[:id] %>"
-          class="<%= reset_link_classes %>"
-        >
-          <i class="fa-solid w-5 text-center <%= action[:icon] %>"></i>
-          <span class="truncate font-medium"><%= t(".#{action[:key]}") %></span>
-        </button>
+          <div class="flex flex-col gap-0.5" data-controller="modal-opener">
+            <% reset_actions.each do |action| %>
+              <button
+                type="button"
+                data-action="modal-opener#open"
+                data-modal-opener-id-param="<%= action[:id] %>"
+                class="<%= reset_link_classes %>"
+              >
+                <i
+                  aria-hidden="true"
+                  class="fa-solid text-error/80 group-hover/reset:text-error w-5 text-center transition-colors <%= action[:icon] %>"
+                ></i>
+
+                <span class="truncate"><%= t(".#{action[:key]}") %></span>
+              </button>
+            <% end %>
+          </div>
+        </div>
       <% end %>
     </div>
   <% end %>

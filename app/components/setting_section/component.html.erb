@@ -1,87 +1,69 @@
-<div
+<article
   class="
-    bg-base-100 border-base-content/10 hover:border-base-content/20 group relative flex h-full flex-col rounded-2xl
-    border shadow-xs transition-colors duration-200
+    bg-base-100 border-base-content/10 hover:border-primary/40 group relative flex h-full flex-col rounded-2xl
+    border transition-colors duration-300
   "
 >
-  <div class="flex flex-1 items-start gap-4 p-6">
-    <%# Icon tile %>
-    <div
-      class="
-        bg-primary/10 text-primary group-hover:bg-primary/15 flex size-12 shrink-0 items-center justify-center
-        rounded-xl transition-colors duration-200
-      "
-    >
-      <i aria-hidden="true" class="fa-solid text-xl <%= icon %>"></i>
+  <div class="flex flex-1 flex-col p-7">
+    <div class="flex items-start justify-between">
+      <i aria-hidden="true" class="fa-solid text-primary text-2xl <%= icon %>"></i>
+
+      <i
+        aria-hidden="true"
+        class="
+          fa-solid fa-pen-to-square text-base-content/25 group-hover:text-primary text-sm transition-colors
+          duration-200
+        "
+      ></i>
     </div>
 
-    <%# Content %>
-    <div class="min-w-0 flex-1">
-      <div class="flex items-start justify-between gap-3">
-        <h2 class="text-base-content text-lg leading-snug font-semibold tracking-tight">
-          <%= link_to title, link_path,
-                      data: { turbo_frame: "setting-modal-content" },
-                      class: "before:absolute before:inset-0 before:z-10 before:rounded-2xl focus:outline-none focus-visible:before:ring-2 focus-visible:before:ring-primary/40" %>
-        </h2>
+    <h2 class="text-base-content mt-6 text-xl leading-tight font-semibold tracking-tight text-balance">
+      <%= link_to title, link_path,
+                  data: { turbo_frame: "setting-modal-content" },
+                  class: "before:absolute before:inset-0 before:rounded-2xl focus:outline-none focus-visible:before:ring-2 focus-visible:before:ring-primary/40" %>
+    </h2>
 
-        <i
-          aria-hidden="true"
-          class="
-            fa-solid fa-chevron-right text-base-content/30 group-hover:text-base-content/60 mt-1.5 shrink-0 text-xs
-            transition-all duration-200 group-hover:translate-x-0.5
-          "
-        ></i>
-      </div>
-
-      <% if description.present? %>
-        <p class="text-base-content/65 mt-1.5 text-sm leading-relaxed"><%= description %></p>
-      <% end %>
-    </div>
+    <% if description.present? %>
+      <p class="text-base-content/65 mt-2 max-w-[42ch] text-base leading-relaxed"><%= description %></p>
+    <% end %>
   </div>
 
-  <%# Footer: status + optional drill-down %>
-  <% if show_mqtt_topics_link? %>
-    <%= link_to helpers.datasources_mqtt_topics_path,
-                data: { turbo_frame: "_top" },
-                class: "border-base-content/10 bg-base-200/40 group/foot relative z-20 flex items-center justify-between gap-3 rounded-b-2xl border-t px-6 py-3 transition-colors hover:bg-base-200/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset" do %>
-      <span class="flex items-center gap-2 text-sm font-medium <%= status_text_class %>">
-        <span aria-hidden="true" class="size-2.5 rounded-full <%= status_dot_class %>"></span>
-        <%= status_text %>
-      </span>
+  <% if (link = drill_down) %>
+    <div
+      class="
+        border-base-content/10 bg-base-content/4 divide-base-content/10 relative z-20 flex items-stretch divide-x
+        border-t
+      "
+    >
+      <% if incomplete? %>
+        <%= link_to link_path,
+                    data: { turbo_frame: "setting-modal-content" },
+                    class: "text-warning hover:bg-warning/10 focus-visible:ring-warning/40 flex flex-1 items-center gap-2.5 px-7 py-3.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset" do %>
+          <span aria-hidden="true" class="bg-warning size-1.5 rounded-full"></span>
+          <%= status_text %>
+        <% end %>
+      <% else %>
+        <div class="flex flex-1 items-center gap-2.5 px-7 py-3.5 text-sm font-medium <%= status_text_class %>">
+          <span aria-hidden="true" class="size-1.5 rounded-full <%= status_dot_class %>"></span>
+          <%= status_text %>
+        </div>
+      <% end %>
 
-      <span class="text-base-content/70 group-hover/foot:text-primary flex items-center gap-2 text-sm transition-colors">
-        <span class="tabular-nums"><%= t('datasources.mqtt_topics.inline.count', count: mqtt_topics_count) %></span>
-
-        <i
-          aria-hidden="true"
-          class="fa-solid fa-chevron-right text-xs transition-transform duration-200 group-hover/foot:translate-x-0.5"
-        ></i>
-      </span>
-    <% end %>
-  <% elsif show_shelly_devices_link? %>
-    <%= link_to helpers.datasources_shelly_devices_path,
-                data: { turbo_frame: "_top" },
-                class: "border-base-content/10 bg-base-200/40 group/foot relative z-20 flex items-center justify-between gap-3 rounded-b-2xl border-t px-6 py-3 transition-colors hover:bg-base-200/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset" do %>
-      <span class="flex items-center gap-2 text-sm font-medium <%= status_text_class %>">
-        <span aria-hidden="true" class="size-2.5 rounded-full <%= status_dot_class %>"></span>
-        <%= status_text %>
-      </span>
-
-      <span class="text-base-content/70 group-hover/foot:text-primary flex items-center gap-2 text-sm transition-colors">
-        <span class="tabular-nums">
-          <%= t('datasources.shelly_devices.inline.count', count: shelly_devices_count) %>
-        </span>
+      <%= link_to link[:path],
+                  data: { turbo_frame: "_top" },
+                  class: "group/foot text-base-content/70 hover:text-primary hover:bg-base-content/6 focus-visible:ring-primary/40 flex items-center gap-2 px-7 py-3.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset" do %>
+        <span class="font-mono tabular-nums"><%= link[:count_text] %></span>
 
         <i
           aria-hidden="true"
-          class="fa-solid fa-chevron-right text-xs transition-transform duration-200 group-hover/foot:translate-x-0.5"
+          class="fa-solid fa-chevron-right text-[10px] transition-transform duration-200 group-hover/foot:translate-x-0.5"
         ></i>
-      </span>
-    <% end %>
+      <% end %>
+    </div>
   <% else %>
-    <div class="border-base-content/10 bg-base-200/40 flex items-center gap-2 rounded-b-2xl border-t px-6 py-3 text-sm font-medium <%= status_text_class %>">
-      <span aria-hidden="true" class="size-2.5 rounded-full <%= status_dot_class %>"></span>
+    <div class="border-base-content/10 flex items-center gap-2.5 border-t px-7 py-4 text-sm font-medium <%= status_text_class %>">
+      <span aria-hidden="true" class="size-1.5 rounded-full <%= status_dot_class %>"></span>
       <%= status_text %>
     </div>
   <% end %>
-</div>
+</article>

@@ -140,8 +140,8 @@
         "default": "InfluxDB Mapping"
       },
       "description": {
-        "de": "⚠️ Measurement und Field sollten gut überlegt gewählt werden. Sie legen fest, wo die Daten in InfluxDB gespeichert werden. Eine nachträgliche Änderung ist kaum möglich, da bereits geschriebene Daten dauerhaft an diese Bezeichnungen gebunden sind.",
-        "default": "⚠️ Choose measurement and field carefully. They determine where data is stored in InfluxDB. Changing these later is very difficult, as previously written data remains permanently tied to these names."
+        "de": "Measurement und Field sollten gut überlegt gewählt werden. Sie legen fest, wo die Daten in InfluxDB gespeichert werden. Eine nachträgliche Änderung ist kaum möglich, da bereits geschriebene Daten dauerhaft an diese Bezeichnungen gebunden sind.",
+        "default": "Choose measurement and field carefully. They determine where data is stored in InfluxDB. Changing these later is very difficult, as previously written data remains permanently tied to these names."
       },
       "elements": [
         {
