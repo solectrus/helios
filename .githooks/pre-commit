@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Prevent accidental direct commits on `main`.
+# Merge commits (e.g. `git flow release finish`) are still allowed,
+# detected via the presence of MERGE_HEAD.
+
+set -e
+
+branch=$(git symbolic-ref --short HEAD 2>/dev/null || echo "")
+git_dir=$(git rev-parse --git-dir)
+
+if [ "$branch" = "main" ] && [ ! -f "$git_dir/MERGE_HEAD" ]; then
+  echo "ERROR: Direct commits to 'main' are not allowed." >&2
+  echo "       Use git flow (release/hotfix) to merge changes into main." >&2
+  echo "       Override (discouraged): git commit --no-verify" >&2
+  exit 1
+fi
+
+exit 0

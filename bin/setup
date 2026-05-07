@@ -12,7 +12,11 @@ FileUtils.chdir APP_ROOT do
   # This script is idempotent, so that you can run it at any time and get an expectable outcome.
   # Add necessary setup steps to this file.
 
-  puts '== Installing dependencies =='
+  puts '== Installing git hooks =='
+  FileUtils.cp '.githooks/pre-commit', '.git/hooks/pre-commit'
+  FileUtils.chmod 0o755, '.git/hooks/pre-commit'
+
+  puts "\n== Installing dependencies =="
   system('bundle check') || system!('bundle install')
 
   # puts "\n== Copying sample files =="
