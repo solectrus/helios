@@ -23,7 +23,7 @@ module Export
           environment: [
             'INFLUXDB_HOST=influxdb',
             'INFLUXDB_ORG=${INFLUX_ORG}',
-            'INFLUXDB_TOKEN=${INFLUX_TOKEN}',
+            'INFLUXDB_TOKEN=${INFLUX_ADMIN_TOKEN}',
             'AWS_ACCESS_KEY_ID',
             'AWS_SECRET_ACCESS_KEY',
             'S3_BUCKET=${AWS_BUCKET}',

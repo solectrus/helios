@@ -25,7 +25,6 @@ services:
     image: ghcr.io/solectrus/senec-collector:develop
     environment:
     - TZ
-    - INFLUX_TOKEN
     - INFLUX_ORG
     - INFLUX_BUCKET
     - INFLUX_MEASUREMENT_SENEC
@@ -34,6 +33,7 @@ services:
     - INFLUX_HOST
     - INFLUX_PORT
     - INFLUX_SCHEMA
+    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
     - SENEC_HOST
     - SENEC_SCHEMA
     - SENEC_LANGUAGE
@@ -57,10 +57,10 @@ services:
     - INFLUX_HOST
     - INFLUX_PORT
     - INFLUX_SCHEMA
-    - INFLUX_TOKEN
     - INFLUX_ORG
     - INFLUX_BUCKET
     - SHELLY_INTERVAL
+    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
     - SHELLY_HOST
     - INFLUX_MEASUREMENT
     - INFLUX_MODE
@@ -85,10 +85,10 @@ services:
     - INFLUX_PORT
     - INFLUX_SCHEMA
     - TZ
-    - INFLUX_TOKEN
     - INFLUX_ORG
     - INFLUX_BUCKET
     - MQTT_HOST
+    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
     - MQTT_PORT
     - MQTT_SSL
     - MQTT_USERNAME

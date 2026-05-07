@@ -25,8 +25,19 @@ module Export
         entry('INFLUX_ORG', configuration.influxdb.org, 'Organization name')
         entry('INFLUX_BUCKET', configuration.influxdb.bucket,
               'Bucket (database) name for time-series data')
-        entry('INFLUX_TOKEN', configuration.influxdb.token,
-              'API token with full access — auto-generated, do not change after first start')
+        local_token_entries
+      end
+
+      def local_token_entries
+        influx = configuration.influxdb
+        entry('INFLUX_ADMIN_TOKEN', influx.token_admin,
+              'Admin token — used by InfluxDB init and backup')
+        entry('INFLUX_TOKEN_READWRITE', influx.token_readwrite,
+              'Read+write token — used by power-splitter')
+        entry('INFLUX_TOKEN_WRITE', influx.token_write,
+              'Write token — used by all collectors')
+        entry('INFLUX_TOKEN_READ', influx.token_read,
+              'Read token — used by the dashboard')
       end
 
       def external_section
@@ -37,7 +48,7 @@ module Export
         entry('INFLUX_SCHEMA', influx.schema.presence || 'https', 'Protocol (http or https)')
         entry('INFLUX_ORG', influx.org, 'Organization name')
         entry('INFLUX_BUCKET', influx.bucket, 'Bucket (database) name for time-series data')
-        entry('INFLUX_TOKEN', influx.token, 'API token with write access')
+        entry('INFLUX_TOKEN_WRITE', influx.token_write, 'API token with write access')
       end
     end
   end

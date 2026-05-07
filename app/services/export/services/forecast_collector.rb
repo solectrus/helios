@@ -39,16 +39,16 @@ module Export
       end
 
       def passthrough_vars
-        vars = %w[TZ INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET]
+        vars = %w[TZ INFLUX_ORG INFLUX_BUCKET]
         vars += ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS if configuration.collectors_only?
         vars
       end
 
       def explicit_vars
         measurement = 'INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}'
-        return [measurement] if configuration.collectors_only?
+        return [influx_token_write_var, measurement] if configuration.collectors_only?
 
-        ['INFLUX_HOST=influxdb', measurement]
+        ['INFLUX_HOST=influxdb', influx_token_write_var, measurement]
       end
 
       def forecast_vars

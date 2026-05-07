@@ -60,7 +60,7 @@ module Export
       # the .env by Export::Env.
       def collectors_only_environment
         base = %w[TZ] + ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS +
-               %w[INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SHELLY_INTERVAL]
+               %w[INFLUX_ORG INFLUX_BUCKET SHELLY_INTERVAL] + [influx_token_write_var]
         base + collectors_only_device_vars + collectors_only_extra_vars
       end
 
@@ -96,7 +96,7 @@ module Export
       end
 
       def passthrough_vars
-        vars = %w[TZ INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SHELLY_INTERVAL INFLUX_MEASUREMENT]
+        vars = %w[TZ INFLUX_ORG INFLUX_BUCKET SHELLY_INTERVAL INFLUX_MEASUREMENT]
         vars << 'SHELLY_HOST' unless cloud_mode?
         vars
       end

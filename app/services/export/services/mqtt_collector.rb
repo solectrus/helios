@@ -82,7 +82,8 @@ module Export
       # installations typically look.
       def collectors_only_environment
         vars = ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS.dup
-        vars += %w[TZ INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET MQTT_HOST]
+        vars += %w[TZ INFLUX_ORG INFLUX_BUCKET MQTT_HOST]
+        vars << influx_token_write_var
         vars += optional_vars
         vars + raw_mapping_vars
       end
@@ -92,7 +93,7 @@ module Export
       end
 
       def passthrough_vars
-        %w[TZ INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET MQTT_HOST]
+        %w[TZ INFLUX_ORG INFLUX_BUCKET MQTT_HOST]
       end
 
       def optional_vars

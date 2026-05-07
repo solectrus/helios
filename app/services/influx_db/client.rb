@@ -39,7 +39,7 @@ module InfluxDb
       influx = configuration.influxdb
 
       new(
-        token: influx.token,
+        token: influx.token_read,
         org: influx.org,
         bucket: influx.bucket,
         host: influx.host,

@@ -84,7 +84,7 @@
         },
         {
           "type": "text",
-          "name": "token",
+          "name": "token_write",
           "title": {
             "de": "API-Token (Schreibrechte)",
             "default": "API token (write access)"

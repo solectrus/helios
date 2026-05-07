@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 2
+_schema_version: 3
 system:
   admin_password: test-admin
   installation_date: '2023-06-15'
@@ -22,7 +22,10 @@ influxdb:
   image: influxdb:2-alpine
   org: solectrus
   password: test-influx-pw
-  token: test-influx-token
+  token_admin: test-influx-token
+  token_read: test-influx-token
+  token_readwrite: test-influx-token
+  token_write: test-influx-token
 redis:
   image: redis:8-alpine
 watchtower:

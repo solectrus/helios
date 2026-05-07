@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 2
+_schema_version: 3
 system:
   admin_password: my-secret-admin-password
   app_host: 192.168.108.250
@@ -23,7 +23,10 @@ influxdb:
   image: influxdb:2.7-alpine
   org: solectrus
   password: my-secret-influx-password
-  token: my-super-secret-admin-token
+  token_admin: my-super-secret-admin-token
+  token_read: my-super-secret-admin-token
+  token_readwrite: my-super-secret-admin-token
+  token_write: my-super-secret-admin-token
   volume_path: "/home/pi/solectrus/influxdb"
 redis:
   image: redis:7-alpine

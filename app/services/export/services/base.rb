@@ -68,12 +68,20 @@ module Export
         configuration.ingest_required? ? :ingest : :influxdb
       end
 
-      def explicit_vars
-        return ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS if configuration.collectors_only?
+      # Container's INFLUX_TOKEN binds to the role-specific write token so
+      # collectors don't get admin or read access.
+      def influx_token_write_var
+        'INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}'
+      end
 
-        vars = ["INFLUX_HOST=#{collector_influx_target}"]
-        vars << "INFLUX_PORT=#{Ingest::PORT}" if collector_influx_target == :ingest
-        vars
+      def explicit_vars
+        if configuration.collectors_only?
+          ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS + [influx_token_write_var]
+        else
+          vars = ["INFLUX_HOST=#{collector_influx_target}", influx_token_write_var]
+          vars << "INFLUX_PORT=#{Ingest::PORT}" if collector_influx_target == :ingest
+          vars
+        end
       end
 
       def collector_depends_on

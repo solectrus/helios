@@ -84,13 +84,21 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
 
   # --- InfluxDB ---
 
+  # Four roles — admin (init/backup), readwrite (power-splitter), write
+  # (collectors), read (dashboard) — kept as distinct fields so a stack with
+  # privilege-separated authorizations round-trips losslessly.
   INFLUXDB_DEFAULTS = {
     'image' => DockerImages.current(:INFLUXDB),
     'org' => 'solectrus',
     'bucket' => 'solectrus',
     'password' => -> { SecureRandom.alphanumeric(32) },
-    'token' => -> { SecureRandom.hex(32) },
+    'token_admin' => -> { SecureRandom.hex(32) },
+    'token_readwrite' => -> { SecureRandom.hex(32) },
+    'token_write' => -> { SecureRandom.hex(32) },
+    'token_read' => -> { SecureRandom.hex(32) },
   }.freeze
+
+  INFLUXDB_TOKEN_FIELDS = %w[token_admin token_readwrite token_write token_read].freeze
 
   # Fields for targeting an external InfluxDB (used in collectors_only mode).
   INFLUXDB_EXTERNAL_FIELDS = %w[host port schema].freeze

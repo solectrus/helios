@@ -95,7 +95,22 @@ module Export
 
         current = @configuration.send(section)
         updates = defaults.transform_values { |v| ConfigSchema.resolve_default(v) }
+        link_influxdb_tokens!(updates) if section == 'influxdb'
         @configuration.update(section, current.merge(updates))
+      end
+    end
+
+    # InfluxDB's docker-entrypoint seeds only the admin token; until HELIOS
+    # provisions separate read/write tokens via the API, the four .env
+    # entries must share the same value or collectors and dashboard would
+    # fail authentication.
+    def link_influxdb_tokens!(updates)
+      tokens = updates.slice(*ConfigSchema::INFLUXDB_TOKEN_FIELDS)
+      return if tokens.empty?
+
+      shared = tokens.values.first
+      ConfigSchema::INFLUXDB_TOKEN_FIELDS.each do |field|
+        updates[field] = shared if updates.key?(field)
       end
     end
   end

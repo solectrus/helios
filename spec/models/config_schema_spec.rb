@@ -20,7 +20,10 @@ RSpec.describe ConfigSchema do
 
     it 'returns fields for influxdb' do
       fields = described_class.fields_for('influxdb')
-      expect(fields).to include('image', 'org', 'bucket', 'password', 'token')
+      expect(fields).to include(
+        'image', 'org', 'bucket', 'password',
+        'token_admin', 'token_readwrite', 'token_write', 'token_read'
+      )
     end
 
     it 'returns fields for backup' do
@@ -100,7 +103,7 @@ RSpec.describe ConfigSchema do
     end
 
     it 'returns true for influxdb fields' do
-      expect(described_class.valid_field?('influxdb', 'token')).to be true
+      expect(described_class.valid_field?('influxdb', 'token_admin')).to be true
     end
 
     it 'returns true for known senec fields' do
@@ -142,7 +145,9 @@ RSpec.describe ConfigSchema do
 
     it 'returns all influxdb defaults when empty' do
       missing = described_class.missing_auto_generated(Configuration.current)
-      expect(missing['influxdb'].keys).to match_array(%w[image org bucket password token])
+      expect(missing['influxdb'].keys).to match_array(
+        %w[image org bucket password token_admin token_readwrite token_write token_read],
+      )
     end
 
     it 'returns all backup defaults when empty' do

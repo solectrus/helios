@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 2
+_schema_version: 3
 system:
   admin_password: admin_password
   app_host: solectrus.example.com
@@ -23,7 +23,10 @@ influxdb:
   image: influxdb:2.8-alpine
   org: solectrus
   password: influx-password
-  token: influx-token
+  token_admin: influx-token
+  token_read: influx-token
+  token_readwrite: influx-token
+  token_write: influx-token
 redis:
   image: redis:8-alpine
 watchtower:

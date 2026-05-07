@@ -56,12 +56,12 @@ module Export
       end
 
       def passthrough_vars
-        %w[TZ INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET RETENTION_HOURS]
+        %w[TZ INFLUX_ORG INFLUX_BUCKET RETENTION_HOURS]
       end
 
       # STATS_PASSWORD reuses ADMIN_PASSWORD so the Ingest stats dashboard shares admin auth.
       def explicit_vars
-        ['INFLUX_HOST=influxdb', 'STATS_PASSWORD=${ADMIN_PASSWORD}']
+        ['INFLUX_HOST=influxdb', influx_token_write_var, 'STATS_PASSWORD=${ADMIN_PASSWORD}']
       end
 
       def optional_vars

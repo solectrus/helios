@@ -12,8 +12,12 @@ module SupportBundle
       FORECAST_LATITUDE
       FORECAST_LONGITUDE
       FORECAST_SOLAR_APIKEY
+      INFLUX_ADMIN_TOKEN
       INFLUX_PASSWORD
       INFLUX_TOKEN
+      INFLUX_TOKEN_READ
+      INFLUX_TOKEN_READWRITE
+      INFLUX_TOKEN_WRITE
       LOCKUP_CODEWORD
       MQTT_PASSWORD
       MQTT_USERNAME
@@ -33,7 +37,7 @@ module SupportBundle
       'system' => %w[admin_password secret_key_base],
       'dashboard' => %w[lockup_codeword],
       'postgresql' => %w[password],
-      'influxdb' => %w[password token],
+      'influxdb' => %w[password token token_admin token_readwrite token_write token_read],
       'mqtt' => %w[mqtt_username mqtt_password],
       'senec' => %w[username password totp_uri system_id],
       'shelly' => %w[password auth_key],

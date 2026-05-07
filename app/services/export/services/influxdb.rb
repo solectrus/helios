@@ -46,7 +46,7 @@ module Export
           'DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}',
           'DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}',
           'DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}',
-          'DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}',
+          'DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_ADMIN_TOKEN}',
         ]
         env << 'INFLUXD_USE_HASHED_TOKENS' if configuration.influxdb.use_hashed_tokens.present?
         env

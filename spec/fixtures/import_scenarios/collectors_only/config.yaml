@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 2
+_schema_version: 3
 deployment:
   mode: collectors_only
 system:
@@ -19,7 +19,7 @@ influxdb:
   org: solectrus
   port: '443'
   schema: https
-  token: my-external-influx-token
+  token_write: my-external-influx-token
 watchtower:
   image: nickfedor/watchtower:latest
 senec:

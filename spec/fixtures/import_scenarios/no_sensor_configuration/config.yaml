@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 2
+_schema_version: 3
 system:
   admin_password: xxxx
   app_host: 192.168.178.10
@@ -25,7 +25,10 @@ influxdb:
   image: influxdb:2.7-alpine
   org: solectrus
   password: XXXXXXX
-  token: XXXXXX
+  token_admin: XXXXXX
+  token_read: XXXXXXErnpK
+  token_readwrite: XXXXXX
+  token_write: XXXXXXErnpK
   volume_path: "/volume1/docker/solectrus/influxdb"
 redis:
   image: redis:7-alpine

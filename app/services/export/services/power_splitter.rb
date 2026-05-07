@@ -42,7 +42,7 @@ module Export
       # Variables passed through from .env (name only)
       def passthrough_vars
         %w[
-          TZ INSTALLATION_DATE INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET
+          TZ INSTALLATION_DATE INFLUX_ORG INFLUX_BUCKET
           POSTGRES_PASSWORD POWER_SPLITTER_INTERVAL
         ]
       end
@@ -51,6 +51,7 @@ module Export
       def explicit_vars
         %w[
           INFLUX_HOST=influxdb
+          INFLUX_TOKEN=${INFLUX_TOKEN_READWRITE}
           REDIS_URL=redis://redis:6379/1
           DB_HOST=postgresql
           DB_USER=postgres

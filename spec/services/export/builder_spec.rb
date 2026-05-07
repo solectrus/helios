@@ -224,19 +224,29 @@ RSpec.describe Export::Builder do
 
     it 'generates secrets' do
       env = Env.load
-      expect(env['POSTGRES_PASSWORD']).to be_present
-      expect(env['INFLUX_PASSWORD']).to be_present
-      expect(env['INFLUX_TOKEN']).to be_present
-      expect(env['SECRET_KEY_BASE']).to be_present
-      expect(env['ADMIN_PASSWORD']).to be_present
+      secrets = %w[POSTGRES_PASSWORD INFLUX_PASSWORD INFLUX_ADMIN_TOKEN INFLUX_TOKEN_READWRITE
+                   INFLUX_TOKEN_WRITE INFLUX_TOKEN_READ SECRET_KEY_BASE ADMIN_PASSWORD]
+      expect(secrets.map { |key| env[key] }).to all(be_present)
     end
 
     it 'generates secrets with correct lengths' do
       env = Env.load
       expect(env['POSTGRES_PASSWORD'].length).to eq(32)
       expect(env['SECRET_KEY_BASE'].length).to eq(128)
-      expect(env['INFLUX_TOKEN'].length).to eq(64)
+      expect(env['INFLUX_ADMIN_TOKEN'].length).to eq(64)
       expect(env['ADMIN_PASSWORD'].length).to eq(32)
+    end
+
+    # InfluxDB's docker-entrypoint seeds only the admin token; until HELIOS
+    # provisions separate authorizations via the API, the four .env tokens
+    # must point at the same value or collectors and dashboard would fail
+    # authentication.
+    it 'links the four influx tokens to a shared value on first generation' do
+      env = Env.load
+      shared = env['INFLUX_ADMIN_TOKEN']
+      %w[INFLUX_TOKEN_READWRITE INFLUX_TOKEN_WRITE INFLUX_TOKEN_READ].each do |key|
+        expect(env[key]).to eq(shared)
+      end
     end
 
     it 'sets InfluxDB configuration' do
@@ -438,7 +448,7 @@ RSpec.describe Export::Builder do
       expect(influxdb_backup.environment).to include(
         'INFLUXDB_HOST=influxdb',
         'INFLUXDB_ORG=${INFLUX_ORG}',
-        'INFLUXDB_TOKEN=${INFLUX_TOKEN}',
+        'INFLUXDB_TOKEN=${INFLUX_ADMIN_TOKEN}',
         'S3_BUCKET=${AWS_BUCKET}',
         'S3_PREFIX=influxdb_backup',
         'CRON=0 0 * * 0',
@@ -1505,11 +1515,13 @@ RSpec.describe Export::Builder do
       described_class.new(configuration).write!
 
       reloaded = Configuration.current
-      expect(reloaded.system.admin_password).to be_present
-      expect(reloaded.system.secret_key_base).to be_present
-      expect(reloaded.postgresql.password).to be_present
-      expect(reloaded.influxdb.password).to be_present
-      expect(reloaded.influxdb.token).to be_present
+      secrets = [
+        reloaded.system.admin_password, reloaded.system.secret_key_base,
+        reloaded.postgresql.password, reloaded.influxdb.password,
+        reloaded.influxdb.token_admin, reloaded.influxdb.token_readwrite,
+        reloaded.influxdb.token_write, reloaded.influxdb.token_read
+      ]
+      expect(secrets).to all(be_present)
     end
 
     it 'preserves secrets across multiple writes' do

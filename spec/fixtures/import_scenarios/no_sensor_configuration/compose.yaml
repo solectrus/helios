@@ -26,7 +26,6 @@ services:
     environment:
     - TZ
     - INSTALLATION_DATE
-    - INFLUX_TOKEN
     - INFLUX_ORG
     - INFLUX_BUCKET
     - SECRET_KEY_BASE
@@ -37,6 +36,7 @@ services:
     - INFLUX_POLL_INTERVAL
     - REDIS_URL=redis://redis:6379/1
     - INFLUX_HOST=influxdb
+    - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
     - DB_HOST=postgresql
     - DB_USER=postgres
     - DB_PASSWORD=${POSTGRES_PASSWORD}
@@ -97,7 +97,7 @@ services:
     - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
     - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
     - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
-    - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
+    - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_ADMIN_TOKEN}
     volumes:
     - "${INFLUX_VOLUME_PATH}:/var/lib/influxdb2"
     ports:
@@ -188,11 +188,11 @@ services:
     image: ghcr.io/solectrus/mqtt-collector:latest
     environment:
     - TZ
-    - INFLUX_TOKEN
     - INFLUX_ORG
     - INFLUX_BUCKET
     - MQTT_HOST
     - INFLUX_HOST=influxdb
+    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
     - MQTT_PORT
     - MQTT_SSL
     - MQTT_USERNAME
@@ -254,12 +254,12 @@ services:
     environment:
     - TZ
     - INSTALLATION_DATE
-    - INFLUX_TOKEN
     - INFLUX_ORG
     - INFLUX_BUCKET
     - POSTGRES_PASSWORD
     - POWER_SPLITTER_INTERVAL
     - INFLUX_HOST=influxdb
+    - INFLUX_TOKEN=${INFLUX_TOKEN_READWRITE}
     - REDIS_URL=redis://redis:6379/1
     - DB_HOST=postgresql
     - DB_USER=postgres
