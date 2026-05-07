@@ -229,7 +229,6 @@ module Import
       section = shelly_extractor.section_data
       devices = shelly_extractor.raw_devices
       data = (section || {}).merge(image_data_for('shelly-collector'),
-                                   'mode' => shelly_extractor.influx_mode,
                                    'password' => shelly_extractor.shared_password,
                                    'devices' => devices.presence).compact
       data.presence

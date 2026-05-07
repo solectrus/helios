@@ -234,6 +234,7 @@ services:
     - INFLUX_MEASUREMENT
     - INFLUX_HOST=influxdb
     - SHELLY_DEVICE_ID
+    - INFLUX_MODE
     - SHELLY_CLOUD_SERVER
     - SHELLY_AUTH_KEY
     labels:

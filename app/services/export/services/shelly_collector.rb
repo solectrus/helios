@@ -82,6 +82,7 @@ module Export
       def collectors_only_extra_vars
         vars = []
         vars << 'INFLUX_MODE' if shelly_defaults&.mode.present?
+        vars << 'INFLUX_POWER_DATA_TYPE' if shelly_defaults&.power_data_type.present?
         vars << 'SHELLY_PASSWORD' if shelly_defaults&.password.present?
         vars.concat(collectors_only_cloud_vars) if cloud_mode?
         vars
@@ -101,7 +102,14 @@ module Export
       end
 
       def optional_vars
-        per_sensor_optional_vars + global_optional_vars
+        per_sensor_optional_vars + influx_optional_vars + global_optional_vars
+      end
+
+      def influx_optional_vars
+        vars = []
+        vars << 'INFLUX_MODE' if shelly_defaults&.mode.present?
+        vars << 'INFLUX_POWER_DATA_TYPE' if shelly_defaults&.power_data_type.present?
+        vars
       end
 
       def per_sensor_optional_vars

@@ -182,6 +182,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     auth_key
     image
     mode
+    power_data_type
     password
     devices
   ].freeze

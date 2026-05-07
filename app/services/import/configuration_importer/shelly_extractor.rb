@@ -97,14 +97,6 @@ module Import
         Array.new(size) { |i| flags[i].to_s.casecmp('true').zero? || nil }
       end
 
-      # INFLUX_MODE passthrough — optional "essential"/"full" hint the
-      # collector uses to decide how much to publish. Not sensor-dependent.
-      def influx_mode
-        return nil unless enabled?
-
-        service_env(shelly_service_names.first)['INFLUX_MODE']
-      end
-
       # Shared SHELLY_PASSWORD when a single value is used for all devices
       # (the common case for a home full of identically-configured plugs).
       # Mixed per-device passwords stay sensor-side and don't round-trip here.
@@ -165,7 +157,12 @@ module Import
       def build_section_data(shelly_env)
         connection = shelly_env['SHELLY_CLOUD_SERVER'].present? ? 'cloud' : 'local'
 
-        data = { 'connection' => connection, 'interval' => min_interval }
+        data = {
+          'connection' => connection,
+          'interval' => min_interval,
+          'mode' => shelly_env['INFLUX_MODE'],
+          'power_data_type' => shelly_env['INFLUX_POWER_DATA_TYPE'],
+        }
         if connection == 'cloud'
           data['cloud_server'] = shelly_env['SHELLY_CLOUD_SERVER']&.split(',')&.first
           data['auth_key'] = shelly_env['SHELLY_AUTH_KEY']&.split(',')&.first

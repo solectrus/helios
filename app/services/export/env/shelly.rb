@@ -53,7 +53,9 @@ module Export
       end
 
       def collectors_only_extra_entries(devices, shelly)
-        optional_entry('INFLUX_MODE', shelly.mode, 'InfluxDB write mode (essential or full)')
+        optional_entry('INFLUX_MODE', shelly.mode, 'InfluxDB write mode (default or essential)')
+        optional_entry('INFLUX_POWER_DATA_TYPE', shelly.power_data_type,
+                       'Data type for power values in InfluxDB (Float or Integer)')
         password_entry(devices, shelly)
         invert_power_entry(devices)
       end
@@ -80,7 +82,14 @@ module Export
 
       def optional_entries(sensors, shelly)
         per_sensor_optional_entries(sensors)
+        influx_optional_entries(shelly)
         global_optional_entries(shelly)
+      end
+
+      def influx_optional_entries(shelly)
+        optional_entry('INFLUX_MODE', shelly&.mode, 'InfluxDB write mode (default or essential)')
+        optional_entry('INFLUX_POWER_DATA_TYPE', shelly&.power_data_type,
+                       'Data type for power values in InfluxDB (Float or Integer)')
       end
 
       def per_sensor_optional_entries(sensors)
