@@ -15,6 +15,7 @@ system:
   timezone: Europe/Berlin
 dashboard:
   image: ghcr.io/solectrus/solectrus:latest
+  influx_poll_interval: '70'
   lockup_codeword: sonne
 postgresql:
   image: postgres:18-alpine

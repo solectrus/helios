@@ -9,6 +9,8 @@ module Export
               'Must be FALSE, unless Traefik terminates TLS in front of the dashboard')
         entry('WEB_CONCURRENCY', 0,
               'Number of Puma worker processes (0 = single-process mode, sufficient for most setups)')
+        entry('INFLUX_POLL_INTERVAL', configuration.dashboard.influx_poll_interval.presence || 5,
+              'How often the Dashboard polls InfluxDB for live values, in seconds')
         optional_entries(configuration.dashboard)
       end
 

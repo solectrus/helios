@@ -15,6 +15,7 @@ system:
   timezone: Europe/Berlin
 dashboard:
   image: ghcr.io/solectrus/solectrus:develop
+  influx_poll_interval: '20'
 postgresql:
   image: postgres:18-alpine
   password: example-postgres-password

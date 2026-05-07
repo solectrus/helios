@@ -34,6 +34,7 @@ services:
     - APP_HOST
     - FORCE_SSL
     - WEB_CONCURRENCY
+    - INFLUX_POLL_INTERVAL
     - REDIS_URL=redis://redis:6379/1
     - INFLUX_HOST=influxdb
     - DB_HOST=postgresql

@@ -103,6 +103,10 @@ forecasts, and a Tibber price feed. Anonymized but otherwise untouched.
   default. Captured under `power_splitter.interval` and re-emitted
   verbatim. The setting is not exposed in the HELIOS UI yet — it lives
   silently in `config.yaml` so the round-trip stays lossless.
+- **Non-default `INFLUX_POLL_INTERVAL=10` preserved** — donor doubles
+  the dashboard's default 5s polling cadence against InfluxDB.
+  Captured under `dashboard.influx_poll_interval` and re-emitted
+  verbatim. Same UI-less plumbing as the power-splitter interval.
 - **Redundant `command:` overrides dropped** — influxdb's
   `influxd run --bolt-path /var/lib/influxdb2/influxd.bolt
   --engine-path /var/lib/influxdb2/engine --store disk` only respells

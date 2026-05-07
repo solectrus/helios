@@ -16,6 +16,7 @@ system:
 dashboard:
   co2_emission_factor: '258'
   image: ghcr.io/solectrus/solectrus:power-balance-chart
+  influx_poll_interval: '10'
 postgresql:
   image: postgres:16.11-trixie
   password: my-postgres-password
