@@ -36,6 +36,16 @@ https://daisyui.com/llms.txt
 For SurveyJS form configuration (question types, visibleIf, validators, expressions), fetch:
 https://surveyjs.io/form-library/documentation/overview
 
+For SOLECTRUS env var semantics (defaults, valid ranges, runtime behavior), fetch:
+https://docs.solectrus.de/
+
+This is the source of truth when picking default values, validation bounds,
+or fallback behavior for any `INFLUX_*`, `FORECAST_*`, `SENEC_*`, `MQTT_*`,
+`SHELLY_*`, `POWER_SPLITTER_*`, or `WATCHTOWER_*` setting HELIOS exports.
+Do not infer defaults from the existing HELIOS code — they may be wrong (e.g.
+HELIOS used to hardcode `POWER_SPLITTER_INTERVAL=300`, the documented
+minimum, while the docs default is `3600`).
+
 ## Code Quality
 
 ```bash
