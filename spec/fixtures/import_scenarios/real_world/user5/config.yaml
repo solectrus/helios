@@ -33,14 +33,18 @@ redis:
   volume_path: "/my-volumes/solectrus/redis"
 watchtower: {}
 forecast:
-  forecast: forecast.solar
-  forecast_azimuth1: '35'
+  forecast: pvnode
   forecast_declination1: '29.1'
   forecast_interval: '5400'
   forecast_kwp1: '8.75'
   forecast_latitude: '50.12345'
   forecast_longitude: '6.12345'
+  forecast_pvnode_apikey: my-pvnode-api-key
+  forecast_pvnode_azimuth1: '209'
+  forecast_pvnode_extra_params: diffuse_radiation_model=perez&snow_slide_coefficient=0.8
+  forecast_pvnode_paid: nowcast
   forecast_roofs: '1'
+  measurement: Forecast
 backup:
   influxdb:
     image: ghcr.io/solectrus/influxdb2-s3-backup:latest
@@ -194,7 +198,7 @@ _unmanaged:
     PLAUSIBLE_URL: https://p.example.com
     RORVSWILD_API_KEY: my-rorvswild-api-key
   services:
-    forecast-collector-pvnode:
+    forecast-collector-forecast-solar:
       deploy:
         placement:
           constraints:
@@ -205,19 +209,18 @@ _unmanaged:
       - TZ
       - INFLUX_BUCKET
       - INFLUX_HOST=influxdb
-      - INFLUX_MEASUREMENT=Forecast
+      - INFLUX_MEASUREMENT=Forecast-Solar
       - INFLUX_ORG
       - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
-      - FORECAST_AZIMUTH=209
+      - FORECAST_AZIMUTH
+      - FORECAST_DAMPING_EVENING
+      - FORECAST_DAMPING_MORNING
       - FORECAST_DECLINATION
       - FORECAST_INTERVAL
       - FORECAST_KWP
       - FORECAST_LATITUDE
       - FORECAST_LONGITUDE
-      - FORECAST_PROVIDER=pvnode
-      - PVNODE_APIKEY
-      - PVNODE_EXTRA_PARAMS
-      - PVNODE_PAID=nowcast
+      - FORECAST_PROVIDER=forecast.solar
       hostname: forecast-collector.${APP_HOST}
       image: ghcr.io/solectrus/forecast-collector:develop
       links:

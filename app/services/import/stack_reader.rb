@@ -105,14 +105,28 @@ module Import
     def aliased_services
       SERVICE_IMAGE_PREFIXES.each_with_object({}) do |(canonical_name, prefix), result|
         next if resolved_services.key?(canonical_name)
+        # ShellyExtractor reads every service with the shelly-collector image
+        # directly and merges them into `shelly.devices`. A canonical alias
+        # would only duplicate the first instance under two keys.
+        next if canonical_name == 'shelly-collector'
 
-        matches = resolved_services.select { |_, cfg| self.class.image_matches?(cfg['image'], prefix) }
-        # When multiple services share the same image (e.g. two mqtt-collector
-        # instances, or per-device shelly-collectors), the first one wins the
-        # canonical alias — HELIOS re-emits it under the canonical name, while
-        # the rest stay in _unmanaged.services with their original names.
-        result[canonical_name] = matches.values.first if matches.any?
+        # When multiple services share the same image (e.g. parallel
+        # forecast-collector instances per provider, or a second mqtt-collector
+        # for ingest), the first one wins the canonical alias — HELIOS re-emits
+        # it under the canonical name, while the rest stay in
+        # _unmanaged.services with their original names. Order is taken from
+        # raw_compose (original YAML insertion order, what the user authored)
+        # rather than resolved_services (alphabetized by `docker compose
+        # config`), so the user's first-listed service wins.
+        first_match = ordered_service_names.find do |name|
+          self.class.image_matches?(resolved_services.dig(name, 'image'), prefix)
+        end
+        result[canonical_name] = resolved_services[first_match] if first_match
       end
+    end
+
+    def ordered_service_names
+      (raw_compose['services'] || {}).keys
     end
 
     def resolved_config

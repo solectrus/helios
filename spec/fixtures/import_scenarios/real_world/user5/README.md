@@ -21,13 +21,19 @@ Anonymized but otherwise untouched.
   staging/testing; HELIOS keeps the `ingest:` section in `config.yaml` and
   re-emits the service on export because `ingest_required?` activates on
   either a balcony sensor or an explicitly configured ingest section.
-- **Three forecast-collector services** — `forecast.solar` provider
-  recognized as the managed `forecast-collector`; `forecast-collector-pvnode`
-  and `forecast-collector-solcast` preserved verbatim under
-  `_unmanaged.services` with their `deploy:`, `hostname:`, and `links:`
-  blocks intact, including their API keys (`PVNODE_APIKEY`,
-  `PVNODE_EXTRA_PARAMS`, `PVNODE_PAID=nowcast`, `SOLCAST_APIKEY`,
-  `SOLCAST_SITE`) and per-instance `INFLUX_MEASUREMENT` values.
+- **Three forecast-collector services — first-listed wins canonical
+  alias.** `forecast-collector-pvnode` is declared first in the donor's
+  `compose.yaml`, so HELIOS adopts it as the managed
+  `forecast-collector` (`forecast: pvnode`, `measurement: Forecast`,
+  pvnode API key/paid/extra-params attached).
+  `forecast-collector-solcast` and
+  `forecast-collector-forecast-solar` survive verbatim under
+  `_unmanaged.services` with their `deploy:`, `hostname:`, `links:`,
+  full environment lists, and per-instance `INFLUX_MEASUREMENT`
+  values (`Forecast-Solcast`, `Forecast-Solar`) intact. Order is
+  taken from `raw_compose` (original YAML), not from
+  `docker compose config` (which alphabetizes and would have made
+  `forecast-collector-forecast-solar` win).
 - **Inline literal `INFLUXDB_TOKEN: "my-influxdb-admin-token"` on
   `fluxbackup`** — the user hardcoded the admin token in compose; HELIOS
   recognizes `fluxbackup` as the InfluxDB-S3 backup service and rewrites

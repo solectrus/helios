@@ -18,7 +18,11 @@ module Import
         data = base_data(fc_env)
         data.merge!(roof_data(fc_env))
         data.merge!(provider_data(fc_env))
-        data['measurement'] = @reader.raw_env['INFLUX_MEASUREMENT_FORECAST'].presence
+        # Read the forecast measurement from the resolved service env so
+        # indirections like INFLUX_MEASUREMENT=${FORECAST_INFLUX_MEASUREMENT}
+        # (non-canonical variable name spotted in real-world stacks) round-trip
+        # to the canonical INFLUX_MEASUREMENT_FORECAST on re-export.
+        data['measurement'] = fc_env['INFLUX_MEASUREMENT'].presence
         data.compact.presence
       end
 

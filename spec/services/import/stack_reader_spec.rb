@@ -104,5 +104,26 @@ RSpec.describe Import::StackReader do
       expect(reader.service('mqtt-collector').object_id)
         .to eq(reader.service('mqtt-primary').object_id)
     end
+
+    it 'picks source order, not alphabetical order, when multiple share the prefix' do
+      # `docker compose config` alphabetizes services in its JSON output, so the
+      # canonical pick must come from raw_compose (original YAML) — otherwise
+      # `forecast-collector-forecast-solar` would beat `forecast-collector-pvnode`
+      # even though the user listed pvnode first (real-world: user5).
+      File.write(compose_path, <<~YAML)
+        services:
+          forecast-collector-pvnode:
+            image: ghcr.io/solectrus/forecast-collector:latest
+            environment:
+              - FORECAST_PROVIDER=pvnode
+          forecast-collector-forecast-solar:
+            image: ghcr.io/solectrus/forecast-collector:latest
+            environment:
+              - FORECAST_PROVIDER=forecast.solar
+      YAML
+
+      expect(reader.service('forecast-collector')['environment'])
+        .to include('FORECAST_PROVIDER' => 'pvnode')
+    end
   end
 end

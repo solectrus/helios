@@ -1,0 +1,310 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 2
+system:
+  admin_password: my-admin-password
+  app_host: 192.168.178.225
+  installation_date: '2024-02-03'
+  secret_key_base: my-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  frame_ancestors: http://192.168.168.101:8123
+  image: ghcr.io/solectrus/solectrus:latest
+  influx_poll_interval: '5'
+postgresql:
+  image: postgres:16-alpine
+  password: my-postgres-password
+  volume_path: "/var/lib/docker/volumes/solectrus/_data/postgresql"
+influxdb:
+  bucket: xxx-pv
+  image: influxdb:2.7-alpine
+  org: solectrus
+  password: my-influx-password
+  token: my-influx-admin-token
+  volume_path: "/var/lib/docker/volumes/solectrus/_data/influxdb"
+redis:
+  image: redis:7-alpine
+  volume_path: "/var/lib/docker/volumes/solectrus/_data/redis"
+watchtower:
+  image: containrrr/watchtower:latest
+forecast:
+  forecast: forecast.solar
+  forecast_azimuth1: "-72"
+  forecast_azimuth2: '102'
+  forecast_azimuth3: '10'
+  forecast_damping_evening: '0.5'
+  forecast_damping_morning: '0.5'
+  forecast_declination1: '20'
+  forecast_declination2: '20'
+  forecast_declination3: '55'
+  forecast_interval: '900'
+  forecast_kwp1: '5.04'
+  forecast_kwp2: '5.04'
+  forecast_kwp3: '4.60'
+  forecast_latitude: xxx
+  forecast_longitude: xxx
+  forecast_roofs: '3'
+  measurement: Forecast
+mqtt:
+  mqtt_host: 192.168.178.222
+  mqtt_password: my-mqtt-password
+  mqtt_port: '1883'
+  mqtt_ssl: 'false'
+  mqtt_username: my-mqtt-username
+sensors:
+  battery_charging_power:
+    field: bat_power_plus
+    measurement: xxx-pv-messung
+    mqtt_json_formula: IF((round({$.meters.storage.agg_p_mw} / 1000)) < 0, -(round({$.meters.storage.agg_p_mw}
+      / 1000)), 0)
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: integer
+    mqtt_topic: envoy/json
+    source: mqtt
+  battery_discharging_power:
+    field: bat_power_minus
+    measurement: xxx-pv-messung
+    mqtt_json_formula: IF((round({$.meters.storage.agg_p_mw} / 1000)) > 0, (round({$.meters.storage.agg_p_mw}
+      / 1000)), 0)
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: integer
+    mqtt_topic: envoy/json
+    source: mqtt
+  battery_soc:
+    field: bat_fuel_charge
+    measurement: xxx-pv-messung
+    mqtt_json_path: "$.meters.soc"
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: float
+    mqtt_topic: envoy/json
+    source: mqtt
+  car_battery_soc:
+    field: car_battery_soc
+    measurement: xxx-pv-messung
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/loadpoints/2/vehicleSoc
+    source: mqtt
+  case_temp:
+    field: battery_case_temp
+    measurement: xxx-pv-messung
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: float
+    mqtt_topic: forSOLECTRUS/hausakkutemperatur
+    source: mqtt
+  custom_power_01:
+    field: power
+    measurement: waschmaschine
+    mqtt_json_key: apower
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: float
+    mqtt_topic: shelly/waschmaschine/status/switch:0
+    name: waschmaschine
+    source: mqtt
+  custom_power_02:
+    field: power
+    measurement: spulmaschine
+    mqtt_json_key: apower
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: float
+    mqtt_topic: shelly/spuelmaschine/status/switch:0
+    name: spulmaschine
+    source: mqtt
+  custom_power_03:
+    field: power
+    measurement: ebikeladestation
+    mqtt_json_key: apower
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: float
+    mqtt_topic: shelly/ebikeladestation/status/switch:0
+    name: ebikeladestation
+    source: mqtt
+  custom_power_04:
+    field: power
+    measurement: luftentfeuchter
+    mqtt_json_key: apower
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: float
+    mqtt_topic: shelly/luftentfeuchter/status/switch:0
+    name: luftentfeuchter
+    source: mqtt
+  custom_power_05:
+    field: power
+    measurement: rocket
+    mqtt_json_key: apower
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: float
+    mqtt_topic: shelly/rocket/status/switch:0
+    name: rocket
+    source: mqtt
+  custom_power_06:
+    field: power
+    measurement: kuhlschrank
+    mqtt_json_key: apower
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: float
+    mqtt_topic: shelly/kuehlschrank/status/switch:0
+    name: kuhlschrank
+    source: mqtt
+  custom_power_07:
+    field: power
+    measurement: serverschrank
+    mqtt_json_key: apower
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: float
+    mqtt_topic: shelly/serverschrank/status/switch:0
+    name: serverschrank
+    source: mqtt
+  custom_power_08:
+    field: power
+    measurement: 3ddrucker
+    mqtt_json_key: apower
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: float
+    mqtt_topic: shelly/3ddrucker/status/switch:0
+    name: 3ddrucker
+    source: mqtt
+  custom_power_09:
+    field: power
+    measurement: heizluefter
+    mqtt_json_key: apower
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: integer
+    mqtt_topic: shelly/heizluefter/status/switch:0
+    name: heizluefter
+    source: mqtt
+  custom_power_10:
+    field: power
+    measurement: schreibtisch
+    mqtt_json_key: apower
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: float
+    mqtt_topic: shelly/schreibtisch/status/switch:0
+    name: schreibtisch
+    source: mqtt
+  grid_export_power:
+    field: grid_power_minus
+    measurement: xxx-pv-messung
+    mqtt_json_formula: IF((round({$.meters.grid.agg_p_mw} / 1000)) < 0, -(round({$.meters.grid.agg_p_mw}
+      / 1000)), 0)
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: integer
+    mqtt_topic: envoy/json
+    source: mqtt
+  grid_import_power:
+    field: grid_power_plus
+    measurement: xxx-pv-messung
+    mqtt_json_formula: IF((round({$.meters.grid.agg_p_mw} / 1000)) > 0, (round({$.meters.grid.agg_p_mw}
+      / 1000)), 0)
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: integer
+    mqtt_topic: envoy/json
+    source: mqtt
+  heatpump_heating_power:
+    field: heat
+    measurement: ALTHERMA
+    mqtt_json_formula: IF({Aktuelle Betriebsart} = 'Heating' AND {Frostschutz} = 'OFF'
+      AND {R1T-Wasser Vorlauftemp. nach dem Plattenwärmetauscher} > {R4T-Wasser Rücklauftemp.
+      vor dem Plattenwärmetauscher}, {Durchflussmenge (l/min)} * 60.0 * 1.163 * ({R1T-Wasser
+      Vorlauftemp. nach dem Plattenwärmetauscher} - {R4T-Wasser Rücklauftemp. vor
+      dem Plattenwärmetauscher}), 0)
+    mqtt_payload_type: float
+    mqtt_topic: espaltherma/ATTR
+    source: mqtt
+  heatpump_power:
+    exclude_from_house_power: true
+    field: power
+    measurement: heatpump
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: float
+    mqtt_topic: forSOLECTRUS/heatpump_bereinigt
+    source: mqtt
+  heatpump_status:
+    field: current_state
+    measurement: ALTHERMA
+    mqtt_json_formula: 'IF({Frostschutz} == ''ON'', ''Frostschutz'', IF({Abtauung}
+      == ''ON'', ''Abtauen'', IF({3-Wege-Ventil (ON: DHW/OFF: Raumheizung)} == ''ON'',
+      ''Warmwasser'', IF({3-Wege-Ventil (ON: DHW/OFF: Raumheizung)} == ''OFF'' AND
+      {Drehzahl Verdichter (U/Sek)} > 0, ''Heizen'', ''Warten''))))'
+    mqtt_payload_type: string
+    mqtt_topic: espaltherma/ATTR
+    source: mqtt
+  heatpump_tank_temp:
+    field: r5t_tank_temp
+    measurement: ALTHERMA
+    mqtt_json_key: R5T-Brauchwassertemperatur im Speicher
+    mqtt_payload_type: float
+    mqtt_topic: espaltherma/ATTR
+    source: mqtt
+  house_power:
+    field: house_power
+    measurement: xxx-pv-messung
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: integer
+    mqtt_topic: forSOLECTRUS/hausverbrauchMINUSauto
+    source: mqtt
+  inverter_power:
+    field: inverter_power
+    measurement: xxx-pv-messung
+    mqtt_json_formula: round({$.meters.pv.agg_p_mw} / 1000)
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: integer
+    mqtt_topic: envoy/json
+    source: mqtt
+  inverter_power_1:
+    field: pv_ost
+    measurement: xxx-pv-messung
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: integer
+    mqtt_topic: forSOLECTRUS/pv_ost
+    source: mqtt
+  inverter_power_2:
+    field: pv_sued
+    measurement: xxx-pv-messung
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: integer
+    mqtt_topic: forSOLECTRUS/pv_sued
+    source: mqtt
+  inverter_power_3:
+    field: pv_west
+    measurement: xxx-pv-messung
+    mqtt_null_to_zero: 'true'
+    mqtt_payload_type: integer
+    mqtt_topic: forSOLECTRUS/pv_west
+    source: mqtt
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  outdoor_temp:
+    field: r1t_outdoor_temp
+    measurement: ALTHERMA
+    mqtt_json_key: R1T-Außentemperatur
+    mqtt_payload_type: float
+    mqtt_topic: espaltherma/ATTR
+    source: mqtt
+  system_status:
+    field: current_state
+    measurement: xxx-pv-messung
+    mqtt_payload_type: string
+    mqtt_topic: forSOLECTRUS/enphasebetriebsstatus
+    source: mqtt
+  wallbox_car_connected:
+    field: wallbox_car_connected
+    measurement: xxx-pv-messung
+    mqtt_payload_type: boolean
+    mqtt_topic: evcc/loadpoints/2/connected
+    source: mqtt
+  wallbox_power:
+    field: wallbox_charge_power
+    measurement: xxx-pv-messung
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/loadpoints/2/chargePower
+    source: mqtt
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:latest

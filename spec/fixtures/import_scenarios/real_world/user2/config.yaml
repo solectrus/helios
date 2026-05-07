@@ -58,6 +58,7 @@ forecast:
   forecast_pvnode_extra_params4: diffuse_radiation_model=perez&mounting_type=isol&terrain_based_horizon_coverage=true&sky_obstruction_config=85:95:17_240:280:24
   forecast_pvnode_paid: 'true'
   forecast_roofs: '4'
+  measurement: Pvnode
 senec:
   adapter: local
   host: senec.local
