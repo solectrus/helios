@@ -24,10 +24,26 @@
         <% end %>
       </div>
     <% else %>
-      <div class="flex flex-col items-center gap-3 py-12 text-center">
-        <i class="fa-solid fa-satellite-dish text-primary/30 mb-2 text-6xl"></i>
-        <h2 class="text-base-content text-lg font-semibold"><%= t('datasources.show.empty.title') %></h2>
-        <p class="text-base-content/60 max-w-sm text-sm"><%= t('datasources.show.empty.body') %></p>
+      <div class="max-w-2xl py-8 md:py-12">
+        <div class="text-base-content/50 inline-flex items-center gap-2 text-xs font-medium tracking-[0.18em] uppercase">
+          <span class="bg-primary inline-block h-2 w-2 rounded-full"></span>
+          <%= t('datasources.show.empty.status') %>
+        </div>
+
+        <h2 class="mt-4 text-3xl leading-tight font-semibold tracking-tight md:text-4xl">
+          <%= t('datasources.show.empty.title') %>
+        </h2>
+
+        <p class="text-base-content/70 mt-4 max-w-prose text-base leading-relaxed">
+          <%= t('datasources.show.empty.body') %>
+        </p>
+
+        <%= link_to sensors_path,
+                    class: "btn btn-primary mt-6",
+                    data: { turbo_frame: "_top" } do %>
+          <%= t('datasources.show.empty.cta') %>
+          <i aria-hidden="true" class="fa-solid fa-arrow-right text-sm"></i>
+        <% end %>
       </div>
     <% end %>
   <% end %>

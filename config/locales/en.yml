@@ -52,8 +52,10 @@ en:
     show:
       title: 'Data Sources'
       empty:
+        status: 'Waiting for sensors'
         title: 'No data sources in use yet'
         body: 'Once you enable sensors, their data sources will appear here for configuration.'
+        cta: 'Open sensors'
     mqtt_topics:
       index:
         title: 'MQTT topics'

@@ -23,8 +23,10 @@ de:
     show:
       title: 'Datenquellen'
       empty:
+        status: 'Wartet auf Sensoren'
         title: 'Noch keine Datenquellen in Verwendung'
         body: 'Sobald du Sensoren aktivierst, erscheinen hier ihre Datenquellen zur Konfiguration.'
+        cta: 'Sensoren öffnen'
     mqtt_topics:
       index:
         title: 'MQTT-Topics'
