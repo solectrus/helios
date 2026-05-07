@@ -27,6 +27,7 @@ module Export
       [Influxdb,     ->(_) { true }],
       [Redis,        ->(c) { !c.collectors_only? }],
       [ReverseProxy, ->(c) { Services::Traefik.enabled?(c) }],
+      [PowerSplitter, ->(c) { Services::PowerSplitter.enabled?(c) }],
       [Backup,       ->(c) { !c.collectors_only? && c.configured?(:backup) }],
       [Senec,        ->(c) { Services::SenecCollector.enabled?(c) }],
       [Forecast,     ->(c) { Services::ForecastCollector.enabled?(c) }],

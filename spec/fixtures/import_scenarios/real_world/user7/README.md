@@ -65,8 +65,9 @@ several commented-out alternatives. Anonymized but otherwise untouched.
   dedupes (last-wins, identical values, no impact).
 - **`INFLUX_MEASUREMENT_FORECAST=forecast`** — preserved as
   `forecast.measurement: forecast`.
-- **`POWER_SPLITTER_INTERVAL=300`** — inlined into the power-splitter
-  service's `environment:` block (same as user3..user6).
+- **`POWER_SPLITTER_INTERVAL=300`** — re-emitted in `.env` as a HELIOS
+  default, name-only passthrough in the power-splitter service (same
+  as user3..user6).
 - **Three identical InfluxDB tokens consolidated.**
   `INFLUX_ADMIN_TOKEN`, `INFLUX_TOKEN_WRITE`, `INFLUX_TOKEN_READ` all
   hold the same anonymized value, so the donor's per-service

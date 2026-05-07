@@ -41,10 +41,13 @@ module Export
 
       # Variables passed through from .env (name only)
       def passthrough_vars
-        %w[TZ INSTALLATION_DATE INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET POSTGRES_PASSWORD]
+        %w[
+          TZ INSTALLATION_DATE INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET
+          POSTGRES_PASSWORD POWER_SPLITTER_INTERVAL
+        ]
       end
 
-      # Variables with service-specific values
+      # Variables with service-specific values (internal Docker references, remappings)
       def explicit_vars
         %w[
           INFLUX_HOST=influxdb
@@ -52,7 +55,6 @@ module Export
           DB_HOST=postgresql
           DB_USER=postgres
           DB_PASSWORD=${POSTGRES_PASSWORD}
-          POWER_SPLITTER_INTERVAL=300
         ]
       end
     end

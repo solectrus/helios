@@ -57,9 +57,9 @@ otherwise untouched.
 - **`PVNODE_PAID=TRUE` uppercase** — preserved verbatim under
   `forecast.forecast_pvnode_paid: 'TRUE'` instead of being normalized to
   lowercase. The forecast-collector accepts either form.
-- **`POWER_SPLITTER_INTERVAL=300`** — non-default value gets inlined into
-  the power-splitter service's `environment:` block on re-export rather
-  than surfaced in `.env`.
+- **`POWER_SPLITTER_INTERVAL=300`** — re-emitted in `.env` as a HELIOS
+  default with name-only passthrough in the power-splitter service.
+  Donor value matches HELIOS's hardcoded default.
 - **Mid-block German comments and blank lines in the dashboard
   `environment:` array** — `# Benutzer definierte Verbraucher`,
   `# Extra Sensoren PV Node` separate logical groups inside the YAML

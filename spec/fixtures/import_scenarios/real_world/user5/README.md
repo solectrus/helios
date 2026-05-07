@@ -45,8 +45,9 @@ Anonymized but otherwise untouched.
 - **Populated custom-power slots** — `_01`=Washer, `_02`=Fridge,
   `_06`=Dishwasher, `_08`=TV, `_09`=IT round-trip with their measurements
   and field names intact.
-- **`POWER_SPLITTER_INTERVAL=300`** — inlined into the power-splitter
-  service's `environment:` block (same pattern as user3 / user4).
+- **`POWER_SPLITTER_INTERVAL=300`** — re-emitted in `.env` as a HELIOS
+  default, name-only passthrough in the power-splitter service (same
+  pattern as user3 / user4).
 - **`HONEYBADGER_API_KEY`, `RORVSWILD_API_KEY`, `PLAUSIBLE_URL`,
   `ASSET_HOST`, `DOCKER_IMAGE`** — preserved verbatim in
   `_unmanaged.env_vars`. Not re-wired into any managed service, but the

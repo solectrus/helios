@@ -57,8 +57,9 @@ MQTT mapping table. Anonymized but otherwise untouched.
   raw indices shift but every payload survives.
 - **`INFLUX_EXCLUDE_FROM_HOUSE_POWER=HEATPUMP_POWER`** — applied as
   `exclude_from_house_power: true` on the `heatpump_power` sensor.
-- **`POWER_SPLITTER_INTERVAL=300`** — inlined into the power-splitter
-  service's `environment:` block (same pattern as user3..user5).
+- **`POWER_SPLITTER_INTERVAL=300`** — re-emitted in `.env` as a HELIOS
+  default, name-only passthrough in the power-splitter service (same
+  pattern as user3..user5).
 - **`INFLUX_MEASUREMENT_FORECAST=Forecast`** — preserved as
   `forecast.measurement: Forecast` and re-emitted on export.
 - **External Traefik adopted as managed reverse proxy with
