@@ -10,7 +10,7 @@ module Import
     #
     #   1. Non-dashboard managed services keep their imported `traefik.*`
     #      labels verbatim. HELIOS regenerates the service definition but no
-    #      longer owns its routing — the donor's custom router/entrypoint
+    #      longer owns its routing — the imported router/entrypoint config
     #      survives 1:1.
     #
     #   2. The dashboard's labels are split: HELIOS regenerates its canonical
@@ -49,7 +49,7 @@ module Import
         StackReader::SERVICE_IMAGE_PREFIXES.keys.select { |name| @reader.services.key?(name) }
       end
 
-      # Read labels from the unresolved raw compose so the donor's ordering
+      # Read labels from the unresolved raw compose so the original ordering
       # is preserved. The resolved view from `docker compose config` would
       # alphabetize them, which round-trips noisily when exporting.
       def override_labels_for(name)

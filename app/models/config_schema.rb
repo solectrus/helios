@@ -50,7 +50,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   # These end up as Dashboard environment variables (CO2_EMISSION_FACTOR,
   # UI_THEME, FRAME_ANCESTORS, LOCKUP_CODEWORD, TRUSTED_PROXY_RANGES).
   # `influx_poll_interval` is not exposed in the UI (yet) but is captured on
-  # import so a non-default donor cadence survives the round-trip.
+  # import so a non-default polling cadence survives the round-trip.
   DASHBOARD_FIELDS = %w[
     co2_emission_factor
     ui_theme
