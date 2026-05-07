@@ -73,7 +73,25 @@ module Export
       service_hash[:image] = ::Compose.normalize_image(service_hash[:image])
       ServiceOverrides.apply(configuration, service_class.service_name, service_hash)
       service_hash[:labels] = (Array(service_hash[:labels]) + [WATCHTOWER_LABEL]).uniq
+      sort_environment!(service_hash)
       service_hash
+    end
+
+    # TZ stays first (Docker convention); the rest is alphabetized so each
+    # service's compose entry has a predictable, diff-stable layout. Numeric
+    # runs are compared as integers so MAPPING_2 sorts before MAPPING_10.
+    def sort_environment!(service_hash)
+      env = service_hash[:environment]
+      return unless env.is_a?(Array)
+
+      service_hash[:environment] = env.sort_by do |entry|
+        name = entry.to_s.split('=', 2).first
+        [name == 'TZ' ? 0 : 1, natural_sort_key(name)]
+      end
+    end
+
+    def natural_sort_key(string)
+      string.split(/(\d+)/).each_with_index.map { |part, i| i.odd? ? part.to_i : part }
     end
 
     def active_service_classes

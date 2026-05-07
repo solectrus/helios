@@ -25,22 +25,17 @@ services:
     image: ghcr.io/solectrus/solectrus:latest
     environment:
     - TZ
-    - INSTALLATION_DATE
-    - INFLUX_ORG
-    - INFLUX_BUCKET
-    - SECRET_KEY_BASE
     - ADMIN_PASSWORD
     - APP_HOST
-    - FORCE_SSL
-    - WEB_CONCURRENCY
-    - INFLUX_POLL_INTERVAL
-    - REDIS_URL=redis://redis:6379/1
-    - INFLUX_HOST=influxdb
-    - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
-    - DB_HOST=postgresql
-    - DB_USER=postgres
-    - DB_PASSWORD=${POSTGRES_PASSWORD}
     - DB_DATABASE=solectrus
+    - DB_HOST=postgresql
+    - DB_PASSWORD=${POSTGRES_PASSWORD}
+    - DB_USER=postgres
+    - FORCE_SSL
+    - INFLUX_BUCKET
+    - INFLUX_HOST=influxdb
+    - INFLUX_ORG
+    - INFLUX_POLL_INTERVAL
     - INFLUX_SENSOR_BATTERY_CHARGING_POWER
     - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
     - INFLUX_SENSOR_BATTERY_SOC
@@ -49,6 +44,11 @@ services:
     - INFLUX_SENSOR_HOUSE_POWER
     - INFLUX_SENSOR_INVERTER_POWER
     - INFLUX_SENSOR_INVERTER_POWER_FORECAST
+    - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
+    - INSTALLATION_DATE
+    - REDIS_URL=redis://redis:6379/1
+    - SECRET_KEY_BASE
+    - WEB_CONCURRENCY
     ports:
     - 3000:3000
     labels:
@@ -84,12 +84,12 @@ services:
     image: influxdb:2-alpine
     environment:
     - TZ
-    - DOCKER_INFLUXDB_INIT_MODE=setup
-    - DOCKER_INFLUXDB_INIT_USERNAME=admin
-    - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
-    - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
-    - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
     - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_ADMIN_TOKEN}
+    - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
+    - DOCKER_INFLUXDB_INIT_MODE=setup
+    - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
+    - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
+    - DOCKER_INFLUXDB_INIT_USERNAME=admin
     volumes:
     - "${INFLUX_VOLUME_PATH}:/var/lib/influxdb2"
     ports:
@@ -121,8 +121,8 @@ services:
     image: postgres:18-alpine
     environment:
     - TZ
-    - POSTGRES_PASSWORD
     - POSTGRES_DB=solectrus
+    - POSTGRES_PASSWORD
     volumes:
     - "${DB_VOLUME_PATH}:/var/lib/postgresql"
     labels:
@@ -180,16 +180,16 @@ services:
     image: ghcr.io/solectrus/senec-collector:latest
     environment:
     - TZ
-    - INFLUX_ORG
     - INFLUX_BUCKET
-    - INFLUX_MEASUREMENT_SENEC
-    - SENEC_ADAPTER
-    - SENEC_INTERVAL
     - INFLUX_HOST=influxdb
+    - INFLUX_MEASUREMENT_SENEC
+    - INFLUX_ORG
     - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+    - SENEC_ADAPTER
     - SENEC_HOST
-    - SENEC_SCHEMA
+    - SENEC_INTERVAL
     - SENEC_LANGUAGE
+    - SENEC_SCHEMA
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
@@ -210,18 +210,18 @@ services:
     image: ghcr.io/solectrus/forecast-collector:latest
     environment:
     - TZ
-    - INFLUX_ORG
-    - INFLUX_BUCKET
-    - INFLUX_HOST=influxdb
-    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
-    - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}
-    - FORECAST_PROVIDER
+    - FORECAST_AZIMUTH
+    - FORECAST_DECLINATION
+    - FORECAST_INTERVAL
+    - FORECAST_KWP
     - FORECAST_LATITUDE
     - FORECAST_LONGITUDE
-    - FORECAST_INTERVAL
-    - FORECAST_DECLINATION
-    - FORECAST_AZIMUTH
-    - FORECAST_KWP
+    - FORECAST_PROVIDER
+    - INFLUX_BUCKET
+    - INFLUX_HOST=influxdb
+    - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}
+    - INFLUX_ORG
+    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
@@ -242,17 +242,12 @@ services:
     image: ghcr.io/solectrus/power-splitter:latest
     environment:
     - TZ
-    - INSTALLATION_DATE
-    - INFLUX_ORG
-    - INFLUX_BUCKET
-    - POSTGRES_PASSWORD
-    - POWER_SPLITTER_INTERVAL
-    - INFLUX_HOST=influxdb
-    - INFLUX_TOKEN=${INFLUX_TOKEN_READWRITE}
-    - REDIS_URL=redis://redis:6379/1
     - DB_HOST=postgresql
-    - DB_USER=postgres
     - DB_PASSWORD=${POSTGRES_PASSWORD}
+    - DB_USER=postgres
+    - INFLUX_BUCKET
+    - INFLUX_HOST=influxdb
+    - INFLUX_ORG
     - INFLUX_SENSOR_BATTERY_CHARGING_POWER
     - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
     - INFLUX_SENSOR_BATTERY_SOC
@@ -261,6 +256,11 @@ services:
     - INFLUX_SENSOR_HOUSE_POWER
     - INFLUX_SENSOR_INVERTER_POWER
     - INFLUX_SENSOR_INVERTER_POWER_FORECAST
+    - INFLUX_TOKEN=${INFLUX_TOKEN_READWRITE}
+    - INSTALLATION_DATE
+    - POSTGRES_PASSWORD
+    - POWER_SPLITTER_INTERVAL
+    - REDIS_URL=redis://redis:6379/1
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
@@ -285,9 +285,9 @@ services:
     image: nickfedor/watchtower:latest
     environment:
     - TZ
+    - WATCHTOWER_CLEANUP
     - WATCHTOWER_POLL_INTERVAL
     - WATCHTOWER_SCOPE
-    - WATCHTOWER_CLEANUP
     volumes:
     - "/var/run/docker.sock:/var/run/docker.sock"
     labels:

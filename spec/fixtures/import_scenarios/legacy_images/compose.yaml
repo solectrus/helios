@@ -25,22 +25,22 @@ services:
     image: ghcr.io/solectrus/solectrus:pr-4588
     environment:
     - TZ
-    - INSTALLATION_DATE
-    - INFLUX_ORG
-    - INFLUX_BUCKET
-    - SECRET_KEY_BASE
     - ADMIN_PASSWORD
     - APP_HOST
-    - FORCE_SSL
-    - WEB_CONCURRENCY
-    - INFLUX_POLL_INTERVAL
-    - REDIS_URL=redis://redis:6379/1
-    - INFLUX_HOST=influxdb
-    - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
-    - DB_HOST=postgresql
-    - DB_USER=postgres
-    - DB_PASSWORD=${POSTGRES_PASSWORD}
     - DB_DATABASE=solectrus
+    - DB_HOST=postgresql
+    - DB_PASSWORD=${POSTGRES_PASSWORD}
+    - DB_USER=postgres
+    - FORCE_SSL
+    - INFLUX_BUCKET
+    - INFLUX_HOST=influxdb
+    - INFLUX_ORG
+    - INFLUX_POLL_INTERVAL
+    - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
+    - INSTALLATION_DATE
+    - REDIS_URL=redis://redis:6379/1
+    - SECRET_KEY_BASE
+    - WEB_CONCURRENCY
     ports:
     - 3000:3000
     labels:
@@ -76,12 +76,12 @@ services:
     image: influxdb:2.5-alpine
     environment:
     - TZ
-    - DOCKER_INFLUXDB_INIT_MODE=setup
-    - DOCKER_INFLUXDB_INIT_USERNAME=admin
-    - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
-    - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
-    - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
     - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_ADMIN_TOKEN}
+    - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
+    - DOCKER_INFLUXDB_INIT_MODE=setup
+    - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
+    - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
+    - DOCKER_INFLUXDB_INIT_USERNAME=admin
     volumes:
     - "${INFLUX_VOLUME_PATH}:/var/lib/influxdb2"
     ports:
@@ -113,8 +113,8 @@ services:
     image: postgres:16-alpine
     environment:
     - TZ
-    - POSTGRES_PASSWORD
     - POSTGRES_DB=solectrus
+    - POSTGRES_PASSWORD
     volumes:
     - "${DB_VOLUME_PATH}:/var/lib/postgresql"
     labels:
@@ -172,9 +172,9 @@ services:
     image: containrrr/watchtower:1.7.1
     environment:
     - TZ
+    - WATCHTOWER_CLEANUP
     - WATCHTOWER_POLL_INTERVAL
     - WATCHTOWER_SCOPE
-    - WATCHTOWER_CLEANUP
     volumes:
     - "/var/run/docker.sock:/var/run/docker.sock"
     labels:
