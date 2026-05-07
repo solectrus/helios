@@ -45,11 +45,15 @@ module Import
       end
 
       def single_roof_data(fc_env)
+        # Some installations declare a single roof with prefixed
+        # FORECAST_0_DECLINATION/_AZIMUTH/_KWP instead of the unprefixed
+        # slots — fall back to the prefixed values so the configuration
+        # survives the round-trip.
         {
           'forecast_roofs' => '1',
-          'forecast_declination1' => fc_env['FORECAST_DECLINATION'],
-          azimuth_field(fc_env, 1) => fc_env['FORECAST_AZIMUTH'],
-          'forecast_kwp1' => fc_env['FORECAST_KWP'],
+          'forecast_declination1' => fc_env['FORECAST_DECLINATION'].presence || fc_env['FORECAST_0_DECLINATION'],
+          azimuth_field(fc_env, 1) => fc_env['FORECAST_AZIMUTH'].presence || fc_env['FORECAST_0_AZIMUTH'],
+          'forecast_kwp1' => fc_env['FORECAST_KWP'].presence || fc_env['FORECAST_0_KWP'],
         }
       end
 

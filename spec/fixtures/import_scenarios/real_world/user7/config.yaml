@@ -1,0 +1,298 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 2
+system:
+  admin_password: my-admin-password
+  app_host: 192.168.178.114
+  installation_date: '2022-06-01'
+  secret_key_base: my-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  frame_ancestors: "*"
+  image: ghcr.io/solectrus/solectrus:develop
+postgresql:
+  image: postgres:18-alpine
+  password: my-postgres-password
+  volume_path: "/opt/solectrus/postgresql"
+influxdb:
+  bucket: my-solectrus-bucket
+  image: influxdb:2-alpine
+  org: solectrus
+  password: my-influx-password
+  token: my-influx-admin-token
+  volume_path: "/opt/solectrus/influxdb"
+redis:
+  image: redis:8-alpine
+  volume_path: "/opt/solectrus/redis"
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: pvnode
+  forecast_declination1: '30'
+  forecast_kwp1: '9.72'
+  forecast_latitude: '0.00000'
+  forecast_longitude: '0.00000'
+  forecast_pvnode_apikey: my-pvnode-apikey
+  forecast_pvnode_azimuth1: '180'
+  forecast_pvnode_extra_params: pv_technology_type=topcon&temperature_coefficient_power=-0.24&panel_age_years=3&elevation=0&installation_height=5&shading_config=2:1:0:1_6:2:0:2_6:2:0:2
+  forecast_pvnode_paid: 'true'
+  forecast_roofs: '1'
+  measurement: forecast
+mqtt:
+  mappings:
+  - field: co2
+    measurement: SENEC
+    topic: hassio/senec/co2
+    type: float
+  - field: mileagecorsa
+    measurement: SENEC
+    topic: hassio/opel/mileage
+    type: float
+  mqtt_host: 192.168.178.164
+  mqtt_password: my-mqtt-password
+  mqtt_port: '1883'
+  mqtt_ssl: 'false'
+  mqtt_username: my-mqtt-username
+sensors:
+  battery_charging_power:
+    field: bat_power_plus
+    measurement: SENEC
+    mqtt_formula: IF({value} < 0, -{value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/battery/power
+    source: mqtt
+  battery_discharging_power:
+    field: bat_power_minus
+    measurement: SENEC
+    mqtt_formula: IF({value} > 0, {value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/battery/power
+    source: mqtt
+  battery_soc:
+    field: bat_fuel_charge
+    measurement: SENEC
+    mqtt_payload_type: float
+    mqtt_topic: evcc/site/battery/soc
+    source: mqtt
+  car_battery_soc:
+    field: opel_soc
+    measurement: SENEC
+    mqtt_payload_type: integer
+    mqtt_topic: hassio/opel/soc
+    source: mqtt
+  case_temp:
+    field: case_temp
+    measurement: SENEC
+    source: external
+  custom_power_01:
+    field: trockner
+    measurement: SENEC
+    mqtt_payload_type: integer
+    mqtt_topic: hassio/trockner/watt
+    name: SENEC
+    source: mqtt
+  custom_power_02:
+    field: waschmaschine
+    measurement: SENEC
+    mqtt_payload_type: integer
+    mqtt_topic: hassio/waschmaschine/watt
+    name: SENEC
+    source: mqtt
+  custom_power_03:
+    field: gefrierschrank
+    measurement: SENEC
+    name: SENEC
+    source: external
+  custom_power_04:
+    field: itdach
+    measurement: SENEC
+    mqtt_payload_type: integer
+    mqtt_topic: hassio/itdach/watt
+    name: SENEC
+    source: mqtt
+  custom_power_05:
+    field: kuehlschrank
+    measurement: SENEC
+    mqtt_payload_type: integer
+    mqtt_topic: hassio/kuehlschrank/watt
+    name: SENEC
+    source: mqtt
+  custom_power_06:
+    field: spuelmaschine
+    measurement: SENEC
+    mqtt_payload_type: integer
+    mqtt_topic: hassio/spuelmaschine/watt
+    name: SENEC
+    source: mqtt
+  custom_power_07:
+    field: fernseher
+    measurement: SENEC
+    name: SENEC
+    source: external
+  custom_power_08:
+    field: power
+    measurement: custom_08
+    name: custom_08
+    source: external
+  custom_power_09:
+    field: power
+    measurement: custom_09
+    name: custom_09
+    source: external
+  custom_power_10:
+    field: power
+    measurement: custom_10
+    name: custom_10
+    source: external
+  custom_power_11:
+    field: power
+    measurement: custom_11
+    name: custom_11
+    source: external
+  custom_power_12:
+    field: power
+    measurement: custom_12
+    name: custom_12
+    source: external
+  custom_power_13:
+    field: power
+    measurement: custom_13
+    name: custom_13
+    source: external
+  custom_power_14:
+    field: power
+    measurement: custom_14
+    name: custom_14
+    source: external
+  custom_power_15:
+    field: power
+    measurement: custom_15
+    name: custom_15
+    source: external
+  custom_power_16:
+    field: power
+    measurement: custom_16
+    name: custom_16
+    source: external
+  custom_power_17:
+    field: power
+    measurement: custom_17
+    name: custom_17
+    source: external
+  custom_power_18:
+    field: power
+    measurement: custom_18
+    name: custom_18
+    source: external
+  custom_power_19:
+    field: power
+    measurement: custom_19
+    name: custom_19
+    source: external
+  custom_power_20:
+    field: power
+    measurement: custom_20
+    name: custom_20
+    source: external
+  grid_export_limit:
+    field: power_ratio
+    measurement: SENEC
+    source: external
+  grid_export_power:
+    field: grid_power_minus
+    measurement: SENEC
+    mqtt_formula: IF({value} < 0, -{value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/grid/power
+    source: mqtt
+  grid_import_power:
+    field: grid_power_plus
+    measurement: SENEC
+    mqtt_formula: IF({value} > 0, {value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/grid/power
+    source: mqtt
+  heatpump_heating_power:
+    field: heatpumppowerwattnew
+    measurement: SENEC
+    mqtt_payload_type: float
+    mqtt_topic: hassio/senec/heatpumppowerwattnew
+    source: mqtt
+  heatpump_power:
+    field: heatpump_power
+    measurement: SENEC
+    mqtt_payload_type: integer
+    mqtt_topic: hassio/heatpump/watt
+    source: mqtt
+  heatpump_status:
+    field: heatpump_state
+    measurement: SENEC
+    source: external
+  heatpump_tank_temp:
+    field: heatpumphotwater
+    measurement: SENEC
+    mqtt_payload_type: float
+    mqtt_topic: hassio/senec/heatpumphotwater
+    source: mqtt
+  house_power:
+    field: house_power
+    measurement: SENEC
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/homePower
+    source: mqtt
+  inverter_power:
+    field: inverter_power
+    measurement: SENEC
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/pvPower
+    source: mqtt
+  inverter_power_1:
+    field: mpp1
+    measurement: SENEC
+    source: external
+  inverter_power_2:
+    field: mpp2
+    measurement: SENEC
+    source: external
+  inverter_power_3:
+    field: mpp3
+    measurement: SENEC
+    source: external
+  inverter_power_forecast:
+    source: forecast
+  inverter_power_forecast_clearsky:
+    source: forecast
+  outdoor_temp:
+    field: aussentemperatur2
+    measurement: SENEC
+    source: external
+  outdoor_temp_forecast:
+    field: temp
+    measurement: forecast
+    source: forecast
+  system_status:
+    field: current_state
+    measurement: SENEC
+    source: external
+  system_status_ok:
+    field: current_state_ok
+    measurement: SENEC
+    source: external
+  wallbox_car_connected:
+    field: connected
+    measurement: SENEC
+    mqtt_payload_type: string
+    mqtt_topic: evcc/loadpoints/1/connected
+    source: mqtt
+  wallbox_power:
+    field: wallbox_charge_power
+    measurement: SENEC
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/loadpoints/1/chargePower
+    source: mqtt
