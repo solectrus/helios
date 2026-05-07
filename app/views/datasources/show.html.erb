@@ -6,7 +6,7 @@
       Sensor canonicalization happens on the remote dashboard host, so
       we always show one card per collector — even unconfigured ones.
     %>
-    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
       <% Configuration::SOURCE_CONFIGS.each do |source| %>
         <%= render SettingSection::Component.new(setting: source, configuration: @configuration) %>
       <% end %>
@@ -14,7 +14,7 @@
   <% else %>
     <% sources = @configuration.active_sources %>
     <% if sources.any? %>
-      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
         <% sources.each do |source| %>
           <% if source == 'external' %>
             <%= render ExternalInputInfo::Component.new(configuration: @configuration) %>

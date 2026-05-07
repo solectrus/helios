@@ -19,7 +19,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   COLLECTORS_ONLY_SETTINGS = %w[deployment system influxdb].freeze
 
   # Source configurations shown when at least one sensor uses that source
-  SOURCE_CONFIGS = %w[senec mqtt shelly forecast].freeze
+  SOURCE_CONFIGS = %w[mqtt shelly forecast senec].freeze
 
   # All data sources (SOURCE_CONFIGS + external sources without own configuration)
   ALL_SOURCES = (SOURCE_CONFIGS + %w[external]).freeze

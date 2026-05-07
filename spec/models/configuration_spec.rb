@@ -219,7 +219,7 @@ RSpec.describe Configuration do
         'senec' => { 'version' => '4', 'host' => '10.0.0.10' },
         'shelly' => { 'connection' => 'cloud' },
       )
-      expect(described_class.current.active_sources).to eq(%w[senec shelly])
+      expect(described_class.current.active_sources).to eq(%w[shelly senec])
     end
 
     it 'drops device-collector sources in dashboard_only mode' do

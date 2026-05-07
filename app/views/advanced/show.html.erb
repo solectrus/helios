@@ -1,7 +1,7 @@
 <% content_for :title, t('.title') %>
 
 <%= render "shared/configuration_page", active_tab: :advanced do %>
-  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
     <% @configuration.visible_settings.each do |setting| %>
       <%= render SettingSection::Component.new(setting:, configuration: @configuration) %>
     <% end %>

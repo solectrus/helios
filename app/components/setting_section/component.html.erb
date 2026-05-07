@@ -1,77 +1,87 @@
-<div class="card bg-base-100 shadow-md">
-  <div class="card-body flex-row items-start gap-4 p-5">
-    <%# Icon spanning full height %>
-    <div class="text-primary flex items-center self-stretch px-2 text-5xl"><i class="fa-solid <%= icon %>"></i></div>
+<div
+  class="
+    bg-base-100 border-base-content/10 hover:border-base-content/20 group relative flex h-full flex-col rounded-2xl
+    border shadow-xs transition-colors duration-200
+  "
+>
+  <div class="flex flex-1 items-start gap-4 p-6">
+    <%# Icon tile %>
+    <div
+      class="
+        bg-primary/10 text-primary group-hover:bg-primary/15 flex size-12 shrink-0 items-center justify-center
+        rounded-xl transition-colors duration-200
+      "
+    >
+      <i aria-hidden="true" class="fa-solid text-xl <%= icon %>"></i>
+    </div>
 
-    <%# Content area %>
+    <%# Content %>
     <div class="min-w-0 flex-1">
-      <%# Header: Title %>
-      <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold"><%= title %></h2>
+      <div class="flex items-start justify-between gap-3">
+        <h2 class="text-base-content text-lg leading-snug font-semibold tracking-tight">
+          <%= link_to title, link_path,
+                      data: { turbo_frame: "setting-modal-content" },
+                      class: "before:absolute before:inset-0 before:z-10 before:rounded-2xl focus:outline-none focus-visible:before:ring-2 focus-visible:before:ring-primary/40" %>
+        </h2>
+
+        <i
+          aria-hidden="true"
+          class="
+            fa-solid fa-chevron-right text-base-content/30 group-hover:text-base-content/60 mt-1.5 shrink-0 text-xs
+            transition-all duration-200 group-hover:translate-x-0.5
+          "
+        ></i>
       </div>
 
-      <%# Singleton status %>
-      <div class="flex items-center justify-between py-2">
-        <% if incomplete? %>
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-triangle-exclamation text-warning text-xs"></i>
-            <span class="text-warning text-sm"><%= t('configurations.show.incomplete') %></span>
-          </div>
-        <% elsif singleton_configured? %>
-          <div class="flex items-center gap-2">
-            <i class="fa-solid fa-check text-success text-xs"></i>
-            <span class="text-base-content/70 text-sm"><%= status_label %></span>
-          </div>
-        <% else %>
-          <span class="text-base-content/50 text-sm"><%= t('configurations.settings.not_configured') %></span>
-        <% end %>
-
-        <% if singleton_configured? %>
-          <%= link_to helpers.edit_configuration_setting_path(setting:, name: setting),
-                      class: "btn btn-ghost btn-lg btn-square",
-                      data: { turbo_frame: "setting-modal-content" } do %>
-            <i class="fa-solid fa-pen-to-square text-xl"></i>
-          <% end %>
-        <% else %>
-          <%= link_to helpers.new_configuration_setting_path(setting:),
-                      class: "btn btn-ghost btn-lg btn-square",
-                      data: { turbo_frame: "setting-modal-content" } do %>
-            <i class="fa-solid fa-pen-to-square text-xl"></i>
-          <% end %>
-        <% end %>
-      </div>
-
-      <% if show_mqtt_topics_link? %>
-        <%= link_to helpers.datasources_mqtt_topics_path,
-                    data: { turbo_frame: "_top" },
-                    class: "group border-base-content/10 text-base-content/70 hover:text-primary focus-visible:text-primary mt-2 flex items-center justify-between gap-2 border-t py-3 text-sm" do %>
-          <span><%= t('datasources.mqtt_topics.inline.label') %></span>
-
-          <span class="flex items-center gap-2">
-            <span class="text-base-content/50 group-hover:text-primary/80 group-focus-visible:text-primary/80 tabular-nums">
-              <%= t('datasources.mqtt_topics.inline.count', count: mqtt_topics_count) %>
-            </span>
-
-            <i class="fa-solid fa-chevron-right text-xs transition-transform duration-150 group-hover:translate-x-0.5"></i>
-          </span>
-        <% end %>
-      <% end %>
-
-      <% if show_shelly_devices_link? %>
-        <%= link_to helpers.datasources_shelly_devices_path,
-                    data: { turbo_frame: "_top" },
-                    class: "group border-base-content/10 text-base-content/70 hover:text-primary focus-visible:text-primary mt-2 flex items-center justify-between gap-2 border-t py-3 text-sm" do %>
-          <span><%= t('datasources.shelly_devices.inline.label') %></span>
-
-          <span class="flex items-center gap-2">
-            <span class="text-base-content/50 group-hover:text-primary/80 group-focus-visible:text-primary/80 tabular-nums">
-              <%= t('datasources.shelly_devices.inline.count', count: shelly_devices_count) %>
-            </span>
-
-            <i class="fa-solid fa-chevron-right text-xs transition-transform duration-150 group-hover:translate-x-0.5"></i>
-          </span>
-        <% end %>
+      <% if description.present? %>
+        <p class="text-base-content/65 mt-1.5 text-sm leading-relaxed"><%= description %></p>
       <% end %>
     </div>
   </div>
+
+  <%# Footer: status + optional drill-down %>
+  <% if show_mqtt_topics_link? %>
+    <%= link_to helpers.datasources_mqtt_topics_path,
+                data: { turbo_frame: "_top" },
+                class: "border-base-content/10 bg-base-200/40 group/foot relative z-20 flex items-center justify-between gap-3 rounded-b-2xl border-t px-6 py-3 transition-colors hover:bg-base-200/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset" do %>
+      <span class="flex items-center gap-2 text-sm font-medium <%= status_text_class %>">
+        <span aria-hidden="true" class="size-2.5 rounded-full <%= status_dot_class %>"></span>
+        <%= status_text %>
+      </span>
+
+      <span class="text-base-content/70 group-hover/foot:text-primary flex items-center gap-2 text-sm transition-colors">
+        <span class="tabular-nums"><%= t('datasources.mqtt_topics.inline.count', count: mqtt_topics_count) %></span>
+
+        <i
+          aria-hidden="true"
+          class="fa-solid fa-chevron-right text-xs transition-transform duration-200 group-hover/foot:translate-x-0.5"
+        ></i>
+      </span>
+    <% end %>
+  <% elsif show_shelly_devices_link? %>
+    <%= link_to helpers.datasources_shelly_devices_path,
+                data: { turbo_frame: "_top" },
+                class: "border-base-content/10 bg-base-200/40 group/foot relative z-20 flex items-center justify-between gap-3 rounded-b-2xl border-t px-6 py-3 transition-colors hover:bg-base-200/70 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-inset" do %>
+      <span class="flex items-center gap-2 text-sm font-medium <%= status_text_class %>">
+        <span aria-hidden="true" class="size-2.5 rounded-full <%= status_dot_class %>"></span>
+        <%= status_text %>
+      </span>
+
+      <span class="text-base-content/70 group-hover/foot:text-primary flex items-center gap-2 text-sm transition-colors">
+        <span class="tabular-nums">
+          <%= t('datasources.shelly_devices.inline.count', count: shelly_devices_count) %>
+        </span>
+
+        <i
+          aria-hidden="true"
+          class="fa-solid fa-chevron-right text-xs transition-transform duration-200 group-hover/foot:translate-x-0.5"
+        ></i>
+      </span>
+    <% end %>
+  <% else %>
+    <div class="border-base-content/10 bg-base-200/40 flex items-center gap-2 rounded-b-2xl border-t px-6 py-3 text-sm font-medium <%= status_text_class %>">
+      <span aria-hidden="true" class="size-2.5 rounded-full <%= status_dot_class %>"></span>
+      <%= status_text %>
+    </div>
+  <% end %>
 </div>

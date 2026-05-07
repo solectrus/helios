@@ -117,21 +117,21 @@ de:
     settings:
       senec:
         title: 'SENEC-Collector'
-        description: 'Verbindungseinstellungen für deinen SENEC'
+        description: 'Liest Mess- und Statuswerte über direkten Zugriff auf deinen SENEC-Speicher oder über die Cloud. Unterstützt SENEC.Home V2.1, V3 und Home 4.'
       mqtt:
         title: 'MQTT-Collector'
-        description: 'Verbindungseinstellungen für den MQTT-Broker'
+        description: 'Liest Messwerte von Topics eines MQTT-Brokers. Du brauchst dafür einen laufenden MQTT-Broker und Geräte (Wechselrichter, Wallbox, ioBroker o.ä.), die Daten per MQTT veröffentlichen.'
       shelly:
         title: 'Shelly-Collector'
-        description: 'Allgemeine Einstellungen für Shelly-Sensoren'
+        description: 'Liest Leistungsdaten direkt aus Shelly-Geräten (Plug, Pro 3EM o.ä.). Unterstützt die Messung von Verbrauchern, Wallbox und Wärmepumpe.'
       forecast:
         title: 'Forecast-Collector'
-        description: 'Ertragsprognose für deine PV-Anlage'
+        description: 'Holt die voraussichtliche PV-Erzeugung von einem Anbieter für PV-Prognosen (pvnode, Solcast oder Forecast.Solar). Erforderlich für die Ertragsprognose im Dashboard.'
       deployment:
         title: 'Betriebsmodus'
-        description: 'Welche Dienste HELIOS auf diesem Host betreibt'
+        description: 'Welche SOLECTRUS-Dienste auf diesem Host laufen'
         modes:
-          full: 'Vollständig'
+          full: 'Vollständige Installation'
           collectors_only: 'Nur Kollektoren'
           dashboard_only: 'Nur Dashboard'
       system:
@@ -142,7 +142,7 @@ de:
         description: 'Software-Stand, Anzeige- und Sicherheitsoptionen für das SOLECTRUS-Dashboard'
       reverse_proxy:
         title: 'Reverse Proxy'
-        description: 'Domain & HTTPS mit Traefik'
+        description: 'Domain & HTTPS mit Traefik. Nur sinnvoll, wenn dieser Host über das Internet erreichbar ist.'
       backup:
         title: 'Backup'
         description: 'Konfiguration der S3-Datensicherung'
@@ -159,7 +159,7 @@ de:
       discard_cancel: 'Weiter bearbeiten'
       discard_discard: 'Verwerfen'
       configure: 'Konfigurieren'
-      not_configured: 'Noch nicht konfiguriert'
+      not_configured: 'Nicht konfiguriert'
     resets:
       create:
         success: 'Import wurde erfolgreich zurückgesetzt.'
@@ -170,6 +170,7 @@ de:
   external_input_info:
     component:
       title: 'Externe Befüllung'
+      description: 'Ein externes System schreibt Sensordaten direkt in die InfluxDB — z.B. ioBroker oder Home Assistant.'
       sensor_count:
         one: '%{count} Sensor verbunden'
         other: '%{count} Sensoren verbunden'

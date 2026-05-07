@@ -5,8 +5,8 @@
   data-sensors-polling-enabled-value="<%= polling_enabled? %>"
   data-preference-toggle-key-value="hide_unused"
 >
-  <div class="card bg-base-100 shadow-md">
-    <div class="card-body overflow-visible p-0">
+  <div class="bg-base-100 border-base-content/10 rounded-2xl border shadow-xs">
+    <div class="overflow-visible p-0">
       <table class="table-sm table" data-preference-toggle-target="container" data-hide-unused="<%= hide_unused? %>">
         <% all_groups.each do |group, sensor_names| %>
           <tbody data-has-enabled-sensors="<%= group_has_enabled_sensors?(sensor_names) %>">

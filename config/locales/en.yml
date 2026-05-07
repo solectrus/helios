@@ -146,21 +146,21 @@ en:
     settings:
       senec:
         title: 'SENEC-Collector'
-        description: 'Connection settings for your SENEC system'
+        description: 'Reads measurements and status via direct access to your SENEC battery or via the cloud. Supports SENEC.Home V2.1, V3 and Home 4.'
       mqtt:
         title: 'MQTT-Collector'
-        description: 'Connection settings for the MQTT broker'
+        description: 'Reads measurements from topics on an MQTT broker. Requires a running MQTT broker and devices (inverter, wallbox, ioBroker, etc.) that publish data via MQTT.'
       shelly:
         title: 'Shelly-Collector'
-        description: 'General settings for Shelly sensors'
+        description: 'Reads power readings directly from Shelly devices (Plug, Pro 3EM, etc.). Supports measuring loads, a wallbox and a heat pump.'
       forecast:
         title: 'Forecast-Collector'
-        description: 'Solar forecast data collector'
+        description: 'Fetches expected PV yield from a PV forecast provider (pvnode, Solcast or Forecast.Solar). Required for the yield forecast on the dashboard.'
       deployment:
         title: 'Deployment mode'
-        description: 'Which services HELIOS runs on this host'
+        description: 'Which SOLECTRUS services run on this host'
         modes:
-          full: 'Complete'
+          full: 'Complete installation'
           collectors_only: 'Collectors only'
           dashboard_only: 'Dashboard only'
       system:
@@ -171,7 +171,7 @@ en:
         description: 'Release channel, display and security options for the SOLECTRUS dashboard'
       reverse_proxy:
         title: 'Reverse Proxy'
-        description: 'Domain & HTTPS with Traefik'
+        description: 'Domain & HTTPS with Traefik. Only useful if this host is reachable from the internet.'
       backup:
         title: 'Backup'
         description: 'Configuration of S3 data backup'
@@ -188,7 +188,7 @@ en:
       discard_cancel: 'Keep editing'
       discard_discard: 'Discard'
       configure: 'Configure'
-      not_configured: 'Not configured yet'
+      not_configured: 'Not configured'
     resets:
       create:
         success: 'Import was successfully reset.'
@@ -199,6 +199,7 @@ en:
   external_input_info:
     component:
       title: 'External Input'
+      description: 'An external system writes sensor data directly into InfluxDB — e.g. ioBroker or Home Assistant.'
       sensor_count:
         one: '%{count} sensor connected'
         other: '%{count} sensors connected'

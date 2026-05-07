@@ -35,6 +35,18 @@ module SettingSection
       I18n.t("configurations.settings.#{setting}.title")
     end
 
+    def description
+      I18n.t("configurations.settings.#{setting}.description", default: nil)
+    end
+
+    def link_path
+      if singleton_configured?
+        helpers.edit_configuration_setting_path(setting:, name: setting)
+      else
+        helpers.new_configuration_setting_path(setting:)
+      end
+    end
+
     # The deployment card always reflects an effective mode (full is the
     # implicit default), so it is treated as configured even when the section
     # is empty in config.yaml. Other cards remain "not configured" until the
@@ -56,6 +68,27 @@ module SettingSection
       end
 
       I18n.t('configurations.show.configured')
+    end
+
+    def status_text
+      return I18n.t('configurations.show.incomplete') if incomplete?
+      return status_label if singleton_configured?
+
+      I18n.t('configurations.settings.not_configured')
+    end
+
+    def status_dot_class
+      return 'bg-warning' if incomplete?
+      return 'bg-success' if singleton_configured?
+
+      'bg-base-content/30'
+    end
+
+    def status_text_class
+      return 'text-warning' if incomplete?
+      return 'text-base-content/70' if singleton_configured?
+
+      'text-base-content/55'
     end
 
     def forecast_provider_known?
