@@ -198,7 +198,7 @@ services:
   # └──────────────────────────────────────────────────────────┘
   #
   power-splitter:
-    image: ghcr.io/solectrus/power-splitter:latest
+    image: ghcr.io/solectrus/power-splitter:develop
     environment:
     - TZ
     - INSTALLATION_DATE

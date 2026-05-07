@@ -98,6 +98,11 @@ forecasts, and a Tibber price feed. Anonymized but otherwise untouched.
   curl-based ping is replaced by `influx ping`. Deliberate: HELIOS uses
   the native CLI bundled with the image instead of requiring `curl`,
   which is more robust and avoids assumptions about HTTP-API exposure.
+- **Non-default `POWER_SPLITTER_INTERVAL=600` preserved** — donor uses
+  a 10-minute power-splitter cadence instead of HELIOS's 1-hour
+  default. Captured under `power_splitter.interval` and re-emitted
+  verbatim. The setting is not exposed in the HELIOS UI yet — it lives
+  silently in `config.yaml` so the round-trip stays lossless.
 - **Redundant `command:` overrides dropped** — influxdb's
   `influxd run --bolt-path /var/lib/influxdb2/influxd.bolt
   --engine-path /var/lib/influxdb2/engine --store disk` only respells

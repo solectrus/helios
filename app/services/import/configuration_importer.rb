@@ -7,7 +7,7 @@ module Import
     # need custom handling because of mode differences or non-extractor
     # sources, so they're merged in inside `full_result` / `collectors_only_result`.
     UNIFORM_FULL_EXTRACTORS = %i[
-      deployment system dashboard postgresql influxdb redis watchtower ingest
+      deployment system dashboard postgresql influxdb redis watchtower ingest power_splitter
       forecast reverse_proxy backup
     ].freeze
     UNIFORM_COLLECTORS_ONLY_EXTRACTORS = %i[
@@ -110,6 +110,10 @@ module Import
 
     def ingest_extractor
       @ingest_extractor ||= IngestExtractor.new(@reader, volume_resolver, balcony_detector)
+    end
+
+    def power_splitter_extractor
+      @power_splitter_extractor ||= PowerSplitterExtractor.new(@reader)
     end
 
     def sensors_extractor
@@ -242,8 +246,8 @@ module Import
     # --- Persistence ---
 
     def persist_singletons!(config)
-      %i[deployment system dashboard postgresql influxdb redis watchtower ingest sensors forecast senec mqtt
-         shelly reverse_proxy backup service_overrides].each do |key|
+      %i[deployment system dashboard postgresql influxdb redis watchtower ingest power_splitter sensors
+         forecast senec mqtt shelly reverse_proxy backup service_overrides].each do |key|
         config.update(key.to_s, result[key]) if result[key]
       end
     end

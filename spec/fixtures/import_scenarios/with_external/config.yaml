@@ -153,3 +153,6 @@ sensors:
     field: power
     measurement: wallbox
     source: external
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:develop
+  interval: '300'

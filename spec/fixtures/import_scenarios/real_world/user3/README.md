@@ -57,9 +57,11 @@ otherwise untouched.
 - **`PVNODE_PAID=TRUE` uppercase** — preserved verbatim under
   `forecast.forecast_pvnode_paid: 'TRUE'` instead of being normalized to
   lowercase. The forecast-collector accepts either form.
-- **`POWER_SPLITTER_INTERVAL=300`** — re-emitted in `.env` as a HELIOS
-  default with name-only passthrough in the power-splitter service.
-  Donor value matches HELIOS's hardcoded default.
+- **`POWER_SPLITTER_INTERVAL=300`** — donor's non-default 5-minute
+  cadence (HELIOS default is `3600`) is captured under
+  `power_splitter.interval` and re-emitted verbatim. Not exposed in
+  the HELIOS UI yet — it lives silently in `config.yaml` so the
+  round-trip stays lossless.
 - **Mid-block German comments and blank lines in the dashboard
   `environment:` array** — `# Benutzer definierte Verbraucher`,
   `# Extra Sensoren PV Node` separate logical groups inside the YAML

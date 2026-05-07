@@ -254,6 +254,9 @@ sensors:
     field: wallbox_charge_power
     measurement: SENEC
     source: external
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:latest
+  interval: '300'
 service_overrides:
   dashboard:
     labels:

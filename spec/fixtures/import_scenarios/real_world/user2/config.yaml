@@ -283,6 +283,9 @@ ingest:
   image: ghcr.io/solectrus/ingest:develop
   retention_hours: '24'
   volume_path: "/home/user2/docker/solectrus/ingest"
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:0.7.1
+  interval: '600'
 service_overrides:
   dashboard:
     labels:

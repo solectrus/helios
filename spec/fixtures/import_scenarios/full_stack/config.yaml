@@ -231,3 +231,5 @@ sensors:
     source: senec
   wallbox_power:
     source: senec
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:latest

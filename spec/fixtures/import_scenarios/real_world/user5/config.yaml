@@ -181,6 +181,9 @@ ingest:
   image: ghcr.io/solectrus/ingest:develop
   retention_hours: '36'
   volume_path: "/my-volumes/solectrus/ingest"
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:develop
+  interval: '300'
 _unmanaged:
   env_vars:
     ASSET_HOST: https://d12345.cloudfront.net

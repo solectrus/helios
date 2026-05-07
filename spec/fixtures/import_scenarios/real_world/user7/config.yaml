@@ -296,3 +296,6 @@ sensors:
     mqtt_payload_type: integer
     mqtt_topic: evcc/loadpoints/1/chargePower
     source: mqtt
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:develop
+  interval: '300'

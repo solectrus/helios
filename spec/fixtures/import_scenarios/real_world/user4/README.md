@@ -60,9 +60,9 @@ DB service it depends on. Anonymized but otherwise untouched.
   `INFLUX_TOKEN_READ` and the collectors' `INFLUX_TOKEN_WRITE`. All three
   values happen to be identical, so consolidation to a single
   `INFLUX_TOKEN` on re-export is lossless.
-- **`POWER_SPLITTER_INTERVAL=300`** — re-emitted in `.env` as a HELIOS
-  default with name-only passthrough in the power-splitter service
-  (same shape as user3).
+- **`POWER_SPLITTER_INTERVAL=300`** — donor's non-default 5-minute
+  cadence preserved under `power_splitter.interval` (same shape as
+  user3).
 - **Watchtower with `command: --scope solectrus --cleanup`** — no
   `WATCHTOWER_*` env vars; HELIOS rewrites the service to use
   `WATCHTOWER_POLL_INTERVAL=86400` (default) and drops the command.

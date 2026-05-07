@@ -261,6 +261,9 @@ sensors:
 ingest:
   image: ghcr.io/solectrus/ingest:latest
   volume_path: "/home/pi/solectrus/ingest"
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:latest
+  interval: '300'
 _unmanaged:
   services:
     dozzle:

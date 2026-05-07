@@ -108,3 +108,5 @@ sensors:
     source: mqtt
 ingest:
   image: ghcr.io/solectrus/ingest:latest
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:develop
