@@ -45,7 +45,7 @@ module Export
       def passthrough_vars
         %w[
           TZ INSTALLATION_DATE INFLUX_TOKEN INFLUX_ORG INFLUX_BUCKET SECRET_KEY_BASE ADMIN_PASSWORD
-          APP_HOST FORCE_SSL
+          APP_HOST FORCE_SSL WEB_CONCURRENCY
         ]
       end
 
@@ -58,7 +58,6 @@ module Export
           DB_USER=postgres
           DB_PASSWORD=${POSTGRES_PASSWORD}
           DB_DATABASE=solectrus
-          WEB_CONCURRENCY=0
         ]
       end
 

@@ -129,10 +129,10 @@ or the value is simply re-spelled.
   `timeout: 10s` / `start_period: 30s|60s` replaced with HELIOS's
   shorter standard intervals (`interval: 10s` / `timeout: 5s` plus a
   `start_interval: 2s`). Same probes, faster startup.
-- **Dashboard `WEB_CONCURRENCY=0`** moved from a literal `.env` value
-  into a baked-in compose default (HELIOS treats `0` as the default,
-  so the env var disappears from `.env` while the runtime value stays
-  the same).
+- **Dashboard `WEB_CONCURRENCY=0`** kept in `.env` and referenced
+  name-only by the dashboard service. HELIOS rewrites the value as a
+  hardcoded `0` (single-process Puma), so a non-default donor value
+  would be replaced — but `0` is what user7 already had.
 - **Commented-out optional vars discarded.** `# RAILS_MAX_THREADS=3`,
   `# RAILS_LOG_LEVEL=info`, `# ASSET_HOST=`, `# CO2_EMISSION_FACTOR=401`,
   `# UI_THEME=`, `#LOCKUP_CODEWORD=S0170d7s!` (no space after `#`),

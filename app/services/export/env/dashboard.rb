@@ -7,6 +7,8 @@ module Export
               'Hostname for the SOLECTRUS web interface')
         entry('FORCE_SSL', Services::Traefik.enabled?(configuration),
               'Must be FALSE, unless Traefik terminates TLS in front of the dashboard')
+        entry('WEB_CONCURRENCY', 0,
+              'Number of Puma worker processes (0 = single-process mode, sufficient for most setups)')
         optional_entries(configuration.dashboard)
       end
 

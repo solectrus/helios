@@ -33,13 +33,13 @@ services:
     - ADMIN_PASSWORD
     - APP_HOST
     - FORCE_SSL
+    - WEB_CONCURRENCY
     - REDIS_URL=redis://redis:6379/1
     - INFLUX_HOST=influxdb
     - DB_HOST=postgresql
     - DB_USER=postgres
     - DB_PASSWORD=${POSTGRES_PASSWORD}
     - DB_DATABASE=solectrus
-    - WEB_CONCURRENCY=0
     - FRAME_ANCESTORS
     - TRUSTED_PROXY_RANGES
     - INFLUX_EXCLUDE_FROM_HOUSE_POWER
