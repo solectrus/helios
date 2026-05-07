@@ -141,6 +141,7 @@ en:
   configurations:
     show:
       configured: 'Configured'
+      configured_for: 'Configured for %{provider}'
       incomplete: 'Configuration incomplete'
     settings:
       senec:

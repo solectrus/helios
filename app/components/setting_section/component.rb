@@ -13,6 +13,12 @@ module SettingSection
       'influxdb' => 'fa-database',
     }.freeze
 
+    FORECAST_PROVIDERS = {
+      'pvnode' => 'pvnode',
+      'solcast' => 'Solcast',
+      'forecast.solar' => 'Forecast.Solar',
+    }.freeze
+
     attr_reader :setting, :configuration
 
     def initialize(setting:, configuration:)
@@ -45,8 +51,15 @@ module SettingSection
 
     def status_label
       return I18n.t("configurations.settings.deployment.modes.#{configuration.mode}") if setting == 'deployment'
+      if forecast_provider_known?
+        return I18n.t('configurations.show.configured_for', provider: FORECAST_PROVIDERS.fetch(singleton_data.forecast))
+      end
 
       I18n.t('configurations.show.configured')
+    end
+
+    def forecast_provider_known?
+      setting == 'forecast' && FORECAST_PROVIDERS.key?(singleton_data.forecast)
     end
 
     def incomplete?

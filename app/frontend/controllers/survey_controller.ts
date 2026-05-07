@@ -3,15 +3,6 @@ import { Model } from 'survey-core';
 import { BorderlessDark } from 'survey-core/themes';
 import { readLocale } from '../utils/preferences_cookie';
 
-function escapeHtml(value: string): string {
-  return value
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 // Import Survey.JS UI (side-effect: registers UI components)
 import 'survey-js-ui';
 
@@ -64,12 +55,13 @@ export default class extends Controller {
 
     // Render text with a trailing hint: "Main text\n\nHint text" becomes
     // a headline followed by a smaller muted subtitle. Used for radio choices.
+    // HTML is allowed in both parts because survey JSON is fully under our control.
     this.survey.onTextMarkdown.add((_sender, options) => {
       const separator = options.text.indexOf('\n\n');
       if (separator === -1) return;
 
-      const main = escapeHtml(options.text.slice(0, separator));
-      const hint = escapeHtml(options.text.slice(separator + 2));
+      const main = options.text.slice(0, separator);
+      const hint = options.text.slice(separator + 2);
       options.html = `${main}<span class="mt-1 block text-sm opacity-60">${hint}</span>`;
     });
 

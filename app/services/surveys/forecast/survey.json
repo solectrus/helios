@@ -28,18 +28,28 @@
             "default": "All providers offer both free and paid tiers."
           },
           "isRequired": true,
+          "defaultValue": "pvnode",
           "choices": [
             {
-              "value": "forecast.solar",
-              "text": "forecast.solar"
+              "value": "pvnode",
+              "text": {
+                "de": "pvnode\n\n<a href=\"https://pvnode.com\" target=\"_blank\" rel=\"noopener\" onclick=\"event.stopPropagation()\">https://pvnode.com</a>",
+                "default": "pvnode\n\n<a href=\"https://pvnode.com\" target=\"_blank\" rel=\"noopener\" onclick=\"event.stopPropagation()\">https://pvnode.com</a>"
+              }
             },
             {
               "value": "solcast",
-              "text": "solcast.com"
+              "text": {
+                "de": "Solcast\n\n<a href=\"https://solcast.com\" target=\"_blank\" rel=\"noopener\" onclick=\"event.stopPropagation()\">https://solcast.com</a>",
+                "default": "Solcast\n\n<a href=\"https://solcast.com\" target=\"_blank\" rel=\"noopener\" onclick=\"event.stopPropagation()\">https://solcast.com</a>"
+              }
             },
             {
-              "value": "pvnode",
-              "text": "pvnode.com"
+              "value": "forecast.solar",
+              "text": {
+                "de": "Forecast.Solar\n\n<a href=\"https://forecast.solar\" target=\"_blank\" rel=\"noopener\" onclick=\"event.stopPropagation()\">https://forecast.solar</a>",
+                "default": "Forecast.Solar\n\n<a href=\"https://forecast.solar\" target=\"_blank\" rel=\"noopener\" onclick=\"event.stopPropagation()\">https://forecast.solar</a>"
+              }
             }
           ]
         }

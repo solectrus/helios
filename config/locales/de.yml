@@ -112,6 +112,7 @@ de:
   configurations:
     show:
       configured: 'Konfiguriert'
+      configured_for: 'Konfiguriert für %{provider}'
       incomplete: 'Konfiguration unvollständig'
     settings:
       senec:
