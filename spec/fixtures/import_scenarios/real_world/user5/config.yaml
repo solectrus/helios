@@ -236,6 +236,9 @@ _unmanaged:
           - node.labels.type==stateless
         update_config:
           order: stop-first
+      env_values:
+        SOLCAST_APIKEY: my-solcast-api-key
+        SOLCAST_SITE: 1234-5678-abcd-efga
       environment:
       - TZ
       - INFLUX_BUCKET

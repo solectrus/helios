@@ -70,10 +70,11 @@ module Import
       # never attach them to an unmanaged service even if it uses env_file.
       HELIOS_CORE_ENV_KEYS = %w[ADMIN_PASSWORD SECRET_KEY_BASE].freeze
 
-      def initialize(reader, known_measurements: [], traefik_adopted: true)
+      def initialize(reader, known_measurements: [], traefik_adopted: true, emitted_canonical_keys: Set.new)
         @reader = reader
         @known_measurements = known_measurements.to_set
         @traefik_adopted = traefik_adopted
+        @emitted_canonical_keys = emitted_canonical_keys.to_set
       end
 
       def detect
@@ -156,14 +157,18 @@ module Import
       end
 
       # Second pass: keep the service's declared environment list intact, only
-      # sorting its entries. Collect values for every referenced var (declared
-      # or interpolated) so they survive the round-trip via service env_values.
+      # sorting its entries. Collect values for every referenced var that the
+      # container will read from .env at runtime — bare names and the targets
+      # of `${VAR}` interpolations. LHS names of value-carrying entries
+      # (`FOO=${BAR}`) are excluded: docker compose resolves them inline, so
+      # FOO never needs to live in .env.
       def finalize_service(service)
         result = service[:raw]
         name_only = (service[:declared] - service[:value_names]).to_a
+        env_value_names = service[:referenced] - service[:value_names]
 
         result['environment'] = sort_env_entries(service[:inline] + name_only)
-        result['env_values'] = collect_env_values(service[:referenced]).presence
+        result['env_values'] = collect_env_values(env_value_names).presence
         result.compact
       end
 
@@ -252,18 +257,26 @@ module Import
         explicit_value_entries(environment).filter_map { |e| e.split('=', 2).first }.to_set
       end
 
-      # Values for name-only environment entries. Keys that HELIOS renders
-      # in a managed .env section are skipped — the compose `- NAME` reference
-      # picks them up at docker runtime.
+      # Values for name-only environment entries. Skip keys HELIOS will
+      # canonically emit (computed by a dry-run Export::Env on the
+      # intermediate import data) plus keys HELIOS unconditionally rewrites
+      # or replaces (infrastructure hostnames baked into compose, deprecated
+      # MQTT topic vars translated to MAPPING_*, legacy sensor aliases). Any
+      # remaining referenced var that the donor's .env supplied a value for
+      # survives in env_values so the unmanaged service still finds it.
       def collect_env_values(names)
         raw = @reader.raw_env.to_h
-        managed = managed_env_keys_set
+        skip = canonical_skip_set
         names.each_with_object({}) do |name, values|
-          next if managed.include?(name)
+          next if skip.include?(name)
 
           value = raw[name]
           values[name] = value if value.present?
         end
+      end
+
+      def canonical_skip_set
+        @canonical_skip_set ||= @emitted_canonical_keys + regenerated_env_keys_set
       end
 
       # Env-var sort order:
@@ -437,9 +450,18 @@ module Import
       end
 
       def managed_env_keys_set
-        @managed_env_keys_set ||= (
-          MANAGED_ENV_KEYS +
-            INFRASTRUCTURE_ENV_KEYS +
+        @managed_env_keys_set ||= MANAGED_ENV_KEYS.to_set + regenerated_env_keys_set
+      end
+
+      # Keys HELIOS unconditionally regenerates or replaces on export. Unlike
+      # plain MANAGED_ENV_KEYS, these never need to survive in env_values:
+      # infrastructure hostnames are baked into compose, sensor mappings are
+      # rebuilt from sensors.*, and deprecated MQTT vars are rewritten as
+      # MAPPING_* form. Forecast/pvnode/mqtt indexed slots are likewise
+      # regenerated from the canonical config.
+      def regenerated_env_keys_set
+        @regenerated_env_keys_set ||= (
+          INFRASTRUCTURE_ENV_KEYS +
             LEGACY_CONSUMED_ENV_KEYS +
             MqttExtractor::DEPRECATED_TOPIC_VARS.keys +
             MqttExtractor::DEPRECATED_SPLIT_VARS.keys +

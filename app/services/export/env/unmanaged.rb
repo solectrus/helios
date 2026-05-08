@@ -16,8 +16,11 @@ module Export
           values = config&.env_values
           next if values.blank?
 
+          fresh_groups = fresh_groups(values)
+          next if fresh_groups.empty?
+
           env.add_section("#{name} — service environment")
-          render_grouped_env_values(values)
+          render_grouped_env_values(fresh_groups)
         end
       end
 
@@ -25,8 +28,7 @@ module Export
       # each group led by a `--- Group` separator. Keys within a group stay
       # tight; a blank line separates groups. Single-group lists skip the
       # separator since the enclosing section header is already descriptive.
-      def render_grouped_env_values(values)
-        groups = group_env_values(values)
+      def render_grouped_env_values(groups)
         groups.each do |title, entries|
           env.add_comment("--- #{title}") if groups.size > 1
           entries.each { |key, value| env[key] = value }
@@ -34,8 +36,15 @@ module Export
         end
       end
 
-      def group_env_values(values)
+      # Group env_values by logical prefix, then drop entries already written
+      # by an earlier service section (env[]= updates the existing line in
+      # place, so re-rendering them only leaves an empty group header behind).
+      def fresh_groups(values)
         values.group_by { |key, _| env_key_group_title(key) }
+              .filter_map do |title, entries|
+                fresh = entries.reject { |key, _| env.key?(key) }
+                [title, fresh] unless fresh.empty?
+              end
       end
 
       def env_key_group_title(key)

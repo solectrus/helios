@@ -91,6 +91,15 @@ class Configuration # rubocop:disable Metrics/ClassLength
     Current.configuration ||= new(path)
   end
 
+  # In-memory Configuration from a raw data hash. Used by the import pipeline
+  # to dry-run Export::Env against intermediate extractor data without
+  # touching disk.
+  def self.from_data(data)
+    config = allocate
+    config.send(:initialize_from_data, data)
+    config
+  end
+
   # Load and parse a config.yaml file from disk, returning the raw hash. Returns
   # an empty hash when the file is missing or empty. Centralizes the YAML
   # loader options (permitted classes) shared with ConfigurationMigrator.
@@ -116,6 +125,15 @@ class Configuration # rubocop:disable Metrics/ClassLength
     @path = path
     @data = self.class.load_file(path)
   end
+
+  # Used by Configuration.from_data to skip disk I/O. Reuses Configuration's
+  # full surface area (singleton accessors, helper predicates) without going
+  # through the file-backed initializer.
+  def initialize_from_data(data)
+    @path = nil
+    @data = (data || {}).deep_stringify_keys
+  end
+  private :initialize_from_data
 
   # Dynamic singleton accessors: config.system, config.forecast, config.senec, etc.
   # Excluded singletons have hash-of-hashes shape and need their own sanitation
@@ -411,12 +429,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   end
 
   def save!
-    dir = File.dirname(@path)
-    FileUtils.mkdir_p(dir) unless File.directory?(dir)
-
-    tmp_path = "#{@path}.tmp"
-    File.write(tmp_path, self.class.dump(ordered_data))
-    File.rename(tmp_path, @path)
+    write_yaml_file! if @path
 
     @enabled_sensors = nil
     @balcony_sensors = nil
@@ -465,6 +478,15 @@ class Configuration # rubocop:disable Metrics/ClassLength
   }.freeze
 
   private
+
+  def write_yaml_file!
+    dir = File.dirname(@path)
+    FileUtils.mkdir_p(dir) unless File.directory?(dir)
+
+    tmp_path = "#{@path}.tmp"
+    File.write(tmp_path, self.class.dump(ordered_data))
+    File.rename(tmp_path, @path)
+  end
 
   def sanitize_fields(data, fields)
     deep_unwrap(data).slice(*fields).compact_blank

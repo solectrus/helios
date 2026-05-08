@@ -1,0 +1,372 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: dummy_admin_password
+  installation_date: '2020-11-27'
+  secret_key_base: dummy_secret_key_base
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+  influx_poll_interval: '300'
+postgresql:
+  image: postgres:18-alpine
+  password: dummy_postgres_password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: dummy_influx_password
+  token_admin: dummy_influx_admin_token
+  token_read: dummy_influx_token_read
+  token_readwrite: dummy_influx_admin_token
+  token_write: dummy_influx_token_write
+redis:
+  image: redis:7-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: pvnode
+  forecast_declination1: '28'
+  forecast_interval: '3000'
+  forecast_kwp1: '9.24'
+  forecast_latitude: '0.00000'
+  forecast_longitude: '0.00000'
+  forecast_pvnode_apikey: dummy_pvnode_apikey
+  forecast_pvnode_azimuth1: '209'
+  forecast_pvnode_extra_params: panel_age_years=4
+  forecast_pvnode_paid: 'false'
+  forecast_roofs: '1'
+  measurement: forecast
+senec:
+  adapter: cloud
+  interval: '600'
+  password: dummy_senec_password
+  system_id: '0'
+  totp_uri: dummy_senec_totp_uri
+  username: dummy_senec_username
+  version: v4
+shelly:
+  connection: local
+  interval: '30'
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  custom_power_01:
+    field: power
+    measurement: Washer
+    name: Washer
+    source: external
+  custom_power_02:
+    field: power
+    measurement: Fridge
+    name: Fridge
+    source: external
+  custom_power_03:
+    field: power
+    measurement: KabelFritz
+    name: KabelFritz
+    source: external
+  custom_power_04:
+    field: power
+    measurement: Synology
+    name: Synology
+    source: external
+  custom_power_05:
+    field: power
+    measurement: iMac
+    name: iMac
+    source: external
+  custom_power_06:
+    field: power
+    measurement: Dishwasher
+    name: Dishwasher
+    source: external
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  heatpump_heating_power:
+    field: heating_power
+    measurement: heatpump
+    source: external
+  heatpump_power:
+    exclude_from_house_power: true
+    field: power
+    measurement: Consumer
+    shelly_connection: local
+    shelly_host: shelly-heatpump.fritz.box
+    shelly_interval: '30'
+    source: shelly
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_1:
+    source: senec
+  inverter_power_2:
+    source: senec
+  inverter_power_3:
+    source: senec
+  inverter_power_forecast:
+    source: forecast
+  inverter_power_forecast_clearsky:
+    source: forecast
+  outdoor_temp:
+    field: temperature
+    measurement: outdoor
+    source: external
+  outdoor_temp_forecast:
+    field: temp
+    measurement: forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_power:
+    source: senec
+ingest:
+  image: ghcr.io/solectrus/ingest:develop
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:develop
+  interval: '300'
+_unmanaged:
+  services:
+    dozzle:
+      environment:
+      - DOZZLE_ENABLE_ACTIONS=true
+      - DOZZLE_ENABLE_SHELL=true
+      - DOZZLE_NO_ANALYTICS=true
+      image: amir20/dozzle:latest
+      labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+      ports:
+      - 8080:8080
+      restart: unless-stopped
+      volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    senec-charger:
+      depends_on:
+        influxdb:
+          condition: service_healthy
+      env_values:
+        CHARGER_DRY_RUN: 'true'
+        CHARGER_INTERVAL: '18000'
+        FORECAST_CONFIGURATIONS: '1'
+        INFLUX_MEASUREMENT_SHELLY_HEATPUMP: Consumer
+        PVNODE_PAID: 'false'
+        SENEC_HOST: senec.fritz.box
+        SENEC_INFLUX_MEASUREMENT: SENEC
+        SENEC_LANGUAGE: de
+        SENEC_SCHEMA: https
+        TIBBER_TOKEN: dummy_tibber_token
+      environment:
+      - TZ
+      - INFLUX_ADMIN_TOKEN
+      - INFLUX_BUCKET
+      - INFLUX_EXCLUDE_FROM_HOUSE_POWER
+      - INFLUX_HOST
+      - INFLUX_MEASUREMENT_FORECAST
+      - INFLUX_MEASUREMENT_SHELLY_HEATPUMP
+      - INFLUX_ORG
+      - INFLUX_PASSWORD
+      - INFLUX_POLL_INTERVAL
+      - INFLUX_PORT
+      - INFLUX_SCHEMA
+      - INFLUX_SENSOR_BATTERY_CHARGING_POWER
+      - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
+      - INFLUX_SENSOR_BATTERY_SOC
+      - INFLUX_SENSOR_CASE_TEMP
+      - INFLUX_SENSOR_CUSTOM_POWER_01
+      - INFLUX_SENSOR_CUSTOM_POWER_02
+      - INFLUX_SENSOR_CUSTOM_POWER_03
+      - INFLUX_SENSOR_CUSTOM_POWER_04
+      - INFLUX_SENSOR_CUSTOM_POWER_05
+      - INFLUX_SENSOR_CUSTOM_POWER_06
+      - INFLUX_SENSOR_GRID_EXPORT_LIMIT
+      - INFLUX_SENSOR_GRID_EXPORT_POWER
+      - INFLUX_SENSOR_GRID_IMPORT_POWER
+      - INFLUX_SENSOR_HEATPUMP_HEATING_POWER
+      - INFLUX_SENSOR_HEATPUMP_POWER
+      - INFLUX_SENSOR_HOUSE_POWER
+      - INFLUX_SENSOR_INVERTER_POWER
+      - INFLUX_SENSOR_INVERTER_POWER_1
+      - INFLUX_SENSOR_INVERTER_POWER_2
+      - INFLUX_SENSOR_INVERTER_POWER_3
+      - INFLUX_SENSOR_INVERTER_POWER_FORECAST
+      - INFLUX_SENSOR_INVERTER_POWER_FORECAST_CLEARSKY
+      - INFLUX_SENSOR_OUTDOOR_TEMP
+      - INFLUX_SENSOR_OUTDOOR_TEMP_FORECAST
+      - INFLUX_SENSOR_SYSTEM_STATUS
+      - INFLUX_SENSOR_SYSTEM_STATUS_OK
+      - INFLUX_SENSOR_WALLBOX_POWER
+      - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
+      - INFLUX_USERNAME
+      - INFLUX_VOLUME_PATH
+      - CHARGER_DRY_RUN
+      - CHARGER_INTERVAL
+      - DB_VOLUME_PATH
+      - FORCE_SSL
+      - FORECAST_0_AZIMUTH
+      - FORECAST_0_DECLINATION
+      - FORECAST_0_KWP
+      - FORECAST_CONFIGURATIONS
+      - FORECAST_INTERVAL
+      - FORECAST_LATITUDE
+      - FORECAST_LONGITUDE
+      - FORECAST_PROVIDER
+      - INGEST_HOST
+      - INGEST_PORT
+      - INGEST_VOLUME_PATH
+      - INSTALLATION_DATE
+      - POSTGRES_PASSWORD
+      - POWER_SPLITTER_INTERVAL
+      - PVNODE_APIKEY
+      - PVNODE_EXTRA_PARAMS
+      - PVNODE_PAID
+      - REDIS_VOLUME_PATH
+      - SENEC_ADAPTER
+      - SENEC_HOST
+      - SENEC_INFLUX_MEASUREMENT
+      - SENEC_INTERVAL
+      - SENEC_LANGUAGE
+      - SENEC_PASSWORD
+      - SENEC_SCHEMA
+      - SENEC_SYSTEM_ID
+      - SENEC_TOTP_URI
+      - SENEC_USERNAME
+      - SHELLY_HOST
+      - SHELLY_INTERVAL
+      - TIBBER_TOKEN
+      image: ghcr.io/solectrus/senec-charger:develop
+      labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+      links:
+      - influxdb
+      logging:
+        driver: json-file
+        options:
+          max-file: '3'
+          max-size: 10m
+      restart: unless-stopped
+    tibber-collector:
+      depends_on:
+        influxdb:
+          condition: service_healthy
+      env_values:
+        CHARGER_DRY_RUN: 'true'
+        CHARGER_INTERVAL: '18000'
+        FORECAST_CONFIGURATIONS: '1'
+        INFLUX_MEASUREMENT_PRICES: prices
+        INFLUX_MEASUREMENT_SHELLY_HEATPUMP: Consumer
+        PVNODE_PAID: 'false'
+        SENEC_HOST: senec.fritz.box
+        SENEC_INFLUX_MEASUREMENT: SENEC
+        SENEC_LANGUAGE: de
+        SENEC_SCHEMA: https
+        TIBBER_TOKEN: dummy_tibber_token
+      environment:
+      - TZ
+      - INFLUX_ADMIN_TOKEN
+      - INFLUX_BUCKET
+      - INFLUX_EXCLUDE_FROM_HOUSE_POWER
+      - INFLUX_HOST
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_PRICES}
+      - INFLUX_MEASUREMENT_FORECAST
+      - INFLUX_MEASUREMENT_SHELLY_HEATPUMP
+      - INFLUX_ORG
+      - INFLUX_PASSWORD
+      - INFLUX_POLL_INTERVAL
+      - INFLUX_PORT
+      - INFLUX_SCHEMA
+      - INFLUX_SENSOR_BATTERY_CHARGING_POWER
+      - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
+      - INFLUX_SENSOR_BATTERY_SOC
+      - INFLUX_SENSOR_CASE_TEMP
+      - INFLUX_SENSOR_CUSTOM_POWER_01
+      - INFLUX_SENSOR_CUSTOM_POWER_02
+      - INFLUX_SENSOR_CUSTOM_POWER_03
+      - INFLUX_SENSOR_CUSTOM_POWER_04
+      - INFLUX_SENSOR_CUSTOM_POWER_05
+      - INFLUX_SENSOR_CUSTOM_POWER_06
+      - INFLUX_SENSOR_GRID_EXPORT_LIMIT
+      - INFLUX_SENSOR_GRID_EXPORT_POWER
+      - INFLUX_SENSOR_GRID_IMPORT_POWER
+      - INFLUX_SENSOR_HEATPUMP_HEATING_POWER
+      - INFLUX_SENSOR_HEATPUMP_POWER
+      - INFLUX_SENSOR_HOUSE_POWER
+      - INFLUX_SENSOR_INVERTER_POWER
+      - INFLUX_SENSOR_INVERTER_POWER_1
+      - INFLUX_SENSOR_INVERTER_POWER_2
+      - INFLUX_SENSOR_INVERTER_POWER_3
+      - INFLUX_SENSOR_INVERTER_POWER_FORECAST
+      - INFLUX_SENSOR_INVERTER_POWER_FORECAST_CLEARSKY
+      - INFLUX_SENSOR_OUTDOOR_TEMP
+      - INFLUX_SENSOR_OUTDOOR_TEMP_FORECAST
+      - INFLUX_SENSOR_SYSTEM_STATUS
+      - INFLUX_SENSOR_SYSTEM_STATUS_OK
+      - INFLUX_SENSOR_WALLBOX_POWER
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_USERNAME
+      - INFLUX_VOLUME_PATH
+      - CHARGER_DRY_RUN
+      - CHARGER_INTERVAL
+      - DB_VOLUME_PATH
+      - FORCE_SSL
+      - FORECAST_0_AZIMUTH
+      - FORECAST_0_DECLINATION
+      - FORECAST_0_KWP
+      - FORECAST_CONFIGURATIONS
+      - FORECAST_INTERVAL
+      - FORECAST_LATITUDE
+      - FORECAST_LONGITUDE
+      - FORECAST_PROVIDER
+      - INGEST_HOST
+      - INGEST_PORT
+      - INGEST_VOLUME_PATH
+      - INSTALLATION_DATE
+      - POSTGRES_PASSWORD
+      - POWER_SPLITTER_INTERVAL
+      - PVNODE_APIKEY
+      - PVNODE_EXTRA_PARAMS
+      - PVNODE_PAID
+      - REDIS_VOLUME_PATH
+      - SENEC_ADAPTER
+      - SENEC_HOST
+      - SENEC_INFLUX_MEASUREMENT
+      - SENEC_INTERVAL
+      - SENEC_LANGUAGE
+      - SENEC_PASSWORD
+      - SENEC_SCHEMA
+      - SENEC_SYSTEM_ID
+      - SENEC_TOTP_URI
+      - SENEC_USERNAME
+      - SHELLY_HOST
+      - SHELLY_INTERVAL
+      - TIBBER_TOKEN
+      image: ghcr.io/solectrus/tibber-collector:develop
+      labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+      links:
+      - influxdb
+      logging:
+        driver: json-file
+        options:
+          max-file: '3'
+          max-size: 10m
+      restart: unless-stopped

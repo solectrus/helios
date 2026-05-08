@@ -1,0 +1,306 @@
+name: solectrus
+
+services:
+  helios:
+    image: ghcr.io/solectrus/helios:develop
+    environment:
+      - ADMIN_PASSWORD
+      - SECRET_KEY_BASE
+    volumes:
+      - .:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 3999:3000
+    restart: unless-stopped
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  shelly-collector:
+    image: ghcr.io/solectrus/shelly-collector:develop
+    env_file: .env
+    environment:
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_SHELLY_HEATPUMP}
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: 10m
+        max-file: '3'
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  senec-charger:
+    image: ghcr.io/solectrus/senec-charger:develop
+    env_file: .env
+    environment:
+      - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: 10m
+        max-file: '3'
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  tibber-collector:
+    image: ghcr.io/solectrus/tibber-collector:develop
+    env_file: .env
+    environment:
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_PRICES}
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: 10m
+        max-file: '3'
+    restart: unless-stopped
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  power-splitter:
+    image: ghcr.io/solectrus/power-splitter:develop
+    env_file: .env
+    environment:
+      - INFLUX_TOKEN=${INFLUX_ADMIN_TOKEN}
+      - REDIS_URL=redis://redis:6379/1
+      - DB_HOST=postgresql
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_USER=postgres
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  dashboard:
+    image: ghcr.io/solectrus/solectrus:latest
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    links:
+      - postgresql
+      - influxdb
+      - redis
+    ports:
+      - 3000:3000
+    env_file: .env
+    environment:
+      - DB_HOST=postgresql
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_USER=postgres
+      - REDIS_URL=redis://redis:6379/1
+      - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 3000 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  influxdb:
+    image: influxdb:2-alpine
+    volumes:
+      - ${INFLUX_VOLUME_PATH}:/var/lib/influxdb2
+    environment:
+      - TZ
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUX_USERNAME}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_ADMIN_TOKEN}
+      - INFLUXD_REPORTING_DISABLED=true
+    command: influxd run --bolt-path /var/lib/influxdb2/influxd.bolt --engine-path /var/lib/influxdb2/engine --store disk
+    restart: unless-stopped
+    ports:
+      - 8086:8086
+    healthcheck:
+      test: influx ping || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  ingest:
+    image: ghcr.io/solectrus/ingest:develop
+    env_file: .env
+    environment:
+      - INFLUX_HOST=influxdb
+      - STATS_USERNAME=admin
+      - STATS_PASSWORD=${ADMIN_PASSWORD}
+    volumes:
+      - ${INGEST_VOLUME_PATH}:/app/data
+    ports:
+      - 4567:4567
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  postgresql:
+    image: postgres:18-alpine
+    environment:
+      - TZ
+      - POSTGRES_PASSWORD
+    volumes:
+      - ${DB_VOLUME_PATH}:/var/lib/postgresql
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres
+      interval: 10s
+      timeout: 20s
+      retries: 5
+      start_period: 60s
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  redis:
+    image: redis:7-alpine
+    environment:
+      - TZ
+    volumes:
+      - ${REDIS_VOLUME_PATH}:/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 10s
+      timeout: 20s
+      retries: 5
+      start_period: 60s
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  senec-collector:
+    image: ghcr.io/solectrus/senec-collector:develop
+    env_file: .env
+    environment:
+      - INFLUX_HOST=${INGEST_HOST}
+      - INFLUX_PORT=${INGEST_PORT}
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_MEASUREMENT=${SENEC_INFLUX_MEASUREMENT}
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    depends_on:
+      ingest:
+        condition: service_healthy
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  forecast-collector:
+    image: ghcr.io/solectrus/forecast-collector:develop
+    env_file: .env
+    environment:
+      - INFLUX_HOST=${INGEST_HOST}
+      - INFLUX_PORT=${INGEST_PORT}
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    depends_on:
+      ingest:
+        condition: service_healthy
+    links:
+      - ingest
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  watchtower:
+    image: nickfedor/watchtower
+    environment:
+      - TZ
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --scope solectrus --cleanup
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  dozzle:
+    image: amir20/dozzle:latest
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    ports:
+      - 8080:8080
+    restart: unless-stopped
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+    environment:
+      DOZZLE_NO_ANALYTICS: true
+      DOZZLE_ENABLE_SHELL: true
+      DOZZLE_ENABLE_ACTIONS: true

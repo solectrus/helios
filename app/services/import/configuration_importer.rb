@@ -1,5 +1,5 @@
 module Import
-  class ConfigurationImporter
+  class ConfigurationImporter # rubocop:disable Metrics/ClassLength
     include Helpers
 
     # Sections whose data comes from a uniform `section_data` extractor call.
@@ -18,9 +18,17 @@ module Import
       @reader = stack_reader
     end
 
-    # Extracted data as plain hashes (no DB access)
+    # Extracted data as plain hashes (no DB access). `partial_result` is the
+    # full payload minus the unmanaged section; the unmanaged detector
+    # depends on a dry-run that runs after the singletons are persisted, so
+    # callers that don't need the unmanaged section should prefer
+    # `partial_result` to avoid triggering detection too early.
     def result
-      @result ||= build_result
+      @result ||= partial_result.merge(unmanaged: unmanaged_detector.detect)
+    end
+
+    def partial_result
+      @partial_result ||= collectors_only? ? collectors_only_partial_result : full_partial_result
     end
 
     # Persist extracted data into config.yaml
@@ -30,6 +38,10 @@ module Import
       persist_singletons!(config)
       sensor_persister.persist!(config) unless collectors_only?
       mark_balcony_sensor!(config)
+      # Snapshot which env keys HELIOS will canonically emit. Runs after the
+      # singleton sections have been persisted (so Configuration is fully
+      # populated) but before unmanaged detection consumes the snapshot.
+      @emitted_canonical_keys = compute_emitted_canonical_keys(config)
       persist_unmanaged!(config)
 
       config
@@ -125,7 +137,43 @@ module Import
         @reader,
         known_measurements:,
         traefik_adopted: reverse_proxy_extractor.section_data.present?,
+        emitted_canonical_keys: emitted_canonical_keys,
       )
+    end
+
+    # Dry-run Export::Env on the persisted Configuration so the unmanaged
+    # detector can ask "will HELIOS canonically emit this var?" instead of
+    # approximating via a hand-curated MANAGED_ENV_KEYS list. The latter
+    # silently mis-skipped conditionally-emitted vars (SENEC_HOST in cloud
+    # mode, SOLCAST_* without solcast forecast, etc.) and dropped values that
+    # unmanaged services still needed at runtime.
+    #
+    # `import!` overrides @emitted_canonical_keys early with the persisted
+    # Configuration. Tests that hit `result` directly fall through to a
+    # dry-run on a Configuration assembled from the in-memory partial result.
+    def emitted_canonical_keys
+      @emitted_canonical_keys ||= compute_emitted_canonical_keys(dryrun_configuration)
+    end
+
+    def compute_emitted_canonical_keys(config)
+      env_file = ::Env::File.new(File::NULL)
+      Export::Env::SECTIONS.each do |klass, enabled|
+        next if klass == Export::Env::Unmanaged
+        next unless enabled.call(config)
+
+        klass.new(env_file, config).call
+      end
+      env_file.keys.to_set
+    end
+
+    # Build a Configuration from the in-memory partial result, running the
+    # SensorPersister so sensors are stored as the hash-of-hashes shape that
+    # Configuration's accessors expect — extractor output is a flat
+    # name → measurement string map and would crash Data.wrap.
+    def dryrun_configuration
+      config = Configuration.from_data(partial_result.except(:sensors))
+      sensor_persister.persist!(config) unless collectors_only?
+      config
     end
 
     def volume_resolver
@@ -149,7 +197,7 @@ module Import
     def sensor_persister
       @sensor_persister ||= SensorPersister.new(
         sensors_data:,
-        devices: result[:devices],
+        devices: partial_result[:devices],
         enabled_collectors: enabled_collectors,
         mqtt_mappings: mqtt_extractor.enabled? ? mqtt_extractor.mappings : [],
         excluded_sensors: sensors_extractor.excluded_sensor_names,
@@ -166,19 +214,14 @@ module Import
 
     # --- Result building ---
 
-    def build_result
-      collectors_only? ? collectors_only_result : full_result
-    end
-
-    def full_result
-      uniform_sections(UNIFORM_FULL_EXTRACTORS).merge(
+    def full_partial_result
+      @full_partial_result ||= uniform_sections(UNIFORM_FULL_EXTRACTORS).merge(
         sensors: sensors_data,
         senec: senec_extractor.section_data,
         mqtt: mqtt_section_data,
         shelly: shelly_extractor.section_data,
         devices: build_devices,
         service_overrides: service_overrides_extractor.section_data,
-        unmanaged: unmanaged_detector.detect,
       )
     end
 
@@ -187,13 +230,12 @@ module Import
     # Collector connection data (hosts, credentials) is extracted into the
     # usual senec/shelly/mqtt sections; the opaque mapping payload is kept
     # as a raw list in mqtt.mappings and shelly.devices.
-    def collectors_only_result
-      uniform_sections(UNIFORM_COLLECTORS_ONLY_EXTRACTORS).merge(
+    def collectors_only_partial_result
+      @collectors_only_partial_result ||= uniform_sections(UNIFORM_COLLECTORS_ONLY_EXTRACTORS).merge(
         senec: collectors_only_senec_data,
         mqtt: collectors_only_mqtt_data,
         shelly: collectors_only_shelly_data,
         service_overrides: service_overrides_extractor.section_data,
-        unmanaged: unmanaged_detector.detect,
       )
     end
 
@@ -247,7 +289,7 @@ module Import
     def persist_singletons!(config)
       %i[deployment system dashboard postgresql influxdb redis watchtower ingest power_splitter sensors
          forecast senec mqtt shelly reverse_proxy backup service_overrides].each do |key|
-        config.update(key.to_s, result[key]) if result[key]
+        config.update(key.to_s, partial_result[key]) if partial_result[key]
       end
     end
 
