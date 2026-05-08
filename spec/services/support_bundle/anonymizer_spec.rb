@@ -23,6 +23,7 @@ RSpec.describe SupportBundle::Anonymizer do
         FORECAST_SOLAR_APIKEY=solar-key
         SOLCAST_APIKEY=solcast-key
         PVNODE_APIKEY=pvnode-key
+        TIBBER_TOKEN=s3cr3t-t0k3n
       ENV
     end
 
@@ -31,6 +32,7 @@ RSpec.describe SupportBundle::Anonymizer do
 
       expect(result).to include('POSTGRES_PASSWORD=dummy_postgres_password')
       expect(result).to include('SENEC_USERNAME=dummy_senec_username')
+      expect(result).to include('TIBBER_TOKEN=dummy_tibber_token')
     end
 
     it 'uses realistic dummies for non-string env variables' do
@@ -68,6 +70,35 @@ RSpec.describe SupportBundle::Anonymizer do
 
     it 'leaves compose env list entries without value untouched' do
       content = "    - SENEC_PASSWORD\n    - SENEC_USERNAME\n"
+
+      expect(described_class.anonymize_env_style(content)).to eq(content)
+    end
+
+    it 'redacts unrecognized keys whose name matches a sensitive pattern' do
+      content = <<~ENV
+        STRIPE_API_KEY=sk_live_abcdef
+        HONEYBADGER_API_KEY=hb_xxx
+        S3_SECRET_ACCESS_KEY=s3-secret
+        VENDOR_PRIVATE_KEY=PEM-encoded-key
+        PGADMIN_DEFAULT_PASSWORD=adminpw
+      ENV
+
+      expect(described_class.anonymize_env_style(content)).to eq(<<~ENV)
+        STRIPE_API_KEY=dummy_stripe_api_key
+        HONEYBADGER_API_KEY=dummy_honeybadger_api_key
+        S3_SECRET_ACCESS_KEY=dummy_s3_secret_access_key
+        VENDOR_PRIVATE_KEY=dummy_vendor_private_key
+        PGADMIN_DEFAULT_PASSWORD=dummy_pgadmin_default_password
+      ENV
+    end
+
+    it 'leaves keys with key-shaped substrings that are not secrets alone' do
+      content = <<~ENV
+        SENEC_LANGUAGE=de
+        INFLUX_USERNAME=admin
+        MAPPING_0_JSON_KEY=apower
+        FORECAST_KWP=9.24
+      ENV
 
       expect(described_class.anonymize_env_style(content)).to eq(content)
     end
@@ -250,6 +281,58 @@ RSpec.describe SupportBundle::Anonymizer do
 
       expect(parsed['senec']['username']).to eq('')
       expect(parsed['senec']['password']).to be_nil
+    end
+
+    it 'redacts whitelisted secrets inside unmanaged service env_values' do
+      yaml = <<~YAML
+        _unmanaged:
+          services:
+            tibber-collector:
+              env_values:
+                TIBBER_TOKEN: s3cr3t-t0k3n
+                INFLUX_MEASUREMENT_PRICES: prices
+      YAML
+
+      parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
+
+      expect(parsed['_unmanaged']['services']['tibber-collector']['env_values']).to eq(
+        'TIBBER_TOKEN' => 'dummy_tibber_token',
+        'INFLUX_MEASUREMENT_PRICES' => 'prices',
+      )
+    end
+
+    it 'redacts pattern-matched secrets inside unmanaged service env_values' do
+      yaml = <<~YAML
+        _unmanaged:
+          services:
+            vendor-collector:
+              env_values:
+                VENDOR_API_KEY: vendor-key
+                VENDOR_BASE_URL: https://api.vendor.example
+      YAML
+
+      parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
+
+      expect(parsed['_unmanaged']['services']['vendor-collector']['env_values']).to eq(
+        'VENDOR_API_KEY' => 'dummy_vendor_api_key',
+        'VENDOR_BASE_URL' => 'https://api.vendor.example',
+      )
+    end
+
+    it 'leaves unmanaged env_values that reference compose interpolations alone' do
+      yaml = <<~YAML
+        _unmanaged:
+          services:
+            tibber-collector:
+              env_values:
+                TIBBER_TOKEN: "${TIBBER_TOKEN}"
+      YAML
+
+      parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
+
+      expect(parsed['_unmanaged']['services']['tibber-collector']['env_values']).to eq(
+        'TIBBER_TOKEN' => '${TIBBER_TOKEN}',
+      )
     end
   end
 

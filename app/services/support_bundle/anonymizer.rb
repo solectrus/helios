@@ -1,10 +1,15 @@
 module SupportBundle
-  # Redacts a small, explicit whitelist of variables from config files
-  # so the bundle can be shared in a public support forum. Placeholders
-  # are derived from the key name (e.g. `dummy_postgres_password`)
-  # so the stack still starts when the bundle is replayed locally. Add
-  # more variables here on demand.
-  module Anonymizer
+  # Redacts secrets from config files so the bundle can be shared in a
+  # public support forum. Placeholders are derived from the key name
+  # (e.g. `dummy_postgres_password`) so the stack still starts when the
+  # bundle is replayed locally.
+  #
+  # Recognition has two layers: the explicit `ENV_KEYS` / `YAML_KEYS`
+  # lists drive placeholder shape, log-redaction behavior, and special
+  # dummies (lat/lng, SENEC_SYSTEM_ID); `SENSITIVE_KEY_PATTERN` is a
+  # name-based catch-all for vendor-specific keys HELIOS has never seen,
+  # especially inside unmanaged-service `env_values`.
+  module Anonymizer # rubocop:disable Metrics/ModuleLength
     ENV_KEYS = %w[
       ADMIN_PASSWORD
       AWS_ACCESS_KEY_ID
@@ -31,6 +36,7 @@ module SupportBundle
       SHELLY_AUTH_KEY
       SHELLY_PASSWORD
       SOLCAST_APIKEY
+      TIBBER_TOKEN
     ].to_set.freeze
 
     YAML_KEYS = {
@@ -50,6 +56,12 @@ module SupportBundle
 
     # Per-sensor fields to redact inside the dynamic `sensors:` section.
     SENSOR_KEYS = %w[shelly_password].freeze
+
+    # Catch-all pattern for unrecognized secrets that follow common
+    # naming conventions. Kept narrow so harmless keys (`SENEC_LANGUAGE`,
+    # `MAPPING_<N>_JSON_KEY`, `INFLUX_USERNAME=admin`) don't get caught.
+    # `API_?KEY` covers both `APIKEY` and `API_KEY` spellings.
+    SENSITIVE_KEY_PATTERN = /PASSWORD|SECRET|TOKEN|API_?KEY|AUTH_KEY|ACCESS_KEY|PRIVATE_KEY/
 
     # Coordinates may surface in container logs with extra trailing digits
     # (Float arithmetic in the forecast collector turns 50.92264 into
@@ -93,6 +105,10 @@ module SupportBundle
 
       data['sensors']&.each_value { |sensor| redact_fields(sensor, SENSOR_KEYS) }
 
+      data.dig('_unmanaged', 'services')&.each_value do |service|
+        redact_unmanaged_env_values(service)
+      end
+
       YAML.dump(data)
     end
 
@@ -102,13 +118,25 @@ module SupportBundle
       keys.each { |key| hash[key] = placeholder_for(key) if hash[key].present? }
     end
 
-    def anonymize_env_line(line)
-      return line if line.lstrip.start_with?('#')
+    # Unmanaged services keep their env vars as a free-form `env_values`
+    # hash, so secrets land here under the donor's original spelling
+    # rather than under any name HELIOS knows.
+    def redact_unmanaged_env_values(service)
+      values = service.is_a?(Hash) ? service['env_values'] : nil
+      return unless values.is_a?(Hash)
 
-      match = line.match(ENV_LINE)
+      values.each do |key, value|
+        next unless sensitive_key?(key)
+        next if value.blank?
+        next if value.is_a?(String) && value.start_with?('${')
+
+        values[key] = placeholder_for(key)
+      end
+    end
+
+    def anonymize_env_line(line)
+      match = parse_sensitive_env_line(line)
       return line unless match
-      return line unless ENV_KEYS.include?(match[:key].upcase)
-      return line if match[:value].empty? || match[:value].start_with?('${')
 
       "#{match[:prefix]}#{match[:key]}=#{placeholder_for(match[:key])}#{match[:trailing]}"
     end
@@ -116,6 +144,11 @@ module SupportBundle
     def placeholder_for(key)
       normalized = key.to_s.downcase
       DUMMY_VALUES[normalized] || "dummy_#{normalized}"
+    end
+
+    def sensitive_key?(key)
+      upper = key.to_s.upcase
+      ENV_KEYS.include?(upper) || SENSITIVE_KEY_PATTERN.match?(upper)
     end
 
     # Extracts (pattern, placeholder) pairs for every whitelisted env value
@@ -136,18 +169,23 @@ module SupportBundle
     end
 
     def line_redaction(line)
+      match = parse_sensitive_env_line(line)
+      return nil unless match
+
+      key = match[:key].upcase
+      pattern = redaction_pattern(key, match[:value])
+      pattern && [pattern, placeholder_for(key)]
+    end
+
+    def parse_sensitive_env_line(line)
       return nil if line.lstrip.start_with?('#')
 
       match = line.match(ENV_LINE)
       return nil unless match
+      return nil unless sensitive_key?(match[:key])
+      return nil if match[:value].empty? || match[:value].start_with?('${')
 
-      key = match[:key].upcase
-      value = match[:value]
-      return nil unless ENV_KEYS.include?(key)
-      return nil if value.empty? || value.start_with?('${')
-
-      pattern = redaction_pattern(key, value)
-      pattern && [pattern, placeholder_for(key)]
+      match
     end
 
     def redaction_pattern(key, value)
