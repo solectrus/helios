@@ -28,6 +28,16 @@ Rails.application.routes.draw do
     end
   end
   resource :advanced, only: :show, controller: 'advanced'
+  scope 'backups', module: :backups, as: :backups do
+    resource :failure, only: :destroy
+    resource :restore_failure, only: :destroy
+    resource :upload, only: :create
+  end
+  resources :backups,
+            only: %i[index create show destroy],
+            controller: 'backups/backups' do
+    resource :restore, only: :create, module: :backups
+  end
   resource :support, only: %i[new create]
 
   scope 'configuration', as: :configuration do

@@ -208,10 +208,27 @@ module Orchestration
     end
 
     def process_event(event)
-      return unless event.relevant?
+      if event.relevant?
+        log_event(event)
+        schedule_broadcast(event.service_name, created: event.action == 'create')
+      elsif event.helios_operation?
+        log_event(event)
+        broadcast_helios_operation
+      end
+    end
 
-      log_event(event)
-      schedule_broadcast(event.service_name, created: event.action == 'create')
+    # Backup/restore runners run as detached containers without compose labels,
+    # so service-row broadcasts don't cover them. We push the status bar (so
+    # the badge / restore mode tracks the container's lifecycle) and morph the
+    # /backups page (so the in-progress row in the list disappears the moment
+    # the container exits, instead of waiting for the 3 s auto-reload tick).
+    def broadcast_helios_operation
+      I18n.with_locale(self.class.locale) do
+        Orchestration::StatusBarBroadcaster.new.broadcast
+        Turbo::StreamsChannel.broadcast_refresh_to('backups')
+      end
+    rescue StandardError => e
+      logger.error("[#{id}] Helios operation broadcast failed: #{e.class}: #{e.message}")
     end
 
     def scheduler_loop

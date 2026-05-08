@@ -8,6 +8,12 @@ module Header
         icon: 'fa-solid fa-server',
         visible_if: -> { Configuration.current.setup_completed? },
       },
+      {
+        id: :backup,
+        path_helper: :backups_path,
+        icon: 'fa-solid fa-box-archive',
+        visible_if: -> { Configuration.current.setup_completed? && !Configuration.current.collectors_only? },
+      },
     ].freeze
 
     TAB_BASE_CLASSES = 'flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold ' \

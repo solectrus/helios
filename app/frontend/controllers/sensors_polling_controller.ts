@@ -1,58 +1,21 @@
-import { Controller } from '@hotwired/stimulus';
 import * as Turbo from '@hotwired/turbo';
+import PollingController from '../utils/pollingController';
 
-export default class extends Controller {
+export default class extends PollingController {
   static values = {
-    interval: { type: Number, default: 5000 },
+    ...PollingController.values,
     url: String,
     enabled: { type: Boolean, default: true },
   };
 
-  declare intervalValue: number;
   declare urlValue: string;
   declare enabledValue: boolean;
 
-  private timer: ReturnType<typeof setInterval> | null = null;
-  private boundVisibilityHandler!: () => void;
-
-  connect() {
-    if (!this.enabledValue) return;
-
-    this.boundVisibilityHandler = this.handleVisibilityChange.bind(this);
-    document.addEventListener('visibilitychange', this.boundVisibilityHandler);
-    this.startPolling();
+  protected shouldPoll(): boolean {
+    return this.enabledValue;
   }
 
-  disconnect() {
-    this.stopPolling();
-    document.removeEventListener(
-      'visibilitychange',
-      this.boundVisibilityHandler,
-    );
-  }
-
-  private startPolling() {
-    this.stopPolling();
-    this.timer = setInterval(() => this.reload(), this.intervalValue);
-  }
-
-  private stopPolling() {
-    if (this.timer) {
-      clearInterval(this.timer);
-      this.timer = null;
-    }
-  }
-
-  private handleVisibilityChange() {
-    if (document.hidden) {
-      this.stopPolling();
-    } else {
-      this.reload();
-      this.startPolling();
-    }
-  }
-
-  private async reload() {
+  protected async refresh() {
     try {
       const response = await fetch(this.urlValue, {
         headers: { Accept: 'text/vnd.turbo-stream.html' },

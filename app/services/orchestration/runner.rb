@@ -145,6 +145,18 @@ module Orchestration
         Rails.configuration.data_path
       end
 
+      # In production, data_path (e.g. /data) is container-internal; the Docker
+      # daemon runs on the host and needs the real host path to resolve bind-mount
+      # sources. In dev/test, data_path is already a host path.
+      def host_data_path
+        return data_path unless Rails.env.production?
+
+        source = Orchestration::Container.find(SELF_SERVICE)&.mount_source(data_path)
+        raise CommandError, "Cannot resolve HELIOS host mount for #{data_path}" unless source
+
+        source
+      end
+
       private
 
       def run_compose(*args)
@@ -213,18 +225,6 @@ module Orchestration
           '--progress', 'plain',
           'up', '--no-build', '-d', '--force-recreate', SELF_SERVICE
         )
-      end
-
-      # In production, data_path (e.g. /data) is container-internal; the Docker
-      # daemon runs on the host and needs the real host path to resolve bind-mount
-      # sources in compose.yaml. In dev/test, data_path is already a host path.
-      def host_data_path
-        return data_path unless Rails.env.production?
-
-        source = Orchestration::Container.find(SELF_SERVICE)&.mount_source(data_path)
-        raise CommandError, "Cannot resolve HELIOS host mount for #{data_path}" unless source
-
-        source
       end
 
       def services_except_self

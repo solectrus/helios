@@ -6,6 +6,10 @@ export default class extends Controller {
     text: { type: String, default: 'Loading...' },
     successText: String,
     successDuration: { type: Number, default: 1500 },
+    spinner: {
+      type: String,
+      default: 'loading loading-spinner loading-xs',
+    },
   };
 
   declare buttonTarget: HTMLButtonElement;
@@ -13,17 +17,20 @@ export default class extends Controller {
   declare successTextValue: string;
   declare hasSuccessTextValue: boolean;
   declare successDurationValue: number;
+  declare spinnerValue: string;
 
   click(event: Event) {
     const button = event.currentTarget as HTMLButtonElement;
+
+    // Lock current width so the button doesn't reflow when its label changes.
+    button.style.minWidth = `${button.getBoundingClientRect().width}px`;
 
     // Defer disabling to the next tick: setting `disabled` synchronously
     // inside the click handler cancels the pending form submit in some
     // browsers, which swallows downloads triggered by the submit.
     setTimeout(() => {
-      button.classList.add('loading', 'loading-spinner');
+      this.swapChildren(button, 'span', this.spinnerValue, this.textValue);
       button.disabled = true;
-      button.textContent = this.textValue;
 
       if (this.hasSuccessTextValue) {
         setTimeout(() => this.showSuccess(button), this.successDurationValue);
@@ -35,11 +42,17 @@ export default class extends Controller {
   // which give no completion event — we assume the download has started
   // once `successDurationValue` has elapsed.
   private showSuccess(button: HTMLButtonElement) {
-    button.classList.remove('loading', 'loading-spinner');
+    this.swapChildren(button, 'i', 'fa-solid fa-check', this.successTextValue);
+  }
 
-    const icon = document.createElement('i');
-    icon.className = 'fa-solid fa-check';
-    button.replaceChildren(icon, document.createTextNode(' '));
-    button.append(this.successTextValue);
+  private swapChildren(
+    button: HTMLButtonElement,
+    tag: 'span' | 'i',
+    className: string,
+    text: string,
+  ) {
+    const indicator = document.createElement(tag);
+    indicator.className = className;
+    button.replaceChildren(indicator, document.createTextNode(` ${text}`));
   }
 }

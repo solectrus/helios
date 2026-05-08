@@ -23,6 +23,16 @@
       </div>
 
       <div class="flex items-center justify-end gap-2">
+        <% if backup_hint_labels %>
+          <span class="badge badge-sm badge-soft gap-1.5 tabular-nums">
+            <span class="loading loading-spinner loading-xs"></span>
+
+            <% backup_hint_labels.each do |locale, text| %>
+              <span data-locale="<%= locale %>" class="status-bar-label"><%= text %></span>
+            <% end %>
+          </span>
+        <% end %>
+
         <% if show_start? %>
           <%= button_to batch_path, method: :post, class: "btn btn-outline btn-sm" do %>
             <i class="fa-solid fa-play"></i>

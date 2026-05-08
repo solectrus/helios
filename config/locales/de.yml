@@ -1,4 +1,9 @@
 de:
+  time:
+    formats:
+      backup_date: '%d.%m.%Y'
+      backup_time: '%H:%M Uhr'
+
   common:
     back: 'Zurück'
     cancel: 'Abbrechen'
@@ -112,6 +117,81 @@ de:
       download: 'ZIP herunterladen'
       downloading: 'Wird erstellt…'
       downloaded: 'Heruntergeladen'
+
+  backups:
+    index:
+      title: 'Datensicherung'
+      create_title: 'Neue Sicherung erstellen'
+      note: 'Sichert die komplette SOLECTRUS-Installation (mit den Datenbanken aus InfluxDB und PostgreSQL sowie der Konfiguration) in einer einzigen Datei.'
+      download: 'Sicherung erstellen'
+      in_progress: 'Wird erstellt…'
+      duration_hint: 'Läuft im Hintergrund und kann bei größerer Datenmenge mehrere Minuten dauern. Du kannst die Seite verlassen, die Sicherung läuft weiter. SOLECTRUS bleibt währenddessen normal nutzbar. Die fünf neuesten Sicherungen werden aufbewahrt, ältere automatisch entfernt.'
+      unavailable: 'Sicherung derzeit nicht möglich: %{message}'
+      existing_title: 'Vorhandene Sicherungen'
+      existing_empty: 'Noch keine Sicherungen vorhanden.'
+      upload: 'Hochladen'
+      download_existing: 'Herunterladen'
+      restore_existing: 'Wiederherstellen'
+      restore_confirm: 'Deine aktuellen Daten sowie die Konfiguration werden überschrieben und gehen somit verloren.<br><br>Danach ist SOLECTRUS wieder auf dem Stand vom <strong>%{date}, %{time}</strong>.'
+      restore_confirm_button: 'Diese Sicherung wiederherstellen'
+      restore_in_progress: 'Wird wiederhergestellt…'
+      restored_at: 'Wiederherstellung %{date}, %{time}'
+      delete_existing: 'Sicherung löschen'
+      delete_confirm: 'Die Sicherung vom <strong>%{date}, %{time}</strong> wird unwiderruflich gelöscht.'
+      delete_confirm_button: 'Sicherung löschen'
+      actions: 'Aktionen'
+      error: 'Sicherung fehlgeschlagen: %{message}'
+      restore_error: 'Wiederherstellung fehlgeschlagen: %{message}'
+      dismiss: 'Meldung schließen'
+    create:
+      started: 'Sicherung wurde gestartet.'
+      error: 'Sicherung konnte nicht gestartet werden: %{message}'
+    destroy:
+      deleted: 'Sicherung wurde gelöscht.'
+    uploads:
+      create:
+        uploaded: 'Sicherung wurde hochgeladen.'
+        error: 'Sicherung konnte nicht hochgeladen werden: %{message}'
+    uploader:
+      errors:
+        backup_in_progress: 'Eine Sicherung läuft bereits.'
+        restore_in_progress: 'Eine Wiederherstellung läuft bereits.'
+        missing: 'Keine Datei ausgewählt.'
+        not_tar: 'Datei ist keine .tar-Datei.'
+        too_large: 'Datei ist größer als das erlaubte Maximum.'
+        invalid_archive: 'Datei ist kein gültiges tar-Archiv.'
+        already_exists: 'Eine Sicherung mit diesem Namen existiert bereits.'
+        missing_postgres: 'Datei enthält keinen PostgreSQL-Datenbank-Dump.'
+        missing_influx: 'Datei enthält keine InfluxDB-Daten.'
+        missing_config: 'Datei enthält keine helios/config.yaml.'
+        write_failed: 'Datei konnte nicht gespeichert werden: %{message}'
+    restores:
+      create:
+        started: 'Wiederherstellung wurde gestartet.'
+        error: 'Wiederherstellung konnte nicht gestartet werden: %{message}'
+    runner:
+      errors:
+        restore_in_progress: 'Eine Wiederherstellung läuft bereits.'
+        already_in_progress: 'Eine Sicherung läuft bereits.'
+        image_pull_failed: 'Hintergrundprozess konnte nicht vorbereitet werden: %{output}'
+        start_failed: 'Hintergrundprozess konnte nicht gestartet werden: %{output}'
+      unavailable_reasons:
+        env_missing: '.env-Datei fehlt.'
+        config_missing: 'helios/config.yaml fehlt.'
+        influx_token_missing: 'INFLUX_ADMIN_TOKEN fehlt in .env.'
+        postgres_not_running: 'PostgreSQL-Dienst läuft nicht.'
+        influxdb_not_running: 'InfluxDB-Dienst läuft nicht.'
+    restorer:
+      errors:
+        backup_in_progress: 'Eine Sicherung läuft bereits.'
+        already_in_progress: 'Eine Wiederherstellung läuft bereits.'
+        backup_not_found: 'Sicherungsdatei wurde nicht gefunden.'
+        missing_config: 'Sicherung enthält keine helios/config.yaml.'
+        missing_postgres: 'Sicherung enthält keinen PostgreSQL-Datenbank-Dump.'
+        missing_influx: 'Sicherung enthält keine InfluxDB-Daten.'
+        missing_token: 'INFLUX_ADMIN_TOKEN fehlt in der wiederhergestellten .env.'
+        image_pull_failed: 'Hintergrundprozess konnte nicht vorbereitet werden: %{output}'
+        start_failed: 'Hintergrundprozess konnte nicht gestartet werden: %{output}'
 
   configurations:
     show:

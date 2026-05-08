@@ -1,8 +1,9 @@
 RSpec.describe Orchestration::Event do
-  def build_raw_event(type: 'container', action: 'start', service_name: 'postgresql')
-    actor = Data.define(:attributes).new(
-      attributes: { 'com.docker.compose.service' => service_name },
-    )
+  def build_raw_event(type: 'container', action: 'start', service_name: 'postgresql', container_name: nil)
+    attributes = {}
+    attributes['com.docker.compose.service'] = service_name if service_name
+    attributes['name'] = container_name if container_name
+    actor = Data.define(:attributes).new(attributes:)
     Data.define(:type, :action, :actor).new(type:, action:, actor:)
   end
 
@@ -38,6 +39,36 @@ RSpec.describe Orchestration::Event do
     it 'returns false for irrelevant actions' do
       event = described_class.new(build_raw_event(action: 'attach'))
       expect(event).not_to be_relevant
+    end
+  end
+
+  describe '#helios_operation?' do
+    it 'returns true for the backup-runner container with a relevant action' do
+      event = described_class.new(
+        build_raw_event(service_name: nil, container_name: BackupRunner::CONTAINER_NAME, action: 'die'),
+      )
+      expect(event).to be_helios_operation
+    end
+
+    it 'returns true for the restore-runner container with a relevant action' do
+      event = described_class.new(
+        build_raw_event(service_name: nil, container_name: RestoreRunner::CONTAINER_NAME, action: 'start'),
+      )
+      expect(event).to be_helios_operation
+    end
+
+    it 'returns false for unrelated container names' do
+      event = described_class.new(
+        build_raw_event(service_name: nil, container_name: 'random-container', action: 'die'),
+      )
+      expect(event).not_to be_helios_operation
+    end
+
+    it 'returns false for irrelevant actions' do
+      event = described_class.new(
+        build_raw_event(service_name: nil, container_name: BackupRunner::CONTAINER_NAME, action: 'attach'),
+      )
+      expect(event).not_to be_helios_operation
     end
   end
 

@@ -1,0 +1,374 @@
+require 'rubygems/package'
+
+RSpec.describe RestoreRunner do
+  let(:data_path) { Dir.mktmpdir }
+  let(:host_data_path) { '/host/data' }
+  let(:filename) { 'solectrus-backup-20260508-110000.tar' }
+  let(:state) do
+    {
+      open3_calls: [],
+      image_present: true,
+      docker_run_output: 'container-id',
+      docker_run_success: true,
+      docker_pull_output: '',
+      docker_pull_success: true,
+      docker_inspect_success: false,
+      docker_inspect_running: false,
+      docker_inspect_started_at: '2026-05-08T14:30:00Z',
+      docker_inspect_args: ['-c', 'script'],
+    }
+  end
+
+  before do
+    allow(Rails.configuration).to receive(:data_path).and_return(data_path)
+    FileUtils.mkdir_p(File.join(data_path, 'helios', 'backups'))
+    File.write(File.join(data_path, '.env'), "INFLUX_ADMIN_TOKEN=secret-token\n")
+    File.binwrite(
+      File.join(data_path, 'helios', 'backups', filename),
+      tar_archive(
+        'helios/config.yaml' => restored_config_yaml,
+        'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'postgres dump',
+        'solectrus-influxdb-backup-2026-05-08.tar.gz' => 'influx backup',
+      ),
+    )
+
+    allow(BackupRepository).to receive(:find!).with(filename).and_return(
+      BackupRepository::Backup.new(
+        filename:,
+        path: File.join(data_path, 'helios', 'backups', filename),
+        bytes: 7,
+        created_at: Time.zone.local(2026, 5, 8, 11, 0, 0),
+        files: [],
+        restored_at: nil,
+      ),
+    )
+    allow(Export::Builder).to receive(:new).and_return(instance_double(Export::Builder, write!: nil))
+    allow(BackupRunner).to receive(:in_progress).and_return(nil)
+    allow(Orchestration::Runner).to receive(:host_data_path).and_return(host_data_path)
+    allow(Compose).to receive(:load).and_return(
+      instance_double(
+        Compose::File,
+        services: instance_double(
+          Compose::ServiceCollection,
+          names: %w[helios postgresql influxdb dashboard senec-collector forecast-collector],
+        ),
+      ),
+    )
+    allow(Orchestration::Container).to receive(:all).and_return(
+      [
+        mock_container('solectrus-postgresql-1', 'postgresql', running: true),
+        mock_container('solectrus-influxdb-1', 'influxdb', running: true),
+        mock_container('solectrus-helios-1', 'helios', running: true),
+        mock_container('solectrus-dashboard-1', 'dashboard', running: true),
+        mock_container('solectrus-senec-collector-1', 'senec-collector', running: true),
+        mock_container('solectrus-forecast-collector-1', 'forecast-collector', running: false),
+      ],
+    )
+
+    allow(Open3).to receive(:capture2e) do |*args|
+      state[:open3_calls] << args
+      stub_open3_response(args)
+    end
+  end
+
+  after { FileUtils.remove_entry(data_path) }
+
+  describe '.start' do
+    it 'writes the restored config from the archive before starting the restore helper' do
+      described_class.start(filename)
+
+      config = Configuration.load_file(Configuration.path)
+      expect(config.dig('postgresql', 'image')).to eq('postgres:18-alpine')
+      expect(Export::Builder).to have_received(:new).with(Configuration.current)
+    end
+
+    it 'launches docker:cli with the restore script and required mounts' do
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      aggregate_failures do
+        expect(run).to include('--name', 'helios-restore-runner')
+        expect(run).to include('-v', '/var/run/docker.sock:/var/run/docker.sock')
+        expect(run).to include('-v', "#{host_data_path}/helios/backups:/output")
+        expect(run).to include('-v', "#{host_data_path}:/data")
+        expect(run).to include('-v', "#{host_data_path}:#{host_data_path}")
+        expect(run).to include('--entrypoint', 'sh', 'docker:cli', '-c')
+      end
+    end
+
+    it 'passes runtime values as positional shell args' do
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      placeholder_index = run.index('_')
+      expect(run[placeholder_index + 1, 7]).to eq(
+        [
+          'secret-token', filename, host_data_path, "#{host_data_path}/postgresql",
+          "#{host_data_path}/influxdb", "#{host_data_path}/redis", '0'
+        ],
+      )
+    end
+
+    it 'passes restart-after flag "1" when every configured service has a running container' do
+      allow(Orchestration::Container).to receive(:all).and_return(
+        [
+          mock_container('solectrus-postgresql-1', 'postgresql', running: true),
+          mock_container('solectrus-influxdb-1', 'influxdb', running: true),
+          mock_container('solectrus-helios-1', 'helios', running: true),
+          mock_container('solectrus-dashboard-1', 'dashboard', running: true),
+          mock_container('solectrus-senec-collector-1', 'senec-collector', running: true),
+          mock_container('solectrus-forecast-collector-1', 'forecast-collector', running: true),
+        ],
+      )
+
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      expect(run.last).to eq('1')
+    end
+
+    it 'passes restart-after flag "0" when a configured service has no container at all' do
+      allow(Orchestration::Container).to receive(:all).and_return(
+        [
+          mock_container('solectrus-postgresql-1', 'postgresql', running: true),
+          mock_container('solectrus-influxdb-1', 'influxdb', running: true),
+        ],
+      )
+
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      expect(run.last).to eq('0')
+    end
+
+    it 'tears down via compose down -v, wipes data, starts DBs, then conditionally restarts the rest' do
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      script = run[run.index('-c') + 1]
+      aggregate_failures do
+        expect(script).to include('compose down -v --remove-orphans > "$STOP_LOG" 2>&1')
+        expect(script).to include('rm -rf "$POSTGRES_DATA_PATH" "$INFLUXDB_DATA_PATH" "$REDIS_DATA_PATH"')
+        expect(script).to include('compose up --no-build --wait -d postgresql influxdb > "$DB_START_LOG" 2>&1')
+        expect(script).to include('docker compose -f "$HOST_DATA_PATH/compose.yaml"')
+        expect(script).to include('--project-directory "$HOST_DATA_PATH"')
+        expect(script).to include('if [ "$RESTART_AFTER" = "1" ]; then')
+        expect(script).to include('compose up --no-build -d > "$START_LOG" 2>&1')
+      end
+    end
+
+    it 'records restored_at into the manifest sidecar after a successful import' do
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      script = run[run.index('-c') + 1]
+      aggregate_failures do
+        expect(script).to include('MANIFEST_PATH="$OUTPUT_DIR/$BACKUP_FILENAME.json"')
+        expect(script).to include('RESTORED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"')
+        expect(script).to include('s/,"restored_at":"[^"]*"//g')
+        expect(script).to include('printf \'{"restored_at":"%s"}\\n\'')
+      end
+    end
+
+    it 'restores InfluxDB through the local container HTTP endpoint' do
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      script = run[run.index('-c') + 1]
+      expect(script).to include('influx restore --full --host http://localhost:8086 -t "$TOKEN" "$1"')
+    end
+
+    it 'reports PostgreSQL restore command output on failure' do
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      script = run[run.index('-c') + 1]
+      aggregate_failures do
+        expect(script).to include('psql -v ON_ERROR_STOP=1 -h 127.0.0.1 -U postgres')
+        expect(script).to include('POSTGRES_RESTORE_LOG="$WORK_DIR/postgresql-restore.log"')
+        expect(script).to include('> "$POSTGRES_RESTORE_LOG" 2>&1')
+        expect(script).to include('PostgreSQL restore failed: $(tail -n 20 "$POSTGRES_RESTORE_LOG"')
+      end
+    end
+
+    it 'creates solectrus_production before importing the PostgreSQL dump' do
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      script = run[run.index('-c') + 1]
+      aggregate_failures do
+        expect(script).to include("SELECT 1 FROM pg_database WHERE datname='solectrus_production'")
+        expect(script).to include('CREATE DATABASE solectrus_production')
+        expect(script.index('CREATE DATABASE solectrus_production')).to be < script.index('PostgreSQL restore failed')
+      end
+    end
+
+    it 'pulls docker:cli when the image is not present locally' do
+      state[:image_present] = false
+
+      described_class.start(filename)
+
+      expect(state[:open3_calls]).to include(%w[docker pull docker:cli])
+    end
+
+    it 'clears previous backup and restore errors before launching' do
+      File.write(File.join(data_path, 'helios', 'backups', 'error.txt'), 'backup failure')
+      File.write(File.join(data_path, 'helios', 'backups', 'restore-error.txt'), 'restore failure')
+
+      described_class.start(filename)
+
+      expect(File).not_to exist(File.join(data_path, 'helios', 'backups', 'error.txt'))
+      expect(File).not_to exist(File.join(data_path, 'helios', 'backups', 'restore-error.txt'))
+    end
+
+    it 'raises when a backup is already running' do
+      allow(BackupRunner).to receive(:in_progress).and_return(
+        BackupRepository::InProgress.new(started_at: Time.zone.now, filename: 'other.tar.gz'),
+      )
+
+      expect { described_class.start(filename) }.to raise_error(described_class::Error, /backup is already/)
+    end
+
+    it 'raises when a restore is already running' do
+      state[:docker_inspect_success] = true
+      state[:docker_inspect_running] = true
+
+      expect { described_class.start(filename) }.to raise_error(described_class::Error, /restore is already/)
+    end
+
+    it 'raises when the backup is unknown' do
+      allow(BackupRepository).to receive(:find!).with(filename).and_raise(BackupRepository::NotFound)
+
+      expect { described_class.start(filename) }.to raise_error(described_class::Error, /not found/)
+    end
+
+    it 'raises when the archive is missing expected content' do
+      File.binwrite(
+        File.join(data_path, 'helios', 'backups', filename),
+        tar_archive('helios/config.yaml' => restored_config_yaml),
+      )
+
+      expect { described_class.start(filename) }.to raise_error(
+        described_class::Error,
+        I18n.t('backups.restorer.errors.missing_postgres'),
+      )
+    end
+
+    it 'accepts archives whose entries are prefixed with ./ as produced by tar -C dir .' do
+      File.binwrite(
+        File.join(data_path, 'helios', 'backups', filename),
+        tar_archive(
+          './helios/config.yaml' => restored_config_yaml,
+          './solectrus-postgresql-backup-2026-05-08.sql.gz' => 'postgres dump',
+          './solectrus-influxdb-backup-2026-05-08.tar.gz' => 'influx backup',
+        ),
+      )
+
+      expect { described_class.start(filename) }.not_to raise_error
+    end
+
+    it 'translates a docker name conflict into a friendly error' do
+      state[:docker_inspect_success] = false
+      state[:docker_run_output] = 'docker: container name "/helios-restore-runner" is already in use'
+      state[:docker_run_success] = false
+
+      expect { described_class.start(filename) }.to raise_error(described_class::Error, /already in progress/)
+    end
+  end
+
+  describe '.in_progress' do
+    it 'returns nil when no container exists' do
+      state[:docker_inspect_success] = false
+
+      expect(described_class.in_progress).to be_nil
+    end
+
+    it 'returns an InProgress with started_at and filename when running' do
+      state[:docker_inspect_success] = true
+      state[:docker_inspect_running] = true
+      state[:docker_inspect_args] = [
+        '-c', 'script-body', '_', 'token', filename, 'pg', 'influx', 'helios', 'dashboard'
+      ]
+
+      result = described_class.in_progress
+      aggregate_failures do
+        expect(result).to be_a(BackupRepository::InProgress)
+        expect(result.filename).to eq(filename)
+        expect(result.started_at).to eq(Time.zone.parse('2026-05-08T14:30:00Z'))
+        expect(result.in_progress?).to be(true)
+      end
+    end
+  end
+
+  describe '.error_message' do
+    it 'returns the restore error text' do
+      File.write(File.join(data_path, 'helios', 'backups', 'restore-error.txt'), "InfluxDB restore failed\n")
+
+      expect(described_class.error_message).to eq('InfluxDB restore failed')
+    end
+  end
+
+  def stub_open3_response(args)
+    case args
+    in ['docker', 'image', 'inspect', 'docker:cli']
+      ['', instance_double(Process::Status, success?: state[:image_present])]
+    in ['docker', 'pull', 'docker:cli']
+      [state[:docker_pull_output], instance_double(Process::Status, success?: state[:docker_pull_success])]
+    in ['docker', 'inspect', 'helios-restore-runner']
+      docker_inspect_response
+    in ['docker', 'run', *_rest]
+      [state[:docker_run_output], instance_double(Process::Status, success?: state[:docker_run_success])]
+    else
+      raise "Unexpected Open3 call: #{args.inspect}"
+    end
+  end
+
+  def docker_inspect_response
+    success = state[:docker_inspect_success]
+    payload = if success
+                JSON.generate([{
+                                'State' => {
+                                  'Running' => state[:docker_inspect_running],
+                                  'StartedAt' => state[:docker_inspect_started_at],
+                                },
+                                'Args' => state[:docker_inspect_args],
+                              }])
+              else
+                ''
+              end
+    [payload, instance_double(Process::Status, success?: success)]
+  end
+
+  def restored_config_yaml
+    <<~YAML
+      postgresql:
+        image: postgres:18-alpine
+        password: restored-secret
+      influxdb:
+        image: influxdb:2-alpine
+        org: solectrus
+        bucket: solectrus
+        password: restored-secret
+        token_admin: restored-token
+        token_readwrite: restored-token
+        token_write: restored-token
+        token_read: restored-token
+      system:
+        timezone: Europe/Berlin
+    YAML
+  end
+
+  def mock_container(name, service_name, running:)
+    instance_double(Orchestration::Container, name: name, service_name: service_name, running?: running)
+  end
+
+  def tar_archive(entries)
+    StringIO.new.tap do |io|
+      Gem::Package::TarWriter.new(io) do |tar|
+        entries.each do |name, content|
+          tar.add_file_simple(name, 0o644, content.bytesize) { |entry| entry.write(content) }
+        end
+      end
+    end.string
+  end
+end

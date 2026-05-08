@@ -29,13 +29,19 @@ module StatusBar
         icon: 'fa-solid fa-arrows-rotate',
         css: 'bg-warning text-warning-content',
       },
+      restore_in_progress: {
+        icon: 'fa-solid fa-arrow-rotate-left fa-spin',
+        css: 'bg-warning text-warning-content status-bar-barber-pole',
+      },
     }.freeze
 
     DEFAULT_CONFIG = STATE_CONFIG[:stopped]
 
     def initialize(status: nil)
       super()
-      @status = status || Orchestration::StackStatus.overall
+      @restore_in_progress = RestoreRunner.in_progress.present?
+      @backup_in_progress = !@restore_in_progress && BackupRunner.in_progress.present?
+      @status = derive_status(status)
       @config = STATE_CONFIG.fetch(@status, DEFAULT_CONFIG)
     end
 
@@ -48,6 +54,8 @@ module StatusBar
     end
 
     def labels
+      return restore_labels if @status == :restore_in_progress
+
       counts = service_counts
       pending_restart = pending_restart_services
       pending_start = pending_start_services
@@ -57,7 +65,15 @@ module StatusBar
       end
     end
 
+    def backup_hint_labels
+      return nil unless @backup_in_progress
+
+      I18n.available_locales.index_with { |locale| t('.backup_in_progress', locale:) }
+    end
+
     def show_start?
+      return false if operation_in_progress?
+
       @status.in?(%i[stopped partial error]) &&
         Configuration.current.setup_completed? &&
         !Configuration.current.incomplete? &&
@@ -65,10 +81,14 @@ module StatusBar
     end
 
     def show_stop?
+      return false if operation_in_progress?
+
       @status.in?(%i[ok starting partial error])
     end
 
     def show_restart?
+      return false if operation_in_progress?
+
       @status == :restart_required
     end
 
@@ -77,6 +97,20 @@ module StatusBar
     end
 
     private
+
+    def derive_status(provided)
+      return :restore_in_progress if @restore_in_progress
+
+      provided || Orchestration::StackStatus.overall
+    end
+
+    def operation_in_progress?
+      @restore_in_progress || @backup_in_progress
+    end
+
+    def restore_labels
+      I18n.available_locales.index_with { |locale| t('.restore_in_progress', locale:) }
+    end
 
     def service_counts
       Orchestration::StackStatus.service_counts

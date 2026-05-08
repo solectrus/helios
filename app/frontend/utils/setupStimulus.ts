@@ -44,26 +44,72 @@ Turbo.StreamActions.redirect = function (this: Element) {
 declare module '@hotwired/turbo' {
   const config: {
     forms: {
-      confirm: (message: string, element: HTMLFormElement) => Promise<boolean>;
+      confirm: (
+        message: string,
+        form: HTMLFormElement,
+        submitter?: HTMLElement,
+      ) => Promise<boolean>;
     };
   };
 }
 
-Turbo.config.forms.confirm = (message: string) => {
+Turbo.config.forms.confirm = (
+  message: string,
+  form: HTMLFormElement,
+  submitter?: HTMLElement,
+) => {
   const dialog = document.getElementById(
     'turbo-confirm-dialog',
   ) as HTMLDialogElement | null;
   if (!dialog) return Promise.resolve(confirm(message));
 
+  // innerHTML: all confirm messages come from trusted i18n yamls and may
+  // include light formatting (<br>, <strong>). Interpolated values come
+  // from server-side helpers (l(), service names from compose), not user
+  // input.
   const messageEl = dialog.querySelector('[data-confirm-message]');
-  if (messageEl) messageEl.textContent = message;
+  if (messageEl) messageEl.innerHTML = message;
+
+  const acceptButton = dialog.querySelector<HTMLButtonElement>(
+    '[data-confirm-accept]',
+  );
+  const variant =
+    submitter?.dataset.turboConfirmVariant || form.dataset.turboConfirmVariant;
+  const buttonText =
+    submitter?.dataset.turboConfirmButton || form.dataset.turboConfirmButton;
+
+  if (acceptButton) {
+    acceptButton.classList.toggle('btn-error', variant === 'error');
+    acceptButton.classList.toggle('btn-warning', variant !== 'error');
+    // Capture default label on first call so we can restore it when no
+    // override is supplied. textContent is trimmed because the layout
+    // indents the button content for readability.
+    acceptButton.dataset.confirmDefault ??=
+      acceptButton.textContent?.trim() ?? '';
+    acceptButton.textContent =
+      buttonText || acceptButton.dataset.confirmDefault;
+  }
+
+  const icon = dialog.querySelector('[data-confirm-icon]');
+  icon?.classList.toggle('hidden', variant !== 'error');
 
   return new Promise<boolean>((resolve) => {
     dialog.addEventListener(
       'close',
-      () => resolve(dialog.returnValue === 'confirm'),
+      () => {
+        // Browser restores focus to the submitter on close. If the submitter
+        // lives inside a CSS focus-driven container (e.g. daisyUI dropdown),
+        // the container would re-open. Drop the focus so any such container
+        // collapses.
+        if (submitter instanceof HTMLElement) submitter.blur();
+        resolve(dialog.returnValue === 'confirm');
+      },
       { once: true },
     );
+    // Reset returnValue: it persists across opens, and ESC / backdrop submitters
+    // without an explicit value don't overwrite it. Without this, a previous
+    // 'confirm' would leak into the next interaction and be treated as accepted.
+    dialog.returnValue = '';
     dialog.showModal();
   });
 };

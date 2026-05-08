@@ -1,5 +1,7 @@
 module Env
   def self.load
+    return nil unless ::File.exist?(path)
+
     File.load(path)
   end
 

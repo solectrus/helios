@@ -2,6 +2,7 @@ en:
   logout: 'Logout'
   configuration: 'Configuration'
   services: 'Services'
+  backup: 'Backup'
   support: 'Support'
   menu: 'Menu'
   close_menu: 'Close menu'

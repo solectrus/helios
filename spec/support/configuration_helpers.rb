@@ -23,5 +23,5 @@ end
 RSpec.configure do |config|
   config.include ConfigurationHelpers
 
-  config.after { Current.configuration = nil }
+  config.after { Current.reset }
 end

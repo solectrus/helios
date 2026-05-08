@@ -28,6 +28,11 @@
 #       enabled: "ON"
 
 en:
+  time:
+    formats:
+      backup_date: '%Y-%m-%d'
+      backup_time: '%H:%M'
+
   common:
     back: 'Back'
     cancel: 'Cancel'
@@ -141,6 +146,81 @@ en:
       download: 'Download ZIP'
       downloading: 'Preparing…'
       downloaded: 'Downloaded'
+
+  backups:
+    index:
+      title: 'Backup'
+      create_title: 'Create new backup'
+      note: 'Saves the complete SOLECTRUS installation (including the InfluxDB and PostgreSQL databases as well as the configuration) as a single file.'
+      download: 'Create backup'
+      in_progress: 'In progress…'
+      duration_hint: 'Runs in the background and may take several minutes for larger data volumes. You can leave this page; the backup will keep running. SOLECTRUS stays usable in the meantime. The five most recent backups are kept; older ones are removed automatically.'
+      unavailable: 'Backup currently unavailable: %{message}'
+      existing_title: 'Existing backups'
+      existing_empty: 'No backups yet.'
+      upload: 'Upload'
+      download_existing: 'Download'
+      restore_existing: 'Restore'
+      restore_confirm: 'Your current data and configuration will be overwritten and thus lost.<br><br>SOLECTRUS will then be back at the state from <strong>%{date}, %{time}</strong>.'
+      restore_confirm_button: 'Restore this backup'
+      restore_in_progress: 'Restoring…'
+      restored_at: 'Restored on %{date}, %{time}'
+      delete_existing: 'Delete backup'
+      delete_confirm: 'The backup from <strong>%{date}, %{time}</strong> will be permanently deleted.'
+      delete_confirm_button: 'Delete backup'
+      actions: 'Actions'
+      error: 'Backup failed: %{message}'
+      restore_error: 'Restore failed: %{message}'
+      dismiss: 'Dismiss message'
+    create:
+      started: 'Backup was started.'
+      error: 'Backup could not be started: %{message}'
+    destroy:
+      deleted: 'Backup was deleted.'
+    uploads:
+      create:
+        uploaded: 'Backup was uploaded.'
+        error: 'Backup could not be uploaded: %{message}'
+    uploader:
+      errors:
+        backup_in_progress: 'A backup is already in progress.'
+        restore_in_progress: 'A restore is already in progress.'
+        missing: 'No file selected.'
+        not_tar: 'File is not a .tar file.'
+        too_large: 'File exceeds the allowed maximum size.'
+        invalid_archive: 'File is not a valid tar archive.'
+        already_exists: 'A backup with this name already exists.'
+        missing_postgres: 'File does not contain a PostgreSQL database dump.'
+        missing_influx: 'File does not contain InfluxDB data.'
+        missing_config: 'File does not contain helios/config.yaml.'
+        write_failed: 'File could not be saved: %{message}'
+    restores:
+      create:
+        started: 'Restore was started.'
+        error: 'Restore could not be started: %{message}'
+    runner:
+      errors:
+        restore_in_progress: 'A restore is already in progress.'
+        already_in_progress: 'A backup is already in progress.'
+        image_pull_failed: 'Background process could not be prepared: %{output}'
+        start_failed: 'Background process could not be started: %{output}'
+      unavailable_reasons:
+        env_missing: '.env file is missing.'
+        config_missing: 'helios/config.yaml is missing.'
+        influx_token_missing: 'INFLUX_ADMIN_TOKEN is missing in .env.'
+        postgres_not_running: 'PostgreSQL service is not running.'
+        influxdb_not_running: 'InfluxDB service is not running.'
+    restorer:
+      errors:
+        backup_in_progress: 'A backup is already in progress.'
+        already_in_progress: 'A restore is already in progress.'
+        backup_not_found: 'Backup file was not found.'
+        missing_config: 'Backup does not contain helios/config.yaml.'
+        missing_postgres: 'Backup does not contain a PostgreSQL database dump.'
+        missing_influx: 'Backup does not contain InfluxDB data.'
+        missing_token: 'INFLUX_ADMIN_TOKEN is missing in the restored .env.'
+        image_pull_failed: 'Background process could not be prepared: %{output}'
+        start_failed: 'Background process could not be started: %{output}'
 
   configurations:
     show:

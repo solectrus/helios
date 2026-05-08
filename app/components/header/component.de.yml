@@ -2,6 +2,7 @@ de:
   logout: 'Abmelden'
   configuration: 'Konfiguration'
   services: 'Dienste'
+  backup: 'Datensicherung'
   support: 'Support'
   menu: 'Menü'
   close_menu: 'Menü schließen'

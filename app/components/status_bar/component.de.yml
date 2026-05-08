@@ -8,6 +8,8 @@ de:
   restart_required: 'Konfiguration geändert – Neustart erforderlich'
   restart_required_services: 'Neustart erforderlich: %{services}'
   start_pending_services: 'Start ausstehend: %{services}'
+  restore_in_progress: 'Wiederherstellung läuft…'
+  backup_in_progress: 'Backup wird erstellt…'
   start: 'Start'
   stop: 'Stop'
   restart: 'Neustart'
