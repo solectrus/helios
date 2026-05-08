@@ -34,10 +34,18 @@ Anonymized but otherwise untouched.
   taken from `raw_compose` (original YAML), not from
   `docker compose config` (which alphabetizes and would have made
   `forecast-collector-forecast-solar` win).
+- **Three distinct InfluxDB tokens preserved.** `INFLUX_TOKEN_READ`
+  (dashboard), `INFLUX_TOKEN_WRITE` (forecast-collectors, ingest), and
+  `INFLUX_TOKEN_READWRITE` (power-splitter) carry different values in the
+  donor; HELIOS imports each into its own role (`token_read`, `token_write`,
+  `token_readwrite`) and the export wires every managed service back to the
+  right variable. Dashboard keeps read-only access — no privilege
+  escalation. `INFLUX_ADMIN_TOKEN` falls back to the readwrite token because
+  the donor has no explicit admin token.
 - **Inline literal `INFLUXDB_TOKEN: "my-influxdb-admin-token"` on
   `fluxbackup`** — the user hardcoded the admin token in compose; HELIOS
   recognizes `fluxbackup` as the InfluxDB-S3 backup service and rewrites
-  the literal to `INFLUXDB_TOKEN=${INFLUX_TOKEN}` on re-export.
+  the literal to `INFLUXDB_TOKEN=${INFLUX_ADMIN_TOKEN}` on re-export.
 - **Backup service images** — `backup.postgresql.image:
   ghcr.io/solectrus/postgres-s3-backup:18` and `backup.influxdb.image:
   ghcr.io/solectrus/influxdb2-s3-backup:latest` survive verbatim.
@@ -73,14 +81,6 @@ Anonymized but otherwise untouched.
 - **Reverse-proxy and network setup gone.** `traefik-public` external
   network, per-service `hostname: *.${APP_HOST}`, `links:` directives, and
   `ulimits.nofile` on the dashboard service all stripped.
-- **Three distinct InfluxDB tokens consolidated lossily.**
-  `INFLUX_TOKEN_READ` (dashboard), `INFLUX_TOKEN_WRITE` (forecast-collectors,
-  ingest), and `INFLUX_TOKEN_READWRITE` (power-splitter) carry different
-  values; HELIOS exports a single `INFLUX_TOKEN=my-influx-write-token`. The
-  dashboard previously had read-only access and now gets the write token —
-  a genuine privilege-escalation side effect of the round-trip. (Unlike
-  user4 where all three tokens happened to be identical and consolidation
-  was lossless.)
 - **S3 backup credentials silently lost.** Donor has populated
   `AWS_ACCESS_KEY=my-aws-access-key`, `AWS_SECRET_KEY=my-aws-secret-key`,
   `S3_REGION=eu-central-1`, `S3_BUCKET=solectrus`, plus
