@@ -49,7 +49,7 @@ module Orchestration
     def self.store_deployed_hashes!
       hashes = Runner.config_hashes.except(Runner::SELF_SERVICE)
       Rails.cache.write(CONFIG_HASH_CACHE_KEY, hashes)
-      ::File.write(deployed_hashes_path, hashes.to_json)
+      write_deployed_hashes_file!(hashes)
       invalidate_affected_caches
     rescue StandardError => e
       Rails.logger.error(
@@ -79,7 +79,7 @@ module Orchestration
       pruned[service_name] = hash
       return if pruned == deployed
 
-      ::File.write(deployed_hashes_path, pruned.to_json)
+      write_deployed_hashes_file!(pruned)
       Rails.cache.delete(CONFIG_HASH_CACHE_KEY)
       invalidate_affected_caches
     rescue StandardError => e
@@ -94,11 +94,19 @@ module Orchestration
       {}
     end
 
-    # Stored under data_path (the bind-mounted host directory) so the file
-    # survives a HELIOS self-update — the container is recreated from a
-    # fresh image, which would discard anything inside the image layers.
+    # Stored under helios/ alongside config.yaml — this is HELIOS-internal
+    # runtime state, not a file the user's compose stack reads. Keeping
+    # everything HELIOS-owned in one place matches the project rule that
+    # only compose.yaml and .env may live at the data_path root. The
+    # bind-mounted host volume ensures the file survives a HELIOS
+    # self-update, which recreates the container from a fresh image.
     def self.deployed_hashes_path
-      File.join(Rails.configuration.data_path, 'deployed_config_hashes.json')
+      File.join(Rails.configuration.data_path, 'helios', 'deployed_config_hashes.json')
+    end
+
+    def self.write_deployed_hashes_file!(hashes)
+      FileUtils.mkdir_p(::File.dirname(deployed_hashes_path))
+      ::File.write(deployed_hashes_path, hashes.to_json)
     end
 
     def compute
@@ -160,7 +168,7 @@ module Orchestration
     end
 
     def write_deployed_hashes(hashes)
-      ::File.write(self.class.deployed_hashes_path, hashes.to_json)
+      self.class.write_deployed_hashes_file!(hashes)
     rescue StandardError => e
       Rails.logger.error(
         "AffectedServices: failed to store deployed hashes: #{e.message}",

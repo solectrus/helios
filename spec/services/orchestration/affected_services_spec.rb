@@ -426,6 +426,7 @@ RSpec.describe Orchestration::AffectedServices do
   end
 
   def write_deployed_hashes(hashes)
+    FileUtils.mkdir_p(File.dirname(deployed_hashes_path))
     File.write(deployed_hashes_path, hashes.to_json)
   end
 end
