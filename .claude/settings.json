@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bats:*)",
+      "Bash(bin/brakeman:*)",
+      "Bash(bin/bundler-audit:*)",
+      "Bash(bin/ci:*)",
+      "Bash(bin/herb:*)",
+      "Bash(bin/rails:*)",
+      "Bash(bin/rake:*)",
+      "Bash(bin/rspec:*)",
+      "Bash(bin/rubocop:*)",
+      "Bash(bin/yarn:*)",
+      "Bash(bundle install:*)",
+      "Bash(bundle show:*)",
+      "Bash(docker compose:*)",
+      "Bash(gh issue view:*)",
+      "Bash(gh pr list:*)",
+      "Bash(gh pr view:*)",
+      "Bash(gh repo view:*)",
+      "Bash(gh search issues:*)"
+    ]
+  }
+}

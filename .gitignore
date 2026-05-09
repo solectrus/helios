@@ -68,3 +68,6 @@
 
 # SimpleCov
 /coverage/
+
+# Claude Code per-machine settings (permissions, hooks etc.)
+/.claude/settings.local.json

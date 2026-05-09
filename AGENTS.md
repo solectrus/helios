@@ -1,127 +1,76 @@
 # HELIOS
 
-Rails 8.1 web-based management tool for SOLECTRUS Docker hosts. HELIOS removes the need to hand-edit `compose.yaml` / `.env` or run `docker compose` commands.
+Rails 8.1 web-based management tool for SOLECTRUS Docker hosts. Removes the need to hand-edit `compose.yaml` / `.env` or run `docker compose` commands.
 
 ## Stack
 
 - Ruby 4.0, SQLite3
-- Hotwire (Turbo + Stimulus), TypeScript, Vite, ViewComponent
-- Tailwind CSS v4, ERB templates, daisyUI
-- RSpec + Playwright, Bats for shell scripts
+- Hotwire (Turbo + Stimulus in TypeScript), Vite, ViewComponent
+- Tailwind CSS v4, ERB, daisyUI
+- RSpec + Playwright, Bats
 
 ## Documentation
 
-Documentation lives in `docs/` (see `docs/README.md` for the full map):
-
-**What HELIOS does:**
-
-- `docs/product.md` - Scenarios, features, technical constraints
-
-**How HELIOS is built:**
-
-- `docs/architecture/overview.md` - System architecture and internal storage
-- `docs/architecture/docker.md` - Docker integration, generated files, health checks
-- `docs/guides/development.md` - Setup, workflow, and test strategy
-- `docs/adr/` - Architecture decision records
-
-**What's left:**
-
-- `docs/todos.md` - Open work items, grouped by area
+See `docs/README.md` for the full map. Key entry points: `docs/product.md`, `docs/architecture/`, `docs/guides/development.md`, `docs/adr/`, `docs/todos.md`.
 
 ## External References
 
-For daisyUI components, fetch the official LLM documentation:
-https://daisyui.com/llms.txt
+Fetch on demand:
 
-For SurveyJS form configuration (question types, visibleIf, validators, expressions), fetch:
-https://surveyjs.io/form-library/documentation/overview
+- daisyUI: https://daisyui.com/llms.txt
+- SurveyJS: https://surveyjs.io/form-library/documentation/overview
+- SOLECTRUS env var semantics: https://docs.solectrus.de/ — **source of truth** for `INFLUX_*`, `FORECAST_*`, `SENEC_*`, `MQTT_*`, `SHELLY_*`, `POWER_SPLITTER_*`, `WATCHTOWER_*` defaults/ranges. Don't infer from existing HELIOS code; it may be wrong.
 
-For SOLECTRUS env var semantics (defaults, valid ranges, runtime behavior), fetch:
-https://docs.solectrus.de/
+## Verifying in the Browser
 
-This is the source of truth when picking default values, validation bounds,
-or fallback behavior for any `INFLUX_*`, `FORECAST_*`, `SENEC_*`, `MQTT_*`,
-`SHELLY_*`, `POWER_SPLITTER_*`, or `WATCHTOWER_*` setting HELIOS exports.
-Do not infer defaults from the existing HELIOS code — they may be wrong (e.g.
-HELIOS used to hardcode `POWER_SPLITTER_INTERVAL=300`, the documented
-minimum, while the docs default is `3600`).
+For non-trivial UI changes — new flows, complex interactions, anything where rendering or console errors aren't obvious from the diff — verify against the running dev UI at https://helios.localhost using the `mcp__chrome-devtools__*` tools.
 
-## Code Quality
+Skip browser verification for trivial changes (typos, simple CSS tweaks, obvious copy edits) — it's slower and costs tokens.
 
-```bash
-bin/rubocop           # Ruby style (use --autocorrect for auto-correct)
-bin/herb lint         # ERB template linting
-bin/yarn erb:format   # ERB formatting (auto-fix)
-bin/yarn erb:check    # ERB formatting check
-bin/yarn tsc          # TypeScript type checking
-bin/yarn lint         # ESLint for TypeScript
-bin/brakeman          # Security scan (run occasionally, not per-change)
-bin/rspec             # Tests
-```
+Assume the dev server is already running (started by the user via `bin/dev`) — do **not** start it yourself.
 
-### Mandatory Linting
+## Mandatory Linting
 
-After creating or modifying code, **always** run the relevant linter(s) before considering the task complete. Fix any issues found.
+After modifying code, **always** run the matching linter(s) and fix issues:
 
-- **Ruby code** (`.rb`): Run `bin/rubocop` on changed files. Use `--autocorrect` to auto-correct, review the result.
-- **ERB templates** (`.html.erb`): Run `bin/herb lint` for linting. Run `bin/yarn erb:format` to auto-fix formatting or `bin/yarn erb:check` to check only.
-- **TypeScript code** (`.ts`): Run `bin/yarn tsc` (type checking) and `bin/yarn lint` (ESLint). Both must pass.
+- Ruby (`.rb`): `bin/rubocop` (use `--autocorrect`)
+- ERB (`.html.erb`): `bin/herb lint` + `bin/yarn erb:format` (or `erb:check`)
+- TypeScript (`.ts`): `bin/yarn tsc` + `bin/yarn lint`
+
+Run `bin/brakeman` occasionally for security scans (not per-change).
 
 ## Rails Conventions
 
-- **Controllers**: Always use plural names (e.g., `SetupsController`, not `SetupController`)
-- **Routes**: Only use the 7 standard RESTful actions (`index`, `show`, `new`, `create`, `edit`, `update`, `destroy`)
-- **Custom actions**: Model as nested resources instead of custom member/collection routes
-  - Example: Instead of `post :start` on services, use `Services::StartsController#create`
-  - This keeps routing RESTful and controllers focused
+- Controllers: plural names (`SetupsController`)
+- Routes: only the 7 RESTful actions; model custom actions as nested resources (e.g. `Services::StartsController#create` instead of `post :start`)
 
-## Frontend
+## ViewComponent
 
-- Stimulus controllers use **TypeScript** (`.ts` files), not JavaScript
-- UI components use daisyUI (Tailwind CSS component library)
+Use ViewComponents for reusable UI; prefer them over partials. Sidecar layout per component:
+
+```
+app/components/<name>/component.rb
+app/components/<name>/component.html.erb
+app/components/<name>/component_controller.ts   # optional, co-located Stimulus controller
+app/components/<name>/component.de.yml          # optional, co-located i18n (per locale)
+app/components/<name>/component.en.yml
+```
+
+## i18n
+
+HELIOS ships in German and English — every user-facing string must exist in both locales. Never hardcode UI text. App-wide keys live in `config/locales/{de,en}.yml`; component-local keys use the ViewComponent sidecar (`app/components/<name>/component.{de,en}.yml`).
 
 ## Project-Specific Rules
 
-- Use bind mounts, not Docker volumes (ADR-0003)
-- Use real Docker in tests, no mocking
-- Only write two external files HELIOS manages: `compose.yaml` and `.env`
-- All user configuration is stored in a single `config.yaml` file (ADR-0009); no Active Record tables are used for app data
-- Preserve comments and unknown variables in `.env`
-- Comments in `compose.yaml` are not preserved (acceptable)
+- Bind mounts, not Docker volumes (ADR-0003)
+- HELIOS writes only two external files: `compose.yaml` and `.env`
+- All app data lives in `config.yaml` (ADR-0009); no Active Record tables
+- Preserve comments and unknown vars in `.env` (comments in `compose.yaml` are not preserved)
 
 ## Testing
 
-### Running Tests
-
-- Model specs: `bin/rspec spec/models/<model>_spec.rb`
-- Request specs: `bin/rspec spec/requests/<feature>_spec.rb`
-- System specs: `bin/rspec spec/system/<feature>_spec.rb`
-- Shell script specs: `bats --recursive spec/bats/`
-
-**System specs are slow** (Playwright browser automation). Only run when:
-
-- UI behavior or JavaScript interactions are affected
-- Request specs cannot verify the functionality
-
-Use `HEADLESS=false` for debugging with a visible browser window.
-
-### Test Guidelines
-
-- 100% coverage is the goal (not enforced)
-- Focus on unit tests
-- Use real Docker in tests, no mocking
-- System tests use `capybara-playwright-driver` (Capybara DSL + Playwright browser)
-
-## Project Status
-
-HELIOS is nearly feature-complete. Core functionality is shipped: compose.yaml / .env
-handling with comment-preserving round-trip, YAML-based configuration (ADR-0009), hybrid
-Docker integration (Docker API + Compose CLI + events listener), authentication, first-start
-consent flow, survey-based configuration (15 survey JSONs), service management dashboard
-with live status bar and log viewer, full stack generation (~15 service definitions under
-`Export::Services::*`), auto-import of existing installations with unmanaged preservation,
-sensor mapping with InfluxDB latest-value readings, DE/EN localization.
-
-Remaining work is tracked by area in `docs/todos.md` — auto-import review screen, InfluxDB
-discovery during import, "Update now" trigger for Watchtower, and a link from Dashboard
-back to HELIOS.
+- Ruby/request specs: `bin/rspec spec/<models|requests>/<file>_spec.rb`
+- Frontend specs (Stimulus controllers, TS utils): `bin/yarn test` (Vitest, in `spec/frontend/`)
+- Shell scripts: `bats --recursive spec/bats/`
+- Use real Docker, no mocking
+- Aim for high coverage, but don't chase 100% — write tests proportional to the code's complexity, no tests for trivial wiring. Focus on unit and request specs. The only system spec is `spec/system/smoke_spec.rb` (Playwright); usually no need to touch it.

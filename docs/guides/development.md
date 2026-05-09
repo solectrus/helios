@@ -30,9 +30,7 @@
 - Development: `./stack` (relative to Rails root)
 - Test: `./spec/fixtures`
 
-**Project name:** HELIOS hard-codes the Compose project name to `solectrus` (see [`Orchestration::PROJECT_NAME`](../../app/services/orchestration.rb)). On boot, [`StartupCheck#check_compose_project_name`](../../app/services/startup_check.rb) refuses to run if `compose.yaml` does not declare `name: solectrus`. The `stack/compose.yaml` checked into this repo already has that line — leave it in place.
-
-This keeps container lookups by `com.docker.compose.project` label stable regardless of the host directory name.
+**Project name:** HELIOS hard-codes the Compose project name to `solectrus` (see [`Orchestration::PROJECT_NAME`](../../app/services/orchestration.rb)). On boot, [`StartupCheck#check_compose_project_name`](../../app/services/startup_check.rb) refuses to run if `compose.yaml` does not declare `name: solectrus`. The `stack/compose.yaml` checked into this repo already has that line — leave it in place. This keeps container lookups by `com.docker.compose.project` label stable regardless of the host directory name.
 
 ## Development Workflow
 
@@ -55,59 +53,15 @@ Both modes use the same hybrid Docker access (docker-api gem + `docker compose` 
 
 ## Testing
 
-**Frameworks:** RSpec for Ruby code, Bats for shell scripts
-
-### Test Strategy
-
-**Core principles:**
-
-- All code must be covered by tests
-- 100% coverage is the goal (not enforced, but aspired to)
-- Focus on **unit tests** – they are fast, reliable, and document behavior
-- Use **real Docker** in tests, not mocks — [`spec/support/docker_helpers.rb`](../../spec/support/docker_helpers.rb) exposes `skip_without_docker` for tests that need a running daemon
-- Write tests first or alongside implementation, not as an afterthought
-
-**Test pyramid:**
-
-```
-        /\
-       /  \      System tests – few, for JS-heavy and UI flows
-      /----\
-     /      \    Request tests – controllers, auth, integration
-    /--------\
-   /          \  Unit tests – majority of tests, fast, isolated
-  /------------\
-```
-
-### Test Categories
-
-| Category      | Purpose                             | Tools                         | Priority |
-| ------------- | ----------------------------------- | ----------------------------- | -------- |
-| Unit tests    | Service classes, models, components | RSpec                         | High     |
-| Request tests | Controllers, auth, HTTP integration | RSpec                         | High     |
-| Job tests     | Background job behavior             | RSpec                         | Medium   |
-| System tests  | UI flows, JS-heavy interactions     | RSpec + Capybara + Playwright | Medium   |
-| Shell tests   | Bootstrap installer, shell scripts  | Bats                          | Medium   |
-
-**System tests** use `capybara-playwright-driver`: Capybara's DSL with a real Chromium browser powered by Playwright. This covers both server-rendered flows and JS-heavy interactions (SurveyJS forms, real-time updates, Stimulus controllers).
+**Aim for high coverage, but don't chase 100%** — write tests proportional to the code's complexity. Focus on unit and request specs; use real Docker (not mocks). [`spec/support/docker_helpers.rb`](../../spec/support/docker_helpers.rb) exposes `skip_without_docker` for tests that need a running daemon.
 
 ### Run Tests
 
 ```bash
-# Run all tests (unit, request, job, system)
-bin/rspec
-
-# Run specific test file
-bin/rspec spec/services/compose/file_spec.rb
-
-# Run only system tests
-bin/rspec spec/system/
-
-# Run system tests with visible browser (for debugging)
-HEADLESS=false bin/rspec spec/system/
-
-# Run shell script tests (Bats)
-bats --recursive spec/bats/
+bin/rspec                                      # all Ruby specs
+bin/rspec spec/services/compose/file_spec.rb   # single file
+bin/yarn test                                  # Vitest (frontend specs)
+bats --recursive spec/bats/                    # shell scripts
 ```
 
 SimpleCov runs unconditionally from [`spec/spec_helper.rb`](../../spec/spec_helper.rb) and writes the coverage report to `coverage/index.html`.
@@ -118,7 +72,7 @@ SimpleCov runs unconditionally from [`spec/spec_helper.rb`](../../spec/spec_help
 
 - `spec/models/`, `spec/services/`, `spec/jobs/`, `spec/channels/`, `spec/lib/` — unit tests, one file per class / module
 - `spec/requests/` — HTTP-level specs per controller (plus nested folders for nested controllers)
-- `spec/system/` — Playwright-driven smoke coverage; keep thin, most flows are covered at the request level
+- `spec/system/` — currently only `smoke_spec.rb` (Playwright); most flows are covered at the request level
 - `spec/frontend/` — Vitest specs for Stimulus controllers and frontend utils
 - `spec/bats/` — Bats specs for shell scripts (e.g. `spec/bats/bootstrap/` for the bootstrap installer)
 - `spec/fixtures/import_scenarios/` — real `compose.yaml` / `.env` samples driving the Scenario C auto-import tests
@@ -131,4 +85,4 @@ SimpleCov runs unconditionally from [`spec/spec_helper.rb`](../../spec/spec_help
 - Use descriptive test names: `it "preserves comments when saving"`
 - Use fixtures for file-based tests
 - Clean up Docker resources after integration tests
-- Use system tests (`spec/system/`) for anything that requires real browser JavaScript execution
+- Reach for a system test only when behavior truly requires a real browser (JS-heavy flows that can't be covered by request specs)
