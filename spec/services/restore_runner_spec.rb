@@ -101,13 +101,24 @@ RSpec.describe RestoreRunner do
 
       run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
       placeholder_index = run.index('_')
-      expect(run[placeholder_index + 1, 8]).to eq(
+      expect(run[placeholder_index + 1, 9]).to eq(
         [
           'secret-token', filename, host_data_path, "#{host_data_path}/postgresql",
           "#{host_data_path}/influxdb", "#{host_data_path}/redis", '0',
-          'postgresql influxdb dashboard senec-collector forecast-collector'
+          'postgresql influxdb dashboard senec-collector forecast-collector',
+          'compose.yaml'
         ],
       )
+    end
+
+    it 'passes the actual compose filename when the user uses compose.yml' do
+      File.write(File.join(data_path, 'compose.yml'), "services: {}\n")
+
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      placeholder_index = run.index('_')
+      expect(run[placeholder_index + 9]).to eq('compose.yml')
     end
 
     it 'passes restart-after flag "1" when every configured service has a running container' do
@@ -153,7 +164,7 @@ RSpec.describe RestoreRunner do
         expect(script).to include('compose down -v --remove-orphans $SERVICES > "$STOP_LOG" 2>&1')
         expect(script).to include('rm -rf "$POSTGRES_DATA_PATH" "$INFLUXDB_DATA_PATH" "$REDIS_DATA_PATH"')
         expect(script).to include('compose up --no-build --wait -d postgresql influxdb > "$DB_START_LOG" 2>&1')
-        expect(script).to include('docker compose -f "$HOST_DATA_PATH/compose.yaml"')
+        expect(script).to include('docker compose -f "$COMPOSE_PATH"')
         expect(script).to include('--project-directory "$HOST_DATA_PATH"')
         expect(script).to include('if [ "$RESTART_AFTER" = "1" ]; then')
         expect(script).to include('compose up --no-build -d $SERVICES > "$START_LOG" 2>&1')

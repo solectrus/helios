@@ -119,7 +119,8 @@ class RestoreRunner
       IMAGE, '-c', SCRIPT, '_',
       influx_admin_token, backup.filename, host_data_path,
       postgresql_data_path, influxdb_data_path, redis_data_path,
-      restart_after_flag, services_except_self.join(' ')
+      restart_after_flag, services_except_self.join(' '),
+      ::Compose.filename
     ]
   end
 

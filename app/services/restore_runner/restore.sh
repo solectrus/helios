@@ -4,11 +4,13 @@
 # supports that allows `set -o pipefail`.
 # Receives positional args via `sh -c '<this script>' _ <token> <filename>
 # <host-data-path> <pg-data> <influx-data> <redis-data> <restart-after>
-# <services>`. Positional args are passed by argv (not interpolated) so
-# values with shell metacharacters are safe. SERVICES is a space-separated
-# list of compose service names (excluding `helios`) — the HELIOS service
-# itself must never be torn down by this script, since stopping our own
-# container would kill the user's UI mid-restore.
+# <services> <compose-filename>`. Positional args are passed by argv (not
+# interpolated) so values with shell metacharacters are safe. SERVICES is
+# a space-separated list of compose service names (excluding `helios`) —
+# the HELIOS service itself must never be torn down by this script, since
+# stopping our own container would kill the user's UI mid-restore.
+# COMPOSE_FILENAME is the basename of the compose file on the host (e.g.
+# `compose.yaml` or `compose.yml`); HELIOS supports both.
 
 set -eu
 set -o pipefail
@@ -21,11 +23,13 @@ INFLUXDB_DATA_PATH="$5"
 REDIS_DATA_PATH="$6"
 RESTART_AFTER="$7"
 SERVICES="$8"
+COMPOSE_FILENAME="$9"
 
 OUTPUT_DIR="/output"
 WORK_DIR="$OUTPUT_DIR/.restore-work"
 BACKUP_PATH="$OUTPUT_DIR/$BACKUP_FILENAME"
 ERROR_PATH="$OUTPUT_DIR/restore-error.txt"
+COMPOSE_PATH="$HOST_DATA_PATH/$COMPOSE_FILENAME"
 
 fail() {
   echo "$1" > "$ERROR_PATH"
@@ -35,9 +39,9 @@ fail() {
 
 compose() {
   if [ -f "$HOST_DATA_PATH/.env" ]; then
-    docker compose -f "$HOST_DATA_PATH/compose.yaml" --project-directory "$HOST_DATA_PATH" --env-file "$HOST_DATA_PATH/.env" --progress plain "$@"
+    docker compose -f "$COMPOSE_PATH" --project-directory "$HOST_DATA_PATH" --env-file "$HOST_DATA_PATH/.env" --progress plain "$@"
   else
-    docker compose -f "$HOST_DATA_PATH/compose.yaml" --project-directory "$HOST_DATA_PATH" --progress plain "$@"
+    docker compose -f "$COMPOSE_PATH" --project-directory "$HOST_DATA_PATH" --progress plain "$@"
   fi
 }
 
