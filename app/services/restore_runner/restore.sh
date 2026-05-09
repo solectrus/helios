@@ -3,9 +3,12 @@
 # Alpine `ash` (not bash); `shell=bash` is the closest dialect Shellcheck
 # supports that allows `set -o pipefail`.
 # Receives positional args via `sh -c '<this script>' _ <token> <filename>
-# <host-data-path> <pg-data> <influx-data> <redis-data> <restart-after>`.
-# Positional args are passed by argv (not interpolated) so values with shell
-# metacharacters are safe.
+# <host-data-path> <pg-data> <influx-data> <redis-data> <restart-after>
+# <services>`. Positional args are passed by argv (not interpolated) so
+# values with shell metacharacters are safe. SERVICES is a space-separated
+# list of compose service names (excluding `helios`) — the HELIOS service
+# itself must never be torn down by this script, since stopping our own
+# container would kill the user's UI mid-restore.
 
 set -eu
 set -o pipefail
@@ -17,6 +20,7 @@ POSTGRES_DATA_PATH="$4"
 INFLUXDB_DATA_PATH="$5"
 REDIS_DATA_PATH="$6"
 RESTART_AFTER="$7"
+SERVICES="$8"
 
 OUTPUT_DIR="/output"
 WORK_DIR="$OUTPUT_DIR/.restore-work"
@@ -67,7 +71,11 @@ CONFIG_FILE="$WORK_DIR/helios/config.yaml"
 # aborts with `config name "default" already exists` and the entrypoint
 # self-wipes bolt+engine in a restart loop.
 STOP_LOG="$WORK_DIR/compose-down.log"
-if ! compose down -v --remove-orphans > "$STOP_LOG" 2>&1; then
+# Intentionally unquoted: SERVICES is a space-separated list of service
+# names that must be word-split into individual `down` arguments. Compose
+# service names cannot contain whitespace, so splitting is safe.
+# shellcheck disable=SC2086
+if ! compose down -v --remove-orphans $SERVICES > "$STOP_LOG" 2>&1; then
   fail "Failed to stop services before restore: $(tail -n 20 "$STOP_LOG" | tr '\n' ' ')"
 fi
 
@@ -151,7 +159,9 @@ mv "$UPDATED_MANIFEST" "$MANIFEST_PATH"
 # only the DBs (started fresh above for the import) keep running.
 if [ "$RESTART_AFTER" = "1" ]; then
   START_LOG="$WORK_DIR/compose-up.log"
-  if ! compose up --no-build -d > "$START_LOG" 2>&1; then
+  # See SERVICES note above for why this is unquoted.
+  # shellcheck disable=SC2086
+  if ! compose up --no-build -d $SERVICES > "$START_LOG" 2>&1; then
     fail "Failed to start restored stack: $(tail -n 20 "$START_LOG" | tr '\n' ' ')"
   fi
 fi

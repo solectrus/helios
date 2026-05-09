@@ -119,7 +119,7 @@ class RestoreRunner
       IMAGE, '-c', SCRIPT, '_',
       influx_admin_token, backup.filename, host_data_path,
       postgresql_data_path, influxdb_data_path, redis_data_path,
-      restart_after_flag
+      restart_after_flag, services_except_self.join(' ')
     ]
   end
 
@@ -144,9 +144,15 @@ class RestoreRunner
   # running. The restore script restarts the stack only in that case;
   # otherwise it leaves manually-stopped services alone after the restore.
   def restart_after_flag
-    expected = ::Compose.load.services.names - [Orchestration::Runner::SELF_SERVICE]
     running = Orchestration::Container.all.select(&:running?).filter_map(&:service_name)
-    (expected - running).empty? ? '1' : '0'
+    (services_except_self - running).empty? ? '1' : '0'
+  end
+
+  # The HELIOS service must never appear in compose down/up calls issued by
+  # the restore script — stopping our own container would kill the user's
+  # UI mid-restore. Mirrors `Orchestration::Runner.services_except_self`.
+  def services_except_self
+    @services_except_self ||= ::Compose.load.services.names - [Orchestration::Runner::SELF_SERVICE]
   end
 
   def influx_admin_token

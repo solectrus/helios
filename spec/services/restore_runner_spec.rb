@@ -101,10 +101,11 @@ RSpec.describe RestoreRunner do
 
       run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
       placeholder_index = run.index('_')
-      expect(run[placeholder_index + 1, 7]).to eq(
+      expect(run[placeholder_index + 1, 8]).to eq(
         [
           'secret-token', filename, host_data_path, "#{host_data_path}/postgresql",
-          "#{host_data_path}/influxdb", "#{host_data_path}/redis", '0'
+          "#{host_data_path}/influxdb", "#{host_data_path}/redis", '0',
+          'postgresql influxdb dashboard senec-collector forecast-collector'
         ],
       )
     end
@@ -124,7 +125,8 @@ RSpec.describe RestoreRunner do
       described_class.start(filename)
 
       run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
-      expect(run.last).to eq('1')
+      placeholder_index = run.index('_')
+      expect(run[placeholder_index + 7]).to eq('1')
     end
 
     it 'passes restart-after flag "0" when a configured service has no container at all' do
@@ -138,23 +140,33 @@ RSpec.describe RestoreRunner do
       described_class.start(filename)
 
       run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
-      expect(run.last).to eq('0')
+      placeholder_index = run.index('_')
+      expect(run[placeholder_index + 7]).to eq('0')
     end
 
-    it 'tears down via compose down -v, wipes data, starts DBs, then conditionally restarts the rest' do
+    it 'tears down via compose down -v (without helios), wipes data, starts DBs, then conditionally restarts' do
       described_class.start(filename)
 
       run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
       script = run[run.index('-c') + 1]
       aggregate_failures do
-        expect(script).to include('compose down -v --remove-orphans > "$STOP_LOG" 2>&1')
+        expect(script).to include('compose down -v --remove-orphans $SERVICES > "$STOP_LOG" 2>&1')
         expect(script).to include('rm -rf "$POSTGRES_DATA_PATH" "$INFLUXDB_DATA_PATH" "$REDIS_DATA_PATH"')
         expect(script).to include('compose up --no-build --wait -d postgresql influxdb > "$DB_START_LOG" 2>&1')
         expect(script).to include('docker compose -f "$HOST_DATA_PATH/compose.yaml"')
         expect(script).to include('--project-directory "$HOST_DATA_PATH"')
         expect(script).to include('if [ "$RESTART_AFTER" = "1" ]; then')
-        expect(script).to include('compose up --no-build -d > "$START_LOG" 2>&1')
+        expect(script).to include('compose up --no-build -d $SERVICES > "$START_LOG" 2>&1')
       end
+    end
+
+    it 'never lists helios in the services arg passed to compose down/up' do
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      placeholder_index = run.index('_')
+      services_arg = run[placeholder_index + 8]
+      expect(services_arg.split).not_to include('helios')
     end
 
     it 'records restored_at into the manifest sidecar after a successful import' do
