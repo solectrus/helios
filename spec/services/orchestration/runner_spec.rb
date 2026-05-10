@@ -287,16 +287,18 @@ RSpec.describe Orchestration::Runner do
   end
 
   describe '.self_recreate' do
-    it 'runs compose up + image prune in the helper container' do
-      File.write(File.join(data_path, 'compose.yaml'), <<~YAML)
-        name: solectrus
-        services:
-          helios:
-            image: ghcr.io/solectrus/helios:develop
-      YAML
+    let(:helios_yaml) do
+      "name: solectrus\nservices:\n  helios:\n    image: ghcr.io/solectrus/helios:develop\n"
+    end
+
+    before do
       allow(described_class).to receive(:host_data_path).and_return('/opt/solectrus')
       status = instance_double(Process::Status, success?: true, exitstatus: 0)
       allow(Open3).to receive(:capture2e).and_return(['', status])
+    end
+
+    it 'runs compose up + image prune in the helper container' do
+      File.write(File.join(data_path, 'compose.yaml'), helios_yaml)
 
       described_class.self_recreate
 
@@ -306,7 +308,25 @@ RSpec.describe Orchestration::Runner do
         '-v', '/var/run/docker.sock:/var/run/docker.sock',
         '-v', '/opt/solectrus:/opt/solectrus',
         'ghcr.io/solectrus/helios:develop',
-        '-c', a_string_matching(/--force-recreate helios && docker image prune -f\z/)
+        '-c',
+        a_string_matching(
+          %r{-f /opt/solectrus/compose\.yaml .* --force-recreate helios && docker image prune -f\z},
+        )
+      )
+    end
+
+    it 'passes the actual compose filename to the helper container' do
+      File.write(File.join(data_path, 'compose.yml'), helios_yaml)
+
+      described_class.self_recreate
+
+      expect(Open3).to have_received(:capture2e).with(
+        'docker', 'run', '--rm', '-d',
+        '--entrypoint', 'sh',
+        '-v', '/var/run/docker.sock:/var/run/docker.sock',
+        '-v', '/opt/solectrus:/opt/solectrus',
+        'ghcr.io/solectrus/helios:develop',
+        '-c', a_string_matching(%r{-f /opt/solectrus/compose\.yml })
       )
     end
   end

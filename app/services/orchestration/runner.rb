@@ -215,7 +215,7 @@ module Orchestration
       def self_recreate_compose_args(host_path)
         args = [
           'compose',
-          '-f', ::File.join(host_path, 'compose.yaml'),
+          '-f', ::File.join(host_path, ::Compose.filename),
           '--project-directory', host_path
         ]
         if ::File.exist?(::Env.path)
