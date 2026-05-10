@@ -36,19 +36,14 @@ RSpec.describe 'Scenario round-trip' do
 
       before { with_config_yaml }
 
-      it 'imports the compose backup + .env.bak into the expected config' do
-        Import::ConfigurationImporter.new(stack_reader).import!
+      it 'round-trips backup → config → compose/env', :aggregate_failures do
+        config = Import::ConfigurationImporter.new(stack_reader).import!
 
         imported = YAML.safe_load_file(Configuration.path, permitted_classes: [Date])
         expected = YAML.safe_load_file(scenario_path.join('config.yaml'), permitted_classes: [Date])
-
         expect(imported).to eq(expected)
-      end
 
-      it 'exports config into the expected compose.yaml and .env' do
-        config = Import::ConfigurationImporter.new(stack_reader).import!
         Export::Builder.new(config).write!
-
         expect(File.read(Compose.path)).to eq(File.read(scenario_path.join('compose.yaml')))
         expect(File.read(Env.path)).to eq(File.read(scenario_path.join('.env')))
       end

@@ -336,13 +336,24 @@ RSpec.describe Orchestration::Runner do
 
     context 'when the user changes a service tag' do
       let(:project) { 'helios-recreate-test' }
+      # Re-tag the already-cached alpine:latest as two distinct refs so the test
+      # exercises an "old → new" image transition without any registry pulls.
+      let(:old_image) { 'helios-test/recreate:v1' }
+      let(:new_image) { 'helios-test/recreate:v2' }
 
       before do
+        system('docker', 'pull', '-q', 'alpine:latest', out: File::NULL, err: File::NULL)
+        system('docker', 'tag', 'alpine:latest', old_image, out: File::NULL, err: File::NULL)
+        system('docker', 'tag', 'alpine:latest', new_image, out: File::NULL, err: File::NULL)
+
+        # `pull_policy: never` keeps `docker compose pull` from hitting the
+        # registry — these are local-only refs of alpine:latest.
         File.write(File.join(data_path, 'compose.yaml'), <<~YAML)
           name: #{project}
           services:
             test:
-              image: alpine:3.18
+              image: #{old_image}
+              pull_policy: never
               command: sleep 30
         YAML
         described_class.up
@@ -351,7 +362,8 @@ RSpec.describe Orchestration::Runner do
           name: #{project}
           services:
             test:
-              image: alpine:3.19
+              image: #{new_image}
+              pull_policy: never
               command: sleep 30
         YAML
       end
@@ -363,19 +375,19 @@ RSpec.describe Orchestration::Runner do
           out: File::NULL,
           err: File::NULL,
         )
-        system('docker', 'image', 'rm', 'alpine:3.19', out: File::NULL, err: File::NULL)
+        system('docker', 'image', 'rm', new_image, out: File::NULL, err: File::NULL)
       end
 
       it 'removes the previously deployed image' do
-        previous = instance_double(Orchestration::Container, image: 'alpine:3.18')
+        previous = instance_double(Orchestration::Container, image: old_image)
         allow(Orchestration::Container).to receive(:find).with('test').and_return(previous)
 
-        expect(image_exists?('alpine:3.18')).to be(true)
+        expect(image_exists?(old_image)).to be(true)
 
         described_class.recreate('test')
 
-        expect(image_exists?('alpine:3.18')).to be(false)
-        expect(image_exists?('alpine:3.19')).to be(true)
+        expect(image_exists?(old_image)).to be(false)
+        expect(image_exists?(new_image)).to be(true)
       end
     end
 

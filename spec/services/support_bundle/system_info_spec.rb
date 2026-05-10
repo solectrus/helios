@@ -10,35 +10,20 @@ RSpec.describe SupportBundle::SystemInfo do
       allow(Rails.configuration).to receive(:data_path).and_return(Dir.tmpdir)
     end
 
-    it 'renders without raising' do
-      expect { described_class.collect }.not_to raise_error
-    end
-
-    it 'includes a CPU section with cores' do
+    # Each `collect` call shells out (df, free, uptime, …) — one example with
+    # aggregate_failures keeps every section assertion independent while only
+    # paying the cost once.
+    it 'reports every section', :aggregate_failures do
       report = described_class.collect
+
       cpu_section = report[/=== CPU ===\n.*?(?=\n===|\z)/m]
-
-      expect(cpu_section).to match(/Cores\s+\S+/)
-    end
-
-    it 'includes a Memory section with a total value' do
-      report = described_class.collect
       mem_section = report[/=== Memory ===\n.*?(?=\n===|\z)/m]
-
-      expect(mem_section).to match(/Total\s+\S+/)
-    end
-
-    it 'includes a non-empty Uptime line' do
-      report = described_class.collect
       uptime_section = report[/=== Uptime ===\n.*?(?=\n===|\z)/m]
-
-      expect(uptime_section.to_s.strip).not_to be_empty
-    end
-
-    it 'includes a Disk section with parsed totals' do
-      report = described_class.collect
       disk_section = report[/=== Disk ===\n.*?(?=\n===|\z)/m]
 
+      expect(cpu_section).to match(/Cores\s+\S+/)
+      expect(mem_section).to match(/Total\s+\S+/)
+      expect(uptime_section.to_s.strip).not_to be_empty
       expect(disk_section).to match(/Total\s+\S+/)
       expect(disk_section).to match(/Available\s+\S+/)
     end

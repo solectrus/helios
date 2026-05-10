@@ -25,17 +25,45 @@ RSpec.describe SupportBundle do
       zip.to_h { |e| [e.name, e.get_input_stream.read] }
     end
 
-    it 'contains the expected files' do
-      allow(SupportBundle::ContainerLogs).to receive(:collect).and_return({})
+    context 'with the default fixture' do
+      # `build` runs SystemInfo.collect (shells out to df/free/uptime/…) and
+      # zips the archive. These read-only assertions all share the same input,
+      # so we build the bundle once with aggregate_failures.
+      before { allow(SupportBundle::ContainerLogs).to receive(:collect).and_return({}) }
 
-      expect(entries.keys).to contain_exactly(
-        'compose.yaml',
-        '.env',
-        'config.yaml',
-        'compose.yaml.bak',
-        '.env.bak',
-        'system-info.txt',
-      )
+      it 'produces a bundle with the expected entries and content', :aggregate_failures do # rubocop:disable RSpec/ExampleLength
+        result = entries
+
+        expect(result.keys).to contain_exactly(
+          'compose.yaml',
+          '.env',
+          'config.yaml',
+          'compose.yaml.bak',
+          '.env.bak',
+          'system-info.txt',
+        )
+
+        expect(result['system-info.txt']).to include('=== HELIOS ===')
+        expect(result['system-info.txt']).to include('=== Docker Engine ===')
+
+        os_section = result['system-info.txt'][/=== Operating System ===\n.*?(?=\n===|\z)/m]
+        expect(os_section).to include('Operating system')
+        expect(os_section).to include('Kernel')
+        expect(os_section).to include('Architecture')
+        expect(os_section).not_to include('uname')
+
+        containers_section = result['system-info.txt'][/=== Docker Containers ===\n.*?(?=\n===|\z)/m]
+        expect(containers_section).to be_present
+        # Either a table header (when containers exist) or the empty-state note.
+        expect(containers_section).to match(/(NAME\s+STATE\s+STATUS\s+IMAGE|No containers found)/)
+
+        expect(result['.env']).to eq("SENEC_PASSWORD=dummy_senec_password\nTZ=Europe/Berlin\n")
+        expect(result['.env.bak']).to eq("SENEC_PASSWORD=dummy_senec_password\n")
+
+        parsed = YAML.safe_load(result['config.yaml'])
+        expect(parsed['senec']['password']).to eq('dummy_password')
+        expect(parsed['system']['admin_password']).to eq('dummy_admin_password')
+      end
     end
 
     it 'includes per-container log files under logs/' do
@@ -65,47 +93,6 @@ RSpec.describe SupportBundle do
       expect(log).not_to include('NWD3vfbwdz8kKXiz')
       expect(log).to include('forecast.solar/estimate/0.00000/0.00000/29')
       expect(log).to include('dummy_influx_token')
-    end
-
-    it 'includes a non-empty system-info report' do
-      expect(entries['system-info.txt']).to include('=== HELIOS ===')
-      expect(entries['system-info.txt']).to include('=== Docker Engine ===')
-    end
-
-    it 'reports the Docker host OS rather than the HELIOS container' do
-      report = entries['system-info.txt']
-      os_section = report[/=== Operating System ===\n.*?(?=\n===|\z)/m]
-
-      expect(os_section).to include('Operating system')
-      expect(os_section).to include('Kernel')
-      expect(os_section).to include('Architecture')
-      expect(os_section).not_to include('uname')
-    end
-
-    it 'includes a Docker Containers section' do
-      report = entries['system-info.txt']
-      containers_section = report[/=== Docker Containers ===\n.*?(?=\n===|\z)/m]
-
-      expect(containers_section).to be_present
-      # Either a table header (when containers exist) or the empty-state note.
-      expect(containers_section).to match(/(NAME\s+STATE\s+STATUS\s+IMAGE|No containers found)/)
-    end
-
-    it 'anonymizes whitelisted env variables in .env' do
-      expect(entries['.env']).to eq(
-        "SENEC_PASSWORD=dummy_senec_password\nTZ=Europe/Berlin\n",
-      )
-    end
-
-    it 'anonymizes whitelisted env variables in the backup .env' do
-      expect(entries['.env.bak']).to eq("SENEC_PASSWORD=dummy_senec_password\n")
-    end
-
-    it 'anonymizes whitelisted YAML fields in config.yaml' do
-      parsed = YAML.safe_load(entries['config.yaml'])
-
-      expect(parsed['senec']['password']).to eq('dummy_password')
-      expect(parsed['system']['admin_password']).to eq('dummy_admin_password')
     end
 
     it 'skips files that do not exist on disk' do
