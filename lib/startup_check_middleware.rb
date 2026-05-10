@@ -71,7 +71,7 @@ class StartupCheckMiddleware
             <article>
               <h1>Startup Failed</h1>
               <p class="subtitle">HELIOS cannot start because of configuration problems.<br>
-              Please check your <code>compose.yaml</code> and try again.</p>
+              Please check your <code>#{escape(::Compose.filename)}</code> and try again.</p>
               #{checks_html}
             </article>
           </main>

@@ -29,6 +29,13 @@ module ConfigNav
       only != :tabs
     end
 
+    def file_links
+      [
+        { key: 'compose', icon: 'fa-file-code', label: ::Compose.filename },
+        { key: 'env', icon: 'fa-file-lines', label: '.env' },
+      ]
+    end
+
     def active_tab
       @active_tab ||= begin
         controller_id = helpers.controller_name.to_sym

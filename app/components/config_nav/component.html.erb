@@ -25,14 +25,14 @@
         <h3 class="text-base-content/50 mb-2 px-3 text-[0.7rem] font-semibold tracking-[0.14em] uppercase">
           <%= t('.files_label') %>
         </h3>
-        <% [['compose', 'fa-file-code', 'compose.yaml'], ['env', 'fa-file-lines', '.env']].each do |key, icon, label| %>
+        <% file_links.each do |link| %>
           <a
-            href="<%= helpers.file_path(key) %>"
+            href="<%= helpers.file_path(link[:key]) %>"
             data-turbo-frame="file-modal-content"
             class="<%= file_link_classes %>"
           >
-            <i class="fa-solid text-base-content/55 w-5 shrink-0 text-center <%= icon %>" aria-hidden="true"></i>
-            <span><%= label %></span>
+            <i class="fa-solid text-base-content/55 w-5 shrink-0 text-center <%= link[:icon] %>" aria-hidden="true"></i>
+            <span><%= link[:label] %></span>
           </a>
         <% end %>
       <% end %>

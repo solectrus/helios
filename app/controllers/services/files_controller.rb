@@ -1,8 +1,8 @@
 module Services
   class FilesController < BaseController
     ALLOWED_FILES = {
-      'compose' => { label: 'compose.yaml', language_class: 'language-yaml', method: :compose_content },
-      'env' => { label: '.env', language_class: 'language-properties', method: :env_content },
+      'compose' => { label: -> { ::Compose.filename }, language_class: 'language-yaml', method: :compose_content },
+      'env' => { label: -> { '.env' }, language_class: 'language-properties', method: :env_content },
     }.freeze
 
     def show
@@ -12,7 +12,7 @@ module Services
       stack_builder = Export::Builder.new(Configuration.current)
       stack_builder.write!
 
-      @label = file_config[:label]
+      @label = file_config[:label].call
       @language_class = file_config[:language_class]
       @content = stack_builder.public_send(file_config[:method])
     end
