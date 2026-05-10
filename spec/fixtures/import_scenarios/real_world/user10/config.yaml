@@ -1,0 +1,100 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: my-admin-password
+  app_host: 192.168.200.41
+  installation_date: '2022-01-01'
+  secret_key_base: my-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+  influx_poll_interval: '5'
+postgresql:
+  image: postgres:16-alpine
+  password: my-secret-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2.7-alpine
+  org: solectrus
+  password: my-influx-password
+  token_admin: my-influx-admin-token
+  token_read: my-influx-read-token
+  token_readwrite: my-influx-admin-token
+  token_write: my-influx-write-token
+redis:
+  image: redis:7-alpine
+watchtower: {}
+forecast:
+  forecast: solcast
+  forecast_azimuth1: "-0"
+  forecast_azimuth2: '0'
+  forecast_declination1: '20'
+  forecast_declination2: '43'
+  forecast_interval: '28800'
+  forecast_kwp1: '6.92'
+  forecast_kwp2: '3.52'
+  forecast_latitude: '0.00000'
+  forecast_longitude: '0.00000'
+  forecast_roofs: '2'
+  forecast_solcast_api_key: my-solcast-api-key
+  forecast_solcast_id1: 2222-3333-4444-5555
+  forecast_solcast_id2: 3333-4444-5555-6666
+  measurement: forecast
+senec:
+  adapter: local
+  host: 192.168.200.50
+  interval: '5'
+  language: de
+  schema: https
+  version: v3
+mqtt:
+  mqtt_host: 192.168.200.63
+  mqtt_password: my-mqtt-password
+  mqtt_port: '1883'
+  mqtt_ssl: 'false'
+  mqtt_username: my-mqtt-username
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_forecast:
+    source: forecast
+  system_status:
+    field: system_status
+    measurement: pv
+    source: external
+  system_status_ok:
+    source: senec
+  wallbox_car_connected:
+    field: car_connected
+    measurement: pv
+    source: external
+  wallbox_power:
+    exclude_from_house_power: true
+    field: wallbox_power
+    measurement: pv
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/loadpoints/1/chargePower
+    source: mqtt
