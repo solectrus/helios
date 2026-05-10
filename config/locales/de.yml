@@ -144,7 +144,6 @@ de:
       restore_error: 'Wiederherstellung fehlgeschlagen: %{message}'
       dismiss: 'Meldung schließen'
     create:
-      started: 'Sicherung wurde gestartet.'
       error: 'Sicherung konnte nicht gestartet werden: %{message}'
     destroy:
       deleted: 'Sicherung wurde gelöscht.'
@@ -167,7 +166,6 @@ de:
         write_failed: 'Datei konnte nicht gespeichert werden: %{message}'
     restores:
       create:
-        started: 'Wiederherstellung wurde gestartet.'
         error: 'Wiederherstellung konnte nicht gestartet werden: %{message}'
     runner:
       errors:

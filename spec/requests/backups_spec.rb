@@ -190,14 +190,14 @@ RSpec.describe 'Backups', :with_admin_password do
   end
 
   describe 'POST /backups' do
-    it 'starts the runner and redirects with a flash notice' do
+    it 'starts the runner and redirects without a flash notice' do
       allow(BackupRunner).to receive(:start)
 
       post backups_path
 
       expect(BackupRunner).to have_received(:start)
       expect(response).to redirect_to(backups_path)
-      expect(flash[:notice]).to eq(I18n.t('backups.create.started'))
+      expect(flash[:notice]).to be_nil
     end
 
     it 'renders an error on the page when the runner cannot start' do

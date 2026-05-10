@@ -17,7 +17,7 @@ module Backups
     def create
       BackupRunner.start
       Orchestration::StatusBarBroadcaster.new.broadcast
-      redirect_to backups_path, notice: t('backups.create.started')
+      redirect_to backups_path
     rescue BackupRunner::Error => e
       @backup_error = t('backups.create.error', message: e.message)
       load_state

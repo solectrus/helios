@@ -173,7 +173,6 @@ en:
       restore_error: 'Restore failed: %{message}'
       dismiss: 'Dismiss message'
     create:
-      started: 'Backup was started.'
       error: 'Backup could not be started: %{message}'
     destroy:
       deleted: 'Backup was deleted.'
@@ -196,7 +195,6 @@ en:
         write_failed: 'File could not be saved: %{message}'
     restores:
       create:
-        started: 'Restore was started.'
         error: 'Restore could not be started: %{message}'
     runner:
       errors:
