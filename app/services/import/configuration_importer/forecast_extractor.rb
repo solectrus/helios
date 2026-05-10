@@ -92,13 +92,25 @@ module Import
         when 'solcast'
           {
             'forecast_solcast_api_key' => fc_env['SOLCAST_APIKEY'],
-            'forecast_solcast_id1' => fc_env['SOLCAST_SITE'] || fc_env['SOLCAST_0_SITE'],
+            'forecast_solcast_id1' => solcast_id1(fc_env),
             'forecast_solcast_id2' => fc_env['SOLCAST_1_SITE'],
           }
         when 'pvnode'
           pvnode_data(fc_env)
         else
           {}
+        end
+      end
+
+      # Per upstream docs, multi-roof setups (FORECAST_CONFIGURATIONS >= 2) read
+      # SOLCAST_0_SITE for roof 1; SOLCAST_SITE is the single-roof legacy alias
+      # and ignored by the forecast-collector in multi-roof mode. Flip the
+      # precedence so the importer matches the runtime value.
+      def solcast_id1(fc_env)
+        if fc_env['FORECAST_CONFIGURATIONS'].to_i > 1
+          fc_env['SOLCAST_0_SITE'].presence || fc_env['SOLCAST_SITE']
+        else
+          fc_env['SOLCAST_SITE'].presence || fc_env['SOLCAST_0_SITE']
         end
       end
 
