@@ -1,0 +1,119 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: my-admin-password
+  app_host: 192.168.200.63
+  installation_date: '2022-01-01'
+  secret_key_base: my-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+  influx_poll_interval: '12'
+postgresql:
+  image: postgres:18-alpine
+  password: my-secret-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: my-influx-password
+  token_admin: my-influx-admin-token
+  token_read: my-influx-read-token
+  token_readwrite: my-influx-admin-token
+  token_write: my-influx-write-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: solcast
+  forecast_interval: '17280'
+  forecast_roofs: '2'
+  forecast_solcast_api_key: my-solcast-api-key
+  forecast_solcast_id1: 2222-3333-4444-5555
+  forecast_solcast_id2: 3333-4444-5555-6666
+  measurement: Forecast
+mqtt:
+  mqtt_host: 192.168.200.63
+  mqtt_password: my-mqtt-password
+  mqtt_port: '1883'
+  mqtt_ssl: 'false'
+  mqtt_username: my-mqtt-username
+sensors:
+  battery_charging_power:
+    field: battery_charging_power
+    measurement: pv
+    mqtt_formula: IF({value} < 0, -{value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/battery/power
+    source: mqtt
+  battery_discharging_power:
+    field: battery_discharging_power
+    measurement: pv
+    mqtt_formula: IF({value} > 0, {value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/battery/power
+    source: mqtt
+  battery_soc:
+    field: battery_soc
+    measurement: pv
+    mqtt_payload_type: float
+    mqtt_topic: evcc/site/battery/soc
+    source: mqtt
+  grid_export_power:
+    field: grid_export_power
+    measurement: pv
+    mqtt_formula: IF({value} < 0, -{value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/grid/power
+    source: mqtt
+  grid_import_power:
+    field: grid_import_power
+    measurement: pv
+    mqtt_formula: IF({value} > 0, {value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/grid/power
+    source: mqtt
+  house_power:
+    field: house_power
+    measurement: pv
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/homePower
+    source: mqtt
+  inverter_power:
+    field: inverter_power
+    measurement: pv
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/pvPower
+    source: mqtt
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  system_status:
+    field: system_status
+    measurement: pv
+    mqtt_payload_type: string
+    mqtt_topic: evcc/status
+    source: mqtt
+  wallbox_car_connected:
+    field: car_connected
+    measurement: pv
+    mqtt_payload_type: string
+    mqtt_topic: evcc/loadpoints/1/connected
+    source: mqtt
+  wallbox_power:
+    field: wallbox_power
+    measurement: pv
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/loadpoints/1/chargePower
+    source: mqtt
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:latest
