@@ -388,9 +388,11 @@ RSpec.describe 'Backups', :with_admin_password do
     manifest[:restored_at] = restored_at if restored_at
     File.write("#{path}.json", JSON.generate(manifest))
 
-    # Pin mtime to the filename's timestamp so the rendered date is
-    # deterministic regardless of when the test runs.
-    time = Time.strptime(filename[/\d{8}-\d{6}/], '%Y%m%d-%H%M%S')
+    # Pin mtime to the filename's timestamp so the rendered date is deterministic
+    # regardless of when the test runs. Parse in Time.zone so the round-trip
+    # through `stat.mtime.in_time_zone` (in BackupRepository) yields the same
+    # wall-clock time the filename advertises, independent of the host TZ.
+    time = Time.zone.strptime(filename[/\d{8}-\d{6}/], '%Y%m%d-%H%M%S').to_time
     File.utime(time, time, path)
   end
 

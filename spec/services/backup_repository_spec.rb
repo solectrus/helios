@@ -60,6 +60,20 @@ RSpec.describe BackupRepository do
       expect(backup.influxdb_bytes).to eq(200)
     end
 
+    it 'returns created_at in the active Time.zone' do
+      Time.use_zone('Europe/Berlin') do
+        # File mtimes are stored as UTC by the OS; the repository must convert to Time.zone
+        # so views render in the user-configured timezone (e.g. backup at 07:40 Berlin must
+        # not appear as 05:40).
+        mtime = Time.utc(2026, 7, 1, 5, 40)
+        write_backup('solectrus-backup-20260701-074000.tar', mtime: mtime)
+
+        backup = described_class.all.first # rubocop:disable Rails/RedundantActiveRecordAllMethod
+        expect(backup.created_at.zone).to eq('CEST')
+        expect(backup.created_at.strftime('%H:%M')).to eq('07:40')
+      end
+    end
+
     it 'ignores partial files and unrelated entries' do
       write_backup('solectrus-backup-20260508-110000.tar')
       FileUtils.mkdir_p(backups_dir)

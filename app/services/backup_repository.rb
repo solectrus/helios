@@ -154,7 +154,7 @@ class BackupRepository
         filename: ::File.basename(path),
         path: path,
         bytes: stat.size,
-        created_at: stat.mtime,
+        created_at: stat.mtime.in_time_zone,
         files: files_from(manifest) || archive_entries(path),
         restored_at: restored_at_from(manifest),
       )
