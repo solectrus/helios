@@ -47,11 +47,11 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   }.freeze
 
   # Dashboard-specific fields the user configures via the dashboard survey.
-  # These end up as Dashboard environment variables (CO2_EMISSION_FACTOR,
-  # UI_THEME, FRAME_ANCESTORS, LOCKUP_CODEWORD, TRUSTED_PROXY_RANGES).
-  # `influx_poll_interval` and `host_port` are not exposed in the UI (yet)
-  # but are captured on import so a non-default polling cadence or a
-  # remapped host port survives the round-trip.
+  # Most end up as Dashboard environment variables (CO2_EMISSION_FACTOR,
+  # UI_THEME, FRAME_ANCESTORS, LOCKUP_CODEWORD, TRUSTED_PROXY_RANGES);
+  # `host_port` controls the published compose port. `influx_poll_interval`
+  # is not exposed in the UI but is captured on import so a non-default
+  # polling cadence survives the round-trip.
   DASHBOARD_FIELDS = %w[
     co2_emission_factor
     ui_theme
