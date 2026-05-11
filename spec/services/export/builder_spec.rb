@@ -503,6 +503,62 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'with InfluxDB UI port exposure' do
+    context 'without publish_port set' do
+      before { described_class.new(configuration).write! }
+
+      it 'does not publish 8086 to the host' do
+        compose = Compose.load
+        influxdb = compose.services.find('influxdb')
+        expect(influxdb.config[:ports] || influxdb.ports).to be_blank
+      end
+    end
+
+    context 'when publish_port is enabled' do
+      before do
+        configuration.update('influxdb', configuration.influxdb.merge('publish_port' => true))
+        described_class.new(configuration).write!
+      end
+
+      it 'publishes 8086:8086 to the host' do
+        compose = Compose.load
+        influxdb = compose.services.find('influxdb')
+        expect(influxdb.ports).to include('8086:8086')
+      end
+    end
+
+    context 'with a custom host_port' do
+      before do
+        configuration.update('influxdb',
+                             configuration.influxdb.merge('publish_port' => true, 'host_port' => '18086'))
+        described_class.new(configuration).write!
+      end
+
+      it 'maps the configured host port to container port 8086' do
+        compose = Compose.load
+        influxdb = compose.services.find('influxdb')
+        expect(influxdb.ports).to include('18086:8086')
+        expect(influxdb.ports).not_to include('8086:8086')
+      end
+    end
+
+    context 'when running in dashboard_only mode' do
+      before do
+        configuration.update('deployment', { 'mode' => 'dashboard_only' })
+        described_class.new(configuration).write!
+      end
+
+      # Remote collectors reach the InfluxDB across the LAN — the port HAS to
+      # be open regardless of the flag, otherwise the dashboard_only stack
+      # can't receive any measurements.
+      it 'forces the port open even with publish_port unset' do
+        compose = Compose.load
+        influxdb = compose.services.find('influxdb')
+        expect(influxdb.ports).to include('8086:8086')
+      end
+    end
+  end
+
   describe 'with backup configured' do
     before do
       configuration.update('backup', {

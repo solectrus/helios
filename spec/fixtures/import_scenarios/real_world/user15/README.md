@@ -152,9 +152,9 @@ the value is simply re-spelled, or the var was already dead at runtime.
 - **InfluxDB `command: influxd run --bolt-path ... --engine-path ...
   --store disk` dropped.** Donor's explicit-defaults override removed
   (same as user7-14).
-- **InfluxDB `ports: 8086:8086` added.** Donor doesn't expose the
-  port; HELIOS publishes it unconditionally for InfluxDB UI access.
-  Same as user11/12/13.
+- **InfluxDB UI port stays unpublished.** Donor doesn't expose 8086;
+  import captures no `influxdb.publish_port` flag, and re-export
+  emits no `ports:` block on `influxdb`. Same as user11/12/13.
 - **`INFLUX_HOST=influxdb` / `INFLUX_PORT=8086` / `INFLUX_SCHEMA=http`
   / `INFLUX_USERNAME=my-influx-username` dropped from `.env`.** HELIOS
   bakes the connection into compose service-network addressing and

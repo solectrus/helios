@@ -125,6 +125,12 @@ Anonymized but otherwise untouched.
   dashboard by IP; the same IP appears as `MQTT_HOST` inline on
   mqtt-collector, suggesting broker and dashboard share a host.
   Importer doesn't try to deduplicate or rewrite.
+- **InfluxDB UI port `8086:8086` preserved via `publish_port`.**
+  Donor publishes the InfluxDB UI on host port 8086. Import captures
+  `influxdb.publish_port: true` so re-export keeps the `ports:`
+  block on the `influxdb` service. HELIOS's default is to leave the
+  UI port unpublished (canonical SOLECTRUS shape); the flag flips
+  that default back on for donors who rely on direct UI access.
 - **Volume paths preserved.** Canonical ADR-0003 layout
   (`./influxdb`, `./postgresql`, `./redis`), unchanged on re-export.
 - **Modern image baseline preserved.** `postgres:18-alpine`,
@@ -172,8 +178,6 @@ Anonymized but otherwise untouched.
 - **InfluxDB `command: influxd run --bolt-path ... --engine-path ...
   --store disk` dropped.** Donor's explicit-defaults override removed
   (same as user7-13).
-- **InfluxDB `ports: 8086:8086` kept.** Donor exposes it; HELIOS would
-  expose it unconditionally anyway. No-op on the diff.
 - **`INFLUX_HOST=influxdb` / `INFLUX_PORT=8086` / `INFLUX_SCHEMA=http`
   / `INFLUX_USERNAME=admin` dropped from `.env`.** Same as user10-13:
   baked into compose service-network defaults.

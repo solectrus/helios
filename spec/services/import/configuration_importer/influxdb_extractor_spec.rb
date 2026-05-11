@@ -74,4 +74,102 @@ RSpec.describe 'Import::ConfigurationImporter InfluxDB tokens' do
       )
     end
   end
+
+  describe 'publish_port' do
+    let(:raw_env) { { 'INFLUX_TOKEN' => 'shared-secret' } }
+
+    context 'when the donor publishes 8086:8086 (short form)' do
+      let(:services) do
+        {
+          'dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:latest' },
+          'influxdb' => { 'image' => 'influxdb:2.7-alpine', 'ports' => ['8086:8086'] },
+        }
+      end
+
+      it 'captures publish_port: true' do
+        expect(importer.result[:influxdb]).to include('publish_port' => true)
+      end
+    end
+
+    context 'when the donor remaps the host port (18086:8086)' do
+      let(:services) do
+        {
+          'dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:latest' },
+          'influxdb' => { 'image' => 'influxdb:2.7-alpine', 'ports' => ['18086:8086'] },
+        }
+      end
+
+      it 'still captures publish_port: true (target port is what counts)' do
+        expect(importer.result[:influxdb]).to include('publish_port' => true)
+      end
+
+      it 'preserves the non-default host port' do
+        expect(importer.result[:influxdb]).to include('host_port' => '18086')
+      end
+    end
+
+    context 'when docker compose normalizes a remapped port to long-form' do
+      let(:services) do
+        {
+          'dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:latest' },
+          'influxdb' => {
+            'image' => 'influxdb:2.7-alpine',
+            'ports' => [{ 'target' => 8086, 'published' => '18086', 'protocol' => 'tcp' }],
+          },
+        }
+      end
+
+      it 'preserves the non-default host port' do
+        expect(importer.result[:influxdb]).to include('host_port' => '18086')
+      end
+    end
+
+    context 'when the donor publishes the canonical 8086:8086' do
+      let(:services) do
+        {
+          'dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:latest' },
+          'influxdb' => { 'image' => 'influxdb:2.7-alpine', 'ports' => ['8086:8086'] },
+        }
+      end
+
+      it 'omits host_port (canonical default is implicit)' do
+        expect(importer.result[:influxdb]).not_to have_key('host_port')
+      end
+    end
+
+    context 'when docker compose normalizes ports to long-form' do
+      let(:services) do
+        {
+          'dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:latest' },
+          'influxdb' => {
+            'image' => 'influxdb:2.7-alpine',
+            'ports' => [{ 'target' => 8086, 'published' => '8086', 'protocol' => 'tcp' }],
+          },
+        }
+      end
+
+      it 'captures publish_port: true' do
+        expect(importer.result[:influxdb]).to include('publish_port' => true)
+      end
+    end
+
+    context 'when the donor does not publish the InfluxDB port' do
+      it 'omits publish_port (defaults to not publishing)' do
+        expect(importer.result[:influxdb]).not_to have_key('publish_port')
+      end
+    end
+
+    context 'when the donor publishes only an unrelated port' do
+      let(:services) do
+        {
+          'dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:latest' },
+          'influxdb' => { 'image' => 'influxdb:2.7-alpine', 'ports' => ['9999:9999'] },
+        }
+      end
+
+      it 'omits publish_port' do
+        expect(importer.result[:influxdb]).not_to have_key('publish_port')
+      end
+    end
+  end
 end

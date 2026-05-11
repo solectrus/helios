@@ -26,6 +26,7 @@ influxdb:
   image: influxdb:2.7-alpine
   org: solectrus
   password: my-influxdb-password
+  publish_port: true
   token_admin: my-influxdb-admin-token
   token_read: my-influxdb-admin-token
   token_readwrite: my-influxdb-admin-token

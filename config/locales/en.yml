@@ -258,8 +258,8 @@ en:
         title: 'Backup'
         description: 'Configuration of S3 data backup'
       influxdb:
-        title: 'External InfluxDB'
-        description: 'Credentials for the external time-series database'
+        title: 'InfluxDB'
+        description: 'Settings for the time-series database'
       invalid_setting: 'Unknown setting'
       add: 'Add'
       edit: 'Edit'

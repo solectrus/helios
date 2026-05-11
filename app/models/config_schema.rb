@@ -109,9 +109,16 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   INFLUXDB_EXTERNAL_ENV_KEYS = INFLUXDB_EXTERNAL_FIELDS.map { |f| "INFLUX_#{f.upcase}" }.freeze
 
   # Optional InfluxDB settings imported verbatim from existing installations.
-  # No default, no UI — only persisted when present in the original .env so
-  # that re-export does not silently drop a custom setup.
-  INFLUXDB_OPTIONAL_FIELDS = %w[use_hashed_tokens].freeze
+  # No default — only persisted when explicitly set so that re-export does
+  # not silently drop or rewrite a custom setup.
+  # `publish_port` is captured on import when the donor's compose publishes
+  # InfluxDB's port 8086 to the host (used for the InfluxDB UI, the HTTP
+  # API, and remote tooling/collectors), so re-export does not silently
+  # close access a user relies on. Default is to not publish.
+  # `host_port` remembers a non-default host-side port mapping (e.g.
+  # `18086:8086`) so it survives the round-trip; 8086 is the implicit default
+  # and is not persisted.
+  INFLUXDB_OPTIONAL_FIELDS = %w[use_hashed_tokens publish_port host_port].freeze
 
   INFLUXDB_ALL = (
     STORAGE_FIELDS + INFLUXDB_EXTERNAL_FIELDS + INFLUXDB_OPTIONAL_FIELDS + INFLUXDB_DEFAULTS.keys

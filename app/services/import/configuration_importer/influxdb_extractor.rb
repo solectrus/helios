@@ -3,6 +3,9 @@ module Import
     class InfluxdbExtractor
       include Helpers
 
+      # Container port the InfluxDB UI always listens on.
+      INFLUXDB_CONTAINER_PORT = 8086
+
       def initialize(reader, volume_resolver, collectors_only:)
         @reader = reader
         @volume_resolver = volume_resolver
@@ -38,7 +41,55 @@ module Import
           'org' => env_first('INFLUX_ORG', 'DOCKER_INFLUXDB_INIT_ORG'),
           'bucket' => env_first('INFLUX_BUCKET', 'DOCKER_INFLUXDB_INIT_BUCKET'),
           'use_hashed_tokens' => @reader.raw_env['INFLUXD_USE_HASHED_TOKENS'],
+          'publish_port' => publish_port,
+          'host_port' => host_port,
         ).merge(tokens).merge(@volume_resolver.path_data('influxdb')).compact
+      end
+
+      # The donor's port mapping for the InfluxDB UI, if any. Returns nil if
+      # nothing on the influxdb service publishes container port 8086.
+      def published_port_mapping
+        Array(@reader.service('influxdb')&.dig('ports')).find { |entry| targets_influxdb?(entry) }
+      end
+
+      # True when the donor's compose publishes InfluxDB's port 8086 to the
+      # host (covering UI, HTTP API, and external tooling). Returns nil
+      # otherwise so .compact drops the key and the default (don't publish)
+      # takes over.
+      def publish_port
+        published_port_mapping ? true : nil
+      end
+
+      # Host-side port the donor maps to the InfluxDB UI. Returns nil for the
+      # canonical 8086 (default — no need to persist) and for mappings
+      # without an explicit host port (e.g. bare "8086", which docker assigns
+      # an ephemeral host port to). Anything else is preserved so a remapped
+      # port like 18086:8086 survives the round-trip.
+      def host_port
+        mapping = published_port_mapping
+        return nil unless mapping
+
+        host = published_host_port(mapping)
+        host if host && host != INFLUXDB_CONTAINER_PORT.to_s
+      end
+
+      # `docker compose config --format json` normalizes short-form ports to
+      # long-form hashes (target/published/protocol). Handle both so a
+      # raw-YAML fallback path stays compatible too.
+      def targets_influxdb?(entry)
+        case entry
+        when Hash then entry['target'].to_i == INFLUXDB_CONTAINER_PORT
+        else entry.to_s.split(':').last == INFLUXDB_CONTAINER_PORT.to_s
+        end
+      end
+
+      def published_host_port(entry)
+        case entry
+        when Hash then entry['published']&.to_s
+        else
+          host, container = entry.to_s.split(':', 2)
+          container ? host : nil
+        end
       end
 
       def external_data

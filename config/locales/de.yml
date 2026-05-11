@@ -229,8 +229,8 @@ de:
         title: 'Backup'
         description: 'Konfiguration der S3-Datensicherung'
       influxdb:
-        title: 'Externe InfluxDB'
-        description: 'Zugangsdaten für die externe Zeitreihen-Datenbank'
+        title: 'InfluxDB'
+        description: 'Einstellungen für die Zeitreihen-Datenbank'
       invalid_setting: 'Unbekannte Einstellung'
       add: 'Hinzufügen'
       edit: 'Bearbeiten'

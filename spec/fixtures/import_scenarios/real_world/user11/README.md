@@ -151,9 +151,10 @@ the value is simply re-spelled, or the var was already dead at runtime.
   Donor uses bare `REDIS_URL` (resolved from `.env` as
   `redis://redis:6379/1`); export inlines the literal in compose
   (`REDIS_URL=redis://redis:6379/1`).
-- **InfluxDB `ports: 8086:8086` added.** Donor doesn't expose the
-  port; HELIOS's managed `influxdb` service publishes 8086 by default
-  for direct InfluxDB UI access.
+- **InfluxDB UI port stays unpublished.** Donor doesn't expose 8086 to
+  the host; HELIOS captures no `influxdb.publish_port` flag, and the
+  re-exported `influxdb` service has no `ports:` block. UI is reachable
+  only inside the Docker network (the canonical SOLECTRUS default).
 - **HELIOS service added.** Self-export — HELIOS always emits its own
   managed service.
 - **`name: solectrus` and `networks.default.name` added.** Donor's

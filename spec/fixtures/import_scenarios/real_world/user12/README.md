@@ -145,10 +145,11 @@ the value is simply re-spelled, or the var was already dead at runtime.
 - **InfluxDB `command: influxd run --bolt-path ... --engine-path ...
   --store disk` dropped.** These are the InfluxDB 2.x image defaults
   (same as user7/user8/user9/user10/user11).
-- **InfluxDB `ports: 8086:8086` added.** Donor has the block
+- **InfluxDB UI port stays unpublished.** Donor has the block
   commented out (`# Optional: Allow InfluxDB to be accessed from the
-  outside.`); HELIOS publishes the port unconditionally for
-  InfluxDB UI access. Same as user11.
+  outside.`); import captures no `influxdb.publish_port` flag, and
+  the re-exported `influxdb` service has no `ports:` block. Same as
+  user11.
 - **InfluxDB write/read token aliases collapsed.** Donor defines
   `INFLUX_TOKEN_WRITE=my-influx-write-token` /
   `INFLUX_TOKEN_READ=my-influx-read-token` separately from

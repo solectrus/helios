@@ -1,20 +1,66 @@
 {
   "locale": "de",
   "title": {
-    "de": "Externe InfluxDB",
-    "default": "External InfluxDB"
+    "de": "InfluxDB",
+    "default": "InfluxDB"
   },
   "description": {
-    "de": "Zugangsdaten für die InfluxDB, in die die Kollektoren schreiben sollen.",
-    "default": "Credentials for the InfluxDB the collectors should write to."
+    "de": "Einstellungen für die Zeitreihen-Datenbank, in der SOLECTRUS deine Messwerte speichert.",
+    "default": "Settings for the time-series database where SOLECTRUS stores your measurements."
   },
   "pages": [
+    {
+      "name": "p_local",
+      "title": {
+        "de": "Zugriff",
+        "default": "Access"
+      },
+      "description": {
+        "de": "InfluxDB ist standardmäßig nur intern für SOLECTRUS erreichbar. Auf Wunsch kannst du sie von außen freigeben — etwa für die eigene Web-Oberfläche von InfluxDB oder für andere Anwendungen, die direkt auf die gespeicherten Messwerte zugreifen sollen.",
+        "default": "By default InfluxDB is only reachable internally by SOLECTRUS. You can optionally open it to the outside — for the InfluxDB web interface or for other applications that should access the stored measurements directly."
+      },
+      "visibleIfMode": "full",
+      "elements": [
+        {
+          "type": "boolean",
+          "name": "publish_port",
+          "title": {
+            "de": "InfluxDB von außen erreichbar machen",
+            "default": "Make InfluxDB reachable from outside"
+          },
+          "description": {
+            "de": "Aktiviere das beispielsweise, wenn du selbst (im Browser) oder andere Anwendungen (eigene Skripte, Auswertungen, externe Collectoren) direkt auf die InfluxDB zugreifen sollen.",
+            "default": "Enable this for example when you (in the browser) or other applications (your own scripts, analyses, external collectors) should access InfluxDB directly."
+          },
+          "defaultValue": false,
+          "renderAs": "checkbox"
+        },
+        {
+          "type": "text",
+          "name": "host_port",
+          "title": {
+            "de": "Port",
+            "default": "Port"
+          },
+          "description": {
+            "de": "Unter welchem Port soll InfluxDB erreichbar sein? Ändere das beispielsweise, wenn Port 8086 auf deinem Host bereits belegt ist.",
+            "default": "Which port should InfluxDB be reachable on? Change this for example when port 8086 is already in use on your host."
+          },
+          "visibleIf": "{publish_port} = true",
+          "defaultValue": "8086",
+          "inputType": "number",
+          "min": 1,
+          "max": 65535
+        }
+      ]
+    },
     {
       "name": "p_connection",
       "title": {
         "de": "Verbindung",
         "default": "Connection"
       },
+      "visibleIfMode": "collectors_only",
       "elements": [
         {
           "type": "text",
@@ -61,6 +107,7 @@
         "de": "Zugangsdaten",
         "default": "Credentials"
       },
+      "visibleIfMode": "collectors_only",
       "elements": [
         {
           "type": "text",

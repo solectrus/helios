@@ -143,9 +143,9 @@ the value is simply re-spelled, or the var was already dead at runtime.
   --store disk` dropped.** Donor sets the InfluxDB 2.x image defaults
   explicitly; HELIOS drops the redundant override (same as
   user7/user8/user9/user10/user11/user12).
-- **InfluxDB `ports: 8086:8086` added.** Donor doesn't expose the
-  port; HELIOS publishes it unconditionally for InfluxDB UI access.
-  Same as user11/user12.
+- **InfluxDB UI port stays unpublished.** Donor doesn't expose 8086;
+  import captures no `influxdb.publish_port` flag, and re-export
+  emits no `ports:` block on `influxdb`. Same as user11/user12.
 - **`INFLUX_HOST=influxdb` / `INFLUX_PORT=8086` / `INFLUX_SCHEMA=http`
   / `INFLUX_USERNAME=admin` dropped from `.env`.** HELIOS bakes these
   into compose service-network addressing and hardcodes the admin

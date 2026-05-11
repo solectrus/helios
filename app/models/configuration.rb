@@ -9,14 +9,22 @@ class Configuration # rubocop:disable Metrics/ClassLength
   ].freeze
 
   # Sections hidden from the configuration UI (auto-managed)
-  HIDDEN = %w[postgresql influxdb redis watchtower ingest power_splitter].freeze
+  HIDDEN = %w[postgresql redis watchtower ingest power_splitter].freeze
 
-  # Settings shown in the configuration UI in full mode
-  SETTINGS = %w[deployment system dashboard reverse_proxy backup].freeze
+  # Settings shown in the configuration UI in full mode. `influxdb` exposes
+  # only a couple of host-level toggles (e.g. UI port publication) here —
+  # bucket/org/tokens are auto-managed and never user-editable in full mode.
+  SETTINGS = %w[deployment system dashboard influxdb reverse_proxy backup].freeze
 
   # Settings shown in the configuration UI in collectors_only mode
   # (reverse_proxy/backup target the local dashboard/postgres, which don't exist here)
   COLLECTORS_ONLY_SETTINGS = %w[deployment system influxdb].freeze
+
+  # Settings shown in the configuration UI in dashboard_only mode. The
+  # InfluxDB card is hidden because its only user-facing toggle (UI port
+  # publication) is forced on anyway — remote collectors need to reach the
+  # database across the LAN.
+  DASHBOARD_ONLY_SETTINGS = %w[deployment system dashboard reverse_proxy backup].freeze
 
   # Source configurations shown when at least one sensor uses that source
   SOURCE_CONFIGS = %w[mqtt shelly forecast senec].freeze
@@ -354,7 +362,11 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   # Settings visible in the configuration UI for the current mode.
   def visible_settings
-    collectors_only? ? COLLECTORS_ONLY_SETTINGS : SETTINGS
+    case mode
+    when ConfigSchema::MODE_COLLECTORS_ONLY then COLLECTORS_ONLY_SETTINGS
+    when ConfigSchema::MODE_DASHBOARD_ONLY then DASHBOARD_ONLY_SETTINGS
+    else SETTINGS
+    end
   end
 
   def balcony_sensors

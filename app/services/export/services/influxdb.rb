@@ -26,17 +26,29 @@ module Export
       end
 
       def to_h
-        {
+        config = {
           image: configuration.influxdb.image,
-          ports: ['8086:8086'],
           environment: influxdb_environment,
           volumes: [bind_mount('/var/lib/influxdb2')],
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD', 'influx', 'ping'),
         }
+        config[:ports] = ["#{host_port}:8086"] if publish_port?
+        config
       end
 
       private
+
+      # In dashboard_only mode the collectors run on a remote host and write
+      # into this stack's InfluxDB across the LAN — so port 8086 has to be
+      # reachable on the host regardless of the user's preference.
+      def publish_port?
+        configuration.dashboard_only? || configuration.influxdb.publish_port.present?
+      end
+
+      def host_port
+        configuration.influxdb.host_port.presence || 8086
+      end
 
       def influxdb_environment
         env = [

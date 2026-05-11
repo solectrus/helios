@@ -3,6 +3,16 @@ module Surveys
   # `app/services/surveys/<survey_id>/` next to a `survey.json` sidecar
   # and may override `valid?` (gating) and/or `customize!` (mutation).
   class Base
+    # `visibleIfMode` markers a survey JSON may attach to a page or element to
+    # gate it by deployment mode. The marker is stripped from the rendered
+    # JSON. SurveyJS' own `visibleIf` only sees fields within the same survey,
+    # so mode (which lives in its own section) needs server-side resolution.
+    MODE_PREDICATES = {
+      'full' => ->(mode) { mode == ConfigSchema::MODE_FULL },
+      'collectors_only' => ->(mode) { mode == ConfigSchema::MODE_COLLECTORS_ONLY },
+      'not_collectors_only' => ->(mode) { mode != ConfigSchema::MODE_COLLECTORS_ONLY },
+    }.freeze
+
     def self.survey_id
       name.split('::')[-2].underscore
     end
@@ -24,6 +34,7 @@ module Surveys
       return nil unless path.exist?
 
       data = JSON.parse(path.read)
+      apply_mode_visibility!(data)
       customize!(data)
       data
     end
@@ -53,6 +64,27 @@ module Surveys
         end
       end
       nil
+    end
+
+    # Strips pages and elements whose `visibleIfMode` marker doesn't match the
+    # current deployment mode. The marker itself is removed from the rendered
+    # JSON either way so it never reaches SurveyJS.
+    def apply_mode_visibility!(data)
+      mode = Configuration.current.mode
+      data['pages']&.reject! { |page| hidden_for_mode?(page, mode) }
+      data['pages']&.each do |page|
+        page['elements']&.reject! { |element| hidden_for_mode?(element, mode) }
+      end
+    end
+
+    def hidden_for_mode?(node, mode)
+      marker = node.delete('visibleIfMode')
+      return false unless marker
+
+      predicate = MODE_PREDICATES[marker]
+      return false unless predicate
+
+      !predicate.call(mode)
     end
   end
 end
