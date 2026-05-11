@@ -4,7 +4,9 @@ module Orchestration
     end
 
     CACHE_TTL = 3.seconds
-    CACHE_KEY = 'docker_containers'.freeze
+    LIST_CACHE_KEY = 'docker_containers'.freeze
+    INSPECT_CACHE_PREFIX = 'docker_inspect'.freeze
+    INSPECT_GENERATION_KEY = 'docker_inspect_generation'.freeze
 
     class << self
       def all(project: nil)
@@ -24,8 +26,17 @@ module Orchestration
         end
       end
 
+      # Drops both the container list and all cached container inspects.
+      # Inspects are versioned via a generation key — bumping it makes the
+      # previous keys unreachable so a Docker event (start/stop/health) forces
+      # a fresh inspect on the next read, even when the container ID is reused.
       def invalidate_cache
-        Rails.cache.delete(CACHE_KEY)
+        Rails.cache.delete(LIST_CACHE_KEY)
+        Rails.cache.write(INSPECT_GENERATION_KEY, Time.current.to_f)
+      end
+
+      def inspect_generation
+        Rails.cache.fetch(INSPECT_GENERATION_KEY) { 0 }
       end
 
       private
@@ -48,7 +59,7 @@ module Orchestration
       def fetch_all_containers
         Rails
           .cache
-          .fetch(CACHE_KEY, expires_in: CACHE_TTL) do
+          .fetch(LIST_CACHE_KEY, expires_in: CACHE_TTL) do
             Docker::Container.all(all: true)
           end
       end
@@ -58,7 +69,14 @@ module Orchestration
       @raw_container = raw_container
     end
 
-    delegate :id, to: :raw_container
+    delegate :id, :info, to: :raw_container
+
+    # Mirrors Docker::Container#json but reads through our cached inspect data.
+    # Lets VersionExtractor work against our wrapper without bypassing the
+    # cross-request inspect cache.
+    def json
+      inspect_data
+    end
 
     def name
       raw_container.info['Names']&.first&.delete_prefix('/')
@@ -84,7 +102,7 @@ module Orchestration
     end
 
     def version
-      @version ||= VersionExtractor.extract(raw_container)
+      @version ||= VersionExtractor.extract(self)
     rescue Docker::Error::DockerError, Excon::Error
       nil
     end
@@ -186,16 +204,30 @@ module Orchestration
 
     attr_reader :raw_container
 
-    # Cache inspect data per instance — avoids multiple Docker API calls
-    # for health_status, public_port, etc. within a single operation.
-    # Catches all Docker/network errors to prevent cascade failures
-    # when a single container is temporarily unreachable.
+    # Inspect data is cached at two levels:
+    # - Per-instance memoization for repeated reads inside one render
+    #   (health_status + public_port + version on the same container).
+    # - Cross-request via Rails.cache (3s TTL, versioned by INSPECT_GENERATION_KEY)
+    #   so the N concurrent row requests triggered by lazy-loaded /services
+    #   share one inspect per container instead of each hitting the Docker API.
+    #   `Container.invalidate_cache` bumps the generation, so events that mutate
+    #   state without changing the container ID (start/stop/health transitions)
+    #   still surface fresh data on the next read.
+    # Catches all Docker/network errors to prevent cascade failures when a
+    # single container is temporarily unreachable.
     def inspect_data
       return @inspect_data if instance_variable_defined?(:@inspect_data)
 
-      @inspect_data = raw_container.json
+      @inspect_data =
+        Rails.cache.fetch(inspect_cache_key, expires_in: CACHE_TTL) do
+          raw_container.json
+        end
     rescue Docker::Error::DockerError, Excon::Error
       @inspect_data = nil
+    end
+
+    def inspect_cache_key
+      "#{INSPECT_CACHE_PREFIX}/#{self.class.inspect_generation}/#{id}"
     end
   end
 end

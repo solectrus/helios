@@ -112,6 +112,46 @@ RSpec.describe Orchestration::Container do
     end
   end
 
+  describe 'inspect caching' do
+    around do |example|
+      original_store = Rails.cache
+      Rails.cache = ActiveSupport::Cache::MemoryStore.new
+      example.run
+    ensure
+      Rails.cache = original_store
+    end
+
+    it 'shares inspect data across instances with the same container id' do
+      first = described_class.new(mock_container)
+      first.health_status
+
+      second_raw = instance_double(Docker::Container, id: mock_container.id)
+      allow(second_raw).to receive(:json)
+      second = described_class.new(second_raw)
+
+      expect(second.health_status).to eq('healthy')
+      expect(second_raw).not_to have_received(:json)
+    end
+
+    it 'forces a fresh inspect after invalidate_cache' do
+      first = described_class.new(mock_container)
+      first.health_status
+
+      described_class.invalidate_cache
+
+      fresh_raw =
+        instance_double(
+          Docker::Container,
+          id: mock_container.id,
+          json: { 'State' => { 'Health' => { 'Status' => 'unhealthy' } } },
+        )
+      second = described_class.new(fresh_raw)
+
+      expect(second.health_status).to eq('unhealthy')
+      expect(fresh_raw).to have_received(:json)
+    end
+  end
+
   describe '#healthy?' do
     it 'returns true when container is healthy' do
       expect(container.healthy?).to be true
