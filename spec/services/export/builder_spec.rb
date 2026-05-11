@@ -489,6 +489,20 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'with a remapped dashboard host port' do
+    before do
+      configuration.update('dashboard', { 'host_port' => '3010' })
+      described_class.new(configuration).write!
+    end
+
+    it 'maps the configured host port to the container port' do
+      compose = Compose.load
+      dashboard = compose.services.find('dashboard')
+      expect(dashboard.ports).to include('3010:3000')
+      expect(dashboard.ports).not_to include('3000:3000')
+    end
+  end
+
   describe 'with backup configured' do
     before do
       configuration.update('backup', {

@@ -29,13 +29,17 @@ module Export
         if Traefik.enabled?(configuration)
           config[:labels] = traefik_dashboard_labels
         else
-          config[:ports] = ['3000:3000']
+          config[:ports] = ["#{host_port}:3000"]
         end
 
         config
       end
 
       private
+
+      def host_port
+        configuration.dashboard.host_port.presence || 3000
+      end
 
       def dashboard_environment
         passthrough_vars + explicit_vars + optional_vars + sensor_environment
