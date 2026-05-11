@@ -1,0 +1,135 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: my-admin-password
+  app_host: 192.168.178.41
+  installation_date: '2023-01-01'
+  secret_key_base: my-secret-key-base
+dashboard:
+  image: ghcr.io/solectrus/solectrus:develop
+postgresql:
+  image: postgres:16-alpine
+  password: my-postgres-password
+  volume_path: "/volume1/docker/solectrus/postgresql"
+influxdb:
+  bucket: my-solectrus-bucket
+  image: influxdb:2.7-alpine
+  org: solectrus
+  password: my-influx-password
+  token_admin: my-influx-admin-token
+  token_read: my-influx-read-token
+  token_readwrite: my-influx-admin-token
+  token_write: my-influx-write-token
+  volume_path: "/volume1/docker/solectrus/influxdb"
+redis:
+  image: redis:7-alpine
+  volume_path: "/volume1/docker/solectrus/redis"
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast_azimuth1: "-53.6"
+  forecast_azimuth2: '126.4'
+  forecast_damping_evening: '0.2'
+  forecast_damping_morning: '0.5'
+  forecast_declination1: '40'
+  forecast_declination2: '40'
+  forecast_interval: '900'
+  forecast_kwp1: '6.750'
+  forecast_kwp2: '5.250'
+  forecast_latitude: '0.00000'
+  forecast_longitude: '0.00000'
+  forecast_roofs: '2'
+  measurement: Forecast
+senec:
+  adapter: local
+  host: 192.168.178.22
+  interval: '5'
+  schema: https
+  version: v3
+shelly:
+  connection: local
+  interval: '10'
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  custom_power_01:
+    field: power
+    measurement: heatpump
+    name: heatpump
+    shelly_connection: local
+    shelly_host: 192.168.178.134
+    shelly_interval: '10'
+    source: shelly
+  custom_power_02:
+    field: power
+    measurement: beamer
+    name: beamer
+    shelly_connection: local
+    shelly_host: 192.168.178.65
+    shelly_interval: '10'
+    source: shelly
+  custom_power_03:
+    field: power
+    measurement: washingmashine
+    name: washingmashine
+    shelly_connection: local
+    shelly_host: 192.168.178.83
+    shelly_interval: '10'
+    source: shelly
+  custom_power_04:
+    field: power
+    measurement: dryer
+    name: dryer
+    shelly_connection: local
+    shelly_host: 192.168.178.118
+    shelly_interval: '10'
+    source: shelly
+  custom_power_05:
+    field: power
+    measurement: microwave
+    name: microwave
+    shelly_connection: local
+    shelly_host: 192.168.178.123
+    shelly_interval: '10'
+    source: shelly
+  custom_power_06:
+    field: power
+    measurement: dishwasher
+    name: dishwasher
+    shelly_connection: local
+    shelly_host: 192.168.178.80
+    shelly_interval: '10'
+    source: shelly
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_power:
+    source: senec
