@@ -14,7 +14,7 @@ module Import
       end
 
       # Per-role fallback chains: most specific .env var wins, then we degrade
-      # to broader-privilege siblings so a single-token donor still produces a
+      # to broader-privilege siblings so a single-token stack still produces a
       # usable config while a privilege-separated stack round-trips losslessly.
       TOKEN_FALLBACKS = {
         'token_admin' => %w[INFLUX_ADMIN_TOKEN INFLUX_TOKEN DOCKER_INFLUXDB_INIT_ADMIN_TOKEN

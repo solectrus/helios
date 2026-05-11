@@ -262,7 +262,7 @@ module Import
       # intermediate import data) plus keys HELIOS unconditionally rewrites
       # or replaces (infrastructure hostnames baked into compose, deprecated
       # MQTT topic vars translated to MAPPING_*, legacy sensor aliases). Any
-      # remaining referenced var that the donor's .env supplied a value for
+      # remaining referenced var that the source `.env` supplied a value for
       # survives in env_values so the unmanaged service still finds it.
       def collect_env_values(names)
         raw = @reader.raw_env.to_h

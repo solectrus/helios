@@ -119,8 +119,8 @@ module SupportBundle
     end
 
     # Unmanaged services keep their env vars as a free-form `env_values`
-    # hash, so secrets land here under the donor's original spelling
-    # rather than under any name HELIOS knows.
+    # hash, so secrets land here under their original spelling rather than
+    # under any name HELIOS knows.
     def redact_unmanaged_env_values(service)
       values = service.is_a?(Hash) ? service['env_values'] : nil
       return unless values.is_a?(Hash)
