@@ -111,7 +111,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   # Optional InfluxDB settings imported verbatim from existing installations.
   # No default — only persisted when explicitly set so that re-export does
   # not silently drop or rewrite a custom setup.
-  # `publish_port` is captured on import when the donor's compose publishes
+  # `publish_port` is captured on import when the imported compose publishes
   # InfluxDB's port 8086 to the host (used for the InfluxDB UI, the HTTP
   # API, and remote tooling/collectors), so re-export does not silently
   # close access a user relies on. Default is to not publish.

@@ -46,13 +46,13 @@ module Import
         ).merge(tokens).merge(@volume_resolver.path_data('influxdb')).compact
       end
 
-      # The donor's port mapping for the InfluxDB UI, if any. Returns nil if
-      # nothing on the influxdb service publishes container port 8086.
+      # The imported port mapping for the InfluxDB UI, if any. Returns nil
+      # if nothing on the influxdb service publishes container port 8086.
       def published_port_mapping
         Array(@reader.service('influxdb')&.dig('ports')).find { |entry| targets_influxdb?(entry) }
       end
 
-      # True when the donor's compose publishes InfluxDB's port 8086 to the
+      # True when the imported compose publishes InfluxDB's port 8086 to the
       # host (covering UI, HTTP API, and external tooling). Returns nil
       # otherwise so .compact drops the key and the default (don't publish)
       # takes over.
@@ -60,7 +60,7 @@ module Import
         published_port_mapping ? true : nil
       end
 
-      # Host-side port the donor maps to the InfluxDB UI. Returns nil for the
+      # Host-side port the imported compose maps to the InfluxDB UI. Returns nil for the
       # canonical 8086 (default — no need to persist) and for mappings
       # without an explicit host port (e.g. bare "8086", which docker assigns
       # an ephemeral host port to). Anything else is preserved so a remapped

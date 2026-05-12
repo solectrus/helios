@@ -26,7 +26,7 @@ module Import
 
       private
 
-      # Host-side port the donor maps to the dashboard container. Returns
+      # Host-side port the imported compose maps to the dashboard container. Returns
       # nil for the canonical 3000:3000 (HELIOS's default, no need to
       # persist) and for setups without a published port (e.g. Traefik-
       # fronted stacks). Anything else is preserved so a remapped port
