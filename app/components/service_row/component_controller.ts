@@ -1,14 +1,13 @@
-import { Controller } from '@hotwired/stimulus';
+import PollingController from '@/utils/pollingController';
 
-// Polls the server for fresh status when a service is in a transient state
-// (pending or health_starting). Uses setInterval to keep polling until the
-// status resolves — a single setTimeout would stop after one attempt because
-// Stimulus only fires statusValueChanged when the value actually changes.
-const POLLING_INTERVAL_MS = 5000;
-
-export default class extends Controller {
+// Polls the server for fresh status while a service is in a transient state
+// (pending or health_starting) by re-fetching the Turbo Frame's `data-src`.
+// `shouldPoll()` is re-evaluated whenever `statusValue` changes, so the timer
+// stops automatically as soon as the status resolves.
+export default class extends PollingController {
   static targets = ['startButton', 'stopButton', 'recreateButton'];
   static values = {
+    ...PollingController.values,
     name: String,
     status: String,
   };
@@ -22,21 +21,8 @@ export default class extends Controller {
   declare nameValue: string;
   declare statusValue: string;
 
-  private pollingInterval?: number;
-
-  disconnect() {
-    this.#stopPolling();
-  }
-
   statusValueChanged() {
-    if (
-      this.statusValue === 'pending' ||
-      this.statusValue === 'health_starting'
-    ) {
-      this.#startPolling();
-    } else {
-      this.#stopPolling();
-    }
+    this.evaluatePolling();
   }
 
   get canStart() {
@@ -74,30 +60,13 @@ export default class extends Controller {
     }
   }
 
-  #clickAndWait(button: HTMLButtonElement) {
-    return new Promise((resolve) => {
-      const form = button.closest('form');
-      form?.addEventListener('turbo:submit-end', resolve, { once: true });
-      button.click();
-    });
+  protected shouldPoll(): boolean {
+    return (
+      this.statusValue === 'pending' || this.statusValue === 'health_starting'
+    );
   }
 
-  #startPolling() {
-    if (this.pollingInterval) return;
-
-    this.pollingInterval = window.setInterval(() => {
-      this.#reloadFrame();
-    }, POLLING_INTERVAL_MS);
-  }
-
-  #stopPolling() {
-    if (this.pollingInterval) {
-      window.clearInterval(this.pollingInterval);
-      this.pollingInterval = undefined;
-    }
-  }
-
-  #reloadFrame() {
+  protected refresh() {
     const frame = this.element as HTMLElement;
     const src = frame.dataset.src;
     if (!src) return;
@@ -105,5 +74,13 @@ export default class extends Controller {
     frame.removeAttribute('complete');
     frame.removeAttribute('src');
     frame.setAttribute('src', src);
+  }
+
+  #clickAndWait(button: HTMLButtonElement) {
+    return new Promise((resolve) => {
+      const form = button.closest('form');
+      form?.addEventListener('turbo:submit-end', resolve, { once: true });
+      button.click();
+    });
   }
 }

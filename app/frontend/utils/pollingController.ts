@@ -1,9 +1,13 @@
 import { Controller } from '@hotwired/stimulus';
 
 // Base class for Stimulus controllers that periodically refresh content.
-// Subclasses implement `refresh()` and may override `shouldPoll()` to skip
+// Subclasses implement `refresh()` and may override `shouldPoll()` to gate
 // activation. Polling pauses while the tab is hidden and resumes on focus,
 // and the timer/listener are torn down when the controller disconnects.
+//
+// Subclasses with preconditions that change at runtime (e.g. based on a
+// value-changed callback) can call `evaluatePolling()` to re-check
+// `shouldPoll()` and start or stop the timer accordingly.
 export default abstract class PollingController extends Controller {
   static values = {
     interval: { type: Number, default: 5000 },
@@ -15,11 +19,9 @@ export default abstract class PollingController extends Controller {
   private boundVisibilityHandler: (() => void) | null = null;
 
   connect() {
-    if (!this.shouldPoll()) return;
-
     this.boundVisibilityHandler = this.handleVisibilityChange.bind(this);
     document.addEventListener('visibilitychange', this.boundVisibilityHandler);
-    this.startPolling();
+    this.evaluatePolling();
   }
 
   disconnect() {
@@ -35,6 +37,14 @@ export default abstract class PollingController extends Controller {
 
   protected shouldPoll(): boolean {
     return true;
+  }
+
+  protected evaluatePolling() {
+    if (this.shouldPoll()) {
+      this.startPolling();
+    } else {
+      this.stopPolling();
+    }
   }
 
   protected abstract refresh(): void | Promise<void>;
@@ -54,7 +64,7 @@ export default abstract class PollingController extends Controller {
   private handleVisibilityChange() {
     if (document.hidden) {
       this.stopPolling();
-    } else {
+    } else if (this.shouldPoll()) {
       this.refresh();
       this.startPolling();
     }
