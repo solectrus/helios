@@ -1,0 +1,3 @@
+<%= turbo_stream.replace "host-stats", method: :morph do %>
+  <%= render HostStats::Frame::Component.new(snapshot: @snapshot) %>
+<% end %>

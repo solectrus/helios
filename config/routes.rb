@@ -28,6 +28,7 @@ Rails.application.routes.draw do
     end
   end
   resource :advanced, only: :show, controller: 'advanced'
+  resource :host_stats, only: :show, path: 'host-stats'
   scope 'backups', module: :backups, as: :backups do
     resource :failure, only: :destroy
     resource :restore_failure, only: :destroy

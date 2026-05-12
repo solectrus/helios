@@ -29,7 +29,9 @@
     <% end %>
   </div>
 
-  <div class="ml-auto flex items-center gap-1">
+  <div class="ml-auto flex items-center gap-3">
+    <%= render HostStats::Component.new %>
+
     <a
       href="<%= helpers.new_support_path %>"
       data-turbo-frame="support-modal-content"

@@ -1,0 +1,6 @@
+de:
+  cpu: 'CPU-Auslastung'
+  cpu_detail:
+    one: 'CPU-Auslastung (1 Kern)'
+    other: 'CPU-Auslastung (%{count} Kerne)'
+  ram: 'RAM'

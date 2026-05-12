@@ -1,0 +1,11 @@
+<div id="host-stats" class="contents">
+  <% metrics.each do |value, icon, tooltip| %>
+    <span
+      class="tooltip tooltip-bottom tooltip-info inline-flex items-center gap-1 before:font-sans <%= value_class(value) %>"
+      data-tip="<%= tooltip %>"
+    >
+      <i class="<%= icon %>" aria-hidden="true"></i>
+      <%= value_text(value) %>
+    </span>
+  <% end %>
+</div>

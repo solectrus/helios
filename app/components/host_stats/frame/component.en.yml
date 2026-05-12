@@ -1,0 +1,6 @@
+en:
+  cpu: 'CPU usage'
+  cpu_detail:
+    one: 'CPU usage (1 core)'
+    other: 'CPU usage (%{count} cores)'
+  ram: 'RAM'
