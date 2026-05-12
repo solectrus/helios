@@ -1,0 +1,108 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: my-admin-password
+  app_host: 192.168.9.79
+  installation_date: '2023-01-01'
+  secret_key_base: my-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+  influx_poll_interval: '5'
+postgresql:
+  image: postgres:16-alpine
+  password: my-secret-db-password
+  volume_path: "/home/pi/solectrus/postgresql"
+influxdb:
+  bucket: solectrus
+  image: influxdb:2.7-alpine
+  org: solectrus
+  password: my-influx-password
+  publish_port: true
+  token_admin: my-super-secret-admin-token
+  token_read: my-super-secret-admin-token
+  token_readwrite: my-super-secret-admin-token
+  token_write: my-super-secret-admin-token
+  volume_path: "/home/pi/solectrus/influxdb"
+redis:
+  image: redis:7-alpine
+  volume_path: "/home/pi/solectrus/redis"
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: pvnode
+  forecast_declination1: '30'
+  forecast_declination2: '30'
+  forecast_kwp1: '6.4'
+  forecast_kwp2: '2.2'
+  forecast_latitude: '0.00000'
+  forecast_longitude: '0.00000'
+  forecast_pvnode_apikey: my-pvnode-apikey
+  forecast_pvnode_azimuth1: '158'
+  forecast_pvnode_azimuth2: '338'
+  forecast_pvnode_paid: 'true'
+  forecast_roofs: '2'
+  measurement: forecast
+senec:
+  adapter: local
+  host: 192.168.9.52
+  interval: '5'
+  language: de
+  schema: https
+  version: v3
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_1:
+    source: senec
+  inverter_power_3:
+    source: senec
+  inverter_power_forecast:
+    source: forecast
+  inverter_power_forecast_clearsky:
+    source: forecast
+  outdoor_temp_forecast:
+    field: temp
+    measurement: forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_power:
+    source: senec
+_unmanaged:
+  services:
+    dozzle:
+      environment: []
+      image: amir20/dozzle:latest
+      labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+      ports:
+      - 8080:8080
+      restart: unless-stopped
+      volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
