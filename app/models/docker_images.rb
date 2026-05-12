@@ -17,10 +17,11 @@
 
 module DockerImages # rubocop:disable Metrics/ModuleLength
   INFLUXDB = {
-    current: 'influxdb:2.8-alpine',
+    current: 'influxdb:2.9-alpine',
 
     legacy: %w[
       influxdb:2-alpine
+      influxdb:2.8-alpine
       influxdb:2.7-alpine
       influxdb:2.6-alpine
       influxdb:2.5-alpine

@@ -1,7 +1,7 @@
 RSpec.describe DockerImages do
   describe '.current' do
     it 'returns the :current string for single-version services' do
-      expect(described_class.current(:INFLUXDB)).to eq('influxdb:2.8-alpine')
+      expect(described_class.current(:INFLUXDB)).to eq('influxdb:2.9-alpine')
     end
 
     it 'unwraps the first `{image:, label:}` hash for multi-version services' do
@@ -12,7 +12,7 @@ RSpec.describe DockerImages do
 
   describe '.recommended_for' do
     it 'returns the current image for a known service' do
-      expect(described_class.recommended_for('influxdb')).to eq('influxdb:2.8-alpine')
+      expect(described_class.recommended_for('influxdb')).to eq('influxdb:2.9-alpine')
     end
 
     it 'derives the registry name from a hyphenated compose name' do
@@ -104,7 +104,7 @@ RSpec.describe DockerImages do
 
   describe '.selectable' do
     it 'wraps the :current string in an array for single-version services' do
-      expect(described_class.selectable(:INFLUXDB)).to eq(['influxdb:2.8-alpine'])
+      expect(described_class.selectable(:INFLUXDB)).to eq(['influxdb:2.9-alpine'])
     end
 
     it 'unwraps every `{image:, label:}` hash for multi-version services' do
