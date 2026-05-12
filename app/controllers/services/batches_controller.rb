@@ -52,11 +52,12 @@ module Services
         ServiceRow::Component.new(
           compose_service:, container:, pending:, lazy: false,
         ),
+        method: :morph,
       )
     end
 
     def status_bar_update(status)
-      turbo_stream.replace('status-bar', StatusBar::Component.new(status:))
+      turbo_stream.replace('status-bar', StatusBar::Component.new(status:), method: :morph)
     end
 
     def services_to_update

@@ -22,6 +22,7 @@ module Services
                 container:,
                 pending: true,
               ),
+              method: :morph,
             )
         end
         format.html { redirect_to services_path }

@@ -5,7 +5,7 @@
        reading: @readings[name],
      ) %>
 
-  <%= turbo_stream.replace "sensor-value-#{name.parameterize}" do %>
+  <%= turbo_stream.replace "sensor-value-#{name.parameterize}", method: :morph do %>
     <%= render SensorRow::ValueCell::Component.new(sensor_row:) %>
   <% end %>
 <% end %>

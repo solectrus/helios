@@ -1,7 +1,7 @@
 <% @configuration.mqtt_topics.each_with_index do |_topic, index| %>
   <% cell = MqttTopicsTable::ValueCell::Component.new(index:, reading: @readings[index.to_s]) %>
 
-  <%= turbo_stream.replace cell.dom_id do %>
+  <%= turbo_stream.replace cell.dom_id, method: :morph do %>
     <%= render cell %>
   <% end %>
 <% end %>

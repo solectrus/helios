@@ -40,16 +40,13 @@ module Services
     end
 
     def turbo_stream_updates(status_bar: nil)
-      updates = [morph_replace("service-#{service_name}", pending_service_row_component)]
+      updates = [
+        turbo_stream.replace("service-#{service_name}", pending_service_row_component, method: :morph),
+      ]
       if status_bar
-        updates << turbo_stream.replace('status-bar', StatusBar::Component.new(status: status_bar))
+        updates << turbo_stream.replace('status-bar', StatusBar::Component.new(status: status_bar), method: :morph)
       end
       updates
-    end
-
-    def morph_replace(target, component)
-      html = render_to_string(component, layout: false)
-      view_context.turbo_stream_action_tag(:replace, target:, method: :morph, template: html)
     end
 
     def pending_service_row_component
