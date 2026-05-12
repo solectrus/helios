@@ -468,8 +468,17 @@ module Import
             SensorRegistry::SENSORS.keys.map { |s| "INFLUX_SENSOR_#{s.upcase}" } +
             forecast_indexed_env_keys +
             pvnode_indexed_env_keys +
-            mqtt_mapping_env_keys
+            mqtt_mapping_env_keys +
+            forecast_regenerated_env_keys
         ).to_set
+      end
+
+      # Forecast knobs HELIOS rebuilds from forecast.* on every export —
+      # imported copies in an unmanaged service's env_values would only
+      # re-introduce stale data (e.g. a leftover FORECAST_INTERVAL after
+      # switching to pvnode, where the collector ignores it entirely).
+      def forecast_regenerated_env_keys
+        %w[FORECAST_INTERVAL FORECAST_CONFIGURATIONS]
       end
 
       def forecast_indexed_env_keys

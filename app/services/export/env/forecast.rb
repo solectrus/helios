@@ -19,7 +19,10 @@ module Export
         entry('FORECAST_PROVIDER', fcast.forecast, 'Forecast provider')
         entry('FORECAST_LATITUDE', fcast.forecast_latitude, 'Solar panel latitude')
         entry('FORECAST_LONGITUDE', fcast.forecast_longitude, 'Solar panel longitude')
-        entry('FORECAST_INTERVAL', fcast.forecast_interval || '900', 'Forecast update interval in seconds')
+        optional_entry('FORECAST_INTERVAL',
+                       ::Forecast::IntervalRules.emit_value(provider: fcast.forecast,
+                                                            interval: fcast.forecast_interval),
+                       'Forecast update interval in seconds')
         optional_base_entries(fcast)
       end
 

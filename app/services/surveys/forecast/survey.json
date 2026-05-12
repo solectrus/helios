@@ -636,12 +636,10 @@
             "default": "Query interval (seconds)"
           },
           "description": {
-            "de": "Wie oft die Prognose aktualisiert wird",
-            "default": "How often the forecast is updated"
+            "de": "Richte dich nach dem API-Limit deines Tarifs.",
+            "default": "Match this to your provider plan's API limit."
           },
-          "defaultValue": "900",
-          "inputType": "number",
-          "min": 60
+          "inputType": "number"
         },
         {
           "type": "text",

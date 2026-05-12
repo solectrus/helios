@@ -43,7 +43,6 @@ forecast:
   forecast_declination1: '8'
   forecast_declination2: '8'
   forecast_declination3: '8'
-  forecast_interval: '17280'
   forecast_kwp1: '5.2'
   forecast_kwp2: '9.72'
   forecast_kwp3: '1.85'

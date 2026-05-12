@@ -783,8 +783,60 @@ RSpec.describe Export::Builder do
 
       expect(forecast.environment).to include(
         'FORECAST_PROVIDER', 'FORECAST_LATITUDE', 'FORECAST_LONGITUDE',
+        'FORECAST_INTERVAL',
         'FORECAST_DECLINATION', 'FORECAST_AZIMUTH', 'FORECAST_KWP'
       )
+    end
+  end
+
+  describe 'with forecast configured for pvnode' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'pvnode',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_declination1' => '30',
+                             'forecast_pvnode_azimuth1' => '180',
+                             'forecast_kwp1' => '10',
+                             'forecast_pvnode_apikey' => 'pvnode-key',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'omits FORECAST_INTERVAL from .env (pvnode ignores it at runtime)' do
+      expect(Env.load['FORECAST_INTERVAL']).to be_nil
+    end
+
+    it 'omits FORECAST_INTERVAL from the forecast-collector environment passthrough' do
+      forecast = Compose.load.services.find('forecast-collector')
+      expect(forecast.environment).not_to include('FORECAST_INTERVAL')
+    end
+  end
+
+  describe 'with forecast configured for solcast without an explicit interval' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'solcast',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_declination1' => '30',
+                             'forecast_azimuth1' => '180',
+                             'forecast_kwp1' => '10',
+                             'forecast_solcast_api_key' => 'solcast-key',
+                             'forecast_solcast_id1' => 'site-1',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'falls back to the 900s baseline' do
+      expect(Env.load['FORECAST_INTERVAL']).to eq('900')
+    end
+
+    it 'keeps FORECAST_INTERVAL in the forecast-collector environment passthrough' do
+      forecast = Compose.load.services.find('forecast-collector')
+      expect(forecast.environment).to include('FORECAST_INTERVAL')
     end
   end
 

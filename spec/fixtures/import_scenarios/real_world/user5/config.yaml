@@ -38,7 +38,6 @@ watchtower: {}
 forecast:
   forecast: pvnode
   forecast_declination1: '29.1'
-  forecast_interval: '5400'
   forecast_kwp1: '8.75'
   forecast_latitude: '50.12345'
   forecast_longitude: '6.12345'

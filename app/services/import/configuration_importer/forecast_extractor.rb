@@ -33,7 +33,10 @@ module Import
           'forecast' => fc_env['FORECAST_PROVIDER'],
           'forecast_latitude' => fc_env['FORECAST_LATITUDE'],
           'forecast_longitude' => fc_env['FORECAST_LONGITUDE'],
-          'forecast_interval' => fc_env['FORECAST_INTERVAL'],
+          'forecast_interval' => ::Forecast::IntervalRules.normalize(
+            provider: fc_env['FORECAST_PROVIDER'],
+            interval: fc_env['FORECAST_INTERVAL'],
+          ),
           'forecast_damping_morning' => fc_env['FORECAST_DAMPING_MORNING'],
           'forecast_damping_evening' => fc_env['FORECAST_DAMPING_EVENING'],
           'forecast_horizon' => fc_env['FORECAST_HORIZON'],

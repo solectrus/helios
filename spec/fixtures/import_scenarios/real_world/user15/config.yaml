@@ -41,7 +41,6 @@ forecast:
   forecast: pvnode
   forecast_declination1: '23'
   forecast_declination2: '23'
-  forecast_interval: '1800'
   forecast_kwp1: '2.7'
   forecast_kwp2: '3.0'
   forecast_latitude: '51.51189'

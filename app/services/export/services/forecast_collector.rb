@@ -52,7 +52,15 @@ module Export
       end
 
       def forecast_vars
-        %w[FORECAST_PROVIDER FORECAST_LATITUDE FORECAST_LONGITUDE FORECAST_INTERVAL]
+        vars = %w[FORECAST_PROVIDER FORECAST_LATITUDE FORECAST_LONGITUDE]
+        vars << 'FORECAST_INTERVAL' if forecast_interval_emitted?
+        vars
+      end
+
+      def forecast_interval_emitted?
+        fcast = configuration.forecast
+        ::Forecast::IntervalRules.emit_value(provider: fcast.forecast,
+                                             interval: fcast.forecast_interval).present?
       end
 
       def optional_vars

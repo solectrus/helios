@@ -35,7 +35,6 @@ forecast:
   forecast: pvnode
   forecast_declination1: '30'
   forecast_declination2: '30'
-  forecast_interval: '900'
   forecast_kwp1: '4.45'
   forecast_kwp2: '4.86'
   forecast_latitude: '50'

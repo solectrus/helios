@@ -42,7 +42,6 @@ forecast:
   forecast_declination1: '24'
   forecast_declination2: '24'
   forecast_declination3: '30'
-  forecast_interval: '3600'
   forecast_kwp1: '8.910'
   forecast_kwp2: '2.835'
   forecast_kwp3: '0.820'

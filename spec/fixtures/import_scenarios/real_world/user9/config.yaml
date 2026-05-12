@@ -35,7 +35,6 @@ watchtower:
 forecast:
   forecast: pvnode
   forecast_declination1: '28'
-  forecast_interval: '3000'
   forecast_kwp1: '9.24'
   forecast_latitude: '0.00000'
   forecast_longitude: '0.00000'
@@ -168,7 +167,6 @@ _unmanaged:
       env_values:
         CHARGER_DRY_RUN: 'true'
         CHARGER_INTERVAL: '18000'
-        FORECAST_CONFIGURATIONS: '1'
         INFLUX_MEASUREMENT_SHELLY_HEATPUMP: Consumer
         PVNODE_PAID: 'false'
         SENEC_HOST: senec.fritz.box
@@ -272,7 +270,6 @@ _unmanaged:
       env_values:
         CHARGER_DRY_RUN: 'true'
         CHARGER_INTERVAL: '18000'
-        FORECAST_CONFIGURATIONS: '1'
         INFLUX_MEASUREMENT_PRICES: prices
         INFLUX_MEASUREMENT_SHELLY_HEATPUMP: Consumer
         PVNODE_PAID: 'false'
