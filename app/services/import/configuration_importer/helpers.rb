@@ -43,8 +43,14 @@ module Import
       # DOCKER_INFLUXDB_INIT_*, INFLUX_ADMIN_TOKEN, ...) — without the fallback
       # the importer would persist nil and ensure_defaults! would generate a
       # fresh random secret on every export, breaking round-trip stability.
-      def env_first(*keys)
-        keys.lazy.filter_map { |k| @reader.raw_env[k].presence }.first
+      #
+      # `inline:` adds a service-scoped fallback for stacks that put values
+      # directly in `environment:` and ship no .env (legitimate compose pattern).
+      # Scoped — not global — to avoid picking up role-bound `INFLUX_TOKEN=${INFLUX_TOKEN_READ}`
+      # from a collector when looking up an admin token.
+      def env_first(*keys, inline: nil)
+        inline_env = inline ? service_env(inline) : {}
+        keys.lazy.filter_map { |k| inline_env[k].presence || @reader.raw_env[k].presence }.first
       end
 
       def image_data_for(service_name)

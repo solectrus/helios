@@ -1,0 +1,132 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: my-admin-password
+  app_host: http://solectrus.intern.beekhuis.de
+  installation_date: '2023-10-17'
+  secret_key_base: my-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+  influx_poll_interval: '5'
+postgresql:
+  image: postgres:16-alpine
+  password: my-db-password
+influxdb:
+  bucket: my-solectrus-bucket
+  image: influxdb:2-alpine
+  org: solectrus
+  password: my-influx-password
+  token_admin: my-influx-admin-token
+  token_read: my-influx-admin-token
+  token_readwrite: my-influx-admin-token
+  token_write: my-influx-admin-token
+  volume_path: solectrus-influxdb
+redis:
+  image: redis:7-alpine
+  volume_path: solectrus-redis
+watchtower: {}
+forecast:
+  forecast: forecast.solar
+  forecast_azimuth1: "-24"
+  forecast_declination1: '45'
+  forecast_interval: '900'
+  forecast_kwp1: '10'
+  forecast_latitude: '53.0708'
+  forecast_longitude: '7.4605'
+  forecast_roofs: '1'
+  measurement: Forecast
+mqtt:
+  mqtt_host: 192.168.10.10
+  mqtt_password: my-mqtt-password
+  mqtt_port: '1883'
+  mqtt_ssl: 'false'
+  mqtt_username: mqtt
+sensors:
+  battery_charging_power:
+    field: bat_power_plus
+    measurement: my-pv-measurement
+    mqtt_formula: IF({value} < 0, -{value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/battery/power
+    source: mqtt
+  battery_discharging_power:
+    field: bat_power_minus
+    measurement: my-pv-measurement
+    mqtt_formula: IF({value} > 0, {value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/battery/power
+    source: mqtt
+  battery_soc:
+    field: bat_fuel_charge
+    measurement: my-pv-measurement
+    mqtt_payload_type: float
+    mqtt_topic: evcc/site/battery/soc
+    source: mqtt
+  case_temp:
+    field: case_temp
+    measurement: my-pv-measurement
+    source: external
+  grid_export_limit:
+    field: power_ratio
+    measurement: my-pv-measurement
+    source: external
+  grid_export_power:
+    field: grid_power_minus
+    measurement: my-pv-measurement
+    mqtt_formula: IF({value} < 0, -{value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/grid/power
+    source: mqtt
+  grid_import_power:
+    field: grid_power_plus
+    measurement: my-pv-measurement
+    mqtt_formula: IF({value} > 0, {value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/grid/power
+    source: mqtt
+  house_power:
+    field: house_power
+    measurement: my-pv-measurement
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/homePower
+    source: mqtt
+  inverter_power:
+    field: inverter_power
+    measurement: my-pv-measurement
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/pvPower
+    source: mqtt
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  system_status:
+    field: current_state
+    measurement: my-pv-measurement
+    source: external
+  system_status_ok:
+    field: current_state_ok
+    measurement: my-pv-measurement
+    source: external
+  wallbox_power:
+    field: wallbox_charge_power
+    measurement: my-pv-measurement
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/loadpoints/1/chargePower
+    source: mqtt
+_unmanaged:
+  volumes:
+    solectrus-db:
+      external: true
+    solectrus-influxdb:
+      external: true
+    solectrus-redis:
+      external: true

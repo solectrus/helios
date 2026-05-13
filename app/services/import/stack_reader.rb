@@ -137,7 +137,7 @@ module Import
     def run_compose_config
       Dir.mktmpdir do |tmpdir|
         FileUtils.cp(@compose_path, File.join(tmpdir, 'compose.yaml'))
-        FileUtils.cp(@env_path, File.join(tmpdir, '.env'))
+        FileUtils.cp(@env_path, File.join(tmpdir, '.env')) if File.exist?(@env_path)
 
         stdout, stderr, status = Open3.capture3(
           'docker', 'compose', 'config', '--format', 'json',

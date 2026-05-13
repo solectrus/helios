@@ -88,7 +88,6 @@ namespace :fixtures do
       scenario_path = scenarios_dir.join(name)
       abort "Scenario '#{name}' not found at #{scenario_path}" unless scenario_path.directory?
       abort missing_compose_backup_message(scenario_path) unless compose_backup_path(scenario_path)
-      abort "Missing #{scenario_path}/.env.bak" unless scenario_path.join('.env.bak').file?
 
       regenerate_scenario(scenario_path)
       puts "Bootstrapped #{name}/ (config.yaml, compose.yaml, .env)"

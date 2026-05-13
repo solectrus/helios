@@ -23,8 +23,12 @@ module Import
         {
           'timezone' => dashboard_env['TZ'].presence || @reader.raw_env['TZ'].presence,
           'installation_date' => dashboard_env['INSTALLATION_DATE'],
-          'admin_password' => @reader.raw_env['ADMIN_PASSWORD'],
-          'secret_key_base' => @reader.raw_env['SECRET_KEY_BASE'],
+          # Direct raw_env (no .presence) preserves an explicit empty .env value,
+          # otherwise ensure_defaults! would regenerate a random secret on every
+          # round-trip and break determinism. Inline-only stacks (no .env) still
+          # round-trip via service_env.
+          'admin_password' => dashboard_env['ADMIN_PASSWORD'].presence || @reader.raw_env['ADMIN_PASSWORD'],
+          'secret_key_base' => dashboard_env['SECRET_KEY_BASE'].presence || @reader.raw_env['SECRET_KEY_BASE'],
           'network_name' => imported_network_name,
           'update_interval' => @watchtower_interval,
         }

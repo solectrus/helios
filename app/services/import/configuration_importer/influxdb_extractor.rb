@@ -37,9 +37,9 @@ module Import
       def local_data
         tokens = ConfigSchema::INFLUXDB_TOKEN_FIELDS.index_with { |field| token_for(field) }
         image_data_for('influxdb').merge(
-          'password' => env_first('INFLUX_PASSWORD', 'DOCKER_INFLUXDB_INIT_PASSWORD'),
-          'org' => env_first('INFLUX_ORG', 'DOCKER_INFLUXDB_INIT_ORG'),
-          'bucket' => env_first('INFLUX_BUCKET', 'DOCKER_INFLUXDB_INIT_BUCKET'),
+          'password' => env_first('INFLUX_PASSWORD', 'DOCKER_INFLUXDB_INIT_PASSWORD', inline: 'influxdb'),
+          'org' => env_first('INFLUX_ORG', 'DOCKER_INFLUXDB_INIT_ORG', inline: 'influxdb'),
+          'bucket' => env_first('INFLUX_BUCKET', 'DOCKER_INFLUXDB_INIT_BUCKET', inline: 'influxdb'),
           'use_hashed_tokens' => @reader.raw_env['INFLUXD_USE_HASHED_TOKENS'],
           'publish_port' => publish_port,
           'host_port' => host_port,
@@ -104,7 +104,7 @@ module Import
       end
 
       def token_for(role)
-        env_first(*TOKEN_FALLBACKS.fetch(role))
+        env_first(*TOKEN_FALLBACKS.fetch(role), inline: 'influxdb')
       end
     end
   end

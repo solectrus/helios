@@ -1,0 +1,185 @@
+# child compose file for SOLECTRUS
+
+services:
+  solectrus-app:
+    container_name: solectrus-app
+    image: ghcr.io/solectrus/solectrus:latest
+    restart: unless-stopped
+    networks:
+      - containerhafen
+    ports:
+      - 3000:3000
+    depends_on:
+      solectrus-db:
+        condition: service_healthy
+      solectrus-influxdb:
+        condition: service_healthy
+      solectrus-redis:
+        condition: service_healthy
+    environment:
+      - TZ=Europe/Berlin
+      - APP_HOST=http://solectrus.intern.beekhuis.de
+      - FORCE_SSL=false
+      - SECRET_KEY_BASE=my-secret-key-base
+      - INSTALLATION_DATE=2023-10-17
+      - FEED_IN_TARIFF=0.08
+      - ADMIN_PASSWORD=my-admin-password
+      - DB_HOST=solectrus-db
+      - DB_PASSWORD=my-db-password
+      - DB_USER=postgres
+      - REDIS_URL=redis://solectrus-redis:6379/1
+      - INFLUX_HOST=solectrus-influxdb
+      - INFLUX_TOKEN=my-influx-admin-token
+      - INFLUX_ORG=solectrus
+      - INFLUX_BUCKET=my-solectrus-bucket
+      - INFLUX_MEASUREMENT_PV=my-pv-measurement
+      - INFLUX_MEASUREMENT_FORECAST=Forecast
+      - INFLUX_POLL_INTERVAL=5
+      - INFLUX_SENSOR_BATTERY_SOC=my-pv-measurement:bat_fuel_charge
+      - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER=my-pv-measurement:bat_power_minus
+      - INFLUX_SENSOR_BATTERY_CHARGING_POWER=my-pv-measurement:bat_power_plus
+      - INFLUX_SENSOR_GRID_EXPORT_POWER=my-pv-measurement:grid_power_minus
+      - INFLUX_SENSOR_GRID_IMPORT_POWER=my-pv-measurement:grid_power_plus
+      - INFLUX_SENSOR_HOUSE_POWER=my-pv-measurement:house_power
+      - INFLUX_SENSOR_INVERTER_POWER=my-pv-measurement:inverter_power
+      - INFLUX_SENSOR_WALLBOX_POWER=my-pv-measurement:wallbox_charge_power
+
+    healthcheck:
+      test: ['CMD-SHELL', 'nc -z 127.0.0.1 3000 || exit 1']
+
+  solectrus-influxdb:
+    container_name: solectrus-influxdb
+    image: influxdb:2-alpine
+    restart: unless-stopped
+    volumes:
+      - solectrus-influxdb:/var/lib/influxdb2
+    networks:
+      - containerhafen
+    environment:
+      - TZ=Europe/Berlin
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=my-influx-password
+      - DOCKER_INFLUXDB_INIT_ORG=solectrus
+      - DOCKER_INFLUXDB_INIT_BUCKET=my-solectrus-bucket
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-influx-admin-token
+    command: influxd run --bolt-path /var/lib/influxdb2/influxd.bolt --engine-path /var/lib/influxdb2/engine --store disk
+    healthcheck:
+      test: ['CMD', 'influx', 'ping']
+      interval: 10s
+      timeout: 20s
+      retries: 5
+      start_period: 30s
+
+  solectrus-db:
+    container_name: solectrus-db
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin
+      - POSTGRES_PASSWORD=my-db-password
+    volumes:
+      - solectrus-db:/var/lib/postgresql/data
+    networks:
+      - containerhafen
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 20s
+      retries: 5
+      start_period: 30s
+
+  solectrus-redis:
+    container_name: solectrus-redis
+    image: redis:7-alpine
+    restart: unless-stopped
+    environment:
+      - TZ=Europe/Berlin
+    volumes:
+      - solectrus-redis:/data
+    networks:
+      - containerhafen
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 20s
+      retries: 5
+      start_period: 30s
+
+  solectrus-mqttcollector:
+    container_name: solectrus-mqttcollector
+    image: ghcr.io/solectrus/mqtt-collector:latest
+    restart: unless-stopped
+    networks:
+      - containerhafen
+    depends_on:
+      solectrus-influxdb:
+        condition: service_healthy
+    environment:
+      - TZ=Europe/Berlin
+      - INFLUX_HOST=solectrus-influxdb
+      - INFLUX_SCHEMA=http
+      - INFLUX_PORT=8086
+      - INFLUX_TOKEN=my-influx-admin-token
+      - INFLUX_ORG=solectrus
+      - INFLUX_BUCKET=my-solectrus-bucket
+      - INFLUX_MEASUREMENT=my-pv-measurement
+      - MQTT_HOST=192.168.10.10
+      - MQTT_PORT=1883
+      - MQTT_SSL=false
+      - MQTT_USERNAME=mqtt
+      - MQTT_PASSWORD=my-mqtt-password
+      - MQTT_TOPIC_HOUSE_POW=evcc/site/homePower
+      - MQTT_TOPIC_GRID_POW=evcc/site/grid/power
+      # - MQTT_TOPIC_BAT_CHARGE_CURRENT
+      - MQTT_TOPIC_BAT_FUEL_CHARGE=evcc/site/battery/soc
+      - MQTT_TOPIC_BAT_POWER=evcc/site/battery/power
+      # - MQTT_TOPIC_BAT_VOLTAGE
+      # - MQTT_TOPIC_CASE_TEMP
+      # - MQTT_TOPIC_CURRENT_STATE
+      # - MQTT_TOPIC_MPP1_POWER
+      # - MQTT_TOPIC_MPP2_POWER
+      # - MQTT_TOPIC_MPP3_POWER
+      - MQTT_TOPIC_INVERTER_POWER=evcc/site/pvPower
+      - MQTT_TOPIC_WALLBOX_CHARGE_POWER=evcc/loadpoints/1/chargePower
+      - MQTT_FLIP_BAT_POWER=true
+
+  solectrus-forecast-collector:
+    container_name: solectrus-forecast-collector
+    image: ghcr.io/solectrus/forecast-collector:latest
+    restart: unless-stopped
+    networks:
+      - containerhafen
+    depends_on:
+      solectrus-influxdb:
+        condition: service_healthy
+    environment:
+      - TZ=Europe/Berlin
+      - INFLUX_HOST=solectrus-influxdb
+      - INFLUX_SCHEMA=http
+      - INFLUX_PORT=8086
+      - INFLUX_TOKEN=my-influx-admin-token
+      - INFLUX_ORG=solectrus
+      - INFLUX_BUCKET=my-solectrus-bucket
+      - INFLUX_MEASUREMENT=Forecast
+      - FORECAST_PROVIDER=forecast.solar
+      - FORECAST_CONFIGURATIONS=1
+      - FORECAST_INTERVAL=900
+      - INFLUX_MEASUREMENT_FORECAST=Forecast
+      - FORECAST_LATITUDE=53.0708
+      - FORECAST_LONGITUDE=7.4605
+      - FORECAST_DECLINATION=45
+      - FORECAST_AZIMUTH=-24
+      - FORECAST_KWP=10
+
+volumes:
+  solectrus-influxdb:
+    external: true
+  solectrus-db:
+    external: true
+  solectrus-redis:
+    external: true
+
+networks:
+  containerhafen:
+    external: true
