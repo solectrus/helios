@@ -19,18 +19,37 @@ module Import
       # Per-role fallback chains: most specific .env var wins, then we degrade
       # to broader-privilege siblings so a single-token stack still produces a
       # usable config while a privilege-separated stack round-trips losslessly.
+      # `DOCKER_INFLUXDB_INIT_ADMIN_TOKEN` outranks generic `INFLUX_TOKEN` for
+      # admin/rw/write (init var explicitly names the admin token) but not for
+      # read — a donor with only `INFLUX_TOKEN=read-token` is signaling a read
+      # role, not an admin one.
       TOKEN_FALLBACKS = {
-        'token_admin' => %w[INFLUX_ADMIN_TOKEN INFLUX_TOKEN DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
-                            INFLUX_TOKEN_READWRITE INFLUX_TOKEN_WRITE INFLUX_TOKEN_READ],
-        'token_readwrite' => %w[INFLUX_TOKEN_READWRITE INFLUX_ADMIN_TOKEN INFLUX_TOKEN
-                                INFLUX_TOKEN_WRITE DOCKER_INFLUXDB_INIT_ADMIN_TOKEN],
-        'token_write' => %w[INFLUX_TOKEN_WRITE INFLUX_TOKEN_READWRITE INFLUX_TOKEN
-                            INFLUX_ADMIN_TOKEN DOCKER_INFLUXDB_INIT_ADMIN_TOKEN],
+        'token_admin' => %w[INFLUX_ADMIN_TOKEN DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+                            INFLUX_TOKEN INFLUX_TOKEN_READWRITE INFLUX_TOKEN_WRITE
+                            INFLUX_TOKEN_READ],
+        'token_readwrite' => %w[INFLUX_TOKEN_READWRITE INFLUX_ADMIN_TOKEN
+                                DOCKER_INFLUXDB_INIT_ADMIN_TOKEN INFLUX_TOKEN
+                                INFLUX_TOKEN_WRITE],
+        'token_write' => %w[INFLUX_TOKEN_WRITE INFLUX_TOKEN_READWRITE INFLUX_ADMIN_TOKEN
+                            DOCKER_INFLUXDB_INIT_ADMIN_TOKEN INFLUX_TOKEN],
         'token_read' => %w[INFLUX_TOKEN_READ INFLUX_TOKEN_READWRITE INFLUX_TOKEN
                            INFLUX_TOKEN_WRITE INFLUX_ADMIN_TOKEN
                            DOCKER_INFLUXDB_INIT_ADMIN_TOKEN],
       }.freeze
       private_constant :TOKEN_FALLBACKS
+
+      # Canonical consumer service per role, mirroring
+      # app/services/export/services/*.rb. Lets the importer pick up role
+      # tokens that donors wire per-service via custom env names (e.g.
+      # `INFLUX_TOKEN: ${POWER_SPLITTER_INFLUX_TOKEN}` on power-splitter).
+      ROLE_CONSUMERS = {
+        'token_admin' => %w[influxdb],
+        'token_readwrite' => %w[power-splitter],
+        'token_write' => %w[mqtt-collector senec-collector shelly-collector
+                            forecast-collector ingest],
+        'token_read' => %w[dashboard],
+      }.freeze
+      private_constant :ROLE_CONSUMERS
 
       private
 
@@ -103,8 +122,18 @@ module Import
         }.compact
       end
 
+      # Role-specific .env key wins ahead of consumer_token so a donor stack
+      # with a properly set INFLUX_TOKEN_WRITE in .env beats per-service inline
+      # placeholders (e.g. anonymization residue like `INFLUX_TOKEN=XXXXX`).
       def token_for(role)
-        env_first(*TOKEN_FALLBACKS.fetch(role), inline: 'influxdb')
+        fallbacks = TOKEN_FALLBACKS.fetch(role)
+        @reader.raw_env[fallbacks.first].presence ||
+          consumer_token(role) ||
+          env_first(*fallbacks, inline: 'influxdb')
+      end
+
+      def consumer_token(role)
+        ROLE_CONSUMERS.fetch(role, []).lazy.filter_map { |s| service_env(s)['INFLUX_TOKEN'].presence }.first
       end
     end
   end

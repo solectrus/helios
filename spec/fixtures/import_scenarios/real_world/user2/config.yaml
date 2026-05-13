@@ -27,10 +27,10 @@ influxdb:
   image: influxdb:2.8
   org: my-influx-org
   password: my-influx-password
-  token_admin: my-influx-read-token
+  token_admin: my-influx-admin-token
   token_read: my-influx-read-token
-  token_readwrite: my-influx-read-token
-  token_write: my-influx-read-token
+  token_readwrite: my-influx-readwrite-token
+  token_write: my-influx-write-token
   use_hashed_tokens: 'true'
   volume_path: "/home/user2/docker/solectrus/influxdb/data"
 redis:
