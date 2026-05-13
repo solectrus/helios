@@ -557,9 +557,27 @@ class Configuration # rubocop:disable Metrics/ClassLength
     when ConfigSchema::MODE_DASHBOARD_ONLY
       %w[shelly senec mqtt].each { |key| @data.delete(key) }
       rewrite_sensors_to_external!
+      strip_influxdb_fields!(ConfigSchema::INFLUXDB_EXTERNAL_FIELDS)
     when ConfigSchema::MODE_COLLECTORS_ONLY
       %w[reverse_proxy backup sensors].each { |key| @data.delete(key) }
+      strip_influxdb_fields!(ConfigSchema::INFLUXDB_OPTIONAL_FIELDS)
+    else
+      # MODE_FULL (or missing — defaults to full)
+      strip_influxdb_fields!(ConfigSchema::INFLUXDB_EXTERNAL_FIELDS)
     end
+  end
+
+  # External InfluxDB connection fields (host/port/schema) belong only in
+  # collectors_only mode; local-container fields (publish_port/host_port/
+  # use_hashed_tokens) belong only in modes with a local InfluxDB. Switching
+  # between modes through the UI used to leave the now-irrelevant fields
+  # behind, so the running stack pointed at the wrong target on the next
+  # render. Removing them here keeps config.yaml in sync with the mode.
+  def strip_influxdb_fields!(fields)
+    section = @data['influxdb']
+    return unless section.is_a?(Hash)
+
+    fields.each { |field| section.delete(field) }
   end
 
   def rewrite_sensors_to_external!

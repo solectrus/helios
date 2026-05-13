@@ -321,6 +321,10 @@ RSpec.describe Configuration do
           'postgresql' => { 'password' => 'keep-me' },
           'shelly' => { 'connection' => 'cloud' },
           'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
+          'influxdb' => {
+            'org' => 'solectrus', 'bucket' => 'solectrus',
+            'publish_port' => true, 'host_port' => '8086', 'use_hashed_tokens' => true
+          },
         )
         described_class.current.update('deployment',
                                        { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
@@ -342,6 +346,41 @@ RSpec.describe Configuration do
 
       it 'leaves auto-generated database passwords intact' do
         expect(described_class.current.postgresql.password).to eq('keep-me')
+      end
+
+      it 'strips local-container-only fields from the influxdb section' do
+        reloaded = described_class.current.influxdb
+        expect(reloaded).not_to have_key('publish_port')
+        expect(reloaded).not_to have_key('host_port')
+        expect(reloaded).not_to have_key('use_hashed_tokens')
+        expect(reloaded.org).to eq('solectrus')
+      end
+    end
+
+    context 'when switching back from collectors_only to full mode' do
+      before do
+        with_config_yaml(
+          'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+          'influxdb' => {
+            'host' => 'old.example.com', 'port' => '443', 'schema' => 'https',
+            'org' => 'solectrus', 'bucket' => 'solectrus', 'token_admin' => 'tok'
+          },
+        )
+        described_class.current.update('deployment', { 'mode' => ConfigSchema::MODE_FULL })
+      end
+
+      it 'strips the external InfluxDB connection fields' do
+        reloaded = described_class.current.influxdb
+        expect(reloaded).not_to have_key('host')
+        expect(reloaded).not_to have_key('port')
+        expect(reloaded).not_to have_key('schema')
+      end
+
+      it 'preserves auto-generated InfluxDB fields' do
+        reloaded = described_class.current.influxdb
+        expect(reloaded.org).to eq('solectrus')
+        expect(reloaded.bucket).to eq('solectrus')
+        expect(reloaded.token_admin).to eq('tok')
       end
     end
   end
