@@ -30,6 +30,7 @@ module SupportBundle
         'Docker Compose' => DockerReport.compose,
         'Docker Containers' => DockerReport.containers(docker),
         'Docker Networks' => DockerReport.networks(docker),
+        'PostgreSQL Tables' => PostgresReport.tables,
       }
     end
 
