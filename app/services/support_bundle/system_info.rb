@@ -17,7 +17,10 @@ module SupportBundle
 
     def sections
       docker = DockerReport.fetch_snapshot
+      host_sections(docker).merge(docker_sections(docker)).merge(database_sections)
+    end
 
+    def host_sections(docker)
       {
         'HELIOS' => helios,
         'Operating System' => HostMetrics.operating_system(docker),
@@ -26,11 +29,23 @@ module SupportBundle
         'Uptime' => HostMetrics.uptime,
         'Disk' => HostMetrics.disk,
         'Data Volumes' => HostMetrics.data_volumes,
+      }
+    end
+
+    def docker_sections(docker)
+      {
         'Docker Engine' => DockerReport.engine(docker),
         'Docker Compose' => DockerReport.compose,
         'Docker Containers' => DockerReport.containers(docker),
         'Docker Networks' => DockerReport.networks(docker),
+      }
+    end
+
+    def database_sections
+      {
         'PostgreSQL Tables' => PostgresReport.tables,
+        'InfluxDB' => InfluxReport.overview,
+        'InfluxDB Measurements' => InfluxReport.measurements_list,
       }
     end
 

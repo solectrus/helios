@@ -57,14 +57,31 @@ module InfluxDb
       end
     end
 
+    # Run a single Flux query and return the parsed CSV rows. Returns `nil`
+    # if InfluxDB is unreachable so diagnostic callers (e.g. the support
+    # bundle) can render a degraded result. Per-query failures (HTTP 5xx,
+    # malformed CSV) raise so the caller learns the actual failure mode.
+    def query(flux)
+      with_http(default: nil) { |http| execute_query(http, flux) }
+    end
+
+    # Display target, e.g. for the support bundle. Reflects the resolved
+    # host/port/schema, including defaults applied by the constructor.
+    def endpoint
+      "#{schema}://#{host}:#{port}"
+    end
+
     private
 
     attr_reader :token, :org, :bucket, :host, :port, :schema
 
     # One Net::HTTP session is reused across the whole batch: saves N-1 DNS
     # lookups and TCP handshakes per poll, and turns an outage into a single
-    # fast-fail instead of N timeouts back-to-back.
-    def with_http(&)
+    # fast-fail instead of N timeouts back-to-back. `default` is returned
+    # when the session itself cannot be established — polling wants `{}` so
+    # callers get an empty result hash, diagnostics want `nil` to signal
+    # unreachable.
+    def with_http(default: {}, &)
       Net::HTTP.start(
         host, port,
         use_ssl: schema == 'https',
@@ -74,7 +91,7 @@ module InfluxDb
       )
     rescue *CONNECTION_ERRORS => e
       Rails.logger.warn("InfluxDB unreachable at #{schema}://#{host}:#{port}: #{e.message}")
-      {}
+      default
     end
 
     def each_sensor(sensor_mappings)

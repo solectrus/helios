@@ -1,0 +1,103 @@
+RSpec.describe SupportBundle::SystemInfo::InfluxReport do
+  let(:query_url) { 'http://influxdb:8086/api/v2/query?org=org' }
+
+  before do
+    with_config_yaml(
+      'influxdb' => {
+        'token_read' => 'tok', 'org' => 'org', 'bucket' => 'bkt',
+        'host' => 'influxdb', 'port' => '8086', 'schema' => 'http'
+      },
+    )
+  end
+
+  def stub_flux(matcher, body)
+    stub_request(:post, query_url).with(body: matcher).to_return(status: 200, body:)
+  end
+
+  def measurements_csv(*names)
+    rows = names.map { |n| ",_result,0,#{n}" }.join("\n")
+    ",result,table,_value\n#{rows}\n"
+  end
+
+  describe '.overview' do
+    it 'reports schema counts when InfluxDB is reachable' do
+      stub_flux(/schema\.measurements/, measurements_csv('SENEC', 'Forecast'))
+      stub_flux(/schema\.fieldKeys/, measurements_csv('power', 'soc', 'temp'))
+      stub_flux(/schema\.tagKeys/, measurements_csv('host', 'region'))
+
+      result = described_class.overview
+
+      expect(result).to include(
+        'Target' => 'http://influxdb:8086',
+        'Org' => 'org',
+        'Bucket' => 'bkt',
+        'Measurements' => '2',
+        'Field keys (total)' => '3',
+        'Tag keys (total)' => '2',
+      )
+    end
+
+    it 'reports the bucket data size when the directory exists' do
+      stub_request(:post, query_url).to_return(status: 200, body: measurements_csv)
+      dir = File.join(config_yaml_dir, 'influxdb')
+      FileUtils.mkdir_p(dir)
+      allow(SupportBundle::SystemInfo::OutputFormatter).to receive(:capture)
+        .with('du', '-sk', dir).and_return("2048\t#{dir}")
+
+      expect(described_class.overview['Bucket data size']).to eq('2 MB')
+    end
+
+    it 'reports "not on this host" when the bucket directory is absent (collectors_only)' do
+      stub_request(:post, query_url).to_return(status: 200, body: measurements_csv)
+
+      expect(described_class.overview['Bucket data size']).to eq('not on this host')
+    end
+
+    it 'surfaces "unreachable" when InfluxDB is down' do
+      stub_request(:post, query_url).to_raise(Errno::ECONNREFUSED)
+
+      result = described_class.overview
+
+      expect(result).to include('Target' => 'http://influxdb:8086', 'Status' => 'unreachable')
+      expect(result).not_to have_key('Measurements')
+    end
+
+    it 'returns a friendly notice when no bucket is configured' do
+      with_config_yaml('influxdb' => {})
+
+      expect(described_class.overview).to eq('InfluxDB not configured.')
+    end
+
+    it 'degrades gracefully on unexpected errors' do
+      stub_request(:post, query_url).to_return(status: 500, body: 'boom')
+
+      expect(described_class.overview).to start_with('unavailable: InfluxDb::ConnectionError:')
+    end
+  end
+
+  describe '.measurements_list' do
+    it 'renders one measurement name per line' do
+      stub_flux(/schema\.measurements/, measurements_csv('SENEC', 'Forecast'))
+
+      expect(described_class.measurements_list).to eq("SENEC\nForecast")
+    end
+
+    it 'reports unreachable when the query fails' do
+      stub_request(:post, query_url).to_raise(Errno::ECONNREFUSED)
+
+      expect(described_class.measurements_list).to eq('InfluxDB unreachable.')
+    end
+
+    it 'reports an empty bucket' do
+      stub_flux(/schema\.measurements/, ",result,table,_value\n")
+
+      expect(described_class.measurements_list).to eq('No measurements found in bucket.')
+    end
+
+    it 'returns a friendly notice when no bucket is configured' do
+      with_config_yaml('influxdb' => {})
+
+      expect(described_class.measurements_list).to eq('InfluxDB not configured.')
+    end
+  end
+end
