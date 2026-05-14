@@ -1,0 +1,195 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: my-admin-password
+  app_host: localhost
+  installation_date: '2022-01-01'
+  secret_key_base: my-secret-key-base
+dashboard:
+  image: ghcr.io/solectrus/solectrus:pr-3747
+postgresql:
+  image: postgres:14-alpine
+  password: my-super-secret-password
+influxdb:
+  bucket: my-solectrus-bucket
+  image: influxdb:2.7-alpine
+  org: solectrus
+  password: my-influx-password
+  token_admin: my-super-secret-admin-token
+  token_read: my-super-secret-admin-token
+  token_readwrite: my-super-secret-admin-token
+  token_write: my-super-secret-admin-token
+redis:
+  image: redis:7-alpine
+watchtower:
+  image: containrrr/watchtower:latest
+forecast:
+  forecast_azimuth1: "-45"
+  forecast_declination1: '20'
+  forecast_interval: '900'
+  forecast_kwp1: '10.0'
+  forecast_latitude: '0.00000'
+  forecast_longitude: '0.00000'
+  forecast_roofs: '1'
+  measurement: Forecast
+senec:
+  adapter: local
+  host: 192.168.3.100
+  interval: '5'
+  schema: https
+  version: v3
+shelly:
+  connection: local
+  devices:
+  - host: 192.168.3.95
+    name: dryer2
+  - host: 192.168.3.90
+    measurement: gsa
+    name: gsa
+  - host: 192.168.3.92
+    name: mw
+  - host: 192.168.3.91
+    name: oven
+  - host: 192.168.3.97
+    name: oven2
+  - host: 192.168.3.89
+    measurement: tv
+    name: tv
+  - host: 192.168.3.94
+    name: wa
+  - host: 192.168.3.96
+    name: wa2
+  interval: '5'
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  custom_power_01:
+    field: power
+    measurement: TV
+    name: TV
+    source: external
+  custom_power_02:
+    field: power
+    measurement: OVEN
+    name: OVEN
+    source: external
+  custom_power_03:
+    field: power
+    measurement: OVEN2
+    name: OVEN2
+    source: external
+  custom_power_04:
+    field: power
+    measurement: WA
+    name: WA
+    source: external
+  custom_power_05:
+    field: power
+    measurement: WA2
+    name: WA2
+    source: external
+  custom_power_06:
+    field: power
+    measurement: DRYER
+    name: DRYER
+    source: external
+  custom_power_07:
+    field: power
+    measurement: DRYER2
+    name: DRYER2
+    source: external
+  custom_power_08:
+    field: power
+    measurement: MW
+    name: MW
+    source: external
+  custom_power_09:
+    field: power
+    measurement: GSA
+    name: GSA
+    source: external
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_power:
+    source: senec
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:latest
+_unmanaged:
+  env_vars:
+    SHELLY_GEN_DRYER2: '2'
+    SHELLY_GEN_GSA: '2'
+    SHELLY_GEN_MW: '2'
+    SHELLY_GEN_OVEN: '2'
+    SHELLY_GEN_OVEN2: '2'
+    SHELLY_GEN_TV: '2'
+    SHELLY_GEN_WA: '2'
+    SHELLY_GEN_WA2: '2'
+  services:
+    senec-charger:
+      depends_on:
+        influxdb:
+          condition: service_healthy
+      environment:
+      - TZ
+      - INFLUX_BUCKET
+      - INFLUX_HOST=influxdb
+      - INFLUX_MEASUREMENT_FORECAST=${INFLUX_MEASUREMENT_FORECAST}
+      - INFLUX_MEASUREMENT_PRICES=${INFLUX_MEASUREMENT_PRICES}
+      - INFLUX_ORG
+      - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
+      - CHARGER_DRY_RUN
+      - CHARGER_FORECAST_THRESHOLD
+      - CHARGER_INTERVAL
+      - CHARGER_PRICE_MAX
+      - CHARGER_PRICE_TIME_RANGE
+      - SENEC_HOST
+      - SENEC_SCHEMA
+      image: ghcr.io/solectrus/senec-charger:develop
+      links:
+      - influxdb
+      restart: always
+    tibber-collector:
+      depends_on:
+        influxdb:
+          condition: service_healthy
+      environment:
+      - INFLUX_BUCKET
+      - INFLUX_HOST=influxdb
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_PRICES}
+      - INFLUX_ORG
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - TIBBER_INTERVAL
+      - TIBBER_TOKEN
+      image: ghcr.io/solectrus/tibber-collector:develop
+      links:
+      - influxdb
+      restart: always
