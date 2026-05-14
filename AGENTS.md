@@ -36,8 +36,12 @@ After modifying code, **always** run the matching linter(s) and fix issues:
 - Ruby (`.rb`): `bin/rubocop` (use `--autocorrect`)
 - ERB (`.html.erb`): `bin/herb lint` + `bin/yarn erb:format` (or `erb:check`)
 - TypeScript (`.ts`): `bin/yarn tsc` + `bin/yarn lint`
+- JSON/YAML/Markdown/CSS: `bin/yarn prettier --write`
 
 Run `bin/brakeman` occasionally for security scans (not per-change).
+
+In Claude Code sessions these run automatically at turn end via
+`.claude/hooks/` — no need to invoke them manually for edited files.
 
 ## Rails Conventions
 
