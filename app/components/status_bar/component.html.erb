@@ -1,4 +1,8 @@
-<%= helpers.turbo_frame_tag "status-bar" do %>
+<%= helpers.turbo_frame_tag "status-bar",
+                             data: {
+                               src: helpers.status_bar_path,
+                               visibility_target: "frame",
+                             } do %>
   <div class="fixed top-16 right-0 left-0 z-30 lg:top-auto lg:bottom-0 <%= bar_class %>">
     <div
       class="

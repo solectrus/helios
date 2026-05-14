@@ -58,8 +58,10 @@
 
     <% if authorized? && config_yaml_exists? %>
       <%= render MobileDock::Component.new(active_tab: content_for(:active_tab).presence&.to_sym) %>
-      <%= turbo_stream_from "status_bar" %>
-      <%= render StatusBar::Component.new %>
+      <div data-controller="visibility">
+        <%= turbo_stream_from "status_bar" %>
+        <%= render StatusBar::Component.new %>
+      </div>
       <%= render "shared/log_modal",
                  id: "support-modal",
                  turbo_frame: "support-modal-content",

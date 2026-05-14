@@ -118,7 +118,7 @@ RSpec.describe 'Backups', :with_admin_password do
 
       get backups_path
 
-      status_bar = response.body[%r{<turbo-frame id="status-bar".*?</turbo-frame>}m]
+      status_bar = response.body[%r{<turbo-frame[^>]*id="status-bar"[^>]*>.*?</turbo-frame>}m]
       expect(status_bar).to include('Backup in progress…')
       expect(status_bar).to include('Backup wird erstellt…')
       expect(status_bar).not_to match(%r{<form[^>]*action="/services/batch"})
@@ -135,7 +135,7 @@ RSpec.describe 'Backups', :with_admin_password do
 
       get backups_path
 
-      status_bar = response.body[%r{<turbo-frame id="status-bar".*?</turbo-frame>}m]
+      status_bar = response.body[%r{<turbo-frame[^>]*id="status-bar"[^>]*>.*?</turbo-frame>}m]
       expect(status_bar).to include('Restore in progress…')
       expect(status_bar).to include('Wiederherstellung läuft…')
       expect(status_bar).not_to include('All services operational')
