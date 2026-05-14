@@ -605,4 +605,37 @@ RSpec.describe Configuration do
       expect(described_class.current.setup_completed?).to be false
     end
   end
+
+  describe '#visible_settings' do
+    it 'omits ingest by default in full mode' do
+      with_config_yaml
+      expect(described_class.current.visible_settings).not_to include('ingest')
+    end
+
+    it 'inserts ingest right after influxdb when a balcony sensor activates it' do
+      with_config_yaml(
+        'sensors' => { 'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true } },
+      )
+      settings = described_class.current.visible_settings
+      expect(settings[settings.index('influxdb') + 1]).to eq('ingest')
+    end
+
+    it 'never surfaces ingest in collectors_only mode (no local InfluxDB to write to)' do
+      with_config_yaml(
+        'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+        'sensors' => { 'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true } },
+      )
+      expect(described_class.current.visible_settings).not_to include('ingest')
+    end
+
+    it 'appends ingest in dashboard_only mode (no influxdb card to anchor against)' do
+      with_config_yaml(
+        'deployment' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY },
+        'sensors' => { 'inverter_power_2' => { 'source' => 'external', 'is_balcony' => true } },
+      )
+      settings = described_class.current.visible_settings
+      expect(settings.last).to eq('ingest')
+      expect(settings).not_to include('influxdb')
+    end
+  end
 end

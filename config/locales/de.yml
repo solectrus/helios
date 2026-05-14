@@ -224,6 +224,9 @@ de:
       influxdb:
         title: 'InfluxDB'
         description: 'Einstellungen für die Zeitreihen-Datenbank'
+      ingest:
+        title: 'Ingest'
+        description: 'Korrigiert den Hausverbrauch bei Balkonkraftwerken.'
       invalid_setting: 'Unbekannte Einstellung'
       add: 'Hinzufügen'
       edit: 'Bearbeiten'

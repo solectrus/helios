@@ -1,0 +1,56 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Ingest",
+    "default": "Ingest"
+  },
+  "description": {
+    "de": "Korrigiert den Hausverbrauch bei Balkonkraftwerken.",
+    "default": "Recalculates house consumption for balcony plants."
+  },
+  "pages": [
+    {
+      "name": "p_image",
+      "title": {
+        "de": "Software-Stand",
+        "default": "Release channel"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "image",
+          "title": {
+            "de": "Welchen Stand möchtest du verwenden?",
+            "default": "Which release should be used?"
+          },
+          "isRequired": true,
+          "choices": []
+        }
+      ]
+    },
+    {
+      "name": "p_settings",
+      "title": {
+        "de": "Pufferzeit",
+        "default": "Buffer window"
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "retention_hours",
+          "title": {
+            "de": "Wie lange sollen Messdaten zwischengespeichert werden (in Stunden)?",
+            "default": "How long should measurement data be buffered (in hours)?"
+          },
+          "description": {
+            "de": "Ingest hält die Messdaten in einem SQLite-Puffer vor. Standard: 12.",
+            "default": "Ingest keeps measurement data in a SQLite buffer. Default: 12."
+          },
+          "defaultValue": "12",
+          "inputType": "number",
+          "min": 1
+        }
+      ]
+    }
+  ]
+}

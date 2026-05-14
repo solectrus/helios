@@ -8,8 +8,10 @@ class Configuration # rubocop:disable Metrics/ClassLength
     service_overrides
   ].freeze
 
-  # Sections hidden from the configuration UI (auto-managed)
-  HIDDEN = %w[postgresql redis watchtower ingest power_splitter].freeze
+  # Sections hidden from the configuration UI (auto-managed). Ingest is not
+  # listed: it has user-facing knobs (image, retention_hours) and is surfaced
+  # via #visible_settings whenever a balcony sensor activates it.
+  HIDDEN = %w[postgresql redis watchtower power_splitter].freeze
 
   # Settings shown in the configuration UI in full mode. `influxdb` exposes
   # only a couple of host-level toggles (e.g. UI port publication) here —
@@ -359,13 +361,21 @@ class Configuration # rubocop:disable Metrics/ClassLength
     mode == ConfigSchema::MODE_DASHBOARD_ONLY
   end
 
-  # Settings visible in the configuration UI for the current mode.
+  # Settings visible in the configuration UI for the current mode. Ingest is
+  # inserted right after influxdb whenever it is activated by a balcony sensor
+  # — the two services sit next to each other in the data path and read more
+  # naturally as neighbors on the card grid. Modes without an influxdb card
+  # (dashboard_only) get ingest appended at the end.
   def visible_settings
-    case mode
-    when ConfigSchema::MODE_COLLECTORS_ONLY then COLLECTORS_ONLY_SETTINGS
-    when ConfigSchema::MODE_DASHBOARD_ONLY then DASHBOARD_ONLY_SETTINGS
-    else SETTINGS
-    end
+    base = case mode
+           when ConfigSchema::MODE_COLLECTORS_ONLY then COLLECTORS_ONLY_SETTINGS
+           when ConfigSchema::MODE_DASHBOARD_ONLY then DASHBOARD_ONLY_SETTINGS
+           else SETTINGS
+           end
+    return base unless ingest_required?
+
+    insert_at = base.index('influxdb')
+    insert_at ? base.dup.insert(insert_at + 1, 'ingest') : base + %w[ingest]
   end
 
   def balcony_sensors

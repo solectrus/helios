@@ -121,7 +121,28 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
     ],
   }.freeze
 
-  INGEST = { current: 'ghcr.io/solectrus/ingest:latest' }.freeze
+  INGEST = {
+    current: [
+      {
+        image: 'ghcr.io/solectrus/ingest:latest',
+        label: {
+          de: "Stabil (empfohlen)\n\n" \
+              'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
+          en: "Stable (recommended)\n\n" \
+              'Tested releases — only updated when a new version ships, predictable and reliable.',
+        }.freeze,
+      }.freeze,
+      {
+        image: 'ghcr.io/solectrus/ingest:develop',
+        label: {
+          de: "Entwicklung\n\n" \
+              'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
+          en: "Development\n\n" \
+              'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
+        }.freeze,
+      }.freeze,
+    ].freeze,
+  }.freeze
   HELIOS = { current: 'ghcr.io/solectrus/helios:develop' }.freeze
 
   WATCHTOWER = {

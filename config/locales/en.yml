@@ -253,6 +253,9 @@ en:
       influxdb:
         title: 'InfluxDB'
         description: 'Settings for the time-series database'
+      ingest:
+        title: 'Ingest'
+        description: 'Recalculates house consumption for balcony plants.'
       invalid_setting: 'Unknown setting'
       add: 'Add'
       edit: 'Edit'

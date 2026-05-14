@@ -11,6 +11,7 @@ module SettingSection
       'mqtt' => 'fa-tower-broadcast',
       'shelly' => 'fa-plug-circle-bolt',
       'influxdb' => 'fa-database',
+      'ingest' => 'fa-house-signal',
     }.freeze
 
     FORECAST_PROVIDERS = {
@@ -55,8 +56,11 @@ module SettingSection
       @singleton_data ||= configuration.setting_data(setting)
     end
 
+    # Ingest, like deployment, has an effective state even when the section is
+    # empty in config.yaml — defaults (image, retention_hours) kick in and the
+    # service is running. Treat it as configured so the card stays green.
     def singleton_configured?
-      return true if setting == 'deployment'
+      return true if %w[deployment ingest].include?(setting)
 
       singleton_data.present?
     end
