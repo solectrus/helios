@@ -60,8 +60,8 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
               'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
           en: "Stable (recommended)\n\n" \
               'Tested releases — only updated when a new version ships, predictable and reliable.',
-        }.freeze,
-      }.freeze,
+        },
+      },
       {
         image: 'ghcr.io/solectrus/solectrus:develop',
         label: {
@@ -69,9 +69,9 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
               'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
           en: "Development\n\n" \
               'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
-        }.freeze,
-      }.freeze,
-    ].freeze,
+        },
+      },
+    ],
 
     legacy: %w[
       ghcr.io/solectrus/solectrus:1-0-beta
@@ -130,8 +130,8 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
               'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
           en: "Stable (recommended)\n\n" \
               'Tested releases — only updated when a new version ships, predictable and reliable.',
-        }.freeze,
-      }.freeze,
+        },
+      },
       {
         image: 'ghcr.io/solectrus/ingest:develop',
         label: {
@@ -139,9 +139,9 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
               'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
           en: "Development\n\n" \
               'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
-        }.freeze,
-      }.freeze,
-    ].freeze,
+        },
+      },
+    ],
   }.freeze
   HELIOS = { current: 'ghcr.io/solectrus/helios:develop' }.freeze
 
@@ -164,8 +164,8 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
               'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
           en: "Stable (recommended)\n\n" \
               'Tested releases — only updated when a new version ships, predictable and reliable.',
-        }.freeze,
-      }.freeze,
+        },
+      },
       {
         image: 'ghcr.io/solectrus/senec-collector:develop',
         label: {
@@ -173,9 +173,9 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
               'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
           en: "Development\n\n" \
               'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
-        }.freeze,
-      }.freeze,
-    ].freeze,
+        },
+      },
+    ],
   }.freeze
   MQTT_COLLECTOR = {
     current: [
@@ -186,8 +186,8 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
               'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
           en: "Stable (recommended)\n\n" \
               'Tested releases — only updated when a new version ships, predictable and reliable.',
-        }.freeze,
-      }.freeze,
+        },
+      },
       {
         image: 'ghcr.io/solectrus/mqtt-collector:develop',
         label: {
@@ -195,9 +195,9 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
               'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
           en: "Development\n\n" \
               'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
-        }.freeze,
-      }.freeze,
-    ].freeze,
+        },
+      },
+    ],
   }.freeze
   SHELLY_COLLECTOR = {
     current: [
@@ -208,8 +208,8 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
               'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
           en: "Stable (recommended)\n\n" \
               'Tested releases — only updated when a new version ships, predictable and reliable.',
-        }.freeze,
-      }.freeze,
+        },
+      },
       {
         image: 'ghcr.io/solectrus/shelly-collector:develop',
         label: {
@@ -217,9 +217,9 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
               'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
           en: "Development\n\n" \
               'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
-        }.freeze,
-      }.freeze,
-    ].freeze,
+        },
+      },
+    ],
   }.freeze
   FORECAST_COLLECTOR = { current: 'ghcr.io/solectrus/forecast-collector:latest' }.freeze
   POWER_SPLITTER = { current: 'ghcr.io/solectrus/power-splitter:latest' }.freeze
