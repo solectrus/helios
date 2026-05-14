@@ -339,11 +339,10 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # Ingest recalculates house_power when a balcony power plant feeds into
   # the home grid and distorts the inverter-reported value. It runs alongside
   # the local InfluxDB only — in collectors_only mode there is nothing to
-  # recalculate. A balcony sensor activates ingest automatically; an
-  # explicitly configured `ingest:` section keeps it deployed even without
-  # a balcony sensor (testing or pre-balcony staging).
+  # recalculate. Activation is fully derived from the sensor configuration:
+  # at least one balcony sensor enables ingest, nothing else does.
   def ingest_required?
-    !collectors_only? && (balcony_sensors.any? || ingest.present?)
+    !collectors_only? && balcony_sensors.any?
   end
 
   # --- Deployment mode ---
@@ -458,8 +457,30 @@ class Configuration # rubocop:disable Metrics/ClassLength
     sanitize_all_sensors!(result) if result.key?('sensors')
     sanitize_service_overrides!(result) if result.key?('service_overrides')
     sanitize_sections!(result)
+    prune_orphan_ingest!(result)
     result[UNMANAGED_KEY] = @data[UNMANAGED_KEY] if @data.key?(UNMANAGED_KEY)
     result
+  end
+
+  # Drop the `ingest:` section when no sensor is flagged as balcony — Ingest is
+  # only meaningful for balcony-power recalculation, so an orphan section is
+  # configuration noise (and would re-activate the service on export).
+  #
+  # Skipped while sensor data still holds raw "MEASUREMENT:field" strings
+  # (mid-import, before SensorPersister normalizes them to hash form); the next
+  # save after persistence reaches the canonical shape and prunes correctly.
+  def prune_orphan_ingest!(result)
+    return unless result.key?('ingest')
+
+    sensors = result['sensors'] || {}
+    return if sensors.each_value.any? { |v| !v.is_a?(Hash) }
+
+    balcony_present = SensorRegistry::BALCONY_CAPABLE_SENSORS.any? do |name|
+      sensors.dig(name, 'is_balcony') == true
+    end
+    return if balcony_present
+
+    result.delete('ingest')
   end
 
   # Preserve a higher version that may already be stored (e.g. file written

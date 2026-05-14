@@ -157,8 +157,13 @@ RSpec.describe 'Import::ConfigurationImporter Ingest handling' do
       expect(config.sensor_config('inverter_power_3').is_balcony).to be_nil
     end
 
-    it 'still imports the ingest section (split inverters present, even if no balcony)' do
-      expect(importer.result[:ingest]).to include('image' => 'ghcr.io/solectrus/ingest:latest')
+    it 'drops the ingest section — ingest follows balcony sensors, not the donor service' do
+      expect(importer.result[:ingest]).to be_nil
+    end
+
+    it 'results in ingest_required? being false' do
+      importer.import!
+      expect(Configuration.current.ingest_required?).to be false
     end
   end
 

@@ -50,6 +50,12 @@ module Import
         POSTGRES_HOST POSTGRES_USERNAME
       ].freeze
 
+      # Ingest-only env vars HELIOS owns end-to-end: emitted when ingest is
+      # active, dropped entirely when it isn't. Without this list they would
+      # leak into the env_values of any unmanaged service that absorbed `.env`
+      # via `env_file:` once HELIOS stopped emitting them itself.
+      INGEST_MANAGED_ENV_KEYS = %w[INGEST_VOLUME_PATH RETENTION_HOURS].freeze
+
       # Legacy SOLECTRUS keys that HELIOS absorbs at import time via
       # LegacySensorAdapter and MqttExtractor::DEPRECATED_TOPIC_VARS — once
       # translated into sensors/mappings, the originals would only cause noise
@@ -462,6 +468,7 @@ module Import
       def regenerated_env_keys_set
         @regenerated_env_keys_set ||= (
           INFRASTRUCTURE_ENV_KEYS +
+            INGEST_MANAGED_ENV_KEYS +
             LEGACY_CONSUMED_ENV_KEYS +
             MqttExtractor::DEPRECATED_TOPIC_VARS.keys +
             MqttExtractor::DEPRECATED_SPLIT_VARS.keys +

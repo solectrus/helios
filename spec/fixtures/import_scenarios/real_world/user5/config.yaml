@@ -183,10 +183,6 @@ sensors:
     field: wallbox_charge_power
     measurement: SENEC
     source: external
-ingest:
-  image: ghcr.io/solectrus/ingest:develop
-  retention_hours: '36'
-  volume_path: "/my-volumes/solectrus/ingest"
 power_splitter:
   image: ghcr.io/solectrus/power-splitter:develop
   interval: '300'

@@ -10,7 +10,7 @@ module Import
       end
 
       def section_data
-        return unless @balcony_detector.split_inverter_present?
+        return unless @balcony_detector.sensor_name
 
         ingest_env = service_env('ingest')
         image_data_for('ingest').merge(

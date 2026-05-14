@@ -140,8 +140,6 @@ sensors:
     source: senec
   wallbox_power:
     source: senec
-ingest:
-  image: ghcr.io/solectrus/ingest:develop
 power_splitter:
   image: ghcr.io/solectrus/power-splitter:develop
   interval: '300'

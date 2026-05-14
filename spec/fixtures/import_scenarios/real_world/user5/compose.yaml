@@ -137,57 +137,6 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌───────────────────────────────────────────────────────────────────────────────────┐
-  # │  Ingest — Ingestion proxy that recalculates house_power for balcony power plants  │
-  # └───────────────────────────────────────────────────────────────────────────────────┘
-  #
-  ingest:
-    image: ghcr.io/solectrus/ingest:develop
-    environment:
-    - TZ
-    - INFLUX_BUCKET
-    - INFLUX_EXCLUDE_FROM_HOUSE_POWER
-    - INFLUX_HOST=influxdb
-    - INFLUX_ORG
-    - INFLUX_SENSOR_BATTERY_CHARGING_POWER
-    - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
-    - INFLUX_SENSOR_GRID_EXPORT_POWER
-    - INFLUX_SENSOR_GRID_IMPORT_POWER
-    - INFLUX_SENSOR_HEATPUMP_POWER
-    - INFLUX_SENSOR_HOUSE_POWER
-    - INFLUX_SENSOR_INVERTER_POWER
-    - INFLUX_SENSOR_INVERTER_POWER_1
-    - INFLUX_SENSOR_INVERTER_POWER_2
-    - INFLUX_SENSOR_INVERTER_POWER_3
-    - INFLUX_SENSOR_WALLBOX_POWER
-    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
-    - RETENTION_HOURS
-    - STATS_PASSWORD=${ADMIN_PASSWORD}
-    volumes:
-    - "${INGEST_VOLUME_PATH}:/app/data"
-    ports:
-    - 4567:4567
-    labels:
-    - com.centurylinklabs.watchtower.scope=solectrus
-    depends_on:
-      influxdb:
-        condition: service_healthy
-    healthcheck:
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 30s
-      start_interval: 2s
-      test:
-      - CMD-SHELL
-      - wget -qO- http://127.0.0.1:4567/ping || exit 1
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
-        max-file: '3'
-
   # ┌──────────────────────────────────────────────────────────────────────────────────────────┐
   # │  PostgreSQL — Relational database for daily summaries, electricity prices, and settings  │
   # └──────────────────────────────────────────────────────────────────────────────────────────┘

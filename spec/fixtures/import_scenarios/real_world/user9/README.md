@@ -125,8 +125,16 @@ runs at the documented minimum interval. Anonymized but otherwise untouched.
   `:develop`; export rewrites them to `:latest`. HELIOS's collector
   service classes hardcode the tag, so the donor's choice of update
   channel (unstable develop vs. stable latest) is lost. `power-splitter`
-  and `ingest` keep their `:develop` tags because HELIOS records those in
-  `config.yaml`.
+  keeps its `:develop` tag because HELIOS records it in `config.yaml`.
+- **Ingest service dropped — no balcony sensor.** Donor runs ingest with
+  three SENEC MPPTs but no balcony power plant (all three slots share the
+  `SENEC` measurement, so they're MPPTs of one inverter). HELIOS now
+  derives ingest activation strictly from `is_balcony: true` sensors —
+  without one, the service has nothing to recalculate. `ingest:` section
+  absent from `config.yaml`, `ingest` service and the donor's `:develop`
+  tag dropped on re-export. The donor's `forecast-collector` routing
+  through `${INGEST_HOST}` already canonicalizes to direct InfluxDB
+  writes (see "Equivalent on re-export"), so no consumer is left dangling.
 
 ## Equivalent on re-export (no operational impact)
 

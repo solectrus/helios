@@ -17,10 +17,6 @@ Anonymized but otherwise untouched.
   (user2, user3, synthetic `with_ingest`) keep their flag because their
   highest-numbered slot uses a different measurement (`anker-akku:`,
   `TERRASSE:`, `Garage:`).
-- **Ingest preserved without balcony** — the user runs ingest only for
-  staging/testing; HELIOS keeps the `ingest:` section in `config.yaml` and
-  re-emits the service on export because `ingest_required?` activates on
-  either a balcony sensor or an explicitly configured ingest section.
 - **Three forecast-collector services — first-listed wins canonical
   alias.** `forecast-collector-pvnode` is declared first in the donor's
   `compose.yaml`, so HELIOS adopts it as the managed
@@ -71,6 +67,14 @@ Anonymized but otherwise untouched.
 
 ## Lost or degraded on re-export (data loss)
 
+- **Ingest service dropped — no balcony sensor.** Donor runs ingest for
+  staging/testing without any balcony power plant. HELIOS now derives ingest
+  activation strictly from the sensor configuration: at least one sensor
+  flagged `is_balcony: true` is required, otherwise the service has nothing
+  to recalculate. Multi-MPPT slots sharing the `SENEC` measurement aren't
+  balcony sensors. Result: `ingest:` section absent from `config.yaml`,
+  `ingest` service and its `RETENTION_HOURS` / `INGEST_VOLUME_PATH` env vars
+  dropped on re-export.
 - **Docker Swarm topology — completely flattened.** `deploy.placement.constraints`
   (`node.labels.type==stateless` / `==stateful-arm64`), `replicas`,
   `update_config`, `rollback_config`, `restart_policy`, plus the full
