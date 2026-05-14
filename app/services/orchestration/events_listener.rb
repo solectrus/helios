@@ -223,6 +223,9 @@ module Orchestration
     # /backups page (so the in-progress row in the list disappears the moment
     # the container exits, instead of waiting for the 3 s auto-reload tick).
     def broadcast_helios_operation
+      BackupRunner.invalidate_in_progress_cache!
+      RestoreRunner.invalidate_in_progress_cache!
+
       I18n.with_locale(self.class.locale) do
         Orchestration::StatusBarBroadcaster.new.broadcast
         Turbo::StreamsChannel.broadcast_refresh_to('backups')

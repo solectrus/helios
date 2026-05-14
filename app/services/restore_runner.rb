@@ -12,6 +12,8 @@ class RestoreRunner
   POSTGRES_SERVICE = BackupRunner::POSTGRES_SERVICE
   INFLUXDB_SERVICE = BackupRunner::INFLUXDB_SERVICE
   ERROR_FILENAME = 'restore-error.txt'.freeze
+  IN_PROGRESS_CACHE_KEY = 'helios_restore_runner_in_progress'.freeze
+  IN_PROGRESS_CACHE_TTL = 3.seconds
 
   SCRIPT = ::File.read(::File.join(__dir__, 'restore_runner', 'restore.sh')).freeze
 
@@ -20,14 +22,23 @@ class RestoreRunner
 
     def in_progress
       Current.instance.fetch(:restore_runner_in_progress) do
-        container = Orchestration::DockerCli.running_container(CONTAINER_NAME)
-        next nil unless container
+        Rails
+          .cache
+          .fetch(IN_PROGRESS_CACHE_KEY, expires_in: IN_PROGRESS_CACHE_TTL) do
+            container =
+              Orchestration::DockerCli.running_container(CONTAINER_NAME)
+            next nil unless container
 
-        BackupRepository::InProgress.new(
-          started_at: container.started_at,
-          filename: container.args[4],
-        )
+            BackupRepository::InProgress.new(
+              started_at: container.started_at,
+              filename: container.args[4],
+            )
+          end
       end
+    end
+
+    def invalidate_in_progress_cache!
+      Rails.cache.delete(IN_PROGRESS_CACHE_KEY)
     end
 
     def error_message
@@ -46,6 +57,7 @@ class RestoreRunner
     prepare_restored_stack!
     clear_errors!
     run_container!
+    self.class.invalidate_in_progress_cache!
   rescue BackupRepository::NotFound
     raise Error, error(:backup_not_found)
   end

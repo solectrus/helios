@@ -18,6 +18,8 @@ class BackupRunner
   IMAGE = 'docker:cli'.freeze
   POSTGRES_SERVICE = 'postgresql'.freeze
   INFLUXDB_SERVICE = 'influxdb'.freeze
+  IN_PROGRESS_CACHE_KEY = 'helios_backup_runner_in_progress'.freeze
+  IN_PROGRESS_CACHE_TTL = 3.seconds
 
   SCRIPT = ::File.read(::File.join(__dir__, 'backup_runner', 'backup.sh')).freeze
 
@@ -30,14 +32,23 @@ class BackupRunner
 
     def in_progress
       Current.instance.fetch(:backup_runner_in_progress) do
-        container = Orchestration::DockerCli.running_container(CONTAINER_NAME)
-        next nil unless container
+        Rails
+          .cache
+          .fetch(IN_PROGRESS_CACHE_KEY, expires_in: IN_PROGRESS_CACHE_TTL) do
+            container =
+              Orchestration::DockerCli.running_container(CONTAINER_NAME)
+            next nil unless container
 
-        BackupRepository::InProgress.new(
-          started_at: container.started_at,
-          filename: container.args[4],
-        )
+            BackupRepository::InProgress.new(
+              started_at: container.started_at,
+              filename: container.args[4],
+            )
+          end
       end
+    end
+
+    def invalidate_in_progress_cache!
+      Rails.cache.delete(IN_PROGRESS_CACHE_KEY)
     end
   end
 
@@ -47,6 +58,7 @@ class BackupRunner
     BackupRepository.prune!
     BackupRepository.clear_error!
     run_container!
+    self.class.invalidate_in_progress_cache!
   end
 
   def unavailable_reason

@@ -4,6 +4,8 @@ class StatusBarsController < ApplicationController
   before_action :require_turbo_frame, only: :show
 
   def show
+    return unless stale?(etag: status_bar_etag)
+
     render StatusBar::Component.new, layout: false
   end
 
@@ -11,5 +13,16 @@ class StatusBarsController < ApplicationController
 
   def require_turbo_frame
     redirect_unless_turbo_frame(services_path)
+  end
+
+  def status_bar_etag
+    [
+      Orchestration::StackStatus.overall,
+      Orchestration::StackStatus.service_counts,
+      Orchestration::StackStatus.pending_restart_services,
+      Orchestration::StackStatus.pending_start_services,
+      RestoreRunner.in_progress&.started_at,
+      BackupRunner.in_progress&.started_at,
+    ]
   end
 end
