@@ -24,6 +24,19 @@ module Import
         shelly_service_names.any?
       end
 
+      # True when the donor stack carries more than one Shelly device — either
+      # via a single CSV-valued shelly-collector (`SHELLY_HOST=h1,h2,...`) or
+      # via several shelly-collector-<suffix> services, each with its own
+      # device. Drives the CSV-mode export path: HELIOS rolls them up into a
+      # single canonical shelly-collector container with comma-separated
+      # SHELLY_HOST / INFLUX_MEASUREMENT, and surfaces the device list as
+      # `shelly.devices` in `config.yaml` as the round-trip source of truth.
+      def multi_device?
+        return false unless enabled?
+
+        raw_devices.size > 1
+      end
+
       # Names of all services that use the shelly-collector image.
       # A stack may carry either a single service (typically "shelly-collector",
       # multi-device via CSV-valued env vars) or several single-device services
@@ -44,21 +57,34 @@ module Import
         shelly_service_names.flat_map { |name| devices_for_service(name) }
       end
 
-      # Raw device list for collectors_only mode: one hash per Shelly device.
-      # Local-mode uses SHELLY_HOST and a "host" field; cloud-mode uses
-      # SHELLY_DEVICE_ID and a "device_id" field. The measurement aligns by
-      # index with the comma-separated INFLUX_MEASUREMENT list the collector
-      # consumes. In local-mode, names are derived from ${SHELLY_HOST_<NAME>}
-      # references in the raw compose; cloud-mode falls back to a sequential
-      # placeholder. Per-device password and invert_power flags are picked up
-      # from their CSV env vars when present.
+      # Raw device list: one hash per Shelly device, aggregated across every
+      # shelly-collector service in the stack. Local-mode uses SHELLY_HOST and
+      # a "host" field; cloud-mode uses SHELLY_DEVICE_ID and a "device_id"
+      # field. The measurement aligns by index with the comma-separated
+      # INFLUX_MEASUREMENT list the collector consumes. In local-mode, names
+      # are derived from ${SHELLY_HOST_<NAME>} references in the raw compose;
+      # cloud-mode falls back to a sequential placeholder. Per-device password
+      # and invert_power flags are picked up from their CSV env vars when
+      # present.
+      #
+      # Two donor topologies converge here:
+      #   - one shelly-collector with CSV-valued SHELLY_HOST/INFLUX_MEASUREMENT
+      #     (legacy multi-device-per-service, e.g. collectors_only fixture)
+      #   - multiple shelly-collector-<suffix> services, one device each (e.g.
+      #     user18 with -tv/-gsa/-oven/...). Each service contributes its own
+      #     row to the same flat list.
       def raw_devices
         return [] unless enabled?
 
-        ctx = raw_devices_context
+        shelly_service_names.flat_map { |name| raw_devices_for_service(name) }
+      end
+
+      def raw_devices_for_service(service_name)
+        ctx = raw_devices_context(service_name)
+        offset = device_offset_for(service_name)
         ctx[:identifiers].each_with_index.map do |id, i|
           {
-            'name' => ctx[:names][i] || "device#{i + 1}",
+            'name' => ctx[:names][i] || "device#{offset + i + 1}",
             ctx[:field] => id,
             'measurement' => ctx[:measurements][i],
             'password' => ctx[:passwords][i],
@@ -67,28 +93,51 @@ module Import
         end
       end
 
-      def raw_devices_context
-        service = shelly_service_names.first
-        env = service_env(service)
+      def raw_devices_context(service_name)
+        env = service_env(service_name)
         cloud = env['SHELLY_CLOUD_SERVER'].present?
         identifiers = csv_split(env[cloud ? 'SHELLY_DEVICE_ID' : 'SHELLY_HOST'])
+        raw_env = raw_compose_env(service_name)
+        names = shelly_interpolated_names(raw_env, cloud ? 'SHELLY_DEVICE_ID' : 'SHELLY_HOST', identifiers.size)
         {
           identifiers: identifiers,
           measurements: csv_split(env['INFLUX_MEASUREMENT']),
-          names: cloud ? Array.new(identifiers.size) : shelly_host_names(raw_compose_env(service), identifiers.size),
+          names: names,
           field: cloud ? 'device_id' : 'host',
           passwords: per_device_passwords(env, identifiers.size),
           invert_powers: invert_power_flags(env, identifiers.size),
         }
       end
 
-      # Per-device passwords are only attributed to devices when the CSV
-      # holds genuinely different values; a single shared value is picked up
-      # by `shared_password` instead and stays on the global Shelly section.
-      def per_device_passwords(env, size)
-        passwords = csv_split(env['SHELLY_PASSWORD'])
-        return Array.new(size) if passwords.compact_blank.uniq.size <= 1
+      # Running device count before the given service — used as the base for
+      # the `device{N}` fallback name so multi-service stacks without
+      # ${SHELLY_HOST_<NAME>} hints don't collapse onto the same key.
+      def device_offset_for(service_name)
+        @device_offsets ||= compute_device_offsets
+        @device_offsets[service_name] || 0
+      end
 
+      def compute_device_offsets
+        offsets = {}
+        running = 0
+        shelly_service_names.each do |name|
+          offsets[name] = running
+          env = service_env(name)
+          running += csv_split(env['SHELLY_HOST'].presence || env['SHELLY_DEVICE_ID']).size
+        end
+        offsets
+      end
+
+      # Per-device passwords are attributed when at least one slot carries a
+      # value and the CSV is not uniformly shared (handled by
+      # `shared_password`). A donor with `SHELLY_PASSWORD=,,secret,,` means
+      # only device index 2 carries a password — re-emitting it as a single
+      # `SHELLY_PASSWORD=secret` would silently grant the credential to every
+      # device, so we keep the index-aligned form instead.
+      def per_device_passwords(env, size)
+        return Array.new(size) if shared_password_value(env).present?
+
+        passwords = csv_split(env['SHELLY_PASSWORD'])
         Array.new(size) { |i| passwords[i].presence }
       end
 
@@ -97,28 +146,39 @@ module Import
         Array.new(size) { |i| flags[i].to_s.casecmp('true').zero? || nil }
       end
 
-      # Shared SHELLY_PASSWORD when a single value is used for all devices
-      # (the common case for a home full of identically-configured plugs).
-      # Mixed per-device passwords stay sensor-side and don't round-trip here.
+      # Shared SHELLY_PASSWORD when every device carries the same non-empty
+      # value (the common case for a home full of identically-configured
+      # plugs). Mixed per-device passwords — including the partial form where
+      # some slots are blank — stay device-side via `per_device_passwords`.
       def shared_password
         return nil unless enabled?
 
-        passwords = csv_split(service_env(shelly_service_names.first)['SHELLY_PASSWORD']).compact_blank
-        passwords.uniq.size == 1 ? passwords.first : nil
+        shared_password_value(service_env(shelly_service_names.first))
+      end
+
+      def shared_password_value(env)
+        passwords = csv_split(env['SHELLY_PASSWORD'])
+        return nil if passwords.empty?
+        return nil unless passwords.all?(&:present?)
+        return nil unless passwords.uniq.size == 1
+
+        passwords.first
       end
 
       private
 
-      # Names from ${SHELLY_HOST_<NAME>} references in the *raw* compose
-      # environment list (pre-interpolation). Falls back to nil entries when
-      # the stack used a literal CSV instead.
-      def shelly_host_names(compose_env, expected_size)
-        shelly_host_entry = compose_env.find { |e| e.is_a?(String) && e.start_with?('SHELLY_HOST=') }
-        return Array.new(expected_size) unless shelly_host_entry
+      # Names from ${SHELLY_HOST_<NAME>} / ${SHELLY_DEVICE_ID_<NAME>}
+      # references in the *raw* compose environment list (pre-interpolation).
+      # Falls back to nil entries when the stack used a literal CSV instead;
+      # the caller turns those into sequential `deviceN` placeholders.
+      def shelly_interpolated_names(compose_env, env_key, expected_size)
+        prefix = "#{env_key}="
+        entry = compose_env.find { |e| e.is_a?(String) && e.start_with?(prefix) }
+        return Array.new(expected_size) unless entry
 
-        value = shelly_host_entry.split('=', 2).last.to_s
+        value = entry.split('=', 2).last.to_s
         csv_split(value).map do |piece|
-          match = piece.match(/\A\$\{SHELLY_HOST_([A-Z0-9_]+)\}\z/)
+          match = piece.match(/\A\$\{#{env_key}_([A-Z0-9_]+)\}\z/)
           match && match[1].downcase
         end
       end

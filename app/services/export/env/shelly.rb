@@ -2,8 +2,14 @@ module Export
   class Env
     class Shelly < Section
       def call
-        return collectors_only_section if configuration.collectors_only?
+        return devices_section if Array(configuration.shelly&.devices).any?
 
+        sensors_section
+      end
+
+      private
+
+      def sensors_section
         sensors = configuration.sensors_with_source('shelly')
         return if sensors.blank?
 
@@ -17,8 +23,6 @@ module Export
         optional_entries(sensors, shelly)
       end
 
-      private
-
       def host_entry(sensors, shelly)
         return if shelly&.connection == 'cloud'
 
@@ -26,19 +30,24 @@ module Export
               'Shelly device hostnames (comma-separated)')
       end
 
-      def collectors_only_section
+      # CSV-mode .env block: one canonical shelly-collector consumes CSVs of
+      # SHELLY_HOST / INFLUX_MEASUREMENT (plus optional per-device variants).
+      # Used for both collectors-only stacks and full-mode multi-device setups
+      # — the per-sensor pathway above only applies to single-device stacks
+      # where each `source: shelly` sensor carries its own shelly_host.
+      def devices_section
         shelly = configuration.shelly
         devices = Array(shelly&.devices)
         return if devices.empty?
 
         env.add_section('Shelly collector')
         entry('SHELLY_INTERVAL', shelly.interval || '5', 'Polling interval in seconds')
-        collectors_only_device_entries(devices, shelly)
-        collectors_only_extra_entries(devices, shelly)
+        devices_id_entries(devices, shelly)
+        devices_extra_entries(devices, shelly)
         global_optional_entries(shelly)
       end
 
-      def collectors_only_device_entries(devices, shelly)
+      def devices_id_entries(devices, shelly)
         if shelly&.connection == 'cloud'
           ids = devices.filter_map { |d| d['device_id'].presence }.join(',')
           optional_entry('SHELLY_DEVICE_ID', ids, 'Shelly cloud device IDs (comma-separated)')
@@ -52,7 +61,7 @@ module Export
                        'InfluxDB measurement names (comma-separated)')
       end
 
-      def collectors_only_extra_entries(devices, shelly)
+      def devices_extra_entries(devices, shelly)
         optional_entry('INFLUX_MODE', shelly.mode, 'InfluxDB write mode (default or essential)')
         optional_entry('INFLUX_POWER_DATA_TYPE', shelly.power_data_type,
                        'Data type for power values in InfluxDB (Float or Integer)')

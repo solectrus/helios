@@ -20,19 +20,15 @@ module Import
         null_to_zero: 'mqtt_null_to_zero',
       }.freeze
 
-      # Fields on an imported device that can carry its data-source identifier
-      # ('shelly', 'mqtt', …). `data_source` is the generic slot; the others
-      # are type-specific slots on inverter/wallbox/heatpump/battery devices.
-      SOURCE_FIELDS = %w[data_source wallbox_vendor heatpump_access battery_vendor].freeze
-
       def initialize(sensors_data:, devices:, enabled_collectors:, mqtt_mappings:, # rubocop:disable Metrics/ParameterLists
-                     excluded_sensors: [], senec_measurement: nil)
+                     excluded_sensors: [], senec_measurement: nil, shelly_multi_device: false)
         @sensors_data = sensors_data
         @devices = devices
         @enabled_collectors = enabled_collectors
         @mqtt_mappings = mqtt_mappings
         @excluded_sensors = excluded_sensors
         @senec_measurement = senec_measurement
+        @shelly_multi_device = shelly_multi_device
       end
 
       def persist!(config)
@@ -145,7 +141,10 @@ module Import
         return unless device
 
         merge_shelly_mapping!(data, sensor_name)
-        merge_shelly_device_fields!(data, device)
+        # Multi-device stacks store host/interval/connection once on
+        # shelly.devices — duplicating them per-sensor would mean two sources
+        # of truth that can drift apart on UI edits.
+        merge_shelly_device_fields!(data, device) unless @shelly_multi_device
       end
 
       def merge_shelly_mapping!(data, sensor_name)

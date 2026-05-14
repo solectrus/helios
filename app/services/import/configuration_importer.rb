@@ -202,6 +202,7 @@ module Import
         mqtt_mappings: mqtt_extractor.enabled? ? mqtt_extractor.mappings : [],
         excluded_sensors: sensors_extractor.excluded_sensor_names,
         senec_measurement: senec_extractor.measurement,
+        shelly_multi_device: shelly_extractor.multi_device?,
       )
     end
 
@@ -219,7 +220,7 @@ module Import
         sensors: sensors_data,
         senec: senec_extractor.section_data,
         mqtt: mqtt_section_data,
-        shelly: shelly_extractor.section_data,
+        shelly: shelly_section_data,
         devices: build_devices,
         service_overrides: service_overrides_extractor.section_data,
       )
@@ -268,12 +269,26 @@ module Import
     end
 
     def collectors_only_shelly_data
+      shelly_section_data(include_image: true)
+    end
+
+    # Full-mode shelly section: connection/interval plus the per-device list
+    # for multi-device stacks (CSV-valued single service, or several
+    # shelly-collector-<suffix> services). Single-instance, single-device
+    # setups continue to ride through the per-sensor shelly_host pathway in
+    # SensorPersister — devices: stays nil there to avoid duplicating
+    # information that already lives on each `source: shelly` sensor.
+    def shelly_section_data(include_image: false)
       section = shelly_extractor.section_data
-      devices = shelly_extractor.raw_devices
-      data = (section || {}).merge(image_data_for('shelly-collector'),
-                                   'password' => shelly_extractor.shared_password,
-                                   'devices' => devices.presence).compact
-      data.presence
+      return nil unless section
+
+      devices = shelly_extractor.multi_device? ? shelly_extractor.raw_devices : nil
+      extras = {
+        'password' => shelly_extractor.shared_password,
+        'devices' => devices&.presence,
+      }
+      extras.merge!(image_data_for('shelly-collector')) if include_image || devices
+      section.merge(extras).compact.presence
     end
 
     def build_devices

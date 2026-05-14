@@ -58,6 +58,18 @@ senec:
   version: v3
 shelly:
   connection: local
+  devices:
+  - host: shelly-hp.local
+    measurement: HeatPump
+    name: device1
+  - host: shelly-wb.local
+    measurement: Wallbox
+    name: device2
+    password: secret
+  - host: shelly-fridge.local
+    measurement: Fridge
+    name: device3
+  image: ghcr.io/solectrus/shelly-collector:latest
   interval: '5'
 sensors:
   battery_charging_power:
@@ -73,9 +85,6 @@ sensors:
   heatpump_power:
     field: power
     measurement: HeatPump
-    shelly_connection: local
-    shelly_host: shelly-hp.local
-    shelly_interval: '5'
     source: shelly
   house_power:
     source: senec
@@ -88,8 +97,4 @@ sensors:
   wallbox_power:
     field: power
     measurement: Wallbox
-    shelly_connection: local
-    shelly_host: shelly-wb.local
-    shelly_interval: '5'
-    shelly_password: secret
     source: shelly

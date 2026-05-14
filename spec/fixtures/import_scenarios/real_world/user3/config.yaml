@@ -73,6 +73,19 @@ mqtt:
   mqtt_username: my-mqtt-username
 shelly:
   connection: local
+  devices:
+  - host: 192.168.1.243
+    measurement: AUFZUG
+    name: aufzug
+  - host: 192.168.1.246
+    measurement: HERD
+    name: herd
+  - host: 192.168.1.241
+    measurement: TERRASSE
+    name: terrasse
+  - host: 192.168.1.244
+    measurement: THERME
+    name: therme
   interval: '5'
 sensors:
   battery_charging_power:
@@ -167,17 +180,11 @@ sensors:
     field: power
     measurement: AUFZUG
     name: AUFZUG
-    shelly_connection: local
-    shelly_host: 192.168.1.243
-    shelly_interval: '5'
     source: shelly
   custom_power_12:
     field: power
     measurement: THERME
     name: THERME
-    shelly_connection: local
-    shelly_host: 192.168.1.244
-    shelly_interval: '5'
     source: shelly
   custom_power_13:
     field: power
@@ -190,17 +197,11 @@ sensors:
     field: power_a
     measurement: TERRASSE
     name: TERRASSE
-    shelly_connection: local
-    shelly_host: 192.168.1.241
-    shelly_interval: '5'
     source: shelly
   custom_power_15:
     field: power
     measurement: HERD
     name: HERD
-    shelly_connection: local
-    shelly_host: 192.168.1.246
-    shelly_interval: '5'
     source: shelly
   custom_power_16:
     field: power
@@ -246,9 +247,6 @@ sensors:
     field: power_c
     is_balcony: true
     measurement: TERRASSE
-    shelly_connection: local
-    shelly_host: 192.168.1.241
-    shelly_interval: '5'
     source: shelly
   inverter_power_forecast:
     source: forecast

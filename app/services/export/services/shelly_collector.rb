@@ -16,10 +16,15 @@ module Export
       def self.enabled?(configuration)
         return false if configuration.dashboard_only?
 
-        configuration.shelly_required? || (configuration.collectors_only? && collectors_only_enabled?(configuration))
+        configuration.shelly_required? || devices_present?(configuration)
       end
 
-      def self.collectors_only_enabled?(configuration)
+      # True when shelly.devices carries one or more entries — set by the
+      # importer for multi-device stacks (CSV-valued single service, or
+      # several shelly-collector-<suffix> services). collectors-only mode
+      # always falls into this bucket because shelly.devices is the only
+      # surface for Shelly topology there.
+      def self.devices_present?(configuration)
         Array(configuration.shelly&.devices).any?
       end
 
@@ -49,29 +54,30 @@ module Export
       end
 
       def shelly_environment
-        return collectors_only_environment if configuration.collectors_only?
+        return devices_environment if self.class.devices_present?(configuration)
 
         passthrough_vars + explicit_vars + optional_vars
       end
 
-      # In collectors_only mode the compose only lists env names; the values
+      # CSV-mode environment: compose lists only env names; the values
       # (SHELLY_HOST / SHELLY_DEVICE_ID / INFLUX_MEASUREMENT CSVs, optional
       # INFLUX_MODE, SHELLY_PASSWORD, and cloud credentials) are written to
-      # the .env by Export::Env.
-      def collectors_only_environment
-        base = %w[TZ] + ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS +
-               %w[INFLUX_ORG INFLUX_BUCKET SHELLY_INTERVAL] + [influx_token_write_var]
-        base + collectors_only_device_vars + collectors_only_extra_vars
+      # the .env by Export::Env. Used for both collectors-only stacks and
+      # full-mode multi-device setups, which share the same single-container
+      # CSV shape on the wire.
+      def devices_environment
+        base = %w[TZ] + explicit_vars + %w[INFLUX_ORG INFLUX_BUCKET SHELLY_INTERVAL]
+        base + devices_id_vars + devices_extra_vars
       end
 
-      def collectors_only_device_vars
+      def devices_id_vars
         devices = Array(shelly_defaults&.devices)
-        vars = [collectors_only_identifier_var(devices)].compact
+        vars = [devices_identifier_var(devices)].compact
         vars << 'INFLUX_MEASUREMENT' if devices.any? { |d| d['measurement'].present? }
         vars
       end
 
-      def collectors_only_identifier_var(devices)
+      def devices_identifier_var(devices)
         if cloud_mode?
           'SHELLY_DEVICE_ID' if devices.any? { |d| d['device_id'].present? }
         elsif devices.any? { |d| d['host'].present? }
@@ -79,16 +85,25 @@ module Export
         end
       end
 
-      def collectors_only_extra_vars
+      def devices_extra_vars
         vars = []
         vars << 'INFLUX_MODE' if shelly_defaults&.mode.present?
         vars << 'INFLUX_POWER_DATA_TYPE' if shelly_defaults&.power_data_type.present?
-        vars << 'SHELLY_PASSWORD' if shelly_defaults&.password.present?
-        vars.concat(collectors_only_cloud_vars) if cloud_mode?
+        vars << 'SHELLY_PASSWORD' if shelly_password_referenced?
+        vars.concat(devices_cloud_vars) if cloud_mode?
         vars
       end
 
-      def collectors_only_cloud_vars
+      # SHELLY_PASSWORD shows up in the compose env list when either the
+      # whole stack shares a password (shelly.password) or any individual
+      # device carries one — `.env` then emits the bare or CSV form via
+      # Export::Env::Shelly#password_entry.
+      def shelly_password_referenced?
+        shelly_defaults&.password.present? ||
+          Array(shelly_defaults&.devices).any? { |d| d['password'].present? }
+      end
+
+      def devices_cloud_vars
         vars = []
         vars << 'SHELLY_CLOUD_SERVER' if shelly_defaults&.cloud_server.present?
         vars << 'SHELLY_AUTH_KEY' if shelly_defaults&.auth_key.present?

@@ -8,6 +8,11 @@ module Import
         'heatpump' => 'heatpump_access',
       }.freeze
 
+      # All fields on a device that can carry its source identifier — the
+      # generic 'data_source' slot plus the type-specific slots from
+      # DATA_SOURCE_FIELDS.
+      SOURCE_FIELDS = (['data_source'] + DATA_SOURCE_FIELDS.values).freeze
+
       # InfluxDB power fields the shelly-collector writes (per
       # github.com/solectrus/shelly-collector). 1- and 2-channel devices fill
       # only `power`; 3-phase devices (Pro 3EM, Plus 3EM) additionally fill
