@@ -1,0 +1,4 @@
+/* Used when a controller owns scroll position (avoids browser double-compensation) */
+@utility overflow-anchor-none {
+  overflow-anchor: none;
+}

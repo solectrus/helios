@@ -4,60 +4,9 @@
 %>
 
 <%= turbo_frame_tag "log-modal-content", class: "flex h-full flex-col" do %>
-  <div
-    class="relative flex h-full flex-col"
-    data-controller="log-viewer"
-    data-log-viewer-service-value="<%= params[:service_id] %>"
-  >
-    <div class="mb-4 flex items-center gap-3 px-4 pt-4 sm:px-0 sm:pt-0">
-      <h3 class="text-lg font-bold tracking-tight"><%= t('.title', name: @service_display_name) %></h3>
-
-      <span
-        class="
-          group bg-base-200/60 text-base-content/60 data-[state=connected]:text-success
-          data-[state=disconnected]:text-error inline-flex items-center gap-2 rounded-full px-3 py-0.5 text-sm
-          font-medium tracking-wide tabular-nums transition-colors
-        "
-        data-log-viewer-target="status"
-        data-state="connecting"
-      >
-        <span class="relative inline-block h-2 w-2 rounded-full bg-current">
-          <span
-            class="
-              bg-success absolute inset-0 hidden animate-ping rounded-full opacity-75
-              group-data-[state=connected]:block
-            "
-          ></span>
-        </span>
-
-        <span class="hidden group-data-[state=connecting]:inline"><%= t('.connecting') %></span>
-        <span class="hidden group-data-[state=connected]:inline"><%= t('.live') %></span>
-        <span class="hidden group-data-[state=disconnected]:inline"><%= t('.disconnected') %></span>
-      </span>
-    </div>
-
-    <div
-      data-log-viewer-target="scrollContainer"
-      class="
-        bg-base-300 overflow-anchor-none min-h-0 flex-1 overflow-auto p-4 sm:max-h-[70vh] sm:flex-initial
-        sm:rounded-lg
-      "
-    >
-      <span data-log-viewer-target="loader" class="text-base-content/50 mb-2 hidden text-center">
-        <span class="loading loading-dots loading-xs"></span>
-      </span>
-
-      <pre data-log-viewer-target="output" class="font-mono text-xs leading-relaxed"><%= @log_html %></pre>
-    </div>
-
-    <button
-      type="button"
-      data-log-viewer-target="newLines"
-      data-action="click->log-viewer#followBottom"
-      class="btn btn-sm btn-primary absolute right-4 bottom-4 hidden gap-2 shadow-lg"
-    >
-      <i class="fa-solid fa-arrow-down"></i>
-      <%= t('.new_lines') %>
-    </button>
-  </div>
+  <%= render LogViewer::Component.new(
+        service_id: params[:service_id],
+        service_display_name: @service_display_name,
+        log_html: @log_html,
+      ) %>
 <% end %>

@@ -43,13 +43,6 @@ en:
   services:
     index:
       title: 'Services'
-    logs:
-      show:
-        title: '%{name} — Logs'
-        connecting: 'Connecting…'
-        live: 'Live'
-        disconnected: 'Disconnected'
-        new_lines: 'New lines'
     errors:
       blocked_by_dependency: 'Blocked: %{dependency} failed to start'
 

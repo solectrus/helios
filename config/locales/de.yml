@@ -14,13 +14,6 @@ de:
   services:
     index:
       title: 'Dienste'
-    logs:
-      show:
-        title: '%{name} — Logs'
-        connecting: 'Verbinden…'
-        live: 'Live'
-        disconnected: 'Getrennt'
-        new_lines: 'Neue Zeilen'
     errors:
       blocked_by_dependency: 'Blockiert: %{dependency} konnte nicht gestartet werden'
 

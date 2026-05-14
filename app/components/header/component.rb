@@ -19,8 +19,6 @@ module Header
     TAB_BASE_CLASSES = 'flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold ' \
                        'tracking-[0.1em] uppercase transition-colors'.freeze
 
-    DRAWER_BASE_CLASSES = 'flex items-center gap-3 rounded-lg px-3 py-2 text-base'.freeze
-
     def initialize(active_tab:)
       super()
       @active_tab = active_tab
@@ -52,14 +50,6 @@ module Header
         TAB_BASE_CLASSES,
         'text-primary bg-primary/10 font-semibold': tab[:id] == active_tab,
         'text-base-content/65 hover:bg-base-content/5 hover:text-base-content': tab[:id] != active_tab,
-      )
-    end
-
-    def drawer_item_classes(tab)
-      class_names(
-        DRAWER_BASE_CLASSES,
-        'bg-primary/15 text-primary font-semibold': tab[:id] == active_tab,
-        'text-base-content/80 hover:bg-base-content/5': tab[:id] != active_tab,
       )
     end
   end

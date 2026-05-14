@@ -1,7 +1,7 @@
 <div
   class="
-    bg-base-100 border-base-content/10 hover:border-base-content/20 group relative flex h-full flex-col rounded-2xl
-    border shadow-xs transition-colors duration-200
+    bg-base-100 border-base-content/10 hover:border-base-content/20 group relative flex h-full flex-col border-y
+    shadow-xs transition-colors duration-200 md:rounded-2xl md:border
   "
 >
   <div class="flex flex-1 items-start gap-4 p-6">
@@ -22,8 +22,8 @@
           <button
             type="button"
             class="
-              focus-visible:before:ring-primary/40 before:absolute before:inset-0 before:z-10 before:rounded-2xl
-              focus:outline-none focus-visible:before:ring-2
+              focus-visible:before:ring-primary/40 before:absolute before:inset-0 before:z-10 focus:outline-none
+              focus-visible:before:ring-2 md:before:rounded-2xl
             "
             data-controller="modal-opener"
             data-action="modal-opener#open"
@@ -49,8 +49,8 @@
   <%# Footer: status %>
   <div
     class="
-      border-base-content/10 bg-base-200/40 text-base-content/70 flex items-center gap-2 rounded-b-2xl border-t px-6
-      py-3 text-sm font-medium
+      border-base-content/10 bg-base-200/40 text-base-content/70 flex items-center gap-2 border-t px-6 py-3 text-sm
+      font-medium md:rounded-b-2xl
     "
   >
     <span aria-hidden="true" class="bg-success size-2.5 rounded-full"></span>

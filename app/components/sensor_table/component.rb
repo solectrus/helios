@@ -21,10 +21,6 @@ module SensorTable
       end
     end
 
-    def group_has_enabled_sensors?(sensor_names)
-      sensor_names.any? { |s| configuration.sensor_enabled?(s) }
-    end
-
     def group_icon(group)
       SENSOR_GROUP_ICONS[group.to_sym] || 'fa-circle-question'
     end

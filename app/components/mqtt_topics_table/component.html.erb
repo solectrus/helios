@@ -1,5 +1,10 @@
 <% if empty? %>
-  <div class="border-base-content/10 flex flex-col items-center gap-4 rounded-2xl border border-dashed px-6 py-16 text-center">
+  <div
+    class="
+      border-base-content/10 flex flex-col items-center gap-4 border-y border-dashed px-6 py-16 text-center
+      md:rounded-2xl md:border
+    "
+  >
     <div class="bg-base-200 text-base-content/60 flex h-12 w-12 items-center justify-center rounded-full">
       <i aria-hidden="true" class="fa-solid fa-tower-broadcast text-lg"></i>
     </div>
@@ -12,7 +17,7 @@
     we skip the polling controller entirely so it does not even initialize.
   %>
   <ul
-    class="border-base-content/10 divide-base-content/15 divide-y overflow-hidden rounded-2xl border"
+    class="border-base-content/10 divide-base-content/15 divide-y overflow-hidden border-y md:rounded-2xl md:border"
     <% if polling_enabled? %>
       data-controller="sensors-polling"
       data-sensors-polling-url-value="<%= helpers.datasources_mqtt_topics_readings_path %>"

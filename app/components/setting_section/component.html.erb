@@ -1,7 +1,7 @@
 <article
   class="
-    bg-base-100 border-base-content/10 hover:border-primary/40 group relative flex h-full flex-col rounded-2xl
-    border transition-colors duration-300
+    bg-base-100 border-base-content/10 hover:border-primary/40 group relative flex h-full flex-col border-y
+    transition-colors duration-300 md:rounded-2xl md:border
   "
 >
   <div class="flex flex-1 flex-col p-7">
@@ -20,7 +20,7 @@
     <h2 class="text-base-content mt-6 text-xl leading-tight font-semibold tracking-tight text-balance">
       <%= link_to title, link_path,
                   data: { turbo_frame: "setting-modal-content" },
-                  class: "before:absolute before:inset-0 before:rounded-2xl focus:outline-none focus-visible:before:ring-2 focus-visible:before:ring-primary/40" %>
+                  class: "before:absolute before:inset-0 focus:outline-none focus-visible:before:ring-2 focus-visible:before:ring-primary/40 md:before:rounded-2xl" %>
     </h2>
 
     <% if description.present? %>

@@ -1,0 +1,41 @@
+<nav class="dock dock-md bg-base-300 border-base-content/10 border-t lg:hidden" aria-label="<%= t('.label') %>">
+  <% items.each do |item| %>
+    <% if item[:type] == :sheet %>
+      <button
+        type="button"
+        class="<%= 'dock-active' if active?(item) %>"
+        aria-haspopup="dialog"
+        aria-controls="<%= SHEET_ID %>"
+        data-controller="modal-opener"
+        data-action="click->modal-opener#open"
+        data-modal-opener-id-param="<%= SHEET_ID %>"
+      >
+        <i class="text-lg <%= item[:icon] %>" aria-hidden="true"></i>
+        <span class="dock-label"><%= item[:label] %></span>
+      </button>
+    <% else %>
+      <%= link_to send(item[:path_helper]),
+                  class: ('dock-active' if active?(item)),
+                  data: { turbo_frame: "_top" } do %>
+        <i class="text-lg <%= item[:icon] %>" aria-hidden="true"></i>
+        <span class="dock-label"><%= item[:label] %></span>
+      <% end %>
+    <% end %>
+  <% end %>
+</nav>
+
+<dialog id="<%= SHEET_ID %>" class="modal modal-bottom">
+  <div class="modal-box bg-base-200 max-w-full rounded-t-2xl rounded-b-none p-4 pb-6">
+    <div class="bg-base-content/20 mx-auto mb-3 h-1 w-10 rounded-full" aria-hidden="true"></div>
+
+    <h3 class="mb-3 px-2 text-base font-semibold tracking-tight">
+      <%= t('.configuration') %>
+    </h3>
+
+    <%= render ConfigNav::Component.new(compact: true, only: :tabs) %>
+  </div>
+
+  <form method="dialog" class="modal-backdrop">
+    <button><%= t('.close') %></button>
+  </form>
+</dialog>

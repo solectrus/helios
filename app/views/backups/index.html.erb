@@ -18,7 +18,7 @@
     ></div>
   <% end %>
 
-  <div class="mx-auto max-w-4xl space-y-6 p-4 md:p-8">
+  <div class="mx-auto max-w-6xl space-y-6 py-4 md:p-8">
     <% if @backup_error.present? %>
       <div class="alert alert-error" role="alert">
         <i class="fa-solid fa-triangle-exclamation"></i>
@@ -52,7 +52,7 @@
       </div>
     <% end %>
 
-    <section class="bg-base-100 border-base-content/10 relative overflow-hidden rounded-2xl border shadow-sm">
+    <section class="bg-base-100 border-base-content/10 relative overflow-hidden border-y shadow-sm md:rounded-2xl md:border">
       <div
         class="
           from-primary/15 pointer-events-none absolute -top-32 -right-32 h-72 w-72 rounded-full bg-linear-to-br
@@ -71,7 +71,7 @@
         </header>
 
         <%= form_with url: backups_path, method: :post, data: { turbo: false } do %>
-          <% button_class = "btn btn-primary btn-lg w-full md:w-auto md:min-w-64" %>
+          <% button_class = "btn btn-outline btn-lg w-full md:w-auto md:min-w-64" %>
 
           <% if @backup_in_progress %>
             <button type="submit" class="<%= button_class %>" disabled>
@@ -108,7 +108,7 @@
       </div>
     </section>
 
-    <section class="bg-base-100 border-base-content/10 space-y-4 rounded-2xl border p-6 shadow-sm md:p-8">
+    <section class="bg-base-100 border-base-content/10 space-y-4 border-y p-6 shadow-sm md:rounded-2xl md:border md:p-8">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="text-2xl font-semibold tracking-tight"><%= t('.existing_title') %></h2>
 
@@ -141,16 +141,21 @@
         <ul class="divide-base-content/10 divide-y">
           <% if @backup_in_progress %>
             <li class="py-3 first:pt-0 last:pb-0">
-              <div class="flex min-h-10 flex-wrap items-center gap-x-4 gap-y-2">
-                <time datetime="<%= @backup_in_progress.started_at.iso8601 %>" class="w-26 font-semibold tabular-nums">
-                  <%= l(@backup_in_progress.started_at, format: :backup_date) %>
-                </time>
+              <div class="backup-row flex min-h-10 flex-wrap items-center gap-x-4 gap-y-1 sm:gap-y-2">
+                <div class="backup-row-datetime flex items-baseline gap-2 sm:contents">
+                  <time
+                    datetime="<%= @backup_in_progress.started_at.iso8601 %>"
+                    class="font-semibold tabular-nums sm:w-26"
+                  >
+                    <%= l(@backup_in_progress.started_at, format: :backup_date) %>
+                  </time>
 
-                <span class="text-base-content/60 w-20 tabular-nums">
-                  <%= l(@backup_in_progress.started_at, format: :backup_time) %>
-                </span>
+                  <span class="text-base-content/60 tabular-nums sm:w-20">
+                    <%= l(@backup_in_progress.started_at, format: :backup_time) %>
+                  </span>
+                </div>
 
-                <span class="text-base-content/60 ml-auto inline-flex items-center gap-2">
+                <span class="backup-row-actions text-base-content/60 ml-auto inline-flex items-center gap-2">
                   <span class="loading loading-spinner loading-sm"></span>
                   <%= t('.in_progress') %>
                 </span>
@@ -159,122 +164,12 @@
           <% end %>
 
           <% @backups.each do |backup| %>
-            <% restore_current = @restore_in_progress&.filename == backup.filename %>
-
             <li class="py-3 first:pt-0 last:pb-0">
-              <div class="flex min-h-10 flex-wrap items-center gap-x-4 gap-y-2">
-                <time datetime="<%= backup.created_at.iso8601 %>" class="w-26 font-semibold tabular-nums">
-                  <%= l(backup.created_at, format: :backup_date) %>
-                </time>
-
-                <span class="text-base-content/60 w-20 tabular-nums">
-                  <%= l(backup.created_at, format: :backup_time) %>
-                </span>
-
-                <span class="badge badge-soft badge-secondary w-22 justify-start gap-1.5 whitespace-nowrap tabular-nums">
-                  <i class="fa-solid fa-chart-line"></i>
-                  <%= number_to_human_size(backup.influxdb_bytes, precision: 0) %>
-                </span>
-
-                <span class="badge badge-soft badge-primary w-20 justify-start gap-1.5 whitespace-nowrap tabular-nums">
-                  <i class="fa-solid fa-database"></i>
-                  <%= number_to_human_size(backup.postgresql_bytes, precision: 0) %>
-                </span>
-
-                <span class="w-16 text-right font-semibold tabular-nums">
-                  <%= number_to_human_size(backup.bytes, precision: 0) %>
-                </span>
-
-                <% if backup.restored_at %>
-                  <span
-                    class="tooltip tooltip-top text-base-content/40"
-                    data-tip="<%= t('.restored_at',
-                                        date: l(backup.restored_at, format: :backup_date),
-                                        time: l(backup.restored_at, format: :backup_time)) %>"
-                  >
-                    <i class="fa-solid fa-clock-rotate-left"></i>
-                  </span>
-                <% end %>
-
-                <div class="ml-auto flex gap-2">
-                  <%= link_to backup_path(backup),
-                                class: "btn btn-outline btn-square",
-                                title: t('.download_existing'),
-                                aria: { label: t('.download_existing') },
-                                data: { turbo: false } do %>
-                    <i class="fa-solid fa-download"></i>
-                  <% end %>
-
-                  <% if restore_current %>
-                    <span
-                      class="btn btn-ghost btn-square cursor-default"
-                      title="<%= t('.restore_in_progress') %>"
-                      aria-label="<%= t('.restore_in_progress') %>"
-                    >
-                      <span class="loading loading-spinner loading-sm"></span>
-                    </span>
-                  <% else %>
-                    <% disabled = @backup_in_progress || @restore_in_progress %>
-                    <div class="dropdown dropdown-end">
-                      <div
-                        tabindex="0"
-                        role="button"
-                        class="btn btn-outline btn-square"
-                        title="<%= t('.actions') %>"
-                        aria-label="<%= t('.actions') %>"
-                      >
-                        <i class="fa-solid fa-ellipsis-vertical"></i>
-                      </div>
-
-                      <div
-                        tabindex="0"
-                        class="
-                          dropdown-content bg-base-300 ring-base-content/15 rounded-box z-10 mt-1 w-60 space-y-1 p-2
-                          shadow-2xl ring-1
-                        "
-                      >
-                        <%= button_to backup_restore_path(backup),
-                                      method: :post,
-                                      class: "btn btn-ghost w-full justify-start gap-3 text-warning",
-                                      form: {
-                                        class: "w-full",
-                                        data: {
-                                          turbo_confirm: t('.restore_confirm',
-                                                           date: l(backup.created_at, format: :backup_date),
-                                                           time: l(backup.created_at, format: :backup_time)),
-                                          turbo_confirm_variant: 'error',
-                                          turbo_confirm_button: t('.restore_confirm_button'),
-                                          turbo_frame: "_top",
-                                        },
-                                      },
-                                      disabled: disabled do %>
-                          <i class="fa-solid fa-arrow-rotate-left fa-fw"></i>
-                          <%= t('.restore_existing') %>
-                        <% end %>
-
-                        <%= button_to backup_path(backup),
-                                      method: :delete,
-                                      class: "btn btn-ghost w-full justify-start gap-3 text-error",
-                                      form: {
-                                        class: "w-full",
-                                        data: {
-                                          turbo_confirm: t('.delete_confirm',
-                                                           date: l(backup.created_at, format: :backup_date),
-                                                           time: l(backup.created_at, format: :backup_time)),
-                                          turbo_confirm_variant: 'error',
-                                          turbo_confirm_button: t('.delete_confirm_button'),
-                                          turbo_frame: "_top",
-                                        },
-                                      },
-                                      disabled: disabled do %>
-                          <i class="fa-solid fa-trash fa-fw"></i>
-                          <%= t('.delete_existing') %>
-                        <% end %>
-                      </div>
-                    </div>
-                  <% end %>
-                </div>
-              </div>
+              <%= render BackupRow::Component.new(
+                backup:,
+                restore_current: @restore_in_progress&.filename == backup.filename,
+                actions_disabled: @backup_in_progress || @restore_in_progress,
+              ) %>
             </li>
           <% end %>
         </ul>

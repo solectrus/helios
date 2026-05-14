@@ -1,0 +1,6 @@
+de:
+  title: '%{name} — Logs'
+  connecting: 'Verbinden…'
+  live: 'Live'
+  disconnected: 'Getrennt'
+  new_lines: 'Neue Zeilen'

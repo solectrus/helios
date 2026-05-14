@@ -1,0 +1,4 @@
+/* Lock body scroll when the mobile drawer is open. */
+html:has(#main-drawer-toggle:checked) {
+  overflow: hidden;
+}

@@ -22,14 +22,14 @@
     <%= vite_stylesheet_tag 'application.css', data: { turbo_track: 'reload' } %>
   </head>
 
-  <body class="bg-base-200 min-h-dvh md:pb-14">
+  <body class="bg-base-200 min-h-dvh pb-16 lg:pb-14">
     <%= render Flash::Component.new(flash:) %>
 
     <% if authorized? && config_yaml_exists? %>
       <%= render Header::Component.new(active_tab: content_for(:active_tab).presence&.to_sym) %>
       <%# Spacer for fixed navbar (always) and mobile fixed status bar %>
       <div class="h-16" aria-hidden="true"></div>
-      <div class="h-12 md:hidden" aria-hidden="true"></div>
+      <div class="h-12 lg:hidden" aria-hidden="true"></div>
     <% end %>
 
     <%= yield %>
@@ -57,6 +57,7 @@
     </dialog>
 
     <% if authorized? && config_yaml_exists? %>
+      <%= render MobileDock::Component.new(active_tab: content_for(:active_tab).presence&.to_sym) %>
       <%= turbo_stream_from "status_bar" %>
       <%= render StatusBar::Component.new %>
       <%= render "shared/log_modal",

@@ -1,0 +1,186 @@
+@import 'survey-core/survey-core.min.css' layer(survey);
+
+/* helios-survey is declared after `survey`, so our overrides win without !important */
+@layer survey, helios-survey;
+
+/* SurveyJS overrides: token mapping (colors, radii) is set via applyTheme() in
+   the survey controller; this layer only handles structural tweaks not exposed
+   as tokens. */
+@layer helios-survey {
+  .sd-root-modern {
+    --helios-text-muted: color-mix(
+      in oklab,
+      var(--color-base-content) 50%,
+      transparent
+    );
+    --helios-border-hover: color-mix(
+      in oklab,
+      var(--color-base-content) 36%,
+      transparent
+    );
+    --helios-border-focus: color-mix(
+      in oklab,
+      var(--color-base-content) 60%,
+      transparent
+    );
+
+    & :is(.sd-question, .sd-panel) {
+      border: 1px solid var(--sjs-border-light);
+    }
+
+    /* Drop default 540px max-width so the form fills the modal */
+    & .sd-body {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 2rem 0 1.5rem;
+      view-transition-name: helios-survey-body;
+    }
+
+    & .sd-page {
+      padding: 0 1.25rem;
+    }
+    & .sd-question {
+      padding: 1rem 1.25rem 1.125rem;
+    }
+    & :is(.sd-action-bar, .sd-footer, .sd-navigation) {
+      padding: 1rem 1.25rem;
+    }
+
+    & .sd-page__title {
+      margin-bottom: 0.75rem;
+      font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    & .sd-question__title {
+      margin-bottom: 0.375rem;
+      font-weight: 600;
+    }
+
+    /* Title underline doubles as progress bar — driven by --survey-progress
+       set in survey_controller; defaults to 100% (full gold rule). */
+    & :is(.sd-container-modern__title, .sd-title.sd-container-modern__title) {
+      padding-bottom: 1.25rem;
+      box-shadow: none;
+      background-image: linear-gradient(
+        to right,
+        var(--color-primary) var(--survey-progress, 100%),
+        color-mix(in oklab, var(--color-base-content) 22%, transparent)
+          var(--survey-progress, 100%)
+      );
+      background-position: bottom;
+      background-size: 100% 2px;
+      background-repeat: no-repeat;
+    }
+
+    /* Inputs — BorderlessDark hides borders; restore so fields read as active */
+    & :is(.sd-input, .sd-text, .sd-dropdown) {
+      border: 1px solid var(--sjs-border-default);
+      color: var(--color-base-content);
+      transition:
+        border-color 150ms,
+        background-color 150ms,
+        box-shadow 150ms;
+    }
+    & :is(.sd-input, .sd-text)::placeholder {
+      color: var(--helios-text-muted);
+    }
+    & :is(.sd-input, .sd-text).sd-input--readonly {
+      color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
+    }
+    & :is(.sd-input, .sd-text):hover:not(:disabled, .sd-input--readonly),
+    & .sd-dropdown:hover:not(.sd-input--readonly) {
+      border-color: var(--helios-border-hover);
+    }
+    & :is(.sd-input, .sd-text, .sd-dropdown):is(:focus, :focus-within):not(
+        .sd-input--readonly
+      ) {
+      border-color: var(--helios-border-focus);
+      background-color: color-mix(in oklab, var(--color-base-100) 92%, white);
+      box-shadow: none;
+      outline: none;
+    }
+
+    /* Native date/time picker icon needs to be visible on dark bg */
+    & .sd-input:is([type='date'], [type='datetime-local'], [type='time'])::-webkit-calendar-picker-indicator {
+      filter: invert(0.85);
+      cursor: pointer;
+    }
+
+    /* HTML "questions" (mapping_injector hints) render as prose, not cards */
+    & .sd-question--html {
+      border: none;
+      background: transparent;
+      padding: 0 0.25rem;
+    }
+    & .sd-mapping-hint {
+      margin: 0;
+      font-size: 0.9rem;
+      line-height: 1.55;
+      color: color-mix(in oklab, var(--color-base-content) 78%, transparent);
+    }
+
+    /* Navigation buttons */
+    & :is(.sd-navigation__next-btn, .sd-navigation__complete-btn) {
+      background-color: var(--sjs-primary-backcolor);
+      color: var(--sjs-primary-forecolor);
+      font-weight: 600;
+      transition:
+        background-color 200ms,
+        transform 150ms;
+    }
+    & :is(.sd-navigation__next-btn, .sd-navigation__complete-btn):hover {
+      background-color: var(--sjs-primary-backcolor-dark);
+      transform: translateY(-1px);
+    }
+    & .sd-navigation__prev-btn {
+      background-color: transparent;
+      color: var(--sjs-general-forecolor);
+      border: 1px solid var(--sjs-border-default);
+      font-weight: 500;
+    }
+    & .sd-navigation__prev-btn:hover {
+      background-color: color-mix(
+        in oklab,
+        var(--color-base-content) 5%,
+        transparent
+      );
+    }
+
+    /* Validation: SurveyJS positions the error box flush with the card edge
+       via sticky + negative margins sized to --sd-base-padding (~30px), which
+       overflows our tighter 1.25rem question padding. Reset to inline-flow. */
+    & :is(.sd-question__erbox, .sd-element__erbox) {
+      position: static;
+      left: auto;
+      width: 100%;
+      margin: 0 0 0.625rem;
+      padding: 0;
+      background: none;
+      color: color-mix(in oklab, var(--color-error) 85%, white);
+      font-weight: 500;
+      line-height: 1.4;
+    }
+
+    & :is(.sd-question__erbox, .sd-element__erbox) .sd-error__item {
+      font-size: 1rem;
+      line-height: 1.4;
+    }
+    & .sd-question--error :is(.sd-input, .sd-text, .sd-dropdown) {
+      border-color: var(--color-error);
+    }
+    & .sd-question--error
+      :is(.sd-input, .sd-text, .sd-dropdown):is(:focus, :focus-within):not(
+        .sd-input--readonly
+      ) {
+      border-color: var(--color-error);
+      box-shadow: 0 0 0 3px
+        color-mix(in oklab, var(--color-error) 25%, transparent);
+    }
+  }
+}
+
+/* View transition target lives at document root, outside .sd-root-modern */
+::view-transition-group(helios-survey-body) {
+  animation-duration: 240ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}

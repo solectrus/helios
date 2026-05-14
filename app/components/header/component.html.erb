@@ -4,51 +4,53 @@
   containing block (https://bugs.webkit.org/show_bug.cgi?id=199501).
 %>
 
-<nav class="navbar bg-base-300 fixed top-0 right-0 left-0 z-40 h-16 min-h-0 gap-3 px-4 py-0 shadow-sm md:gap-8 md:px-8">
-  <label for="main-drawer-toggle" class="btn btn-ghost btn-sm btn-square md:hidden" aria-label="<%= t(".menu") %>">
-    <i class="fa-solid fa-bars text-lg"></i>
-  </label>
+<nav class="navbar bg-base-300 fixed top-0 right-0 left-0 z-40 h-16 min-h-0 px-0 py-0 shadow-sm">
+  <div class="mx-auto flex h-full w-full max-w-6xl items-center gap-3 px-4 md:gap-8 md:px-8">
+    <label for="main-drawer-toggle" class="btn btn-ghost btn-sm btn-square lg:hidden" aria-label="<%= t(".menu") %>">
+      <i class="fa-solid fa-bars text-lg"></i>
+    </label>
 
-  <h1 class="hidden sm:block">
-    <img
-      src="/logo.svg"
-      alt="HELIOS Logo"
-      class="h-8"
-      aria-hidden="true"
-    >
+    <h1 class="hidden shrink-0 sm:block">
+      <img
+        src="/logo.svg"
+        alt="HELIOS Logo"
+        class="h-8"
+        aria-hidden="true"
+      >
 
-    <span class="sr-only">HELIOS</span>
-  </h1>
+      <span class="sr-only">HELIOS</span>
+    </h1>
 
-  <div class="hidden items-center gap-1 md:flex">
-    <% tabs.each do |tab| %>
-      <%= link_to tab[:path], class: tab_classes(tab), data: { turbo_frame: "_top" } do %>
-        <i class="<%= tab[:icon] %>"></i>
-        <%= tab[:label] %>
+    <div class="hidden items-center gap-1 lg:flex">
+      <% tabs.each do |tab| %>
+        <%= link_to tab[:path], class: tab_classes(tab), data: { turbo_frame: "_top" } do %>
+          <i class="<%= tab[:icon] %>"></i>
+          <%= tab[:label] %>
+        <% end %>
       <% end %>
-    <% end %>
-  </div>
+    </div>
 
-  <div class="ml-auto flex items-center gap-3">
-    <%= render HostStats::Component.new %>
+    <div class="ml-auto flex items-center gap-3">
+      <%= render HostStats::Component.new %>
 
-    <a
-      href="<%= helpers.new_support_path %>"
-      data-turbo-frame="support-modal-content"
-      class="btn btn-ghost btn-sm max-sm:btn-square gap-2"
-      title="<%= t(".support") %>"
-    >
-      <i class="fa-solid fa-life-ring"></i>
-      <span class="hidden sm:inline"><%= t(".support") %></span>
-    </a>
+      <a
+        href="<%= helpers.new_support_path %>"
+        data-turbo-frame="support-modal-content"
+        class="btn btn-ghost btn-sm max-sm:btn-square gap-2"
+        title="<%= t(".support") %>"
+      >
+        <i class="fa-solid fa-life-ring"></i>
+        <span class="hidden sm:inline"><%= t(".support") %></span>
+      </a>
 
-    <%= render LanguageSelect::Component.new %>
+      <%= render LanguageSelect::Component.new %>
 
-    <% if helpers.password_required? %>
-      <%= button_to session_path, method: :delete, class: "btn btn-ghost btn-sm btn-square", title: t('.logout') do %>
-        <i class="fa-solid fa-right-from-bracket"></i>
+      <% if helpers.password_required? %>
+        <%= button_to session_path, method: :delete, class: "btn btn-ghost btn-sm btn-square", title: t('.logout') do %>
+          <i class="fa-solid fa-right-from-bracket"></i>
+        <% end %>
       <% end %>
-    <% end %>
+    </div>
   </div>
 </nav>
 
@@ -58,7 +60,7 @@
 <%# Drawer backdrop %>
 <label
   for="main-drawer-toggle"
-  class="bg-base-content/40 fixed inset-0 z-40 hidden peer-checked/drawer:block md:hidden"
+  class="bg-base-content/40 fixed inset-0 z-40 hidden peer-checked/drawer:block lg:hidden"
   aria-label="<%= t('.close_menu') %>"
 ></label>
 
@@ -66,7 +68,7 @@
 <aside
   class="
     bg-base-200 fixed top-0 bottom-0 left-0 z-50 flex w-72 max-w-[80vw] -translate-x-full flex-col overflow-hidden
-    transition-transform peer-checked/drawer:translate-x-0 md:hidden
+    transition-transform peer-checked/drawer:translate-x-0 lg:hidden
   "
 >
   <div class="border-base-content/10 flex items-center justify-between border-b p-4">
@@ -82,22 +84,7 @@
     </label>
   </div>
 
-  <nav class="flex flex-1 flex-col gap-1 overflow-y-auto p-4">
-    <% tabs.each do |tab| %>
-      <%= link_to tab[:path], class: drawer_item_classes(tab), data: { turbo_frame: "_top" } do %>
-        <i class="w-5 text-center <%= tab[:icon] %>"></i>
-        <span><%= tab[:label] %></span>
-      <% end %>
-
-      <% if tab[:id] == :configuration %>
-        <div class="border-base-content/20 mt-1 mb-2 ml-5 border-l pl-3">
-          <%= render ConfigNav::Component.new(compact: true, only: :tabs) %>
-        </div>
-      <% end %>
-    <% end %>
-  </nav>
-
-  <div class="border-base-content/10 border-t p-4">
+  <div class="flex flex-1 flex-col overflow-y-auto p-4">
     <%= render ConfigNav::Component.new(compact: true, only: :files) %>
   </div>
 </aside>

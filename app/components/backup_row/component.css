@@ -1,0 +1,24 @@
+/* Mobile: stack backup-row metadata (date+time on top, sizes below) on the
+   left and span the action buttons across both rows on the right. */
+@media (width < 640px) {
+  .backup-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'datetime actions'
+      'sizes actions';
+    column-gap: 0.75rem;
+    row-gap: 0.5rem;
+    align-items: center;
+  }
+  .backup-row > .backup-row-datetime {
+    grid-area: datetime;
+  }
+  .backup-row > .backup-row-sizes {
+    grid-area: sizes;
+  }
+  .backup-row > .backup-row-actions {
+    grid-area: actions;
+    margin-left: 0;
+  }
+}

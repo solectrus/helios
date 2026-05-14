@@ -3,7 +3,7 @@
 
 <div>
   <%= turbo_frame_tag "tab-content", data: { controller: "visibility" } do %>
-    <div class="mx-auto max-w-4xl p-4 md:p-8">
+    <div class="mx-auto max-w-6xl py-4 md:p-8">
       <%= turbo_stream_from "services" %>
 
       <% regular, tail = @compose_services.partition { |s| !s.helios? } %>

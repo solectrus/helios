@@ -1,0 +1,6 @@
+/* Hide unused sensor rows — and any group that ends up with no enabled
+   sensor — when the user toggles "hide unused". */
+table[data-hide-unused='true'] tr[data-sensor-enabled='false'],
+table[data-hide-unused='true'] tbody:not(:has(tr[data-sensor-enabled='true'])) {
+  display: none;
+}

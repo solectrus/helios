@@ -6,11 +6,11 @@
 <% content_for :active_tab, "configuration" %>
 
 <%= turbo_frame_tag "tab-content" do %>
-  <div class="md:flex md:items-start">
+  <div class="mx-auto max-w-6xl lg:flex lg:items-start">
     <aside
       class="
-        border-base-content/10 hidden md:sticky md:top-16 md:block md:h-[calc(100vh-7rem)] md:w-64 md:shrink-0
-        md:border-r
+        border-base-content/10 hidden lg:sticky lg:top-16 lg:block lg:h-[calc(100vh-7rem)] lg:w-64 lg:shrink-0
+        lg:border-r
       "
     >
       <div class="flex h-full flex-col px-4 py-6">
@@ -18,12 +18,10 @@
       </div>
     </aside>
 
-    <div class="min-w-0 flex-1 p-4 md:p-8">
-      <div class="mx-auto max-w-4xl">
-        <%= yield %>
+    <div class="min-w-0 flex-1 py-4 md:p-8">
+      <%= yield %>
 
-        <%= render DialogModal::Component.new(id: "setting-modal", turbo_frame: "setting-modal-content") %>
-      </div>
+      <%= render DialogModal::Component.new(id: "setting-modal", turbo_frame: "setting-modal-content") %>
     </div>
   </div>
 

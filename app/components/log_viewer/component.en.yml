@@ -1,0 +1,6 @@
+en:
+  title: '%{name} — Logs'
+  connecting: 'Connecting…'
+  live: 'Live'
+  disconnected: 'Disconnected'
+  new_lines: 'New lines'
