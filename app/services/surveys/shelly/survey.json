@@ -1,12 +1,12 @@
 {
   "locale": "de",
   "title": {
-    "de": "Shelly-Standardeinstellungen",
-    "default": "Shelly default settings"
+    "de": "Shelly-Collector",
+    "default": "Shelly-Collector"
   },
   "description": {
-    "de": "Allgemeine Einstellungen für alle Shelly-Sensoren",
-    "default": "General settings for all Shelly sensors"
+    "de": "Liest Messwerte aus Shelly-Stromzählern (Plug, Pro 3EM o.ä.).",
+    "default": "Reads measurements from Shelly energy meters (Plug, Pro 3EM, etc.)."
   },
   "pages": [
     {
@@ -82,6 +82,25 @@
             "default": "Authentication key"
           },
           "isRequired": true
+        }
+      ]
+    },
+    {
+      "name": "p_image",
+      "title": {
+        "de": "Software-Stand des Collectors",
+        "default": "Collector release channel"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "image",
+          "title": {
+            "de": "Welchen Stand möchtest du verwenden?",
+            "default": "Which release should be used?"
+          },
+          "isRequired": true,
+          "choices": []
         }
       ]
     }

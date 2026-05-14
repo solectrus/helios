@@ -1,62 +1,45 @@
-<div
+<article
   class="
-    bg-base-100 border-base-content/10 hover:border-base-content/20 group relative flex h-full flex-col border-y
-    shadow-xs transition-colors duration-200 md:rounded-2xl md:border
+    bg-base-100 border-base-content/10 hover:border-primary/40 group relative flex h-full flex-col border-y
+    transition-colors duration-300 md:rounded-2xl md:border
   "
 >
-  <div class="flex flex-1 items-start gap-4 p-6">
-    <%# Icon tile %>
-    <div
-      class="
-        bg-primary/10 text-primary group-hover:bg-primary/15 flex size-12 shrink-0 items-center justify-center
-        rounded-xl transition-colors duration-200
-      "
-    >
-      <i aria-hidden="true" class="fa-solid fa-house-signal text-xl"></i>
+  <div class="flex flex-1 flex-col p-7">
+    <div class="flex items-start justify-between">
+      <i aria-hidden="true" class="fa-solid fa-house-signal text-primary text-2xl"></i>
+
+      <i
+        aria-hidden="true"
+        class="
+          fa-solid fa-circle-info text-base-content/25 group-hover:text-primary text-sm transition-colors
+          duration-200
+        "
+      ></i>
     </div>
 
-    <%# Content %>
-    <div class="min-w-0 flex-1">
-      <div class="flex items-start justify-between gap-3">
-        <h2 class="text-base-content text-lg leading-snug font-semibold tracking-tight">
-          <button
-            type="button"
-            class="
-              focus-visible:before:ring-primary/40 before:absolute before:inset-0 before:z-10 focus:outline-none
-              focus-visible:before:ring-2 md:before:rounded-2xl
-            "
-            data-controller="modal-opener"
-            data-action="modal-opener#open"
-            data-modal-opener-id-param="external_input_info_modal"
-          >
-            <%= t('.title') %>
-          </button>
-        </h2>
+    <h2 class="text-base-content mt-6 text-xl leading-tight font-semibold tracking-tight text-balance">
+      <button
+        type="button"
+        class="
+          focus-visible:ring-primary/40 before:absolute before:inset-0 focus:outline-none focus-visible:ring-2
+          md:before:rounded-2xl
+        "
+        data-controller="modal-opener"
+        data-action="modal-opener#open"
+        data-modal-opener-id-param="external_input_info_modal"
+      >
+        <%= t('.title') %>
+      </button>
+    </h2>
 
-        <i
-          aria-hidden="true"
-          class="
-            fa-solid fa-circle-info text-base-content/30 group-hover:text-primary mt-1.5 shrink-0 text-sm
-            transition-colors duration-200
-          "
-        ></i>
-      </div>
-
-      <p class="text-base-content/65 mt-1.5 text-sm leading-relaxed"><%= t('.description') %></p>
-    </div>
+    <p class="text-base-content/65 mt-2 max-w-[42ch] text-base leading-relaxed"><%= t('.description') %></p>
   </div>
 
-  <%# Footer: status %>
-  <div
-    class="
-      border-base-content/10 bg-base-200/40 text-base-content/70 flex items-center gap-2 border-t px-6 py-3 text-sm
-      font-medium md:rounded-b-2xl
-    "
-  >
-    <span aria-hidden="true" class="bg-success size-2.5 rounded-full"></span>
+  <div class="border-base-content/10 text-base-content/70 flex items-center gap-2.5 border-t px-7 py-4 text-sm font-medium">
+    <span aria-hidden="true" class="bg-success size-1.5 rounded-full"></span>
     <%= t('.sensor_count', count: sensor_count) %>
   </div>
-</div>
+</article>
 
 <dialog id="external_input_info_modal" class="modal">
   <div class="modal-box max-w-lg">

@@ -192,13 +192,13 @@ de:
     settings:
       senec:
         title: 'SENEC-Collector'
-        description: 'Liest Mess- und Statuswerte über direkten Zugriff auf deinen SENEC-Speicher oder über die Cloud. Unterstützt SENEC.Home V2.1, V3 und Home 4.'
+        description: 'Liest Messwerte von deinem SENEC-Speicher. Unterstützt SENEC.Home V2.1, V3 und Home 4.'
       mqtt:
         title: 'MQTT-Collector'
-        description: 'Liest Messwerte von Topics eines MQTT-Brokers. Du brauchst dafür einen laufenden MQTT-Broker und Geräte (Wechselrichter, Wallbox, ioBroker o.ä.), die Daten per MQTT veröffentlichen.'
+        description: 'Liest Messwerte von Topics eines MQTT-Brokers.'
       shelly:
         title: 'Shelly-Collector'
-        description: 'Liest Leistungsdaten direkt aus Shelly-Geräten (Plug, Pro 3EM o.ä.). Unterstützt die Messung von Verbrauchern, Wallbox und Wärmepumpe.'
+        description: 'Liest Messwerte aus Shelly-Stromzählern (Plug, Pro 3EM o.ä.).'
       forecast:
         title: 'Forecast-Collector'
         description: 'Holt die voraussichtliche PV-Erzeugung von einem Anbieter für PV-Prognosen (pvnode, Solcast oder Forecast.Solar). Erforderlich für die Ertragsprognose im Dashboard.'

@@ -221,13 +221,13 @@ en:
     settings:
       senec:
         title: 'SENEC-Collector'
-        description: 'Reads measurements and status via direct access to your SENEC battery or via the cloud. Supports SENEC.Home V2.1, V3 and Home 4.'
+        description: 'Reads measurements from your SENEC battery. Supports SENEC.Home V2.1, V3 and Home 4.'
       mqtt:
         title: 'MQTT-Collector'
-        description: 'Reads measurements from topics on an MQTT broker. Requires a running MQTT broker and devices (inverter, wallbox, ioBroker, etc.) that publish data via MQTT.'
+        description: 'Reads measurements from topics on an MQTT broker.'
       shelly:
         title: 'Shelly-Collector'
-        description: 'Reads power readings directly from Shelly devices (Plug, Pro 3EM, etc.). Supports measuring loads, a wallbox and a heat pump.'
+        description: 'Reads measurements from Shelly energy meters (Plug, Pro 3EM, etc.).'
       forecast:
         title: 'Forecast-Collector'
         description: 'Fetches expected PV yield from a PV forecast provider (pvnode, Solcast or Forecast.Solar). Required for the yield forecast on the dashboard.'

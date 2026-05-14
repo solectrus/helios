@@ -1,19 +1,19 @@
 {
   "locale": "de",
   "title": {
-    "de": "MQTT-Broker",
-    "default": "MQTT Broker"
+    "de": "MQTT-Collector",
+    "default": "MQTT Collector"
   },
   "description": {
-    "de": "Verbindungsdaten des MQTT-Brokers",
-    "default": "MQTT broker connection details"
+    "de": "Liest Messwerte von Topics eines MQTT-Brokers.",
+    "default": "Reads measurements from topics on an MQTT broker."
   },
   "pages": [
     {
       "name": "p_mqtt_connection",
       "title": {
-        "de": "Verbindung",
-        "default": "Connection"
+        "de": "Verbindung zum MQTT-Broker",
+        "default": "Connection to the MQTT broker"
       },
       "elements": [
         {
@@ -56,8 +56,8 @@
     {
       "name": "p_mqtt_auth",
       "title": {
-        "de": "Authentifizierung",
-        "default": "Authentication"
+        "de": "Authentifizierung beim MQTT-Broker",
+        "default": "Authentication with the MQTT broker"
       },
       "elements": [
         {
@@ -76,6 +76,25 @@
             "default": "Password (optional)"
           },
           "inputType": "password"
+        }
+      ]
+    },
+    {
+      "name": "p_image",
+      "title": {
+        "de": "Software-Stand des Collectors",
+        "default": "Collector release channel"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "image",
+          "title": {
+            "de": "Welchen Stand möchtest du verwenden?",
+            "default": "Which release should be used?"
+          },
+          "isRequired": true,
+          "choices": []
         }
       ]
     }

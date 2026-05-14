@@ -1,4 +1,4 @@
-RSpec.describe Surveys::Ingest::Survey do
+RSpec.describe Surveys::Mqtt::Survey do
   describe '#call' do
     subject(:result) { described_class.new.call }
 
@@ -9,10 +9,14 @@ RSpec.describe Surveys::Ingest::Survey do
         &.find { |e| e['name'] == 'image' }
     end
 
-    context 'when the registry exposes multiple versions (default INGEST)' do
+    context 'when the registry exposes multiple versions (default MQTT_COLLECTOR)' do
+      it 'appends the image page as the last page so existing fields stay on top' do
+        expect(result['pages'].last['name']).to eq('p_image')
+      end
+
       it 'fills the image element choices with the current image first' do
         expect(image_element['choices'].first).to include(
-          'value' => DockerImages.current(:INGEST),
+          'value' => DockerImages.current(:MQTT_COLLECTOR),
         )
       end
 
@@ -25,33 +29,25 @@ RSpec.describe Surveys::Ingest::Survey do
 
       it 'includes every selectable variant from the registry' do
         expect(image_element['choices'].pluck('value'))
-          .to eq(DockerImages::INGEST[:current].pluck(:image))
+          .to eq(DockerImages::MQTT_COLLECTOR[:current].pluck(:image))
       end
 
       it 'preselects the recommended (first) variant so fresh setups default to latest' do
-        expect(image_element['defaultValue']).to eq(DockerImages.current(:INGEST))
+        expect(image_element['defaultValue']).to eq(DockerImages.current(:MQTT_COLLECTOR))
       end
     end
 
     context 'when the registry only exposes a single version' do
       before do
         stub_const(
-          'DockerImages::INGEST',
-          { current: 'ghcr.io/solectrus/ingest:latest' }.freeze,
+          'DockerImages::MQTT_COLLECTOR',
+          { current: 'ghcr.io/solectrus/mqtt-collector:latest' }.freeze,
         )
       end
 
       it 'drops the version page entirely so the user is not shown a one-option chooser' do
         expect(result['pages'].pluck('name')).not_to include('p_image')
       end
-    end
-
-    it 'exposes a retention_hours element with a sensible default' do
-      element = result['pages']
-                .find { |p| p['name'] == 'p_settings' }
-                &.dig('elements')
-                &.find { |e| e['name'] == 'retention_hours' }
-      expect(element).to include('defaultValue' => '12', 'inputType' => 'number')
     end
   end
 end

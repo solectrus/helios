@@ -1,12 +1,12 @@
 {
   "locale": "de",
   "title": {
-    "de": "SENEC-Verbindung",
-    "default": "SENEC Connection"
+    "de": "SENEC-Collector",
+    "default": "SENEC-Collector"
   },
   "description": {
-    "de": "Konfiguration der Verbindung zu deinem SENEC-System",
-    "default": "Configuration of the connection to your SENEC system"
+    "de": "Liest Messwerte von deinem SENEC-Speicher. Unterstützt SENEC.Home V2.1, V3 und Home 4.",
+    "default": "Reads measurements from your SENEC battery. Supports SENEC.Home V2.1, V3 and Home 4."
   },
   "pages": [
     {
@@ -203,7 +203,10 @@
           "choices": [
             {
               "value": "minimal",
-              "text": { "de": "Minimal (empfohlen)", "default": "Minimal (recommended)" }
+              "text": {
+                "de": "Minimal (empfohlen)",
+                "default": "Minimal (recommended)"
+              }
             },
             {
               "value": "full",
@@ -257,6 +260,25 @@
             "de": "Kommaseparierte Liste von Messfeldern, die nicht an InfluxDB gesendet werden sollen",
             "default": "Comma-separated list of measurement fields to exclude from InfluxDB"
           }
+        }
+      ]
+    },
+    {
+      "name": "p_image",
+      "title": {
+        "de": "Software-Stand des Collectors",
+        "default": "Collector release channel"
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "image",
+          "title": {
+            "de": "Welchen Stand möchtest du verwenden?",
+            "default": "Which release should be used?"
+          },
+          "isRequired": true,
+          "choices": []
         }
       ]
     }

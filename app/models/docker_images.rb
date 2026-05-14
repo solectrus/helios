@@ -155,9 +155,72 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
     ],
   }.freeze
 
-  SENEC_COLLECTOR = { current: 'ghcr.io/solectrus/senec-collector:latest' }.freeze
-  MQTT_COLLECTOR = { current: 'ghcr.io/solectrus/mqtt-collector:latest' }.freeze
-  SHELLY_COLLECTOR = { current: 'ghcr.io/solectrus/shelly-collector:latest' }.freeze
+  SENEC_COLLECTOR = {
+    current: [
+      {
+        image: 'ghcr.io/solectrus/senec-collector:latest',
+        label: {
+          de: "Stabil (empfohlen)\n\n" \
+              'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
+          en: "Stable (recommended)\n\n" \
+              'Tested releases — only updated when a new version ships, predictable and reliable.',
+        }.freeze,
+      }.freeze,
+      {
+        image: 'ghcr.io/solectrus/senec-collector:develop',
+        label: {
+          de: "Entwicklung\n\n" \
+              'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
+          en: "Development\n\n" \
+              'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
+        }.freeze,
+      }.freeze,
+    ].freeze,
+  }.freeze
+  MQTT_COLLECTOR = {
+    current: [
+      {
+        image: 'ghcr.io/solectrus/mqtt-collector:latest',
+        label: {
+          de: "Stabil (empfohlen)\n\n" \
+              'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
+          en: "Stable (recommended)\n\n" \
+              'Tested releases — only updated when a new version ships, predictable and reliable.',
+        }.freeze,
+      }.freeze,
+      {
+        image: 'ghcr.io/solectrus/mqtt-collector:develop',
+        label: {
+          de: "Entwicklung\n\n" \
+              'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
+          en: "Development\n\n" \
+              'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
+        }.freeze,
+      }.freeze,
+    ].freeze,
+  }.freeze
+  SHELLY_COLLECTOR = {
+    current: [
+      {
+        image: 'ghcr.io/solectrus/shelly-collector:latest',
+        label: {
+          de: "Stabil (empfohlen)\n\n" \
+              'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
+          en: "Stable (recommended)\n\n" \
+              'Tested releases — only updated when a new version ships, predictable and reliable.',
+        }.freeze,
+      }.freeze,
+      {
+        image: 'ghcr.io/solectrus/shelly-collector:develop',
+        label: {
+          de: "Entwicklung\n\n" \
+              'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
+          en: "Development\n\n" \
+              'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
+        }.freeze,
+      }.freeze,
+    ].freeze,
+  }.freeze
   FORECAST_COLLECTOR = { current: 'ghcr.io/solectrus/forecast-collector:latest' }.freeze
   POWER_SPLITTER = { current: 'ghcr.io/solectrus/power-splitter:latest' }.freeze
   TRAEFIK = { current: 'traefik:v3.6' }.freeze
