@@ -46,12 +46,14 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     'image' => DockerImages.current(:DASHBOARD),
   }.freeze
 
-  # Dashboard-specific fields the user configures via the dashboard survey.
-  # Most end up as Dashboard environment variables (CO2_EMISSION_FACTOR,
-  # UI_THEME, FRAME_ANCESTORS, LOCKUP_CODEWORD, TRUSTED_PROXY_RANGES);
-  # `host_port` controls the published compose port. `influx_poll_interval`
-  # is not exposed in the UI but is captured on import so a non-default
-  # polling cadence survives the round-trip.
+  # Dashboard-specific fields, mostly emitted as Dashboard environment
+  # variables. co2_emission_factor, ui_theme and frame_ancestors are set via
+  # the dashboard mini-surveys; lockup_codeword and trusted_proxy_ranges are
+  # Dashboard env vars stored here too, but surface in the security /
+  # reverse-proxy surveys (see Configuration::BORROWED_FIELDS). `host_port`
+  # controls the published compose port. `influx_poll_interval` is not
+  # exposed in the UI but is captured on import so a non-default polling
+  # cadence survives the round-trip.
   DASHBOARD_FIELDS = %w[
     co2_emission_factor
     ui_theme
@@ -135,7 +137,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   # --- Watchtower ---
 
   # Default WATCHTOWER_POLL_INTERVAL (in seconds) when the user has not
-  # picked an interval — keep in sync with surveys/system.json.
+  # picked an interval — keep in sync with surveys/software/survey.json.
   DEFAULT_UPDATE_INTERVAL = '86400'.freeze
 
   WATCHTOWER_DEFAULTS = {

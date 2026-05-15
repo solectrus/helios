@@ -1,0 +1,33 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Host",
+    "default": "Host"
+  },
+  "description": {
+    "de": "Unter welcher Adresse ist SOLECTRUS erreichbar?",
+    "default": "Which address SOLECTRUS is reachable at"
+  },
+  "pages": [
+    {
+      "name": "p_network",
+      "elements": [
+        {
+          "type": "text",
+          "name": "app_host",
+          "title": {
+            "de": "IP-Adresse oder Hostname",
+            "default": "IP address or host name"
+          },
+          "isRequired": true
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

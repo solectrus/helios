@@ -19,7 +19,9 @@ module Export
       def optional_entries(dashboard)
         optional_entry('CO2_EMISSION_FACTOR', dashboard.co2_emission_factor, 'CO2 emission factor (g/kWh)')
         optional_entry('FRAME_ANCESTORS', dashboard.frame_ancestors, 'Allowed frame ancestors for embedding')
-        optional_entry('UI_THEME', dashboard.ui_theme, 'UI theme (light or dark)')
+        # An empty UI_THEME is dropped: an unset value already means "user
+        # picks the theme", so writing UI_THEME= adds nothing.
+        optional_entry('UI_THEME', dashboard.ui_theme, 'UI theme (light, dark, or empty for user choice)')
         optional_entry('LOCKUP_CODEWORD', dashboard.lockup_codeword, 'Codeword for lockup page protection')
         optional_entry('TRUSTED_PROXY_RANGES', dashboard.trusted_proxy_ranges, 'Trusted proxy IP ranges')
         excluded = configuration.excluded_from_house_power.join(',').presence

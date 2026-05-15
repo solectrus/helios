@@ -14,7 +14,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
 
     it 'renders the survey form for a singleton' do
-      get new_configuration_setting_path(setting: 'system'), headers: turbo_frame_headers
+      get new_configuration_setting_path(setting: 'system_general'), headers: turbo_frame_headers
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('survey')
@@ -33,7 +33,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
 
     it 'redirects non-frame requests to the advanced page for singleton settings' do
-      get new_configuration_setting_path(setting: 'system')
+      get new_configuration_setting_path(setting: 'system_general')
 
       expect(response).to redirect_to(advanced_path)
     end
@@ -74,12 +74,23 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
     it 'creates a singleton and redirects to the advanced page' do
       post configuration_settings_path,
-           params: { setting: 'system', data: { timezone: 'Europe/Berlin' }.to_json }
+           params: { setting: 'system_general', data: { timezone: 'Europe/Berlin' }.to_json }
 
       expect(response).to redirect_to(advanced_path)
 
       config = Configuration.current
       expect(config.system.timezone).to eq('Europe/Berlin')
+    end
+
+    it 'merges a mini-survey into its parent singleton without dropping siblings' do
+      Configuration.current.update('system', { 'admin_password' => 'secret', 'timezone' => 'UTC' })
+
+      post configuration_settings_path,
+           params: { setting: 'system_security', data: { admin_password: 'new-secret' }.to_json }
+
+      config = Configuration.current
+      expect(config.system.admin_password).to eq('new-secret')
+      expect(config.system.timezone).to eq('UTC')
     end
   end
 
@@ -129,7 +140,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       config = Configuration.current
       config.update('system', { 'timezone' => 'UTC' })
 
-      get edit_configuration_setting_path(setting: 'system', name: 'system'),
+      get edit_configuration_setting_path(setting: 'system_general', name: 'system_general'),
           headers: turbo_frame_headers
 
       expect(response).to have_http_status(:ok)
@@ -155,13 +166,28 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     it 'updates a singleton without changing name' do
       setting_data = { 'app_host' => 'example.com' }
 
-      patch configuration_setting_path(setting: 'system', name: 'system'),
+      patch configuration_setting_path(setting: 'system_network', name: 'system_network'),
             params: { data: setting_data.to_json }
 
       expect(response).to redirect_to(advanced_path)
 
       config = Configuration.current
       expect(config.system.app_host).to eq('example.com')
+    end
+
+    it 'stores the dashboard theme `user` sentinel as an empty string' do
+      patch configuration_setting_path(setting: 'dashboard_theme', name: 'dashboard_theme'),
+            params: { data: { 'ui_theme' => 'user' }.to_json }
+
+      expect(response).to redirect_to(advanced_path)
+      expect(Configuration.current.dashboard.ui_theme).to eq('')
+    end
+
+    it 'stores a fixed dashboard theme verbatim' do
+      patch configuration_setting_path(setting: 'dashboard_theme', name: 'dashboard_theme'),
+            params: { data: { 'ui_theme' => 'dark' }.to_json }
+
+      expect(Configuration.current.dashboard.ui_theme).to eq('dark')
     end
   end
 

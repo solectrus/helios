@@ -193,17 +193,27 @@ RSpec.describe ConfigSchema do
   describe 'consistency with surveys' do
     survey_settings = (Configuration::ALL - Configuration::HIDDEN)
     survey_settings.select { |s| Rails.root.join("app/services/surveys/#{s}/survey.json").exist? }.each do |setting|
+      next if setting == 'software' # custom channel-token persistence, not a simple field map
+
       it "#{setting}/survey.json fields are all in described_class" do
         survey = JSON.parse(Rails.root.join("app/services/surveys/#{setting}/survey.json").read)
         survey_fields = extract_survey_field_names(survey)
 
-        schema_fields = described_class.fields_for(setting)
-        next if schema_fields == :dynamic
+        # Mini-surveys validate against their parent singleton's schema —
+        # they own a slice of the singleton, not a section of their own.
+        # Borrowed fields (BORROWED_FIELDS) are validated against the foreign
+        # section that actually stores them.
+        parent = Configuration::SETTING_GROUPS.dig(setting, :singleton) || setting
+        borrowed = Configuration::BORROWED_FIELDS.fetch(setting, {})
 
         survey_fields.reject { |f| f == 'enabled' }.each do |field|
+          section = borrowed[field] || parent
+          schema_fields = described_class.fields_for(section)
+          next if schema_fields == :dynamic
+
           expect(schema_fields).to include(field),
                                    "Survey field '#{field}' from #{setting}.json " \
-                                   "is not in ConfigSchema::FIELDS['#{setting}']"
+                                   "is not in ConfigSchema::FIELDS['#{section}']"
         end
       end
     end

@@ -13,20 +13,90 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # via #visible_settings whenever a balcony sensor activates it.
   HIDDEN = %w[postgresql redis watchtower power_splitter].freeze
 
+  # Mini-surveys persist into a slice of one singleton section in config.yaml.
+  # On save the listed keys overwrite, missing ones are cleared, and any
+  # sibling keys in the singleton (owned by other mini-surveys) survive
+  # untouched. `#setting_data` returns the slice the mini-survey owns.
+  SETTING_GROUPS = {
+    'system_general' => { singleton: 'system', keys: %w[installation_date timezone] },
+    'system_network' => { singleton: 'system', keys: %w[app_host] },
+    'system_security' => { singleton: 'system', keys: %w[admin_password] },
+    'dashboard_co2' => { singleton: 'dashboard', keys: %w[co2_emission_factor] },
+    'dashboard_theme' => { singleton: 'dashboard', keys: %w[ui_theme] },
+    'dashboard_network' => { singleton: 'dashboard', keys: %w[frame_ancestors host_port] },
+    'ingest_settings' => { singleton: 'ingest', keys: %w[retention_hours] },
+  }.freeze
+
+  # Survey fields persisted in a section other than the survey's own.
+  # lockup_codeword and trusted_proxy_ranges are Dashboard environment
+  # variables and keep living in the `dashboard` section, but surface in the
+  # security and reverse-proxy surveys for UX grouping. `#setting_data` merges
+  # them in for prefill; `#update` writes them back to their `dashboard` keys.
+  BORROWED_FIELDS = {
+    'system_security' => { 'lockup_codeword' => 'dashboard' },
+    'reverse_proxy' => { 'trusted_proxy_ranges' => 'dashboard' },
+  }.freeze
+
+  # The Software survey shows a matrix of services (rows) × release
+  # channels (columns). Each row stores its persisted image in a different
+  # singleton, so we translate between the survey's channel tokens
+  # (`'latest'`/`'develop'`) and the registry's full image URLs at load and
+  # save time. See #software_setting_data / #update_software.
+  SOFTWARE_SERVICES = {
+    'dashboard' => { singleton: 'dashboard', registry: :DASHBOARD },
+    'senec_collector' => { singleton: 'senec', registry: :SENEC_COLLECTOR },
+    'shelly_collector' => { singleton: 'shelly', registry: :SHELLY_COLLECTOR },
+    'mqtt_collector' => { singleton: 'mqtt', registry: :MQTT_COLLECTOR },
+    'forecast_collector' => { singleton: 'forecast', registry: :FORECAST_COLLECTOR },
+    'ingest' => { singleton: 'ingest', registry: :INGEST },
+    'power_splitter' => { singleton: 'power_splitter', registry: :POWER_SPLITTER },
+  }.freeze
+
+  # Per-service singletons whose `image` is owned by the Software survey.
+  SOFTWARE_IMAGE_OWNERS = SOFTWARE_SERVICES.values.pluck(:singleton).uniq.freeze
+
   # Settings shown in the configuration UI in full mode. `influxdb` exposes
   # only a couple of host-level toggles (e.g. UI port publication) here —
   # bucket/org/tokens are auto-managed and never user-editable in full mode.
-  SETTINGS = %w[deployment system dashboard influxdb reverse_proxy backup].freeze
+  SETTINGS = %w[
+    deployment software
+    system_general system_network system_security
+    dashboard_co2 dashboard_theme dashboard_network
+    influxdb reverse_proxy backup
+  ].freeze
 
-  # Settings shown in the configuration UI in collectors_only mode
-  # (reverse_proxy/backup target the local dashboard/postgres, which don't exist here)
-  COLLECTORS_ONLY_SETTINGS = %w[deployment system influxdb].freeze
+  # On the Advanced page, settings render as compact chips clustered into
+  # thematic groups. The keys are i18n slugs (advanced.show.groups.*); the
+  # values list setting IDs in the order they should appear inside the group.
+  # Mode filtering (`visible_settings`) and empty-group filtering happen in
+  # `#advanced_groups` — this map is the static layout.
+  ADVANCED_GROUPS = {
+    'installation' => %w[deployment software system_general],
+    'access' => %w[system_network influxdb dashboard_network reverse_proxy system_security],
+    'data' => %w[ingest_settings backup],
+    'dashboard' => %w[dashboard_co2 dashboard_theme],
+  }.freeze
+
+  # Settings shown in the configuration UI in collectors_only mode. The host
+  # has no public surface (reverse_proxy/backup target the local dashboard/
+  # postgres, which don't exist here) and `system_network` configures app_host,
+  # which only matters when the dashboard runs locally.
+  COLLECTORS_ONLY_SETTINGS = %w[
+    deployment software
+    system_general system_security
+    influxdb
+  ].freeze
 
   # Settings shown in the configuration UI in dashboard_only mode. The
   # InfluxDB card is hidden because its only user-facing toggle (UI port
   # publication) is forced on anyway — remote collectors need to reach the
   # database across the LAN.
-  DASHBOARD_ONLY_SETTINGS = %w[deployment system dashboard reverse_proxy backup].freeze
+  DASHBOARD_ONLY_SETTINGS = %w[
+    deployment software
+    system_general system_network system_security
+    dashboard_co2 dashboard_theme dashboard_network
+    reverse_proxy backup
+  ].freeze
 
   # Source configurations shown when at least one sensor uses that source
   SOURCE_CONFIGS = %w[mqtt shelly forecast senec].freeze
@@ -41,8 +111,10 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # the dashboard, so it stays available together with `external`.
   DASHBOARD_ONLY_SOURCES = %w[external forecast].freeze
 
-  # All valid setting names
-  ALL = SINGLETONS.freeze
+  # All valid setting names (real singletons + mini-survey IDs + software).
+  # Software has its own translation layer (see SOFTWARE_SERVICES) instead of
+  # the generic SETTING_GROUPS mapping, but is still a routable setting ID.
+  ALL = (SINGLETONS + SETTING_GROUPS.keys + %w[software]).freeze
 
   # Key for unmanaged services and env vars (preserved from existing installations)
   UNMANAGED_KEY = '_unmanaged'.freeze
@@ -338,6 +410,12 @@ class Configuration # rubocop:disable Metrics/ClassLength
     collectors_only? && influxdb.host.blank?
   end
 
+  def setting_incomplete?(setting)
+    return incomplete_influxdb? if setting == 'influxdb'
+
+    incomplete_sources.include?(setting)
+  end
+
   # Ingest recalculates house_power when a balcony power plant feeds into
   # the home grid and distorts the inverter-reported value. It runs alongside
   # the local InfluxDB only — in collectors_only mode there is nothing to
@@ -375,7 +453,18 @@ class Configuration # rubocop:disable Metrics/ClassLength
     return base unless ingest_required?
 
     insert_at = base.index('influxdb')
-    insert_at ? base.dup.insert(insert_at + 1, 'ingest') : base + %w[ingest]
+    insert_at ? base.dup.insert(insert_at + 1, 'ingest_settings') : base + %w[ingest_settings]
+  end
+
+  # Visible settings clustered into the thematic groups rendered on the
+  # Advanced page. Returns an ordered hash of `{ group_key => [settings] }`,
+  # skipping groups that have no visible setting in the current mode.
+  def advanced_groups
+    visible = visible_settings
+    ADVANCED_GROUPS.each_with_object({}) do |(group, settings), result|
+      present = settings & visible
+      result[group] = present if present.any?
+    end
   end
 
   def balcony_sensors
@@ -404,19 +493,48 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   # --- Generic singleton access ---
 
+  # For real singletons, returns the section hash. For mini-survey IDs,
+  # returns the slice the mini-survey owns (a `slice` of its parent section).
+  # Borrowed fields (see BORROWED_FIELDS) and the `software` matrix are merged
+  # in so form prefill and `configured?` see the survey's full view.
   def setting_data(setting)
-    Data.wrap(@data[setting.to_s] || {})
+    setting = setting.to_s
+    return software_setting_data if setting == 'software'
+
+    Data.wrap(merge_borrowed_fields(own_section_data(setting), setting))
   end
 
-  # Create or update a singleton setting. Returns true if data changed.
-  def update(setting, data) # rubocop:disable Naming/PredicateMethod
-    raw = deep_unwrap(data)
-    return false if @data[setting.to_s] == raw
+  # Create or update a setting. Returns true if data changed.
+  #
+  # For real singletons (`'system'`, `'backup'`, …) the whole section is
+  # replaced by the incoming hash — the survey's view of the section is the
+  # full truth.
+  #
+  # For mini-survey IDs (`'system_security'`, …) only the keys the mini-survey
+  # owns are touched: present keys overwrite, missing keys are deleted, and any
+  # other keys in the singleton (owned by sibling mini-surveys) survive
+  # untouched.
+  #
+  # Borrowed fields (see BORROWED_FIELDS) are split off first and written into
+  # their own `dashboard` keys, never into the survey's own section.
+  def update(setting, data)
+    setting = setting.to_s
+    return update_software(data) if setting == 'software'
 
-    @data[setting.to_s] = raw
-    enforce_mode_constraints! if setting.to_s == 'deployment'
-    save!
-    true
+    raw = deep_unwrap(data)
+    borrowed_changed = store_borrowed_fields!(setting, raw)
+
+    group = SETTING_GROUPS[setting]
+    return update_grouped(group, raw) || borrowed_changed if group
+
+    if @data[setting] == raw
+      borrowed_changed
+    else
+      @data[setting] = raw
+      enforce_mode_constraints! if setting == 'deployment'
+      save!
+      true
+    end
   end
 
   def configured?(setting)
@@ -521,6 +639,157 @@ class Configuration # rubocop:disable Metrics/ClassLength
   }.freeze
 
   private
+
+  # The raw section/slice a survey owns, before borrowed fields are merged in.
+  def own_section_data(setting)
+    group = SETTING_GROUPS[setting]
+    return (@data[group[:singleton]] || {}).slice(*group[:keys]) if group
+
+    (@data[setting] || {}).dup
+  end
+
+  # Merges a survey's borrowed fields (see BORROWED_FIELDS) into `base`.
+  def merge_borrowed_fields(base, setting)
+    BORROWED_FIELDS.fetch(setting, {}).each do |field, section|
+      value = (@data[section] || {})[field]
+      base[field] = value if value.present?
+    end
+    base
+  end
+
+  # Extracts a survey's borrowed fields from `raw` (mutating it) and writes
+  # each into its foreign section. Returns true if any borrowed value changed.
+  def store_borrowed_fields!(setting, raw)
+    changed = false
+    BORROWED_FIELDS.fetch(setting, {}).each do |field, section|
+      next unless raw.key?(field)
+
+      changed = true if store_section_field(section, field, raw.delete(field))
+    end
+    save! if changed
+    changed
+  end
+
+  # Writes a single field into a singleton section without disturbing its
+  # other keys. A blank value removes the key (and the section, if it empties).
+  def store_section_field(section, field, value) # rubocop:disable Naming/PredicateMethod
+    current = @data[section]&.dup || {}
+    return false unless section_field_changes?(current, field, value)
+
+    if value.blank?
+      current.delete(field)
+    else
+      current[field] = value
+    end
+
+    if current.empty?
+      @data.delete(section)
+    else
+      @data[section] = current
+    end
+    true
+  end
+
+  def section_field_changes?(current, field, value)
+    return current.key?(field) if value.blank?
+
+    current[field] != value
+  end
+
+  def update_grouped(group, data) # rubocop:disable Naming/PredicateMethod
+    singleton = group[:singleton]
+    keys = group[:keys]
+    incoming = deep_unwrap(data).slice(*keys)
+
+    current = @data[singleton]&.dup || {}
+    next_section = current.merge(incoming)
+    (keys - incoming.keys).each { |k| next_section.delete(k) }
+
+    return false if current == next_section
+
+    if next_section.empty?
+      @data.delete(singleton)
+    else
+      @data[singleton] = next_section
+    end
+    save!
+    true
+  end
+
+  # Read side of the Software survey: the persisted image URL in each
+  # service-owning singleton is mapped back to a `'latest'`/`'develop'` token
+  # so the matrix can preselect the right column. Unrecognised URLs (legacy
+  # tags, registry overrides) leave the row blank.
+  def software_setting_data
+    channels = SOFTWARE_SERVICES.each_with_object({}) do |(key, spec), result|
+      image = (@data[spec[:singleton]] || {})['image']
+      token = software_channel_for(spec[:registry], image)
+      result[key] = token if token
+    end
+    update_interval = (@data['system'] || {})['update_interval']
+    payload = {}
+    payload['service_channels'] = channels if channels.any?
+    payload['update_interval'] = update_interval if update_interval.present?
+    Data.wrap(payload)
+  end
+
+  # Write side: translate `'latest'`/`'develop'` tokens into the registry's
+  # full image URL and merge into each service's singleton. `update_interval`
+  # rides along into `system`.
+  def update_software(data)
+    raw = deep_unwrap(data)
+    changed = apply_software_channels(raw['service_channels'] || {})
+    if raw.key?('update_interval') && merge_singleton_field('system', 'update_interval', raw['update_interval'])
+      changed = true
+    end
+    save! if changed
+    changed
+  end
+
+  def apply_software_channels(channels)
+    changed = false
+    SOFTWARE_SERVICES.each do |key, spec|
+      token = channels[key]
+      next if token.blank?
+
+      image = software_image_for(spec[:registry], token)
+      next unless image
+      next unless merge_singleton_field(spec[:singleton], 'image', image)
+
+      changed = true
+    end
+    changed
+  end
+
+  def software_channel_for(registry, image)
+    return nil if image.blank?
+
+    choices = DockerImages.choices(registry)
+    return nil unless choices&.include?(image)
+
+    image_channel(image)
+  end
+
+  def software_image_for(registry, token)
+    choices = DockerImages.choices(registry)
+    return nil unless choices
+
+    choices.find { |image| image_channel(image) == token }
+  end
+
+  # The channel token (`'latest'`/`'develop'`) is the tag part of an image URL.
+  def image_channel(image)
+    image.split(':').last
+  end
+
+  def merge_singleton_field(singleton, key, value) # rubocop:disable Naming/PredicateMethod
+    current = @data[singleton]&.dup || {}
+    return false if current[key] == value
+
+    current[key] = value
+    @data[singleton] = current
+    true
+  end
 
   def write_yaml_file!
     dir = File.dirname(@path)

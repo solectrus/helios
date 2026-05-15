@@ -8,6 +8,9 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
     (Configuration::ALL - Configuration::HIDDEN).each do |setting|
       next if setting == 'sensors' # sensors is dynamic, no survey file
       next if setting == 'service_overrides' # advanced overrides edited inline, no survey
+      next if setting == 'system' # split into system_* mini-surveys
+      next if setting == 'dashboard' # split into dashboard_* mini-surveys
+      next if setting == 'ingest' # split into ingest_settings (+ image via software survey)
 
       it "returns JSON for #{setting} survey" do
         get configuration_survey_path(id: setting)

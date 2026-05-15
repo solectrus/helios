@@ -11,30 +11,34 @@
   "pages": [
     {
       "name": "p_backup",
-      "title": {
-        "de": "Automatisches Backup",
-        "default": "Automatic backup"
-      },
       "elements": [
         {
           "type": "boolean",
           "name": "enabled",
           "title": {
-            "de": "Soll ein automatisches Backup auf Amazon S3 eingerichtet werden?",
-            "default": "Do you want to set up automatic backup to Amazon S3?"
+            "de": "Automatisches Backup auf Amazon S3",
+            "default": "Automatic backup to Amazon S3"
+          },
+          "description": {
+            "de": "Sichert die Datenbanken regelmäßig in einen S3-Bucket.",
+            "default": "Backs up the databases regularly into an S3 bucket."
           },
           "isRequired": true,
-          "defaultValue": false
+          "defaultValue": false,
+          "labelTrue": {
+            "de": "An",
+            "default": "On"
+          },
+          "labelFalse": {
+            "de": "Aus",
+            "default": "Off"
+          }
         }
       ]
     },
     {
       "name": "p_aws",
       "visibleIf": "{enabled} = true",
-      "title": {
-        "de": "AWS-Zugangsdaten",
-        "default": "AWS Credentials"
-      },
       "elements": [
         {
           "type": "text",
@@ -71,14 +75,6 @@
   "completeText": {
     "de": "Speichern",
     "default": "Save"
-  },
-  "pageNextText": {
-    "de": "Weiter",
-    "default": "Next"
-  },
-  "pagePrevText": {
-    "de": "Zurück",
-    "default": "Back"
   },
   "showCompletePage": false
 }

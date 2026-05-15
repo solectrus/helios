@@ -1,5 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
-import { Model, surveyLocalization } from 'survey-core';
+import { Model, surveyLocalization, FunctionFactory } from 'survey-core';
 import { BorderlessDark } from 'survey-core/themes';
 import { readLocale } from '../utils/preferences_cookie';
 import { prefersReducedMotion } from '../utils/prefers_reduced_motion';
@@ -97,6 +97,16 @@ Object.assign(surveyLocalization.locales.de, {
   commentText: 'Bitte hinterlasse einen Kommentar',
   ratingOptionsCaption: 'Tippe hier, um zu bewerten...',
 });
+
+// Survey expression helper: true when any value of a matrix-style answer
+// object equals `token`. The Software survey uses it so the Watchtower
+// interval question unlocks only when a service runs on the "develop" channel.
+function anyValueEquals(params: unknown[]): boolean {
+  const [answers, token] = params;
+  if (!answers || typeof answers !== 'object') return false;
+  return Object.values(answers as Record<string, unknown>).includes(token);
+}
+FunctionFactory.Instance.register('anyValueEquals', anyValueEquals);
 
 // Survey.JS styles are imported in application.css for correct cascade order
 

@@ -15,6 +15,10 @@
         "de": "Shelly-Einstellungen",
         "default": "Shelly settings"
       },
+      "description": {
+        "de": "Standardvorgaben für die Abfrage deiner Shelly-Geräte.",
+        "default": "Default settings for querying your Shelly devices."
+      },
       "elements": [
         {
           "type": "radiogroup",
@@ -63,6 +67,10 @@
         "de": "Cloud-Zugriff",
         "default": "Cloud access"
       },
+      "description": {
+        "de": "Zugangsdaten der Shelly Cloud — nötig, wenn Geräte nicht lokal im Heimnetz erreichbar sind.",
+        "default": "Shelly Cloud credentials — required when devices are not reachable locally on your network."
+      },
       "elements": [
         {
           "type": "text",
@@ -82,25 +90,6 @@
             "default": "Authentication key"
           },
           "isRequired": true
-        }
-      ]
-    },
-    {
-      "name": "p_image",
-      "title": {
-        "de": "Software-Stand des Collectors",
-        "default": "Collector release channel"
-      },
-      "elements": [
-        {
-          "type": "radiogroup",
-          "name": "image",
-          "title": {
-            "de": "Welchen Stand möchtest du verwenden?",
-            "default": "Which release should be used?"
-          },
-          "isRequired": true,
-          "choices": []
         }
       ]
     }

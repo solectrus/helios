@@ -1,8 +1,8 @@
 {
   "locale": "de",
   "title": {
-    "de": "Reverse Proxy",
-    "default": "Reverse Proxy"
+    "de": "Eigene Domain",
+    "default": "Custom domain"
   },
   "description": {
     "de": "Domain & HTTPS mit Traefik",
@@ -11,34 +11,34 @@
   "pages": [
     {
       "name": "p_reverse_proxy",
-      "title": {
-        "de": "Domain & HTTPS",
-        "default": "Domain & HTTPS"
-      },
       "elements": [
         {
           "type": "boolean",
           "name": "enabled",
           "title": {
-            "de": "Eigene Domain mit HTTPS nutzen?",
-            "default": "Use custom domain with HTTPS?"
+            "de": "Eigene Domain mit HTTPS über Traefik",
+            "default": "Custom domain with HTTPS via Traefik"
           },
           "description": {
-            "de": "Aktiviert Traefik als Reverse Proxy mit automatischem Let's Encrypt-Zertifikat",
-            "default": "Enables Traefik as reverse proxy with automatic Let's Encrypt certificate"
+            "de": "Aktiviert Traefik als Reverse Proxy mit automatischem Let's Encrypt-Zertifikat.",
+            "default": "Enables Traefik as a reverse proxy with an automatic Let's Encrypt certificate."
           },
           "isRequired": true,
-          "defaultValue": false
+          "defaultValue": false,
+          "labelTrue": {
+            "de": "An",
+            "default": "On"
+          },
+          "labelFalse": {
+            "de": "Aus",
+            "default": "Off"
+          }
         }
       ]
     },
     {
       "name": "p_domain",
       "visibleIf": "{enabled} = true",
-      "title": {
-        "de": "Domain-Konfiguration",
-        "default": "Domain configuration"
-      },
       "elements": [
         {
           "type": "text",
@@ -65,6 +65,18 @@
             "default": "For certificate notifications. Default: webmaster@{domain}"
           },
           "inputType": "email"
+        },
+        {
+          "type": "text",
+          "name": "trusted_proxy_ranges",
+          "title": {
+            "de": "IP-Bereiche eines vorgelagerten Proxys (optional)",
+            "default": "IP ranges of an upstream proxy (optional)"
+          },
+          "description": {
+            "de": "Nur ausfüllen, wenn vor SOLECTRUS ein eigener Reverse Proxy steht (z.B. Cloudflare, externer Nginx). Kommaseparierte IP-Bereiche im Format 198.51.100.0/24, 2001:db8::/32.",
+            "default": "Only fill in if an external reverse proxy sits in front of SOLECTRUS (e.g. Cloudflare, external Nginx). Comma-separated IP ranges in the format 198.51.100.0/24, 2001:db8::/32."
+          }
         }
       ]
     }
@@ -73,14 +85,6 @@
   "completeText": {
     "de": "Speichern",
     "default": "Save"
-  },
-  "pageNextText": {
-    "de": "Weiter",
-    "default": "Next"
-  },
-  "pagePrevText": {
-    "de": "Zurück",
-    "default": "Back"
   },
   "showCompletePage": false
 }

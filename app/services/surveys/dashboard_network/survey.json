@@ -1,0 +1,52 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Netzwerk",
+    "default": "Network"
+  },
+  "description": {
+    "de": "Host-Port und Einbettung in andere Webseiten. Lass die Felder leer, wenn du nichts davon brauchst.",
+    "default": "Host port and embedding into other websites. Leave empty if you don't need any of these."
+  },
+  "pages": [
+    {
+      "name": "p_network",
+      "elements": [
+        {
+          "type": "text",
+          "name": "host_port",
+          "title": {
+            "de": "Host-Port",
+            "default": "Host port"
+          },
+          "description": {
+            "de": "Port auf dem Host, unter dem das Dashboard erreichbar sein soll. Nur ändern, wenn dieser Port bereits belegt ist.",
+            "default": "Port on the host where the dashboard should be reachable. Only change if that port is already in use."
+          },
+          "defaultValue": "3000",
+          "inputType": "number",
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "type": "text",
+          "name": "frame_ancestors",
+          "title": {
+            "de": "Einbettung in andere Webseite erlauben (optional)",
+            "default": "Allow embedding into another website (optional)"
+          },
+          "description": {
+            "de": "URL der Webseite, in die das Dashboard per iFrame eingebettet werden soll, z.B. https://example.com",
+            "default": "URL of the website that should embed the dashboard via iFrame, e.g. https://example.com"
+          }
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

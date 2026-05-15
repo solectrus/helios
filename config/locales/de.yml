@@ -91,6 +91,11 @@ de:
   advanced:
     show:
       title: 'Erweitert'
+      groups:
+        installation: 'Installation'
+        access: 'Zugriff & Sicherheit'
+        data: 'Daten'
+        dashboard: 'Dashboard'
 
   supports:
     new:
@@ -209,14 +214,29 @@ de:
           full: 'Vollständige Installation'
           collectors_only: 'Nur Kollektoren'
           dashboard_only: 'Nur Dashboard'
-      system:
-        title: 'System'
-        description: 'Allgemeine Einstellungen für SOLECTRUS'
-      dashboard:
-        title: 'Dashboard'
-        description: 'Software-Stand, Anzeige- und Sicherheitsoptionen für das SOLECTRUS-Dashboard'
+      system_general:
+        title: 'PV-Anlage'
+        description: 'Inbetriebnahme und Zeitzone'
+      system_network:
+        title: 'Host'
+        description: 'Unter welcher Adresse ist SOLECTRUS erreichbar?'
+      system_security:
+        title: 'Zugriffsschutz'
+        description: 'Admin-Passwort und Zugangscode für die Weboberfläche'
+      software:
+        title: 'Software-Stand'
+        description: 'Stable oder Develop pro Dienst und Watchtower-Prüfintervall'
+      dashboard_co2:
+        title: 'CO₂-Faktor'
+        description: 'Strommix für die CO₂-Einsparungsberechnung'
+      dashboard_theme:
+        title: 'Farbschema'
+        description: 'Helles oder dunkles Farbschema für das Dashboard'
+      dashboard_network:
+        title: 'Netzwerk'
+        description: 'Host-Port und Einbettung in andere Webseiten'
       reverse_proxy:
-        title: 'Reverse Proxy'
+        title: 'Eigene Domain'
         description: 'Domain & HTTPS mit Traefik. Nur sinnvoll, wenn dieser Host über das Internet erreichbar ist.'
       backup:
         title: 'Backup'
@@ -224,9 +244,9 @@ de:
       influxdb:
         title: 'InfluxDB'
         description: 'Einstellungen für die Zeitreihen-Datenbank'
-      ingest:
+      ingest_settings:
         title: 'Ingest'
-        description: 'Korrigiert den Hausverbrauch bei Balkonkraftwerken.'
+        description: 'Korrigiert den Hausverbrauch bei Balkonkraftwerken'
       invalid_setting: 'Unbekannte Einstellung'
       add: 'Hinzufügen'
       edit: 'Bearbeiten'

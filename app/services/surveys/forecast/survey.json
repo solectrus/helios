@@ -15,6 +15,10 @@
         "de": "Prognoseanbieter",
         "default": "Forecast provider"
       },
+      "description": {
+        "de": "Wähle den Dienst, der die Ertragsprognose für deine Anlage berechnet.",
+        "default": "Choose the service that calculates the yield forecast for your system."
+      },
       "elements": [
         {
           "type": "radiogroup",
@@ -62,6 +66,10 @@
         "de": "Standort",
         "default": "Location"
       },
+      "description": {
+        "de": "Die geografischen Koordinaten deiner PV-Anlage bestimmen Sonnenstand und Einstrahlung.",
+        "default": "The geographic coordinates of your PV system determine sun position and irradiation."
+      },
       "elements": [
         {
           "type": "text",
@@ -104,6 +112,10 @@
         "de": "Dachflächen",
         "default": "Roofs"
       },
+      "description": {
+        "de": "Bei mehreren unterschiedlich ausgerichteten Dachflächen wird jede einzeln erfasst.",
+        "default": "When you have multiple roof surfaces with different orientations, each is configured separately."
+      },
       "elements": [
         {
           "type": "radiogroup",
@@ -134,6 +146,10 @@
       "title": {
         "de": "1. Dachfläche",
         "default": "1. Roof"
+      },
+      "description": {
+        "de": "Die Eckdaten der ersten Dachfläche.",
+        "default": "The key parameters of the first roof surface."
       },
       "elements": [
         {
@@ -206,6 +222,10 @@
         "de": "2. Dachfläche",
         "default": "2. Roof"
       },
+      "description": {
+        "de": "Die Eckdaten der zweiten Dachfläche.",
+        "default": "The key parameters of the second roof surface."
+      },
       "elements": [
         {
           "type": "text",
@@ -276,6 +296,10 @@
       "title": {
         "de": "3. Dachfläche",
         "default": "3. Roof"
+      },
+      "description": {
+        "de": "Die Eckdaten der dritten Dachfläche.",
+        "default": "The key parameters of the third roof surface."
       },
       "elements": [
         {
@@ -348,6 +372,10 @@
         "de": "4. Dachfläche",
         "default": "4. Roof"
       },
+      "description": {
+        "de": "Die Eckdaten der vierten Dachfläche.",
+        "default": "The key parameters of the fourth roof surface."
+      },
       "elements": [
         {
           "type": "text",
@@ -419,6 +447,10 @@
         "de": "Solcast API",
         "default": "Solcast API"
       },
+      "description": {
+        "de": "Zugangsdaten für die Solcast-API.",
+        "default": "Credentials for the Solcast API."
+      },
       "elements": [
         {
           "type": "text",
@@ -460,6 +492,10 @@
       "title": {
         "de": "pvnode API",
         "default": "pvnode API"
+      },
+      "description": {
+        "de": "Zugangsdaten für die pvnode-API.",
+        "default": "Credentials for the pvnode API."
       },
       "elements": [
         {
@@ -606,41 +642,16 @@
     },
     {
       "name": "p_forecast_advanced",
-      "visibleIf": "{forecast} anyof ['forecast.solar', 'solcast']",
+      "visibleIf": "{forecast} = 'forecast.solar'",
       "title": {
         "de": "Erweiterte Einstellungen",
         "default": "Advanced settings"
       },
+      "description": {
+        "de": "Optionale Feineinstellungen für fortgeschrittene Anwendungsfälle.",
+        "default": "Optional fine-tuning for advanced use cases."
+      },
       "elements": [
-        {
-          "type": "text",
-          "name": "measurement",
-          "title": {
-            "de": "InfluxDB-Measurement",
-            "default": "InfluxDB measurement"
-          },
-          "description": {
-            "de": "Alle Forecast-Sensoren verwenden dasselbe Measurement. Eine nachträgliche Änderung ist kaum möglich, da bereits geschriebene Daten dauerhaft an diesen Namen gebunden sind.",
-            "default": "All forecast sensors use the same measurement. Changing this later is very difficult, as previously written data remains permanently tied to this name."
-          },
-          "defaultValue": "forecast",
-          "isRequired": true,
-          "visibleIf": "{forecast} anyof ['forecast.solar', 'solcast', 'pvnode']"
-        },
-        {
-          "type": "text",
-          "name": "forecast_interval",
-          "visibleIf": "{forecast} anyof ['forecast.solar', 'solcast']",
-          "title": {
-            "de": "Abfrageintervall (Sekunden)",
-            "default": "Query interval (seconds)"
-          },
-          "description": {
-            "de": "Richte dich nach dem API-Limit deines Tarifs.",
-            "default": "Match this to your provider plan's API limit."
-          },
-          "inputType": "number"
-        },
         {
           "type": "text",
           "name": "forecast_damping_morning",
@@ -696,6 +707,34 @@
           },
           "inputType": "number",
           "min": 0
+        }
+      ]
+    },
+    {
+      "name": "p_forecast_api",
+      "visibleIf": "{forecast} anyof ['forecast.solar', 'solcast']",
+      "title": {
+        "de": "API-Zugriff",
+        "default": "API access"
+      },
+      "description": {
+        "de": "Steuert, wie der Collector die Prognose-API abruft.",
+        "default": "Controls how the collector queries the forecast API."
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "forecast_interval",
+          "visibleIf": "{forecast} anyof ['forecast.solar', 'solcast']",
+          "title": {
+            "de": "Abfrageintervall (Sekunden)",
+            "default": "Query interval (seconds)"
+          },
+          "description": {
+            "de": "Richte dich nach dem API-Limit deines Tarifs.",
+            "default": "Match this to your provider plan's API limit."
+          },
+          "inputType": "number"
         },
         {
           "type": "text",
@@ -709,6 +748,35 @@
             "de": "Nur erforderlich für die kostenpflichtige Variante von forecast.solar",
             "default": "Only required for the paid variant of forecast.solar"
           }
+        }
+      ]
+    },
+    {
+      "name": "p_forecast_measurement",
+      "visibleIf": "{forecast} anyof ['forecast.solar', 'solcast']",
+      "title": {
+        "de": "InfluxDB-Measurement",
+        "default": "InfluxDB measurement"
+      },
+      "description": {
+        "de": "Lege fest, wohin die Prognosewerte in InfluxDB geschrieben werden.",
+        "default": "Define where the forecast values are written in InfluxDB."
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "measurement",
+          "title": {
+            "de": "InfluxDB-Measurement",
+            "default": "InfluxDB measurement"
+          },
+          "description": {
+            "de": "Alle Forecast-Sensoren verwenden dasselbe Measurement. Eine nachträgliche Änderung ist kaum möglich, da bereits geschriebene Daten dauerhaft an diesen Namen gebunden sind.",
+            "default": "All forecast sensors use the same measurement. Changing this later is very difficult, as previously written data remains permanently tied to this name."
+          },
+          "defaultValue": "forecast",
+          "isRequired": true,
+          "visibleIf": "{forecast} anyof ['forecast.solar', 'solcast', 'pvnode']"
         }
       ]
     }

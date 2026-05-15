@@ -1,0 +1,62 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "PV-Anlage",
+    "default": "PV system"
+  },
+  "description": {
+    "de": "Inbetriebnahme und Zeitzone",
+    "default": "Commissioning date and timezone"
+  },
+  "pages": [
+    {
+      "name": "p_general",
+      "elements": [
+        {
+          "type": "text",
+          "name": "installation_date",
+          "title": {
+            "de": "Inbetriebnahme der PV-Anlage",
+            "default": "Commissioning date of PV system"
+          },
+          "description": {
+            "de": "Wird für die Zeitraumauswahl benötigt",
+            "default": "Required for time range selection"
+          },
+          "visibleIfMode": "not_collectors_only",
+          "isRequired": true,
+          "inputType": "date"
+        },
+        {
+          "type": "dropdown",
+          "name": "timezone",
+          "title": {
+            "de": "Zeitzone",
+            "default": "Timezone"
+          },
+          "isRequired": true,
+          "defaultValue": "Europe/Berlin",
+          "choices": [
+            { "value": "Europe/Berlin", "text": "Europe/Berlin" },
+            { "value": "Europe/Vienna", "text": "Europe/Vienna" },
+            { "value": "Europe/Zurich", "text": "Europe/Zurich" },
+            { "value": "Europe/Amsterdam", "text": "Europe/Amsterdam" },
+            { "value": "Europe/Paris", "text": "Europe/Paris" },
+            { "value": "Europe/Rome", "text": "Europe/Rome" },
+            { "value": "Europe/London", "text": "Europe/London" },
+            { "value": "America/New_York", "text": "America/New_York" },
+            { "value": "America/Los_Angeles", "text": "America/Los_Angeles" },
+            { "value": "Asia/Tokyo", "text": "Asia/Tokyo" },
+            { "value": "Australia/Sydney", "text": "Australia/Sydney" }
+          ]
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

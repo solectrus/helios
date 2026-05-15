@@ -1,7 +1,7 @@
 RSpec.describe Surveys::Base do
   describe '.survey_id' do
     it 'derives the id from the namespace holding the subclass' do
-      expect(Surveys::Dashboard::Survey.survey_id).to eq('dashboard')
+      expect(Surveys::Backup::Survey.survey_id).to eq('backup')
     end
 
     it 'underscores camelcased namespaces' do

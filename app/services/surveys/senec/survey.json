@@ -15,6 +15,10 @@
         "de": "SENEC-Typ",
         "default": "SENEC type"
       },
+      "description": {
+        "de": "Die Modellreihe bestimmt, welche Zugriffsarten und Optionen anschließend zur Verfügung stehen.",
+        "default": "The model series determines which access types and options become available next."
+      },
       "elements": [
         {
           "type": "radiogroup",
@@ -49,6 +53,10 @@
       "title": {
         "de": "Zugriffsart",
         "default": "Access type"
+      },
+      "description": {
+        "de": "Lokaler Zugriff liest direkt im Heimnetz, Cloud-Zugriff läuft über mein-senec.de.",
+        "default": "Local access reads directly on your home network, cloud access goes via mein-senec.de."
       },
       "elements": [
         {
@@ -88,6 +96,10 @@
         "de": "Lokaler Zugriff",
         "default": "Local access"
       },
+      "description": {
+        "de": "So erreicht der Collector dein SENEC-Gerät im Heimnetz.",
+        "default": "How the collector reaches your SENEC device on the home network."
+      },
       "elements": [
         {
           "type": "text",
@@ -123,14 +135,26 @@
           "defaultValue": "de",
           "isRequired": true,
           "choices": [
-            { "value": "de", "text": { "de": "Deutsch", "default": "German" } },
+            {
+              "value": "de",
+              "text": {
+                "de": "Deutsch",
+                "default": "German"
+              }
+            },
             {
               "value": "en",
-              "text": { "de": "Englisch", "default": "English" }
+              "text": {
+                "de": "Englisch",
+                "default": "English"
+              }
             },
             {
               "value": "it",
-              "text": { "de": "Italienisch", "default": "Italian" }
+              "text": {
+                "de": "Italienisch",
+                "default": "Italian"
+              }
             }
           ]
         }
@@ -142,6 +166,10 @@
       "title": {
         "de": "Cloud-Zugriff",
         "default": "Cloud access"
+      },
+      "description": {
+        "de": "Zugangsdaten deines mein-senec.de-Kontos, über das der Collector die Messwerte abruft.",
+        "default": "Credentials for your mein-senec.de account the collector uses to fetch measurements."
       },
       "elements": [
         {
@@ -210,7 +238,10 @@
             },
             {
               "value": "full",
-              "text": { "de": "Voll", "default": "Full" }
+              "text": {
+                "de": "Voll",
+                "default": "Full"
+              }
             }
           ]
         }
@@ -221,6 +252,10 @@
       "title": {
         "de": "Allgemein",
         "default": "General"
+      },
+      "description": {
+        "de": "Grundlegende Einstellungen des Collectors.",
+        "default": "Basic settings for the collector."
       },
       "elements": [
         {
@@ -260,25 +295,6 @@
             "de": "Kommaseparierte Liste von Messfeldern, die nicht an InfluxDB gesendet werden sollen",
             "default": "Comma-separated list of measurement fields to exclude from InfluxDB"
           }
-        }
-      ]
-    },
-    {
-      "name": "p_image",
-      "title": {
-        "de": "Software-Stand des Collectors",
-        "default": "Collector release channel"
-      },
-      "elements": [
-        {
-          "type": "radiogroup",
-          "name": "image",
-          "title": {
-            "de": "Welchen Stand möchtest du verwenden?",
-            "default": "Which release should be used?"
-          },
-          "isRequired": true,
-          "choices": []
         }
       ]
     }

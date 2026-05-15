@@ -3,15 +3,20 @@ module SettingSection
     ICONS = {
       'forecast' => 'fa-cloud-sun',
       'deployment' => 'fa-sitemap',
-      'system' => 'fa-gear',
-      'dashboard' => 'fa-chart-line',
+      'software' => 'fa-code-branch',
+      'system_general' => 'fa-sliders',
+      'system_network' => 'fa-network-wired',
+      'system_security' => 'fa-key',
+      'dashboard_co2' => 'fa-leaf',
+      'dashboard_theme' => 'fa-palette',
+      'dashboard_network' => 'fa-globe',
       'reverse_proxy' => 'fa-shield-halved',
       'backup' => 'fa-cloud-arrow-up',
       'senec' => 'fa-bolt',
       'mqtt' => 'fa-tower-broadcast',
       'shelly' => 'fa-plug-circle-bolt',
       'influxdb' => 'fa-database',
-      'ingest' => 'fa-house-signal',
+      'ingest_settings' => 'fa-house-signal',
     }.freeze
 
     FORECAST_PROVIDERS = {
@@ -29,7 +34,7 @@ module SettingSection
     end
 
     def icon
-      ICONS[setting] || 'fa-circle-question'
+      self.class.icon_for(setting)
     end
 
     def title
@@ -100,9 +105,11 @@ module SettingSection
     end
 
     def incomplete?
-      return configuration.incomplete_influxdb? if setting == 'influxdb'
+      configuration.setting_incomplete?(setting)
+    end
 
-      configuration.incomplete_sources.include?(setting)
+    def self.icon_for(setting)
+      ICONS[setting] || 'fa-circle-question'
     end
 
     # Returns drill-down link metadata, or nil when the card has no follow-up

@@ -12,6 +12,10 @@
         "de": "Datenquelle",
         "default": "Data source"
       },
+      "description": {
+        "de": "Lege fest, aus welchem System dieser Sensor seine Messwerte bezieht.",
+        "default": "Choose which system this sensor draws its measurements from."
+      },
       "elements": [
         {
           "type": "radiogroup",
@@ -31,6 +35,10 @@
       "title": {
         "de": "Shelly — Lokaler Zugriff",
         "default": "Shelly — Local Access"
+      },
+      "description": {
+        "de": "Adresse des Shelly-Geräts im Heimnetz für den direkten lokalen Zugriff.",
+        "default": "Address of the Shelly device on your home network for direct local access."
       },
       "elements": [
         {
@@ -67,6 +75,10 @@
         "de": "Shelly — Cloud-Zugriff",
         "default": "Shelly — Cloud Access"
       },
+      "description": {
+        "de": "Geräte-ID, unter der die Shelly Cloud dieses Gerät führt.",
+        "default": "Device ID the Shelly Cloud uses for this device."
+      },
       "elements": [
         {
           "type": "text",
@@ -85,6 +97,10 @@
       "title": {
         "de": "MQTT — Topic",
         "default": "MQTT — Topic"
+      },
+      "description": {
+        "de": "Das MQTT-Topic, auf dem der gewünschte Messwert veröffentlicht wird.",
+        "default": "The MQTT topic where the desired measurement is published."
       },
       "elements": [
         {
@@ -113,6 +129,10 @@
         "de": "MQTT — Wertgewinnung",
         "default": "MQTT — Value Extraction"
       },
+      "description": {
+        "de": "Lege fest, wie aus der empfangenen Nachricht ein Messwert gewonnen wird.",
+        "default": "Define how a measurement is derived from the received message."
+      },
       "elements": []
     },
     {
@@ -122,6 +142,10 @@
         "de": "MQTT — Wertgewinnung — Details",
         "default": "MQTT — Value Extraction — Details"
       },
+      "description": {
+        "de": "Feinheiten der Wertgewinnung — abhängig von der zuvor gewählten Methode.",
+        "default": "Details of value extraction — depending on the method chosen before."
+      },
       "elements": []
     },
     {
@@ -130,6 +154,10 @@
       "title": {
         "de": "MQTT — Filter (optional)",
         "default": "MQTT — Filters (optional)"
+      },
+      "description": {
+        "de": "Optionale Filter, um Ausreißer oder unplausible Werte vor dem Speichern zu verwerfen.",
+        "default": "Optional filters to discard outliers or implausible values before storing."
       },
       "elements": []
     },

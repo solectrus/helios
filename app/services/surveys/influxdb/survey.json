@@ -60,6 +60,10 @@
         "de": "Verbindung",
         "default": "Connection"
       },
+      "description": {
+        "de": "Gib an, unter welcher Adresse SOLECTRUS deine externe InfluxDB im Netzwerk erreicht.",
+        "default": "Specify the address where SOLECTRUS reaches your external InfluxDB on the network."
+      },
       "visibleIfMode": "collectors_only",
       "elements": [
         {
@@ -73,6 +77,20 @@
           "placeholder": "influxdb.example.com"
         },
         {
+          "type": "radiogroup",
+          "name": "schema",
+          "title": {
+            "de": "Protokoll",
+            "default": "Protocol"
+          },
+          "isRequired": true,
+          "defaultValue": "http",
+          "choices": [
+            { "value": "http", "text": "http" },
+            { "value": "https", "text": "https" }
+          ]
+        },
+        {
           "type": "text",
           "name": "port",
           "title": {
@@ -80,24 +98,10 @@
             "default": "Port"
           },
           "isRequired": true,
-          "defaultValue": "443",
+          "defaultValueExpression": "iif({schema} = 'http', '8086', '443')",
           "inputType": "number",
           "min": 1,
           "max": 65535
-        },
-        {
-          "type": "dropdown",
-          "name": "schema",
-          "title": {
-            "de": "Protokoll",
-            "default": "Protocol"
-          },
-          "isRequired": true,
-          "defaultValue": "https",
-          "choices": [
-            { "value": "https", "text": "https" },
-            { "value": "http", "text": "http" }
-          ]
         }
       ]
     },
@@ -106,6 +110,10 @@
       "title": {
         "de": "Zugangsdaten",
         "default": "Credentials"
+      },
+      "description": {
+        "de": "Zugangsdaten, mit denen SOLECTRUS sich an der InfluxDB anmeldet und Messwerte schreibt.",
+        "default": "Credentials SOLECTRUS uses to authenticate against InfluxDB and write measurements."
       },
       "visibleIfMode": "collectors_only",
       "elements": [
@@ -145,14 +153,6 @@
   "completeText": {
     "de": "Speichern",
     "default": "Save"
-  },
-  "pageNextText": {
-    "de": "Weiter",
-    "default": "Next"
-  },
-  "pagePrevText": {
-    "de": "Zurück",
-    "default": "Back"
   },
   "showCompletePage": false
 }

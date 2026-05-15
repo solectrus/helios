@@ -1,0 +1,60 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Software-Stand",
+    "default": "Release channel"
+  },
+  "description": {
+    "de": "Software-Stand der SOLECTRUS-Dienste",
+    "default": "Release channel of the SOLECTRUS services"
+  },
+  "pages": [
+    {
+      "name": "p_software",
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "update_interval",
+          "title": {
+            "de": "Wie oft soll Watchtower auf neue Versionen prüfen?",
+            "default": "How often should Watchtower check for new versions?"
+          },
+          "isRequired": true,
+          "defaultValue": "86400",
+          "visibleIf": "anyValueEquals({service_channels}, 'develop') = true",
+          "resetValueIf": "anyValueEquals({service_channels}, 'develop') = false",
+          "clearIfInvisible": "none",
+          "choices": [
+            {
+              "value": "86400",
+              "text": {
+                "de": "Täglich (empfohlen)",
+                "default": "Daily (recommended)"
+              }
+            },
+            {
+              "value": "28800",
+              "text": {
+                "de": "Alle 8 Stunden",
+                "default": "Every 8 hours"
+              }
+            },
+            {
+              "value": "3600",
+              "text": {
+                "de": "Stündlich",
+                "default": "Hourly"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

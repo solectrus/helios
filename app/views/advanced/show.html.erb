@@ -1,9 +1,19 @@
 <% content_for :title, t('.title') %>
 
 <%= render "shared/configuration_page", active_tab: :advanced do %>
-  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-    <% @configuration.visible_settings.each do |setting| %>
-      <%= render SettingSection::Component.new(setting:, configuration: @configuration) %>
+  <div class="flex flex-col gap-8">
+    <% @configuration.advanced_groups.each do |group, settings| %>
+      <section>
+        <h2 class="text-base-content/55 mb-3 text-xs font-medium tracking-wider uppercase">
+          <%= t("advanced.show.groups.#{group}") %>
+        </h2>
+
+        <div class="flex flex-wrap gap-3">
+          <% settings.each do |setting| %>
+            <%= render SettingLink::Component.new(setting:, configuration: @configuration) %>
+          <% end %>
+        </div>
+      </section>
     <% end %>
   </div>
 <% end %>

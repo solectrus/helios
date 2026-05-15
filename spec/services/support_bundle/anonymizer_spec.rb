@@ -184,7 +184,7 @@ RSpec.describe SupportBundle::Anonymizer do
         )
       end
 
-      it 'redacts the dashboard lockup codeword and keeps non-secret fields' do
+      it 'redacts the dashboard codeword and keeps non-secret fields' do
         expect(parsed['dashboard']).to eq(
           'lockup_codeword' => 'dummy_lockup_codeword',
           'ui_theme' => 'light',

@@ -1,0 +1,39 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "CO₂-Faktor",
+    "default": "CO₂ factor"
+  },
+  "description": {
+    "de": "Strommix für die CO₂-Einsparungsberechnung",
+    "default": "Power grid mix for CO₂ savings calculation"
+  },
+  "pages": [
+    {
+      "name": "p_co2",
+      "elements": [
+        {
+          "type": "text",
+          "name": "co2_emission_factor",
+          "title": {
+            "de": "CO₂-Emissionsfaktor (g/kWh)",
+            "default": "CO₂ emission factor (g/kWh)"
+          },
+          "description": {
+            "de": "Faktor zur Berechnung der CO₂-Einsparung. Der Standardwert 401 entspricht dem deutschen Strommix (Quelle: Umweltbundesamt). Für andere Länder ggf. anpassen.",
+            "default": "Factor for calculating CO₂ savings. The default of 401 reflects the German power grid mix (source: German Environment Agency). Adjust for other countries."
+          },
+          "defaultValue": "401",
+          "inputType": "number",
+          "min": 0
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

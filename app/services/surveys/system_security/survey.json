@@ -1,0 +1,49 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Zugriffsschutz",
+    "default": "Access protection"
+  },
+  "description": {
+    "de": "Admin-Passwort und Zugangscode für die Weboberfläche",
+    "default": "Admin password and access code for the web interface"
+  },
+  "pages": [
+    {
+      "name": "p_security",
+      "elements": [
+        {
+          "type": "text",
+          "name": "admin_password",
+          "title": {
+            "de": "Administrator-Passwort",
+            "default": "Administrator password"
+          },
+          "description": {
+            "de": "Nur der Admin kann Einstellungen und Strompreise bearbeiten.",
+            "default": "Only the admin can edit settings and electricity prices."
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "lockup_codeword",
+          "title": {
+            "de": "Zugangscode für die Weboberfläche (optional)",
+            "default": "Access code for the web interface (optional)"
+          },
+          "description": {
+            "de": "Sperrt die gesamte Weboberfläche mit einem Codewort. Lass das Feld leer, wenn kein zusätzlicher Schutz nötig ist.",
+            "default": "Locks the entire web interface with a codeword. Leave empty if no additional protection is needed."
+          }
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

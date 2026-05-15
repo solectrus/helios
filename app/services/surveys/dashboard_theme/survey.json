@@ -1,0 +1,56 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Farbschema",
+    "default": "Color theme"
+  },
+  "description": {
+    "de": "Helles oder dunkles Farbschema für das Dashboard",
+    "default": "Light or dark color theme for the dashboard"
+  },
+  "pages": [
+    {
+      "name": "p_theme",
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "ui_theme",
+          "title": {
+            "de": "Farbschema",
+            "default": "Color theme"
+          },
+          "defaultValue": "user",
+          "choices": [
+            {
+              "value": "user",
+              "text": {
+                "de": "Vom Nutzer wählbar",
+                "default": "User-selectable"
+              }
+            },
+            {
+              "value": "light",
+              "text": {
+                "de": "Fest eingestellt: Hell",
+                "default": "Fixed: Light"
+              }
+            },
+            {
+              "value": "dark",
+              "text": {
+                "de": "Fest eingestellt: Dunkel",
+                "default": "Fixed: Dark"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

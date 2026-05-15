@@ -38,6 +38,10 @@ RSpec.describe Configuration do
       expect(described_class.valid?('senec')).to be true
     end
 
+    it 'returns true for mini-survey IDs' do
+      expect(described_class.valid?('system_security')).to be true
+    end
+
     it 'returns false for invalid settings' do
       expect(described_class.valid?('unknown')).to be false
     end
@@ -63,6 +67,24 @@ RSpec.describe Configuration do
       config.update('system', { 'timezone' => 'Europe/Berlin' })
 
       expect(config.setting_data('system')).to eq({ 'timezone' => 'Europe/Berlin' })
+    end
+
+    it 'slices the parent singleton down to the mini-survey keys' do
+      config = described_class.current
+      config.update('system', { 'timezone' => 'UTC', 'admin_password' => 'secret' })
+
+      expect(config.setting_data('system_general')).to eq({ 'timezone' => 'UTC' })
+      expect(config.setting_data('system_security')).to eq({ 'admin_password' => 'secret' })
+    end
+
+    it 'merges borrowed fields in from their foreign section' do
+      config = described_class.current
+      config.update('system', { 'admin_password' => 'secret' })
+      config.update('dashboard', { 'lockup_codeword' => 'open-sesame', 'ui_theme' => 'dark' })
+
+      expect(config.setting_data('system_security')).to eq(
+        { 'admin_password' => 'secret', 'lockup_codeword' => 'open-sesame' },
+      )
     end
   end
 
@@ -259,6 +281,83 @@ RSpec.describe Configuration do
 
       reloaded = described_class.current
       expect(reloaded.system).to eq({ 'timezone' => 'UTC' })
+    end
+
+    it 'merges a mini-survey ID into the parent singleton, leaving siblings intact' do
+      config = described_class.current
+      config.update('system', { 'admin_password' => 'secret', 'timezone' => 'Europe/Berlin' })
+      config.update('system_security', { 'admin_password' => 'new-secret' })
+
+      expect(config.system).to eq(
+        { 'admin_password' => 'new-secret', 'timezone' => 'Europe/Berlin' },
+      )
+    end
+
+    it 'drops mini-survey keys that are not in the patch (cleared by the user)' do
+      config = described_class.current
+      config.update('system', { 'admin_password' => 'secret', 'app_host' => 'old.example' })
+      config.update('system_network', {})
+
+      expect(config.system).to eq({ 'admin_password' => 'secret' })
+    end
+
+    it 'removes the singleton entirely once the last mini-survey key is cleared' do
+      config = described_class.current
+      config.update('system_security', { 'admin_password' => 'pw' })
+      config.update('system_security', {})
+
+      expect(config.system).to be_empty
+    end
+
+    it 'routes a borrowed field into its foreign section, not the survey section' do
+      config = described_class.current
+      config.update('dashboard', { 'ui_theme' => 'dark' })
+      config.update('system_security', { 'admin_password' => 'pw', 'lockup_codeword' => 'open-sesame' })
+
+      expect(config.system).to eq({ 'admin_password' => 'pw' })
+      expect(config.dashboard).to eq({ 'ui_theme' => 'dark', 'lockup_codeword' => 'open-sesame' })
+    end
+
+    it 'removes a borrowed field from its section when cleared' do
+      config = described_class.current
+      config.update('dashboard', { 'ui_theme' => 'dark' })
+      config.update('system_security', { 'admin_password' => 'pw', 'lockup_codeword' => 'x' })
+      config.update('system_security', { 'admin_password' => 'pw', 'lockup_codeword' => '' })
+
+      expect(config.dashboard).to eq({ 'ui_theme' => 'dark' })
+    end
+
+    it 'stores the reverse-proxy trusted_proxy_ranges under dashboard' do
+      config = described_class.current
+      config.update('reverse_proxy',
+                    { 'app_domain' => 'example.com', 'trusted_proxy_ranges' => '10.0.0.0/8' })
+
+      expect(config.reverse_proxy).to eq({ 'app_domain' => 'example.com' })
+      expect(config.dashboard).to eq({ 'trusted_proxy_ranges' => '10.0.0.0/8' })
+      expect(config.setting_data('reverse_proxy')).to eq(
+        { 'app_domain' => 'example.com', 'trusted_proxy_ranges' => '10.0.0.0/8' },
+      )
+    end
+
+    it 'translates software channel tokens into the registry image URLs' do
+      config = described_class.current
+      config.update('software', {
+                      'service_channels' => { 'dashboard' => 'develop' },
+                      'update_interval' => '3600',
+                    })
+
+      expect(config.dashboard.image).to eq('ghcr.io/solectrus/solectrus:develop')
+      expect(config.system.update_interval).to eq('3600')
+    end
+
+    it 'preserves sibling keys in service singletons when updating software channels' do
+      config = described_class.current
+      config.update('dashboard', { 'co2_emission_factor' => '401' })
+      config.update('senec', { 'version' => '4' })
+      config.update('software', { 'service_channels' => { 'dashboard' => 'latest' } })
+
+      expect(config.dashboard.co2_emission_factor).to eq('401')
+      expect(config.senec.version).to eq('4')
     end
 
     it 'strips unknown fields from sections on save' do
@@ -607,17 +706,17 @@ RSpec.describe Configuration do
   end
 
   describe '#visible_settings' do
-    it 'omits ingest by default in full mode' do
+    it 'omits ingest_settings by default in full mode' do
       with_config_yaml
-      expect(described_class.current.visible_settings).not_to include('ingest')
+      expect(described_class.current.visible_settings).not_to include('ingest_settings')
     end
 
-    it 'inserts ingest right after influxdb when a balcony sensor activates it' do
+    it 'inserts ingest_settings right after influxdb when a balcony sensor activates it' do
       with_config_yaml(
         'sensors' => { 'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true } },
       )
       settings = described_class.current.visible_settings
-      expect(settings[settings.index('influxdb') + 1]).to eq('ingest')
+      expect(settings[settings.index('influxdb') + 1]).to eq('ingest_settings')
     end
 
     it 'never surfaces ingest in collectors_only mode (no local InfluxDB to write to)' do
@@ -625,17 +724,58 @@ RSpec.describe Configuration do
         'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
         'sensors' => { 'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true } },
       )
-      expect(described_class.current.visible_settings).not_to include('ingest')
+      expect(described_class.current.visible_settings).not_to include('ingest_settings')
     end
 
-    it 'appends ingest in dashboard_only mode (no influxdb card to anchor against)' do
+    it 'appends ingest_settings in dashboard_only mode (no influxdb to anchor against)' do
       with_config_yaml(
         'deployment' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY },
         'sensors' => { 'inverter_power_2' => { 'source' => 'external', 'is_balcony' => true } },
       )
       settings = described_class.current.visible_settings
-      expect(settings.last).to eq('ingest')
+      expect(settings.last).to eq('ingest_settings')
       expect(settings).not_to include('influxdb')
+    end
+  end
+
+  describe '#advanced_groups' do
+    it 'returns every group with at least one visible setting in full mode' do
+      with_config_yaml
+      expect(described_class.current.advanced_groups).to eq(
+        'installation' => %w[deployment software system_general],
+        'access' => %w[system_network influxdb dashboard_network reverse_proxy system_security],
+        'data' => %w[backup],
+        'dashboard' => %w[dashboard_co2 dashboard_theme],
+      )
+    end
+
+    it 'keeps influxdb and system_security in the access group in collectors_only mode' do
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      expect(described_class.current.advanced_groups.fetch('access')).to eq(
+        %w[influxdb system_security],
+      )
+    end
+
+    it 'pulls ingest_settings into the data group when a balcony sensor activates it' do
+      with_config_yaml(
+        'sensors' => { 'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true } },
+      )
+      expect(described_class.current.advanced_groups.fetch('data')).to eq(
+        %w[ingest_settings backup],
+      )
+    end
+
+    it 'keeps only the installation and access groups in collectors_only mode' do
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      expect(described_class.current.advanced_groups.keys).to contain_exactly(
+        'installation',
+        'access',
+      )
+    end
+
+    it 'narrows the data group to backup in dashboard_only mode without a balcony sensor' do
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY })
+      expect(described_class.current.advanced_groups.fetch('data')).to eq(%w[backup])
     end
   end
 end

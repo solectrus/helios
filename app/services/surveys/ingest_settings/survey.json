@@ -5,35 +5,12 @@
     "default": "Ingest"
   },
   "description": {
-    "de": "Korrigiert den Hausverbrauch bei Balkonkraftwerken.",
-    "default": "Recalculates house consumption for balcony plants."
+    "de": "Wie lange Messdaten zwischengespeichert werden",
+    "default": "How long measurement data is buffered"
   },
   "pages": [
     {
-      "name": "p_image",
-      "title": {
-        "de": "Software-Stand",
-        "default": "Release channel"
-      },
-      "elements": [
-        {
-          "type": "radiogroup",
-          "name": "image",
-          "title": {
-            "de": "Welchen Stand möchtest du verwenden?",
-            "default": "Which release should be used?"
-          },
-          "isRequired": true,
-          "choices": []
-        }
-      ]
-    },
-    {
       "name": "p_settings",
-      "title": {
-        "de": "Pufferzeit",
-        "default": "Buffer window"
-      },
       "elements": [
         {
           "type": "text",
@@ -52,5 +29,11 @@
         }
       ]
     }
-  ]
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
 }

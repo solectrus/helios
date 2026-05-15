@@ -66,31 +66,6 @@ module Surveys
       nil
     end
 
-    # Populates the `p_image` page's `image` radiogroup from DockerImages —
-    # or drops the page entirely when the registry only exposes one variant,
-    # so the user is not shown a one-option chooser.
-    def apply_image_choices!(data, registry_name)
-      choices = DockerImages.choices(registry_name)
-      if choices
-        inject_image_choices!(data, choices)
-      else
-        data['pages']&.reject! { |page| page['name'] == 'p_image' }
-      end
-    end
-
-    def inject_image_choices!(data, choices)
-      element = find_element(data, 'image')
-      return unless element
-
-      element['choices'] = choices.map do |choice|
-        { 'value' => choice[:image], 'text' => self.class.localized(**choice[:label]) }
-      end
-      # First choice is the recommended `:latest`; preselect it for fresh
-      # configurations. mergeData on the frontend still wins for existing
-      # records, so this only affects new ones.
-      element['defaultValue'] = choices.first[:image]
-    end
-
     # Strips pages and elements whose `visibleIfMode` marker doesn't match the
     # current deployment mode. The marker itself is removed from the rendered
     # JSON either way so it never reaches SurveyJS.

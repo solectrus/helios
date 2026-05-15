@@ -1,7 +1,7 @@
 # Each entry has `:current` (the recommended default) and optionally
 # `:legacy` — images that surface as an "update available" hint in the UI.
-# `:current` is either a tag string, or an Array of `{image:, label:}`
-# hashes when the user can pick a variant (first entry is the default).
+# `:current` is either a tag string, or an Array of image strings when the
+# user can pick a variant (first entry is the default).
 #
 # Nothing here is ever rewritten automatically: `:current` is only
 # consulted when generating defaults for a fresh setup; `:legacy` only
@@ -52,25 +52,9 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
   }.freeze
 
   DASHBOARD = {
-    current: [
-      {
-        image: 'ghcr.io/solectrus/solectrus:latest',
-        label: {
-          de: "Stabil (empfohlen)\n\n" \
-              'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
-          en: "Stable (recommended)\n\n" \
-              'Tested releases — only updated when a new version ships, predictable and reliable.',
-        },
-      },
-      {
-        image: 'ghcr.io/solectrus/solectrus:develop',
-        label: {
-          de: "Entwicklung\n\n" \
-              'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
-          en: "Development\n\n" \
-              'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
-        },
-      },
+    current: %w[
+      ghcr.io/solectrus/solectrus:latest
+      ghcr.io/solectrus/solectrus:develop
     ],
 
     legacy: %w[
@@ -122,25 +106,9 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
   }.freeze
 
   INGEST = {
-    current: [
-      {
-        image: 'ghcr.io/solectrus/ingest:latest',
-        label: {
-          de: "Stabil (empfohlen)\n\n" \
-              'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
-          en: "Stable (recommended)\n\n" \
-              'Tested releases — only updated when a new version ships, predictable and reliable.',
-        },
-      },
-      {
-        image: 'ghcr.io/solectrus/ingest:develop',
-        label: {
-          de: "Entwicklung\n\n" \
-              'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
-          en: "Development\n\n" \
-              'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
-        },
-      },
+    current: %w[
+      ghcr.io/solectrus/ingest:latest
+      ghcr.io/solectrus/ingest:develop
     ],
   }.freeze
   HELIOS = { current: 'ghcr.io/solectrus/helios:develop' }.freeze
@@ -156,73 +124,35 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
   }.freeze
 
   SENEC_COLLECTOR = {
-    current: [
-      {
-        image: 'ghcr.io/solectrus/senec-collector:latest',
-        label: {
-          de: "Stabil (empfohlen)\n\n" \
-              'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
-          en: "Stable (recommended)\n\n" \
-              'Tested releases — only updated when a new version ships, predictable and reliable.',
-        },
-      },
-      {
-        image: 'ghcr.io/solectrus/senec-collector:develop',
-        label: {
-          de: "Entwicklung\n\n" \
-              'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
-          en: "Development\n\n" \
-              'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
-        },
-      },
+    current: %w[
+      ghcr.io/solectrus/senec-collector:latest
+      ghcr.io/solectrus/senec-collector:develop
     ],
   }.freeze
   MQTT_COLLECTOR = {
-    current: [
-      {
-        image: 'ghcr.io/solectrus/mqtt-collector:latest',
-        label: {
-          de: "Stabil (empfohlen)\n\n" \
-              'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
-          en: "Stable (recommended)\n\n" \
-              'Tested releases — only updated when a new version ships, predictable and reliable.',
-        },
-      },
-      {
-        image: 'ghcr.io/solectrus/mqtt-collector:develop',
-        label: {
-          de: "Entwicklung\n\n" \
-              'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
-          en: "Development\n\n" \
-              'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
-        },
-      },
+    current: %w[
+      ghcr.io/solectrus/mqtt-collector:latest
+      ghcr.io/solectrus/mqtt-collector:develop
     ],
   }.freeze
   SHELLY_COLLECTOR = {
-    current: [
-      {
-        image: 'ghcr.io/solectrus/shelly-collector:latest',
-        label: {
-          de: "Stabil (empfohlen)\n\n" \
-              'Geprüfte Releases — wird nur bei neuen Versionen aktualisiert, dafür planbar und zuverlässig.',
-          en: "Stable (recommended)\n\n" \
-              'Tested releases — only updated when a new version ships, predictable and reliable.',
-        },
-      },
-      {
-        image: 'ghcr.io/solectrus/shelly-collector:develop',
-        label: {
-          de: "Entwicklung\n\n" \
-              'Wird mehrmals täglich aktualisiert. Neue Features kommen früher an, können aber noch Fehler enthalten.',
-          en: "Development\n\n" \
-              'Updated multiple times daily. New features arrive earlier, but may still contain bugs.',
-        },
-      },
+    current: %w[
+      ghcr.io/solectrus/shelly-collector:latest
+      ghcr.io/solectrus/shelly-collector:develop
     ],
   }.freeze
-  FORECAST_COLLECTOR = { current: 'ghcr.io/solectrus/forecast-collector:latest' }.freeze
-  POWER_SPLITTER = { current: 'ghcr.io/solectrus/power-splitter:latest' }.freeze
+  FORECAST_COLLECTOR = {
+    current: %w[
+      ghcr.io/solectrus/forecast-collector:latest
+      ghcr.io/solectrus/forecast-collector:develop
+    ],
+  }.freeze
+  POWER_SPLITTER = {
+    current: %w[
+      ghcr.io/solectrus/power-splitter:latest
+      ghcr.io/solectrus/power-splitter:develop
+    ],
+  }.freeze
   TRAEFIK = { current: 'traefik:v3.6' }.freeze
 
   INFLUXDB_BACKUP = { current: 'ghcr.io/solectrus/influxdb2-s3-backup:latest' }.freeze
@@ -237,16 +167,15 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
     hash[const_name.to_s.downcase.tr('_', '-')] = const_name
   end.freeze
 
-  # Normalized variant list — single-string `:current` is wrapped as
-  # `[{image:}]` so callers don't branch on shape.
+  # Normalized variant list — a single-string `:current` becomes a one-element
+  # array so callers don't branch on shape.
   def self.variants(name)
-    value = const_get(name).fetch(:current)
-    value.is_a?(Array) ? value : [{ image: value }]
+    Array(const_get(name).fetch(:current))
   end
   private_class_method :variants
 
   def self.current(name)
-    variants(name).first.fetch(:image)
+    variants(name).first
   end
 
   # Survey choices for multi-version services, or nil when the registry
@@ -254,10 +183,6 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
   def self.choices(name)
     value = const_get(name).fetch(:current)
     value if value.is_a?(Array)
-  end
-
-  def self.selectable(name)
-    variants(name).pluck(:image)
   end
 
   # Recommended image tag for a compose-service, or nil if the service has
@@ -274,8 +199,7 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
     return [] unless name
 
     data = const_get(name)
-    list = Array(data[:current]).map { |entry| entry.is_a?(Hash) ? entry.fetch(:image) : entry }
-    list + Array(data[:legacy])
+    Array(data[:current]) + Array(data[:legacy])
   end
 
   # True when the image should surface as "outdated / update available" in
@@ -292,9 +216,8 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
     data = const_get(name)
     current = data[:current]
     multi_version = current.is_a?(Array)
-    selectable_images = multi_version ? current.pluck(:image) : [current]
 
-    return false if selectable_images.include?(image)
+    return false if Array(current).include?(image)
     return true if Array(data[:legacy]).any? { |entry| matches_legacy?(image, entry) }
 
     multi_version

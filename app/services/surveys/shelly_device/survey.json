@@ -12,6 +12,10 @@
         "de": "Bezeichnung",
         "default": "Label"
       },
+      "description": {
+        "de": "Wähle eine Bezeichnung, an der du das Gerät in HELIOS wiedererkennst — etwa nach Verbraucher oder Einbauort.",
+        "default": "Pick a label you'll recognize the device by in HELIOS — for example by appliance or location."
+      },
       "elements": [
         {
           "type": "text",
@@ -36,6 +40,10 @@
       "title": {
         "de": "Verbindung",
         "default": "Connection"
+      },
+      "description": {
+        "de": "So erreicht der Collector das Shelly-Gerät.",
+        "default": "How the collector reaches the Shelly device."
       },
       "elements": [
         {
@@ -85,6 +93,10 @@
         "de": "Optionen",
         "default": "Options"
       },
+      "description": {
+        "de": "Zusätzliche Einstellungen zur Aufbereitung der gemessenen Werte.",
+        "default": "Additional settings for processing the measured values."
+      },
       "elements": [
         {
           "type": "boolean",
@@ -107,6 +119,10 @@
       "title": {
         "de": "InfluxDB",
         "default": "InfluxDB"
+      },
+      "description": {
+        "de": "Lege fest, in welches Measurement der Collector die Messwerte dieses Geräts schreibt.",
+        "default": "Define which measurement the collector writes this device's readings to."
       },
       "elements": [
         {

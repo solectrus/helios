@@ -1,0 +1,11 @@
+<%= link_to link_path,
+            data: { turbo_frame: "setting-modal-content" },
+            class: "group border-base-content/10 hover:border-primary/40 hover:bg-base-content/4 focus-visible:ring-primary/40 inline-flex items-center gap-3.5 rounded-full border bg-base-100 px-7 py-3.5 text-lg font-medium transition-colors focus:outline-none focus-visible:ring-2" do %>
+  <i aria-hidden="true" class="fa-solid text-primary text-xl <%= icon %>"></i>
+  <span class="text-base-content"><%= title %></span>
+
+  <% if incomplete? %>
+    <span aria-hidden="true" class="bg-warning size-2.5 rounded-full"></span>
+    <span class="sr-only"><%= t('configurations.show.incomplete') %></span>
+  <% end %>
+<% end %>

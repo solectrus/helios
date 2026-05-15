@@ -24,10 +24,6 @@
       transparent
     );
 
-    & :is(.sd-question, .sd-panel) {
-      border: 1px solid var(--sjs-border-light);
-    }
-
     /* Drop default 540px max-width so the form fills the modal */
     & .sd-body {
       max-width: 720px;
@@ -40,7 +36,13 @@
       padding: 0 1.25rem;
     }
     & .sd-question {
+      border: 1px solid var(--sjs-border-light);
       padding: 1rem 1.25rem 1.125rem;
+    }
+    /* Drop the matrix table's own background so it inherits the question-box
+       fill and reads as one element. */
+    & .sd-matrix__table {
+      background-color: transparent;
     }
     & :is(.sd-action-bar, .sd-footer, .sd-navigation) {
       padding: 1rem 1.25rem;
@@ -91,7 +93,8 @@
     & .sd-dropdown:hover:not(.sd-input--readonly) {
       border-color: var(--helios-border-hover);
     }
-    & :is(.sd-input, .sd-text, .sd-dropdown):is(:focus, :focus-within):not(
+    &
+      :is(.sd-input, .sd-text, .sd-dropdown):is(:focus, :focus-within):not(
         .sd-input--readonly
       ) {
       border-color: var(--helios-border-focus);
@@ -101,7 +104,12 @@
     }
 
     /* Native date/time picker icon needs to be visible on dark bg */
-    & .sd-input:is([type='date'], [type='datetime-local'], [type='time'])::-webkit-calendar-picker-indicator {
+    &
+      .sd-input:is(
+        [type='date'],
+        [type='datetime-local'],
+        [type='time']
+      )::-webkit-calendar-picker-indicator {
       filter: invert(0.85);
       cursor: pointer;
     }
@@ -168,7 +176,8 @@
     & .sd-question--error :is(.sd-input, .sd-text, .sd-dropdown) {
       border-color: var(--color-error);
     }
-    & .sd-question--error
+    &
+      .sd-question--error
       :is(.sd-input, .sd-text, .sd-dropdown):is(:focus, :focus-within):not(
         .sd-input--readonly
       ) {

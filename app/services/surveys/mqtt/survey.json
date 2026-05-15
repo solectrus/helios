@@ -15,6 +15,10 @@
         "de": "Verbindung zum MQTT-Broker",
         "default": "Connection to the MQTT broker"
       },
+      "description": {
+        "de": "So erreicht SOLECTRUS deinen MQTT-Broker.",
+        "default": "How SOLECTRUS reaches your MQTT broker."
+      },
       "elements": [
         {
           "type": "text",
@@ -59,6 +63,10 @@
         "de": "Authentifizierung beim MQTT-Broker",
         "default": "Authentication with the MQTT broker"
       },
+      "description": {
+        "de": "Zugangsdaten für den Broker — leer lassen, wenn er ohne Anmeldung erreichbar ist.",
+        "default": "Credentials for the broker — leave empty if it is reachable without a login."
+      },
       "elements": [
         {
           "type": "text",
@@ -76,25 +84,6 @@
             "default": "Password (optional)"
           },
           "inputType": "password"
-        }
-      ]
-    },
-    {
-      "name": "p_image",
-      "title": {
-        "de": "Software-Stand des Collectors",
-        "default": "Collector release channel"
-      },
-      "elements": [
-        {
-          "type": "radiogroup",
-          "name": "image",
-          "title": {
-            "de": "Welchen Stand möchtest du verwenden?",
-            "default": "Which release should be used?"
-          },
-          "isRequired": true,
-          "choices": []
         }
       ]
     }

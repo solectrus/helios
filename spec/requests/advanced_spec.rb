@@ -11,12 +11,20 @@ RSpec.describe 'Advanced', :with_admin_password do
       expect(response).to have_http_status(:ok)
     end
 
-    it 'displays setting section titles' do
+    it 'displays a chip for every visible setting' do
       get advanced_path
 
-      Configuration::SETTINGS.each do |setting|
-        title = I18n.t("configurations.settings.#{setting}.title")
-        expect(response.body).to include(title)
+      Configuration.current.visible_settings.each do |setting|
+        expect(response.body).to include(I18n.t("configurations.settings.#{setting}.title"))
+      end
+    end
+
+    it 'displays a heading for every active group' do
+      get advanced_path
+
+      Configuration.current.advanced_groups.each_key do |group|
+        # CGI.escapeHTML: group labels may contain "&" (e.g. "Zugriff & Sicherheit")
+        expect(response.body).to include(CGI.escapeHTML(I18n.t("advanced.show.groups.#{group}")))
       end
     end
   end

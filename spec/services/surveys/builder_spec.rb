@@ -1,14 +1,14 @@
 RSpec.describe Surveys::Builder do
   describe '#call' do
     it 'resolves a known setting to its Survey class and renders the JSON' do
-      result = described_class.new(setting: 'system').call
+      result = described_class.new(setting: 'backup').call
 
       expect(result).to be_a(Hash)
       expect(result['title']).to be_present
     end
 
     it 'resolves multi-word settings via camelize' do
-      result = described_class.new(setting: 'reverse_proxy').call
+      result = described_class.new(setting: 'system_security').call
 
       expect(result).to be_a(Hash)
     end

@@ -4,9 +4,9 @@ RSpec.describe DockerImages do
       expect(described_class.current(:INFLUXDB)).to eq('influxdb:2.9-alpine')
     end
 
-    it 'unwraps the first `{image:, label:}` hash for multi-version services' do
+    it 'returns the first entry for multi-version services' do
       expect(described_class.current(:DASHBOARD))
-        .to eq(DockerImages::DASHBOARD[:current].first[:image])
+        .to eq(DockerImages::DASHBOARD[:current].first)
     end
   end
 
@@ -77,7 +77,7 @@ RSpec.describe DockerImages do
       end
 
       it 'is false for a non-default selectable variant' do
-        variant = DockerImages::DASHBOARD[:current].last[:image]
+        variant = DockerImages::DASHBOARD[:current].last
         expect(described_class.legacy?('dashboard', variant)).to be false
       end
 
@@ -99,17 +99,6 @@ RSpec.describe DockerImages do
 
     it 'returns the :current array verbatim for multi-version services' do
       expect(described_class.choices(:DASHBOARD)).to eq(DockerImages::DASHBOARD[:current])
-    end
-  end
-
-  describe '.selectable' do
-    it 'wraps the :current string in an array for single-version services' do
-      expect(described_class.selectable(:INFLUXDB)).to eq(['influxdb:2.9-alpine'])
-    end
-
-    it 'unwraps every `{image:, label:}` hash for multi-version services' do
-      expect(described_class.selectable(:DASHBOARD))
-        .to eq(DockerImages::DASHBOARD[:current].pluck(:image))
     end
   end
 

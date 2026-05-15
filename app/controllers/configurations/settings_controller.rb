@@ -2,9 +2,15 @@ module Configurations
   class SettingsController < ApplicationController
     include TurboFrameOnly
 
-    # Settings whose survey uses an `enabled` boolean to toggle the whole section.
-    # The flag is stripped on save, so we re-inject it on load when data is present.
-    ENABLED_FLAG_SETTINGS = %w[reverse_proxy backup].freeze
+    # Settings whose survey uses an `enabled` boolean to toggle the whole
+    # section. The flag is stripped on save; on load we re-derive it from the
+    # gating field (or from "any data present" when no gating field applies).
+    # reverse_proxy gates on `app_domain` because its survey also carries the
+    # borrowed `trusted_proxy_ranges` field, which can be set with Traefik off.
+    ENABLED_FLAG_GATING_FIELD = {
+      'reverse_proxy' => 'app_domain',
+      'backup' => nil,
+    }.freeze
 
     before_action :set_configuration
     before_action :validate_setting
@@ -27,6 +33,7 @@ module Configurations
       else
         data = @configuration.setting_data(setting)
         inject_enabled_flag!(data)
+        inject_theme_sentinel!(data)
         render SettingForm::Component.new(setting:, data:)
       end
     end
@@ -101,15 +108,33 @@ module Configurations
       end
     end
 
-    # Handle the `enabled` UI flag: when false, remove the section entirely;
-    # when true, strip the flag and save the remaining data.
+    # Handle the `enabled` UI flag: when false, clear the section entirely;
+    # when true, strip the flag and save the remaining data. Borrowed fields
+    # (e.g. reverse_proxy's trusted_proxy_ranges) live in a different section,
+    # so clearing this one never touches them — Configuration#update routes
+    # them to their own section regardless of the toggle.
     def persist_setting(data)
+      strip_theme_sentinel!(data)
+
       if data.key?('enabled') && data.delete('enabled') == false
         @configuration.update(setting, {})
         return
       end
 
+      preserve_software_owned_image!(data)
       @configuration.update(setting, data)
+    end
+
+    # The `image` key on per-service singletons is owned by the Software
+    # survey. Per-service surveys don't ship it, but `Configuration#update`
+    # replaces the whole section — so re-inject the persisted value before
+    # saving to avoid dropping the user's channel choice on every edit.
+    def preserve_software_owned_image!(data)
+      return unless Configuration::SOFTWARE_IMAGE_OWNERS.include?(setting)
+      return if data.key?('image')
+
+      persisted = @configuration.setting_data(setting)['image']
+      data['image'] = persisted if persisted.present?
     end
 
     def setting_params
@@ -129,12 +154,31 @@ module Configurations
     end
 
     # Re-inject the UI-only `enabled` flag for sections that use it.
-    # The flag is stripped on save (see persist_setting), so it must be derived
-    # from whether the section has persisted data.
+    # The flag is stripped on save (see persist_setting), so it must be
+    # derived from persisted state. With a gating field, `enabled` reflects
+    # whether that field is set; otherwise, any persisted data flips it on.
     def inject_enabled_flag!(data)
-      return unless ENABLED_FLAG_SETTINGS.include?(setting) && data.present?
+      return if data.blank?
+      return unless ENABLED_FLAG_GATING_FIELD.key?(setting)
 
-      data['enabled'] = true
+      gating = ENABLED_FLAG_GATING_FIELD[setting]
+      data['enabled'] = gating ? data[gating].present? : true
+    end
+
+    # The "user-selectable" theme is stored as an empty string (the dashboard's
+    # UI_THEME convention), but SurveyJS can't preselect a radio option with an
+    # empty value. The survey uses a `user` sentinel instead: inject it on load
+    # when no theme is fixed, and translate it back to `''` on save.
+    def inject_theme_sentinel!(data)
+      return unless setting == 'dashboard_theme'
+
+      data['ui_theme'] = 'user' if data['ui_theme'].blank?
+    end
+
+    def strip_theme_sentinel!(data)
+      return unless setting == 'dashboard_theme'
+
+      data['ui_theme'] = '' if data['ui_theme'] == 'user'
     end
 
     # Derive UI-only state (extraction mode) from persisted MQTT fields.

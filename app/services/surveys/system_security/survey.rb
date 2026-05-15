@@ -1,5 +1,5 @@
 module Surveys
-  module System
+  module SystemSecurity
     class Survey < Base
     end
   end

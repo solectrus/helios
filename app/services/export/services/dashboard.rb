@@ -72,6 +72,8 @@ module Export
 
       def optional_system_vars
         dashboard = configuration.dashboard
+        # An empty UI_THEME is dropped: an unset value already means "user
+        # picks the theme", so passing UI_THEME through adds nothing.
         {
           'CO2_EMISSION_FACTOR' => dashboard.co2_emission_factor,
           'FRAME_ANCESTORS' => dashboard.frame_ancestors,

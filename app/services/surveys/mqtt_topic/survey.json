@@ -12,6 +12,10 @@
         "de": "Quelle",
         "default": "Source"
       },
+      "description": {
+        "de": "Wähle das MQTT-Topic, aus dem dieser Sensor seinen Wert bezieht.",
+        "default": "Choose the MQTT topic this sensor draws its value from."
+      },
       "elements": [
         {
           "type": "text",
@@ -38,6 +42,10 @@
         "de": "Wertgewinnung",
         "default": "Value extraction"
       },
+      "description": {
+        "de": "Lege fest, wie aus der empfangenen Nachricht ein Messwert gewonnen wird.",
+        "default": "Define how a measurement is derived from the received message."
+      },
       "elements": []
     },
     {
@@ -45,6 +53,10 @@
       "title": {
         "de": "Wertgewinnung — Details",
         "default": "Value extraction — details"
+      },
+      "description": {
+        "de": "Feinheiten der Wertgewinnung — abhängig von der zuvor gewählten Methode.",
+        "default": "Details of value extraction — depending on the method chosen before."
       },
       "elements": []
     },
@@ -55,6 +67,10 @@
         "de": "Filter (optional)",
         "default": "Filters (optional)"
       },
+      "description": {
+        "de": "Optionale Filter, um Ausreißer oder unplausible Werte vor dem Speichern zu verwerfen.",
+        "default": "Optional filters to discard outliers or implausible values before storing."
+      },
       "elements": []
     },
     {
@@ -62,6 +78,10 @@
       "title": {
         "de": "InfluxDB-Ziel",
         "default": "InfluxDB target"
+      },
+      "description": {
+        "de": "Lege fest, an welche Stelle in InfluxDB der gewonnene Wert geschrieben wird.",
+        "default": "Define where in InfluxDB the extracted value is written."
       },
       "elements": [
         {

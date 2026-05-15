@@ -120,6 +120,11 @@ en:
   advanced:
     show:
       title: 'Advanced'
+      groups:
+        installation: 'Installation'
+        access: 'Access & Security'
+        data: 'Data'
+        dashboard: 'Dashboard'
 
   supports:
     new:
@@ -238,14 +243,29 @@ en:
           full: 'Complete installation'
           collectors_only: 'Collectors only'
           dashboard_only: 'Dashboard only'
-      system:
-        title: 'System'
-        description: 'General settings for SOLECTRUS'
-      dashboard:
-        title: 'Dashboard'
-        description: 'Release channel, display and security options for the SOLECTRUS dashboard'
+      system_general:
+        title: 'PV system'
+        description: 'Commissioning date and timezone'
+      system_network:
+        title: 'Host'
+        description: 'Which address SOLECTRUS is reachable at'
+      system_security:
+        title: 'Access protection'
+        description: 'Admin password and access code for the web interface'
+      software:
+        title: 'Release channel'
+        description: 'Stable or develop per service plus Watchtower check interval'
+      dashboard_co2:
+        title: 'CO₂ factor'
+        description: 'Power grid mix for CO₂ savings calculation'
+      dashboard_theme:
+        title: 'Color theme'
+        description: 'Light or dark color theme for the dashboard'
+      dashboard_network:
+        title: 'Network'
+        description: 'Host port and embedding into other websites'
       reverse_proxy:
-        title: 'Reverse Proxy'
+        title: 'Custom domain'
         description: 'Domain & HTTPS with Traefik. Only useful if this host is reachable from the internet.'
       backup:
         title: 'Backup'
@@ -253,9 +273,9 @@ en:
       influxdb:
         title: 'InfluxDB'
         description: 'Settings for the time-series database'
-      ingest:
+      ingest_settings:
         title: 'Ingest'
-        description: 'Recalculates house consumption for balcony plants.'
+        description: 'Recalculates house consumption for balcony plants'
       invalid_setting: 'Unknown setting'
       add: 'Add'
       edit: 'Edit'

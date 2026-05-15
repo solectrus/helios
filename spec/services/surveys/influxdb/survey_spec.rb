@@ -4,22 +4,18 @@ RSpec.describe Surveys::Influxdb::Survey do
 
     before { with_config_yaml }
 
-    def page_names(survey)
-      survey['pages'].pluck('name')
-    end
-
     context 'when running in full mode (locally managed InfluxDB)' do
-      it 'shows only the local Network page with the publish_port toggle' do
-        expect(page_names(result)).to eq(['p_local'])
+      it 'shows only the local Network section with the publish_port toggle' do
+        expect(section_names(result)).to eq(['p_local'])
       end
 
       it 'exposes a boolean publish_port element with a false default' do
-        element = result['pages'].first['elements'].find { |e| e['name'] == 'publish_port' }
+        element = find_survey_element(result, 'publish_port')
         expect(element).to include('type' => 'boolean', 'defaultValue' => false)
       end
 
       it 'offers a host_port input gated by the publish_port toggle' do
-        element = result['pages'].first['elements'].find { |e| e['name'] == 'host_port' }
+        element = find_survey_element(result, 'host_port')
         expect(element).to include(
           'type' => 'text',
           'defaultValue' => '8086',
@@ -36,7 +32,7 @@ RSpec.describe Surveys::Influxdb::Survey do
       before { Configuration.current.update('deployment', { 'mode' => 'collectors_only' }) }
 
       it 'shows the connection + credentials pages and hides the local Network page' do
-        expect(page_names(result)).to contain_exactly('p_connection', 'p_credentials')
+        expect(section_names(result)).to contain_exactly('p_connection', 'p_credentials')
       end
 
       it 'strips the visibleIfMode marker from every surviving page' do
@@ -49,8 +45,8 @@ RSpec.describe Surveys::Influxdb::Survey do
 
       # The port is force-published anyway, so asking the user is misleading.
       # Both the local and the external pages are mode-gated away.
-      it 'hides every page (nothing for the user to configure)' do
-        expect(result['pages']).to be_empty
+      it 'hides every section (nothing for the user to configure)' do
+        expect(section_names(result)).to be_empty
       end
     end
   end
