@@ -16,5 +16,26 @@ RSpec.describe 'StatusBar', :with_admin_password do
 
       expect(response).to redirect_to(services_path)
     end
+
+    it 'returns a fresh response when the HELIOS version changes' do
+      login
+      frame_header = { 'Turbo-Frame' => 'status-bar' }
+
+      get status_bar_path, headers: frame_header
+      etag = response.headers['etag']
+
+      # Same version: cached response is still valid
+      get status_bar_path,
+          headers: frame_header.merge('If-None-Match' => etag)
+      expect(response).to have_http_status(:not_modified)
+
+      # New version after an update: response must not be cached
+      allow(Rails.configuration.x.git).to receive(:commit_version).and_return(
+        'v9.9.9',
+      )
+      get status_bar_path,
+          headers: frame_header.merge('If-None-Match' => etag)
+      expect(response).to have_http_status(:ok)
+    end
   end
 end

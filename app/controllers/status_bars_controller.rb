@@ -17,6 +17,7 @@ class StatusBarsController < ApplicationController
 
   def status_bar_etag
     [
+      Rails.configuration.x.git.commit_version,
       Orchestration::StackStatus.overall,
       Orchestration::StackStatus.service_counts,
       Orchestration::StackStatus.pending_restart_services,
