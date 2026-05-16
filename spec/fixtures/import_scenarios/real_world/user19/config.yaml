@@ -1,0 +1,82 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: my-admin-password
+  app_host: 192.168.178.108
+  installation_date: '2022-09-01'
+  secret_key_base: my-secret-key-base
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+  influx_poll_interval: '5'
+postgresql:
+  image: postgres:16-alpine
+  password: my-postgres-password
+  volume_path: "/home/user19/solectrus/postgresql"
+influxdb:
+  bucket: solectrus
+  image: influxdb:2.7-alpine
+  org: solectrus
+  password: my-influx-password
+  token_admin: my-influx-admin-token
+  token_read: my-influx-admin-token
+  token_readwrite: my-influx-admin-token
+  token_write: my-influx-admin-token
+  volume_path: "/home/user19/solectrus/influxdb"
+redis:
+  image: redis:7-alpine
+  volume_path: "/home/user19/solectrus/redis"
+watchtower:
+  image: containrrr/watchtower:latest
+forecast:
+  forecast: forecast.solar
+  forecast_azimuth1: '10'
+  forecast_declination1: '30'
+  forecast_interval: '900'
+  forecast_kwp1: '9.9'
+  forecast_latitude: '0.00000'
+  forecast_longitude: '0.00000'
+  forecast_roofs: '1'
+  measurement: Forecast
+senec:
+  adapter: local
+  host: 192.168.178.128
+  interval: '5'
+  language: de
+  schema: https
+  version: v3
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_power:
+    source: senec
