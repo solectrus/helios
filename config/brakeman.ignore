@@ -1,0 +1,28 @@
+{
+  "ignored_warnings": [
+    {
+      "warning_type": "SSL Verification Bypass",
+      "warning_code": 71,
+      "fingerprint": "1dac4a2267a910219c8fa2d24558adb12903f49a1099a4b103f90867419d05eb",
+      "check_name": "SSLVerify",
+      "message": "SSL certificate verification was bypassed",
+      "file": "app/services/mqtt/probe.rb",
+      "line": 98,
+      "link": "https://brakemanscanner.org/docs/warning_types/ssl_verification_bypass/",
+      "code": "OpenSSL::SSL::SSLContext.new.verify_mode = OpenSSL::SSL::VERIFY_NONE",
+      "render_path": null,
+      "location": {
+        "type": "method",
+        "class": "Mqtt::Probe",
+        "method": "ssl_socket"
+      },
+      "user_input": null,
+      "confidence": "High",
+      "cwe_id": [
+        295
+      ],
+      "note": "Intentional: Mqtt::Probe only runs the survey connection test against a local MQTT broker, which typically ships a self-signed certificate. The probe verifies reachability and credentials, not certificate trust, and never carries application data. Matches the verify: false used for SENEC's local https endpoint."
+    }
+  ],
+  "brakeman_version": "8.0.4"
+}

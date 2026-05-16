@@ -90,6 +90,14 @@
             "default": "Authentication key"
           },
           "isRequired": true
+        },
+        {
+          "type": "html",
+          "name": "cloud_test",
+          "html": {
+            "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"shelly\" data-test-check=\"cloud\" data-test-fields=\"cloud_server,auth_key\">Verbindung testen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
+            "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"shelly\" data-test-check=\"cloud\" data-test-fields=\"cloud_server,auth_key\">Test connection</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
+          }
         }
       ]
     }

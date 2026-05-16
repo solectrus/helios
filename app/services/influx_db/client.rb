@@ -6,21 +6,6 @@ module InfluxDb
     OPEN_TIMEOUT = 2
     READ_TIMEOUT = 10
 
-    # Connection-level errors abort the whole batch — once name resolution
-    # or TCP connect fails, retrying for every remaining sensor only stacks
-    # up timeouts (with ~25 sensors, that turns a 2s outage into 30s+ per
-    # poll). Per-query failures (HTTP 5xx, parse errors) are rescued below
-    # and degrade just that one sensor.
-    CONNECTION_ERRORS = [
-      SocketError,
-      Errno::ECONNREFUSED,
-      Errno::EHOSTUNREACH,
-      Errno::ENETUNREACH,
-      Errno::ETIMEDOUT,
-      Net::OpenTimeout,
-      Net::ReadTimeout,
-    ].freeze
-
     def initialize(token:, org:, bucket:, host: nil, port: nil, schema: nil) # rubocop:disable Metrics/ParameterLists
       @token = token
       @org = org
@@ -80,16 +65,11 @@ module InfluxDb
     # fast-fail instead of N timeouts back-to-back. `default` is returned
     # when the session itself cannot be established — polling wants `{}` so
     # callers get an empty result hash, diagnostics want `nil` to signal
-    # unreachable.
+    # unreachable. Connection-level errors abort the whole batch here rather
+    # than retry per sensor (~25 sensors would turn a 2s outage into 30s+).
     def with_http(default: {}, &)
-      Net::HTTP.start(
-        host, port,
-        use_ssl: schema == 'https',
-        open_timeout: OPEN_TIMEOUT,
-        read_timeout: READ_TIMEOUT,
-        &
-      )
-    rescue *CONNECTION_ERRORS => e
+      InfluxDb::Http.start(host:, port:, schema:, open_timeout: OPEN_TIMEOUT, read_timeout: READ_TIMEOUT, &)
+    rescue *InfluxDb::Http::CONNECTION_ERRORS => e
       Rails.logger.warn("InfluxDB unreachable at #{schema}://#{host}:#{port}: #{e.message}")
       default
     end
@@ -109,7 +89,7 @@ module InfluxDb
 
       row = rows.first
       Reading.new(value: parse_value(row['_value']), time: Time.zone.parse(row['_time']))
-    rescue *CONNECTION_ERRORS
+    rescue *InfluxDb::Http::CONNECTION_ERRORS
       raise
     rescue StandardError => e
       Rails.logger.warn("InfluxDB query failed for #{measurement}:#{field}: #{e.message}")

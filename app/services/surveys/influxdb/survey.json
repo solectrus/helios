@@ -102,6 +102,14 @@
           "inputType": "number",
           "min": 1,
           "max": 65535
+        },
+        {
+          "type": "html",
+          "name": "connection_test",
+          "html": {
+            "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"influxdb\" data-test-check=\"reachability\" data-test-fields=\"schema,host,port\">Verbindung testen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
+            "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"influxdb\" data-test-check=\"reachability\" data-test-fields=\"schema,host,port\">Test connection</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
+          }
         }
       ]
     },
@@ -145,6 +153,14 @@
             "default": "API token (write access)"
           },
           "isRequired": true
+        },
+        {
+          "type": "html",
+          "name": "credentials_test",
+          "html": {
+            "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"influxdb\" data-test-check=\"credentials\" data-test-fields=\"schema,host,port,org,bucket,token_write\">Zugangsdaten prüfen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
+            "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"influxdb\" data-test-check=\"credentials\" data-test-fields=\"schema,host,port,org,bucket,token_write\">Verify credentials</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
+          }
         }
       ]
     }

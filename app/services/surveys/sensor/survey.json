@@ -65,6 +65,14 @@
             "de": "Nur erforderlich, falls ein Passwort für den Shelly konfiguriert ist",
             "default": "Only required if a password is configured for the Shelly"
           }
+        },
+        {
+          "type": "html",
+          "name": "shelly_connection_test",
+          "html": {
+            "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"shelly\" data-test-check=\"reachability\" data-test-fields=\"shelly_host:host,shelly_password:password\">Verbindung testen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
+            "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"shelly\" data-test-check=\"reachability\" data-test-fields=\"shelly_host:host,shelly_password:password\">Test connection</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
+          }
         }
       ]
     },

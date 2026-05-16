@@ -108,6 +108,14 @@ function anyValueEquals(params: unknown[]): boolean {
 }
 FunctionFactory.Instance.register('anyValueEquals', anyValueEquals);
 
+// Connection-test labels shown before the server replies (the result message
+// itself comes back localized from the server). Kept here because they belong
+// to a transient UI state SurveyJS never sees.
+const TEST_LABELS = {
+  de: { pending: 'Prüfe Verbindung…', failed: 'Prüfung fehlgeschlagen' },
+  default: { pending: 'Testing connection…', failed: 'Check failed' },
+};
+
 // Survey.JS styles are imported in application.css for correct cascade order
 
 export default class extends Controller<HTMLElement> {
@@ -117,6 +125,7 @@ export default class extends Controller<HTMLElement> {
     formId: String,
     fieldName: { type: String, default: 'survey_data' },
     initialData: { type: Object, default: {} },
+    connectionTestUrl: { type: String, default: '' },
   };
 
   declare containerTarget: HTMLElement;
@@ -127,16 +136,19 @@ export default class extends Controller<HTMLElement> {
   declare hasFormIdValue: boolean;
   declare fieldNameValue: string;
   declare initialDataValue: Record<string, unknown>;
+  declare connectionTestUrlValue: string;
 
   private survey: Model | null = null;
   private inViewTransition = false;
   private lastProgress = -1;
+  private readonly resetTestsOnInput = () => this.resetConnectionTests();
 
   async connect() {
     await this.initSurvey();
   }
 
   disconnect() {
+    this.containerTarget.removeEventListener('input', this.resetTestsOnInput);
     this.survey?.dispose();
     this.survey = null;
   }
@@ -220,6 +232,11 @@ export default class extends Controller<HTMLElement> {
       this.handleComplete(sender.data);
     });
 
+    // Wire any "test connection" buttons (html elements) in the survey.
+    this.survey.onAfterRenderQuestion.add((_sender, options) => {
+      this.wireConnectionTest(options.htmlElement);
+    });
+
     // Render survey into container
     this.survey.render(this.containerTarget);
 
@@ -228,9 +245,16 @@ export default class extends Controller<HTMLElement> {
     this.survey.onValueChanged.add((_sender, options) => {
       this.handleValueChanged(options);
     });
+
+    // onValueChanged fires only on blur; clear a stale connection-test result
+    // already while the user is still typing in a field.
+    this.containerTarget.addEventListener('input', this.resetTestsOnInput);
   }
 
   private handleValueChanged(options: { name: string; value: unknown }) {
+    // Any field edit invalidates a prior connection-test result.
+    this.resetConnectionTests();
+
     // Dispatch custom event for other controllers to listen
     this.dispatch('valueChanged', {
       detail: {
@@ -283,5 +307,130 @@ export default class extends Controller<HTMLElement> {
     if (this.survey) {
       this.survey.data = data;
     }
+  }
+
+  // --- Connection test ------------------------------------------------
+  // The probe runs server-side: HELIOS reaches the target (InfluxDB, SENEC,
+  // Shelly, MQTT) on the same path the collectors will, and avoids the
+  // browser's mixed-content/CORS limits. This only wires the button and
+  // renders the result.
+
+  private wireConnectionTest(htmlElement: HTMLElement) {
+    const button = htmlElement.querySelector<HTMLButtonElement>(
+      'button[data-test-target]',
+    );
+    // onAfterRenderQuestion can fire again for a button that survived a
+    // re-render (e.g. page navigation), so guard against stacking listeners.
+    if (!button || button.dataset.testWired) return;
+
+    const status = htmlElement.querySelector<HTMLElement>(
+      '.connection-test__status',
+    );
+    if (!status) return;
+
+    button.dataset.testWired = 'true';
+    button.addEventListener('click', () => {
+      void this.runConnectionTest(button, status);
+    });
+  }
+
+  // The button declares its target, check and the survey fields to submit
+  // (data-test-* attributes), so this stays integration-agnostic.
+  private async runConnectionTest(
+    button: HTMLButtonElement,
+    status: HTMLElement,
+  ) {
+    if (!this.survey || !this.connectionTestUrlValue) return;
+
+    const { testTarget, testCheck, testFields } = button.dataset;
+    const data = this.survey.data as Record<string, unknown>;
+    const values: Record<string, unknown> = {};
+    (testFields ?? '')
+      .split(',')
+      .filter(Boolean)
+      .forEach((field) => {
+        // A field may map a survey field to a differently named probe key
+        // via "surveyField:probeKey" — the sensor survey prefixes its Shelly
+        // fields with shelly_, while the probe expects the bare name.
+        const [surveyField, probeKey = surveyField] = field.split(':');
+        values[probeKey] = data[surveyField];
+      });
+
+    const labels = readLocale() === 'de' ? TEST_LABELS.de : TEST_LABELS.default;
+    button.disabled = true;
+    this.setConnectionStatus(
+      status,
+      'pending',
+      'fa-spinner fa-spin',
+      labels.pending,
+    );
+
+    try {
+      const response = await fetch(this.connectionTestUrlValue, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+          'X-CSRF-Token': this.csrfToken(),
+        },
+        body: JSON.stringify({
+          target: testTarget,
+          check: testCheck,
+          values,
+        }),
+      });
+      const result = (await response.json()) as {
+        ok: boolean;
+        message: string;
+      };
+      this.setConnectionStatus(
+        status,
+        result.ok ? 'ok' : 'error',
+        result.ok ? 'fa-circle-check' : 'fa-circle-xmark',
+        result.message,
+      );
+    } catch {
+      this.setConnectionStatus(
+        status,
+        'error',
+        'fa-circle-xmark',
+        labels.failed,
+      );
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  private setConnectionStatus(
+    status: HTMLElement,
+    state: 'pending' | 'ok' | 'error',
+    icon: string,
+    message: string,
+  ) {
+    status.className = `connection-test__status connection-test__status--${state}`;
+    status.innerHTML = `<i class="fa-solid ${icon}" aria-hidden="true"></i><span></span>`;
+    const label = status.querySelector('span');
+    if (label) label.textContent = message;
+  }
+
+  private resetConnectionTests() {
+    this.element
+      .querySelectorAll<HTMLElement>('.connection-test__status')
+      .forEach((status) => {
+        // Skip statuses still in their base state — this runs on every
+        // keystroke (input listener), so avoid needless DOM writes.
+        if (status.childElementCount === 0) return;
+
+        status.className = 'connection-test__status';
+        status.textContent = '';
+      });
+  }
+
+  private csrfToken(): string {
+    return (
+      document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute('content') ?? ''
+    );
   }
 }

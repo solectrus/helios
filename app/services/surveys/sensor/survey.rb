@@ -128,7 +128,15 @@ module Surveys
         shelly_local_page = find_page(data, 'p_shelly_local')
         return unless shelly_local_page
 
-        shelly_local_page['elements'] << {
+        # Keep the connection-test button as the page's last element.
+        elements = shelly_local_page['elements']
+        test_index = elements.index { |e| e['name'] == 'shelly_connection_test' }
+        position = test_index || elements.length
+        elements.insert(position, shelly_invert_power_element)
+      end
+
+      def shelly_invert_power_element
+        {
           'type' => 'boolean',
           'name' => 'shelly_invert_power',
           'title' => self.class.localized(

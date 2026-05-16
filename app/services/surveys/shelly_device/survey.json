@@ -84,6 +84,14 @@
             "default": "Device password (optional)"
           },
           "inputType": "password"
+        },
+        {
+          "type": "html",
+          "name": "connection_test",
+          "html": {
+            "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"shelly\" data-test-check=\"reachability\" data-test-fields=\"host,password\">Verbindung testen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
+            "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"shelly\" data-test-check=\"reachability\" data-test-fields=\"host,password\">Test connection</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
+          }
         }
       ]
     },

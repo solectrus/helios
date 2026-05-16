@@ -46,6 +46,7 @@ Rails.application.routes.draw do
     resources :settings, only: %i[new create], module: :configurations
     resources :surveys, only: :show, module: :configurations
     resource :reset, only: %i[create destroy], module: :configurations
+    resource :connection_test, only: :create, module: :configurations
   end
 
   scope 'configuration/:setting/:name',

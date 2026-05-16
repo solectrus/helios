@@ -54,6 +54,14 @@
             "default": "Use SSL/TLS"
           },
           "defaultValue": false
+        },
+        {
+          "type": "html",
+          "name": "connection_test",
+          "html": {
+            "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"mqtt\" data-test-check=\"reachability\" data-test-fields=\"mqtt_host,mqtt_port,mqtt_ssl\">Verbindung testen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
+            "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"mqtt\" data-test-check=\"reachability\" data-test-fields=\"mqtt_host,mqtt_port,mqtt_ssl\">Test connection</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
+          }
         }
       ]
     },
@@ -84,6 +92,14 @@
             "default": "Password (optional)"
           },
           "inputType": "password"
+        },
+        {
+          "type": "html",
+          "name": "credentials_test",
+          "html": {
+            "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"mqtt\" data-test-check=\"credentials\" data-test-fields=\"mqtt_host,mqtt_port,mqtt_ssl,mqtt_username,mqtt_password\">Zugangsdaten prüfen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
+            "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"mqtt\" data-test-check=\"credentials\" data-test-fields=\"mqtt_host,mqtt_port,mqtt_ssl,mqtt_username,mqtt_password\">Verify credentials</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
+          }
         }
       ]
     }

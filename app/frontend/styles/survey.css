@@ -44,6 +44,54 @@
     & .sd-matrix__table {
       background-color: transparent;
     }
+    /* The connection-test html element is an action row, not a form field —
+       strip the question-card chrome so the button stands on its own. */
+    & .sd-question:has(.connection-test) {
+      border: none;
+      padding: 0;
+    }
+    & .connection-test {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    & .connection-test__button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      border: 1px solid var(--sjs-border-default);
+      border-radius: var(--sjs-corner-radius);
+      padding: 0.5rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition:
+        border-color 0.15s,
+        background-color 0.15s;
+    }
+    & .connection-test__button:hover:not(:disabled) {
+      border-color: var(--helios-border-hover);
+    }
+    & .connection-test__button:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+    & .connection-test__status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.875rem;
+    }
+    & .connection-test__status--ok {
+      color: var(--color-success);
+    }
+    & .connection-test__status--error {
+      color: var(--color-error);
+    }
+    & .connection-test__status--pending {
+      color: var(--helios-text-muted);
+    }
     & :is(.sd-action-bar, .sd-footer, .sd-navigation) {
       padding: 1rem 1.25rem;
     }

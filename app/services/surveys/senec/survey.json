@@ -157,6 +157,14 @@
               }
             }
           ]
+        },
+        {
+          "type": "html",
+          "name": "connection_test",
+          "html": {
+            "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"senec\" data-test-check=\"reachability\" data-test-fields=\"schema,host\">Verbindung testen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
+            "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"senec\" data-test-check=\"reachability\" data-test-fields=\"schema,host\">Test connection</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
+          }
         }
       ]
     },
