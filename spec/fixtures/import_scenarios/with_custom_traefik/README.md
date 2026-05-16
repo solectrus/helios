@@ -26,4 +26,4 @@ foreign services HELIOS no longer accepts).
   `myresolver`) round-trip via `service_overrides[influxdb].labels`.
 - **Only baseline services** (`dashboard`, `influxdb`, `postgresql`, `redis`)
   behind Traefik — no collectors, no foreign services, so the stack passes
-  `Import::SupportedServicesCheck`.
+  `Import::CompatibilityCheck`.

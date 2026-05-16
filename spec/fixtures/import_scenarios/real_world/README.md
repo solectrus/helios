@@ -12,6 +12,12 @@ commented-out alternatives, typos, inline literals, legacy variable names,
 inconsistent measurements — and exist to keep the importer honest against
 what people actually run in production.
 
+A few snapshots ship only the donor `.bak` files and no `config.yaml`: their
+stacks are refused by `Import::CompatibilityCheck` (foreign service images
+HELIOS cannot reproduce), so there is no round-trip to verify. These are
+exercised by `spec/services/import/compatibility_check_spec.rb` instead — see
+each directory's own `README.md`.
+
 ## Adding a new user snapshot
 
 1. Create `real_world/userN/` with the donor's anonymized `compose.yaml.bak`

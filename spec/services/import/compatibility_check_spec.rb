@@ -24,6 +24,11 @@ RSpec.describe Import::CompatibilityCheck do
       expect(check_for('with_tibber').unsupported_services).to be_empty
     end
 
+    it 'flags a self-hosted mosquitto broker (user2)' do
+      names = check_for('real_world/user2').unsupported_services.pluck('service')
+      expect(names).to contain_exactly('mosquitto')
+    end
+
     it 'flags foreign services while keeping dozzle (user6)' do
       names = check_for('real_world/user6').unsupported_services.pluck('service')
       expect(names).to contain_exactly('mosquitto', 'pgadmin')
