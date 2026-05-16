@@ -8,9 +8,13 @@
 #
 # Change every setting through the HELIOS web interface.
 #
-# Need something HELIOS does not expose? Then HELIOS is no longer
-# the right tool for your stack: uninstall HELIOS and manage
-# compose.yaml + .env by hand.
+# Missing a setting? HELIOS is actively developed and can be
+# extended — suggest it at:
+# https://github.com/solectrus/helios/issues
+#
+# HELIOS fits the vast majority of setups. For a very
+# specialized configuration, managing compose.yaml + .env
+# by hand instead remains a valid alternative.
 # ============================================================
 
 name: solectrus
