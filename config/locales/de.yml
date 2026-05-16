@@ -397,6 +397,12 @@ de:
       step_manage: 'Anschließend erfolgt die gesamte Konfiguration von SOLECTRUS sowie der Betrieb der Container webbasiert über HELIOS – die Kommandozeile wird nicht mehr benötigt'
       hint_exclusive_html: 'Da HELIOS die Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> zukünftig selbst schreibt und ändert, ist eine parallele Nutzung von Portainer, Dockge, Arcane oder ähnlichen Tools nicht mehr vorgesehen.'
       agree: 'Einverstanden, Import starten'
+      unsupported_heading: 'HELIOS kann diese Konfiguration leider nicht verwalten'
+      unsupported_reason: 'Folgende Dienste sind unbekannt:'
+      unsupported_no_image: 'kein Image'
+      unsupported_hint_html: 'HELIOS verwaltet die Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> vollständig und kann dabei nur bekannte Dienste übernehmen. Du könntest versuchen, die oben genannten Dienste in eine separate Compose-Datei zu verlagern und den Import anschließend erneut zu starten.'
+      invalid_reason_html: 'Die Datei <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> ist fehlerhaft:'
+      invalid_hint: 'Behebe den oben genannten Fehler und starte den Import anschließend erneut.'
 
   sessions:
     new:

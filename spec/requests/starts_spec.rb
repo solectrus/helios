@@ -18,6 +18,70 @@ RSpec.describe 'Starts' do
         expect(response.body).to include('HELIOS')
       end
     end
+
+    context 'when the stack only contains supported services' do
+      let(:dir) { with_config_yaml }
+
+      before do
+        File.write(File.join(dir, 'compose.yaml'),
+                   "services:\n  dashboard:\n    image: ghcr.io/solectrus/solectrus:latest\n")
+        File.write(File.join(dir, '.env'), "TZ=Europe/Berlin\n")
+      end
+
+      it 'offers the import button' do
+        get start_path
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include(I18n.t('starts.show.agree'))
+      end
+    end
+
+    context 'when the stack contains an unsupported service' do
+      let(:dir) { with_config_yaml }
+
+      before do
+        File.write(File.join(dir, 'compose.yaml'),
+                   "services:\n  proxy:\n    image: nginx:alpine\n")
+        File.write(File.join(dir, '.env'), "TZ=Europe/Berlin\n")
+      end
+
+      it 'names the offending service' do
+        get start_path
+
+        expect(response.body).to include('proxy').and include('nginx:alpine')
+      end
+
+      it 'does not offer the import button' do
+        get start_path
+
+        expect(response.body).not_to include(I18n.t('starts.show.agree'))
+      end
+    end
+
+    context 'when the compose file is invalid' do
+      let(:dir) { with_config_yaml }
+
+      before do
+        # depends_on an undefined service makes `docker compose config` fail.
+        File.write(File.join(dir, 'compose.yaml'),
+                   "services:\n  dashboard:\n    image: ghcr.io/solectrus/solectrus:latest\n    " \
+                   "depends_on:\n      - missing\n")
+        File.write(File.join(dir, '.env'), "TZ=Europe/Berlin\n")
+      end
+
+      it 'renders the page instead of crashing' do
+        get start_path
+
+        expect(response).to have_http_status(:ok)
+      end
+
+      it 'explains the problem and does not offer the import button' do
+        get start_path
+
+        expect(response.body).to include('missing')
+        expect(response.body).not_to include(I18n.t('starts.show.agree'))
+      end
+    end
   end
 
   describe 'fresh-install detection on protected routes' do
@@ -76,6 +140,9 @@ RSpec.describe 'Starts' do
         File.write(File.join(dir, '.env'), env_content)
 
         allow(Import::StackReader).to receive(:new).and_return(stack_reader)
+        allow(Import::CompatibilityCheck).to receive(:new).with(stack_reader).and_return(
+          instance_double(Import::CompatibilityCheck, call!: nil),
+        )
         allow(Import::ConfigurationImporter).to receive(:new).with(stack_reader).and_return(importer)
         allow(importer).to receive(:import!)
         allow(Export::Builder).to receive(:new).and_return(builder)
@@ -104,6 +171,59 @@ RSpec.describe 'Starts' do
         post start_path
 
         expect(response).to redirect_to(services_path)
+      end
+    end
+
+    context 'when the stack contains an unsupported service' do
+      let(:dir) { with_config_yaml }
+
+      before do
+        File.write(File.join(dir, 'compose.yaml'),
+                   "services:\n  proxy:\n    image: nginx:alpine\n")
+        File.write(File.join(dir, '.env'), "TZ=Europe/Berlin\n")
+      end
+
+      it 'responds with unprocessable content' do
+        post start_path
+
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it 'names the offending service' do
+        post start_path
+
+        expect(response.body).to include('proxy').and include('nginx:alpine')
+      end
+
+      it 'does not back up or import the stack' do
+        post start_path
+
+        expect(File.exist?(File.join(dir, 'compose.yaml.bak'))).to be false
+        expect(File.exist?(Configuration.path)).to be false
+      end
+    end
+
+    context 'when the compose file is invalid' do
+      let(:dir) { with_config_yaml }
+
+      before do
+        File.write(File.join(dir, 'compose.yaml'),
+                   "services:\n  dashboard:\n    image: ghcr.io/solectrus/solectrus:latest\n    " \
+                   "depends_on:\n      - missing\n")
+        File.write(File.join(dir, '.env'), "TZ=Europe/Berlin\n")
+      end
+
+      it 'responds with unprocessable content' do
+        post start_path
+
+        expect(response).to have_http_status(:unprocessable_content)
+      end
+
+      it 'does not back up or import the stack' do
+        post start_path
+
+        expect(File.exist?(File.join(dir, 'compose.yaml.bak'))).to be false
+        expect(File.exist?(Configuration.path)).to be false
       end
     end
   end

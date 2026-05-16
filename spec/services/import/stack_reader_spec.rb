@@ -42,6 +42,34 @@ RSpec.describe Import::StackReader do
     end
   end
 
+  describe 'invalid compose project' do
+    let(:tmpdir) { Dir.mktmpdir }
+    let(:compose_path) { File.join(tmpdir, 'compose.yaml') }
+    let(:env_path) { File.join(tmpdir, '.env') }
+    let(:reader) { described_class.new(compose_path: compose_path, env_path: env_path) }
+
+    after { FileUtils.remove_entry(tmpdir) }
+
+    it 'raises Error carrying the docker message without warning noise' do
+      # ${UNDEFINED_VAR} triggers a warning; the undefined depends_on fails.
+      File.write(compose_path, <<~YAML)
+        services:
+          app:
+            image: ghcr.io/solectrus/solectrus:latest
+            environment:
+              FOO: ${UNDEFINED_VAR}
+            depends_on:
+              - missing
+      YAML
+      File.write(env_path, '')
+
+      expect { reader.services }.to raise_error(described_class::Error) do |error|
+        expect(error.detail).to include('missing')
+        expect(error.detail).not_to include('level=warning')
+      end
+    end
+  end
+
   describe 'image-based aliasing' do
     # Legacy SOLECTRUS installations often use historical service names:
     # 'app' instead of 'dashboard', 'db' instead of 'postgresql'. Callers should

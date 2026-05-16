@@ -1,0 +1,90 @@
+services:
+  traefik:
+    image: traefik:v3
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --entrypoints.influxdb.address=:8086
+      - --entrypoints.web.http.redirections.entrypoint.to=websecure
+      - --entrypoints.web.http.redirections.entrypoint.scheme=https
+      - --certificatesresolvers.myresolver.acme.tlschallenge=true
+      - --certificatesresolvers.myresolver.acme.email=postmaster@example.com
+      - --certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json
+    ports:
+      - 80:80
+      - 443:443
+      - 8086:8086
+    volumes:
+      - ./letsencrypt:/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    environment:
+      - TZ
+    restart: always
+
+  dashboard:
+    image: ghcr.io/solectrus/solectrus:latest
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.app-solectrus.rule=Host(`solectrus.example.com`)
+      - traefik.http.routers.app-solectrus.entrypoints=websecure
+      - traefik.http.routers.app-solectrus.tls.certresolver=myresolver
+      - traefik.http.middlewares.test-ratelimit.ratelimit.average=100
+      - traefik.http.middlewares.test-ratelimit.ratelimit.burst=200
+    depends_on:
+      traefik:
+        condition: service_started
+      postgresql:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      - TZ
+      - INSTALLATION_DATE
+      - SECRET_KEY_BASE
+      - ADMIN_PASSWORD
+      - DB_HOST=postgresql
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_USER=postgres
+      - REDIS_URL=redis://redis:6379/1
+      - INFLUX_HOST=influxdb
+      - INFLUX_TOKEN=${INFLUX_TOKEN}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+    restart: unless-stopped
+
+  influxdb:
+    image: influxdb:2-alpine
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.influxdb-solectrus.rule=Host(`solectrus.example.com`)
+      - traefik.http.routers.influxdb-solectrus.entrypoints=influxdb
+      - traefik.http.routers.influxdb-solectrus.tls.certresolver=myresolver
+      - traefik.http.routers.influxdb-solectrus.tls=true
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
+    volumes:
+      - ./influxdb:/var/lib/influxdb2
+    restart: unless-stopped
+
+  postgresql:
+    image: postgres:18-alpine
+    environment:
+      - POSTGRES_PASSWORD
+    volumes:
+      - ./postgresql:/var/lib/postgresql
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    volumes:
+      - ./redis:/data
+    restart: unless-stopped

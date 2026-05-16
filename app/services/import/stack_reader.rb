@@ -6,7 +6,18 @@ require 'json'
 
 module Import
   class StackReader
-    class Error < StandardError; end
+    # Raised when `docker compose config` rejects the stack (malformed YAML,
+    # an invalid compose project, etc.).
+    class Error < StandardError
+      # The `docker compose config` output that caused the failure, stripped
+      # of progress/warning noise — safe to show the user verbatim.
+      attr_reader :detail
+
+      def initialize(detail)
+        @detail = detail
+        super("docker compose config failed: #{detail}")
+      end
+    end
 
     # Canonical HELIOS service name -> image prefix that identifies it.
     # Lets us resolve legacy installations where the user chose different
@@ -143,10 +154,17 @@ module Import
           'docker', 'compose', 'config', '--format', 'json',
           chdir: tmpdir
         )
-        raise Error, "docker compose config failed: #{stderr.presence || stdout}" unless status.success?
+        raise Error, compose_error(stderr.presence || stdout) unless status.success?
 
         JSON.parse(stdout)
       end
+    end
+
+    # docker emits progress/warning lines (`time=... level=warning ...`) to
+    # stderr alongside the actual error; drop them so only the error remains.
+    def compose_error(output)
+      filtered = output.each_line.reject { |line| line.include?('level=warning') }.join.strip
+      filtered.presence || output.strip
     end
   end
 end

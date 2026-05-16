@@ -1,0 +1,68 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: test-admin
+  installation_date: '2023-06-15'
+  secret_key_base: test-secret-key
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: test-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: test-influx-pw
+  token_admin: test-influx-token
+  token_read: test-influx-token
+  token_readwrite: test-influx-token
+  token_write: test-influx-token
+redis:
+  image: redis:8-alpine
+watchtower: {}
+reverse_proxy:
+  app_domain: solectrus.example.com
+  command:
+  - "--providers.docker=true"
+  - "--providers.docker.exposedbydefault=false"
+  - "--entrypoints.web.address=:80"
+  - "--entrypoints.websecure.address=:443"
+  - "--entrypoints.influxdb.address=:8086"
+  - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+  - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+  - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+  - "--certificatesresolvers.myresolver.acme.email=postmaster@example.com"
+  - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+  environment:
+  - TZ
+  image: traefik:v3
+  ports:
+  - 80:80
+  - 443:443
+  - 8086:8086
+  restart: always
+  volumes:
+  - "./letsencrypt:/letsencrypt"
+  - "/var/run/docker.sock:/var/run/docker.sock:ro"
+sensors: {}
+service_overrides:
+  dashboard:
+    labels:
+    - traefik.http.middlewares.test-ratelimit.ratelimit.average=100
+    - traefik.http.middlewares.test-ratelimit.ratelimit.burst=200
+  influxdb:
+    labels:
+    - traefik.enable=true
+    - traefik.http.routers.influxdb-solectrus.rule=Host(`solectrus.example.com`)
+    - traefik.http.routers.influxdb-solectrus.entrypoints=influxdb
+    - traefik.http.routers.influxdb-solectrus.tls.certresolver=myresolver
+    - traefik.http.routers.influxdb-solectrus.tls=true
