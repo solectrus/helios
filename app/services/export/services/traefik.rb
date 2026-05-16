@@ -35,7 +35,7 @@ module Export
           image: configuration.reverse_proxy.image.presence || DockerImages.current(:TRAEFIK),
           command: override_or(:command, traefik_command),
           environment: override_or(:environment, nil),
-          ports: override_or(:ports, %w[80:80 443:443]),
+          ports: override_or(:ports, default_ports),
           volumes: override_or(:volumes, [
                                  '/var/run/docker.sock:/var/run/docker.sock:ro',
                                  bind_mount('/letsencrypt'),
@@ -68,10 +68,35 @@ module Export
           '--entrypoints.web.address=:80',
           '--entrypoints.web.http.redirections.entrypoint.to=websecure',
           '--entrypoints.websecure.address=:443',
+          *influxdb_entrypoint,
           '--certificatesresolvers.letsencrypt.acme.tlschallenge=true',
           "--certificatesresolvers.letsencrypt.acme.email=#{self.class.letsencrypt_email(configuration)}",
           '--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json',
         ]
+      end
+
+      # Default published ports — adds the InfluxDB entrypoint port when an
+      # exposed InfluxDB is routed through Traefik (see Services::Influxdb).
+      def default_ports
+        ports = %w[80:80 443:443]
+        ports << "#{influxdb_host_port}:#{influxdb_host_port}" if influxdb_routed?
+        ports
+      end
+
+      # Dedicated entrypoint for the InfluxDB HTTP API/UI, terminating TLS
+      # so external access matches the dashboard (HTTPS, same domain).
+      def influxdb_entrypoint
+        return [] unless influxdb_routed?
+
+        ["--entrypoints.influxdb.address=:#{influxdb_host_port}"]
+      end
+
+      def influxdb_routed?
+        Influxdb.traefik_managed_routing?(configuration)
+      end
+
+      def influxdb_host_port
+        Influxdb.host_port(configuration)
       end
     end
   end

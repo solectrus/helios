@@ -559,6 +559,135 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'with reverse_proxy and an exposed InfluxDB' do
+    before do
+      configuration.update('reverse_proxy', { 'app_domain' => 'solar.example.com' })
+      configuration.update('influxdb', configuration.influxdb.merge('publish_port' => true))
+      described_class.new(configuration).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'routes InfluxDB through Traefik instead of publishing a host port' do
+      compose = Compose.load
+      influxdb = compose.services.find('influxdb')
+      expect(influxdb.ports).to be_blank
+      expect(influxdb.config['labels']).to include(
+        'traefik.enable=true',
+        'traefik.http.routers.influxdb.rule=Host(`solar.example.com`)',
+        'traefik.http.routers.influxdb.entrypoints=influxdb',
+        'traefik.http.routers.influxdb.tls.certresolver=letsencrypt',
+        'traefik.http.services.influxdb.loadbalancer.server.port=8086',
+      )
+    end
+
+    it 'adds the influxdb entrypoint and published port to Traefik' do
+      compose = Compose.load
+      traefik = compose.services.find('traefik')
+      expect(traefik.config['command']).to include('--entrypoints.influxdb.address=:8086')
+      expect(traefik.ports).to include('8086:8086')
+    end
+
+    context 'with a custom InfluxDB host port' do
+      before do
+        configuration.update('influxdb',
+                             configuration.influxdb.merge('publish_port' => true, 'host_port' => '18086'))
+        described_class.new(configuration).write!
+      end
+
+      it 'uses the custom port for the Traefik entrypoint and mapping' do
+        compose = Compose.load
+        traefik = compose.services.find('traefik')
+        expect(traefik.config['command']).to include('--entrypoints.influxdb.address=:18086')
+        expect(traefik.ports).to include('18086:18086')
+      end
+    end
+
+    context 'when running in dashboard_only mode' do
+      before do
+        configuration.update('deployment', { 'mode' => 'dashboard_only' })
+        described_class.new(configuration).write!
+      end
+
+      it 'still routes InfluxDB through Traefik' do
+        compose = Compose.load
+        influxdb = compose.services.find('influxdb')
+        traefik = compose.services.find('traefik')
+        expect(influxdb.ports).to be_blank
+        expect(traefik.ports).to include('8086:8086')
+      end
+    end
+
+    # Imported custom Traefik (captured `command`) that already declares an
+    # `influxdb` entrypoint — HELIOS leaves routing to it (service_overrides
+    # carries the labels) and publishes no host port, so 8086 isn't bound twice.
+    context 'with an imported Traefik that routes influxdb itself' do
+      before do
+        configuration.update('reverse_proxy', {
+                               'app_domain' => 'solar.example.com',
+                               'command' => [
+                                 '--providers.docker=true',
+                                 '--entrypoints.web.address=:80',
+                                 '--entrypoints.websecure.address=:443',
+                                 '--entrypoints.influxdb.address=:8086',
+                               ],
+                               'ports' => %w[80:80 443:443 8086:8086],
+                             })
+        described_class.new(configuration).write!
+      end
+
+      it 'publishes no direct host port for InfluxDB' do
+        compose = Compose.load
+        influxdb = compose.services.find('influxdb')
+        expect(influxdb.ports).to be_blank
+      end
+    end
+
+    # Imported custom Traefik without an `influxdb` entrypoint — HELIOS can't
+    # route through it, so an exposed InfluxDB falls back to a direct host
+    # port (no clash, since Traefik doesn't publish 8086).
+    context 'with an imported Traefik that does not route influxdb' do
+      before do
+        configuration.update('reverse_proxy', {
+                               'app_domain' => 'solar.example.com',
+                               'command' => [
+                                 '--providers.docker=true',
+                                 '--entrypoints.web.address=:80',
+                                 '--entrypoints.websecure.address=:443',
+                               ],
+                               'ports' => %w[80:80 443:443],
+                             })
+        described_class.new(configuration).write!
+      end
+
+      it 'falls back to a direct host port for InfluxDB' do
+        compose = Compose.load
+        influxdb = compose.services.find('influxdb')
+        expect(influxdb.ports).to include('8086:8086')
+      end
+    end
+  end
+
+  describe 'with reverse_proxy but InfluxDB not exposed' do
+    before do
+      configuration.update('reverse_proxy', { 'app_domain' => 'solar.example.com' })
+      described_class.new(configuration).write!
+    end
+
+    it 'leaves the influxdb entrypoint off Traefik' do
+      compose = Compose.load
+      traefik = compose.services.find('traefik')
+      expect(traefik.config['command']).not_to include('--entrypoints.influxdb.address=:8086')
+      expect(traefik.ports).to contain_exactly('80:80', '443:443')
+    end
+
+    it 'adds no Traefik labels to influxdb' do
+      compose = Compose.load
+      influxdb = compose.services.find('influxdb')
+      expect(Array(influxdb.config['labels']).grep(/traefik/)).to be_empty
+    end
+  end
+
   describe 'with backup configured' do
     before do
       configuration.update('backup', {
