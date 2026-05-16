@@ -302,6 +302,42 @@ services:
         max-size: 10m
         max-file: '3'
 
+  # ┌───────────────────────────────────────────────────────────┐
+  # │  Forecast Collector — Fetches solar production forecasts  │
+  # └───────────────────────────────────────────────────────────┘
+  #
+  forecast-collector:
+    image: ghcr.io/solectrus/forecast-collector:latest
+    environment:
+    - TZ
+    - FORECAST_0_AZIMUTH
+    - FORECAST_0_DECLINATION
+    - FORECAST_0_KWP
+    - FORECAST_1_AZIMUTH
+    - FORECAST_1_DECLINATION
+    - FORECAST_1_KWP
+    - FORECAST_CONFIGURATIONS
+    - FORECAST_INTERVAL
+    - FORECAST_LATITUDE
+    - FORECAST_LONGITUDE
+    - FORECAST_PROVIDER
+    - INFLUX_BUCKET
+    - INFLUX_HOST=influxdb
+    - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}
+    - INFLUX_ORG
+    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+    labels:
+    - com.centurylinklabs.watchtower.scope=solectrus
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
   # ┌──────────────────────────────────────────────────────────┐
   # │  Power Splitter — Calculates derived power values        │
   # └──────────────────────────────────────────────────────────┘

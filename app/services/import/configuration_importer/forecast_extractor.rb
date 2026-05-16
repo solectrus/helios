@@ -28,13 +28,21 @@ module Import
 
       private
 
+      # The forecast-collector defaults FORECAST_PROVIDER to 'forecast.solar'
+      # when the variable is absent — older stacks predate it. Mirror that
+      # default so a provider-less collector still round-trips instead of
+      # being silently dropped on export.
+      def provider(fc_env)
+        fc_env['FORECAST_PROVIDER'].presence || 'forecast.solar'
+      end
+
       def base_data(fc_env)
         {
-          'forecast' => fc_env['FORECAST_PROVIDER'],
+          'forecast' => provider(fc_env),
           'forecast_latitude' => fc_env['FORECAST_LATITUDE'],
           'forecast_longitude' => fc_env['FORECAST_LONGITUDE'],
           'forecast_interval' => ::Forecast::IntervalRules.normalize(
-            provider: fc_env['FORECAST_PROVIDER'],
+            provider: provider(fc_env),
             interval: fc_env['FORECAST_INTERVAL'],
           ),
           'forecast_damping_morning' => fc_env['FORECAST_DAMPING_MORNING'],
@@ -81,7 +89,7 @@ module Import
       end
 
       def azimuth_field(fc_env, index)
-        if fc_env['FORECAST_PROVIDER'] == 'pvnode'
+        if provider(fc_env) == 'pvnode'
           "forecast_pvnode_azimuth#{index}"
         else
           "forecast_azimuth#{index}"
@@ -89,7 +97,7 @@ module Import
       end
 
       def provider_data(fc_env)
-        case fc_env['FORECAST_PROVIDER']
+        case provider(fc_env)
         when 'forecast.solar'
           { 'forecast_solar_apikey' => fc_env['FORECAST_SOLAR_APIKEY'] }
         when 'solcast'

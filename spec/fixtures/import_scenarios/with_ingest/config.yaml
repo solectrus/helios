@@ -34,6 +34,7 @@ redis:
 watchtower:
   image: containrrr/watchtower:latest
 forecast:
+  forecast: forecast.solar
   forecast_azimuth1: "-30"
   forecast_azimuth2: '75'
   forecast_declination1: '30'

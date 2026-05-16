@@ -34,6 +34,7 @@ redis:
 watchtower:
   image: nickfedor/watchtower:latest
 forecast:
+  forecast: forecast.solar
   forecast_azimuth1: "-53.6"
   forecast_azimuth2: '126.4'
   forecast_damping_evening: '0.2'
