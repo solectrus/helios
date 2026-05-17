@@ -40,8 +40,10 @@ database. This snapshot is the regression guard for that bug.
 - **`MQTT_TOPIC_BAT_VOLTAGE=evcc/site/homePower`** — legacy MQTT-collector
   variable outside `DEPRECATED_TOPIC_VARS`; dropped silently rather than
   carried forward as unmanaged.
-- **Duplicate `FORECAST_INFLUX_MEASUREMENT=forecast`** — redundant with the
-  canonical `INFLUX_MEASUREMENT_FORECAST`, kept as unmanaged for safety.
+- **Duplicate `FORECAST_INFLUX_MEASUREMENT=forecast`** — non-canonical alias
+  of `INFLUX_MEASUREMENT_FORECAST`; its value round-trips via the canonical
+  var, so the alias is dropped silently rather than carried forward as
+  `_unmanaged.env_vars`.
 - **Shelly collector dropped** — the source compose declares a
   shelly-collector service, but `SHELLY_HOST` and `SHELLY_INTERVAL` are
   commented out in `.env`, so the service was inactive and is correctly

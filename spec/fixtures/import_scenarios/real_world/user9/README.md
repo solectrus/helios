@@ -25,8 +25,8 @@ runs at the documented minimum interval. Anonymized but otherwise untouched.
   during import to find out which vars it will emit itself, then records
   only the rest under each service's `env_values` — unrecognized donor vars
   (`CHARGER_DRY_RUN`, `CHARGER_INTERVAL`, `INFLUX_MEASUREMENT_PRICES`,
-  `INFLUX_MEASUREMENT_SHELLY_HEATPUMP`, `SENEC_INFLUX_MEASUREMENT`,
-  `TIBBER_TOKEN`) and managed vars HELIOS won't re-emit in the donor's
+  `INFLUX_MEASUREMENT_SHELLY_HEATPUMP`, `TIBBER_TOKEN`) and managed vars
+  HELIOS won't re-emit in the donor's
   configuration (`SENEC_HOST` / `SCHEMA` / `LANGUAGE` because adapter is
   cloud, `FORECAST_CONFIGURATIONS=1` because single-roof drops the suffix,
   `PVNODE_PAID=false` because it matches the image default). Vars HELIOS
@@ -58,9 +58,10 @@ runs at the documented minimum interval. Anonymized but otherwise untouched.
   Donor sets `SENEC_INFLUX_MEASUREMENT=SENEC` and bridges with
   `INFLUX_MEASUREMENT=${SENEC_INFLUX_MEASUREMENT}` on `senec-collector`.
   Round-trip emits canonical `INFLUX_MEASUREMENT_SENEC=SENEC` and the
-  collector picks it up directly. Donor's legacy var name still survives
-  under the unmanaged `senec-charger` env_values block (where HELIOS can't
-  prove it's unused).
+  collector picks it up directly. The legacy var name is a known
+  Online-Configurator alias (2024-03..10) of `INFLUX_MEASUREMENT_SENEC`, so
+  it is dropped rather than carried forward in the unmanaged `senec-charger`
+  env_values block.
 - **Three distinct InfluxDB tokens preserved.** `INFLUX_TOKEN_READ`
   (dashboard, senec-charger), `INFLUX_TOKEN_WRITE` (collectors,
   tibber-collector) and `INFLUX_ADMIN_TOKEN` (InfluxDB init,

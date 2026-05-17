@@ -33,8 +33,10 @@ typos, and inline literals — exercises the importer's resilience.
   variable outside the deprecated allowlist (DEPRECATED_TOPIC_VARS). The
   modern mqtt-collector ignores it, so the importer drops it silently
   rather than carrying dead weight forward as `_unmanaged.env_vars`.
-- **Duplicate `FORECAST_INFLUX_MEASUREMENT=forecast`** — redundant with the
-  canonical `INFLUX_MEASUREMENT_FORECAST`, kept as unmanaged for safety.
+- **Duplicate `FORECAST_INFLUX_MEASUREMENT=forecast`** — non-canonical alias
+  of `INFLUX_MEASUREMENT_FORECAST`; its value round-trips via the canonical
+  var, so the alias is dropped silently rather than carried forward as
+  `_unmanaged.env_vars`.
 - **Auto-default sensors** — `INFLUX_MEASUREMENT_PV=my-pv-measurement` triggers
   `LegacySensorAdapter` to synthesize `case_temp`, `system_status`,
   `system_status_ok`, and `grid_export_limit` even though the user never set

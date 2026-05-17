@@ -168,7 +168,6 @@ _unmanaged:
         INFLUX_MEASUREMENT_SHELLY_HEATPUMP: Consumer
         PVNODE_PAID: 'false'
         SENEC_HOST: senec.fritz.box
-        SENEC_INFLUX_MEASUREMENT: SENEC
         SENEC_LANGUAGE: de
         SENEC_SCHEMA: https
         TIBBER_TOKEN: dummy_tibber_token
@@ -272,7 +271,6 @@ _unmanaged:
         INFLUX_MEASUREMENT_SHELLY_HEATPUMP: Consumer
         PVNODE_PAID: 'false'
         SENEC_HOST: senec.fritz.box
-        SENEC_INFLUX_MEASUREMENT: SENEC
         SENEC_LANGUAGE: de
         SENEC_SCHEMA: https
         TIBBER_TOKEN: dummy_tibber_token

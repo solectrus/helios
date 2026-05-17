@@ -61,9 +61,14 @@ module Import
       # translated into sensors/mappings, the originals would only cause noise
       # if re-emitted. Also includes dashboard env vars superseded by UI-managed
       # settings (e.g. historical prices), which would otherwise leak into
-      # _unmanaged.env_vars.
+      # _unmanaged.env_vars. The {FORECAST,SENEC,SHELLY,MQTT}_INFLUX_MEASUREMENT
+      # quartet are non-canonical aliases of INFLUX_MEASUREMENT_* emitted by the
+      # Online Configurator between 2024-03 and 2024-10: their value round-trips
+      # via the canonical var, so the aliases are dead weight.
       LEGACY_CONSUMED_ENV_KEYS = %w[
         INFLUX_MEASUREMENT_PV
+        FORECAST_INFLUX_MEASUREMENT SENEC_INFLUX_MEASUREMENT
+        SHELLY_INFLUX_MEASUREMENT MQTT_INFLUX_MEASUREMENT
         MQTT_FLIP_GRID_POW MQTT_FLIP_BAT_POWER
         DOCKER_INFLUXDB_INIT_MODE DOCKER_INFLUXDB_INIT_USERNAME
         DOCKER_INFLUXDB_INIT_PASSWORD DOCKER_INFLUXDB_INIT_ADMIN_TOKEN

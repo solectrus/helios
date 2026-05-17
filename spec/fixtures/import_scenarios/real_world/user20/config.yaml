@@ -248,6 +248,3 @@ sensors:
     source: external
 power_splitter:
   image: ghcr.io/solectrus/power-splitter:develop
-_unmanaged:
-  env_vars:
-    FORECAST_INFLUX_MEASUREMENT: forecast
