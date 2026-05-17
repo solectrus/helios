@@ -41,6 +41,4 @@ backup:
   aws_secret_access_key: secret123
   influxdb:
     image: ghcr.io/solectrus/influxdb2-s3-backup:latest
-  postgresql:
-    image: ghcr.io/solectrus/postgres-s3-backup:18
 sensors: {}

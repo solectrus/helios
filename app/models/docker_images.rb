@@ -192,6 +192,18 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
     current(name) if name
   end
 
+  # The postgres-s3-backup image runs `pg_dump`, which must match the
+  # database server's major version. Images are published per PostgreSQL
+  # major (`:17`, `:18`, …), so the backup image tracks the configured
+  # PostgreSQL image instead of a fixed tag — see
+  # Export::Services::PostgresqlBackup#backup_image.
+  def self.postgresql_backup_for(major)
+    default = current(:POSTGRESQL_BACKUP)
+    return default if major.blank?
+
+    "#{default.split(':').first}:#{major}"
+  end
+
   # Bare-repo legacy entries (e.g. "containrrr/watchtower") are returned
   # untagged; the caller expands them against tags present on the host.
   def self.known_for(service_name)

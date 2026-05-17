@@ -10,8 +10,10 @@ module Import
       def section_data
         return unless @reader.services.key?('postgresql-backup')
 
+        # The postgres-s3-backup image is not imported: it is derived at
+        # export time from the PostgreSQL major version (its pg_dump must
+        # match the server) — see Export::Services::PostgresqlBackup.
         {
-          'postgresql' => image_data_for('postgresql-backup').presence,
           'influxdb' => image_data_for('influxdb-backup').presence,
           'aws_access_key_id' => @reader.raw_env['AWS_ACCESS_KEY_ID'],
           'aws_secret_access_key' => @reader.raw_env['AWS_SECRET_ACCESS_KEY'],

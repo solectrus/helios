@@ -748,6 +748,15 @@ RSpec.describe Export::Builder do
       expect(compose.services.names).to include('postgresql-backup')
     end
 
+    it 'tags postgresql-backup to match the PostgreSQL major version' do
+      compose = Compose.load
+      postgresql_major = compose.services.find('postgresql').image[/postgres:(\d+)/, 1]
+
+      expect(compose.services.find('postgresql-backup').image).to eq(
+        "ghcr.io/solectrus/postgres-s3-backup:#{postgresql_major}",
+      )
+    end
+
     it 'includes influxdb-backup service' do
       compose = Compose.load
       expect(compose.services.names).to include('influxdb-backup')

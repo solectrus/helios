@@ -50,8 +50,6 @@ forecast:
 backup:
   influxdb:
     image: ghcr.io/solectrus/influxdb2-s3-backup:latest
-  postgresql:
-    image: ghcr.io/solectrus/postgres-s3-backup:18
 sensors:
   battery_charging_power:
     field: bat_power_plus

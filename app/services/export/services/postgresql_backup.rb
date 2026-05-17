@@ -19,7 +19,7 @@ module Export
 
       def to_h
         {
-          image: configuration.backup.postgresql.image,
+          image: backup_image,
           environment: backup_environment,
           depends_on: healthy_depends_on(%i[postgresql]),
           restart: 'unless-stopped',
@@ -27,6 +27,14 @@ module Export
       end
 
       private
+
+      # postgres-s3-backup runs `pg_dump`, which must match the database's
+      # major version. Derive the tag from the configured PostgreSQL image
+      # rather than storing it — mirrors Postgresql#container_data_path.
+      def backup_image
+        major = configuration.postgresql.image.to_s[/postgres:(\d+)/, 1]
+        DockerImages.postgresql_backup_for(major)
+      end
 
       def backup_environment
         [
