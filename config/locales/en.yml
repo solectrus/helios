@@ -45,6 +45,10 @@ en:
       title: 'Services'
     errors:
       blocked_by_dependency: 'Blocked: %{dependency} failed to start'
+    caches:
+      destroy:
+        success: 'Redis cache cleared.'
+        failure: 'Could not clear the Redis cache. Is the Redis service running?'
 
   datasources:
     show:

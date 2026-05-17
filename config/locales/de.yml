@@ -16,6 +16,10 @@ de:
       title: 'Dienste'
     errors:
       blocked_by_dependency: 'Blockiert: %{dependency} konnte nicht gestartet werden'
+    caches:
+      destroy:
+        success: 'Redis-Cache geleert.'
+        failure: 'Redis-Cache konnte nicht geleert werden. Läuft der Redis-Dienst?'
 
   datasources:
     show:

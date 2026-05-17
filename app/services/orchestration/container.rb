@@ -153,6 +153,11 @@ module Orchestration
       nil
     end
 
+    # Runs a command inside the container, returning [stdout, stderr, exit_code].
+    def exec(command, **)
+      raw_container.exec(command, **)
+    end
+
     def created_at
       Time.zone.parse(raw_container.info['Created'])
     end

@@ -76,6 +76,26 @@
 
     <div class="flex shrink-0 items-center gap-1 sm:gap-4">
       <% unless helios? %>
+        <%#
+          Redis-only: kept at the left of the cluster so the start/stop/recreate
+          group stays aligned with the other service rows.
+        %>
+        <% if service_name == "redis" %>
+          <div id="<%= dom_id %>-cache" class="tooltip tooltip-info" data-tip="<%= t('.clear_cache') %>">
+            <%= button_to service_cache_path(service_name),
+                          method: :delete,
+                          disabled: !clear_cache_enabled?,
+                          class: "btn btn-ghost btn-sm btn-square",
+                          data: {
+                            turbo_confirm: t('.clear_cache_confirm.body'),
+                            turbo_confirm_title: t('.clear_cache_confirm.title'),
+                            turbo_confirm_button: t('.clear_cache_confirm.button'),
+                            turbo_frame: "_top",
+                          } do %>
+              <i class="fa-solid fa-trash-can"></i>
+            <% end %>
+          </div>
+        <% end %>
         <% if public_port %>
           <button
             type="button"

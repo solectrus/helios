@@ -29,3 +29,8 @@ en:
   recreate_pending: 'Out of date — update required'
   start_pending: 'Configuration changed — additional service must be started'
   self_recreate_confirm: 'HELIOS will be updated and restarted, the interface will be briefly unavailable. Continue?'
+  clear_cache: 'Clear cache'
+  clear_cache_confirm:
+    title: 'Clear the Redis cache?'
+    body: 'Redis keeps a cached copy of data from InfluxDB and PostgreSQL to improve performance. Clearing it discards that copy; it is rebuilt automatically later when needed.'
+    button: 'Yes, clear cache'

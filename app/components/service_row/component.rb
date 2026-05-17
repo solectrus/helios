@@ -216,6 +216,12 @@ module ServiceRow
       container&.stoppable?
     end
 
+    # Flushing the cache is Redis-specific and runs `redis-cli` inside the
+    # container, so it only works while Redis is running.
+    def clear_cache_enabled?
+      service_name == 'redis' && !lazy && !pending && running?
+    end
+
     def logs_available?
       return false unless container
 

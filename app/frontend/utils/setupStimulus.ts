@@ -70,6 +70,16 @@ Turbo.config.forms.confirm = (
   const messageEl = dialog.querySelector('[data-confirm-message]');
   if (messageEl) messageEl.innerHTML = message;
 
+  // Optional bold title above the message. Hidden again when not supplied,
+  // so confirms without a title keep the plain single-paragraph layout.
+  const title =
+    submitter?.dataset.turboConfirmTitle || form.dataset.turboConfirmTitle;
+  const titleEl = dialog.querySelector('[data-confirm-title]');
+  if (titleEl) {
+    titleEl.textContent = title ?? '';
+    titleEl.classList.toggle('hidden', !title);
+  }
+
   const acceptButton = dialog.querySelector<HTMLButtonElement>(
     '[data-confirm-accept]',
   );
