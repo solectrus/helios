@@ -244,12 +244,6 @@ links)` of compose duplication. The donor-side `restart`/`labels`
 - **POSTGRES_DB=solectrus / DB_DATABASE=solectrus added.** Donor
   relied on the postgres image's default; HELIOS sets the name
   explicitly. Same as user12-17.
-- **PostgreSQL volume mount path normalized.** Donor mounts
-  `${DB_VOLUME_PATH}:/var/lib/postgresql/data` (image's internal data
-  dir); HELIOS emits the parent `${DB_VOLUME_PATH}:/var/lib/postgresql`
-  instead, exposing the full pg layout (config + WAL + data). Both
-  paths produce equivalent persistence; HELIOS's choice is the canonical
-  HELIOS layout post-`develop` ADR-0003 alignment.
 - **Watchtower normalized.** Donor uses `containrrr/watchtower`
   (upstream) with `command: --scope solectrus --cleanup`. HELIOS keeps
   the upstream image (`containrrr/watchtower:latest`) and splits the

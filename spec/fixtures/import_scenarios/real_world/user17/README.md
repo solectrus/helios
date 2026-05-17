@@ -107,10 +107,8 @@ its absence as part of this fixture going in.
   stateful services. Each survives in `_unmanaged.volumes` and is
   re-emitted in the exported `compose.yaml` with the same
   `external: true` flag. `volume_path: solectrus-influxdb` /
-  `solectrus-redis` end up in `config.yaml` as plain string
-  identifiers (no path semantics). PostgreSQL gets no `volume_path`
-  because HELIOS treats `solectrus-db` as a named volume reference,
-  not a bind mount.
+  `solectrus-redis` / `solectrus-db` end up in `config.yaml` as plain
+  string identifiers (no path semantics).
 
 ## Equivalent on re-export (no operational impact)
 

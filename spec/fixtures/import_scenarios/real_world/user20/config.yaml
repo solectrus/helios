@@ -1,0 +1,253 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: dummy_admin_password
+  app_host: 192.168.178.208
+  installation_date: '2022-01-27'
+  secret_key_base: dummy_secret_key_base
+  timezone: Europe/Berlin
+  update_interval: '28800'
+dashboard:
+  frame_ancestors: http://192.168.178.206:8081
+  image: ghcr.io/solectrus/solectrus:develop
+  influx_poll_interval: '5'
+postgresql:
+  image: postgres:16-alpine
+  password: dummy_postgres_password
+  volume_path: "/home/pi/solectrus/postgresql"
+influxdb:
+  bucket: solectrus
+  image: influxdb:2.7-alpine
+  org: solectrus
+  password: dummy_influx_password
+  publish_port: true
+  token_admin: dummy_influx_admin_token
+  token_read: dummy_influx_token_read
+  token_readwrite: dummy_influx_admin_token
+  token_write: dummy_influx_token_write
+  volume_path: "/home/pi/solectrus/influxdb"
+redis:
+  image: redis:7-alpine
+  volume_path: "/home/pi/solectrus/redis"
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: pvnode
+  forecast_declination1: '8'
+  forecast_declination2: '8'
+  forecast_declination3: '8'
+  forecast_kwp1: '5.2'
+  forecast_kwp2: '9.72'
+  forecast_kwp3: '1.85'
+  forecast_latitude: '0.00000'
+  forecast_longitude: '0.00000'
+  forecast_pvnode_apikey: dummy_pvnode_apikey
+  forecast_pvnode_azimuth1: '230'
+  forecast_pvnode_azimuth2: '220'
+  forecast_pvnode_azimuth3: '300'
+  forecast_pvnode_extra_params1: diffuse_radiation_model=perez&snow_slide_coefficient=0.3
+  forecast_pvnode_extra_params2: diffuse_radiation_model=perez&snow_slide_coefficient=0.3
+  forecast_pvnode_extra_params3: diffuse_radiation_model=perez&snow_slide_coefficient=0.3
+  forecast_pvnode_paid: 'true'
+  forecast_roofs: '3'
+  measurement: forecast
+mqtt:
+  mappings:
+  - field: mpp1_power
+    measurement: my-pv-measurement
+    topic: evcc/site/pv/1/Power
+    type: integer
+  - field: mpp2_power
+    measurement: my-pv-measurement
+    topic: evcc/site/pv/2/Power
+    type: integer
+  - field: mpp3_power
+    measurement: my-pv-measurement
+    topic: evcc/site/pv/3/Power
+    type: integer
+  mqtt_host: 192.168.178.206
+  mqtt_password: dummy_mqtt_password
+  mqtt_port: '1883'
+  mqtt_ssl: 'false'
+  mqtt_username: dummy_mqtt_username
+shelly:
+  connection: local
+sensors:
+  battery_charging_power:
+    field: bat_power_plus
+    measurement: my-pv-measurement
+    source: external
+  battery_discharging_power:
+    field: bat_power_minus
+    measurement: my-pv-measurement
+    source: external
+  battery_soc:
+    field: bat_fuel_charge
+    measurement: my-pv-measurement
+    source: external
+  car_battery_soc:
+    field: SOC
+    measurement: Tesla1
+    source: external
+  case_temp:
+    field: case_temp
+    measurement: my-pv-measurement
+    source: external
+  custom_power_01:
+    field: power
+    measurement: PS5pro
+    name: PS5pro
+    source: external
+  custom_power_02:
+    field: power
+    measurement: BoschGS
+    name: BoschGS
+    source: external
+  custom_power_03:
+    field: power
+    measurement: GamingPC
+    name: GamingPC
+    source: external
+  custom_power_04:
+    field: power
+    measurement: BoschBO
+    name: BoschBO
+    source: external
+  custom_power_05:
+    field: power
+    measurement: Haier
+    name: Haier
+    source: external
+  custom_power_06:
+    field: power
+    measurement: Nebengeb
+    name: Nebengeb
+    source: external
+  custom_power_07:
+    field: power
+    measurement: PlayStation
+    name: PlayStation
+    source: external
+  custom_power_08:
+    field: power
+    measurement: Kueche
+    name: Kueche
+    source: external
+  custom_power_09:
+    field: power
+    measurement: Proxmox
+    name: Proxmox
+    source: external
+  custom_power_10:
+    field: power
+    measurement: 3DDrucker
+    name: 3DDrucker
+    source: external
+  custom_power_11:
+    field: power
+    measurement: Waschmaschine
+    name: Waschmaschine
+    source: external
+  custom_power_12:
+    field: power
+    measurement: Gartenpumpe
+    name: Gartenpumpe
+    source: external
+  grid_export_limit:
+    field: power_ratio
+    measurement: my-pv-measurement
+    source: external
+  grid_export_power:
+    field: grid_power_minus
+    measurement: my-pv-measurement
+    source: external
+  grid_import_power:
+    field: grid_power_plus
+    measurement: my-pv-measurement
+    source: external
+  heatpump_heating_power:
+    field: waerme
+    measurement: heatpump
+    source: external
+  heatpump_power:
+    field: power
+    measurement: heatpump
+    source: external
+  heatpump_status:
+    field: statusWP
+    measurement: heatpump
+    source: external
+  heatpump_tank_temp:
+    field: tank_temp_float
+    measurement: heatpump
+    source: external
+  heatpump_tank_temp_setpoint:
+    field: tank_temp_setpoint
+    measurement: heatpump
+    source: external
+  house_power:
+    field: house_power
+    measurement: my-pv-measurement
+    source: external
+  inverter_power:
+    field: inverter_power
+    measurement: my-pv-measurement
+    source: external
+  inverter_power_1:
+    field: pvneben
+    measurement: my_pv_measurement
+    source: external
+  inverter_power_2:
+    field: pvhaupt
+    measurement: my_pv_measurement
+    source: external
+  inverter_power_3:
+    field: pvgarten
+    measurement: my_pv_measurement
+    source: external
+  inverter_power_4:
+    field: kostal
+    measurement: my_pv_measurement
+    source: external
+  inverter_power_forecast:
+    source: forecast
+  inverter_power_forecast_clearsky:
+    source: forecast
+  outdoor_temp:
+    field: outdoor_temp_float2
+    measurement: heatpump
+    source: external
+  outdoor_temp_forecast:
+    field: temp
+    measurement: forecast
+    source: forecast
+  system_status:
+    field: current_state
+    measurement: my-pv-measurement
+    source: external
+  system_status_ok:
+    field: current_state_ok
+    measurement: my-pv-measurement
+    source: external
+  wallbox_car_connected:
+    field: ev_connected
+    measurement: my_wallbox
+    mqtt_payload_type: boolean
+    mqtt_topic: Solectrus/mqtt/1/evcc/loadpoints/1/connected
+    source: mqtt
+  wallbox_power:
+    field: wallbox_charge_power
+    measurement: my-pv-measurement
+    source: external
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:develop
+_unmanaged:
+  env_vars:
+    FORECAST_INFLUX_MEASUREMENT: forecast

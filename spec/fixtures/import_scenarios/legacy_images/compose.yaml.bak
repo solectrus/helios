@@ -44,7 +44,7 @@ services:
     environment:
       - POSTGRES_PASSWORD
     volumes:
-      - ./postgresql:/var/lib/postgresql
+      - ./postgresql:/var/lib/postgresql/data
     restart: unless-stopped
 
   redis:

@@ -26,7 +26,7 @@ services:
   # └──────────────────────────────────────────────────────────┘
   #
   dashboard:
-    image: ghcr.io/solectrus/solectrus:latest
+    image: ghcr.io/solectrus/solectrus:develop
     environment:
     - TZ
     - ADMIN_PASSWORD
@@ -38,7 +38,6 @@ services:
     - FORCE_SSL
     - FRAME_ANCESTORS
     - INFLUX_BUCKET
-    - INFLUX_EXCLUDE_FROM_HOUSE_POWER
     - INFLUX_HOST=influxdb
     - INFLUX_ORG
     - INFLUX_POLL_INTERVAL
@@ -52,15 +51,31 @@ services:
     - INFLUX_SENSOR_CUSTOM_POWER_03
     - INFLUX_SENSOR_CUSTOM_POWER_04
     - INFLUX_SENSOR_CUSTOM_POWER_05
+    - INFLUX_SENSOR_CUSTOM_POWER_06
+    - INFLUX_SENSOR_CUSTOM_POWER_07
+    - INFLUX_SENSOR_CUSTOM_POWER_08
+    - INFLUX_SENSOR_CUSTOM_POWER_09
+    - INFLUX_SENSOR_CUSTOM_POWER_10
+    - INFLUX_SENSOR_CUSTOM_POWER_11
+    - INFLUX_SENSOR_CUSTOM_POWER_12
     - INFLUX_SENSOR_GRID_EXPORT_LIMIT
     - INFLUX_SENSOR_GRID_EXPORT_POWER
     - INFLUX_SENSOR_GRID_IMPORT_POWER
+    - INFLUX_SENSOR_HEATPUMP_HEATING_POWER
+    - INFLUX_SENSOR_HEATPUMP_POWER
+    - INFLUX_SENSOR_HEATPUMP_STATUS
+    - INFLUX_SENSOR_HEATPUMP_TANK_TEMP
+    - INFLUX_SENSOR_HEATPUMP_TANK_TEMP_SETPOINT
     - INFLUX_SENSOR_HOUSE_POWER
     - INFLUX_SENSOR_INVERTER_POWER
     - INFLUX_SENSOR_INVERTER_POWER_1
     - INFLUX_SENSOR_INVERTER_POWER_2
     - INFLUX_SENSOR_INVERTER_POWER_3
+    - INFLUX_SENSOR_INVERTER_POWER_4
     - INFLUX_SENSOR_INVERTER_POWER_FORECAST
+    - INFLUX_SENSOR_INVERTER_POWER_FORECAST_CLEARSKY
+    - INFLUX_SENSOR_OUTDOOR_TEMP
+    - INFLUX_SENSOR_OUTDOOR_TEMP_FORECAST
     - INFLUX_SENSOR_SYSTEM_STATUS
     - INFLUX_SENSOR_SYSTEM_STATUS_OK
     - INFLUX_SENSOR_WALLBOX_CAR_CONNECTED
@@ -71,7 +86,7 @@ services:
     - SECRET_KEY_BASE
     - WEB_CONCURRENCY
     ports:
-    - 3001:3000
+    - 3000:3000
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
@@ -113,6 +128,8 @@ services:
     - DOCKER_INFLUXDB_INIT_USERNAME=admin
     volumes:
     - "${INFLUX_VOLUME_PATH}:/var/lib/influxdb2"
+    ports:
+    - 8086:8086
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     healthcheck:
@@ -137,7 +154,7 @@ services:
   # └──────────────────────────────────────────────────────────────────────────────────────────┘
   #
   postgresql:
-    image: postgres:17-alpine
+    image: postgres:16-alpine
     environment:
     - TZ
     - POSTGRES_DB=solectrus
@@ -191,64 +208,6 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌───────────────────────────────────────────────────────────────────┐
-  # │  SENEC Collector — Reads data from SENEC battery storage systems  │
-  # └───────────────────────────────────────────────────────────────────┘
-  #
-  senec-collector:
-    image: ghcr.io/solectrus/senec-collector:latest
-    environment:
-    - TZ
-    - INFLUX_BUCKET
-    - INFLUX_HOST=influxdb
-    - INFLUX_MEASUREMENT_SENEC
-    - INFLUX_ORG
-    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
-    - SENEC_ADAPTER
-    - SENEC_HOST
-    - SENEC_IGNORE
-    - SENEC_INTERVAL
-    - SENEC_LANGUAGE
-    - SENEC_SCHEMA
-    labels:
-    - com.centurylinklabs.watchtower.scope=solectrus
-    depends_on:
-      influxdb:
-        condition: service_healthy
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
-        max-file: '3'
-
-  # ┌───────────────────────────────────────────────────────────┐
-  # │  Shelly Collector — Reads data from Shelly energy meters  │
-  # └───────────────────────────────────────────────────────────┘
-  #
-  shelly-collector:
-    image: ghcr.io/solectrus/shelly-collector:latest
-    environment:
-    - TZ
-    - INFLUX_BUCKET
-    - INFLUX_HOST=influxdb
-    - INFLUX_MEASUREMENT
-    - INFLUX_ORG
-    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
-    - SHELLY_HOST
-    - SHELLY_INTERVAL
-    labels:
-    - com.centurylinklabs.watchtower.scope=solectrus
-    depends_on:
-      influxdb:
-        condition: service_healthy
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
-        max-file: '3'
-
   # ┌───────────────────────────────────────────────────────────┐
   # │  MQTT Collector — Receives sensor data via MQTT protocol  │
   # └───────────────────────────────────────────────────────────┘
@@ -273,9 +232,15 @@ services:
     - MAPPING_2_MEASUREMENT
     - MAPPING_2_TOPIC
     - MAPPING_2_TYPE
+    - MAPPING_3_FIELD
+    - MAPPING_3_MEASUREMENT
+    - MAPPING_3_TOPIC
+    - MAPPING_3_TYPE
     - MQTT_HOST
+    - MQTT_PASSWORD
     - MQTT_PORT
     - MQTT_SSL
+    - MQTT_USERNAME
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
@@ -302,6 +267,9 @@ services:
     - FORECAST_1_AZIMUTH
     - FORECAST_1_DECLINATION
     - FORECAST_1_KWP
+    - FORECAST_2_AZIMUTH
+    - FORECAST_2_DECLINATION
+    - FORECAST_2_KWP
     - FORECAST_CONFIGURATIONS
     - FORECAST_LATITUDE
     - FORECAST_LONGITUDE
@@ -311,6 +279,9 @@ services:
     - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}
     - INFLUX_ORG
     - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+    - PVNODE_0_EXTRA_PARAMS
+    - PVNODE_1_EXTRA_PARAMS
+    - PVNODE_2_EXTRA_PARAMS
     - PVNODE_APIKEY
     - PVNODE_PAID
     labels:
@@ -330,7 +301,7 @@ services:
   # └──────────────────────────────────────────────────────────┘
   #
   power-splitter:
-    image: ghcr.io/solectrus/power-splitter:latest
+    image: ghcr.io/solectrus/power-splitter:develop
     environment:
     - TZ
     - DB_HOST=postgresql
@@ -349,15 +320,31 @@ services:
     - INFLUX_SENSOR_CUSTOM_POWER_03
     - INFLUX_SENSOR_CUSTOM_POWER_04
     - INFLUX_SENSOR_CUSTOM_POWER_05
+    - INFLUX_SENSOR_CUSTOM_POWER_06
+    - INFLUX_SENSOR_CUSTOM_POWER_07
+    - INFLUX_SENSOR_CUSTOM_POWER_08
+    - INFLUX_SENSOR_CUSTOM_POWER_09
+    - INFLUX_SENSOR_CUSTOM_POWER_10
+    - INFLUX_SENSOR_CUSTOM_POWER_11
+    - INFLUX_SENSOR_CUSTOM_POWER_12
     - INFLUX_SENSOR_GRID_EXPORT_LIMIT
     - INFLUX_SENSOR_GRID_EXPORT_POWER
     - INFLUX_SENSOR_GRID_IMPORT_POWER
+    - INFLUX_SENSOR_HEATPUMP_HEATING_POWER
+    - INFLUX_SENSOR_HEATPUMP_POWER
+    - INFLUX_SENSOR_HEATPUMP_STATUS
+    - INFLUX_SENSOR_HEATPUMP_TANK_TEMP
+    - INFLUX_SENSOR_HEATPUMP_TANK_TEMP_SETPOINT
     - INFLUX_SENSOR_HOUSE_POWER
     - INFLUX_SENSOR_INVERTER_POWER
     - INFLUX_SENSOR_INVERTER_POWER_1
     - INFLUX_SENSOR_INVERTER_POWER_2
     - INFLUX_SENSOR_INVERTER_POWER_3
+    - INFLUX_SENSOR_INVERTER_POWER_4
     - INFLUX_SENSOR_INVERTER_POWER_FORECAST
+    - INFLUX_SENSOR_INVERTER_POWER_FORECAST_CLEARSKY
+    - INFLUX_SENSOR_OUTDOOR_TEMP
+    - INFLUX_SENSOR_OUTDOOR_TEMP_FORECAST
     - INFLUX_SENSOR_SYSTEM_STATUS
     - INFLUX_SENSOR_SYSTEM_STATUS_OK
     - INFLUX_SENSOR_WALLBOX_CAR_CONNECTED
@@ -388,7 +375,7 @@ services:
   # └──────────────────────────────────────────────────────────┘
   #
   watchtower:
-    image: containrrr/watchtower:latest
+    image: nickfedor/watchtower:latest
     environment:
     - TZ
     - WATCHTOWER_CLEANUP

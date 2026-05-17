@@ -135,10 +135,6 @@ the value is simply re-spelled, or the var was already dead at runtime.
   `timeout: 10s` / `start_period: 10s|30s|60s` replaced with HELIOS's
   shorter standard intervals (`interval: 10s` / `timeout: 5s` plus a
   `start_interval: 2s`). Same probes, faster startup feedback.
-- **Postgres bind-mount path canonicalized.** Donor mounts
-  `${DB_VOLUME_PATH}:/var/lib/postgresql/data`; export rewrites to
-  `${DB_VOLUME_PATH}:/var/lib/postgresql` (the parent dir). Same
-  data-on-disk under HELIOS's bind-mount layout (ADR-0003).
 - **Commented-out alternatives dropped.** `# FRAME_ANCESTORS=…`,
   `# SENEC_USERNAME/PASSWORD/SYSTEM_ID`,
   `# FORECAST_PROVIDER=forecast.solar` and its damping/horizon vars,

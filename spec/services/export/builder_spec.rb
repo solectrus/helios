@@ -84,6 +84,48 @@ RSpec.describe Export::Builder do
     end
   end
 
+  # The PostgreSQL image's data directory moved between major versions, so
+  # HELIOS bind-mounts the target the running image expects: `postgres:17`
+  # and older → `/var/lib/postgresql/data`, `postgres:18`+ → the parent
+  # `/var/lib/postgresql`. No PGDATA override is synthesized. See ADR-0003.
+  describe 'PostgreSQL mount target by image major version' do
+    def postgresql_volume
+      Compose.load.services.find('postgresql').config['volumes'].first
+    end
+
+    context 'with postgres:18 (the HELIOS default image)' do
+      before { described_class.new(configuration).write! }
+
+      it 'bind-mounts the parent /var/lib/postgresql' do
+        expect(postgresql_volume).to eq('${DB_VOLUME_PATH}:/var/lib/postgresql')
+      end
+
+      it 'emits no PGDATA override' do
+        expect(Env.load['PGDATA']).to be_nil
+        expect(Compose.load.services.find('postgresql').environment).not_to include('PGDATA')
+      end
+    end
+
+    context 'with an imported postgres:16 image' do
+      let(:configuration) do
+        config = super()
+        config.update('postgresql', { 'image' => 'postgres:16-alpine' })
+        config
+      end
+
+      before { described_class.new(configuration).write! }
+
+      it 'bind-mounts the version-native /var/lib/postgresql/data' do
+        expect(postgresql_volume).to eq('${DB_VOLUME_PATH}:/var/lib/postgresql/data')
+      end
+
+      it 'emits no PGDATA override' do
+        expect(Env.load['PGDATA']).to be_nil
+        expect(Compose.load.services.find('postgresql').environment).not_to include('PGDATA')
+      end
+    end
+  end
+
   describe 'compose file generation' do
     before { described_class.new(configuration).write! }
 

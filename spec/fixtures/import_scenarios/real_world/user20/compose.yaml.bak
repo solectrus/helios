@@ -1,0 +1,531 @@
+name: solectrus
+
+#version: '3.7'
+
+services:
+  helios:
+    image: ghcr.io/solectrus/helios:develop
+    environment:
+      - ADMIN_PASSWORD
+      - SECRET_KEY_BASE
+    volumes:
+      - .:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+    ports:
+      - 3999:3000
+    restart: unless-stopped
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+  app:
+#    image: ghcr.io/solectrus/solectrus:latest
+#    image: ghcr.io/solectrus/solectrus:1-0-beta
+    image: ghcr.io/solectrus/solectrus:develop
+#    image: ghcr.io/solectrus/solectrus:next
+    labels:
+      - 'com.centurylinklabs.watchtower.scope=solectrus'
+    depends_on:
+      db:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    links:
+      - db
+      - influxdb
+      - redis
+    ports:
+      - 3000:3000
+    environment:
+      - APP_HOST
+      - FORCE_SSL
+      - SECRET_KEY_BASE
+      - INSTALLATION_DATE
+      - ADMIN_PASSWORD
+      - FRAME_ANCESTORS
+      - DB_HOST=db
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_USER=postgres
+      - REDIS_URL=redis://redis:6379/1
+      - INFLUX_HOST
+      - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT_PV
+      - INFLUX_MEASUREMENT_FORECAST
+      - INFLUX_POLL_INTERVAL
+      - INFLUX_SENSOR_HOUSE_POWER
+      - INFLUX_SENSOR_GRID_IMPORT_POWER
+      - INFLUX_SENSOR_GRID_EXPORT_POWER
+      - INFLUX_SENSOR_WALLBOX_POWER
+      - INFLUX_SENSOR_CAR_BATTERY_SOC=Tesla1:SOC
+      - INFLUX_SENSOR_BATTERY_SOC
+      - INFLUX_SENSOR_WALLBOX_CAR_CONNECTED=my_wallbox:ev_connected
+      - INFLUX_SENSOR_INVERTER_POWER_FORECAST
+      - INFLUX_SENSOR_HEATPUMP_HEATING_POWER
+      - INFLUX_SENSOR_HEATPUMP_STATUS
+      - INFLUX_SENSOR_HEATPUMP_TANK_TEMP
+      - INFLUX_SENSOR_HEATPUMP_TANK_TEMP_SETPOINT
+#     - INFLUX_SENSOR_OUTDOOR_TEMP_FLOAT2
+      - INFLUX_SENSOR_OUTDOOR_TEMP
+      - INFLUX_SENSOR_BATTERY_CHARGING_POWER
+      - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
+      - INFLUX_SENSOR_CUSTOM_POWER_01
+      - INFLUX_SENSOR_CUSTOM_POWER_02
+      - INFLUX_SENSOR_CUSTOM_POWER_03
+      - INFLUX_SENSOR_CUSTOM_POWER_04
+      - INFLUX_SENSOR_CUSTOM_POWER_05
+      - INFLUX_SENSOR_CUSTOM_POWER_06
+      - INFLUX_SENSOR_CUSTOM_POWER_07
+      - INFLUX_SENSOR_CUSTOM_POWER_08
+      - INFLUX_SENSOR_CUSTOM_POWER_09
+      - INFLUX_SENSOR_CUSTOM_POWER_10
+      - INFLUX_SENSOR_CUSTOM_POWER_11
+      - INFLUX_SENSOR_CUSTOM_POWER_12
+#      - INFLUX_SENSOR_BALCONY_INVERTER_POWER
+      - INFLUX_SENSOR_INVERTER_POWER
+      - INFLUX_SENSOR_INVERTER_POWER_1
+      - INFLUX_SENSOR_INVERTER_POWER_2
+      - INFLUX_SENSOR_INVERTER_POWER_3
+      - INFLUX_SENSOR_INVERTER_POWER_4
+      - INFLUX_SENSOR_INVERTER_POWER_5
+      - INFLUX_SENSOR_HEATPUMP_POWER
+      - INFLUX_SENSOR_OUTDOOR_TEMP_FORECAST
+      - INFLUX_SENSOR_INVERTER_POWER_FORECAST_CLEARSKY
+  #    - PVNODE_FORECAST_DAYS
+  #    - PVNODE_CLEARSKY_DATA
+      - FORECAST_INFLUX_MEASUREMENT
+      - PVNODE_EXTRA_PARAMS
+      - PVNODE_APIKEY
+      - PVNODE_PAID
+      - PVNODE_0_EXTRA_PARAMS
+      - PVNODE_1_EXTRA_PARAMS
+      - PVNODE_2_EXTRA_PARAMS
+#   - INFLUX_EXCLUDE_FROM_HOUSE_POWER
+      - WEB_CONCURRENCY
+    healthcheck:
+      test: ['CMD-SHELL', 'nc -z 127.0.0.1 3000 || exit 1']
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+  power-splitter:
+    image: ghcr.io/solectrus/power-splitter:develop
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+    environment:
+      - TZ
+      - INFLUX_HOST
+      - INFLUX_SCHEMA
+      - INFLUX_TOKEN=${INFLUX_ADMIN_TOKEN}
+      - INFLUX_PORT
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_SENSOR_GRID_IMPORT_POWER
+      - INFLUX_SENSOR_HOUSE_POWER
+      - INFLUX_SENSOR_WALLBOX_POWER
+      - INFLUX_SENSOR_HEATPUMP_POWER
+      - INFLUX_SENSOR_HEATPUMP_HEATING_POWER
+      - INFLUX_EXCLUDE_FROM_HOUSE_POWER
+      - INFLUX_SENSOR_BATTERY_CHARGING_POWER
+      - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
+      - INFLUX_SENSOR_CAR_BATTERY_SOC=Tesla1:SOC
+      - INFLUX_SENSOR_BATTERY_SOC
+      - INFLUX_SENSOR_WALLBOX_CAR_CONNECTED=my_wallbox:ev_connected
+      - INFLUX_SENSOR_INVERTER_POWER_FORECAST
+      - INFLUX_SENSOR_BATTERY_CHARGING_POWER
+      - INFLUX_SENSOR_CUSTOM_POWER_01
+      - INFLUX_SENSOR_CUSTOM_POWER_02
+      - INFLUX_SENSOR_CUSTOM_POWER_03
+      - INFLUX_SENSOR_CUSTOM_POWER_04
+      - INFLUX_SENSOR_CUSTOM_POWER_05
+      - INFLUX_SENSOR_CUSTOM_POWER_06
+      - INFLUX_SENSOR_CUSTOM_POWER_07
+      - INFLUX_SENSOR_CUSTOM_POWER_08
+      - INFLUX_SENSOR_CUSTOM_POWER_09
+      - INFLUX_SENSOR_CUSTOM_POWER_10
+      - INFLUX_SENSOR_CUSTOM_POWER_11
+      - INFLUX_SENSOR_CUSTOM_POWER_12
+  #    - INFLUX_SENSOR_BALCONY_INVERTER_POWER
+      - INFLUX_SENSOR_INVERTER_POWER
+      - INFLUX_SENSOR_INVERTER_POWER_1
+      - INFLUX_SENSOR_INVERTER_POWER_2
+      - INFLUX_SENSOR_INVERTER_POWER_3
+      - INFLUX_SENSOR_INVERTER_POWER_4
+      - INFLUX_SENSOR_INVERTER_POWER_5
+      - REDIS_URL=redis://redis:6379/1
+    links:
+      - influxdb
+      - redis
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+  
+  influxdb:
+    image: influxdb:2.7-alpine
+    labels:
+      - 'com.centurylinklabs.watchtower.scope=solectrus'
+    volumes:
+      - ${INFLUX_VOLUME_PATH}:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUX_USERNAME}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_ADMIN_TOKEN}
+    command: influxd run --bolt-path /var/lib/influxdb2/influxd.bolt --engine-path /var/lib/influxdb2/engine --store disk
+    # Optional: Allow InfluxDB to be accessed from the outside.
+    ports:
+      - 8086:8086
+    restart: always
+    healthcheck:
+      test: ['CMD', 'influx', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  db:
+    # Don't change major version if you have an existing database!
+    # If you have started with an older major version (like 15), you need to migrate your database.
+    # This is not worth the effort, so don't do it.
+    image: postgres:16-alpine
+    labels:
+      - 'com.centurylinklabs.watchtower.scope=solectrus'
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - ${DB_VOLUME_PATH}:/var/lib/postgresql/data
+    restart: always
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 20s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  redis:
+    image: redis:7-alpine
+    labels:
+      - 'com.centurylinklabs.watchtower.scope=solectrus'
+    volumes:
+      - ${REDIS_VOLUME_PATH}:/data
+    restart: always
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 20s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  mqtt-collector:
+    image: ghcr.io/solectrus/mqtt-collector:latest
+    labels:
+      - 'com.centurylinklabs.watchtower.scope=solectrus'
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    environment:
+      - INFLUX_HOST
+      - INFLUX_SCHEMA
+      - INFLUX_PORT
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_PV}
+      - MQTT_HOST
+      - MQTT_PORT
+      - MQTT_SSL
+      - MQTT_USERNAME
+      - MQTT_PASSWORD
+      - MQTT_TOPIC_HOUSE_POW
+#      - MQTT_TOPIC_GRID_POW
+#      - MQTT_TOPIC_BAT_CHARGE_CURRENT
+#      - MQTT_TOPIC_BAT_FUEL_CHARGE
+      - MQTT_TOPIC_BAT_POWER
+      - MQTT_TOPIC_BAT_VOLTAGE
+      - MQTT_TOPIC_CASE_TEMP
+#      - MQTT_TOPIC_CURRENT_STATE
+      - MQTT_TOPIC_MPP1_POWER
+      - MQTT_TOPIC_MPP2_POWER
+      - MQTT_TOPIC_MPP3_POWER
+      - MQTT_TOPIC_INVERTER_POWER
+      - MQTT_TOPIC_WALLBOX_CHARGE_POWER
+      - MQTT_FLIP_BAT_POWER
+#      - MAPPING_0_TOPIC
+#      - MAPPING_0_FIELD
+#      - MAPPING_0_MEASUREMENT
+#      - MAPPING_0_TYPE
+      - MAPPING_1_TOPIC
+      - MAPPING_1_FIELD_POSITIVE
+      - MAPPING_1_FIELD_NEGATIVE
+      - MAPPING_1_MEASUREMENT_POSITIVE
+      - MAPPING_1_MEASUREMENT_NEGATIVE
+      - MAPPING_1_TYPE
+#      - MAPPING_10_TOPIC
+#      - MAPPING_10_FIELD
+#      - MAPPING_10_MEASUREMENT
+#      - MAPPING_10_TYPE
+      - MAPPING_2_TOPIC
+      - MAPPING_2_FIELD_POSITIVE
+      - MAPPING_2_FIELD_NEGATIVE
+      - MAPPING_2_MEASUREMENT_POSITIVE
+      - MAPPING_2_MEASUREMENT_NEGATIVE
+      - MAPPING_2_TYPE
+#      - MAPPING_3_TOPIC
+#      - MAPPING_3_FIELD
+#      - MAPPING_3_MEASUREMENT
+#      - MAPPING_3_TYPE
+#      - MAPPING_4_TOPIC
+#      - MAPPING_4_FIELD
+#      - MAPPING_4_MEASUREMENT
+#      - MAPPING_4_TYPE
+      - MAPPING_5_TOPIC
+      - MAPPING_5_FIELD
+      - MAPPING_5_MEASUREMENT
+      - MAPPING_5_TYPE
+      - MAPPING_6_TOPIC
+      - MAPPING_6_FIELD
+      - MAPPING_6_MEASUREMENT
+      - MAPPING_6_TYPE
+      - MAPPING_7_TOPIC
+      - MAPPING_7_FIELD
+      - MAPPING_7_MEASUREMENT
+      - MAPPING_7_TYPE
+#      - MAPPING_8_TOPIC
+#      - MAPPING_8_FIELD
+#      - MAPPING_8_MEASUREMENT
+#      - MAPPING_8_TYPE
+#      - MAPPING_9_TOPIC
+#      - MAPPING_9_FIELD
+#      - MAPPING_9_MEASUREMENT
+#      - MAPPING_9_TYPE
+#      - MAPPING_11_TOPIC
+#      - MAPPING_11_FIELD
+#      - MAPPING_11_MEASUREMENT
+#      - MAPPING_11_TYPE
+      - MAPPING_12_TOPIC
+      - MAPPING_12_FIELD
+      - MAPPING_12_MEASUREMENT
+      - MAPPING_12_TYPE
+#      - MAPPING_13_TOPIC
+#      - MAPPING_13_FIELD
+#      - MAPPING_13_MEASUREMENT
+#      - MAPPING_13_TYPE
+#      - MAPPING_14_TOPIC
+#      - MAPPING_14_FIELD
+#      - MAPPING_14_MEASUREMENT
+#      - MAPPING_14_TYPE
+#      - MAPPING_15_TOPIC
+#      - MAPPING_15_FIELD
+#      - MAPPING_15_MEASUREMENT
+#      - MAPPING_15_TYPE
+#      - MAPPING_16_TOPIC
+#      - MAPPING_16_FIELD
+#      - MAPPING_16_MEASUREMENT
+#      - MAPPING_16_TYPE
+ #     - MAPPING_17_TOPIC
+ #     - MAPPING_17_FIELD
+ #     - MAPPING_17_MEASUREMENT
+ #     - MAPPING_17_TYPE
+#      - MAPPING_18_TOPIC
+#      - MAPPING_18_FIELD
+#      - MAPPING_18_MEASUREMENT
+#      - MAPPING_18_TYPE
+#      - MAPPING_19_TOPIC
+#      - MAPPING_19_FIELD
+#      - MAPPING_19_MEASUREMENT
+#      - MAPPING_19_TYPE
+#      - MAPPING_20_TOPIC
+#      - MAPPING_20_FIELD
+#      - MAPPING_20_MEASUREMENT
+#      - MAPPING_20_TYPE
+      - MAPPING_21_TOPIC
+      - MAPPING_21_FIELD
+      - MAPPING_21_MEASUREMENT
+      - MAPPING_21_TYPE
+#      - MAPPING_22_TOPIC
+#      - MAPPING_22_FIELD
+#      - MAPPING_22_MEASUREMENT
+#      - MAPPING_22_TYPE
+#      - MAPPING_23_TOPIC
+#      - MAPPING_23_FIELD
+#      - MAPPING_23_MEASUREMENT
+#      - MAPPING_23_TYPE
+#      - MAPPING_24_TOPIC
+#      - MAPPING_24_FIELD
+#      - MAPPING_24_MEASUREMENT
+#      - MAPPING_24_TYPE
+#      - MAPPING_25_TOPIC
+#      - MAPPING_25_FIELD
+#      - MAPPING_25_MEASUREMENT
+#      - MAPPING_25_TYPE
+#      - MAPPING_26_TOPIC
+#      - MAPPING_26_FIELD
+#      - MAPPING_26_MEASUREMENT
+#      - MAPPING_26_TYPE
+#      - MAPPING_27_TOPIC
+#      - MAPPING_27_FIELD
+#      - MAPPING_27_MEASUREMENT
+#      - MAPPING_27_TYPE
+#      - MAPPING_28_TOPIC
+#      - MAPPING_28_FIELD
+#      - MAPPING_28_MEASUREMENT
+#      - MAPPING_28_TYPE
+#      - MAPPING_29_TOPIC
+#      - MAPPING_29_FIELD
+#      - MAPPING_29_MEASUREMENT
+#      - MAPPING_29_TYPE
+      - MAPPING_30_TOPIC
+      - MAPPING_30_FIELD
+      - MAPPING_30_MEASUREMENT
+      - MAPPING_30_TYPE
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  shelly-collector:
+    image: ghcr.io/solectrus/shelly-collector:latest
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    environment:
+      - INFLUX_SCHEMA
+      - INFLUX_HOST
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_PORT
+      - INFLUX_MEASUREMENT=vehicle2load
+      - SHELLY_HOST
+      - SHELLY_INTERVAL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - 'com.centurylinklabs.watchtower.scope=solectrus'
+      
+  forecast-collector:
+    image: ghcr.io/solectrus/forecast-collector:develop
+    labels:
+      - 'com.centurylinklabs.watchtower.scope=solectrus'
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    environment:
+      - INFLUX_HOST
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}
+      - TZ
+      - FORECAST_PROVIDER
+      - FORECAST_LATITUDE
+      - FORECAST_LONGITUDE
+      - FORECAST_DECLINATION
+      - FORECAST_AZIMUTH
+      - FORECAST_KWP
+      - FORECAST_CONFIGURATIONS
+      - FORECAST_0_LATITUDE
+      - FORECAST_0_LONGITUDE
+      - FORECAST_0_DECLINATION
+      - FORECAST_0_AZIMUTH
+      - FORECAST_0_KWP
+      - FORECAST_0_DAMPING_MORNING
+      - FORECAST_0_DAMPING_EVENING
+      - FORECAST_1_LATITUDE
+      - FORECAST_1_LONGITUDE
+      - FORECAST_1_DECLINATION
+      - FORECAST_1_AZIMUTH
+      - FORECAST_1_KWP
+      - FORECAST_1_DAMPING_MORNING
+      - FORECAST_1_DAMPING_EVENING
+      - FORECAST_2_LATITUDE
+      - FORECAST_2_LONGITUDE
+      - FORECAST_2_DECLINATION
+      - FORECAST_2_AZIMUTH
+      - FORECAST_2_KWP
+      - FORECAST_2_DAMPING_MORNING
+      - FORECAST_2_DAMPING_EVENING
+      - FORECAST_3_LATITUDE
+      - FORECAST_3_LONGITUDE
+      - FORECAST_3_DECLINATION
+      - FORECAST_3_AZIMUTH
+      - FORECAST_3_KWP
+      - FORECAST_3_DAMPING_MORNING
+      - FORECAST_3_DAMPING_EVENING
+      - FORECAST_INTERVAL
+      - FORECAST_SOLAR_APIKEY
+      - FORECAST_DAMPING_MORNING
+      - FORECAST_DAMPING_EVENING
+      - FORECAST_HORIZON
+      - FORECAST_INVERTER
+      - SOLCAST_APIKEY
+      - SOLCAST_SITE
+      - SOLCAST_0_SITE
+      - SOLCAST_1_SITE
+      - PVNODE_APIKEY
+      - PVNODE_PAID
+      - PVNODE_2_EXTRA_PARAMS
+      - PVNODE_0_EXTRA_PARAMS
+      - PVNODE_1_EXTRA_PARAMS
+      - FORECAST_INFLUX_MEASUREMENT
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+
+  watchtower:
+    image: nickfedor/watchtower
+    labels:
+      - 'com.centurylinklabs.watchtower.scope=solectrus'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - WATCHTOWER_POLL_INTERVAL=28800
+    command: --scope solectrus --cleanup
+    restart: always
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'

@@ -3,3 +3,8 @@ coverage/*
 tmp/*
 .yarn/*
 .ruby-lsp
+
+# Import-scenario fixtures: generated config.yaml/compose.yaml/.env must stay
+# byte-identical for the round-trip tests, and the donor .bak files and
+# scenario READMEs contain literal identifiers prettier would mangle.
+spec/fixtures/

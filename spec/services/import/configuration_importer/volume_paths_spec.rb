@@ -121,76 +121,70 @@ RSpec.describe 'Import::ConfigurationImporter volume path handling' do
     end
   end
 
-  context 'when postgres mounts a PGDATA subpath instead of the parent dir' do
-    let(:raw_env) do
-      {
-        'BASE_DIR' => '/home/user/docker/solectrus',
-        'PGDATA' => '/var/lib/postgresql/data/',
-      }
-    end
+  # `postgres:17` and older expose `/var/lib/postgresql/data` as the image
+  # VOLUME; HELIOS accepts that mount and records the host source verbatim
+  # (the export side re-emits the version-correct target — see ADR-0003).
+  context 'when postgres mounts the legacy `/var/lib/postgresql/data` target' do
+    let(:raw_env) { { 'DB_VOLUME_PATH' => '/home/pi/solectrus/postgresql' } }
     let(:raw_compose) do
       {
         'services' => {
-          'postgresql' => { 'volumes' => ['${BASE_DIR}/postgres/16/data/:${PGDATA}'] },
+          'postgresql' => { 'volumes' => ['${DB_VOLUME_PATH}:/var/lib/postgresql/data'] },
         },
       }
     end
 
-    it 'strips the trailing /data segment so HELIOS can parent-mount it' do
-      expect(importer.result[:postgresql]).to include('volume_path' => '/home/user/docker/solectrus/postgres/16')
+    it 'records the host source as volume_path without a synthesized pgdata' do
+      expect(importer.result[:postgresql]).to include('volume_path' => '/home/pi/solectrus/postgresql')
+      expect(importer.result[:postgresql]).not_to have_key('pgdata')
     end
   end
 
-  context 'when postgres uses an implicit PGDATA default for the subpath mount' do
-    let(:raw_env) { { 'BASE_DIR' => '/srv/stacks' } }
+  context 'when postgres mounts the legacy target via a ${PGDATA} variable' do
+    let(:raw_env) { { 'PGDATA' => '/var/lib/postgresql/data/' } }
     let(:raw_compose) do
       {
         'services' => {
-          'postgresql' => { 'volumes' => ['${BASE_DIR}/pg/data:/var/lib/postgresql/data'] },
+          'postgresql' => { 'volumes' => ['/mnt/postgres-vol/:${PGDATA}'] },
         },
       }
     end
 
-    it 'falls back to the postgres image default PGDATA path' do
-      expect(importer.result[:postgresql]).to include('volume_path' => '/srv/stacks/pg')
+    it 'resolves the interpolated target and strips the trailing slash' do
+      expect(importer.result[:postgresql]).to include('volume_path' => '/mnt/postgres-vol')
     end
   end
 
-  context 'when postgres mounts a PGDATA subpath but host source does not end in /data' do
-    let(:raw_env) { { 'PGDATA' => '/var/lib/postgresql/data' } }
+  context 'when postgres mounts the legacy target via a relative host path' do
+    let(:raw_env) { {} }
     let(:raw_compose) do
       {
         'services' => {
-          'postgresql' => { 'volumes' => ['/mnt/postgres-vol:${PGDATA}'] },
+          'postgresql' => { 'volumes' => ['./postgresql:/var/lib/postgresql/data'] },
         },
       }
     end
 
-    it 'refuses to guess the parent dir and falls through' do
+    it 'drops the relative path — HELIOS already defaults to the same mount' do
       expect(importer.result[:postgresql] || {}).not_to have_key('volume_path')
     end
   end
 
   context 'when the postgres service is named `postgres` (legacy alias)' do
-    let(:raw_env) do
-      {
-        'BASE_DIR' => '/home/user/docker/solectrus',
-        'PGDATA' => '/var/lib/postgresql/data/',
-      }
-    end
+    let(:raw_env) { { 'BASE_DIR' => '/home/user/docker/solectrus' } }
     let(:raw_compose) do
       {
         'services' => {
           'postgres' => {
             'image' => 'postgres:16',
-            'volumes' => ['${BASE_DIR}/postgres/16/data/:${PGDATA}'],
+            'volumes' => ['${BASE_DIR}/postgres/16/data:/var/lib/postgresql/data'],
           },
         },
       }
     end
 
     it 'resolves the alias via SERVICE_IMAGE_PREFIXES and detects the mount' do
-      expect(importer.result[:postgresql]).to include('volume_path' => '/home/user/docker/solectrus/postgres/16')
+      expect(importer.result[:postgresql]).to include('volume_path' => '/home/user/docker/solectrus/postgres/16/data')
     end
   end
 

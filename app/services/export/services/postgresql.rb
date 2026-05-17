@@ -29,7 +29,7 @@ module Export
         {
           image: configuration.postgresql.image,
           environment: postgres_environment,
-          volumes: [bind_mount('/var/lib/postgresql')],
+          volumes: [bind_mount(container_data_path)],
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD-SHELL', 'pg_isready -U postgres'),
         }
@@ -41,6 +41,17 @@ module Export
         env = ['TZ', 'POSTGRES_PASSWORD', 'POSTGRES_DB=solectrus']
         env << 'PGDATA' if configuration.postgresql.pgdata.present?
         env
+      end
+
+      # The PostgreSQL image's data directory moved between major versions:
+      # `postgres:17` and older expose `/var/lib/postgresql/data` as the
+      # image `VOLUME`, `postgres:18`+ expose the parent `/var/lib/postgresql`
+      # (per-major subpath underneath, easing pg_upgrade). Bind-mount whichever
+      # the running image expects so the data directory lines up without a
+      # PGDATA override — see ADR-0003.
+      def container_data_path
+        major = configuration.postgresql.image.to_s[/postgres:(\d+)/, 1]&.to_i
+        major && major <= 17 ? '/var/lib/postgresql/data' : '/var/lib/postgresql'
       end
     end
   end

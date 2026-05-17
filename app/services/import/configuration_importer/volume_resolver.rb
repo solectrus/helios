@@ -8,11 +8,15 @@ module Import
     class VolumeResolver
       # Per-section bind-mount detection metadata. `container_target` matches
       # against the user's inline `volumes:` block when the host source isn't
-      # exposed via `*_VOLUME_PATH`. Postgres opts in to a PGDATA-subpath
-      # fallback (`<host>/data:/var/lib/postgresql/data`).
+      # exposed via `*_VOLUME_PATH`. It may be an array: Postgres exposes a
+      # different image `VOLUME` per major version (`postgres:17` and older
+      # mount `/var/lib/postgresql/data`, `postgres:18`+ mount the parent
+      # `/var/lib/postgresql`), so both are accepted on import. The host
+      # source is recorded verbatim; the export side re-emits whichever
+      # target matches the (preserved) image version.
       VOLUME_PATH_ENVS = {
         'postgresql' => { env_key: 'DB_VOLUME_PATH', default_dir: 'postgresql',
-                          container_target: '/var/lib/postgresql', pgdata_fallback: true },
+                          container_target: ['/var/lib/postgresql', '/var/lib/postgresql/data'] },
         'influxdb' => { env_key: 'INFLUX_VOLUME_PATH', default_dir: 'influxdb',
                         container_target: '/var/lib/influxdb2' },
         'redis' => { env_key: 'REDIS_VOLUME_PATH', default_dir: 'redis',
@@ -43,7 +47,6 @@ module Import
       def path_data(section)
         mapping = VOLUME_PATH_ENVS.fetch(section)
         value = inline_volume_source(section, mapping) ||
-                (mapping[:pgdata_fallback] && pgdata_subpath_source) ||
                 resolve_interpolation(@reader.raw_env[mapping[:env_key]])
         return {} unless meaningful_volume_value?(value, mapping)
 
@@ -74,9 +77,15 @@ module Import
 
       private
 
+      # First inline `volumes:` source matching any of the section's container
+      # targets. Postgres lists two (see VOLUME_PATH_ENVS) so a stack importing
+      # either the `postgres:17`-style `/var/lib/postgresql/data` mount or the
+      # `postgres:18`-style `/var/lib/postgresql` mount resolves the same way.
       def inline_volume_source(section, mapping)
-        target = mapping[:container_target]
-        target && resolved_volume_source(mapping[:service_name] || section, target)
+        service = mapping[:service_name] || section
+        Array(mapping[:container_target]).lazy.filter_map do |target|
+          resolved_volume_source(service, target)
+        end.first
       end
 
       # Resolved source of the volume entry whose container target matches
@@ -86,7 +95,7 @@ module Import
       def resolved_volume_source(service_name, target)
         raw_volumes = Array(raw_service_config(service_name)&.dig('volumes'))
         raw_source = raw_volumes.lazy.filter_map { |entry| volume_source_for_target(entry, target) }.first
-        resolved = resolve_interpolation(raw_source)
+        resolved = resolve_interpolation(raw_source).to_s.chomp('/')
         return nil if resolved.blank?
 
         resolved if resolved.start_with?('/') || resolved.match?(NAMED_VOLUME_RE)
@@ -112,22 +121,6 @@ module Import
 
         resolved = resolve_interpolation(mounted_target).to_s.chomp('/')
         source if resolved == target.to_s.chomp('/')
-      end
-
-      # Stacks that bind-mount the PGDATA subpath
-      # (`<host>/data:/var/lib/postgresql/data`) instead of the parent dir.
-      # Only safe to transform if the host source ends in `/data` — strip it
-      # so HELIOS's parent-mount strategy (`<host>:/var/lib/postgresql`) lines
-      # up; PGDATA stays at `/var/lib/postgresql/data` via the preserved env
-      # var, so the container still finds the same bytes on disk.
-      def pgdata_subpath_source
-        pgdata = resolve_interpolation(@reader.raw_env['PGDATA']).presence ||
-                 '/var/lib/postgresql/data'
-        resolved = resolved_volume_source('postgresql', pgdata)
-        return nil unless resolved&.start_with?('/')
-
-        parent = resolved.sub(%r{/data/?\z}, '')
-        parent unless parent == resolved
       end
     end
   end

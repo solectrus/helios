@@ -131,11 +131,9 @@ the value is simply re-spelled, or the var was already dead at runtime.
   dashboard and all collectors. Modern Compose service discovery on
   the default bridge network makes `links:` unnecessary; HELIOS
   drops them all.
-- **`db:` service renamed to `postgresql:`; `/data` subpath stripped
-  from the bind mount.** Donor mounts
-  `${DB_VOLUME_PATH}:/var/lib/postgresql/data`; HELIOS rewrites to
-  `${DB_VOLUME_PATH}:/var/lib/postgresql` (ADR-0003 bind-mount
-  layout). Same regression-guard as user10.
+- **`db:` service renamed to `postgresql:`.** Donor uses the legacy
+  hosting-guide name `db:`; HELIOS aliases it via `SERVICE_IMAGE_PREFIXES`
+  and re-exports under the canonical `postgresql:`.
 - **`INFLUX_HOST=influxdb` / `INFLUX_PORT=8086` / `INFLUX_SCHEMA=http`
   / `INFLUX_USERNAME=admin` dropped from `.env`.** HELIOS bakes
   these into compose service-network addressing and hardcodes the

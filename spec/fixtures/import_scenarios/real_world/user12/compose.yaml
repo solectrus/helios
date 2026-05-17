@@ -137,7 +137,7 @@ services:
     - POSTGRES_DB=solectrus
     - POSTGRES_PASSWORD
     volumes:
-    - "${DB_VOLUME_PATH}:/var/lib/postgresql"
+    - "${DB_VOLUME_PATH}:/var/lib/postgresql/data"
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     healthcheck:

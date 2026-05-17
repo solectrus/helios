@@ -19,6 +19,7 @@ dashboard:
 postgresql:
   image: postgres:16-alpine
   password: my-db-password
+  volume_path: solectrus-db
 influxdb:
   bucket: my-solectrus-bucket
   image: influxdb:2-alpine
