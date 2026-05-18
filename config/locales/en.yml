@@ -50,6 +50,18 @@ en:
         success: 'Redis cache cleared.'
         failure: 'Could not clear the Redis cache. Is the Redis service running?'
 
+  orchestration:
+    postgresql_upgrade:
+      not_upgradable: 'No PostgreSQL upgrade is available.'
+      dump_failed: 'Database backup (pg_dumpall) failed: %{detail}'
+      dump_incomplete: 'The database backup (pg_dumpall) is incomplete. The upgrade was aborted before any data was changed.'
+      wipe_failed: 'Could not empty the PostgreSQL data directory: %{detail}'
+      not_ready: 'The upgraded PostgreSQL did not become ready in time.'
+      restore_failed: 'Restoring the database failed: %{detail}'
+      verify_failed: 'Verification failed: the restored database has %{actual} tables, expected %{expected}.'
+      rolled_back: 'The upgrade failed (%{detail}). PostgreSQL was automatically rolled back to the previous version %{major}; your data is intact.'
+      rollback_failed: 'The upgrade failed (%{detail}) and the automatic rollback did not succeed either (%{error}). Your data is preserved in the backup at "%{path}" and can be restored from there.'
+
   datasources:
     show:
       title: 'Data Sources'

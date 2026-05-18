@@ -43,15 +43,11 @@ module Export
         env
       end
 
-      # The PostgreSQL image's data directory moved between major versions:
-      # `postgres:17` and older expose `/var/lib/postgresql/data` as the
-      # image `VOLUME`, `postgres:18`+ expose the parent `/var/lib/postgresql`
-      # (per-major subpath underneath, easing pg_upgrade). Bind-mount whichever
-      # the running image expects so the data directory lines up without a
-      # PGDATA override — see ADR-0003.
+      # Bind-mount whichever data directory the running image expects so it
+      # lines up without a PGDATA override — see DockerImages.postgresql_data_path.
       def container_data_path
-        major = configuration.postgresql.image.to_s[/postgres:(\d+)/, 1]&.to_i
-        major && major <= 17 ? '/var/lib/postgresql/data' : '/var/lib/postgresql'
+        major = DockerImages.postgresql_major(configuration.postgresql.image)
+        DockerImages.postgresql_data_path(major)
       end
     end
   end

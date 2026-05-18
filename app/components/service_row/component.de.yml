@@ -6,6 +6,7 @@ de:
     stop: 'Wird gestoppt…'
     up: 'Wird gestartet…'
     down: 'Wird gestoppt…'
+    upgrade: 'PostgreSQL wird aktualisiert…'
   not_created: 'Nicht erstellt'
   unknown: 'Unbekannt'
   waiting_for_healthcheck: 'Wird geprüft…'
@@ -34,3 +35,8 @@ de:
     title: 'Redis-Cache leeren?'
     body: 'Redis hält Daten aus InfluxDB sowie PostgreSQL zur Leistungsverbesserung als Zwischenspeicher vor. Beim Leeren werden diese verworfen und später bei Bedarf automatisch neu aufgebaut.'
     button: 'Ja, Cache leeren'
+  postgresql_upgrade: 'Auf Version %{major} aktualisieren'
+  postgresql_upgrade_confirm:
+    title: 'PostgreSQL auf Version %{major} aktualisieren?'
+    body: 'Anders als bei einem gewöhnlichen Update wird dabei die gesamte Datenbank in das Format der neuen Version konvertiert.<br><br>Erstelle vorher eine Datensicherung!'
+    button: 'Ja, PostgreSQL aktualisieren'

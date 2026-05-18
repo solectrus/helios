@@ -1,4 +1,5 @@
 require 'open3'
+require 'tempfile'
 
 module Orchestration
   class Runner
@@ -102,6 +103,55 @@ module Orchestration
         [io, io.pid]
       end
 
+      # Runs a command inside a running compose service via `docker compose
+      # exec`. `-T` disables TTY allocation so stdin and stdout stay
+      # byte-clean — required for piping a database dump in and out.
+      # Returns [stdout, stderr, exit_status].
+      def compose_exec(service, *command, stdin_data: nil)
+        validate_data_path!
+
+        cmd = compose_base_command + ['exec', '-T', service.to_s, *command.map(&:to_s)]
+        capture_opts = stdin_data ? { stdin_data: } : {}
+        stdout, stderr, status = Open3.capture3(*cmd, **capture_opts)
+        [stdout, stderr, status.exitstatus]
+      end
+
+      # Like #compose_exec, but streams stdin from a file and/or stdout to a
+      # file instead of buffering them in memory — required for a database
+      # dump, which can be far larger than available RAM. Pass `in_path` to
+      # feed the command its stdin, `out_path` to capture its stdout; either
+      # may be omitted. stderr is always captured (it stays small).
+      # Returns [stderr, exit_status].
+      def compose_exec_streaming(service, *command, in_path: nil, out_path: nil)
+        validate_data_path!
+
+        cmd = compose_base_command + ['exec', '-T', service.to_s, *command.map(&:to_s)]
+        Tempfile.create('helios-exec-stderr') do |stderr_file|
+          redirects = { err: stderr_file.path, out: out_path || ::File::NULL }
+          redirects[:in] = in_path if in_path
+          pid = Process.spawn(*cmd, **redirects)
+          _, status = Process.waitpid2(pid)
+          [::File.read(stderr_file.path), status.exitstatus]
+        end
+      end
+
+      # Runs a one-off command in a throwaway container for a compose service
+      # via `docker compose run`. Unlike #compose_exec the service need not be
+      # running — the container is created fresh with the service's volumes,
+      # the command runs, and `--rm` removes it. `--no-deps` skips
+      # dependencies, `-T` keeps the streams byte-clean. `entrypoint`
+      # overrides the image entrypoint (e.g. 'sh' to run a shell instead of
+      # the service itself). Returns [stdout, stderr, exit_status].
+      def compose_run(service, *command, entrypoint: nil)
+        validate_data_path!
+
+        args = %w[run --rm --no-deps -T]
+        args.push('--entrypoint', entrypoint.to_s) if entrypoint
+        cmd = compose_base_command + args + [service.to_s, *command.map(&:to_s)]
+        stdout, stderr, status = Open3.capture3(*cmd)
+        [stdout, stderr, status.exitstatus]
+      end
+
       def config_hashes
         result = run_compose('config', '--hash', '*')
         result.output.each_line.to_h do |line|
@@ -143,7 +193,7 @@ module Orchestration
         CommandResult.new(output:, exit_status: status.exitstatus)
       end
 
-      def build_compose_command(*args)
+      def compose_base_command
         cmd = [
           'docker',
           'compose',
@@ -154,6 +204,11 @@ module Orchestration
         ]
         env_path = ::Env.path
         cmd.push('--env-file', env_path) if ::File.exist?(env_path)
+        cmd
+      end
+
+      def build_compose_command(*args)
+        cmd = compose_base_command
         cmd.push('--progress', 'plain')
         cmd + args.map(&:to_s)
       end

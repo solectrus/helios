@@ -49,6 +49,16 @@ RSpec.configure do |config|
   config.filter_rails_from_backtrace!
   # arbitrary gems may also be filtered via:
   # config.filter_gems_from_backtrace("gem name")
+
+  # Specs in spec/integration/ drive real Docker and are slow. Tag them by
+  # location so individual files need no explicit metadata.
+  config.define_derived_metadata(file_path: %r{/spec/integration/}) do |metadata|
+    metadata[:integration] = true
+  end
+
+  # Skip integration specs in local runs; run them explicitly with
+  # `--tag integration`. On CI (ENV['CI'] set) they always run.
+  config.filter_run_excluding(:integration) unless ENV['CI']
 end
 
 Shoulda::Matchers.configure do |config|

@@ -1,5 +1,5 @@
 module ServiceRow
-  class Component < ViewComponent::Base
+  class Component < ViewComponent::Base # rubocop:disable Metrics/ClassLength
     attr_reader :compose_service, :container, :error_message, :lazy
 
     def initialize(
@@ -220,6 +220,20 @@ module ServiceRow
     # container, so it only works while Redis is running.
     def clear_cache_enabled?
       service_name == 'redis' && !lazy && !pending && running?
+    end
+
+    # A PostgreSQL major-version upgrade migrates the database via dump &
+    # restore (see Orchestration::PostgresqlUpgrade) — offered while an older
+    # major than the recommended image is running.
+    def postgresql_upgrade_available?
+      return false unless service_name == 'postgresql'
+      return false if lazy || pending
+
+      Orchestration::PostgresqlUpgrade.available?(container)
+    end
+
+    def postgresql_target_major
+      Orchestration::PostgresqlUpgrade.target_major
     end
 
     def logs_available?

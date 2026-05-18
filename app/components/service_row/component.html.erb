@@ -70,6 +70,28 @@
               <% end %>
             </span>
           <% end %>
+
+          <% if !lazy && postgresql_upgrade_available? %>
+            <span
+              class="tooltip tooltip-right tooltip-warning shrink-0"
+              data-tip="<%= t('.postgresql_upgrade', major: postgresql_target_major) %>"
+            >
+              <%= button_to service_upgrade_path(service_name),
+                            method: :post,
+                            disabled: pending,
+                            class: "btn btn-ghost btn-xs btn-circle text-warning",
+                            form: {
+                              class: "inline-block align-middle",
+                              data: {
+                                turbo_confirm: t('.postgresql_upgrade_confirm.body', major: postgresql_target_major),
+                                turbo_confirm_title: t('.postgresql_upgrade_confirm.title', major: postgresql_target_major),
+                                turbo_confirm_button: t('.postgresql_upgrade_confirm.button'),
+                              },
+                            } do %>
+                <i class="fa-solid fa-circle-up"></i>
+              <% end %>
+            </span>
+          <% end %>
         </div>
       </div>
     </div>
