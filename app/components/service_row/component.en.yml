@@ -6,6 +6,7 @@ en:
     stop: 'Stopping...'
     up: 'Starting...'
     down: 'Stopping...'
+    upgrade: 'Updating PostgreSQL...'
   not_created: 'Not created'
   unknown: 'Unknown'
   waiting_for_healthcheck: 'Waiting for healthcheck...'
@@ -34,3 +35,8 @@ en:
     title: 'Clear the Redis cache?'
     body: 'Redis keeps a cached copy of data from InfluxDB and PostgreSQL to improve performance. Clearing it discards that copy; it is rebuilt automatically later when needed.'
     button: 'Yes, clear cache'
+  postgresql_upgrade: 'Upgrade to version %{major}'
+  postgresql_upgrade_confirm:
+    title: 'Upgrade PostgreSQL to version %{major}?'
+    body: 'Unlike an ordinary update, this converts the entire database to the format of the new version.<br><br>Create a data backup beforehand in case something goes wrong!'
+    button: 'Yes, upgrade PostgreSQL'

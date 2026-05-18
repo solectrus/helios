@@ -192,6 +192,21 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
     current(name) if name
   end
 
+  # Major version parsed from a `postgres:<major>…` image tag, or nil when
+  # the string is not a recognizable PostgreSQL image.
+  def self.postgresql_major(image)
+    image.to_s[/postgres:(\d+)/, 1]&.to_i
+  end
+
+  # In-container data directory for a given PostgreSQL major. The image's
+  # data directory moved between majors: `postgres:17` and older expose
+  # `/var/lib/postgresql/data` as the image `VOLUME`, `postgres:18`+ expose
+  # the parent `/var/lib/postgresql` (per-major subpath underneath, easing
+  # pg_upgrade) — see ADR-0003.
+  def self.postgresql_data_path(major)
+    major && major <= 17 ? '/var/lib/postgresql/data' : '/var/lib/postgresql'
+  end
+
   # The postgres-s3-backup image runs `pg_dump`, which must match the
   # database server's major version. Images are published per PostgreSQL
   # major (`:17`, `:18`, …), so the backup image tracks the configured

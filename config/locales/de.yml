@@ -21,6 +21,18 @@ de:
         success: 'Redis-Cache geleert.'
         failure: 'Redis-Cache konnte nicht geleert werden. Läuft der Redis-Dienst?'
 
+  orchestration:
+    postgresql_upgrade:
+      not_upgradable: 'Es ist kein PostgreSQL-Upgrade verfügbar.'
+      dump_failed: 'Datenbank-Sicherung (pg_dumpall) fehlgeschlagen: %{detail}'
+      dump_incomplete: 'Die Datenbank-Sicherung (pg_dumpall) ist unvollständig. Das Upgrade wurde abgebrochen, bevor Daten verändert wurden.'
+      wipe_failed: 'Das PostgreSQL-Datenverzeichnis konnte nicht geleert werden: %{detail}'
+      not_ready: 'Das aktualisierte PostgreSQL wurde nicht rechtzeitig betriebsbereit.'
+      restore_failed: 'Wiederherstellen der Datenbank fehlgeschlagen: %{detail}'
+      verify_failed: 'Überprüfung fehlgeschlagen: Die wiederhergestellte Datenbank hat %{actual} Tabellen, erwartet wurden %{expected}.'
+      rolled_back: 'Das Upgrade ist fehlgeschlagen (%{detail}). PostgreSQL wurde automatisch auf die vorherige Version %{major} zurückgesetzt – deine Daten sind unverändert erhalten.'
+      rollback_failed: 'Das Upgrade ist fehlgeschlagen (%{detail}) und die automatische Wiederherstellung war ebenfalls nicht erfolgreich (%{error}). Deine Daten sind in der Sicherung unter „%{path}“ erhalten und können von dort wiederhergestellt werden.'
+
   datasources:
     show:
       title: 'Datenquellen'

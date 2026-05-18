@@ -32,7 +32,7 @@ module Export
       # major version. Derive the tag from the configured PostgreSQL image
       # rather than storing it — mirrors Postgresql#container_data_path.
       def backup_image
-        major = configuration.postgresql.image.to_s[/postgres:(\d+)/, 1]
+        major = DockerImages.postgresql_major(configuration.postgresql.image)
         DockerImages.postgresql_backup_for(major)
       end
 
