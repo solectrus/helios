@@ -332,6 +332,7 @@ en:
       create:
         success: 'Import was successfully reset.'
         unavailable: 'Reset unavailable — no backup files found.'
+        postgresql_downgrade: 'Reset not possible because PostgreSQL has since been upgraded to a newer major version.'
       destroy:
         success: 'Backup files have been deleted.'
 

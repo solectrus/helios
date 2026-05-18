@@ -21,7 +21,20 @@ module ResetDialogs
       StackBackup.exist?
     end
 
+    # The reset would restore an older PostgreSQL major that can no longer
+    # start against the migrated data directory — see StackReset. Only the
+    # reset dialog is affected; discarding the backup stays available.
+    def reset_blocked?(dialog)
+      dialog[:key] == :reset && postgresql_downgrade?
+    end
+
     private
+
+    def postgresql_downgrade?
+      return @postgresql_downgrade if defined?(@postgresql_downgrade)
+
+      @postgresql_downgrade = StackReset.postgresql_downgrade?
+    end
 
     def compose_filename
       Compose.filename

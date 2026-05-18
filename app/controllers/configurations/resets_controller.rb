@@ -3,6 +3,10 @@ module Configurations
     before_action :require_backups
 
     def create
+      if StackReset.postgresql_downgrade?
+        return redirect_to(sensors_path, alert: t('.postgresql_downgrade'))
+      end
+
       StackReset.perform!
       redirect_to sensors_path, notice: t('.success')
     end

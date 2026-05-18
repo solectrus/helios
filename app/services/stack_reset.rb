@@ -29,4 +29,28 @@ class StackReset
     Export::Builder.new(Configuration.current).write!
   end
   private_class_method :reimport
+
+  # A reset restores compose.yaml.bak, which still pins the PostgreSQL major
+  # from before a major-version upgrade. That major cannot start against the
+  # already-migrated data directory, so the reset would break the stack.
+  # True when the backed-up compose.yaml pins an older PostgreSQL major than
+  # the one currently deployed — the reset is then refused (the user can edit
+  # the image line in the .bak file by hand to re-enable it).
+  def self.postgresql_downgrade?
+    backup_major = DockerImages.postgresql_major(backup_postgresql_image)
+    current_major = DockerImages.postgresql_major(Configuration.current.postgresql.image)
+    return false unless backup_major && current_major
+
+    backup_major < current_major
+  end
+
+  # PostgreSQL image pinned in the backed-up compose.yaml, or nil when the
+  # backup file or the PostgreSQL service is absent.
+  def self.backup_postgresql_image
+    path = StackBackup.backup_path(Compose.path)
+    return unless File.exist?(path)
+
+    Compose::File.load(path).services.find('postgresql')&.image
+  end
+  private_class_method :backup_postgresql_image
 end

@@ -41,6 +41,32 @@ RSpec.describe 'Configurations::Resets', :with_admin_password do
         expect(flash[:alert]).to be_present
       end
     end
+
+    context 'when restoring the backup would downgrade PostgreSQL' do
+      let(:dir) do
+        with_config_yaml(
+          'system' => { 'timezone' => 'Europe/Berlin' },
+          'postgresql' => { 'image' => 'postgres:18-alpine' },
+        )
+      end
+
+      before do
+        File.write(compose_path, "services:\n  postgresql:\n    image: postgres:18-alpine\n")
+        File.write(env_path, "TZ=Europe/Berlin\n")
+        File.write(compose_backup, "services:\n  postgresql:\n    image: postgres:17-alpine\n")
+        File.write(env_backup, "TZ=Europe/Berlin\n")
+
+        allow(StackReset).to receive(:perform!)
+      end
+
+      it 'does not reset and redirects with an explanatory alert' do
+        post configuration_reset_path
+
+        expect(StackReset).not_to have_received(:perform!)
+        expect(response).to redirect_to(sensors_path)
+        expect(flash[:alert]).to be_present
+      end
+    end
   end
 
   describe 'DELETE /configuration/reset' do

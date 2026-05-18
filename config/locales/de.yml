@@ -303,6 +303,7 @@ de:
       create:
         success: 'Import wurde erfolgreich zurückgesetzt.'
         unavailable: 'Reset nicht verfügbar — keine Sicherungsdateien gefunden.'
+        postgresql_downgrade: 'Zurücksetzen nicht möglich, da PostgreSQL inzwischen auf eine neuere Hauptversion aktualisiert wurde.'
       destroy:
         success: 'Sicherungsdateien wurden gelöscht.'
 

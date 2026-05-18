@@ -4,6 +4,7 @@ en:
   reset_when: 'This is useful when …'
   reset_reason_user: 'you accidentally broke your configuration and want to start over'
   reset_reason_helios: 'the import was performed by an older HELIOS version and was incorrect'
+  postgresql_downgrade: 'Resetting is not possible because PostgreSQL has since been upgraded to a newer major version.'
   reset_confirm_button: 'Reset'
   discard: 'Delete backups'
   discard_what_html: 'HELIOS permanently deletes <code class="bg-base-300 rounded px-1.5 py-0.5 font-mono text-xs">%{compose}.bak</code> and <code class="bg-base-300 rounded px-1.5 py-0.5 font-mono text-xs">.env.bak</code>. You will no longer be able to return to the originally imported state.'

@@ -51,4 +51,30 @@ RSpec.describe StackReset do
       expect { described_class.perform! }.to raise_error(/Backup files missing/)
     end
   end
+
+  describe '.postgresql_downgrade?' do
+    before do
+      FileUtils.mkdir_p(File.dirname(Configuration.path))
+      File.write(Configuration.path, YAML.dump('postgresql' => { 'image' => 'postgres:18-alpine' }))
+    end
+
+    def write_backup_compose(services)
+      File.write(StackBackup.backup_path(compose_path), "services:\n#{services}")
+    end
+
+    it 'is true when the backup pins an older PostgreSQL major' do
+      write_backup_compose("  postgresql:\n    image: postgres:17-alpine\n")
+      expect(described_class.postgresql_downgrade?).to be true
+    end
+
+    it 'is false when the backup pins the same PostgreSQL major' do
+      write_backup_compose("  postgresql:\n    image: postgres:18-alpine\n")
+      expect(described_class.postgresql_downgrade?).to be false
+    end
+
+    it 'is false when the backup has no PostgreSQL service' do
+      write_backup_compose("  dashboard:\n    image: dashboard:latest\n")
+      expect(described_class.postgresql_downgrade?).to be false
+    end
+  end
 end

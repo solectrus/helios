@@ -19,6 +19,13 @@
         <% end %>
       </div>
 
+      <% if reset_blocked?(dialog) %>
+        <div class="alert alert-warning mt-4 text-sm">
+          <i class="fa-solid fa-triangle-exclamation"></i>
+          <span><%= t('.postgresql_downgrade') %></span>
+        </div>
+      <% end %>
+
       <div class="modal-action gap-3">
         <form method="dialog">
           <button class="btn"><%= t('.cancel') %></button>
@@ -27,7 +34,7 @@
         <%= form_with url: helpers.configuration_reset_path,
                       method: dialog[:method],
                       data: { turbo_frame: "_top", controller: "modal-opener" } do %>
-          <button type="submit" class="btn btn-error">
+          <button type="submit" class="btn btn-error" <% if reset_blocked?(dialog) %> disabled <% end %>>
             <i class="fa-solid <%= dialog[:icon] %>"></i> <%= t(".#{dialog[:key]}_confirm_button") %>
           </button>
         <% end %>
