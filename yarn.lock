@@ -751,12 +751,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=20.0.0, @types/node@npm:^25.8.0":
+"@types/node@npm:*, @types/node@npm:>=20.0.0":
   version: 25.8.0
   resolution: "@types/node@npm:25.8.0"
   dependencies:
     undici-types: "npm:>=7.24.0 <7.24.7"
   checksum: 10c0/ff53e5428309d2e6060190ec5e02afd0e4a7369456b16130a7f5898f12a6ad0efd62d752830f2f7355d714ae429bc0acbb2dc0cbf761cadb03e88c4996cdf1dc
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^25.9.0":
+  version: 25.9.0
+  resolution: "@types/node@npm:25.9.0"
+  dependencies:
+    undici-types: "npm:>=7.24.0 <7.24.7"
+  checksum: 10c0/1845f0ce5471213a4f0c887845c50993968ea863c03bb355282b59bdcc877d009a2785f0f506cfc40b8ce7548a21e33ac826e998be62d42b000bfd9ccdc6c910
   languageName: node
   linkType: hard
 
@@ -1544,7 +1553,7 @@ __metadata:
     "@rails/actioncable": "npm:^8.1.300"
     "@size-limit/file": "npm:^12.1.0"
     "@tailwindcss/vite": "npm:^4.3.0"
-    "@types/node": "npm:^25.8.0"
+    "@types/node": "npm:^25.9.0"
     daisyui: "npm:^5.5.19"
     eslint: "npm:^10.4.0"
     eslint-config-prettier: "npm:^10.1.8"
