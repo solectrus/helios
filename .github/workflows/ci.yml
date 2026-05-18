@@ -142,7 +142,7 @@ jobs:
         run: bin/rails db:setup
 
       - name: Run RSpec tests
-        run: bin/rspec
+        run: bin/rspec --tag ~integration
         env:
           SKIP_VITE_BUILD: 1
 
@@ -153,6 +153,28 @@ jobs:
           name: playwright-artifacts
           path: tmp/capybara/
           if-no-files-found: ignore
+
+  rspec-integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    env:
+      RAILS_ENV: test
+      CI: true
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+
+      - name: Setup Database
+        run: bin/rails db:setup
+
+      - name: Run integration tests
+        run: bin/rspec --tag integration
 
   build:
     runs-on: ${{ matrix.runner }}
@@ -236,7 +258,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
 
-    needs: [lint, bats, rspec, build]
+    needs: [lint, bats, rspec, rspec-integration, build]
     if: always()
 
     steps:
