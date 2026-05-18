@@ -29,7 +29,7 @@ class ComposeJob < ApplicationJob
     when :start then Orchestration::Runner.start(*Array(service_name))
     when :stop then Orchestration::Runner.stop(service_name)
     when :recreate then Orchestration::Runner.recreate(service_name)
-    when :self_recreate then Orchestration::Runner.self_recreate
+    when :self_recreate then Orchestration::SelfUpdate.call
     else raise ArgumentError, "Unknown compose action: #{action}"
     end
   end

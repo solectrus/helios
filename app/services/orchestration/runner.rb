@@ -27,7 +27,7 @@ module Orchestration
         args << '-d' if detach
         args.concat(services_except_self)
         result = run_compose(*args)
-        cleanup_images!
+        ImageCleanup.run
         result
       end
 
@@ -49,35 +49,8 @@ module Orchestration
         pull(service:)
         run_compose('down', service.to_s)
         result = run_compose('up', '--no-build', '-d', service.to_s)
-        cleanup_images!(previous_image:)
+        ImageCleanup.run(previous_image:)
         result
-      end
-
-      # Self-update: pull new image, then delegate the recreate to
-      # a temporary helper container. A process inside the HELIOS
-      # container cannot survive the container being stopped, so the
-      # helper runs independently and outlives the restart.
-      #
-      # The volume mount must use the HOST path (e.g. /opt/solectrus),
-      # not the container-internal data_path (/data), because the helper
-      # is a sibling container that mounts directly from the host.
-      def self_recreate
-        pull(service: SELF_SERVICE)
-
-        compose = ::Compose.load
-        image = compose.services.find(SELF_SERVICE).image
-        host_path = host_data_path
-        script = "docker #{self_recreate_compose_args(host_path).join(' ')} && docker image prune -f"
-
-        cmd = [
-          'docker', 'run', '--rm', '-d',
-          '--entrypoint', 'sh',
-          '-v', '/var/run/docker.sock:/var/run/docker.sock',
-          '-v', "#{host_path}:#{host_path}",
-          image,
-          '-c', script
-        ]
-        run_docker(*cmd)
       end
 
       def start(*services)
@@ -207,69 +180,8 @@ module Orchestration
         raise CommandError, "Data path does not exist: #{path}"
       end
 
-      def run_docker(*args)
-        output, status = Open3.capture2e(*args)
-        raise_command_error(args.first, output, status) unless status.success?
-      end
-
-      def self_recreate_compose_args(host_path)
-        args = [
-          'compose',
-          '-f', ::File.join(host_path, ::Compose.filename),
-          '--project-directory', host_path
-        ]
-        if ::File.exist?(::Env.path)
-          args.push('--env-file', ::File.join(host_path, '.env'))
-        end
-        args.push(
-          '--progress', 'plain',
-          'up', '--no-build', '-d', '--force-recreate', SELF_SERVICE
-        )
-      end
-
       def services_except_self
         ::Compose.load.services.names - [SELF_SERVICE]
-      end
-
-      # Stopped services are intentionally skipped — the user may still
-      # need their images. We never pass --force, so any image still
-      # referenced by a container survives.
-      def cleanup_images!(previous_image: nil)
-        prune_images(previous_image) if previous_image.present?
-        prune_legacy_for_running_services
-        prune_dangling_images
-      end
-
-      def prune_images(*images)
-        return if images.empty?
-
-        Open3.capture2e('docker', 'image', 'rm', *images)
-      end
-
-      def prune_legacy_for_running_services
-        Orchestration::Container.invalidate_cache
-        running = Orchestration::Container.all.select(&:running?)
-        in_use = running.map(&:image)
-        tags = running.flat_map { |c| known_tags_for(c.service_name) }.uniq - in_use
-        prune_images(*tags)
-      end
-
-      def known_tags_for(service_name)
-        DockerImages.known_for(service_name).flat_map do |entry|
-          entry.include?(':') ? [entry] : tags_for_repo(entry)
-        end
-      end
-
-      def tags_for_repo(repo)
-        output, status =
-          Open3.capture2e('docker', 'images', repo, '--format', '{{.Repository}}:{{.Tag}}')
-        return [] unless status.success?
-
-        output.lines.map(&:strip).reject { |line| line.empty? || line.end_with?(':<none>') }
-      end
-
-      def prune_dangling_images
-        Open3.capture2e('docker', 'image', 'prune', '-f')
       end
     end
   end
