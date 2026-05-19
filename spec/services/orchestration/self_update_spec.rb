@@ -1,5 +1,6 @@
 RSpec.describe Orchestration::SelfUpdate do
-  let(:data_path) { Rails.root.join('tmp/stack').to_s }
+  # Unique per parallel worker so concurrent specs don't clobber each other.
+  let(:data_path) { Rails.root.join("tmp/stack#{ENV.fetch('TEST_ENV_NUMBER', nil)}").to_s }
   let(:helios_yaml) do
     "name: solectrus\nservices:\n  helios:\n    image: ghcr.io/solectrus/helios:develop\n"
   end

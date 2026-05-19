@@ -19,5 +19,6 @@ CI.run do
   step 'Build: Vite assets', 'yarn vite build --mode test'
 
   step 'Test: Bats', 'bats --recursive spec/bats/'
-  step 'Test: RSpec', 'bin/rspec'
+  step 'Test: RSpec', 'bin/turbo_tests'
+  step 'Test: Coverage', 'bin/coverage'
 end

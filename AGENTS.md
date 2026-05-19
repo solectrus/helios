@@ -76,6 +76,7 @@ HELIOS ships in German and English — every user-facing string must exist in bo
 - Ruby/request specs: `bin/rspec spec/<models|requests>/<file>_spec.rb`
 - Frontend specs (Stimulus controllers, TS utils): `bin/yarn test` (Vitest, in `spec/frontend/`)
 - Shell scripts: `bats --recursive spec/bats/`
-- Integration specs (`spec/integration/`): slow, drive a real stack via Docker. Auto-tagged `:integration`; skipped in local runs unless `bin/rspec --tag integration`, always run on CI.
+- Integration specs (`spec/integration/`): slow, drive a real stack via Docker. Auto-tagged `:integration`; run by `bin/ci` (which sets `CI`) and on GitHub CI. A bare `bin/rspec` skips them — run them alone with `bin/rspec --tag integration`.
 - Use real Docker, no mocking
+- Specs run in parallel via `bin/turbo_tests` (on CI and in `bin/ci`); `bin/coverage` then collates a single SimpleCov report. A spec writing to a fixed disk path must scope it per process with `TEST_ENV_NUMBER` (e.g. `tmp/stack#{ENV.fetch('TEST_ENV_NUMBER', nil)}`), or it will clobber other processes.
 - Aim for high coverage, but don't chase 100% — write tests proportional to the code's complexity, no tests for trivial wiring. Focus on unit and request specs. The only system spec is `spec/system/smoke_spec.rb` (Playwright); usually no need to touch it.

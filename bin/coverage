@@ -1,0 +1,10 @@
+#!/usr/bin/env ruby
+# Collates the per-worker SimpleCov results from a parallel test run into a
+# single merged coverage report. Run after `bin/turbo_tests`.
+require 'bundler/setup'
+require 'simplecov'
+
+resultset = 'coverage/.resultset.json'
+abort 'No coverage results found — run bin/turbo_tests first.' unless File.exist?(resultset)
+
+SimpleCov.collate [resultset], 'rails'

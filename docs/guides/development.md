@@ -58,13 +58,17 @@ Both modes use the same hybrid Docker access (docker-api gem + `docker compose` 
 ### Run Tests
 
 ```bash
-bin/rspec                                      # all Ruby specs
+bin/rspec                                      # all Ruby specs (serial)
 bin/rspec spec/services/compose/file_spec.rb   # single file
+bin/turbo_tests                                # full suite, sharded across cores
+bin/coverage                                   # merged coverage report (after bin/turbo_tests)
 bin/yarn test                                  # Vitest (frontend specs)
 bats --recursive spec/bats/                    # shell scripts
 ```
 
-SimpleCov runs unconditionally from [`spec/spec_helper.rb`](../../spec/spec_helper.rb) and writes the coverage report to `coverage/index.html`.
+CI runs the suite with `turbo_tests`, sharding it across the runner's cores and balancing shards by recorded per-file runtime, with one aggregated output stream instead of fragmented per-process output.
+
+SimpleCov runs unconditionally from [`spec/spec_helper.rb`](../../spec/spec_helper.rb) and writes the coverage report to `coverage/index.html`. In parallel runs each worker only persists its result; `bin/coverage` then collates them into a single merged report.
 
 ### Test Structure
 
@@ -84,5 +88,6 @@ SimpleCov runs unconditionally from [`spec/spec_helper.rb`](../../spec/spec_help
 - One assertion per test when possible
 - Use descriptive test names: `it "preserves comments when saving"`
 - Use fixtures for file-based tests
+- A spec writing to a fixed disk path must scope it per process with `TEST_ENV_NUMBER` (e.g. `tmp/stack#{ENV.fetch('TEST_ENV_NUMBER', nil)}`) — parallel workers share the filesystem, so an unscoped path clobbers parallel runs
 - Clean up Docker resources after integration tests
 - Reach for a system test only when behavior truly requires a real browser (JS-heavy flows that can't be covered by request specs)

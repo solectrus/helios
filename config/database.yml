@@ -24,7 +24,9 @@ development:
 test:
   primary:
     <<: *default
-    database: storage/test.sqlite3
+    # ENV["TEST_ENV_NUMBER"] is set per worker by turbo_tests ("1", "2", …),
+    # giving each parallel worker its own database. Blank for a serial run.
+    database: storage/test<%= ENV["TEST_ENV_NUMBER"] %>.sqlite3
 
 # Store production databases in /data (the mounted stack directory),
 # so they persist across container recreations without a separate volume.

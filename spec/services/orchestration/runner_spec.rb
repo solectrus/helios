@@ -1,5 +1,6 @@
 RSpec.describe Orchestration::Runner do
-  let(:data_path) { Rails.root.join('tmp/stack').to_s }
+  # Unique per parallel worker so concurrent specs don't clobber each other.
+  let(:data_path) { Rails.root.join("tmp/stack#{ENV.fetch('TEST_ENV_NUMBER', nil)}").to_s }
 
   before do
     allow(Rails.configuration).to receive(:data_path).and_return(

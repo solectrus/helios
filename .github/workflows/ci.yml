@@ -138,13 +138,23 @@ jobs:
         if: steps.vite-cache.outputs.cache-hit != 'true'
         run: yarn vite build --mode test
 
-      - name: Setup Database
-        run: bin/rails db:setup
+      # Restore the per-file runtime log from a previous run so turbo_tests
+      # can balance shards by execution time instead of file size. The key is
+      # unique per run, so each run also saves a fresh log via restore-keys.
+      - name: Cache RSpec runtime log
+        uses: actions/cache@v5
+        with:
+          path: tmp/parallel_runtime_rspec.log
+          key: rspec-runtime-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: rspec-runtime-${{ runner.os }}-
 
       - name: Run RSpec tests
-        run: bin/rspec --tag ~integration
+        run: bin/turbo_tests -t '~integration'
         env:
           SKIP_VITE_BUILD: 1
+
+      - name: Report coverage
+        run: bin/coverage
 
       - name: Upload Playwright artifacts
         uses: actions/upload-artifact@v7

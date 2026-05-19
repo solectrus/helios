@@ -1,0 +1,9 @@
+#!/usr/bin/env ruby
+require 'bundler/setup'
+require 'fileutils'
+
+# Start from a clean slate so bin/coverage only collates this run's results,
+# not stale per-worker results merged from earlier runs.
+FileUtils.rm_f('coverage/.resultset.json')
+
+load Gem.bin_path('turbo_tests', 'turbo_tests')
