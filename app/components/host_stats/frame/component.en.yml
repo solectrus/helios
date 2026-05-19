@@ -1,6 +1,7 @@
 en:
   cpu: 'CPU usage'
   cpu_detail:
-    one: 'CPU usage (1 core)'
-    other: 'CPU usage (%{count} cores)'
-  ram: 'RAM'
+    one: 'Usage of the CPU core'
+    other: 'Usage of %{count} CPU cores'
+  ram: 'RAM usage'
+  ram_detail: '%{free} GB available of %{total} GB'

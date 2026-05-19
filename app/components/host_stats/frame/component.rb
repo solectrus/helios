@@ -16,7 +16,7 @@ module HostStats
       def metrics
         [
           [snapshot.cpu_percent, 'fa-solid fa-microchip', cpu_tooltip],
-          [snapshot.ram_percent, 'fa-solid fa-memory', t('.ram')],
+          [snapshot.ram_percent, 'fa-solid fa-memory', ram_tooltip],
         ]
       end
 
@@ -33,6 +33,18 @@ module HostStats
         return t('.cpu') if cores.nil?
 
         t('.cpu_detail', count: cores)
+      end
+
+      def ram_tooltip
+        free = snapshot.ram_free
+        total = snapshot.ram_total
+        return t('.ram') if free.nil? || total.nil?
+
+        t('.ram_detail', free: gigabytes(free), total: gigabytes(total))
+      end
+
+      def gigabytes(bytes)
+        number_with_delimiter((bytes / (1024.0**3)).round(1))
       end
     end
   end

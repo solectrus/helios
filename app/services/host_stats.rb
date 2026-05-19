@@ -1,5 +1,5 @@
 module HostStats # rubocop:disable Metrics/ModuleLength
-  Snapshot = Data.define(:cpu_percent, :cpu_cores, :ram_percent)
+  Snapshot = Data.define(:cpu_percent, :cpu_cores, :ram_percent, :ram_free, :ram_total)
 
   # Cache briefly so concurrent renders and the 5 s poller don't each pay the
   # cost (cheap on Linux, expensive on macOS dev — sysctl + vm_stat shell-outs).
@@ -24,7 +24,8 @@ module HostStats # rubocop:disable Metrics/ModuleLength
         end
         cpu = read_cpu_metrics(prev: @prev_cpu_sample, now: now, limits: @host_limits)
         @prev_cpu_sample = cpu[:sample] || @prev_cpu_sample
-        @cached_snapshot = Snapshot.new(cpu[:percent], cpu[:cores], read_ram_percent(limits: @host_limits))
+        ram = read_ram_metrics(limits: @host_limits)
+        @cached_snapshot = Snapshot.new(cpu[:percent], cpu[:cores], ram[:percent], ram[:free], ram[:total])
         @cached_at = now
       end
       @cached_snapshot
@@ -129,26 +130,26 @@ module HostStats # rubocop:disable Metrics/ModuleLength
       nil
     end
 
-    def read_ram_percent(limits:)
-      ram_percent_from_host_cgroup(limits) || ram_percent_from_proc
+    def read_ram_metrics(limits:)
+      ram_from_host_cgroup(limits) || ram_from_proc || { percent: nil, free: nil, total: nil }
     end
 
     # RAM usage of the Docker host: bytes in use (HostCgroup.memory_used) over
     # the host's MemTotal. nil (→ /proc fallback) when the host cgroup is not
     # mounted, e.g. on bare-metal/VM hosts — where /proc/meminfo is accurate.
-    def ram_percent_from_host_cgroup(limits)
+    def ram_from_host_cgroup(limits)
       used = HostCgroup.memory_used
       limit = limits[:mem_total]
       return nil unless used && limit&.positive?
 
-      (used.to_f / limit * 100).round.clamp(0, 100)
+      { percent: (used.to_f / limit * 100).round.clamp(0, 100), free: limit - used, total: limit }
     end
 
-    def ram_percent_from_proc
+    def ram_from_proc
       total, available = mem_totals
       return nil if total.nil? || total.zero? || available.nil?
 
-      ((total - available).to_f / total * 100).round
+      { percent: ((total - available).to_f / total * 100).round, free: available, total: total }
     end
 
     def mem_totals

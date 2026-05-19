@@ -4,6 +4,11 @@ de:
       backup_date: '%d.%m.%Y'
       backup_time: '%H:%M Uhr'
 
+  number:
+    format:
+      separator: ','
+      delimiter: '.'
+
   common:
     back: 'Zurück'
     cancel: 'Abbrechen'

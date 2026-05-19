@@ -1,6 +1,7 @@
 de:
   cpu: 'CPU-Auslastung'
   cpu_detail:
-    one: 'CPU-Auslastung (1 Kern)'
-    other: 'CPU-Auslastung (%{count} Kerne)'
-  ram: 'RAM'
+    one: 'Auslastung des CPU-Kerns'
+    other: 'Auslastung der %{count} CPU-Kerne'
+  ram: 'RAM-Auslastung'
+  ram_detail: '%{free} GB verfügbar von %{total} GB'

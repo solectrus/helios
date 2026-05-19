@@ -52,6 +52,12 @@ RSpec.describe HostStats do
         # (8000000 - 2000000) / 8000000 * 100 = 75
         expect(described_class.snapshot.ram_percent).to eq(75)
       end
+
+      it 'exposes free and total RAM in bytes' do
+        snapshot = described_class.snapshot
+        expect(snapshot.ram_free).to eq(2_000_000 * 1024)
+        expect(snapshot.ram_total).to eq(8_000_000 * 1024)
+      end
     end
 
     context 'when MemAvailable is missing from /proc/meminfo' do
@@ -75,7 +81,10 @@ RSpec.describe HostStats do
 
       it 'reports RAM usage of the host, not the HELIOS container' do
         # 400e6 bytes used of the 2e9 host limit → 20 %
-        expect(described_class.snapshot.ram_percent).to eq(20)
+        snapshot = described_class.snapshot
+        expect(snapshot.ram_percent).to eq(20)
+        expect(snapshot.ram_free).to eq(1_600_000_000)
+        expect(snapshot.ram_total).to eq(2_000_000_000)
       end
 
       it 'reports the host core count from the Docker daemon' do
