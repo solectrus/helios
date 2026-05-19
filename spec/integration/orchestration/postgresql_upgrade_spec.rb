@@ -28,13 +28,13 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
   describe '.call (real major-version upgrade)' do
     it 'migrates the database to the new major with data intact' do
       Orchestration::Runner.start('postgresql')
-      container = wait_until_healthy!
+      container = wait_until_ready!
       expect(described_class.current_major(container)).to eq(17)
       seed_data!
 
       expect(described_class.call).to be true
 
-      upgraded = wait_until_healthy!
+      upgraded = wait_until_ready!
       aggregate_failures do
         expect(described_class.current_major(upgraded)).to eq(described_class.target_major)
         expect(widget_names).to eq(['helios'])
@@ -47,7 +47,7 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
   describe '#call (rollback when the migration fails)' do
     it 'returns to the previous major with data intact' do
       Orchestration::Runner.start('postgresql')
-      container = wait_until_healthy!
+      container = wait_until_ready!
       expect(described_class.current_major(container)).to eq(17)
       seed_data!
 
@@ -61,7 +61,7 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
         described_class::UpgradeError, /rolled back|zurückgesetzt/
       )
 
-      restored = wait_until_healthy!
+      restored = wait_until_ready!
       expect(described_class.current_major(restored)).to eq(17)
       expect(widget_names).to eq(['helios'])
       expect(Configuration.current.postgresql.image).to eq(starting_image)
@@ -71,7 +71,7 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
   describe '#call (rollback before the data directory is touched)' do
     it 'reverts the image and leaves the running cluster untouched' do
       Orchestration::Runner.start('postgresql')
-      container = wait_until_healthy!
+      container = wait_until_ready!
       expect(described_class.current_major(container)).to eq(17)
       seed_data!
 
@@ -85,7 +85,7 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
         described_class::UpgradeError, /rolled back|zurückgesetzt/
       )
 
-      restored = wait_until_healthy!
+      restored = wait_until_ready!
       expect(described_class.current_major(restored)).to eq(17)
       expect(widget_names).to eq(['helios'])
       expect(Configuration.current.postgresql.image).to eq(starting_image)
@@ -128,17 +128,35 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
     )
   end
 
-  def wait_until_healthy!(timeout: 120)
+  # Waits until PostgreSQL truly accepts connections — not just until Docker
+  # reports the container healthy.
+  #
+  # On a first-time start the postgres image runs a temporary bootstrap server
+  # that listens on the Unix socket only (`listen_addresses=''`). The container
+  # healthcheck (`pg_isready` over that socket) can flip to "healthy" against
+  # the throwaway server, then the bootstrap server shuts down — so a query
+  # racing it dies with "terminating connection due to administrator command".
+  # A TCP probe stays negative until the real server is up, mirroring
+  # Orchestration::PostgresqlUpgrade#accepting_tcp_connections?.
+  def wait_until_ready!(timeout: 120)
     deadline = Time.current + timeout
 
     loop do
       Orchestration::Container.invalidate_cache
       container = Orchestration::Container.find('postgresql')
-      return container if container&.healthy?
-      raise "PostgreSQL did not become healthy within #{timeout}s" if Time.current > deadline
+      return container if container&.healthy? && accepting_tcp_connections?
+      raise "PostgreSQL did not become ready within #{timeout}s" if Time.current > deadline
 
       sleep 1
     end
+  end
+
+  def accepting_tcp_connections?
+    _stdout, _stderr, code =
+      Orchestration::Runner.compose_exec(
+        'postgresql', 'pg_isready', '-h', '127.0.0.1', '-U', 'postgres', '-q'
+      )
+    code&.zero?
   end
 
   def compose_down!
