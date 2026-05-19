@@ -1,6 +1,6 @@
-<tr class="sensor-row <%= enabled? ? '' : 'opacity-40' %>" data-sensor-enabled="<%= enabled? %>">
+<tr class="sensor-row" data-sensor-enabled="<%= enabled? %>">
   <%# Sensor name %>
-  <td class="pl-4 font-mono text-sm font-semibold uppercase">
+  <td class="pl-4 font-mono text-sm font-semibold uppercase <%= 'opacity-40' unless enabled? %>">
     <% if custom_sensor? %>
       <i class="fa-solid fa-microchip text-base-content/70 text-xs"></i>
       <%= sensor_name %>
@@ -52,9 +52,9 @@
       </div>
     <% else %>
       <%= link_to new_path,
-                  class: "btn btn-ghost btn-sm btn-square",
+                  class: "btn btn-soft btn-primary btn-sm btn-square",
                   data: { turbo_frame: "setting-modal-content" } do %>
-        <i class="fa-solid fa-plus text-base-content/30"></i>
+        <i class="fa-solid fa-plus"></i>
       <% end %>
     <% end %>
   </td>
