@@ -45,8 +45,12 @@ Rails.application.configure do
   # Don't log any deprecations.
   config.active_support.report_deprecations = false
 
-  # Replace the default in-process memory cache store with a durable alternative.
-  # config.cache_store = :mem_cache_store
+  # Use a thread-safe in-process cache. HELIOS runs as a single Puma process
+  # with the in-process :async job adapter, so every cache user is process-local
+  # anyway. The Rails default (:file_store) has a directory race between
+  # concurrent writes and Container.invalidate_cache's empty-directory pruning,
+  # which surfaces as Errno::ENOENT on the heavily parallel /services page.
+  config.cache_store = :memory_store
 
   # Run Active Jobs in an in-process thread pool. Jobs are only ever enqueued
   # by user clicks, and Docker state is authoritative — EventsListener will
