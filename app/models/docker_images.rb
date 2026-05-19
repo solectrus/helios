@@ -72,6 +72,16 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
       ghcr.io/solectrus/solectrus:pr-4403
       ghcr.io/solectrus/solectrus:pr-4588
       ghcr.io/solectrus/solectrus:0
+      ghcr.io/solectrus/solectrus:0.13
+      ghcr.io/solectrus/solectrus:0.13.0
+      ghcr.io/solectrus/solectrus:0.13.1
+      ghcr.io/solectrus/solectrus:0.14
+      ghcr.io/solectrus/solectrus:0.14.0
+      ghcr.io/solectrus/solectrus:0.14.1
+      ghcr.io/solectrus/solectrus:0.14.2
+      ghcr.io/solectrus/solectrus:0.14.3
+      ghcr.io/solectrus/solectrus:0.14.4
+      ghcr.io/solectrus/solectrus:0.14.5
       ghcr.io/solectrus/solectrus:0.15
       ghcr.io/solectrus/solectrus:0.15.0
       ghcr.io/solectrus/solectrus:0.15.1
