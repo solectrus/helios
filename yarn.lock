@@ -1109,10 +1109,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"daisyui@npm:^5.5.19":
-  version: 5.5.19
-  resolution: "daisyui@npm:5.5.19"
-  checksum: 10c0/10e33c5e602b491b6e82e369fd08f1737359a327361cd464e87e2bf9e14e0601bf362db03e6846ae398f76d3f2cf524e071d3fec85b18d6637faddd628d2a10a
+"daisyui@npm:^5.5.20":
+  version: 5.5.20
+  resolution: "daisyui@npm:5.5.20"
+  checksum: 10c0/7af259c11bc1cadc58cda4d6fa469b967d45879f4fd446095e310cc0f877ab28b75ebb641bf204abc1bada43bf11a67a941134acdc65c87b2c16118eef85a528
   languageName: node
   linkType: hard
 
@@ -1545,7 +1545,7 @@ __metadata:
     "@size-limit/file": "npm:^12.1.0"
     "@tailwindcss/vite": "npm:^4.3.0"
     "@types/node": "npm:^25.9.0"
-    daisyui: "npm:^5.5.19"
+    daisyui: "npm:^5.5.20"
     eslint: "npm:^10.4.0"
     eslint-config-prettier: "npm:^10.1.8"
     eslint-plugin-prettier: "npm:^5.5.5"
