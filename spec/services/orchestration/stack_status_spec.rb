@@ -250,15 +250,6 @@ RSpec.describe Orchestration::StackStatus do
     end
   end
 
-  describe '#pending_start_services' do
-    it 'delegates to AffectedServices.start_pending' do
-      allow(Orchestration::AffectedServices).to receive(:start_pending)
-        .and_return(%w[ingest])
-
-      expect(described_class.pending_start_services).to eq(%w[ingest])
-    end
-  end
-
   describe '#services_settling?' do
     before do
       allow(Orchestration::StatusBarBroadcaster).to receive(:new).and_return(

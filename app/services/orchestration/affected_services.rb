@@ -16,20 +16,11 @@ module Orchestration
     CACHE_TTL = 5.seconds
     CONFIG_HASH_CACHE_KEY = 'orchestration/config_hashes'.freeze
     AFFECTED_CACHE_KEY = 'orchestration/affected_services'.freeze
-    START_PENDING_CACHE_KEY = 'orchestration/start_pending_services'.freeze
 
     def self.compute
       Rails
         .cache
         .fetch(AFFECTED_CACHE_KEY, expires_in: CACHE_TTL) { new.compute }
-    end
-
-    def self.start_pending
-      Rails
-        .cache
-        .fetch(START_PENDING_CACHE_KEY, expires_in: CACHE_TTL) do
-          new.start_pending
-        end
     end
 
     def self.invalidate_cache
@@ -59,7 +50,6 @@ module Orchestration
 
     def self.invalidate_affected_caches
       Rails.cache.delete(AFFECTED_CACHE_KEY)
-      Rails.cache.delete(START_PENDING_CACHE_KEY)
     end
 
     # Update the deployed hash for a single service when its container
@@ -111,22 +101,6 @@ module Orchestration
 
     def compute
       categorize { |changed, containers| changed.select { |name| containers[name] } }
-    end
-
-    # Services that are defined in compose.yaml but have no container yet
-    # and whose config hash differs from (or is missing in) the deployed
-    # baseline — typically a service newly added via a configuration change
-    # (e.g. mqtt-collector after enabling the first MQTT topic).
-    #
-    # Only reported when at least one container exists. If the whole stack
-    # is down, flagging every missing service as "start pending" is noise —
-    # the user will start the whole stack.
-    def start_pending
-      categorize do |changed, containers|
-        next [] if containers.except(Runner::SELF_SERVICE).empty?
-
-        changed.reject { |name| containers[name] }
-      end
     end
 
     private

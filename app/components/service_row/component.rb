@@ -1,5 +1,5 @@
 module ServiceRow
-  class Component < ViewComponent::Base # rubocop:disable Metrics/ClassLength
+  class Component < ViewComponent::Base
     attr_reader :compose_service, :container, :error_message, :lazy
 
     def initialize(
@@ -85,7 +85,6 @@ module ServiceRow
 
       dot = 'inline-block size-4 rounded-full'
       return "#{dot} bg-error" if error?
-      return "#{dot} bg-warning" if start_pending?
       if healthcheck_starting?
         return 'loading loading-spinner loading-xs text-success'
       end
@@ -96,9 +95,7 @@ module ServiceRow
     def status_label
       return pending_label if pending
       return error_message if error?
-      if container.nil?
-        return start_pending? ? t('.start_pending') : t('.not_created')
-      end
+      return t('.not_created') if container.nil?
 
       running? ? running_status_label : container_status_label
     end
@@ -124,11 +121,9 @@ module ServiceRow
     end
 
     def tooltip_class
-      base = 'tooltip tooltip-left before:text-left before:text-xs'
+      base = 'tooltip tooltip-right before:text-left before:text-xs'
       if error?
-        "#{base} tooltip-error before:max-w-sm before:break-words"
-      elsif start_pending?
-        "#{base} tooltip-warning before:max-w-sm before:break-words"
+        "#{base} tooltip-error before:max-w-2xs before:break-words"
       else
         "#{base} tooltip-info"
       end
@@ -142,14 +137,6 @@ module ServiceRow
       @restart_pending =
         !helios? && !pending &&
         Orchestration::AffectedServices.compute.include?(service_name)
-    end
-
-    def start_pending?
-      return @start_pending if defined?(@start_pending)
-
-      @start_pending =
-        !helios? && !pending && container.nil? &&
-        Orchestration::AffectedServices.start_pending.include?(service_name)
     end
 
     def row_class

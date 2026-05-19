@@ -28,7 +28,6 @@ de:
   legacy_image: 'Upgrade empfohlen auf %{image}'
   legacy_image_confirm: 'Image auf %{image} aktualisieren und den Service neu erstellen?'
   recreate_pending: 'Nicht aktuell – Aktualisierung erforderlich'
-  start_pending: 'Konfiguration geändert – zusätzlicher Dienst muss gestartet werden'
   self_recreate_confirm: 'HELIOS wird aktualisiert und neu gestartet, die Oberfläche wird kurz nicht erreichbar sein. Fortfahren?'
   clear_cache: 'Cache leeren'
   clear_cache_confirm:

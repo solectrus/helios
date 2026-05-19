@@ -28,7 +28,6 @@ en:
   legacy_image: 'Upgrade recommended to %{image}'
   legacy_image_confirm: 'Update image to %{image} and recreate the service?'
   recreate_pending: 'Out of date — update required'
-  start_pending: 'Configuration changed — additional service must be started'
   self_recreate_confirm: 'HELIOS will be updated and restarted, the interface will be briefly unavailable. Continue?'
   clear_cache: 'Clear cache'
   clear_cache_confirm:

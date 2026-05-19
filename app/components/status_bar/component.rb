@@ -58,9 +58,8 @@ module StatusBar
 
       counts = service_counts
       pending_restart = pending_restart_services
-      pending_start = pending_start_services
       I18n.available_locales.index_with do |locale|
-        restart_label(locale, pending_restart, pending_start, counts) ||
+        restart_label(locale, pending_restart, counts) ||
           t(".#{@status}", locale:, **counts)
       end
     end
@@ -120,17 +119,10 @@ module StatusBar
       Orchestration::StackStatus.pending_restart_services
     end
 
-    def pending_start_services
-      Orchestration::StackStatus.pending_start_services
-    end
-
-    def restart_label(locale, restart, start, counts)
+    def restart_label(locale, restart, counts)
       return nil unless @status == :restart_required && restart.any?
 
-      parts = []
-      parts << pending_label(:start_pending_services, start, locale, counts) if start.any?
-      parts << pending_label(:restart_required_services, restart, locale, counts)
-      parts.join(' · ')
+      pending_label(:restart_required_services, restart, locale, counts)
     end
 
     def pending_label(key, services, locale, counts)

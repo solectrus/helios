@@ -21,7 +21,6 @@ class StatusBarsController < ApplicationController
       Orchestration::StackStatus.overall,
       Orchestration::StackStatus.service_counts,
       Orchestration::StackStatus.pending_restart_services,
-      Orchestration::StackStatus.pending_start_services,
       RestoreRunner.in_progress&.started_at,
       BackupRunner.in_progress&.started_at,
     ]
