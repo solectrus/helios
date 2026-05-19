@@ -73,5 +73,8 @@
                  turbo_frame: "file-modal-content",
                  box_classes: "overflow-hidden sm:w-[95vw]! sm:max-w-[95vw]! sm:overflow-y-auto" %>
     <% end %>
+
+    <%# Cloned by Stimulus controllers to show a spinner while a frame loads %>
+    <template id="loading-spinner"><%= render LoadingSpinner::Component.new %></template>
   </body>
 </html>

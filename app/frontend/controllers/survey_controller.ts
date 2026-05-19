@@ -3,6 +3,7 @@ import { Model, surveyLocalization, FunctionFactory } from 'survey-core';
 import { BorderlessDark } from 'survey-core/themes';
 import { readLocale } from '../utils/preferences_cookie';
 import { prefersReducedMotion } from '../utils/prefers_reduced_motion';
+import { loadingSpinner } from '../utils/loading_spinner';
 
 // SurveyJS sets these as inline CSS variables on the root element, beating
 // any stylesheet rule. Merged into BorderlessDark in one applyTheme() call so
@@ -163,7 +164,50 @@ export default class extends Controller<HTMLElement> {
     this.element.style.setProperty('--survey-progress', `${percent}%`);
   }
 
+  // View transitions drive the modal-resize and page-change animations;
+  // skipped without browser support or when reduced motion is preferred.
+  private get viewTransitionsEnabled() {
+    return (
+      typeof document.startViewTransition === 'function' &&
+      !prefersReducedMotion()
+    );
+  }
+
+  // Spinner shown in the container while the survey JSON is fetched, so the
+  // modal never sits visually empty between frame-load and survey render.
+  private showLoading() {
+    this.containerTarget.replaceChildren(loadingSpinner());
+  }
+
+  // Replace the spinner with the rendered survey.
+  private renderSurvey() {
+    if (!this.survey) return;
+    this.containerTarget.replaceChildren();
+    this.survey.render(this.containerTarget);
+  }
+
+  // Render the survey inside a view transition so the modal box animates to
+  // its final size (it carries the dialog-modal-box view-transition-name).
+  // The form is hidden during the resize and faded in once the box has
+  // settled, so the frame grows first and the content appears second.
+  private async renderSurveyAnimated() {
+    const transition = document.startViewTransition(() => {
+      this.containerTarget.style.opacity = '0';
+      this.renderSurvey();
+    });
+
+    await transition.finished;
+
+    this.containerTarget.style.removeProperty('opacity');
+    this.containerTarget.animate([{ opacity: 0 }, { opacity: 1 }], {
+      duration: 120,
+      easing: 'ease-out',
+    });
+  }
+
   private async initSurvey() {
+    this.showLoading();
+
     const response = await fetch(this.urlValue);
     const surveyJson = await response.json();
     if (!this.element.isConnected) return;
@@ -181,9 +225,7 @@ export default class extends Controller<HTMLElement> {
 
     // Animate height changes between pages instead of snapping.
     this.survey.onCurrentPageChanging.add((sender, options) => {
-      if (this.inViewTransition) return;
-      if (typeof document.startViewTransition !== 'function') return;
-      if (prefersReducedMotion()) return;
+      if (this.inViewTransition || !this.viewTransitionsEnabled) return;
 
       options.allowChanging = false;
       this.inViewTransition = true;
@@ -237,8 +279,13 @@ export default class extends Controller<HTMLElement> {
       this.wireConnectionTest(options.htmlElement);
     });
 
-    // Render survey into container
-    this.survey.render(this.containerTarget);
+    // Render the survey, replacing the loading spinner.
+    if (this.viewTransitionsEnabled) {
+      await this.renderSurveyAnimated();
+    } else {
+      this.renderSurvey();
+    }
+    if (!this.survey || !this.element.isConnected) return;
 
     // Handle value changes (registered after render to avoid
     // triggering dirty state from initialization/default values)

@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { loadingSpinner } from '../utils/loading_spinner';
 
 export default class extends Controller<HTMLDialogElement> {
   static targets = ['frame'];
@@ -8,6 +9,10 @@ export default class extends Controller<HTMLDialogElement> {
 
   connect() {
     if (this.hasFrameTarget) {
+      this.frameTarget.addEventListener(
+        'turbo:before-fetch-request',
+        this.handleFrameFetchStart,
+      );
       this.frameTarget.addEventListener(
         'turbo:frame-load',
         this.handleFrameLoad,
@@ -20,6 +25,10 @@ export default class extends Controller<HTMLDialogElement> {
   disconnect() {
     if (this.hasFrameTarget) {
       this.frameTarget.removeEventListener(
+        'turbo:before-fetch-request',
+        this.handleFrameFetchStart,
+      );
+      this.frameTarget.removeEventListener(
         'turbo:frame-load',
         this.handleFrameLoad,
       );
@@ -28,15 +37,25 @@ export default class extends Controller<HTMLDialogElement> {
     this.element.removeEventListener('close', this.handleClose);
   }
 
-  private handleFrameLoad = () => {
-    this.element.showModal();
+  // Open the modal as soon as the frame starts fetching, so the spinner is
+  // visible immediately instead of waiting for the logs to arrive.
+  private handleFrameFetchStart = (event: Event) => {
+    if (event.target !== this.frameTarget) return;
+    this.open();
   };
+
+  private handleFrameLoad = () => {
+    this.open();
+  };
+
+  private open() {
+    if (!this.element.open) this.element.showModal();
+  }
 
   private handleClose = () => {
     // Reset frame content so next open shows spinner and fetches fresh logs
     if (this.hasFrameTarget) {
-      this.frameTarget.innerHTML =
-        '<div class="flex justify-center py-8"><span class="loading loading-spinner loading-lg"></span></div>';
+      this.frameTarget.replaceChildren(loadingSpinner());
       this.frameTarget.removeAttribute('src');
       this.frameTarget.removeAttribute('complete');
     }

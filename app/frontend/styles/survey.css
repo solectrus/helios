@@ -241,3 +241,18 @@
   animation-duration: 240ms;
   animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* Survey render morphs the modal box to its final size (survey_controller
+   #renderSurveyAnimated). Skip the cross-fade: the loading-spinner snapshot
+   must vanish the instant the box starts growing, not linger and stretch. */
+::view-transition-group(dialog-modal-box) {
+  animation-duration: 150ms;
+  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+::view-transition-old(dialog-modal-box) {
+  animation: none;
+  opacity: 0;
+}
+::view-transition-new(dialog-modal-box) {
+  animation: none;
+}

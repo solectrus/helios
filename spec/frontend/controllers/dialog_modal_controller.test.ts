@@ -4,6 +4,9 @@ import DialogModalController from '@/controllers/dialog_modal_controller';
 
 function createDOM() {
   document.body.innerHTML = `
+    <template id="loading-spinner">
+      <div class="flex justify-center py-8"><span class="loading loading-spinner loading-lg"></span></div>
+    </template>
     <dialog id="modal" data-controller="dialog-modal">
       <div data-dialog-modal-target="box" tabindex="-1">
         <turbo-frame id="frame" data-dialog-modal-target="frame"></turbo-frame>
@@ -111,6 +114,35 @@ describe('DialogModalController', () => {
       dom.frame.dispatchEvent(new Event('turbo:frame-load'));
 
       expect(isModalOpen()).toBe(true);
+    });
+
+    it('opens immediately when the frame starts fetching', () => {
+      dom.frame.dispatchEvent(
+        new Event('turbo:before-fetch-request', { bubbles: true }),
+      );
+
+      expect(isModalOpen()).toBe(true);
+    });
+
+    it('replaces stale frame content with a spinner on fetch start', () => {
+      dom.frame.innerHTML = '<p>stale content</p>';
+      dom.frame.dispatchEvent(
+        new Event('turbo:before-fetch-request', { bubbles: true }),
+      );
+
+      expect(dom.frame.querySelector('.loading')).not.toBeNull();
+      expect(dom.frame.textContent).not.toContain('stale content');
+    });
+
+    it('ignores turbo:before-fetch-request bubbling from inside the frame', () => {
+      // A form submission inside the modal must not re-open the frame.
+      const innerForm = document.createElement('form');
+      dom.frame.appendChild(innerForm);
+      innerForm.dispatchEvent(
+        new Event('turbo:before-fetch-request', { bubbles: true }),
+      );
+
+      expect(isModalOpen()).toBe(false);
     });
 
     it('ESC closes when not dirty', () => {
