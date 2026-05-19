@@ -99,8 +99,25 @@ module SupportBundle
       end
 
       def memory(docker = nil)
-        memory_from_cgroup || memory_from_proc(docker) || memory_from_sysctl ||
-          { 'Status' => 'unavailable' }
+        memory_from_host_cgroup(docker) || memory_from_cgroup ||
+          memory_from_proc(docker) || memory_from_sysctl || { 'Status' => 'unavailable' }
+      end
+
+      # RAM of the Docker host from its bind-mounted cgroup (HostCgroup),
+      # against the daemon's MemTotal. Mirrors HostStats so the header and
+      # this report agree. nil when the host cgroup is not mounted — e.g.
+      # bare-metal/VM hosts, where the /proc-based paths below are accurate.
+      def memory_from_host_cgroup(docker)
+        used = HostCgroup.memory_used
+        total = docker_info_mem_total(docker)
+        return nil unless used && total
+
+        {
+          'Total' => OutputFormatter.human_bytes(total),
+          'Used' => OutputFormatter.human_bytes(used),
+          'Available' => OutputFormatter.human_bytes([total - used, 0].max),
+          'Source' => 'host cgroup',
+        }
       end
 
       def memory_from_cgroup

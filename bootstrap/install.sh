@@ -330,6 +330,7 @@ helios_service_yaml() {
     volumes:
       - .:/data
       - /var/run/docker.sock:/var/run/docker.sock
+      - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
     ports:
       - 3999:3000
     restart: unless-stopped

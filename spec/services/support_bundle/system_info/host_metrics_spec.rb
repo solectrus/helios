@@ -37,6 +37,33 @@ RSpec.describe SupportBundle::SystemInfo::HostMetrics do
   end
 
   describe '.memory' do
+    context 'when the Docker host cgroup is bind-mounted' do
+      before do
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with('/host/sys/fs/cgroup/memory.current').and_return(true)
+        allow(File).to receive(:exist?).with('/host/sys/fs/cgroup/memory.stat').and_return(true)
+        allow(File).to receive(:read).and_call_original
+        allow(File).to receive(:read).with('/host/sys/fs/cgroup/memory.current')
+                                     .and_return("1610612736\n")
+        allow(File).to receive(:foreach).and_call_original
+        allow(File).to receive(:foreach).with('/host/sys/fs/cgroup/memory.stat').and_return(
+          ["anon 200000000\n", "inactive_file 268435456\n",
+           "active_file 209715200\n", "slab_reclaimable 58720256\n"],
+        )
+      end
+
+      it 'reports the host RAM (current minus reclaimable), not the HELIOS container' do
+        result = described_class.memory(info: { 'MemTotal' => 2_147_483_648 })
+
+        expect(result).to eq(
+          'Total' => '2 GB',
+          'Used' => '1 GB',
+          'Available' => '1 GB',
+          'Source' => 'host cgroup',
+        )
+      end
+    end
+
     context 'when a cgroup v2 memory limit is set' do
       before do
         stub_cgroup(

@@ -18,6 +18,10 @@ load helpers
   [[ "$(helios_service_yaml)" == *"com.centurylinklabs.watchtower.scope=solectrus"* ]]
 }
 
+@test "bind-mounts the host cgroup read-only for HostStats" {
+  [[ "$(helios_service_yaml)" == *"/sys/fs/cgroup:/host/sys/fs/cgroup:ro"* ]]
+}
+
 @test "honours the HELIOS_IMAGE override" {
   HELIOS_IMAGE="ghcr.io/example/custom:tag" run helios_service_yaml
   [ "$status" -eq 0 ]
