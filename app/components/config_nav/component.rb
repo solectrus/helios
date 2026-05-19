@@ -25,8 +25,11 @@ module ConfigNav
       only != :files
     end
 
+    # The compose.yaml / .env preview links only make sense once setup is
+    # completed — before that there is no stack and previewing them must not
+    # create the files prematurely.
     def show_files?
-      only != :tabs
+      only != :tabs && Configuration.current.setup_completed?
     end
 
     def file_links

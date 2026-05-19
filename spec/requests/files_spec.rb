@@ -20,6 +20,16 @@ RSpec.describe 'Files', :with_admin_password do
       expect(response.body).to include('.env')
     end
 
+    it 'does not write compose.yaml/.env to disk' do
+      get file_path('compose'), headers: turbo_frame_headers
+      get file_path('env'), headers: turbo_frame_headers
+
+      aggregate_failures do
+        expect(File).not_to exist(Compose.path)
+        expect(File).not_to exist(Env.path)
+      end
+    end
+
     it 'returns not found for unknown file' do
       get file_path('unknown'), headers: turbo_frame_headers
 

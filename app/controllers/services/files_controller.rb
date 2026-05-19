@@ -9,8 +9,13 @@ module Services
       file_config = ALLOWED_FILES[params[:id]]
       raise ActionController::RoutingError, 'Not Found' unless file_config
 
+      # Preview only: resolve defaults so the content is accurate, but never
+      # write compose.yaml/.env to disk. Writing them here would create the
+      # stack files before setup is complete — making the stack look
+      # configured (e.g. surfacing the Backup tab's create form instead of
+      # its empty state).
       stack_builder = Export::Builder.new(Configuration.current)
-      stack_builder.write!
+      stack_builder.ensure_defaults!
 
       @label = file_config[:label].call
       @language_class = file_config[:language_class]

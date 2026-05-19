@@ -49,6 +49,25 @@ module Export
       Env.new(@configuration).to_s
     end
 
+    # Materialize auto-generated values (passwords, tokens, …) into config.yaml
+    # so compose_content/env_content reflect what would actually be written.
+    # Public so a file preview can resolve defaults without writing the
+    # compose.yaml/.env files themselves to disk (see Services::FilesController).
+    def ensure_defaults!
+      missing = ConfigSchema.missing_auto_generated(@configuration)
+      return if missing.empty?
+
+      missing.each do |section, defaults|
+        gate = OPTIONAL_SECTIONS[section]
+        next if gate && !gate.call(@configuration)
+
+        current = @configuration.send(section)
+        updates = defaults.transform_values { |v| ConfigSchema.resolve_default(v) }
+        link_influxdb_tokens!(updates) if section == 'influxdb'
+        @configuration.update(section, current.merge(updates))
+      end
+    end
+
     private
 
     def data_path
@@ -83,21 +102,6 @@ module Export
       ::File.mtime(path)
     rescue Errno::ENOENT
       nil
-    end
-
-    def ensure_defaults!
-      missing = ConfigSchema.missing_auto_generated(@configuration)
-      return if missing.empty?
-
-      missing.each do |section, defaults|
-        gate = OPTIONAL_SECTIONS[section]
-        next if gate && !gate.call(@configuration)
-
-        current = @configuration.send(section)
-        updates = defaults.transform_values { |v| ConfigSchema.resolve_default(v) }
-        link_influxdb_tokens!(updates) if section == 'influxdb'
-        @configuration.update(section, current.merge(updates))
-      end
     end
 
     # InfluxDB's docker-entrypoint seeds only the admin token; until HELIOS

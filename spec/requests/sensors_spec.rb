@@ -48,6 +48,26 @@ RSpec.describe 'Sensors', :with_admin_password do
       expect(response.body).to match(/fa-solid fa-play/)
     end
 
+    it 'hides the compose.yaml/.env file links when no sensors are configured' do
+      get sensors_path
+
+      aggregate_failures do
+        expect(response.body).not_to include(file_path('compose'))
+        expect(response.body).not_to include(file_path('env'))
+      end
+    end
+
+    it 'shows the compose.yaml/.env file links once a sensor is configured' do
+      Configuration.current.update_sensor('inverter_power', { 'source' => 'senec' })
+
+      get sensors_path
+
+      aggregate_failures do
+        expect(response.body).to include(file_path('compose'))
+        expect(response.body).to include(file_path('env'))
+      end
+    end
+
     # The remote read endpoint is often unavailable (write-only Ingest
     # service, reverse proxy without /api/v2, etc.) — skipping the query
     # avoids one 404 per mapping per request.
