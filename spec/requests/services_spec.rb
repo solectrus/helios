@@ -74,9 +74,14 @@ RSpec.describe 'Services', :with_admin_password do
     context 'when setup not completed' do
       before { with_config_yaml }
 
-      it 'redirects to sensors' do
+      it 'shows the empty state instead of the service list' do
         get services_path
-        expect(response).to redirect_to(sensors_path)
+
+        aggregate_failures do
+          expect(response).to have_http_status(:ok)
+          expect(response.body).to include(I18n.t('services.index.empty_title'))
+          expect(response.body).to include(sensors_path)
+        end
       end
     end
 

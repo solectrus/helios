@@ -4,19 +4,14 @@ module MobileDock
 
     ITEM_DEFINITIONS = [
       { id: :configuration, icon: 'fa-solid fa-wrench', type: :sheet },
-      {
-        id: :services,
-        path_helper: :services_path,
-        icon: 'fa-solid fa-server',
-        type: :link,
-        visible_if: -> { Configuration.current.setup_completed? },
-      },
+      { id: :services, path_helper: :services_path, icon: 'fa-solid fa-server', type: :link },
       {
         id: :backup,
         path_helper: :backups_path,
         icon: 'fa-solid fa-box-archive',
         type: :link,
-        visible_if: -> { Configuration.current.setup_completed? && !Configuration.current.collectors_only? },
+        # Collectors-only stacks have no local databases, so backup never applies.
+        visible_if: -> { !Configuration.current.collectors_only? },
       },
     ].freeze
 

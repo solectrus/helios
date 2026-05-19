@@ -30,6 +30,11 @@ class BackupRunner
     # In-progress states are excluded — the UI surfaces those separately.
     delegate :unavailable_reason, to: :new
 
+    # Whether both database services exist in compose.yaml. When they don't,
+    # the Backup tab shows an empty state; when they merely aren't running,
+    # the create form stays visible with a disabled button.
+    delegate :databases_configured?, to: :new
+
     def in_progress
       Current.instance.fetch(:backup_runner_in_progress) do
         Rails
@@ -69,6 +74,11 @@ class BackupRunner
     return reason(:influxdb_not_running) unless influxdb_container_name
 
     nil
+  end
+
+  def databases_configured?
+    services = Compose.load.services
+    services.exists?(POSTGRES_SERVICE) && services.exists?(INFLUXDB_SERVICE)
   end
 
   private

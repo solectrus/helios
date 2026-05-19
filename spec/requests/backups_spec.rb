@@ -6,8 +6,14 @@ RSpec.describe 'Backups', :with_admin_password do
   before do
     login
     allow(Rails.configuration).to receive(:data_path).and_return(data_path)
-    allow(BackupRunner).to receive(:in_progress).and_return(nil)
     allow(RestoreRunner).to receive(:in_progress).and_return(nil)
+    # Default to "backup available" so the create section renders; the
+    # preconditions-unmet cases override this in their own examples.
+    allow(BackupRunner).to receive_messages(
+      in_progress: nil,
+      unavailable_reason: nil,
+      databases_configured?: true,
+    )
   end
 
   after { FileUtils.remove_entry(data_path) }
@@ -84,14 +90,29 @@ RSpec.describe 'Backups', :with_admin_password do
       end
     end
 
-    it 'disables the create button and explains why when preconditions are unmet' do
+    it 'disables the create button and explains why when the databases are not running' do
       reason = I18n.t('backups.runner.unavailable_reasons.postgres_not_running')
       allow(BackupRunner).to receive(:unavailable_reason).and_return(reason)
 
       get backups_path
 
-      expect(response.body).to include(I18n.t('backups.index.unavailable', message: reason))
-      expect(response.body).to match(/<button[^>]*disabled/)
+      aggregate_failures do
+        expect(response.body).to include(I18n.t('backups.index.create_title'))
+        expect(response.body).to include(I18n.t('backups.index.unavailable', message: reason))
+        expect(response.body).to match(/<button[^>]*disabled/)
+      end
+    end
+
+    it 'shows an empty state when the database services do not exist yet' do
+      allow(BackupRunner).to receive(:databases_configured?).and_return(false)
+
+      get backups_path
+
+      aggregate_failures do
+        expect(response.body).to include(I18n.t('backups.index.unavailable_title'))
+        expect(response.body).to include(I18n.t('backups.index.unavailable_description'))
+        expect(response.body).not_to include(I18n.t('backups.index.create_title'))
+      end
     end
 
     it 'shows the in-progress row and disables the create button while running' do

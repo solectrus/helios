@@ -19,6 +19,9 @@ de:
   services:
     index:
       title: 'Dienste'
+      empty_title: 'Noch keine Dienste'
+      empty_description: 'SOLECTRUS ist noch nicht eingerichtet. Lege in der Konfiguration fest, welche Messwerte erfasst werden sollen – danach erscheinen hier die dafür benötigten Dienste.'
+      empty_cta: 'Zur Konfiguration'
     errors:
       blocked_by_dependency: 'Blockiert: %{dependency} konnte nicht gestartet werden'
     caches:
@@ -146,6 +149,8 @@ de:
       in_progress: 'Wird erstellt…'
       duration_hint: 'Läuft im Hintergrund und kann bei größerer Datenmenge mehrere Minuten dauern. Du kannst die Seite verlassen, die Sicherung läuft weiter. SOLECTRUS bleibt währenddessen normal nutzbar. Die fünf neuesten Sicherungen werden aufbewahrt, ältere automatisch entfernt.'
       unavailable: 'Sicherung derzeit nicht möglich: %{message}'
+      unavailable_title: 'Sicherung noch nicht möglich'
+      unavailable_description: 'Eine Sicherung umfasst die Datenbanken von InfluxDB und PostgreSQL. Sobald beide Dienste eingerichtet sind und laufen, kannst du hier eine Sicherung erstellen.'
       existing_title: 'Vorhandene Sicherungen'
       existing_empty: 'Noch keine Sicherungen vorhanden.'
       upload: 'Hochladen'

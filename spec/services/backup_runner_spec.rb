@@ -214,6 +214,29 @@ RSpec.describe BackupRunner do
     end
   end
 
+  describe '.databases_configured?' do
+    def write_compose(*service_names)
+      services = service_names.index_with { { 'image' => 'x:1' } }
+      File.write(File.join(data_path, 'compose.yaml'), { 'services' => services }.to_yaml)
+    end
+
+    it 'is true when both database services exist in compose.yaml' do
+      write_compose('postgresql', 'influxdb')
+
+      expect(described_class.databases_configured?).to be(true)
+    end
+
+    it 'is false when only one database service exists' do
+      write_compose('postgresql')
+
+      expect(described_class.databases_configured?).to be(false)
+    end
+
+    it 'is false when compose.yaml does not exist' do
+      expect(described_class.databases_configured?).to be(false)
+    end
+  end
+
   def stub_open3_response(args)
     case args
     in ['docker', 'image', 'inspect', 'docker:cli']

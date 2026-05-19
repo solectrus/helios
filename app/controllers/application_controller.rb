@@ -9,9 +9,17 @@ class ApplicationController < ActionController::Base
   before_action :set_locale
   before_action :set_time_zone
 
-  helper_method :authorized?, :password_required?, :config_yaml_exists?, :preferences
+  helper_method :authorized?, :password_required?, :show_app_chrome?, :preferences
 
   private
+
+  # Whether to render the app chrome (header, mobile dock, status bar). Shown on
+  # every authenticated page — including the setup flow — so navigation and stack
+  # status stay reachable. Login and the /start import-consent page are
+  # deliberate full-screen gates and stay bare.
+  def show_app_chrome?
+    authorized? && !is_a?(SessionsController) && !is_a?(StartsController)
+  end
 
   def require_consent
     return if config_yaml_exists?

@@ -31,10 +31,10 @@ RSpec.describe 'Sensors', :with_admin_password do
       expect(response.body).to include('inverter_power')
     end
 
-    it 'hides the services nav tab and start button when no sensors are configured' do
+    it 'shows the services nav tab but no start button when no sensors are configured' do
       get sensors_path
 
-      expect(response.body).not_to match(/href="#{services_path}"/)
+      expect(response.body).to match(/href="#{services_path}"/)
       expect(response.body).not_to match(/fa-solid fa-play/)
     end
 

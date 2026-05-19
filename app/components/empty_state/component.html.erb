@@ -1,0 +1,18 @@
+<div
+  class="
+    bg-base-100 border-base-content/10 flex flex-col items-center gap-4 border-y px-6 py-16 text-center shadow-sm
+    md:rounded-2xl md:border
+  "
+>
+  <div class="bg-base-200 text-base-content/40 flex h-16 w-16 items-center justify-center rounded-full text-2xl">
+    <i class="<%= icon %>" aria-hidden="true"></i>
+  </div>
+
+  <h2 class="text-2xl font-semibold tracking-tight"><%= title %></h2>
+
+  <p class="text-base-content/65 max-w-lg text-base leading-relaxed"><%= description %></p>
+
+  <% if cta.present? %>
+    <%= link_to cta[:label], cta[:path], class: "btn btn-primary mt-2" %>
+  <% end %>
+</div>

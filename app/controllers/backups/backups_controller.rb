@@ -52,6 +52,7 @@ module Backups
       @restore_in_progress = RestoreRunner.in_progress
       @backup_failure = BackupRepository.error_message
       @restore_failure = RestoreRunner.error_message
+      @backup_databases_configured = BackupRunner.databases_configured?
       @backup_unavailable_reason = BackupRunner.unavailable_reason unless @backup_in_progress || @restore_in_progress
     end
   end
