@@ -221,7 +221,7 @@ Defaults live in [`ConfigSchema`](../../app/models/config_schema.rb); per-servic
 | PostgreSQL          | `postgres:18-alpine`                           | Major version pinned                 |
 | Redis               | `redis:8-alpine`                               | Major version pinned                 |
 | InfluxDB            | `influxdb:2.9-alpine`                          | Minor version pinned                 |
-| Traefik             | `traefik:v3.6`                                 | Minor version pinned                 |
+| Traefik             | `traefik:v3.7`                                 | Minor version pinned                 |
 | Watchtower          | `nickfedor/watchtower:latest`                  | Fork with additional features        |
 
 **Rationale:**

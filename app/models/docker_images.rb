@@ -163,7 +163,21 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
       ghcr.io/solectrus/power-splitter:develop
     ],
   }.freeze
-  TRAEFIK = { current: 'traefik:v3.6' }.freeze
+
+  TRAEFIK = {
+    current: 'traefik:v3.7',
+
+    legacy: %w[
+      traefik:v3
+      traefik:v3.6
+      traefik:v3.5
+      traefik:v3.4
+      traefik:v3.3
+      traefik:v3.2
+      traefik:v3.1
+      traefik:v3.0
+    ],
+  }.freeze
 
   INFLUXDB_BACKUP = { current: 'ghcr.io/solectrus/influxdb2-s3-backup:latest' }.freeze
   POSTGRESQL_BACKUP = { current: 'ghcr.io/solectrus/postgres-s3-backup:18' }.freeze
