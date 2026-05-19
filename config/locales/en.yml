@@ -179,6 +179,8 @@ en:
       restore_confirm_button: 'Restore this backup'
       restore_in_progress: 'Restoring…'
       restored_at: 'Restored on %{date}, %{time}'
+      influxdb_version: 'InfluxDB %{version}'
+      postgresql_version: 'PostgreSQL %{version}'
       delete_existing: 'Delete backup'
       delete_confirm: 'The backup from <strong>%{date}, %{time}</strong> will be permanently deleted.'
       delete_confirm_button: 'Delete backup'

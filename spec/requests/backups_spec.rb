@@ -69,6 +69,21 @@ RSpec.describe 'Backups', :with_admin_password do
       end
     end
 
+    it 'shows the InfluxDB and PostgreSQL versions of each backup' do
+      persist_backup(
+        'solectrus-backup-20260508-110000.tar',
+        influxdb_image: 'influxdb:2.7-alpine',
+        postgresql_image: 'postgres:14-alpine',
+      )
+
+      get backups_path
+
+      aggregate_failures do
+        expect(response.body).to include(I18n.t('backups.index.influxdb_version', version: '2.7'))
+        expect(response.body).to include(I18n.t('backups.index.postgresql_version', version: '14'))
+      end
+    end
+
     it 'shows when a backup was restored' do
       filename = 'solectrus-backup-20260508-110000.tar'
       restored_at = Time.zone.local(2026, 5, 9, 8, 30, 0)
@@ -241,7 +256,7 @@ RSpec.describe 'Backups', :with_admin_password do
   describe 'DELETE /backups/:id' do
     it 'removes the backup file and its manifest, then redirects' do
       filename = 'solectrus-backup-20260508-110000.tar'
-      persist_backup(filename)
+      persist_backup(filename, restored_at: '2026-05-08T12:00:00Z')
       stored_path = File.join(data_path, 'helios', 'backups', filename)
 
       delete backup_path('solectrus-backup-20260508-110000')
@@ -373,27 +388,32 @@ RSpec.describe 'Backups', :with_admin_password do
     File.write(Configuration.path, YAML.dump('system' => { 'admin_password' => 'test' }))
   end
 
-  def persist_backup(filename, restored_at: nil)
+  def persist_backup(filename, restored_at: nil, influxdb_image: nil, postgresql_image: nil)
     entries = {
       'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'p' * 2816,
       'solectrus-influxdb-backup-2026-05-08.tar.gz' => 'i' * 7168,
-      'helios/config.yaml' => 'system: {}',
+      'helios/config.yaml' => backup_config_yaml(influxdb_image, postgresql_image),
     }
 
     backups_dir = File.join(data_path, 'helios', 'backups')
     FileUtils.mkdir_p(backups_dir)
     path = File.join(backups_dir, filename)
     File.binwrite(path, tar_archive(entries))
-    manifest = { entries: entries.map { |name, content| { name: name, bytes: content.bytesize } } }
-    manifest[:restored_at] = restored_at if restored_at
-    File.write("#{path}.json", JSON.generate(manifest))
+    File.write("#{path}.json", JSON.generate(restored_at: restored_at)) if restored_at
 
     # Pin mtime to the filename's timestamp so the rendered date is deterministic
-    # regardless of when the test runs. Parse in Time.zone so the round-trip
-    # through `stat.mtime.in_time_zone` (in BackupRepository) yields the same
-    # wall-clock time the filename advertises, independent of the host TZ.
+    # regardless of when the test runs and of the host TZ.
     time = Time.zone.strptime(filename[/\d{8}-\d{6}/], '%Y%m%d-%H%M%S').to_time
     File.utime(time, time, path)
+  end
+
+  # config.yaml as stored inside the backup archive — the source of truth for
+  # the InfluxDB / PostgreSQL versions shown in the backup list.
+  def backup_config_yaml(influxdb_image, postgresql_image)
+    config = { 'system' => {} }
+    config['influxdb'] = { 'image' => influxdb_image } if influxdb_image
+    config['postgresql'] = { 'image' => postgresql_image } if postgresql_image
+    YAML.dump(config)
   end
 
   def tar_upload(filename)

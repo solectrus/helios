@@ -155,6 +155,8 @@ de:
       restore_confirm_button: 'Diese Sicherung wiederherstellen'
       restore_in_progress: 'Wird wiederhergestellt…'
       restored_at: 'Wiederherstellung %{date}, %{time}'
+      influxdb_version: 'InfluxDB %{version}'
+      postgresql_version: 'PostgreSQL %{version}'
       delete_existing: 'Sicherung löschen'
       delete_confirm: 'Die Sicherung vom <strong>%{date}, %{time}</strong> wird unwiderruflich gelöscht.'
       delete_confirm_button: 'Sicherung löschen'

@@ -150,20 +150,11 @@ if ! docker exec -i "$INFLUXDB_CONTAINER" sh -c '
   fail "InfluxDB restore failed: $(tail -n 20 "$INFLUX_RESTORE_LOG" | tr '\n' ' ')"
 fi
 
-MANIFEST_PATH="$OUTPUT_DIR/$BACKUP_FILENAME.json"
+# Record the restore timestamp in the manifest sidecar. The manifest holds
+# nothing else — file list and versions are read from the archive — so it is
+# simply (over)written, replacing any prior restore marker.
 RESTORED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-UPDATED_MANIFEST="$WORK_DIR/manifest-updated.json"
-if [ -f "$MANIFEST_PATH" ]; then
-  # The manifest is a single-line JSON object written by BackupRunner,
-  # so this textual rewrite of the trailing brace is safe.
-  sed \
-    -e 's/,"restored_at":"[^"]*"//g' \
-    -e "s/}\$/,\"restored_at\":\"$RESTORED_AT\"}/" \
-    "$MANIFEST_PATH" > "$UPDATED_MANIFEST"
-else
-  printf '{"restored_at":"%s"}\n' "$RESTORED_AT" > "$UPDATED_MANIFEST"
-fi
-mv "$UPDATED_MANIFEST" "$MANIFEST_PATH"
+printf '{"restored_at":"%s"}\n' "$RESTORED_AT" > "$OUTPUT_DIR/$BACKUP_FILENAME.json"
 
 # If any service was stopped before the restore, leave the rest stopped —
 # only the DBs (started fresh above for the import) keep running.

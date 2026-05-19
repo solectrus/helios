@@ -23,19 +23,7 @@ RSpec.describe BackupRepository do
                               ])
     end
 
-    it 'reads file sizes from a manifest when present' do
-      write_backup(
-        'solectrus-backup-20260508-110000.tar',
-        manifest: { entries: [{ name: 'helios/config.yaml', bytes: 42 }] },
-      )
-
-      backup = described_class.all.first # rubocop:disable Rails/RedundantActiveRecordAllMethod
-      expect(backup.files).to contain_exactly(
-        described_class::Entry.new(name: 'helios/config.yaml', bytes: 42),
-      )
-    end
-
-    it 'falls back to scanning the archive when the manifest is missing' do
+    it 'reads the file list from the archive' do
       write_backup(
         'solectrus-backup-20260508-110000.tar',
         archive: { 'helios/config.yaml' => 'system: {}' },
@@ -45,14 +33,14 @@ RSpec.describe BackupRepository do
       expect(backup.files.map(&:name)).to contain_exactly('helios/config.yaml')
     end
 
-    it 'exposes PostgreSQL and InfluxDB sizes via the manifest' do
+    it 'exposes PostgreSQL and InfluxDB sizes from the archive' do
       write_backup(
         'solectrus-backup-20260508-110000.tar',
-        manifest: { entries: [
-          { name: 'solectrus-postgresql-backup-2026-05-08.sql.gz', bytes: 100 },
-          { name: 'solectrus-influxdb-backup-2026-05-08.tar.gz', bytes: 200 },
-          { name: 'helios/config.yaml', bytes: 10 },
-        ] },
+        archive: {
+          'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'p' * 100,
+          'solectrus-influxdb-backup-2026-05-08.tar.gz' => 'i' * 200,
+          'helios/config.yaml' => 'system: {}',
+        },
       )
 
       backup = described_class.all.first # rubocop:disable Rails/RedundantActiveRecordAllMethod
@@ -107,7 +95,7 @@ RSpec.describe BackupRepository do
   describe '.destroy!' do
     it 'removes the archive and its manifest' do
       filename = 'solectrus-backup-20260508-110000.tar'
-      write_backup(filename, manifest: { entries: [] })
+      write_backup(filename, restored_at: '2026-05-08T12:00:00Z')
 
       described_class.destroy!(filename)
 
@@ -153,7 +141,7 @@ RSpec.describe BackupRepository do
 
     it 'removes the manifest alongside the backup file' do
       filename = 'solectrus-backup-20260508-110000.tar'
-      write_backup(filename, manifest: { entries: [] })
+      write_backup(filename, restored_at: '2026-05-08T12:00:00Z')
 
       described_class.prune!(keep: 0)
 
@@ -163,39 +151,32 @@ RSpec.describe BackupRepository do
   end
 
   describe 'restored_at' do
-    it 'is nil when the manifest has no restored_at' do
-      write_backup('solectrus-backup-20260508-110000.tar', manifest: { entries: [] })
-
-      expect(described_class.find!('solectrus-backup-20260508-110000.tar').restored_at).to be_nil
-    end
-
     it 'is nil when no manifest exists at all' do
       write_backup('solectrus-backup-20260508-110000.tar')
 
       expect(described_class.find!('solectrus-backup-20260508-110000.tar').restored_at).to be_nil
     end
 
+    it 'is nil for a legacy manifest that carries no restored_at' do
+      filename = 'solectrus-backup-20260508-110000.tar'
+      write_backup(filename)
+      File.write(File.join(backups_dir, "#{filename}.json"), '{"entries":[]}')
+
+      expect(described_class.find!(filename).restored_at).to be_nil
+    end
+
     it 'parses the restored_at from the manifest as a Time.zone-aware Time' do
       restored_at = '2026-05-09T08:30:00Z'
-      write_backup(
-        'solectrus-backup-20260508-110000.tar',
-        manifest: { entries: [], restored_at: restored_at },
-      )
+      write_backup('solectrus-backup-20260508-110000.tar', restored_at: restored_at)
 
       backup = described_class.find!('solectrus-backup-20260508-110000.tar')
       expect(backup.restored_at).to eq(Time.zone.parse(restored_at))
     end
 
     it 'in .all only the most recent restore keeps its restored_at' do
-      write_backup(
-        'solectrus-backup-20260508-110000.tar',
-        manifest: { entries: [], restored_at: '2026-05-08T12:00:00Z' },
-      )
-      write_backup(
-        'solectrus-backup-20260508-120000.tar',
-        manifest: { entries: [], restored_at: '2026-05-09T08:30:00Z' },
-      )
-      write_backup('solectrus-backup-20260508-130000.tar', manifest: { entries: [] })
+      write_backup('solectrus-backup-20260508-110000.tar', restored_at: '2026-05-08T12:00:00Z')
+      write_backup('solectrus-backup-20260508-120000.tar', restored_at: '2026-05-09T08:30:00Z')
+      write_backup('solectrus-backup-20260508-130000.tar')
 
       restored_by_filename = described_class.all.to_h { |b| [b.filename, b.restored_at] }
       expect(restored_by_filename).to eq(
@@ -203,6 +184,29 @@ RSpec.describe BackupRepository do
         'solectrus-backup-20260508-120000.tar' => Time.zone.parse('2026-05-09T08:30:00Z'),
         'solectrus-backup-20260508-130000.tar' => nil,
       )
+    end
+  end
+
+  describe 'image versions' do
+    it 'reads the InfluxDB and PostgreSQL images from the archived config.yaml' do
+      write_backup(
+        'solectrus-backup-20260508-110000.tar',
+        archive: {
+          'helios/config.yaml' => "influxdb:\n  image: influxdb:2.6-alpine\npostgresql:\n  image: postgres:13-alpine\n",
+        },
+      )
+
+      backup = described_class.find!('solectrus-backup-20260508-110000.tar')
+      expect(backup.influxdb_image).to eq('influxdb:2.6-alpine')
+      expect(backup.postgresql_image).to eq('postgres:13-alpine')
+    end
+
+    it 'is nil when config.yaml carries no image' do
+      write_backup('solectrus-backup-20260508-110000.tar')
+
+      backup = described_class.find!('solectrus-backup-20260508-110000.tar')
+      expect(backup.influxdb_image).to be_nil
+      expect(backup.postgresql_image).to be_nil
     end
   end
 
@@ -242,11 +246,11 @@ RSpec.describe BackupRepository do
     end
   end
 
-  def write_backup(filename, archive: { 'helios/config.yaml' => 'system: {}' }, manifest: nil, mtime: nil)
+  def write_backup(filename, archive: { 'helios/config.yaml' => 'system: {}' }, restored_at: nil, mtime: nil)
     FileUtils.mkdir_p(backups_dir)
     path = File.join(backups_dir, filename)
     File.binwrite(path, tar_archive(archive))
-    File.write("#{path}.json", JSON.generate(manifest)) if manifest
+    File.write("#{path}.json", JSON.generate(restored_at: restored_at)) if restored_at
     File.utime(mtime.to_i, mtime.to_i, path) if mtime
   end
 

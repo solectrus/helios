@@ -40,6 +40,8 @@ RSpec.describe RestoreRunner do
         created_at: Time.zone.local(2026, 5, 8, 11, 0, 0),
         files: [],
         restored_at: nil,
+        influxdb_image: nil,
+        postgresql_image: nil,
       ),
     )
     allow(Export::Builder).to receive(:new).and_return(instance_double(Export::Builder, write!: nil))
@@ -186,10 +188,10 @@ RSpec.describe RestoreRunner do
       run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
       script = run[run.index('-c') + 1]
       aggregate_failures do
-        expect(script).to include('MANIFEST_PATH="$OUTPUT_DIR/$BACKUP_FILENAME.json"')
         expect(script).to include('RESTORED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"')
-        expect(script).to include('s/,"restored_at":"[^"]*"//g')
-        expect(script).to include('printf \'{"restored_at":"%s"}\\n\'')
+        expect(script).to include(
+          'printf \'{"restored_at":"%s"}\\n\' "$RESTORED_AT" > "$OUTPUT_DIR/$BACKUP_FILENAME.json"',
+        )
       end
     end
 

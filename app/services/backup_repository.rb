@@ -16,7 +16,8 @@ class BackupRepository
   Entry = Data.define(:name, :bytes)
   ArchiveContents = Data.define(:entries, :config)
 
-  Backup = Data.define(:filename, :path, :bytes, :created_at, :files, :restored_at) do
+  Backup = Data.define(:filename, :path, :bytes, :created_at, :files, :restored_at, :influxdb_image,
+                       :postgresql_image) do
     def in_progress? = false
 
     def to_param = ::File.basename(filename, '.tar')
@@ -85,8 +86,9 @@ class BackupRepository
     end
 
     # Walks a HELIOS backup tar, capturing every entry plus the parsed
-    # `helios/config.yaml`. Used both as a manifest fallback in `.all` and
-    # by RestoreRunner / BackupUploader for archive validation.
+    # `helios/config.yaml`. Backs `.all` (file list + image versions) and
+    # RestoreRunner / BackupUploader archive validation. TarReader seeks past
+    # file bodies, so this stays cheap even for multi-GB backups.
     def read_archive(path)
       entries = []
       config = nil
@@ -148,20 +150,28 @@ class BackupRepository
          .reverse
     end
 
+    # File list, sizes and image versions all come straight from the archive;
+    # the manifest sidecar carries only the restore timestamp.
     def backup_for(path, stat)
-      manifest = manifest_for(path)
+      archive = read_archive(path)
+      images = images_from_config(archive.config)
+
       Backup.new(
         filename: ::File.basename(path),
         path: path,
         bytes: stat.size,
         created_at: stat.mtime.in_time_zone,
-        files: files_from(manifest) || archive_entries(path),
-        restored_at: restored_at_from(manifest),
+        files: archive.entries,
+        restored_at: restored_at_from(manifest_for(path)),
+        influxdb_image: images[:influxdb],
+        postgresql_image: images[:postgresql],
       )
     end
 
-    def files_from(manifest)
-      manifest&.fetch(:entries, nil)&.map { |entry| Entry.new(name: entry[:name], bytes: entry[:bytes]) }
+    # The configured InfluxDB / PostgreSQL image tags from the backed-up
+    # `helios/config.yaml`, e.g. "influxdb:2.9-alpine".
+    def images_from_config(config)
+      { influxdb: config&.dig('influxdb', 'image').presence, postgresql: config&.dig('postgresql', 'image').presence }
     end
 
     def restored_at_from(manifest)
@@ -177,10 +187,6 @@ class BackupRepository
       JSON.parse(::File.read(manifest_path(path)), symbolize_names: true)
     rescue Errno::ENOENT, JSON::ParserError
       nil
-    end
-
-    def archive_entries(path)
-      read_archive(path).entries
     end
 
     def parse_config_yaml(raw)

@@ -25,12 +25,12 @@
       <%= number_to_human_size(backup.bytes, precision: 0) %>
     </span>
 
-    <span class="badge badge-soft badge-secondary justify-start gap-1.5 whitespace-nowrap tabular-nums sm:w-22">
+    <span class="badge badge-soft badge-secondary justify-start gap-1.5 whitespace-nowrap tabular-nums sm:w-22 <%= 'tooltip tooltip-top' if influxdb_version %>" <% if influxdb_version %> data-tip="<%= t('backups.index.influxdb_version', version: influxdb_version) %>" <% end %>>
       <i class="fa-solid fa-chart-line"></i>
       <%= number_to_human_size(backup.influxdb_bytes, precision: 0) %>
     </span>
 
-    <span class="badge badge-soft badge-primary justify-start gap-1.5 whitespace-nowrap tabular-nums sm:w-20">
+    <span class="badge badge-soft badge-primary justify-start gap-1.5 whitespace-nowrap tabular-nums sm:w-20 <%= 'tooltip tooltip-top' if postgresql_version %>" <% if postgresql_version %> data-tip="<%= t('backups.index.postgresql_version', version: postgresql_version) %>" <% end %>>
       <i class="fa-solid fa-database"></i>
       <%= number_to_human_size(backup.postgresql_bytes, precision: 0) %>
     </span>
