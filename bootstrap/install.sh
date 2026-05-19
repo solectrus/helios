@@ -176,7 +176,7 @@ welcome() {
   fi
   cat <<TEXT
   This installer will:
-    • Install Docker if missing (Linux only, via https://get.docker.com)
+    • Install Docker if missing (via https://get.docker.com)
     • Create compose.yaml and .env, or extend an existing compose.yaml
       by adding HELIOS as a new service
     • Pull and start HELIOS, reachable at http://<host>:3999
