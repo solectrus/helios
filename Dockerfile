@@ -1,8 +1,6 @@
 # syntax=docker/dockerfile:1
 # check=error=true
 
-ARG SKIP_BOOTSNAP_PRECOMPILE=true
-
 FROM ghcr.io/ledermann/rails-base-builder:4.0.4-alpine AS builder
 
 # Remove some files not needed in resulting image.
