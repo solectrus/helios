@@ -1,7 +1,7 @@
 # Stores a tar archive uploaded by the user as a regular HELIOS backup.
 # The file is validated to look like a HELIOS backup (PostgreSQL dump,
 # InfluxDB dump, helios/config.yaml) before it is moved into the backups
-# directory and a matching manifest sidecar is written.
+# directory.
 class BackupUploader
   class Error < StandardError; end
 
@@ -85,15 +85,12 @@ class BackupUploader
   def persist!(target_path)
     FileUtils.mkdir_p(BackupRepository.directory)
     part_path = "#{target_path}.part"
-    manifest_path = "#{target_path}#{BackupRepository::MANIFEST_SUFFIX}"
 
     FileUtils.mv(uploaded_file.tempfile.path, part_path)
-    ::File.write(manifest_path, JSON.generate(entries: @archive.entries.map(&:to_h)))
     ::File.rename(part_path, target_path)
     apply_mtime_from_filename!(target_path)
   rescue SystemCallError => e
     FileUtils.rm_f(part_path) if part_path
-    FileUtils.rm_f(manifest_path) if manifest_path
     raise Error, error(:write_failed, message: e.message)
   end
 

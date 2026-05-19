@@ -150,12 +150,6 @@ if ! docker exec -i "$INFLUXDB_CONTAINER" sh -c '
   fail "InfluxDB restore failed: $(tail -n 20 "$INFLUX_RESTORE_LOG" | tr '\n' ' ')"
 fi
 
-# Record the restore timestamp in the manifest sidecar. The manifest holds
-# nothing else — file list and versions are read from the archive — so it is
-# simply (over)written, replacing any prior restore marker.
-RESTORED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-printf '{"restored_at":"%s"}\n' "$RESTORED_AT" > "$OUTPUT_DIR/$BACKUP_FILENAME.json"
-
 # If any service was stopped before the restore, leave the rest stopped —
 # only the DBs (started fresh above for the import) keep running.
 if [ "$RESTART_AFTER" = "1" ]; then

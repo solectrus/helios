@@ -84,20 +84,6 @@ RSpec.describe 'Backups', :with_admin_password do
       end
     end
 
-    it 'shows when a backup was restored' do
-      filename = 'solectrus-backup-20260508-110000.tar'
-      restored_at = Time.zone.local(2026, 5, 9, 8, 30, 0)
-      persist_backup(filename, restored_at: restored_at.utc.iso8601)
-
-      get backups_path
-
-      expect(response.body).to include(
-        I18n.t('backups.index.restored_at',
-               date: I18n.l(restored_at, format: :backup_date),
-               time: I18n.l(restored_at, format: :backup_time)),
-      )
-    end
-
     it 'disables the create button and explains why when preconditions are unmet' do
       reason = I18n.t('backups.runner.unavailable_reasons.postgres_not_running')
       allow(BackupRunner).to receive(:unavailable_reason).and_return(reason)
@@ -254,15 +240,14 @@ RSpec.describe 'Backups', :with_admin_password do
   end
 
   describe 'DELETE /backups/:id' do
-    it 'removes the backup file and its manifest, then redirects' do
+    it 'removes the backup file, then redirects' do
       filename = 'solectrus-backup-20260508-110000.tar'
-      persist_backup(filename, restored_at: '2026-05-08T12:00:00Z')
+      persist_backup(filename)
       stored_path = File.join(data_path, 'helios', 'backups', filename)
 
       delete backup_path('solectrus-backup-20260508-110000')
 
       expect(File).not_to exist(stored_path)
-      expect(File).not_to exist("#{stored_path}.json")
       expect(response).to redirect_to(backups_path)
       expect(flash[:notice]).to eq(I18n.t('backups.destroy.deleted'))
     end
@@ -388,7 +373,7 @@ RSpec.describe 'Backups', :with_admin_password do
     File.write(Configuration.path, YAML.dump('system' => { 'admin_password' => 'test' }))
   end
 
-  def persist_backup(filename, restored_at: nil, influxdb_image: nil, postgresql_image: nil)
+  def persist_backup(filename, influxdb_image: nil, postgresql_image: nil)
     entries = {
       'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'p' * 2816,
       'solectrus-influxdb-backup-2026-05-08.tar.gz' => 'i' * 7168,
@@ -399,7 +384,6 @@ RSpec.describe 'Backups', :with_admin_password do
     FileUtils.mkdir_p(backups_dir)
     path = File.join(backups_dir, filename)
     File.binwrite(path, tar_archive(entries))
-    File.write("#{path}.json", JSON.generate(restored_at: restored_at)) if restored_at
 
     # Pin mtime to the filename's timestamp so the rendered date is deterministic
     # regardless of when the test runs and of the host TZ.

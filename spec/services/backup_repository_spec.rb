@@ -93,9 +93,10 @@ RSpec.describe BackupRepository do
   end
 
   describe '.destroy!' do
-    it 'removes the archive and its manifest' do
+    it 'removes the archive and any legacy manifest sidecar' do
       filename = 'solectrus-backup-20260508-110000.tar'
-      write_backup(filename, restored_at: '2026-05-08T12:00:00Z')
+      write_backup(filename)
+      File.write(File.join(backups_dir, "#{filename}.json"), '{}') # legacy sidecar
 
       described_class.destroy!(filename)
 
@@ -103,7 +104,7 @@ RSpec.describe BackupRepository do
       expect(File).not_to exist(File.join(backups_dir, "#{filename}.json"))
     end
 
-    it 'works when the manifest is missing' do
+    it 'works when no legacy sidecar exists' do
       filename = 'solectrus-backup-20260508-110000.tar'
       write_backup(filename)
 
@@ -139,51 +140,15 @@ RSpec.describe BackupRepository do
                                                         ])
     end
 
-    it 'removes the manifest alongside the backup file' do
+    it 'removes any legacy manifest sidecar alongside the backup file' do
       filename = 'solectrus-backup-20260508-110000.tar'
-      write_backup(filename, restored_at: '2026-05-08T12:00:00Z')
+      write_backup(filename)
+      File.write(File.join(backups_dir, "#{filename}.json"), '{}') # legacy sidecar
 
       described_class.prune!(keep: 0)
 
       expect(File).not_to exist(File.join(backups_dir, filename))
       expect(File).not_to exist(File.join(backups_dir, "#{filename}.json"))
-    end
-  end
-
-  describe 'restored_at' do
-    it 'is nil when no manifest exists at all' do
-      write_backup('solectrus-backup-20260508-110000.tar')
-
-      expect(described_class.find!('solectrus-backup-20260508-110000.tar').restored_at).to be_nil
-    end
-
-    it 'is nil for a legacy manifest that carries no restored_at' do
-      filename = 'solectrus-backup-20260508-110000.tar'
-      write_backup(filename)
-      File.write(File.join(backups_dir, "#{filename}.json"), '{"entries":[]}')
-
-      expect(described_class.find!(filename).restored_at).to be_nil
-    end
-
-    it 'parses the restored_at from the manifest as a Time.zone-aware Time' do
-      restored_at = '2026-05-09T08:30:00Z'
-      write_backup('solectrus-backup-20260508-110000.tar', restored_at: restored_at)
-
-      backup = described_class.find!('solectrus-backup-20260508-110000.tar')
-      expect(backup.restored_at).to eq(Time.zone.parse(restored_at))
-    end
-
-    it 'in .all only the most recent restore keeps its restored_at' do
-      write_backup('solectrus-backup-20260508-110000.tar', restored_at: '2026-05-08T12:00:00Z')
-      write_backup('solectrus-backup-20260508-120000.tar', restored_at: '2026-05-09T08:30:00Z')
-      write_backup('solectrus-backup-20260508-130000.tar')
-
-      restored_by_filename = described_class.all.to_h { |b| [b.filename, b.restored_at] }
-      expect(restored_by_filename).to eq(
-        'solectrus-backup-20260508-110000.tar' => nil,
-        'solectrus-backup-20260508-120000.tar' => Time.zone.parse('2026-05-09T08:30:00Z'),
-        'solectrus-backup-20260508-130000.tar' => nil,
-      )
     end
   end
 
@@ -246,11 +211,10 @@ RSpec.describe BackupRepository do
     end
   end
 
-  def write_backup(filename, archive: { 'helios/config.yaml' => 'system: {}' }, restored_at: nil, mtime: nil)
+  def write_backup(filename, archive: { 'helios/config.yaml' => 'system: {}' }, mtime: nil)
     FileUtils.mkdir_p(backups_dir)
     path = File.join(backups_dir, filename)
     File.binwrite(path, tar_archive(archive))
-    File.write("#{path}.json", JSON.generate(restored_at: restored_at)) if restored_at
     File.utime(mtime.to_i, mtime.to_i, path) if mtime
   end
 

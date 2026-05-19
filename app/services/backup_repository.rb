@@ -1,13 +1,15 @@
-require 'json'
 require 'rubygems/package'
 
 class BackupRepository
   class NotFound < StandardError; end
 
   MAX_BACKUPS = 5
-  MANIFEST_SUFFIX = '.json'.freeze
   ERROR_FILENAME = 'error.txt'.freeze
   CONFIG_ENTRY_PATH = 'helios/config.yaml'.freeze
+
+  # Per-backup `<archive>.tar.json` sidecars written by older HELIOS versions.
+  # No longer produced; only cleaned up when their backup is deleted/pruned.
+  LEGACY_MANIFEST_SUFFIX = '.json'.freeze
 
   FILENAME_PATTERN = /\Asolectrus-backup-\d{8}-\d{6}\.tar\z/
   POSTGRESQL_ENTRY_PATTERN = /\Asolectrus-postgresql-backup-\d{4}-\d{2}-\d{2}\.sql\.gz\z/
@@ -16,8 +18,7 @@ class BackupRepository
   Entry = Data.define(:name, :bytes)
   ArchiveContents = Data.define(:entries, :config)
 
-  Backup = Data.define(:filename, :path, :bytes, :created_at, :files, :restored_at, :influxdb_image,
-                       :postgresql_image) do
+  Backup = Data.define(:filename, :path, :bytes, :created_at, :files, :influxdb_image, :postgresql_image) do
     def in_progress? = false
 
     def to_param = ::File.basename(filename, '.tar')
@@ -43,16 +44,7 @@ class BackupRepository
 
   class << self
     def all
-      backups = backup_paths_with_stats.map { |path, stat| backup_for(path, stat) }
-
-      # Restoring a backup overwrites whatever data the previous restore brought
-      # in, so only the most recent restore reflects the current DB state. Keep
-      # the marker on that one and clear the others — historical truth still
-      # lives in the manifest sidecars.
-      latest_restore = backups.filter_map(&:restored_at).max
-      return backups unless latest_restore
-
-      backups.map { |backup| backup.restored_at == latest_restore ? backup : backup.with(restored_at: nil) }
+      backup_paths_with_stats.map { |path, stat| backup_for(path, stat) }
     end
 
     def find!(filename)
@@ -71,7 +63,7 @@ class BackupRepository
       raise NotFound unless ::File.exist?(path)
 
       FileUtils.rm_f(path)
-      FileUtils.rm_f(manifest_path(path))
+      FileUtils.rm_f("#{path}#{LEGACY_MANIFEST_SUFFIX}")
     end
 
     def directory
@@ -123,7 +115,7 @@ class BackupRepository
     def prune!(keep: MAX_BACKUPS - 1)
       backup_paths_with_stats.drop(keep).each do |(path, _stat)|
         FileUtils.rm_f(path)
-        FileUtils.rm_f(manifest_path(path))
+        FileUtils.rm_f("#{path}#{LEGACY_MANIFEST_SUFFIX}")
       end
     end
 
@@ -133,10 +125,6 @@ class BackupRepository
       raise NotFound unless filename.match?(FILENAME_PATTERN)
 
       ::File.join(directory, filename)
-    end
-
-    def manifest_path(path)
-      "#{path}#{MANIFEST_SUFFIX}"
     end
 
     def backup_paths_with_stats
@@ -150,8 +138,7 @@ class BackupRepository
          .reverse
     end
 
-    # File list, sizes and image versions all come straight from the archive;
-    # the manifest sidecar carries only the restore timestamp.
+    # File list, sizes and image versions all come straight from the archive.
     def backup_for(path, stat)
       archive = read_archive(path)
       images = images_from_config(archive.config)
@@ -162,7 +149,6 @@ class BackupRepository
         bytes: stat.size,
         created_at: stat.mtime.in_time_zone,
         files: archive.entries,
-        restored_at: restored_at_from(manifest_for(path)),
         influxdb_image: images[:influxdb],
         postgresql_image: images[:postgresql],
       )
@@ -172,21 +158,6 @@ class BackupRepository
     # `helios/config.yaml`, e.g. "influxdb:2.9-alpine".
     def images_from_config(config)
       { influxdb: config&.dig('influxdb', 'image').presence, postgresql: config&.dig('postgresql', 'image').presence }
-    end
-
-    def restored_at_from(manifest)
-      raw = manifest&.fetch(:restored_at, nil)
-      return nil if raw.blank?
-
-      Time.zone.parse(raw)
-    rescue ArgumentError
-      nil
-    end
-
-    def manifest_for(path)
-      JSON.parse(::File.read(manifest_path(path)), symbolize_names: true)
-    rescue Errno::ENOENT, JSON::ParserError
-      nil
     end
 
     def parse_config_yaml(raw)

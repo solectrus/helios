@@ -18,9 +18,7 @@ RSpec.describe BackupUploader do
 
       described_class.start(uploaded)
 
-      stored_path = File.join(backups_dir, 'solectrus-backup-20260507-101234.tar')
-      expect(File).to exist(stored_path)
-      expect(File).to exist("#{stored_path}.json")
+      expect(File).to exist(File.join(backups_dir, 'solectrus-backup-20260507-101234.tar'))
     end
 
     it 'sets the mtime to the timestamp encoded in the filename' do
@@ -30,23 +28,6 @@ RSpec.describe BackupUploader do
 
       stored_path = File.join(backups_dir, 'solectrus-backup-20260507-101234.tar')
       expect(File.mtime(stored_path)).to eq(Time.zone.local(2026, 5, 7, 10, 12, 34))
-    end
-
-    it 'writes a manifest with all archive entries' do
-      uploaded = build_upload('solectrus-backup-20260507-101234.tar', valid_archive)
-
-      described_class.start(uploaded)
-
-      manifest = JSON.parse(
-        File.read(File.join(backups_dir, 'solectrus-backup-20260507-101234.tar.json')),
-        symbolize_names: true,
-      )
-      names = manifest[:entries].pluck(:name)
-      expect(names).to contain_exactly(
-        'solectrus-postgresql-backup-2026-05-07.sql.gz',
-        'solectrus-influxdb-backup-2026-05-07.tar.gz',
-        'helios/config.yaml',
-      )
     end
 
     it 'generates a fresh filename when the original does not match the pattern' do

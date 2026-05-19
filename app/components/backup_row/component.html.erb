@@ -5,19 +5,6 @@
     </time>
 
     <span class="text-base-content/60 tabular-nums sm:w-20"><%= l(backup.created_at, format: :backup_time) %></span>
-
-    <% if backup.restored_at %>
-      <span
-        class="tooltip tooltip-top text-base-content/40 sm:inline-flex sm:w-4 sm:justify-center"
-        data-tip="<%= t('backups.index.restored_at',
-                        date: l(backup.restored_at, format: :backup_date),
-                        time: l(backup.restored_at, format: :backup_time)) %>"
-      >
-        <i class="fa-solid fa-clock-rotate-left"></i>
-      </span>
-    <% else %>
-      <span class="hidden sm:inline-block sm:w-4" aria-hidden="true"></span>
-    <% end %>
   </div>
 
   <div class="backup-row-sizes flex flex-wrap items-center gap-x-3 gap-y-1 sm:contents">

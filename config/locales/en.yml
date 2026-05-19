@@ -178,7 +178,6 @@ en:
       restore_confirm: 'Your current data and configuration will be overwritten and thus lost.<br><br>SOLECTRUS will then be back at the state from <strong>%{date}, %{time}</strong>.'
       restore_confirm_button: 'Restore this backup'
       restore_in_progress: 'Restoring…'
-      restored_at: 'Restored on %{date}, %{time}'
       influxdb_version: 'InfluxDB %{version}'
       postgresql_version: 'PostgreSQL %{version}'
       delete_existing: 'Delete backup'

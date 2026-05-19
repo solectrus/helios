@@ -39,7 +39,6 @@ RSpec.describe RestoreRunner do
         bytes: 7,
         created_at: Time.zone.local(2026, 5, 8, 11, 0, 0),
         files: [],
-        restored_at: nil,
         influxdb_image: nil,
         postgresql_image: nil,
       ),
@@ -180,19 +179,6 @@ RSpec.describe RestoreRunner do
       placeholder_index = run.index('_')
       services_arg = run[placeholder_index + 8]
       expect(services_arg.split).not_to include('helios')
-    end
-
-    it 'records restored_at into the manifest sidecar after a successful import' do
-      described_class.start(filename)
-
-      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
-      script = run[run.index('-c') + 1]
-      aggregate_failures do
-        expect(script).to include('RESTORED_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"')
-        expect(script).to include(
-          'printf \'{"restored_at":"%s"}\\n\' "$RESTORED_AT" > "$OUTPUT_DIR/$BACKUP_FILENAME.json"',
-        )
-      end
     end
 
     it 'restores InfluxDB through the local container HTTP endpoint' do
