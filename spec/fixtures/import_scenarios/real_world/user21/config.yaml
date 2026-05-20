@@ -1,0 +1,78 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: 283aebd3f655573d2e551dd0aa9c13f4
+  app_host: 192.168.178.44
+  installation_date: '2020-06-01'
+  secret_key_base: my-secret-key-base
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:14-alpine
+  password: my-postgres-password
+  volume_path: "/volume1/docker/solectrus/dashboard/postgresql"
+influxdb:
+  bucket: my-solectrus-bucket
+  image: influxdb:2.1.1-alpine
+  org: solectrus
+  password: my-influx-password
+  token_admin: my-super-secret-admin-token
+  token_read: my-super-secret-admin-token
+  token_readwrite: my-super-secret-admin-token
+  token_write: my-super-secret-admin-token
+  volume_path: "/volume1/docker/solectrus/dashboard/influxdb"
+redis:
+  image: redis:alpine
+  volume_path: "/volume1/docker/solectrus/dashboard/redis"
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: forecast.solar
+  forecast_azimuth1: '0'
+  forecast_declination1: '18'
+  forecast_interval: '900'
+  forecast_kwp1: '9.72'
+  forecast_latitude: '0.00000'
+  forecast_longitude: '0.00000'
+  forecast_roofs: '1'
+senec:
+  adapter: local
+  host: 192.168.178.34
+  interval: '5'
+  version: v3
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_power:
+    source: senec
