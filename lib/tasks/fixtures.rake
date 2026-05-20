@@ -48,7 +48,9 @@ namespace :fixtures do
     # sort nested keys so diffs stay stable across importer reshuffles.
     data = YAML.safe_load_file(Configuration.path, permitted_classes: [Date])
     sorted = data.transform_values { |v| deep_sort_keys(v) }
-    File.write(scenario_path.join('config.yaml'), Configuration.dump(sorted))
+    config_path = scenario_path.join('helios/config.yaml')
+    FileUtils.mkdir_p(config_path.dirname)
+    File.write(config_path, Configuration.dump(sorted))
 
     FileUtils.cp(Compose.path, scenario_path.join('compose.yaml'))
     FileUtils.cp(Env.path, scenario_path.join('.env'))
@@ -74,8 +76,8 @@ namespace :fixtures do
   task regenerate: :environment do
     with_scenario_sandbox do |scenarios_dir|
       names = Pathname
-              .glob(scenarios_dir.join('**/config.yaml'))
-              .map { |p| p.dirname.relative_path_from(scenarios_dir).to_s }
+              .glob(scenarios_dir.join('**/helios/config.yaml'))
+              .map { |p| p.dirname.parent.relative_path_from(scenarios_dir).to_s }
               .sort
 
       names.each do |name|

@@ -1,8 +1,13 @@
 # Data-driven round-trip tests: for each fixture scenario under
-# spec/fixtures/import_scenarios/<name>/ that has a config.yaml, verify that
+# spec/fixtures/import_scenarios/<name>/ that has a helios/config.yaml, verify
+# that
 #
-#   <compose>.bak + .env.bak     →  Import  →  config.yaml
-#   config.yaml                  →  Export  →  compose.yaml + .env
+#   <compose>.bak + .env.bak     →  Import  →  helios/config.yaml
+#   helios/config.yaml           →  Export  →  compose.yaml + .env
+#
+# helios/config.yaml mirrors the production layout where HELIOS stores its
+# config under <host_data_path>/helios/ — letting fixtures double as droppable
+# stacks for `docker compose up -d`.
 #
 # Synthetic scenarios live directly under import_scenarios/. Anonymized
 # real-world snapshots from actual users live under import_scenarios/real_world/
@@ -18,8 +23,8 @@ def scenarios_root
 end
 
 RSpec.describe 'Scenario round-trip' do
-  Pathname.glob(scenarios_root.join('**/config.yaml'))
-          .map { |p| p.dirname.relative_path_from(scenarios_root).to_s }
+  Pathname.glob(scenarios_root.join('**/helios/config.yaml'))
+          .map { |p| p.dirname.parent.relative_path_from(scenarios_root).to_s }
           .sort
           .each do |name|
     context "with scenario '#{name}'" do
@@ -46,7 +51,7 @@ RSpec.describe 'Scenario round-trip' do
         Export::Builder.new(config).write!
 
         imported = YAML.safe_load_file(Configuration.path, permitted_classes: [Date])
-        expected = YAML.safe_load_file(scenario_path.join('config.yaml'), permitted_classes: [Date])
+        expected = YAML.safe_load_file(scenario_path.join('helios/config.yaml'), permitted_classes: [Date])
         expect(imported).to eq(expected)
 
         expect(File.read(Compose.path)).to eq(File.read(scenario_path.join('compose.yaml')))
