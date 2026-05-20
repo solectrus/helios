@@ -8,24 +8,24 @@
 ---
 _schema_version: 3
 system:
-  admin_password: my-admin-password
+  admin_password: CCCCC
   app_host: localhost
   installation_date: '2022-01-01'
-  secret_key_base: my-secret-key-base
+  secret_key_base: AAAAA
 dashboard:
   image: ghcr.io/solectrus/solectrus:pr-3747
 postgresql:
   image: postgres:14-alpine
-  password: my-super-secret-password
+  password: BBBBB
 influxdb:
-  bucket: my-solectrus-bucket
+  bucket: GGGGG
   image: influxdb:2.7-alpine
-  org: solectrus
-  password: my-influx-password
-  token_admin: my-super-secret-admin-token
-  token_read: my-super-secret-admin-token
-  token_readwrite: my-super-secret-admin-token
-  token_write: my-super-secret-admin-token
+  org: DDDDD
+  password: EEEEE
+  token_admin: FFFFF
+  token_read: FFFFF
+  token_readwrite: FFFFF
+  token_write: FFFFF
 redis:
   image: redis:7-alpine
 watchtower:
@@ -39,7 +39,7 @@ forecast:
   forecast_latitude: '0.00000'
   forecast_longitude: '0.00000'
   forecast_roofs: '1'
-  forecast_solar_apikey: my-forecast-solar-api-key
+  forecast_solar_apikey: HHHHH
   measurement: Forecast
 senec:
   adapter: local

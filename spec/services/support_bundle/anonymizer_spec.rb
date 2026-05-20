@@ -1,45 +1,97 @@
 RSpec.describe SupportBundle::Anonymizer do
+  describe '.mask' do
+    it 'replaces a string with a fixed 5-letter run of a single letter' do
+      expect(described_class.mask('geheim')).to eq('AAAAA')
+    end
+
+    it 'always returns the same length, regardless of input length' do
+      expect(described_class.mask('a').length).to eq(5)
+      expect(described_class.mask('a-much-longer-secret').length).to eq(5)
+    end
+
+    it 'returns the same mask for repeated calls with the same value' do
+      first = described_class.mask('shared-secret')
+      second = described_class.mask('shared-secret')
+
+      expect(second).to eq(first)
+    end
+
+    it 'gives different values different letters' do
+      first = described_class.mask('alpha')
+      second = described_class.mask('beta')
+
+      expect(first[0]).not_to eq(second[0])
+    end
+
+    it 'preserves empty strings' do
+      expect(described_class.mask('')).to eq('')
+    end
+
+    it 'cycles letters after exhausting A-Z so the 27th value reuses A' do
+      26.times { |i| described_class.mask("value-#{i}") }
+
+      expect(described_class.mask('overflow')[0]).to eq('A')
+    end
+  end
+
+  describe '.coord_mask' do
+    it 'keeps the integer part and zeroes the decimals' do
+      expect(described_class.coord_mask('52.51627')).to eq('52.00000')
+    end
+
+    it 'preserves a negative sign' do
+      expect(described_class.coord_mask('-3.14159')).to eq('-3.00000')
+    end
+
+    it 'handles longer decimal tails (e.g. float-precision tails in logs)' do
+      expect(described_class.coord_mask('52.5162799')).to eq('52.0000000')
+    end
+
+    it 'falls back to the 5-letter mask for non-coordinate strings' do
+      expect(described_class.coord_mask('not-a-coord')).to match(/\A[A-Z]{5}\z/)
+    end
+  end
+
   describe '.anonymize_env_style' do
-    let(:all_secrets_env) do
-      <<~ENV
+    it 'masks every whitelisted env variable to the 5-letter dummy' do
+      content = <<~ENV
         ADMIN_PASSWORD=adminpw
-        SECRET_KEY_BASE=31daffd9b7e9f511
-        LOCKUP_CODEWORD=letmein
-        INFLUX_PASSWORD=influxpw
-        INFLUX_TOKEN=NWD3vfbwdz8kKXiz
-        POSTGRES_PASSWORD=pgpw
-        MQTT_USERNAME=mqttuser
-        MQTT_PASSWORD=mqttpw
-        AWS_ACCESS_KEY_ID=AKIA0000
-        AWS_SECRET_ACCESS_KEY=wJalrXUt
-        SENEC_USERNAME=user@example.com
         SENEC_PASSWORD=s3cret
-        SENEC_TOTP_URI=otpauth://totp/SENEC?secret=ABC
-        SENEC_SYSTEM_ID=12345
-        SHELLY_AUTH_KEY=abc123
-        SHELLY_PASSWORD=shellypw,shellypw2
-        FORECAST_LATITUDE=52.51627
-        FORECAST_LONGITUDE=13.37774
-        FORECAST_SOLAR_APIKEY=solar-key
-        SOLCAST_APIKEY=solcast-key
-        PVNODE_APIKEY=pvnode-key
         TIBBER_TOKEN=s3cr3t-t0k3n
+      ENV
+
+      result = described_class.anonymize_env_style(content)
+
+      expect(result).to eq(<<~ENV)
+        ADMIN_PASSWORD=AAAAA
+        SENEC_PASSWORD=BBBBB
+        TIBBER_TOKEN=CCCCC
       ENV
     end
 
-    it 'redacts every whitelisted env variable with a descriptive placeholder' do
-      result = described_class.anonymize_env_style(all_secrets_env)
+    it 'reuses the same letter when a value repeats across lines' do
+      content = <<~ENV
+        INFLUX_TOKEN=NWD3vfbwdz8kKXiz
+        INFLUX_TOKEN_WRITE=NWD3vfbwdz8kKXiz
+      ENV
 
-      expect(result).to include('POSTGRES_PASSWORD=dummy_postgres_password')
-      expect(result).to include('SENEC_USERNAME=dummy_senec_username')
-      expect(result).to include('TIBBER_TOKEN=dummy_tibber_token')
+      result = described_class.anonymize_env_style(content)
+
+      expect(result).to eq(<<~ENV)
+        INFLUX_TOKEN=AAAAA
+        INFLUX_TOKEN_WRITE=AAAAA
+      ENV
     end
 
-    it 'uses realistic dummies for non-string env variables' do
-      result = described_class.anonymize_env_style(all_secrets_env)
+    it 'keeps coordinates as their integer part with zeroed decimals' do
+      result = described_class.anonymize_env_style(<<~ENV)
+        FORECAST_LATITUDE=52.51627
+        FORECAST_LONGITUDE=13.37774
+        SENEC_SYSTEM_ID=12345
+      ENV
 
-      expect(result).to include('FORECAST_LATITUDE=0.00000')
-      expect(result).to include('FORECAST_LONGITUDE=0.00000')
+      expect(result).to include('FORECAST_LATITUDE=52.00000')
+      expect(result).to include('FORECAST_LONGITUDE=13.00000')
       expect(result).to include('SENEC_SYSTEM_ID=0')
     end
 
@@ -47,19 +99,67 @@ RSpec.describe SupportBundle::Anonymizer do
       content = <<~ENV
         TZ=Europe/Berlin
         APP_HOST=192.168.178.131
-        INFLUX_ORG=solectrus
         INSTALLATION_DATE=2025-01-01
       ENV
 
       expect(described_class.anonymize_env_style(content)).to eq(content)
     end
 
+    it 'masks INFLUX_BUCKET and INFLUX_ORG regardless of value' do
+      content = <<~ENV
+        INFLUX_BUCKET=my-solectrus-bucket
+        INFLUX_ORG=solectrus
+      ENV
+
+      expect(described_class.anonymize_env_style(content)).to eq(<<~ENV)
+        INFLUX_BUCKET=AAAAA
+        INFLUX_ORG=BBBBB
+      ENV
+    end
+
+    it 'masks *_HOST values that are public FQDNs' do
+      content = <<~ENV
+        APP_HOST=solar.example.com
+        INFLUX_HOST=influx.mydomain.de
+      ENV
+
+      expect(described_class.anonymize_env_style(content)).to eq(<<~ENV)
+        APP_HOST=AAAAA
+        INFLUX_HOST=BBBBB
+      ENV
+    end
+
+    it 'leaves *_HOST values that are private IPs, container names, or local zones alone' do
+      content = <<~ENV
+        APP_HOST=192.168.178.131
+        INFLUX_HOST=influxdb
+        MQTT_HOST=10.0.0.5
+        SENEC_HOST=senec.fritz.box
+        SHELLY_HOST=shelly-heatpump.fritz.box
+        APP_HOST=localhost
+      ENV
+
+      expect(described_class.anonymize_env_style(content)).to eq(content)
+    end
+
+    it 'leaves a private IP with a trailing inline comment alone' do
+      content = "SENEC_HOST=192.168.178.34 # change this!!!\n"
+
+      expect(described_class.anonymize_env_style(content)).to eq(content)
+    end
+
+    it 'masks the whole SHELLY_HOST list when any entry is a public FQDN' do
+      content = "SHELLY_HOST=192.168.1.10,solar.example.com,192.168.1.11\n"
+
+      expect(described_class.anonymize_env_style(content))
+        .to eq("SHELLY_HOST=AAAAA\n")
+    end
+
     it 'matches env keys case-insensitively (for compose env-list entries)' do
       content = "    - senec_password=literal\n"
 
-      expect(described_class.anonymize_env_style(content)).to eq(
-        "    - senec_password=dummy_senec_password\n",
-      )
+      expect(described_class.anonymize_env_style(content))
+        .to eq("    - senec_password=AAAAA\n")
     end
 
     it 'leaves ${VAR} compose interpolations untouched' do
@@ -74,21 +174,15 @@ RSpec.describe SupportBundle::Anonymizer do
       expect(described_class.anonymize_env_style(content)).to eq(content)
     end
 
-    it 'redacts unrecognized keys whose name matches a sensitive pattern' do
+    it 'masks unrecognized keys whose name matches a sensitive pattern' do
       content = <<~ENV
         STRIPE_API_KEY=sk_live_abcdef
-        HONEYBADGER_API_KEY=hb_xxx
-        S3_SECRET_ACCESS_KEY=s3-secret
-        VENDOR_PRIVATE_KEY=PEM-encoded-key
         PGADMIN_DEFAULT_PASSWORD=adminpw
       ENV
 
       expect(described_class.anonymize_env_style(content)).to eq(<<~ENV)
-        STRIPE_API_KEY=dummy_stripe_api_key
-        HONEYBADGER_API_KEY=dummy_honeybadger_api_key
-        S3_SECRET_ACCESS_KEY=dummy_s3_secret_access_key
-        VENDOR_PRIVATE_KEY=dummy_vendor_private_key
-        PGADMIN_DEFAULT_PASSWORD=dummy_pgadmin_default_password
+        STRIPE_API_KEY=AAAAA
+        PGADMIN_DEFAULT_PASSWORD=BBBBB
       ENV
     end
 
@@ -113,7 +207,7 @@ RSpec.describe SupportBundle::Anonymizer do
 
       expect(described_class.anonymize_env_style(content)).to eq(<<~ENV)
         # SENEC cloud password
-        SENEC_PASSWORD=dummy_senec_password
+        SENEC_PASSWORD=AAAAA
 
         # trailing comment
       ENV
@@ -121,7 +215,7 @@ RSpec.describe SupportBundle::Anonymizer do
   end
 
   describe '.anonymize_yaml' do
-    it 'redacts SENEC credentials and leaves other senec fields alone' do
+    it 'masks SENEC credentials and leaves other senec fields alone' do
       yaml = <<~YAML
         senec:
           host: senec.fritz.box
@@ -135,14 +229,14 @@ RSpec.describe SupportBundle::Anonymizer do
 
       expect(parsed['senec']).to eq(
         'host' => 'senec.fritz.box',
-        'username' => 'dummy_username',
-        'password' => 'dummy_password',
-        'totp_uri' => 'dummy_totp_uri',
+        'username' => 'AAAAA',
+        'password' => 'BBBBB',
+        'totp_uri' => 'CCCCC',
         'system_id' => '0',
       )
     end
 
-    it 'redacts forecast coordinates and leaves other forecast fields alone' do
+    it 'replaces forecast coordinates with parseable placeholders and leaves other forecast fields alone' do
       yaml = <<~YAML
         forecast:
           forecast_latitude: '52.51627'
@@ -153,99 +247,82 @@ RSpec.describe SupportBundle::Anonymizer do
       parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
 
       expect(parsed['forecast']).to eq(
-        'forecast_latitude' => '0.00000',
-        'forecast_longitude' => '0.00000',
+        'forecast_latitude' => '52.00000',
+        'forecast_longitude' => '13.00000',
         'forecast_roofs' => '1',
       )
     end
 
-    context 'with admin/database/broker secrets' do
-      let(:yaml) do
-        <<~YAML
-          system:
-            admin_password: adminpw
-            secret_key_base: 31daffd9
-            timezone: Europe/Berlin
-          dashboard:
-            lockup_codeword: letmein
-            ui_theme: light
-          postgresql: { password: pgpw }
-          influxdb: { token: influxtoken, password: influxpw, org: solectrus }
-          mqtt: { mqtt_password: mqttpw, mqtt_username: admin }
-        YAML
-      end
-      let(:parsed) { YAML.safe_load(described_class.anonymize_yaml(yaml)) }
+    it 'masks database and broker secrets with consistent letters per value' do
+      yaml = <<~YAML
+        postgresql: { password: pgpw }
+        influxdb: { token: influxtoken, password: pgpw, org: solectrus }
+        mqtt: { mqtt_password: mqttpw, mqtt_username: admin }
+      YAML
 
-      it 'redacts system secrets and keeps non-secret fields' do
-        expect(parsed['system']).to eq(
-          'admin_password' => 'dummy_admin_password',
-          'secret_key_base' => 'dummy_secret_key_base',
-          'timezone' => 'Europe/Berlin',
-        )
-      end
+      parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
 
-      it 'redacts the dashboard codeword and keeps non-secret fields' do
-        expect(parsed['dashboard']).to eq(
-          'lockup_codeword' => 'dummy_lockup_codeword',
-          'ui_theme' => 'light',
-        )
-      end
+      # pgpw appears twice → same letter, same mask
+      expect(parsed['postgresql']['password']).to eq(parsed['influxdb']['password'])
+      expect(parsed['postgresql']['password']).to match(/\A[A-Z]{5}\z/)
 
-      it 'redacts database and broker secrets' do
-        expect(parsed['postgresql']).to eq('password' => 'dummy_password')
-        expect(parsed['influxdb']).to eq(
-          'token' => 'dummy_token',
-          'password' => 'dummy_password',
-          'org' => 'solectrus',
-        )
-        expect(parsed['mqtt']).to eq(
-          'mqtt_password' => 'dummy_mqtt_password',
-          'mqtt_username' => 'dummy_mqtt_username',
-        )
-      end
+      # Distinct values get distinct letters
+      letters = parsed.values_at('postgresql', 'influxdb', 'mqtt').flat_map(&:values).pluck(0)
+      expect(letters.uniq.size).to be > 1
     end
 
-    context 'with shelly, backup and forecast API keys' do
-      let(:yaml) do
-        <<~YAML
-          shelly: { password: shellypw, auth_key: ak123, cloud_server: shelly-11-eu.shelly.cloud }
-          backup: { aws_access_key_id: AKIA0000, aws_secret_access_key: wJalrXUt, aws_region: eu-central-1 }
-          forecast:
-            forecast_solar_apikey: solar-key
-            forecast_solcast_api_key: solcast-key
-            forecast_pvnode_apikey: pvnode-key
-            forecast_roofs: '1'
-        YAML
-      end
-      let(:parsed) { YAML.safe_load(described_class.anonymize_yaml(yaml)) }
+    it 'masks influxdb bucket/org and a public FQDN host, keeps container hostnames' do
+      yaml = <<~YAML
+        influxdb:
+          host: influxdb
+          bucket: my-solectrus-bucket
+          org: solectrus
+        mqtt:
+          host: broker.example.com
+      YAML
 
-      it 'redacts shelly credentials and keeps cloud_server' do
-        expect(parsed['shelly']).to eq(
-          'password' => 'dummy_password',
-          'auth_key' => 'dummy_auth_key',
-          'cloud_server' => 'shelly-11-eu.shelly.cloud',
-        )
-      end
+      parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
 
-      it 'redacts AWS credentials and keeps region' do
-        expect(parsed['backup']).to eq(
-          'aws_access_key_id' => 'dummy_aws_access_key_id',
-          'aws_secret_access_key' => 'dummy_aws_secret_access_key',
-          'aws_region' => 'eu-central-1',
-        )
-      end
-
-      it 'redacts forecast API keys and keeps non-secret fields' do
-        expect(parsed['forecast']).to eq(
-          'forecast_solar_apikey' => 'dummy_forecast_solar_apikey',
-          'forecast_solcast_api_key' => 'dummy_forecast_solcast_api_key',
-          'forecast_pvnode_apikey' => 'dummy_forecast_pvnode_apikey',
-          'forecast_roofs' => '1',
-        )
-      end
+      expect(parsed['influxdb']['host']).to eq('influxdb')
+      expect(parsed['influxdb']['bucket']).to match(/\A[A-Z]{5}\z/)
+      expect(parsed['influxdb']['org']).to match(/\A[A-Z]{5}\z/)
+      expect(parsed['mqtt']['host']).to match(/\A[A-Z]{5}\z/)
     end
 
-    it 'redacts shelly_password per sensor inside the dynamic sensors section' do
+    it 'masks a public shelly_host per sensor, keeps fritz.box and private IPs' do
+      yaml = <<~YAML
+        sensors:
+          house_power:
+            source: shelly
+            shelly_host: 192.168.1.10
+          heatpump_power:
+            source: shelly
+            shelly_host: shelly-heatpump.fritz.box
+          cloud_shelly:
+            source: shelly
+            shelly_host: shelly.example.com
+      YAML
+
+      parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
+
+      expect(parsed['sensors']['house_power']['shelly_host']).to eq('192.168.1.10')
+      expect(parsed['sensors']['heatpump_power']['shelly_host']).to eq('shelly-heatpump.fritz.box')
+      expect(parsed['sensors']['cloud_shelly']['shelly_host']).to match(/\A[A-Z]{5}\z/)
+    end
+
+    it 'masks AWS credentials and keeps region' do
+      yaml = <<~YAML
+        backup: { aws_access_key_id: AKIA0000, aws_secret_access_key: wJalrXUt, aws_region: eu-central-1 }
+      YAML
+
+      parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
+
+      expect(parsed['backup']['aws_access_key_id']).to match(/\A[A-Z]{5}\z/)
+      expect(parsed['backup']['aws_secret_access_key']).to match(/\A[A-Z]{5}\z/)
+      expect(parsed['backup']['aws_region']).to eq('eu-central-1')
+    end
+
+    it 'masks shelly_password per sensor inside the dynamic sensors section' do
       yaml = <<~YAML
         sensors:
           house_power:
@@ -261,7 +338,7 @@ RSpec.describe SupportBundle::Anonymizer do
       expect(parsed['sensors']['house_power']).to eq(
         'source' => 'shelly',
         'shelly_host' => '192.168.1.10',
-        'shelly_password' => 'dummy_shelly_password',
+        'shelly_password' => 'AAAAA',
       )
       expect(parsed['sensors']['grid_power']).to eq('source' => 'senec')
     end
@@ -283,7 +360,7 @@ RSpec.describe SupportBundle::Anonymizer do
       expect(parsed['senec']['password']).to be_nil
     end
 
-    it 'redacts whitelisted secrets inside unmanaged service env_values' do
+    it 'masks whitelisted secrets inside unmanaged service env_values' do
       yaml = <<~YAML
         _unmanaged:
           services:
@@ -296,12 +373,12 @@ RSpec.describe SupportBundle::Anonymizer do
       parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
 
       expect(parsed['_unmanaged']['services']['tibber-collector']['env_values']).to eq(
-        'TIBBER_TOKEN' => 'dummy_tibber_token',
+        'TIBBER_TOKEN' => 'AAAAA',
         'INFLUX_MEASUREMENT_PRICES' => 'prices',
       )
     end
 
-    it 'redacts pattern-matched secrets inside unmanaged service env_values' do
+    it 'masks pattern-matched secrets inside unmanaged service env_values' do
       yaml = <<~YAML
         _unmanaged:
           services:
@@ -314,7 +391,7 @@ RSpec.describe SupportBundle::Anonymizer do
       parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
 
       expect(parsed['_unmanaged']['services']['vendor-collector']['env_values']).to eq(
-        'VENDOR_API_KEY' => 'dummy_vendor_api_key',
+        'VENDOR_API_KEY' => 'AAAAA',
         'VENDOR_BASE_URL' => 'https://api.vendor.example',
       )
     end
@@ -350,7 +427,7 @@ RSpec.describe SupportBundle::Anonymizer do
     end
     let(:redactions) { described_class.log_redactions(env) }
 
-    it 'replaces coordinates inside a forecast collector URL' do
+    it 'replaces coordinates inside a forecast collector URL with zeroed decimals' do
       log = <<~LOG
         Fetching forecast at 2026-05-02T07:38:06+02:00
           0: https://api.forecast.solar/estimate/52.51627/13.37774/29/-50/9.75 ... OK
@@ -360,13 +437,13 @@ RSpec.describe SupportBundle::Anonymizer do
 
       expect(result).not_to include('52.51627')
       expect(result).not_to include('13.37774')
-      expect(result).to include('https://api.forecast.solar/estimate/0.00000/0.00000/29/-50/9.75')
+      expect(result).to include('https://api.forecast.solar/estimate/52.00000/13.00000/29/-50/9.75')
     end
 
-    it 'also catches coordinates that gained extra Float-precision digits' do
+    it 'catches coordinates that gained extra Float-precision digits while keeping the integer part' do
       log = "lat=52.51627999 lon=13.37774001\n"
 
-      expect(described_class.anonymize_text(log, redactions)).to eq("lat=0.00000 lon=0.00000\n")
+      expect(described_class.anonymize_text(log, redactions)).to eq("lat=52.00000000 lon=13.00000000\n")
     end
 
     it 'preserves the surrounding ISO timestamp when scrubbing coordinates' do
@@ -374,15 +451,17 @@ RSpec.describe SupportBundle::Anonymizer do
 
       result = described_class.anonymize_text(log, redactions)
 
-      expect(result).to eq("ts=2026-05-02T07:38:06+02:00 lat=0.00000 lon=0.00000\n")
+      expect(result).to eq("ts=2026-05-02T07:38:06+02:00 lat=52.00000 lon=13.00000\n")
     end
 
-    it 'replaces opaque tokens that leak into log lines' do
+    it 'masks opaque tokens that leak into log lines, consistent with the .env mask' do
+      env_redactions = described_class.log_redactions("INFLUX_TOKEN=NWD3vfbwdz8kKXiz\n")
+      env_mask = described_class.mask('NWD3vfbwdz8kKXiz')
       log = "POST /api/v2/write Authorization=Token NWD3vfbwdz8kKXiz failed\n"
 
-      result = described_class.anonymize_text(log, redactions)
+      result = described_class.anonymize_text(log, env_redactions)
 
-      expect(result).to eq("POST /api/v2/write Authorization=Token dummy_influx_token failed\n")
+      expect(result).to eq("POST /api/v2/write Authorization=Token #{env_mask} failed\n")
     end
 
     it 'leaves coordinates alone when only an unrelated number is present' do
@@ -399,6 +478,47 @@ RSpec.describe SupportBundle::Anonymizer do
 
     it 'leaves logs untouched when no redactions apply' do
       expect(described_class.anonymize_text("nothing to redact\n", [])).to eq("nothing to redact\n")
+    end
+
+    it 'masks custom bucket and org names that leak into log lines' do
+      env = <<~ENV
+        INFLUX_BUCKET=my-solectrus-bucket
+        INFLUX_ORG=my-org-name
+      ENV
+      redactions = described_class.log_redactions(env)
+      log = "writing to bucket my-solectrus-bucket org my-org-name failed\n"
+
+      bucket_mask = described_class.mask('my-solectrus-bucket')
+      org_mask = described_class.mask('my-org-name')
+      expect(described_class.anonymize_text(log, redactions))
+        .to eq("writing to bucket #{bucket_mask} org #{org_mask} failed\n")
+    end
+
+    it 'masks only the public FQDN entries of a SHELLY_HOST list in logs' do
+      env = "SHELLY_HOST=192.168.1.10,solar.example.com\n"
+      redactions = described_class.log_redactions(env)
+      log = "probing 192.168.1.10 and solar.example.com\n"
+
+      host_mask = described_class.mask('solar.example.com')
+      expect(described_class.anonymize_text(log, redactions))
+        .to eq("probing 192.168.1.10 and #{host_mask}\n")
+    end
+
+    it 'does not add log redactions for *_HOST values that are private IPs' do
+      env = "INFLUX_HOST=192.168.1.10\nMQTT_HOST=broker\n"
+
+      expect(described_class.log_redactions(env)).to be_empty
+    end
+  end
+
+  describe '.reset_registry!' do
+    it 'clears the value→letter mapping so the next bundle starts at A again' do
+      described_class.mask('first')
+      described_class.mask('second')
+
+      described_class.reset_registry!
+
+      expect(described_class.mask('fresh')).to eq('AAAAA')
     end
   end
 end

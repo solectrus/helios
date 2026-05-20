@@ -8,26 +8,26 @@
 ---
 _schema_version: 3
 system:
-  admin_password: dummy_admin_password
+  admin_password: AAAAA
   installation_date: '2020-11-27'
-  secret_key_base: dummy_secret_key_base
+  secret_key_base: BBBBB
   timezone: Europe/Berlin
 dashboard:
   image: ghcr.io/solectrus/solectrus:latest
   influx_poll_interval: '300'
 postgresql:
   image: postgres:18-alpine
-  password: dummy_postgres_password
+  password: CCCCC
 influxdb:
-  bucket: solectrus
+  bucket: GGGGG
   image: influxdb:2-alpine
-  org: solectrus
-  password: dummy_influx_password
+  org: GGGGG
+  password: HHHHH
   publish_port: true
-  token_admin: dummy_influx_admin_token
-  token_read: dummy_influx_token_read
-  token_readwrite: dummy_influx_admin_token
-  token_write: dummy_influx_token_write
+  token_admin: IIIII
+  token_read: KKKKK
+  token_readwrite: IIIII
+  token_write: JJJJJ
 redis:
   image: redis:7-alpine
 watchtower:
@@ -38,7 +38,7 @@ forecast:
   forecast_kwp1: '9.24'
   forecast_latitude: '0.00000'
   forecast_longitude: '0.00000'
-  forecast_pvnode_apikey: dummy_pvnode_apikey
+  forecast_pvnode_apikey: LLLLL
   forecast_pvnode_azimuth1: '209'
   forecast_pvnode_extra_params: panel_age_years=4
   forecast_pvnode_paid: 'false'
@@ -47,10 +47,10 @@ forecast:
 senec:
   adapter: cloud
   interval: '600'
-  password: dummy_senec_password
+  password: EEEEE
   system_id: '0'
-  totp_uri: dummy_senec_totp_uri
-  username: dummy_senec_username
+  totp_uri: FFFFF
+  username: DDDDD
   version: v4
 shelly:
   connection: local
@@ -170,7 +170,7 @@ _unmanaged:
         SENEC_HOST: senec.fritz.box
         SENEC_LANGUAGE: de
         SENEC_SCHEMA: https
-        TIBBER_TOKEN: dummy_tibber_token
+        TIBBER_TOKEN: MMMMM
       environment:
       - TZ
       - INFLUX_ADMIN_TOKEN
@@ -273,7 +273,7 @@ _unmanaged:
         SENEC_HOST: senec.fritz.box
         SENEC_LANGUAGE: de
         SENEC_SCHEMA: https
-        TIBBER_TOKEN: dummy_tibber_token
+        TIBBER_TOKEN: MMMMM
       environment:
       - TZ
       - INFLUX_ADMIN_TOKEN

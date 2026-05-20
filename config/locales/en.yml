@@ -151,7 +151,7 @@ en:
       subtitle: 'Two steps to a solution.'
       step_download:
         title: 'Download support bundle'
-        description: 'Includes configuration, system info and container logs. Passwords, tokens and coordinates are anonymized automatically.'
+        description: 'Includes configuration, system info and container logs. Passwords, tokens, coordinates, bucket/org names, public hostnames and the system hostname are anonymized automatically.'
       step_post:
         title: 'Post your report'
         description: 'Attach the ZIP file. Pick the channel that fits:'

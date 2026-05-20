@@ -8,25 +8,25 @@
 ---
 _schema_version: 3
 system:
-  admin_password: 283aebd3f655573d2e551dd0aa9c13f4
+  admin_password: 11770b3ea657fe68cba19675143e4715
   app_host: 192.168.178.44
   installation_date: '2020-06-01'
-  secret_key_base: my-secret-key-base
+  secret_key_base: AAAAA
 dashboard:
   image: ghcr.io/solectrus/solectrus:latest
 postgresql:
   image: postgres:14-alpine
-  password: my-postgres-password
+  password: BBBBB
   volume_path: "/volume1/docker/solectrus/dashboard/postgresql"
 influxdb:
-  bucket: my-solectrus-bucket
+  bucket: FFFFF
   image: influxdb:2.1.1-alpine
-  org: solectrus
-  password: my-influx-password
-  token_admin: my-super-secret-admin-token
-  token_read: my-super-secret-admin-token
-  token_readwrite: my-super-secret-admin-token
-  token_write: my-super-secret-admin-token
+  org: CCCCC
+  password: DDDDD
+  token_admin: EEEEE
+  token_read: EEEEE
+  token_readwrite: EEEEE
+  token_write: EEEEE
   volume_path: "/volume1/docker/solectrus/dashboard/influxdb"
 redis:
   image: redis:alpine

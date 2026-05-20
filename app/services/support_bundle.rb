@@ -7,25 +7,31 @@ module SupportBundle
   module_function
 
   def build
-    io = Zip::OutputStream.write_buffer do |zip|
-      sources.each do |entry_name, path|
-        next unless File.exist?(path)
+    Anonymizer.reset_registry!
 
-        zip.put_next_entry(entry_name)
-        zip.write(anonymize(entry_name, File.read(path)))
-      end
-
+    Zip::OutputStream.write_buffer do |zip|
+      write_config_entries(zip)
       zip.put_next_entry('system-info.txt')
       zip.write(SystemInfo.collect)
+      write_log_entries(zip)
+    end.string
+  end
 
-      redactions = log_redactions
-      ContainerLogs.collect.each do |entry_name, content|
-        zip.put_next_entry(entry_name)
-        zip.write(Anonymizer.anonymize_text(content, redactions))
-      end
+  def write_config_entries(zip)
+    sources.each do |entry_name, path|
+      next unless File.exist?(path)
+
+      zip.put_next_entry(entry_name)
+      zip.write(anonymize(entry_name, File.read(path)))
     end
+  end
 
-    io.string
+  def write_log_entries(zip)
+    redactions = log_redactions
+    ContainerLogs.collect.each do |entry_name, content|
+      zip.put_next_entry(entry_name)
+      zip.write(Anonymizer.anonymize_text(content, redactions))
+    end
   end
 
   def anonymize(entry_name, content)

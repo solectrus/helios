@@ -8,27 +8,27 @@
 ---
 _schema_version: 3
 system:
-  admin_password: my-admin-password
-  app_host: http://solectrus.intern.beekhuis.de
+  admin_password: BBBBB
+  app_host: AAAAA
   installation_date: '2023-10-17'
-  secret_key_base: my-secret-key-base
+  secret_key_base: AAAAA
   timezone: Europe/Berlin
 dashboard:
   image: ghcr.io/solectrus/solectrus:latest
   influx_poll_interval: '5'
 postgresql:
   image: postgres:16-alpine
-  password: my-db-password
+  password: CCCCC
   volume_path: solectrus-db
 influxdb:
   bucket: my-solectrus-bucket
   image: influxdb:2-alpine
   org: solectrus
-  password: my-influx-password
-  token_admin: my-influx-admin-token
-  token_read: my-influx-admin-token
-  token_readwrite: my-influx-admin-token
-  token_write: my-influx-admin-token
+  password: GGGGG
+  token_admin: DDDDD
+  token_read: DDDDD
+  token_readwrite: DDDDD
+  token_write: DDDDD
   volume_path: solectrus-influxdb
 redis:
   image: redis:7-alpine
@@ -41,16 +41,16 @@ forecast:
   forecast_declination1: '45'
   forecast_interval: '900'
   forecast_kwp1: '10'
-  forecast_latitude: '53.0708'
-  forecast_longitude: '7.4605'
+  forecast_latitude: '53.0000'
+  forecast_longitude: '7.0000'
   forecast_roofs: '1'
   measurement: Forecast
 mqtt:
   mqtt_host: 192.168.10.10
-  mqtt_password: my-mqtt-password
+  mqtt_password: IIIII
   mqtt_port: '1883'
   mqtt_ssl: 'false'
-  mqtt_username: mqtt
+  mqtt_username: HHHHH
 sensors:
   battery_charging_power:
     field: bat_power_plus

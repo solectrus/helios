@@ -1,14 +1,23 @@
+require 'ipaddr'
+
 module SupportBundle
-  # Redacts secrets from config files so the bundle can be shared in a
-  # public support forum. Placeholders are derived from the key name
-  # (e.g. `dummy_postgres_password`) so the stack still starts when the
-  # bundle is replayed locally.
+  # Redacts sensitive data from config files so the bundle can be shared in
+  # a public support forum. Strings are masked to a same-length run of a
+  # single uppercase letter ("geheim" → "AAAAAA") so no original character
+  # leaks. A per-bundle registry guarantees the same value always gets the
+  # same mask across compose.yaml, .env, config.yaml and container logs —
+  # so support can still tell "INFLUX_TOKEN and INFLUX_TOKEN_WRITE share a
+  # value" or "this domain appears in two places". Coordinates are softened
+  # (integer part kept, decimals zeroed) because the integer part alone
+  # only narrows location to a ~100 km band — useful for diagnostics.
   #
-  # Recognition has two layers: the explicit `ENV_KEYS` / `YAML_KEYS`
-  # lists drive placeholder shape, log-redaction behavior, and special
-  # dummies (lat/lng, SENEC_SYSTEM_ID); `SENSITIVE_KEY_PATTERN` is a
-  # name-based catch-all for vendor-specific keys HELIOS has never seen,
-  # especially inside unmanaged-service `env_values`.
+  # Recognition has three layers: explicit `ENV_KEYS` / `YAML_KEYS` cover
+  # always-redact secrets; `BUCKET_KEYS` cover identifiers (bucket/org names)
+  # that may leak location even though they aren't secret; `HOST_KEYS` cover
+  # hostnames, redacted only when they're public FQDNs — private IPs and
+  # container names stay so support can still see the network topology.
+  # `SENSITIVE_KEY_PATTERN` is a name-based catch-all for vendor-specific
+  # keys HELIOS has never seen, especially inside unmanaged-service `env_values`.
   module Anonymizer # rubocop:disable Metrics/ModuleLength
     ENV_KEYS = %w[
       ADMIN_PASSWORD
@@ -39,6 +48,21 @@ module SupportBundle
       TIBBER_TOKEN
     ].to_set.freeze
 
+    # Identifiers that aren't secret but may give away who/where the user is
+    # (custom bucket like "berlin-pv"). Always redacted regardless of value.
+    BUCKET_KEYS = %w[INFLUX_BUCKET INFLUX_ORG].to_set.freeze
+
+    # Hostnames are only redacted when the value is a public FQDN. Private
+    # IPs (RFC 1918), loopback and Docker container names stay as-is — they
+    # are useful for diagnostics and don't leak location.
+    HOST_KEYS = %w[APP_HOST INFLUX_HOST MQTT_HOST SENEC_HOST SHELLY_HOST].to_set.freeze
+
+    # Local/reserved zones that look like an FQDN but never leave the LAN.
+    # `.fritz.box` (AVM router default), `.local` (mDNS), `.lan/.home/.intern*`
+    # (de-facto LAN suffixes) — keeping them visible helps support diagnose
+    # network setups without exposing the user's public domain.
+    LOCAL_HOST_SUFFIXES = %w[.local .lan .home .box .internal .intern .localhost].freeze
+
     YAML_KEYS = {
       'system' => %w[admin_password secret_key_base],
       'dashboard' => %w[lockup_codeword],
@@ -54,8 +78,23 @@ module SupportBundle
       ],
     }.freeze
 
+    # YAML identifiers redacted regardless of value — same idea as
+    # `BUCKET_KEYS` on the .env side.
+    YAML_BUCKET_KEYS = { 'influxdb' => %w[bucket org] }.freeze
+
+    # YAML host fields redacted only when the value is a public FQDN.
+    YAML_HOST_KEYS = {
+      'influxdb' => %w[host],
+      'mqtt' => %w[host],
+      'senec' => %w[host],
+      'shelly' => %w[host],
+    }.freeze
+
     # Per-sensor fields to redact inside the dynamic `sensors:` section.
     SENSOR_KEYS = %w[shelly_password].freeze
+
+    # Per-sensor host fields redacted only when the value is a public FQDN.
+    SENSOR_HOST_KEYS = %w[shelly_host senec_host mqtt_host].freeze
 
     # Catch-all pattern for unrecognized secrets that follow common
     # naming conventions. Kept narrow so harmless keys (`SENEC_LANGUAGE`,
@@ -63,33 +102,44 @@ module SupportBundle
     # `API_?KEY` covers both `APIKEY` and `API_KEY` spellings.
     SENSITIVE_KEY_PATTERN = /PASSWORD|SECRET|TOKEN|API_?KEY|AUTH_KEY|ACCESS_KEY|PRIVATE_KEY/
 
-    # Coordinates may surface in container logs with extra trailing digits
-    # (Float arithmetic in the forecast collector turns 50.92264 into
-    # 50.922642249999996), so they need a regex tolerant to those tails
-    # instead of a literal match when scrubbing log output.
-    NUMERIC_KEYS = %w[FORECAST_LATITUDE FORECAST_LONGITUDE].to_set.freeze
+    # Coordinates get a softer mask (integer part kept, decimals zeroed)
+    # — these keys flag values that should go through coord_mask instead
+    # of the standard letter mask, both in .env/YAML and in container logs.
+    COORD_KEYS = %w[FORECAST_LATITUDE FORECAST_LONGITUDE].to_set.freeze
 
-    # Non-string fields need parseable dummies so the replayed stack can
-    # load them. Listed under both the ENV and YAML spelling because the
+    # SENEC_SYSTEM_ID is a numeric identifier the replayed stack must parse
+    # as an Integer. Listed under both the ENV and YAML spelling because the
     # env var (SENEC_SYSTEM_ID) and the YAML leaf (senec.system_id) reach
-    # the lookup with different names. Coordinates default to 0.00000 —
-    # a syntactically valid value that is obviously a placeholder at a
-    # glance, so reviewers don't mistake it for a real location.
-    DUMMY_VALUES = {
-      'forecast_latitude' => '0.00000',
-      'forecast_longitude' => '0.00000',
-      'senec_system_id' => '0',
-      'system_id' => '0',
-    }.freeze
+    # the lookup with different names. The all-letter mask would break
+    # parsing, so it gets a fixed '0' placeholder instead.
+    INTEGER_PLACEHOLDER_KEYS = %w[senec_system_id system_id].to_set.freeze
 
     # Values shorter than this are skipped when scrubbing log content to
     # avoid false positives on common words (e.g. a 3-letter username
     # would otherwise be replaced everywhere it appears as plain text).
     LOG_REDACTION_MIN_LENGTH = 4
 
+    # The standard mask is always exactly this many letters wide — the same
+    # length regardless of the original value, so nothing about the input's
+    # shape (or length) leaks through the bundle.
+    MASK_LENGTH = 5
+
     ENV_LINE = /\A(?<prefix>\s*-?\s*)(?<key>[A-Za-z_][A-Za-z0-9_]*)=(?<value>.*?)(?<trailing>\s*)\z/
 
+    @registry = {} # rubocop:disable ThreadSafety/MutableClassInstanceVariable
+
     module_function
+
+    # Clears the per-bundle value→letter mapping. Call once at the start of
+    # building a support bundle so masks are reproducible inside the bundle
+    # but don't bleed across runs.
+    def reset_registry!
+      @registry = {} # rubocop:disable ThreadSafety/ClassInstanceVariable
+    end
+
+    def registry
+      @registry # rubocop:disable ThreadSafety/ClassInstanceVariable
+    end
 
     def anonymize_env_style(content)
       content.each_line.map { |line| anonymize_env_line(line) }.join
@@ -99,23 +149,42 @@ module SupportBundle
       data = YAML.safe_load(content, permitted_classes: [Date])
       return content unless data.is_a?(Hash)
 
-      YAML_KEYS.each do |section, keys|
-        redact_fields(data[section], keys)
-      end
-
-      data['sensors']&.each_value { |sensor| redact_fields(sensor, SENSOR_KEYS) }
-
-      data.dig('_unmanaged', 'services')&.each_value do |service|
-        redact_unmanaged_env_values(service)
-      end
+      redact_yaml_sections(data)
+      redact_yaml_sensors(data['sensors'])
+      data.dig('_unmanaged', 'services')&.each_value { |service| redact_unmanaged_env_values(service) }
 
       YAML.dump(data)
+    end
+
+    def redact_yaml_sections(data)
+      YAML_KEYS.each { |section, keys| redact_fields(data[section], keys) }
+      YAML_BUCKET_KEYS.each { |section, keys| redact_fields(data[section], keys) }
+      YAML_HOST_KEYS.each { |section, keys| redact_host_fields(data[section], keys) }
+    end
+
+    def redact_yaml_sensors(sensors)
+      sensors&.each_value do |sensor|
+        redact_fields(sensor, SENSOR_KEYS)
+        redact_host_fields(sensor, SENSOR_HOST_KEYS)
+      end
     end
 
     def redact_fields(hash, keys)
       return unless hash.is_a?(Hash)
 
-      keys.each { |key| hash[key] = placeholder_for(key) if hash[key].present? }
+      keys.each do |key|
+        value = hash[key]
+        hash[key] = placeholder_for(key, value) if value.present?
+      end
+    end
+
+    def redact_host_fields(hash, keys)
+      return unless hash.is_a?(Hash)
+
+      keys.each do |key|
+        value = hash[key]
+        hash[key] = placeholder_for(key, value) if value.present? && public_hostname?(value)
+      end
     end
 
     # Unmanaged services keep their env vars as a free-form `env_values`
@@ -126,11 +195,11 @@ module SupportBundle
       return unless values.is_a?(Hash)
 
       values.each do |key, value|
-        next unless sensitive_key?(key)
         next if value.blank?
         next if value.is_a?(String) && value.start_with?('${')
+        next unless line_sensitive?(key, value.to_s)
 
-        values[key] = placeholder_for(key)
+        values[key] = placeholder_for(key, value)
       end
     end
 
@@ -138,43 +207,131 @@ module SupportBundle
       match = parse_sensitive_env_line(line)
       return line unless match
 
-      "#{match[:prefix]}#{match[:key]}=#{placeholder_for(match[:key])}#{match[:trailing]}"
+      "#{match[:prefix]}#{match[:key]}=#{placeholder_for(match[:key], match[:value])}#{match[:trailing]}"
     end
 
-    def placeholder_for(key)
+    # Returns the right kind of placeholder for the key/value pair:
+    # - Coordinates: `52.51627` → `52.00000` (integer part kept).
+    # - Integer IDs: fixed `'0'` so the replayed stack can parse it.
+    # - Everything else: same-length run of an uppercase letter, with the
+    #   letter chosen so the same input value always maps to the same mask.
+    def placeholder_for(key, value)
       normalized = key.to_s.downcase
-      DUMMY_VALUES[normalized] || "dummy_#{normalized}"
+      return coord_mask(value) if COORD_KEYS.include?(key.to_s.upcase)
+      return '0' if INTEGER_PLACEHOLDER_KEYS.include?(normalized)
+
+      mask(value)
+    end
+
+    # The standard mask: a fixed-width run of a single uppercase letter so
+    # the dummy is unmistakable at a glance and gives away neither the
+    # value nor its length. Registry-backed so cross-file references stay
+    # linkable (same value → same letter, throughout the bundle).
+    def mask(value)
+      str = value.to_s
+      return str if str.empty?
+
+      letter = (@registry[str] ||= assign_letter) # rubocop:disable ThreadSafety/ClassInstanceVariable
+      letter * MASK_LENGTH
+    end
+
+    # Lat/Lng: keep the integer (and sign) so the rough latitude band is
+    # visible for diagnostics, zero everything after the decimal point.
+    # Length is preserved so `52.51627` → `52.00000` and `52.5162799` (a
+    # float-precision tail seen in forecast logs) → `52.0000000`.
+    def coord_mask(value)
+      match = value.to_s.match(/\A(-?\d+)\.(\d+)\z/)
+      return mask(value) unless match
+
+      "#{match[1]}.#{'0' * match[2].length}"
+    end
+
+    def assign_letter
+      ('A'.ord + (@registry.size % 26)).chr # rubocop:disable ThreadSafety/ClassInstanceVariable
     end
 
     def sensitive_key?(key)
       upper = key.to_s.upcase
-      ENV_KEYS.include?(upper) || SENSITIVE_KEY_PATTERN.match?(upper)
+      ENV_KEYS.include?(upper) || BUCKET_KEYS.include?(upper) || SENSITIVE_KEY_PATTERN.match?(upper)
     end
 
-    # Extracts (pattern, placeholder) pairs for every whitelisted env value
+    # True for hostnames that point outside the LAN. Comma-separated lists
+    # (e.g. SHELLY_HOST) count as public when any element is public.
+    def public_hostname?(value)
+      return false if value.blank?
+
+      value.to_s.split(',').any? { |part| public_single_hostname?(part.strip) }
+    end
+
+    def public_single_hostname?(value)
+      # .env doesn't really support inline comments — Docker Compose treats
+      # `KEY=192.168.1.10 # note` as a literal value with the comment baked
+      # in. Real users still write this; tolerate it here so the leading IP
+      # is recognized as private and the line stays untouched.
+      hostname = value.to_s.split.first
+      return false if hostname.blank?
+      return false unless hostname.include?('.')
+      return false if ip_address?(hostname)
+
+      downcased = hostname.downcase
+      LOCAL_HOST_SUFFIXES.none? { |suffix| downcased.end_with?(suffix) }
+    end
+
+    def ip_address?(value)
+      IPAddr.new(value)
+      true
+    rescue IPAddr::InvalidAddressError
+      false
+    end
+
+    # Extracts (pattern, replacement) pairs for every whitelisted env value
     # that should be scrubbed from container log output. Coordinates use a
-    # regex tolerant to Float-precision tails; opaque secrets use literal
-    # substring matches.
+    # regex tolerant to Float-precision tails and a callable replacement so
+    # the integer part of each match is preserved; opaque secrets use literal
+    # substring matches; SHELLY_HOST lists fan out into one pair per public
+    # entry so each gets its own mask.
     def log_redactions(env_content)
-      env_content.each_line.filter_map { |line| line_redaction(line) }
+      env_content.each_line.flat_map { |line| line_redactions(line) }
     end
 
     # Applies redaction pairs to free-form text (e.g. container logs) so
     # the same secrets present in .env are masked when they leak through
-    # other channels.
+    # other channels. Replacement may be a String or a callable — the
+    # callable form lets coordinate matches keep their original integer
+    # part regardless of trailing float-precision digits.
     def anonymize_text(content, redactions)
       redactions.reduce(content) do |result, (pattern, replacement)|
-        result.gsub(pattern, replacement)
+        if replacement.respond_to?(:call)
+          result.gsub(pattern) { |match| replacement.call(match) }
+        else
+          result.gsub(pattern, replacement)
+        end
       end
     end
 
-    def line_redaction(line)
+    def line_redactions(line)
       match = parse_sensitive_env_line(line)
-      return nil unless match
+      return [] unless match
 
-      key = match[:key].upcase
-      pattern = redaction_pattern(key, match[:value])
-      pattern && [pattern, placeholder_for(key)]
+      build_redactions(match[:key].upcase, match[:value])
+    end
+
+    def build_redactions(key, value)
+      return [coord_redaction(value)] if COORD_KEYS.include?(key)
+      return host_redactions(value) if HOST_KEYS.include?(key)
+      return [] if value.length < LOG_REDACTION_MIN_LENGTH
+
+      [[value, mask(value)]]
+    end
+
+    def coord_redaction(value)
+      [/\b#{Regexp.escape(value)}\d*\b/, method(:coord_mask)]
+    end
+
+    def host_redactions(value)
+      value.split(',').map(&:strip).filter_map do |part|
+        [part, mask(part)] if public_single_hostname?(part)
+      end
     end
 
     def parse_sensitive_env_line(line)
@@ -182,17 +339,18 @@ module SupportBundle
 
       match = line.match(ENV_LINE)
       return nil unless match
-      return nil unless sensitive_key?(match[:key])
       return nil if match[:value].empty? || match[:value].start_with?('${')
+      return nil unless line_sensitive?(match[:key], match[:value])
 
       match
     end
 
-    def redaction_pattern(key, value)
-      return /\b#{Regexp.escape(value)}\d*\b/ if NUMERIC_KEYS.include?(key)
-      return nil if value.length < LOG_REDACTION_MIN_LENGTH
+    def line_sensitive?(key, value)
+      upper = key.to_s.upcase
+      return true if sensitive_key?(upper)
+      return public_hostname?(value) if HOST_KEYS.include?(upper)
 
-      value
+      false
     end
   end
 end

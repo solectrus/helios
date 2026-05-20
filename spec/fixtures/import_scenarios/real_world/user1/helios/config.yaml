@@ -8,10 +8,10 @@
 ---
 _schema_version: 3
 system:
-  admin_password: dummy_admin_password
+  admin_password: CCCCC
   app_host: 192.168.0.123
   installation_date: '2022-01-01'
-  secret_key_base: dummy_secret_key_base
+  secret_key_base: AAAAA
   timezone: Europe/Berlin
   update_interval: '28800'
 dashboard:
@@ -20,18 +20,18 @@ dashboard:
   influx_poll_interval: '5'
 postgresql:
   image: postgres:16-alpine
-  password: dummy_postgres_password
+  password: BBBBB
   volume_path: "/home/pi/solectrus/postgresql"
 influxdb:
-  bucket: solectrus
+  bucket: DDDDD
   image: influxdb:2.7-alpine
-  org: solectrus
-  password: dummy_influx_password
+  org: DDDDD
+  password: EEEEE
   publish_port: true
-  token_admin: my-super-secret-admin-token
-  token_read: my-super-secret-admin-token
-  token_readwrite: my-super-secret-admin-token
-  token_write: my-super-secret-admin-token
+  token_admin: FFFFF
+  token_read: FFFFF
+  token_readwrite: FFFFF
+  token_write: FFFFF
   volume_path: "/home/pi/solectrus/influxdb"
 redis:
   image: redis:7-alpine
@@ -48,7 +48,7 @@ forecast:
   forecast_kwp3: '1.85'
   forecast_latitude: '50.0'
   forecast_longitude: '10.0'
-  forecast_pvnode_apikey: dummy_pvnode_apikey
+  forecast_pvnode_apikey: IIIII
   forecast_pvnode_azimuth1: '230'
   forecast_pvnode_azimuth2: '220'
   forecast_pvnode_azimuth3: '300'
@@ -73,10 +73,10 @@ mqtt:
     topic: evcc/site/pv/3/Power
     type: integer
   mqtt_host: 192.168.0.124
-  mqtt_password: dummy_mqtt_password
+  mqtt_password: HHHHH
   mqtt_port: '1883'
   mqtt_ssl: 'false'
-  mqtt_username: dummy_mqtt_username
+  mqtt_username: GGGGG
 shelly:
   connection: local
 sensors:

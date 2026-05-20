@@ -8,10 +8,10 @@
 ---
 _schema_version: 3
 system:
-  admin_password: my-admin-password
+  admin_password: AAAAA
   app_host: 192.168.1.91
   installation_date: '2022-09-01'
-  secret_key_base: my-secret-key-base
+  secret_key_base: BBBBB
   timezone: Europe/Berlin
 dashboard:
   frame_ancestors: http://192.168.1.90:8123
@@ -19,18 +19,18 @@ dashboard:
   influx_poll_interval: '5'
 postgresql:
   image: postgres:18-alpine
-  password: my-secret-db-password
+  password: CCCCC
   volume_path: "/home/pi/solectrus/postgresql"
 influxdb:
-  bucket: my-solectrus-bucket
+  bucket: KKKKK
   image: influxdb:2.7-alpine
-  org: solectrus
-  password: my-influxdb-password
+  org: GGGGG
+  password: IIIII
   publish_port: true
-  token_admin: my-influxdb-admin-token
-  token_read: my-influxdb-admin-token
-  token_readwrite: my-influxdb-admin-token
-  token_write: my-influxdb-admin-token
+  token_admin: JJJJJ
+  token_read: JJJJJ
+  token_readwrite: JJJJJ
+  token_write: JJJJJ
   volume_path: "/home/pi/solectrus/influxdb"
 redis:
   image: redis:7-alpine
@@ -45,9 +45,9 @@ forecast:
   forecast_kwp1: '8.910'
   forecast_kwp2: '2.835'
   forecast_kwp3: '0.820'
-  forecast_latitude: '48.12345'
-  forecast_longitude: '9.12345'
-  forecast_pvnode_apikey: my-pvnode-apikey
+  forecast_latitude: '48.00000'
+  forecast_longitude: '9.00000'
+  forecast_pvnode_apikey: DDDDD
   forecast_pvnode_azimuth1: '87'
   forecast_pvnode_azimuth2: '267'
   forecast_pvnode_azimuth3: '180'
@@ -68,9 +68,9 @@ mqtt:
     topic: homeassistant/sensor/ws2900_v2_01_18_outdoor_temperature/state
     type: float
   mqtt_host: 192.168.1.90
-  mqtt_password: my-mqtt-password
+  mqtt_password: FFFFF
   mqtt_port: '1883'
-  mqtt_username: my-mqtt-username
+  mqtt_username: EEEEE
 shelly:
   connection: local
   devices:

@@ -57,12 +57,17 @@ RSpec.describe SupportBundle do
         # Either a table header (when containers exist) or the empty-state note.
         expect(containers_section).to match(/(NAME\s+STATE\s+STATUS\s+IMAGE|No containers found)/)
 
-        expect(result['.env']).to eq("SENEC_PASSWORD=dummy_senec_password\nTZ=Europe/Berlin\n")
-        expect(result['.env.bak']).to eq("SENEC_PASSWORD=dummy_senec_password\n")
+        # Every secret becomes a fixed 5-letter dummy; the exact letter
+        # depends on the order the registry first sees each value.
+        expect(result['.env']).to match(%r{\ASENEC_PASSWORD=[A-Z]{5}\nTZ=Europe/Berlin\n\z})
+        expect(result['.env.bak']).to match(/\ASENEC_PASSWORD=[A-Z]{5}\n\z/)
 
         parsed = YAML.safe_load(result['config.yaml'])
-        expect(parsed['senec']['password']).to eq('dummy_password')
-        expect(parsed['system']['admin_password']).to eq('dummy_admin_password')
+        expect(parsed['senec']['password']).to match(/\A[A-Z]{5}\z/)
+        expect(parsed['system']['admin_password']).to match(/\A[A-Z]{5}\z/)
+        # `secret` appears in both .env and config.yaml → same mask in both.
+        env_mask = result['.env'][/SENEC_PASSWORD=([A-Z]+)/, 1]
+        expect(parsed['senec']['password']).to eq(env_mask)
       end
     end
 
@@ -91,8 +96,8 @@ RSpec.describe SupportBundle do
       expect(log).not_to include('52.51627')
       expect(log).not_to include('13.37774')
       expect(log).not_to include('NWD3vfbwdz8kKXiz')
-      expect(log).to include('forecast.solar/estimate/0.00000/0.00000/29')
-      expect(log).to include('dummy_influx_token')
+      expect(log).to include('forecast.solar/estimate/52.00000/13.00000/29')
+      expect(log).to match(/Authorization=Token [A-Z]{5}/)
     end
 
     it 'skips files that do not exist on disk' do

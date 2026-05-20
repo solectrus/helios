@@ -26,9 +26,27 @@ module SupportBundle
         "unavailable: #{e.class}: #{e.message}"
       end
 
+      # Bucket + org names can hint at the user's location ("berlin-pv");
+      # the endpoint host can be a public domain. Both get anonymized so
+      # the report is safe to share in a public support forum. Mask keeps
+      # the first 3 chars visible so support can still spot non-default
+      # naming at a glance.
       def target_info(client)
         config = Configuration.current.influxdb
-        { 'Target' => client.endpoint, 'Org' => config.org, 'Bucket' => config.bucket }
+        {
+          'Target' => anonymized_endpoint(client),
+          'Org' => Anonymizer.mask(config.org),
+          'Bucket' => Anonymizer.mask(config.bucket),
+        }
+      end
+
+      def anonymized_endpoint(client)
+        uri = URI.parse(client.endpoint)
+        return client.endpoint unless Anonymizer.public_hostname?(uri.host)
+
+        "#{uri.scheme}://#{Anonymizer.mask(uri.host)}:#{uri.port}"
+      rescue URI::InvalidURIError
+        client.endpoint
       end
 
       def schema_counts(client, measurements)

@@ -251,18 +251,20 @@ RSpec.describe SupportBundle::SystemInfo::HostMetrics do
       }
     end
 
-    it 'returns the Docker host details when running inside a container' do
+    it 'returns the Docker host details when running inside a container, hostname masked' do
       allow(described_class).to receive(:containerized?).and_return(true)
 
-      expect(described_class.operating_system(info: info)).to eq(
+      result = described_class.operating_system(info: info)
+
+      expect(result).to include(
         'Operating system' => 'Debian GNU/Linux 13 (trixie)',
         'Kernel' => '6.17.13-3-pve',
         'Architecture' => 'x86_64',
-        'Hostname' => 'helios-lxc',
       )
+      expect(result['Hostname']).to match(/\A[A-Z]{5}\z/)
     end
 
-    it 'returns the local OS when running natively, ignoring the Docker daemon' do
+    it 'returns the local OS when running natively, hostname masked' do
       allow(described_class).to receive_messages(
         containerized?: false,
         os_release: 'macOS 15.0 (24A335)',
@@ -271,12 +273,14 @@ RSpec.describe SupportBundle::SystemInfo::HostMetrics do
         .to receive(:capture).with('uname', '-sm').and_return('Darwin arm64')
       allow(Socket).to receive(:gethostname).and_return('georgs-mac')
 
-      expect(described_class.operating_system(info: info)).to eq(
+      result = described_class.operating_system(info: info)
+
+      expect(result).to include(
         'Operating system' => 'macOS 15.0 (24A335)',
         'Kernel' => 'Darwin',
         'Architecture' => 'arm64',
-        'Hostname' => 'georgs-mac',
       )
+      expect(result['Hostname']).to match(/\A[A-Z]{5}\z/)
     end
 
     it 'falls back to the local OS when Docker info is unavailable' do
@@ -286,7 +290,6 @@ RSpec.describe SupportBundle::SystemInfo::HostMetrics do
       )
       allow(SupportBundle::SystemInfo::OutputFormatter)
         .to receive(:capture).with('uname', '-sm').and_return('Linux x86_64')
-      allow(Socket).to receive(:gethostname).and_return('ci-runner')
 
       expect(described_class.operating_system(error: 'unavailable: boom'))
         .to include('Operating system' => 'Ubuntu 24.04')

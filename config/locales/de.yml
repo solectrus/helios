@@ -127,7 +127,7 @@ de:
       subtitle: 'In zwei Schritten zur Lösung.'
       step_download:
         title: 'Support-Paket herunterladen'
-        description: 'Enthält Konfiguration, System-Infos und Container-Logs. Passwörter, Tokens und Koordinaten werden automatisch anonymisiert.'
+        description: 'Enthält Konfiguration, System-Infos und Container-Logs. Passwörter, Tokens, Koordinaten, Bucket-/Org-Namen, öffentliche Hostnamen und der System-Hostname werden automatisch anonymisiert.'
       step_post:
         title: 'Beitrag erstellen'
         description: 'Hänge das ZIP-Archiv deinem Beitrag an. Wähle den passenden Kanal:'

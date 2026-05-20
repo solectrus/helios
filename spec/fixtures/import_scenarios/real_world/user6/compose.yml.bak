@@ -197,7 +197,7 @@ services:
     environment:
       - TZ
       - PGADMIN_DEFAULT_EMAIL=pgadmin_email
-      - PGADMIN_DEFAULT_PASSWORD=pgadmin_password
+      - PGADMIN_DEFAULT_PASSWORD=LLLLL
       - PGADMIN_ENABLE_TLS
     depends_on:
       postgresql:

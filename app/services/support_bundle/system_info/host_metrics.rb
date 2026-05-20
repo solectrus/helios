@@ -26,7 +26,7 @@ module SupportBundle
           'Operating system' => info['OperatingSystem'],
           'Kernel' => info['KernelVersion'],
           'Architecture' => info['Architecture'],
-          'Hostname' => info['Name'],
+          'Hostname' => Anonymizer.mask(info['Name']),
         }
       end
 
@@ -36,7 +36,7 @@ module SupportBundle
           'Operating system' => os_release,
           'Kernel' => kernel || 'unknown',
           'Architecture' => arch || 'unknown',
-          'Hostname' => Socket.gethostname,
+          'Hostname' => Anonymizer.mask(Socket.gethostname),
         }
       end
 

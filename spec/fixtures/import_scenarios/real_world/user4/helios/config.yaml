@@ -8,25 +8,25 @@
 ---
 _schema_version: 3
 system:
-  admin_password: my-secret-admin-password
+  admin_password: CCCCC
   app_host: 192.168.108.250
   installation_date: '2020-01-01'
-  secret_key_base: my-secret-key-base
+  secret_key_base: AAAAA
 dashboard:
   image: ghcr.io/solectrus/solectrus:1-0-beta
 postgresql:
   image: postgres:15-alpine
-  password: my-secret-db-password
+  password: BBBBB
   volume_path: "/home/pi/solectrus/postgresql"
 influxdb:
-  bucket: my-solectrus-bucket
+  bucket: GGGGG
   image: influxdb:2.7-alpine
-  org: solectrus
-  password: my-secret-influx-password
-  token_admin: my-super-secret-admin-token
-  token_read: my-super-secret-admin-token
-  token_readwrite: my-super-secret-admin-token
-  token_write: my-super-secret-admin-token
+  org: DDDDD
+  password: EEEEE
+  token_admin: FFFFF
+  token_read: FFFFF
+  token_readwrite: FFFFF
+  token_write: FFFFF
   volume_path: "/home/pi/solectrus/influxdb"
 redis:
   image: redis:7-alpine
@@ -42,8 +42,8 @@ forecast:
   forecast_interval: '1800'
   forecast_kwp1: '3.52'
   forecast_kwp2: '5.5'
-  forecast_latitude: '59.12345'
-  forecast_longitude: '8.12345'
+  forecast_latitude: '59.00000'
+  forecast_longitude: '8.00000'
   forecast_roofs: '2'
   measurement: Forecast
 senec:

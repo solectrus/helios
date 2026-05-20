@@ -99,15 +99,15 @@ services:
       - TZ
       - INFLUX_SCHEMA
       - INFLUX_HOST=influxdb
-      - INFLUX_TOKEN=XXXXX
-      - INFLUX_ORG=solectrus
-      - INFLUX_BUCKET=solectrus
+      - INFLUX_TOKEN=IIIII
+      - INFLUX_ORG=DDDDD
+      - INFLUX_BUCKET=DDDDD
       - INFLUX_PORT
       - MQTT_HOST=192.168.1.39
       - MQTT_PORT=1883
       - MQTT_SSL=false
-      - MQTT_USERNAME=XXXXX
-      - MQTT_PASSWORD=XXXXX
+      - MQTT_USERNAME=IIIII
+      - MQTT_PASSWORD=IIIII
     logging:
       options:
         max-size: 10m
@@ -334,8 +334,8 @@ services:
       - INFLUX_SCHEMA
       - INFLUX_PORT
       - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
-      - INFLUX_ORG=solectrus
-      - INFLUX_BUCKET=solectrus
+      - INFLUX_ORG=DDDDD
+      - INFLUX_BUCKET=DDDDD
       - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_SENEC}
     logging:
       driver: 'json-file'

@@ -18,20 +18,20 @@ services:
         condition: service_healthy
     environment:
       - TZ=Europe/Berlin
-      - APP_HOST=http://solectrus.intern.beekhuis.de
+      - APP_HOST=AAAAA
       - FORCE_SSL=false
-      - SECRET_KEY_BASE=my-secret-key-base
+      - SECRET_KEY_BASE=AAAAA
       - INSTALLATION_DATE=2023-10-17
       - FEED_IN_TARIFF=0.08
-      - ADMIN_PASSWORD=my-admin-password
+      - ADMIN_PASSWORD=BBBBB
       - DB_HOST=solectrus-db
-      - DB_PASSWORD=my-db-password
+      - DB_PASSWORD=CCCCC
       - DB_USER=postgres
       - REDIS_URL=redis://solectrus-redis:6379/1
       - INFLUX_HOST=solectrus-influxdb
-      - INFLUX_TOKEN=my-influx-admin-token
-      - INFLUX_ORG=solectrus
-      - INFLUX_BUCKET=my-solectrus-bucket
+      - INFLUX_TOKEN=DDDDD
+      - INFLUX_ORG=EEEEE
+      - INFLUX_BUCKET=FFFFF
       - INFLUX_MEASUREMENT_PV=my-pv-measurement
       - INFLUX_MEASUREMENT_FORECAST=Forecast
       - INFLUX_POLL_INTERVAL=5
@@ -59,10 +59,10 @@ services:
       - TZ=Europe/Berlin
       - DOCKER_INFLUXDB_INIT_MODE=setup
       - DOCKER_INFLUXDB_INIT_USERNAME=admin
-      - DOCKER_INFLUXDB_INIT_PASSWORD=my-influx-password
+      - DOCKER_INFLUXDB_INIT_PASSWORD=GGGGG
       - DOCKER_INFLUXDB_INIT_ORG=solectrus
       - DOCKER_INFLUXDB_INIT_BUCKET=my-solectrus-bucket
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=my-influx-admin-token
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=DDDDD
     command: influxd run --bolt-path /var/lib/influxdb2/influxd.bolt --engine-path /var/lib/influxdb2/engine --store disk
     healthcheck:
       test: ['CMD', 'influx', 'ping']
@@ -77,7 +77,7 @@ services:
     restart: unless-stopped
     environment:
       - TZ=Europe/Berlin
-      - POSTGRES_PASSWORD=my-db-password
+      - POSTGRES_PASSWORD=CCCCC
     volumes:
       - solectrus-db:/var/lib/postgresql/data
     networks:
@@ -120,15 +120,15 @@ services:
       - INFLUX_HOST=solectrus-influxdb
       - INFLUX_SCHEMA=http
       - INFLUX_PORT=8086
-      - INFLUX_TOKEN=my-influx-admin-token
-      - INFLUX_ORG=solectrus
-      - INFLUX_BUCKET=my-solectrus-bucket
+      - INFLUX_TOKEN=DDDDD
+      - INFLUX_ORG=EEEEE
+      - INFLUX_BUCKET=FFFFF
       - INFLUX_MEASUREMENT=my-pv-measurement
       - MQTT_HOST=192.168.10.10
       - MQTT_PORT=1883
       - MQTT_SSL=false
-      - MQTT_USERNAME=mqtt
-      - MQTT_PASSWORD=my-mqtt-password
+      - MQTT_USERNAME=HHHHH
+      - MQTT_PASSWORD=IIIII
       - MQTT_TOPIC_HOUSE_POW=evcc/site/homePower
       - MQTT_TOPIC_GRID_POW=evcc/site/grid/power
       # - MQTT_TOPIC_BAT_CHARGE_CURRENT
@@ -158,16 +158,16 @@ services:
       - INFLUX_HOST=solectrus-influxdb
       - INFLUX_SCHEMA=http
       - INFLUX_PORT=8086
-      - INFLUX_TOKEN=my-influx-admin-token
-      - INFLUX_ORG=solectrus
-      - INFLUX_BUCKET=my-solectrus-bucket
+      - INFLUX_TOKEN=DDDDD
+      - INFLUX_ORG=EEEEE
+      - INFLUX_BUCKET=FFFFF
       - INFLUX_MEASUREMENT=Forecast
       - FORECAST_PROVIDER=forecast.solar
       - FORECAST_CONFIGURATIONS=1
       - FORECAST_INTERVAL=900
       - INFLUX_MEASUREMENT_FORECAST=Forecast
-      - FORECAST_LATITUDE=53.0708
-      - FORECAST_LONGITUDE=7.4605
+      - FORECAST_LATITUDE=53.0000
+      - FORECAST_LONGITUDE=7.0000
       - FORECAST_DECLINATION=45
       - FORECAST_AZIMUTH=-24
       - FORECAST_KWP=10

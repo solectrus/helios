@@ -59,6 +59,10 @@ RSpec.configure do |config|
   # Skip integration specs in local runs; run them explicitly with
   # `--tag integration`. On CI (ENV['CI'] set) they always run.
   config.filter_run_excluding(:integration) unless ENV['CI']
+
+  # The Anonymizer keeps a per-bundle value→letter registry; reset between
+  # specs so expectations don't depend on the order tests happen to run in.
+  config.before { SupportBundle::Anonymizer.reset_registry! }
 end
 
 Shoulda::Matchers.configure do |config|
