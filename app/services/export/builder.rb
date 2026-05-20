@@ -61,8 +61,13 @@ module Export
         gate = OPTIONAL_SECTIONS[section]
         next if gate && !gate.call(@configuration)
 
-        current = @configuration.send(section)
-        updates = defaults.transform_values { |v| ConfigSchema.resolve_default(v) }
+        current = @configuration.send(section).to_h
+        # Resolve sequentially so a lambda for one key can see earlier
+        # resolutions in the same section (e.g. admin_password ← secret_key_base).
+        updates = {}
+        defaults.each do |key, default|
+          updates[key] = ConfigSchema.resolve_default(default, current.merge(updates))
+        end
         link_influxdb_tokens!(updates) if section == 'influxdb'
         @configuration.update(section, current.merge(updates))
       end

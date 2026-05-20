@@ -30,7 +30,8 @@ influxdb:
   token_write: my-influx-write-token
 redis:
   image: redis:7-alpine
-watchtower: {}
+watchtower:
+  image: nickfedor/watchtower:latest
 forecast:
   forecast: solcast
   forecast_azimuth1: "-0"

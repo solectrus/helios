@@ -34,7 +34,8 @@ influxdb:
 redis:
   image: redis:8-alpine
   volume_path: "/my-volumes/solectrus/redis"
-watchtower: {}
+watchtower:
+  image: nickfedor/watchtower:latest
 forecast:
   forecast: pvnode
   forecast_declination1: '29.1'

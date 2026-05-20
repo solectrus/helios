@@ -28,7 +28,8 @@ influxdb:
   token_write: test-influx-token
 redis:
   image: redis:8-alpine
-watchtower: {}
+watchtower:
+  image: nickfedor/watchtower:latest
 reverse_proxy:
   app_domain: solectrus.example.com
   command:

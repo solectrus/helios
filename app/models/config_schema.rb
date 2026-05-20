@@ -30,12 +30,24 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   MODE_DASHBOARD_ONLY = 'dashboard_only'.freeze
   SYSTEM_MODES = [MODE_FULL, MODE_COLLECTORS_ONLY, MODE_DASHBOARD_ONLY].freeze
 
-  # Both values are normally seeded by bootstrap/install.sh into .env and
-  # promoted into config.yaml on first save. Random fallbacks keep tests and
+  # SECRET_KEY_BASE is seeded by bootstrap/install.sh into .env and promoted
+  # into config.yaml on first save. The random fallback keeps tests and
   # one-off boots without an .env from breaking.
+  #
+  # ADMIN_PASSWORD is derived deterministically from SECRET_KEY_BASE rather
+  # than minted from SecureRandom: legacy stacks that pre-date the variable
+  # (early-2020 installs, see fixtures/.../real_world/user21) round-trip to
+  # the same password every time, instead of churning a new random value
+  # into config.yaml on every export. SOLECTRUS' admin actions need *some*
+  # password to be usable — without one the dashboard starts but silently
+  # blocks editing. bootstrap/install.sh mirrors the same derivation so a
+  # real adoption converges on the same value HELIOS would compute.
   SYSTEM_DEFAULTS = {
-    'admin_password' => -> { ENV['ADMIN_PASSWORD'].presence || SecureRandom.alphanumeric(32) },
     'secret_key_base' => -> { ENV['SECRET_KEY_BASE'].presence || SecureRandom.hex(64) },
+    'admin_password' => lambda { |context|
+      ENV['ADMIN_PASSWORD'].presence ||
+        Digest::SHA256.hexdigest(context['secret_key_base'].to_s)[0, 32]
+    },
   }.freeze
 
   SYSTEM_ALL = (SYSTEM_FIELDS + SYSTEM_DEFAULTS.keys).uniq.freeze
@@ -351,7 +363,12 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   end
 
   # Materializes a default value: calls lambdas, returns plain values as-is.
-  def self.resolve_default(value)
-    value.respond_to?(:call) ? value.call : value
+  # A 1-arity lambda receives the section's current+already-resolved state
+  # (a Hash), so later defaults can derive from earlier ones (e.g.
+  # `admin_password` from `secret_key_base`).
+  def self.resolve_default(value, context = nil)
+    return value unless value.respond_to?(:call)
+
+    value.arity.zero? ? value.call : value.call(context)
   end
 end

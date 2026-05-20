@@ -37,13 +37,19 @@ namespace :fixtures do
   end
 
   def dump_expected_fixtures(config, scenario_path)
+    # Run the export first so `ensure_defaults!` materializes auto-generated
+    # values (admin_password, secret_key_base, postgres password, influx
+    # tokens, …) into Configuration.path. Without this step config.yaml would
+    # snapshot the pre-defaults state and disagree with the .env/compose.yaml
+    # snapshots, which are taken post-export.
+    Export::Builder.new(config).write!
+
     # Preserve root-level key order (grouped logically by the importer) but
     # sort nested keys so diffs stay stable across importer reshuffles.
     data = YAML.safe_load_file(Configuration.path, permitted_classes: [Date])
     sorted = data.transform_values { |v| deep_sort_keys(v) }
     File.write(scenario_path.join('config.yaml'), Configuration.dump(sorted))
 
-    Export::Builder.new(config).write!
     FileUtils.cp(Compose.path, scenario_path.join('compose.yaml'))
     FileUtils.cp(Env.path, scenario_path.join('.env'))
   end

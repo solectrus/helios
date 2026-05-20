@@ -363,18 +363,37 @@ ENV
   )
 }
 
-# Backfill ADMIN_PASSWORD / SECRET_KEY_BASE in an existing .env. Collector-only
-# stacks lack both — without SECRET_KEY_BASE the helios container can't boot.
-# Sets GENERATED_ADMIN_PASSWORD when a new password was created so the caller
-# can show it to the user (otherwise it would only live in .env, undiscovered).
+# Derive a stable ADMIN_PASSWORD from the existing SECRET_KEY_BASE. Mirrors
+# HELIOS' own ConfigSchema::SYSTEM_DEFAULTS so both the install-time
+# backfill (here) and any later HELIOS-side ensure_defaults! converge on the
+# same value. Reproducible across re-runs (no churn in .env) and keeps the
+# password unpredictable to anyone who doesn't already have read access to
+# the SECRET_KEY_BASE.
+derive_admin_password() {
+  local secret hash
+  secret="$(grep -E '^SECRET_KEY_BASE=' "$ENV_FILE" | head -n1 | cut -d= -f2-)"
+  hash="$(printf '%s' "$secret" | shasum -a 256 | awk '{print $1}')"
+  printf '%s\n' "${hash:0:32}"
+}
+
+# Backfill SECRET_KEY_BASE and ADMIN_PASSWORD in an existing .env. Order
+# matters: SECRET_KEY_BASE is the input to derive_admin_password, so we
+# always ensure it exists before deriving the password.
+#
+# Without SECRET_KEY_BASE the helios container can't boot. Without
+# ADMIN_PASSWORD, the SOLECTRUS dashboard still starts but its admin actions
+# (editing settings, prices, etc.) are inaccessible — worse than picking a
+# derived value. Sets GENERATED_ADMIN_PASSWORD when a new password was
+# created so the caller can show it to the user (otherwise it would only
+# live in .env, undiscovered).
 ensure_helios_secrets() {
   GENERATED_ADMIN_PASSWORD=""
-  if ! grep -qE '^ADMIN_PASSWORD=.+' "$ENV_FILE"; then
-    GENERATED_ADMIN_PASSWORD="$(generate_password)"
-    printf 'ADMIN_PASSWORD=%s\n' "$GENERATED_ADMIN_PASSWORD" >> "$ENV_FILE"
-  fi
   grep -qE '^SECRET_KEY_BASE=.+' "$ENV_FILE" \
     || printf 'SECRET_KEY_BASE=%s\n' "$(generate_secret)" >> "$ENV_FILE"
+  if ! grep -qE '^ADMIN_PASSWORD=.+' "$ENV_FILE"; then
+    GENERATED_ADMIN_PASSWORD="$(derive_admin_password)"
+    printf 'ADMIN_PASSWORD=%s\n' "$GENERATED_ADMIN_PASSWORD" >> "$ENV_FILE"
+  fi
 }
 
 ensure_project_name() {
@@ -457,6 +476,32 @@ helios_url() {
   printf 'http://%s:3999' "$host"
 }
 
+# Final success banner shown after a fresh install or a successful adoption.
+# Pass the freshly-generated admin password as the only argument; omit the
+# argument when an existing ADMIN_PASSWORD was reused (and therefore should
+# not be echoed back to the user).
+print_running_banner() {
+  local password="${1:-}"
+  if [ -n "$password" ]; then
+    cat <<MSG
+
+================================================================
+  HELIOS is running at $(helios_url)
+  Initial admin password:  ${password}
+================================================================
+Keep this password safe — it is also stored in $ENV_FILE
+(key ADMIN_PASSWORD) on this host.
+MSG
+  else
+    cat <<MSG
+
+================================================================
+  HELIOS is running at $(helios_url)
+================================================================
+MSG
+  fi
+}
+
 main() {
   COMPOSE_FILE="$(detect_compose_file)" || COMPOSE_FILE=""
 
@@ -499,20 +544,7 @@ main() {
     success "$COMPOSE_FILE updated — added 'helios' service."
     start_stack
 
-    if [ -n "${GENERATED_ADMIN_PASSWORD:-}" ]; then
-      cat <<MSG
-
-================================================================
-  HELIOS is running at $(helios_url)
-  Initial admin password:  ${GENERATED_ADMIN_PASSWORD}
-================================================================
-Keep this password safe — it is also stored in $ENV_FILE
-(key ADMIN_PASSWORD) on this host.
-MSG
-    else
-      success "HELIOS is running at $(helios_url)"
-      warn "ADMIN_PASSWORD and SECRET_KEY_BASE live in $ENV_FILE."
-    fi
+    print_running_banner "${GENERATED_ADMIN_PASSWORD:-}"
     return
   fi
 
@@ -533,15 +565,7 @@ MSG
   success "Created $COMPOSE_FILE and $ENV_FILE."
   start_stack
 
-  cat <<MSG
-
-================================================================
-  HELIOS is running at $(helios_url)
-  Initial admin password:  ${password}
-================================================================
-Keep this password safe — it is also stored in $ENV_FILE
-(key ADMIN_PASSWORD) on this host.
-MSG
+  print_running_banner "$password"
 }
 
 # Run main unless we are being sourced (e.g. by bats tests in spec/bats/bootstrap/).

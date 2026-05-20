@@ -33,7 +33,8 @@ influxdb:
 redis:
   image: redis:7-alpine
   volume_path: solectrus-redis
-watchtower: {}
+watchtower:
+  image: nickfedor/watchtower:latest
 forecast:
   forecast: forecast.solar
   forecast_azimuth1: "-24"

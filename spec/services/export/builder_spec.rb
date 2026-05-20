@@ -279,6 +279,12 @@ RSpec.describe Export::Builder do
       expect(env['ADMIN_PASSWORD'].length).to eq(32)
     end
 
+    it 'derives ADMIN_PASSWORD deterministically from SECRET_KEY_BASE' do
+      env = Env.load
+      expected = Digest::SHA256.hexdigest(env['SECRET_KEY_BASE'])[0, 32]
+      expect(env['ADMIN_PASSWORD']).to eq(expected)
+    end
+
     # InfluxDB's docker-entrypoint seeds only the admin token; until HELIOS
     # provisions separate authorizations via the API, the four .env tokens
     # must point at the same value or collectors and dashboard would fail

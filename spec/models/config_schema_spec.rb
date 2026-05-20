@@ -140,7 +140,7 @@ RSpec.describe ConfigSchema do
 
     it 'returns all system defaults when empty' do
       missing = described_class.missing_auto_generated(Configuration.current)
-      expect(missing['system'].keys).to match_array(%w[admin_password secret_key_base])
+      expect(missing['system'].keys).to match_array(%w[secret_key_base admin_password])
     end
 
     it 'returns all postgresql defaults when empty' do
@@ -185,9 +185,15 @@ RSpec.describe ConfigSchema do
 
     it 'returns empty hash when all values present' do
       config = Configuration.current
-      # Populate all auto-generated defaults
+      # Populate all auto-generated defaults. Resolve sequentially so a
+      # 1-arity lambda (admin_password ← secret_key_base) sees its dependency
+      # filled in by the same loop.
       ConfigSchema::AUTO_GENERATED.each do |section, defaults|
-        config.update(section, defaults.transform_values { |v| described_class.resolve_default(v) })
+        resolved = {}
+        defaults.each do |key, default|
+          resolved[key] = described_class.resolve_default(default, resolved)
+        end
+        config.update(section, resolved)
       end
 
       missing = described_class.missing_auto_generated(config)

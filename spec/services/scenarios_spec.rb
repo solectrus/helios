@@ -39,11 +39,16 @@ RSpec.describe 'Scenario round-trip' do
       it 'round-trips backup → config → compose/env', :aggregate_failures do
         config = Import::ConfigurationImporter.new(stack_reader).import!
 
+        # Export materializes auto-generated defaults (admin_password,
+        # secret_key_base, …) into Configuration.path. Compare config.yaml
+        # after the export so the snapshot includes those values, matching
+        # the post-defaults state that real HELIOS instances persist.
+        Export::Builder.new(config).write!
+
         imported = YAML.safe_load_file(Configuration.path, permitted_classes: [Date])
         expected = YAML.safe_load_file(scenario_path.join('config.yaml'), permitted_classes: [Date])
         expect(imported).to eq(expected)
 
-        Export::Builder.new(config).write!
         expect(File.read(Compose.path)).to eq(File.read(scenario_path.join('compose.yaml')))
         expect(File.read(Env.path)).to eq(File.read(scenario_path.join('.env')))
       end
