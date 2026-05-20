@@ -115,12 +115,21 @@ module Orchestration
     end
 
     def recompute_and_broadcast(force: false)
-      @starting.make_false unless services_settling?
+      @starting.make_false unless services_starting?
       new_overall = compute_overall
       @stopping.make_false if new_overall == :stopped
       old_overall = @overall.get_and_set(new_overall)
 
       broadcast! if force || old_overall != new_overall
+    end
+
+    # @starting must survive between two consecutive single-service starts:
+    # ComposeJob#ensure clears its own PendingOperation and calls refresh!
+    # *before* the next queued job has registered a :starting status, so
+    # without checking pending start-like ops the flag would drop and the
+    # bar would flicker through :partial.
+    def services_starting?
+      services_settling? || PendingOperations.any_start_pending?
     end
 
     def compute_overall

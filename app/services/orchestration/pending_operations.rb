@@ -8,6 +8,12 @@ module Orchestration
   class PendingOperations
     OPERATIONS = Concurrent::Map.new
 
+    # Operations that bring a container up. Used by StackStatus to keep
+    # the status bar in :starting while consecutive single-service starts
+    # are still queued — without this the bar flickers back to :partial
+    # in the gap between one ComposeJob finishing and the next picking up.
+    START_OPERATIONS = %i[start recreate upgrade up].freeze
+
     class << self
       def set(service_name, operation)
         OPERATIONS[service_name.to_s] = operation.to_sym
@@ -27,6 +33,11 @@ module Orchestration
 
       def clear_all
         OPERATIONS.clear
+      end
+
+      def any_start_pending?
+        OPERATIONS.each_pair { |_, op| return true if START_OPERATIONS.include?(op) }
+        false
       end
     end
   end

@@ -1,5 +1,8 @@
 RSpec.describe Orchestration::StackStatus do
-  before { described_class.instance.reset! }
+  before do
+    described_class.instance.reset!
+    Orchestration::PendingOperations.clear_all
+  end
 
   describe '#overall' do
     context 'when not initialized' do
@@ -151,6 +154,17 @@ RSpec.describe Orchestration::StackStatus do
 
       # No service is :starting, so the flag gets cleared
       expect(described_class.overall).to eq(:partial)
+    end
+
+    it 'keeps starting flag while another start-like op is still pending' do
+      described_class.mark_starting!
+      Orchestration::PendingOperations.set('redis', :start)
+      described_class.update('postgresql', :ok)
+      described_class.update('redis', :stopped)
+
+      # PostgreSQL finished, but Redis still has a queued start —
+      # bar must not flicker to :partial in the gap.
+      expect(described_class.overall).to eq(:starting)
     end
   end
 

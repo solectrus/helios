@@ -50,4 +50,25 @@ RSpec.describe Orchestration::PendingOperations do
       expect(described_class.get('influxdb')).to be_nil
     end
   end
+
+  describe '.any_start_pending?' do
+    it 'returns false when nothing is pending' do
+      expect(described_class.any_start_pending?).to be false
+    end
+
+    it 'returns true for :start, :recreate, :upgrade, :up' do
+      %i[start recreate upgrade up].each do |op|
+        described_class.set('redis', op)
+        expect(described_class.any_start_pending?).to be(true), "expected true for #{op}"
+        described_class.clear('redis')
+      end
+    end
+
+    it 'returns false when only stop-like operations are pending' do
+      described_class.set('redis', :stop)
+      described_class.set('influxdb', :down)
+
+      expect(described_class.any_start_pending?).to be false
+    end
+  end
 end
