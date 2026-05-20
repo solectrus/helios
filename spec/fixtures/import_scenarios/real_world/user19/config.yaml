@@ -78,5 +78,3 @@ sensors:
     source: senec
   system_status_ok:
     source: senec
-  wallbox_power:
-    source: senec

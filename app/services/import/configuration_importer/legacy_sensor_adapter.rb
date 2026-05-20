@@ -25,13 +25,15 @@ module Import
 
       # Returns synthesized { sensor_name => "measurement:field" } for every
       # FALLBACK_SENSORS entry the legacy dashboard would resolve. Existing
-      # INFLUX_SENSOR_* entries in the env win — callers merge on top.
+      # INFLUX_SENSOR_* entries in the env win — callers merge on top, and
+      # an explicit empty entry (`INFLUX_SENSOR_X=`) counts as "user opted
+      # out", so we don't resurrect it through the fallback.
       # Returns {} when legacy markers are absent.
       def self.synthesize(dashboard_env)
         return {} unless legacy_mode?(dashboard_env)
 
         FALLBACK_SENSORS.each_with_object({}) do |(name, (measurement_key, field)), out|
-          next if dashboard_env["INFLUX_SENSOR_#{name.upcase}"].present?
+          next if dashboard_env.key?("INFLUX_SENSOR_#{name.upcase}")
 
           measurement = dashboard_env[measurement_key].presence
           next if measurement.blank?

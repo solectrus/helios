@@ -22,8 +22,8 @@ intact. See `ForecastExtractor#provider`.
 
 Two more donor traits exercise the importer: the **legacy `app` / `db`
 service names** (renamed to `dashboard` / `postgresql`), and a single
-**empty `INFLUX_SENSOR_WALLBOX_POWER=`** that the legacy fallback heals
-into the canonical SENEC mapping. Anonymized but otherwise untouched.
+**empty `INFLUX_SENSOR_WALLBOX_POWER=`** that the importer respects as
+an explicit user opt-out (no wallbox). Anonymized but otherwise untouched.
 
 ## Imported correctly (round-trip preserves the value)
 
@@ -52,19 +52,16 @@ into the canonical SENEC mapping. Anonymized but otherwise untouched.
   null island; HELIOS treats them as opaque strings and re-emits
   `'0.00000'` byte-identical. Same null-island placeholder as
   user12/16/18.
-- **Empty `INFLUX_SENSOR_WALLBOX_POWER=` healed by the legacy
-  fallback.** Donor's `.env` sets 12 sensors explicitly as `SENEC:*` /
+- **Empty `INFLUX_SENSOR_WALLBOX_POWER=` respected as user opt-out.**
+  Donor's `.env` sets 12 sensors explicitly as `SENEC:*` /
   `Forecast:watt` mappings and leaves `INFLUX_SENSOR_WALLBOX_POWER=`
-  blank. Because the dashboard env carries `INFLUX_MEASUREMENT_PV` /
-  `INFLUX_MEASUREMENT_FORECAST`, `LegacySensorAdapter.legacy_mode?` is
-  active: the blank slot resolves through `FALLBACK_SENSORS` to
-  `SENEC:wallbox_charge_power` — exactly what the dashboard's own
-  `Sensor::LegacyConfigAdapter` would serve. Stored as
-  `wallbox_power.source: senec` (canonical default, no field
-  override), re-exported as
-  `INFLUX_SENSOR_WALLBOX_POWER=SENEC:wallbox_charge_power`. The 12
-  explicit mappings win over the fallback table and are left
-  untouched.
+  blank — the user has no wallbox. Even with the dashboard env carrying
+  `INFLUX_MEASUREMENT_PV` / `INFLUX_MEASUREMENT_FORECAST` (which flips
+  `LegacySensorAdapter.legacy_mode?` to active), the adapter skips any
+  sensor whose `INFLUX_SENSOR_*` key is present in the env regardless of
+  value, so the blank slot drops on re-export instead of being healed
+  into `SENEC:wallbox_charge_power`. The 12 explicit mappings round-trip
+  byte-identical.
 - **`/home/user19/solectrus/<service>` volume layout preserved.**
   Donor mounts the three `${X_VOLUME_PATH}` envs to absolute home
   paths; round-trip passes them through verbatim (HELIOS doesn't

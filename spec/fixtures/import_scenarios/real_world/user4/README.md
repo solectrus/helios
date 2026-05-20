@@ -40,15 +40,17 @@ DB service it depends on. Anonymized but otherwise untouched.
   `INFLUX_MEASUREMENT_PV=SENEC` set, `LegacySensorAdapter` synthesizes
   `inverter_power` from the fallback table even though the user never set
   it explicitly. `_4` / `_5` are blank and dropped.
-- **`INFLUX_SENSOR_WALLBOX_POWER=` blank but resurrected as `senec`** —
-  same legacy mechanism: the empty entry would normally be dropped (cf.
-  user3's "twelve empty sensors"), but `INFLUX_MEASUREMENT_PV` /
-  `INFLUX_MEASUREMENT_FORECAST` flip the importer into legacy mode and the
-  fallback table fills in the SENEC default. Re-export materializes
-  `INFLUX_SENSOR_WALLBOX_POWER=SENEC:wallbox_charge_power`. Acceptable —
-  the dashboard would have served that exact value anyway.
-- **`INFLUX_SENSOR_CAR_BATTERY_SOC=` blank** — not in the legacy fallback
-  table, so it stays dropped (no sensor registered).
+- **`INFLUX_SENSOR_WALLBOX_POWER=` blank, respected as user opt-out** —
+  donor has no wallbox and explicitly blanks the slot. Even with
+  `INFLUX_MEASUREMENT_PV=SENEC` flipping the importer into legacy mode,
+  `LegacySensorAdapter` skips any sensor whose `INFLUX_SENSOR_*` key is
+  present in the dashboard env (regardless of value), so the blank entry
+  is treated as a deliberate "no thanks" and dropped on re-export instead
+  of being resurrected from the fallback table. Same treatment as
+  `INFLUX_SENSOR_CAR_BATTERY_SOC=` below.
+- **`INFLUX_SENSOR_CAR_BATTERY_SOC=` blank** — also dropped, both because
+  the entry is empty (user opt-out, same rule as wallbox above) and
+  because the sensor isn't in the legacy fallback table to begin with.
 - **forecast.solar with four planes declared, only two active** —
   `FORECAST_0_*` and `FORECAST_1_*` populated, `_2_*` and `_3_*`
   commented out. `FORECAST_CONFIGURATIONS=2` matches reality, so HELIOS
