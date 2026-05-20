@@ -222,9 +222,15 @@ module Orchestration
     # the badge / restore mode tracks the container's lifecycle) and morph the
     # /backups page (so the in-progress row in the list disappears the moment
     # the container exits, instead of waiting for the 3 s auto-reload tick).
+    # The refresh! re-syncs @service_statuses with the (possibly rewritten)
+    # compose.yaml. A restore on a fresh host overwrites compose.yaml with
+    # services that never produced container events, so without this they'd
+    # be missing from the map and compute_overall would falsely report :ok
+    # while several services are actually stopped.
     def broadcast_helios_operation
       BackupRunner.invalidate_in_progress_cache!
       RestoreRunner.invalidate_in_progress_cache!
+      Orchestration::StackStatus.refresh!
 
       I18n.with_locale(self.class.locale) do
         Orchestration::StatusBarBroadcaster.new.broadcast
