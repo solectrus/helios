@@ -11,6 +11,17 @@ module Import
         @reader.services.key?('forecast-collector')
       end
 
+      # InfluxDB measurement the forecast-collector writes to. The collector
+      # itself defaults to 'Forecast' (capitalized) when INFLUX_MEASUREMENT is
+      # unset — see https://github.com/solectrus/forecast-collector/blob/develop/app/config.rb#L89
+      # — so we mirror that default here. Used as a fallback in LegacySensorAdapter
+      # so pre-INFLUX_MEASUREMENT_FORECAST stacks still resolve their forecast sensor.
+      def measurement
+        return nil unless enabled?
+
+        service_env('forecast-collector')['INFLUX_MEASUREMENT'].presence || 'Forecast'
+      end
+
       def section_data
         return unless enabled?
 

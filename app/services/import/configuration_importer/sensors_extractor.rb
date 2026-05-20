@@ -3,8 +3,10 @@ module Import
     class SensorsExtractor
       include Helpers
 
-      def initialize(reader)
+      def initialize(reader, senec_measurement: nil, forecast_measurement: nil)
         @reader = reader
+        @senec_measurement = senec_measurement
+        @forecast_measurement = forecast_measurement
       end
 
       def sensors_data
@@ -25,9 +27,14 @@ module Import
                      .merge(collect_sensor_mappings(@reader.raw_env.to_h)) { |_, dash_value, _| dash_value }
           # Legacy stacks omit most INFLUX_SENSOR_* and rely on the dashboard's
           # built-in fallback table — replicate it so the imported config matches
-          # what the dashboard actually serves.
-          LegacySensorAdapter.synthesize(dashboard_env).merge(explicit)
-                             .select { |name, _| SensorRegistry.valid?(name) }
+          # what the dashboard actually serves. Pre-INFLUX_MEASUREMENT_PV stacks
+          # fall back to the collectors' compiled-in measurement defaults.
+          synthesized = LegacySensorAdapter.synthesize(
+            dashboard_env,
+            senec_measurement: @senec_measurement,
+            forecast_measurement: @forecast_measurement,
+          )
+          synthesized.merge(explicit).select { |name, _| SensorRegistry.valid?(name) }
         end
       end
 

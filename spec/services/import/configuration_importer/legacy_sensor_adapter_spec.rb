@@ -46,5 +46,37 @@ RSpec.describe Import::ConfigurationImporter::LegacySensorAdapter do
 
       expect(synthesized.keys).not_to include('house_power', 'inverter_power')
     end
+
+    it 'falls back to the senec collector measurement when INFLUX_MEASUREMENT_PV is absent' do
+      synthesized = described_class.synthesize({}, senec_measurement: 'SENEC')
+
+      expect(synthesized).to include(
+        'house_power' => 'SENEC:house_power',
+        'inverter_power' => 'SENEC:inverter_power',
+        'battery_soc' => 'SENEC:bat_fuel_charge',
+      )
+      expect(synthesized).not_to have_key('inverter_power_forecast')
+    end
+
+    it 'falls back to the forecast collector measurement when INFLUX_MEASUREMENT_FORECAST is absent' do
+      synthesized = described_class.synthesize({}, forecast_measurement: 'Forecast')
+
+      expect(synthesized).to include('inverter_power_forecast' => 'Forecast:watt')
+    end
+
+    it 'skips collector-only fallback once any INFLUX_SENSOR_* is present' do
+      env = { 'INFLUX_SENSOR_INVERTER_POWER' => '' }
+
+      expect(described_class.synthesize(env, senec_measurement: 'SENEC')).to eq({})
+    end
+
+    it 'still honors explicit INFLUX_MEASUREMENT_PV even when INFLUX_SENSOR_* exists' do
+      env = {
+        'INFLUX_MEASUREMENT_PV' => 'pv',
+        'INFLUX_SENSOR_INVERTER_POWER' => 'custom:thing',
+      }
+
+      expect(described_class.synthesize(env, senec_measurement: 'SENEC')).to include('house_power' => 'pv:house_power')
+    end
   end
 end

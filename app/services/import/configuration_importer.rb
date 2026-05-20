@@ -129,7 +129,11 @@ module Import
     end
 
     def sensors_extractor
-      @sensors_extractor ||= SensorsExtractor.new(@reader)
+      @sensors_extractor ||= SensorsExtractor.new(
+        @reader,
+        senec_measurement: senec_extractor.measurement,
+        forecast_measurement: forecast_extractor.measurement,
+      )
     end
 
     def unmanaged_detector
