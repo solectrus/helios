@@ -9,10 +9,21 @@ module Import
       end
 
       def section_data
-        core_data.merge('app_host' => service_env('dashboard')['APP_HOST']).compact
+        core_data.merge('app_host' => normalized_app_host).compact
       end
 
       private
+
+      # APP_HOST is the bare hostname or IP; the dashboard adds the scheme at
+      # runtime. Some users paste a full URL (`http://solar.example.com`)
+      # into .env — strip the scheme so config.yaml stays clean and the
+      # dashboard's URL construction doesn't end up with a double prefix.
+      def normalized_app_host
+        value = service_env('dashboard')['APP_HOST']
+        return value if value.blank?
+
+        value.sub(%r{\Ahttps?://}, '')
+      end
 
       def core_data
         dashboard_env = service_env('dashboard')
