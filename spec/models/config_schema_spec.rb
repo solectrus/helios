@@ -28,8 +28,7 @@ RSpec.describe ConfigSchema do
 
     it 'returns fields for backup' do
       fields = described_class.fields_for('backup')
-      expect(fields).to include('aws_access_key_id', 'influxdb')
-      expect(fields).not_to include('postgresql')
+      expect(fields).to include('aws_access_key_id', 'aws_bucket')
     end
 
     it 'returns fields for redis' do
@@ -91,14 +90,6 @@ RSpec.describe ConfigSchema do
       expect(described_class.valid_field?('postgresql', 'image')).to be true
     end
 
-    it 'returns false for postgresql in backup (derived at export time)' do
-      expect(described_class.valid_field?('backup', 'postgresql')).to be false
-    end
-
-    it 'returns true for influxdb in backup' do
-      expect(described_class.valid_field?('backup', 'influxdb')).to be true
-    end
-
     it 'returns false for unknown system field' do
       expect(described_class.valid_field?('system', 'nonsense')).to be false
     end
@@ -135,7 +126,7 @@ RSpec.describe ConfigSchema do
       config = Configuration.current
       missing = described_class.missing_auto_generated(config)
 
-      expect(missing.keys).to match_array(%w[system dashboard postgresql influxdb redis watchtower backup ingest])
+      expect(missing.keys).to match_array(%w[system dashboard postgresql influxdb redis watchtower ingest])
     end
 
     it 'returns all system defaults when empty' do
@@ -153,11 +144,6 @@ RSpec.describe ConfigSchema do
       expect(missing['influxdb'].keys).to match_array(
         %w[image org bucket password token_admin token_readwrite token_write token_read],
       )
-    end
-
-    it 'returns all backup defaults when empty' do
-      missing = described_class.missing_auto_generated(Configuration.current)
-      expect(missing['backup'].keys).to match_array(%w[influxdb])
     end
 
     it 'returns image defaults for image-only sections when empty' do

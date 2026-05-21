@@ -15,8 +15,6 @@ module Export
       Services::ForecastCollector,
       Services::PowerSplitter,
       Services::Traefik,
-      Services::InfluxdbBackup,
-      Services::PostgresqlBackup,
       Services::Watchtower,
       Services::Helios,
     ].freeze

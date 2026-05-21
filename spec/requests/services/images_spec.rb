@@ -49,23 +49,6 @@ RSpec.describe 'Services::Images', :with_admin_password do
       expect(Configuration.current.watchtower.image).to eq(DockerImages.current(:WATCHTOWER))
     end
 
-    it 'writes the new image into the nested backup section' do
-      with_config_yaml(
-        'system' => { 'timezone' => 'Europe/Berlin' },
-        'backup' => {
-          'aws_bucket' => 'my-bucket',
-          'influxdb' => { 'image' => 'ghcr.io/solectrus/influxdb2-s3-backup:0.1.0' },
-        },
-      )
-      install_compose_with('influxdb-backup', 'ghcr.io/solectrus/influxdb2-s3-backup:0.1.0')
-
-      patch service_image_path(service_id: 'influxdb-backup'), as: :turbo_stream
-
-      backup = Configuration.current.backup
-      expect(backup.influxdb.image).to eq(DockerImages.current(:INFLUXDB_BACKUP))
-      expect(backup.aws_bucket).to eq('my-bucket')
-    end
-
     it 'rejects an update for the helios service' do
       with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
       install_compose_with('helios', 'ghcr.io/solectrus/helios:develop')

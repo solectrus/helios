@@ -168,16 +168,6 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
 
   INGEST_ALL = (STORAGE_FIELDS + INGEST_FIELDS + INGEST_DEFAULTS.keys).uniq.freeze
 
-  # --- Backup image defaults ---
-  #
-  # Only InfluxDB's backup image is stored. The postgres-s3-backup image must
-  # match the PostgreSQL major version (it runs pg_dump), so it is derived at
-  # export time from `postgresql.image` — see
-  # Export::Services::PostgresqlBackup#backup_image.
-  BACKUP_DEFAULTS = {
-    'influxdb' => { 'image' => DockerImages.current(:INFLUXDB_BACKUP) }.freeze,
-  }.freeze
-
   # Combined auto-generated defaults keyed by section
   AUTO_GENERATED = {
     'system' => SYSTEM_DEFAULTS,
@@ -186,7 +176,6 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     'influxdb' => INFLUXDB_DEFAULTS,
     'redis' => REDIS_DEFAULTS,
     'watchtower' => WATCHTOWER_DEFAULTS,
-    'backup' => BACKUP_DEFAULTS,
     'ingest' => INGEST_DEFAULTS,
   }.freeze
 
@@ -301,7 +290,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     aws_bucket
   ].freeze
 
-  BACKUP_ALL = (BACKUP_FIELDS + BACKUP_DEFAULTS.keys).uniq.freeze
+  BACKUP_ALL = BACKUP_FIELDS
 
   # Sensors is a dynamic mapping (sensor_name => config hash),
   # validated via SensorRegistry instead of a fixed field list.

@@ -16,8 +16,6 @@ module Compose
       forecast-collector
       power-splitter
       traefik
-      influxdb-backup
-      postgresql-backup
       watchtower
     ].freeze
 

@@ -179,9 +179,6 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
     ],
   }.freeze
 
-  INFLUXDB_BACKUP = { current: 'ghcr.io/solectrus/influxdb2-s3-backup:latest' }.freeze
-  POSTGRESQL_BACKUP = { current: 'ghcr.io/solectrus/postgres-s3-backup:18' }.freeze
-
   # Compose-service-name → registry-constant lookup. Built once at load time so
   # per-render lookups (one per service row, ~15 rows per dashboard) are O(1)
   # hash hits instead of repeated reflection.
@@ -229,18 +226,6 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
   # pg_upgrade) — see ADR-0003.
   def self.postgresql_data_path(major)
     major && major <= 17 ? '/var/lib/postgresql/data' : '/var/lib/postgresql'
-  end
-
-  # The postgres-s3-backup image runs `pg_dump`, which must match the
-  # database server's major version. Images are published per PostgreSQL
-  # major (`:17`, `:18`, …), so the backup image tracks the configured
-  # PostgreSQL image instead of a fixed tag — see
-  # Export::Services::PostgresqlBackup#backup_image.
-  def self.postgresql_backup_for(major)
-    default = current(:POSTGRESQL_BACKUP)
-    return default if major.blank?
-
-    "#{default.split(':').first}:#{major}"
   end
 
   # Bare-repo legacy entries (e.g. "containrrr/watchtower") are returned
