@@ -1,13 +1,13 @@
 # syntax=docker/dockerfile:1
 # check=error=true
 
-FROM ghcr.io/ledermann/rails-base-builder:4.0.4-alpine AS builder
+FROM ghcr.io/ledermann/rails-base-builder:4.0.5-alpine AS builder
 
 # Remove some files not needed in resulting image.
 # Because they are required for building the image, they can't be added to .dockerignore
 RUN rm -r package.json vite.config.mts tsconfig.json
 
-FROM ghcr.io/ledermann/rails-base-final:4.0.4-alpine
+FROM ghcr.io/ledermann/rails-base-final:4.0.5-alpine
 LABEL maintainer="georg@ledermann.dev"
 LABEL org.opencontainers.image.description="HELIOS — knows your SOLECTRUS configuration better than you do"
 
