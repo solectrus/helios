@@ -62,6 +62,7 @@
           <%= button_to helpers.backup_restore_path(backup),
                         method: :post,
                         class: "btn btn-ghost w-full justify-start gap-3 text-warning",
+                        data: { turbo_submits_with: t('backups.index.restore_in_progress') },
                         form: {
                           class: "w-full",
                           data: {

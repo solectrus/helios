@@ -56,6 +56,9 @@ RSpec.describe 'Backups', :with_admin_password do
         )
         expect(response.body).to include(I18n.t('backups.index.restore_confirm_button'))
         expect(response.body).to include('data-turbo-confirm-variant="error"')
+        expect(response.body).to include(
+          %(data-turbo-submits-with="#{I18n.t('backups.index.restore_in_progress')}"),
+        )
       end
     end
 
