@@ -172,6 +172,7 @@ de:
       error: 'Sicherung konnte nicht gestartet werden: %{message}'
     destroy:
       deleted: 'Sicherung wurde gelöscht.'
+      error: 'Sicherung konnte nicht gelöscht werden: %{message}'
     uploads:
       create:
         uploaded: 'Sicherung wurde hochgeladen.'
@@ -180,6 +181,7 @@ de:
       errors:
         backup_in_progress: 'Eine Sicherung läuft bereits.'
         restore_in_progress: 'Eine Wiederherstellung läuft bereits.'
+        external_destination: 'Upload ist nur bei lokalem Sicherungsziel möglich. Lege die Datei direkt im externen Verzeichnis ab oder stelle das Ziel vorübergehend auf „Lokal“ um.'
         missing: 'Keine Datei ausgewählt.'
         not_tar: 'Datei ist keine .tar-Datei.'
         too_large: 'Datei ist größer als das erlaubte Maximum.'
@@ -202,6 +204,7 @@ de:
         env_missing: '.env-Datei fehlt.'
         config_missing: 'helios/config.yaml fehlt.'
         influx_token_missing: 'INFLUX_ADMIN_TOKEN fehlt in .env.'
+        destination_unconfigured: 'Sicherungsziel ist noch nicht vollständig konfiguriert.'
         postgres_not_running: 'PostgreSQL-Dienst läuft nicht.'
         influxdb_not_running: 'InfluxDB-Dienst läuft nicht.'
     restorer:
@@ -244,6 +247,13 @@ de:
       mqtt_unreachable: 'MQTT-Broker nicht erreichbar – prüfe Host und Port'
       mqtt_credentials_valid: 'Zugangsdaten gültig'
       mqtt_unauthorized: 'Benutzername oder Passwort ungültig'
+      backup_path_writable: 'Pfad ist erreichbar und beschreibbar'
+      backup_path_missing: 'Pfad existiert nicht auf dem Host'
+      backup_path_not_directory: 'Pfad ist kein Verzeichnis'
+      backup_path_not_writable: 'Pfad ist nicht beschreibbar'
+      backup_path_not_absolute: 'Pfad muss absolut sein (mit „/“ beginnen)'
+      backup_path_invalid_chars: 'Pfad enthält ungültige Zeichen'
+      backup_path_error: 'Pfad konnte nicht geprüft werden'
       incomplete: 'Bitte zuerst alle Felder ausfüllen'
       error: 'Prüfung fehlgeschlagen'
     settings:

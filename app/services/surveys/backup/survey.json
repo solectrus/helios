@@ -1,72 +1,80 @@
 {
   "locale": "de",
   "title": {
-    "de": "Backup",
+    "de": "Sicherung",
     "default": "Backup"
   },
   "description": {
-    "de": "Konfiguration der S3-Datensicherung",
-    "default": "Configuration of S3 data backup"
+    "de": "Wo HELIOS deine Sicherungen ablegt.",
+    "default": "Where HELIOS stores your backups."
   },
   "pages": [
     {
-      "name": "p_backup",
+      "name": "p_destination",
       "elements": [
         {
-          "type": "boolean",
-          "name": "enabled",
+          "type": "radiogroup",
+          "name": "destination",
           "title": {
-            "de": "Automatisches Backup auf Amazon S3",
-            "default": "Automatic backup to Amazon S3"
-          },
-          "description": {
-            "de": "Sichert die Datenbanken regelmäßig in einen S3-Bucket.",
-            "default": "Backs up the databases regularly into an S3 bucket."
+            "de": "Ablageort",
+            "default": "Destination"
           },
           "isRequired": true,
-          "defaultValue": false,
-          "labelTrue": {
-            "de": "An",
-            "default": "On"
-          },
-          "labelFalse": {
-            "de": "Aus",
-            "default": "Off"
-          }
+          "defaultValue": "local",
+          "choices": [
+            {
+              "value": "local",
+              "text": {
+                "de": "Lokal auf diesem Host",
+                "default": "Local on this host"
+              }
+            },
+            {
+              "value": "external",
+              "text": {
+                "de": "Externer Mount (z. B. NAS)",
+                "default": "External mount (e.g. NAS)"
+              }
+            }
+          ]
         }
       ]
     },
     {
-      "name": "p_aws",
-      "visibleIf": "{enabled} = true",
+      "name": "p_external",
+      "visibleIf": "{destination} = 'external'",
       "elements": [
         {
           "type": "text",
-          "name": "aws_access_key_id",
-          "title": "AWS Access Key ID",
-          "isRequired": true
-        },
-        {
-          "type": "text",
-          "name": "aws_secret_access_key",
-          "title": "AWS Secret Access Key",
-          "isRequired": true
-        },
-        {
-          "type": "text",
-          "name": "aws_region",
-          "title": "AWS Region",
+          "name": "external_path",
+          "title": {
+            "de": "Pfad auf dem Host",
+            "default": "Host path"
+          },
+          "description": {
+            "de": "Absoluter Pfad zu einem bereits gemounteten Verzeichnis (HELIOS legt den Mount nicht an).",
+            "default": "Absolute path to an already-mounted directory (HELIOS does not create the mount)."
+          },
           "isRequired": true,
-          "placeholder": {
-            "de": "z.B. eu-central-1",
-            "default": "e.g. eu-central-1"
-          }
+          "placeholder": "/mnt/nas/solectrus-backups",
+          "validators": [
+            {
+              "type": "regex",
+              "regex": "^/[A-Za-z0-9_/.\\-]+$",
+              "text": {
+                "de": "Bitte einen absoluten Pfad ohne Leer- oder Sonderzeichen angeben.",
+                "default": "Please enter an absolute path without spaces or special characters."
+              }
+            }
+          ]
         },
         {
-          "type": "text",
-          "name": "aws_bucket",
-          "title": "S3 Bucket",
-          "isRequired": true
+          "type": "html",
+          "name": "connection_test",
+          "html": {
+            "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"backup\" data-test-check=\"external_path\" data-test-fields=\"external_path\">Pfad prüfen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
+            "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"backup\" data-test-check=\"external_path\" data-test-fields=\"external_path\">Check path</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
+          }
         }
       ]
     }

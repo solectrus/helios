@@ -1,7 +1,18 @@
 require 'rubygems/package'
 
+# Facade over the configured backup storage (local filesystem or an external
+# host mount). The storage choice is read from `config.yaml.backup.destination`
+# at every call so a freshly-saved survey applies immediately without a HELIOS
+# restart. All filesystem-aware operations are delegated to the matching
+# storage adapter (`Local` or `External`); tar parsing and the data classes
+# live here because they are storage-agnostic.
 class BackupRepository
   class NotFound < StandardError; end
+
+  # Raised when a storage operation (e.g. an external docker:cli sidecar
+  # call) fails. The message carries the underlying tool output so the
+  # controller can surface it.
+  class Error < StandardError; end
 
   MAX_BACKUPS = 5
   ERROR_FILENAME = 'error.txt'.freeze
@@ -11,14 +22,17 @@ class BackupRepository
   # No longer produced; only cleaned up when their backup is deleted/pruned.
   LEGACY_MANIFEST_SUFFIX = '.json'.freeze
 
-  FILENAME_PATTERN = /\Asolectrus-backup-\d{8}-\d{6}\.tar\z/
+  # Capture groups isolate the date (yyyymmdd) and time (hhmmss) digits so a
+  # validated filename can be rebuilt from integers — see External#sidecar_path.
+  FILENAME_PATTERN = /\Asolectrus-backup-(\d{8})-(\d{6})\.tar\z/
   POSTGRESQL_ENTRY_PATTERN = /\Asolectrus-postgresql-backup-\d{4}-\d{2}-\d{2}\.sql\.gz\z/
   INFLUXDB_ENTRY_PATTERN = /\Asolectrus-influxdb-backup-\d{4}-\d{2}-\d{2}\.tar\.gz\z/
 
   Entry = Data.define(:name, :bytes)
   ArchiveContents = Data.define(:entries, :config)
+  EMPTY_ARCHIVE = ArchiveContents.new(entries: [], config: nil).freeze
 
-  Backup = Data.define(:filename, :path, :bytes, :created_at, :files, :influxdb_image, :postgresql_image) do
+  Backup = Data.define(:filename, :bytes, :created_at, :files, :influxdb_image, :postgresql_image) do
     def in_progress? = false
 
     def to_param = ::File.basename(filename, '.tar')
@@ -43,121 +57,64 @@ class BackupRepository
   end
 
   class << self
-    def all
-      backup_paths_with_stats.map { |path, stat| backup_for(path, stat) }
-    end
-
-    def find!(filename)
-      path = path_for(filename)
-      backup_for(path, ::File.stat(path))
-    rescue Errno::ENOENT
-      raise NotFound
-    end
+    delegate :directory, :host_directory, :all, :find!, :destroy!,
+             :error_message, :clear_error!, :prune!, :read_archive_for,
+             :download, to: :storage
 
     def valid_filename?(filename)
       filename.to_s.match?(FILENAME_PATTERN)
     end
 
-    def destroy!(filename)
-      path = path_for(filename)
-      raise NotFound unless ::File.exist?(path)
-
-      FileUtils.rm_f(path)
-      FileUtils.rm_f("#{path}#{LEGACY_MANIFEST_SUFFIX}")
+    # The active storage adapter, picked from configuration at every call.
+    # Survey changes therefore take effect immediately, without restarting
+    # HELIOS — the external adapter routes every IO through a docker:cli
+    # sidecar, so it does not depend on any HELIOS bind-mount that would
+    # only refresh on container recreation.
+    def storage
+      external? ? External : Local
     end
 
-    def directory
-      ::File.join(Rails.configuration.data_path, 'helios', 'backups')
+    def external?
+      Configuration.current.backup.destination.to_s == 'external'
     end
 
-    # Host-side equivalent of `directory`. Bind-mount sources for the docker
-    # runners must be host paths even when HELIOS itself sees a different
-    # container-internal mount.
-    def host_directory
-      ::File.join(Orchestration::Runner.host_data_path, 'helios', 'backups')
-    end
-
-    # Walks a HELIOS backup tar, capturing every entry plus the parsed
-    # `helios/config.yaml`. Backs `.all` (file list + image versions) and
-    # RestoreRunner / BackupUploader archive validation. TarReader seeks past
-    # file bodies, so this stays cheap even for multi-GB backups.
+    # Reads a tar at an arbitrary local path. Used by `BackupUploader` for
+    # validating uploaded tempfiles (which always sit inside the HELIOS
+    # container) and by the local adapter for its stored archives.
     def read_archive(path)
+      ::File.open(path, 'rb') do |io|
+        parse_tar_stream(io)
+      end
+    rescue Errno::ENOENT, Gem::Package::TarInvalidError
+      EMPTY_ARCHIVE
+    end
+
+    # Walks a HELIOS backup tar from an IO, capturing every entry plus the
+    # parsed `helios/config.yaml`. Shared between local file IO and the
+    # external adapter's `docker run cat` pipe — TarReader seeks past file
+    # bodies, so this stays cheap even for multi-GB backups.
+    def parse_tar_stream(io)
       entries = []
       config = nil
 
-      ::File.open(path, 'rb') do |io|
-        Gem::Package::TarReader.new(io) do |tar|
-          tar.each do |entry|
-            next unless entry.file?
+      Gem::Package::TarReader.new(io) do |tar|
+        tar.each do |entry|
+          next unless entry.file?
 
-            name = entry.full_name.delete_prefix('./')
-            entries << Entry.new(name: name, bytes: entry.header.size)
-            config = parse_config_yaml(entry.read) if name == CONFIG_ENTRY_PATH
-          end
+          name = entry.full_name.delete_prefix('./')
+          entries << Entry.new(name: name, bytes: entry.header.size)
+          config = parse_config_yaml(entry.read) if name == CONFIG_ENTRY_PATH
         end
       end
 
       ArchiveContents.new(entries: entries, config: config)
-    rescue Errno::ENOENT, Gem::Package::TarInvalidError
-      ArchiveContents.new(entries: [], config: nil)
-    end
-
-    def error_message(filename = ERROR_FILENAME)
-      ::File.read(::File.join(directory, filename)).strip.presence
-    rescue Errno::ENOENT
-      nil
-    end
-
-    def clear_error!(filename = ERROR_FILENAME)
-      FileUtils.rm_f(::File.join(directory, filename))
-    end
-
-    def prune!(keep: MAX_BACKUPS - 1)
-      backup_paths_with_stats.drop(keep).each do |(path, _stat)|
-        FileUtils.rm_f(path)
-        FileUtils.rm_f("#{path}#{LEGACY_MANIFEST_SUFFIX}")
-      end
-    end
-
-    private
-
-    def path_for(filename)
-      raise NotFound unless filename.match?(FILENAME_PATTERN)
-
-      ::File.join(directory, filename)
-    end
-
-    def backup_paths_with_stats
-      return [] unless Dir.exist?(directory)
-
-      Dir.children(directory)
-         .grep(FILENAME_PATTERN)
-         .map { |filename| ::File.join(directory, filename) }
-         .map { |path| [path, ::File.stat(path)] }
-         .sort_by { |path, stat| [stat.mtime, ::File.basename(path)] }
-         .reverse
-    end
-
-    # File list, sizes and image versions all come straight from the archive.
-    def backup_for(path, stat)
-      archive = read_archive(path)
-      images = images_from_config(archive.config)
-
-      Backup.new(
-        filename: ::File.basename(path),
-        path: path,
-        bytes: stat.size,
-        created_at: stat.mtime.in_time_zone,
-        files: archive.entries,
-        influxdb_image: images[:influxdb],
-        postgresql_image: images[:postgresql],
-      )
     end
 
     # The configured InfluxDB / PostgreSQL image tags from the backed-up
     # `helios/config.yaml`, e.g. "influxdb:2.9-alpine".
     def images_from_config(config)
-      { influxdb: config&.dig('influxdb', 'image').presence, postgresql: config&.dig('postgresql', 'image').presence }
+      { influxdb: config&.dig('influxdb', 'image').presence,
+        postgresql: config&.dig('postgresql', 'image').presence }
     end
 
     def parse_config_yaml(raw)

@@ -34,6 +34,12 @@ class BackupUploader
   end
 
   def validate_runtime!
+    # Upload writes directly into HELIOS's own backups dir; for an external
+    # destination the tar would land in the wrong place and never show up in
+    # the listing. The workaround (place the file on the external mount
+    # manually, or switch the destination back to local) is documented in the
+    # message.
+    raise Error, error(:external_destination) if BackupRepository.external?
     raise Error, error(:backup_in_progress) if BackupRunner.in_progress
     raise Error, error(:restore_in_progress) if RestoreRunner.in_progress
   end

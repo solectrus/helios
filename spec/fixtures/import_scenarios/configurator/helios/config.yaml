@@ -60,8 +60,6 @@ backup:
   aws_bucket: my-aws-bucket
   aws_region: eu-west-1
   aws_secret_access_key: ABCDEFGHIJKLMN
-  influxdb:
-    image: ghcr.io/solectrus/influxdb2-s3-backup:latest
 sensors:
   battery_charging_power:
     source: senec

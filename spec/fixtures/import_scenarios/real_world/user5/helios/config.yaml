@@ -48,9 +48,7 @@ forecast:
   forecast_pvnode_paid: nowcast
   forecast_roofs: '1'
   measurement: Forecast
-backup:
-  influxdb:
-    image: ghcr.io/solectrus/influxdb2-s3-backup:latest
+backup: {}
 sensors:
   battery_charging_power:
     field: bat_power_plus

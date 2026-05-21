@@ -211,6 +211,22 @@ RSpec.describe BackupRepository do
     end
   end
 
+  describe '.storage' do
+    it 'returns the local adapter when destination is unset' do
+      expect(described_class.storage).to eq(BackupRepository::Local)
+    end
+
+    it 'returns the local adapter when destination is explicitly "local"' do
+      with_config_yaml('backup' => { 'destination' => 'local' })
+      expect(described_class.storage).to eq(BackupRepository::Local)
+    end
+
+    it 'returns the external adapter when destination is "external"' do
+      with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/backups' })
+      expect(described_class.storage).to eq(BackupRepository::External)
+    end
+  end
+
   def write_backup(filename, archive: { 'helios/config.yaml' => 'system: {}' }, mtime: nil)
     FileUtils.mkdir_p(backups_dir)
     path = File.join(backups_dir, filename)

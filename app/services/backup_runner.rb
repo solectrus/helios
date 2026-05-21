@@ -63,6 +63,7 @@ class BackupRunner
     BackupRepository.prune!
     BackupRepository.clear_error!
     run_container!
+    BackupRepository::External.mark_pending! if BackupRepository.external?
     self.class.invalidate_in_progress_cache!
   end
 
@@ -70,6 +71,7 @@ class BackupRunner
     return reason(:env_missing) if env.nil?
     return reason(:config_missing) unless ::File.exist?(Configuration.path)
     return reason(:influx_token_missing) if env['INFLUX_ADMIN_TOKEN'].blank?
+    return reason(:destination_unconfigured) if BackupRepository.host_directory.blank?
     return reason(:postgres_not_running) unless postgres_container_name
     return reason(:influxdb_not_running) unless influxdb_container_name
 
@@ -104,7 +106,7 @@ class BackupRunner
   end
 
   def run_container!
-    FileUtils.mkdir_p(BackupRepository.directory)
+    FileUtils.mkdir_p(BackupRepository.directory) if BackupRepository.directory
 
     output, status = Open3.capture2e(*docker_run_command)
     return if status.success?

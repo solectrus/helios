@@ -57,6 +57,7 @@ class RestoreRunner
     prepare_restored_stack!
     clear_errors!
     run_container!
+    BackupRepository::External.mark_pending! if BackupRepository.external?
     self.class.invalidate_in_progress_cache!
   rescue BackupRepository::NotFound
     raise Error, error(:backup_not_found)
@@ -110,7 +111,7 @@ class RestoreRunner
   end
 
   def run_container!
-    FileUtils.mkdir_p(BackupRepository.directory)
+    FileUtils.mkdir_p(BackupRepository.directory) if BackupRepository.directory
 
     output, status = Open3.capture2e(*docker_run_command)
     return if status.success?
@@ -189,7 +190,7 @@ class RestoreRunner
   end
 
   def archive_contents
-    @archive_contents ||= BackupRepository.read_archive(backup.path)
+    @archive_contents ||= BackupRepository.read_archive_for(backup.filename)
   end
 
   def postgresql_data_path

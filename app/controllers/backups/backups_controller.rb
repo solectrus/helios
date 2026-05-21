@@ -8,10 +8,10 @@ module Backups
     end
 
     def show
-      send_file @backup.path,
-                filename: @backup.filename,
-                type: 'application/x-tar',
-                disposition: 'attachment'
+      prepare_download_response(@backup)
+      self.response_body = Enumerator.new do |yielder|
+        BackupRepository.download(@backup.filename) { |chunk| yielder << chunk }
+      end
     end
 
     def create
@@ -29,9 +29,19 @@ module Backups
       redirect_to backups_path, notice: t('backups.destroy.deleted')
     rescue BackupRepository::NotFound
       head :not_found
+    rescue BackupRepository::Error => e
+      redirect_to backups_path, alert: t('backups.destroy.error', message: e.message)
     end
 
     private
+
+    def prepare_download_response(backup)
+      response.headers['Content-Type'] = 'application/x-tar'
+      response.headers['Content-Disposition'] =
+        ActionDispatch::Http::ContentDisposition.format(disposition: 'attachment', filename: backup.filename)
+      response.headers['Content-Length'] = backup.bytes.to_s
+      response.headers['X-Accel-Buffering'] = 'no'
+    end
 
     def set_backup
       @backup = BackupRepository.find!(backup_filename_param)

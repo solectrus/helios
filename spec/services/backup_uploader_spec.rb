@@ -93,6 +93,14 @@ RSpec.describe BackupUploader do
         .to raise_error(BackupUploader::Error, I18n.t('backups.uploader.errors.restore_in_progress'))
     end
 
+    it 'rejects an upload when the destination is external' do
+      allow(BackupRepository).to receive(:external?).and_return(true)
+      uploaded = build_upload('solectrus-backup-20260507-101234.tar', valid_archive)
+
+      expect { described_class.start(uploaded) }
+        .to raise_error(BackupUploader::Error, I18n.t('backups.uploader.errors.external_destination'))
+    end
+
     it 'refuses to overwrite an existing backup' do
       FileUtils.mkdir_p(backups_dir)
       File.binwrite(File.join(backups_dir, 'solectrus-backup-20260507-101234.tar'), 'pre-existing')

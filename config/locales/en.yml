@@ -196,6 +196,7 @@ en:
       error: 'Backup could not be started: %{message}'
     destroy:
       deleted: 'Backup was deleted.'
+      error: 'Backup could not be deleted: %{message}'
     uploads:
       create:
         uploaded: 'Backup was uploaded.'
@@ -204,6 +205,7 @@ en:
       errors:
         backup_in_progress: 'A backup is already in progress.'
         restore_in_progress: 'A restore is already in progress.'
+        external_destination: 'Upload is only available with a local backup destination. Place the file directly in the external directory or switch the destination to local temporarily.'
         missing: 'No file selected.'
         not_tar: 'File is not a .tar file.'
         too_large: 'File exceeds the allowed maximum size.'
@@ -226,6 +228,7 @@ en:
         env_missing: '.env file is missing.'
         config_missing: 'helios/config.yaml is missing.'
         influx_token_missing: 'INFLUX_ADMIN_TOKEN is missing in .env.'
+        destination_unconfigured: 'Backup destination is not fully configured yet.'
         postgres_not_running: 'PostgreSQL service is not running.'
         influxdb_not_running: 'InfluxDB service is not running.'
     restorer:
@@ -268,6 +271,13 @@ en:
       mqtt_unreachable: 'MQTT broker not reachable – check host and port'
       mqtt_credentials_valid: 'Credentials valid'
       mqtt_unauthorized: 'Invalid username or password'
+      backup_path_writable: 'Path is reachable and writable'
+      backup_path_missing: 'Path does not exist on the host'
+      backup_path_not_directory: 'Path is not a directory'
+      backup_path_not_writable: 'Path is not writable'
+      backup_path_not_absolute: 'Path must be absolute (start with "/")'
+      backup_path_invalid_chars: 'Path contains invalid characters'
+      backup_path_error: 'Path could not be checked'
       incomplete: 'Please fill in all fields first'
       error: 'Check failed'
     settings:
