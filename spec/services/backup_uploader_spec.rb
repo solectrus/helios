@@ -94,11 +94,20 @@ RSpec.describe BackupUploader do
     end
 
     it 'rejects an upload when the destination is external' do
-      allow(BackupRepository).to receive(:external?).and_return(true)
+      allow(BackupRepository).to receive(:remote?).and_return(true)
       uploaded = build_upload('solectrus-backup-20260507-101234.tar', valid_archive)
 
       expect { described_class.start(uploaded) }
-        .to raise_error(BackupUploader::Error, I18n.t('backups.uploader.errors.external_destination'))
+        .to raise_error(BackupUploader::Error, I18n.t('backups.uploader.errors.remote_destination'))
+    end
+
+    it 'rejects an upload when the destination is S3' do
+      with_config_yaml('backup' => { 'destination' => 's3', 'aws_bucket' => 'foo',
+                                     'aws_access_key_id' => 'k', 'aws_secret_access_key' => 's', 'aws_region' => 'eu' })
+      uploaded = build_upload('solectrus-backup-20260507-101234.tar', valid_archive)
+
+      expect { described_class.start(uploaded) }
+        .to raise_error(BackupUploader::Error, I18n.t('backups.uploader.errors.remote_destination'))
     end
 
     it 'refuses to overwrite an existing backup' do

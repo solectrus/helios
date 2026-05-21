@@ -37,6 +37,10 @@ RSpec.describe BackupRunner do
       state[:open3_calls] << args
       stub_open3_response(args)
     end
+    allow(Open3).to receive(:capture2) do |*args|
+      state[:open3_calls] << args
+      stub_open3_response(args)
+    end
   end
 
   after { FileUtils.remove_entry(data_path) }
@@ -161,6 +165,69 @@ RSpec.describe BackupRunner do
       state[:docker_pull_success] = false
 
       expect { described_class.start }.to raise_error(described_class::Error, /network unreachable/)
+    end
+
+    context 'with S3 destination' do
+      before do
+        with_config_yaml('backup' => {
+                           'destination' => 's3',
+                           'aws_bucket' => 'my-bucket',
+                           'aws_access_key_id' => 'AKIA',
+                           'aws_secret_access_key' => 'secret',
+                           'aws_region' => 'eu-central-1',
+                           's3_prefix' => 'solectrus/',
+                           's3_endpoint_url' => 'https://minio.example.com',
+                         })
+        # with_config_yaml overrides data_path; reseed the dependencies used by start
+        File.write(File.join(Rails.configuration.data_path, '.env'), "INFLUX_ADMIN_TOKEN=secret-token\n")
+        FileUtils.mkdir_p(File.join(Rails.configuration.data_path, 'helios'))
+      end
+
+      it 'mounts the staging directory and forwards AWS credentials as env vars' do
+        described_class.start
+
+        run = find_backup_runner_call
+        aggregate_failures do
+          expect(run).to include('-v', "#{host_data_path}/helios/backups-staging:/output")
+          expect(run).to include('-e', 'AWS_ACCESS_KEY_ID=AKIA')
+          expect(run).to include('-e', 'AWS_SECRET_ACCESS_KEY=secret')
+          expect(run).to include('-e', 'AWS_DEFAULT_REGION=eu-central-1')
+          expect(run).to include('-e', 'AWS_ENDPOINT_URL=https://minio.example.com')
+        end
+      end
+
+      it 'passes destination, staging host path, aws-cli image and s3 dir URI as trailing positional args' do
+        described_class.start
+
+        run = find_backup_runner_call
+        expect(run.last(4)).to eq([
+                                    's3',
+                                    "#{host_data_path}/helios/backups-staging",
+                                    'amazon/aws-cli:latest',
+                                    's3://my-bucket/solectrus/',
+                                  ])
+      end
+
+      it 'omits the endpoint URL env when no custom endpoint is configured' do
+        with_config_yaml('backup' => {
+                           'destination' => 's3',
+                           'aws_bucket' => 'my-bucket',
+                           'aws_access_key_id' => 'AKIA',
+                           'aws_secret_access_key' => 'secret',
+                           'aws_region' => 'eu-central-1',
+                         })
+        File.write(File.join(Rails.configuration.data_path, '.env'), "INFLUX_ADMIN_TOKEN=secret-token\n")
+        FileUtils.mkdir_p(File.join(Rails.configuration.data_path, 'helios'))
+
+        described_class.start
+
+        run = find_backup_runner_call
+        expect(run.grep(/\AAWS_ENDPOINT_URL=/)).to be_empty
+      end
+
+      def find_backup_runner_call
+        state[:open3_calls].find { |args| args[0..1] == %w[docker run] && args.include?('helios-backup-runner') }
+      end
     end
   end
 

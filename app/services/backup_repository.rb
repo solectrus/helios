@@ -59,7 +59,7 @@ class BackupRepository
   class << self
     delegate :directory, :host_directory, :all, :find!, :destroy!,
              :error_message, :clear_error!, :prune!, :read_archive_for,
-             :download, to: :storage
+             :download, :mark_pending!, to: :storage
 
     def valid_filename?(filename)
       filename.to_s.match?(FILENAME_PATTERN)
@@ -67,15 +67,39 @@ class BackupRepository
 
     # The active storage adapter, picked from configuration at every call.
     # Survey changes therefore take effect immediately, without restarting
-    # HELIOS — the external adapter routes every IO through a docker:cli
-    # sidecar, so it does not depend on any HELIOS bind-mount that would
-    # only refresh on container recreation.
+    # HELIOS — the external and S3 adapters route every IO through a
+    # short-lived sidecar, so they do not depend on any HELIOS bind-mount
+    # that would only refresh on container recreation.
     def storage
-      external? ? External : Local
+      case destination
+      when 'external' then External
+      when 's3' then S3
+      else Local
+      end
+    end
+
+    def destination
+      Configuration.current.backup.destination.to_s.presence || ConfigSchema::BACKUP_DEFAULT_DESTINATION
+    end
+
+    def local?
+      destination == 'local'
     end
 
     def external?
-      Configuration.current.backup.destination.to_s == 'external'
+      destination == 'external'
+    end
+
+    def s3?
+      destination == 's3'
+    end
+
+    # True when the active destination is not the locally mounted backups
+    # directory — i.e. when the destination is reached only through a
+    # short-lived sidecar (external mount, S3). Used by callers that need
+    # to mark a detached run as pending or reject local-only operations.
+    def remote?
+      !local?
     end
 
     # Reads a tar at an arbitrary local path. Used by `BackupUploader` for

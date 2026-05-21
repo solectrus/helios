@@ -225,6 +225,34 @@ RSpec.describe BackupRepository do
       with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/backups' })
       expect(described_class.storage).to eq(BackupRepository::External)
     end
+
+    it 'returns the S3 adapter when destination is "s3"' do
+      with_config_yaml('backup' => { 'destination' => 's3', 'aws_bucket' => 'b',
+                                     'aws_access_key_id' => 'k', 'aws_secret_access_key' => 's',
+                                     'aws_region' => 'eu-central-1' })
+      expect(described_class.storage).to eq(BackupRepository::S3)
+    end
+  end
+
+  describe '.local?, .external?, .s3?, .remote?' do
+    it 'classifies the configured destination' do
+      with_config_yaml('backup' => { 'destination' => 'local' })
+      expect([described_class.local?, described_class.external?, described_class.s3?, described_class.remote?])
+        .to eq([true, false, false, false])
+    end
+
+    it 'flags external as remote' do
+      with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/x' })
+      expect([described_class.local?, described_class.external?, described_class.s3?, described_class.remote?])
+        .to eq([false, true, false, true])
+    end
+
+    it 'flags s3 as remote' do
+      with_config_yaml('backup' => { 'destination' => 's3', 'aws_bucket' => 'b',
+                                     'aws_access_key_id' => 'k', 'aws_secret_access_key' => 's', 'aws_region' => 'eu' })
+      expect([described_class.local?, described_class.external?, described_class.s3?, described_class.remote?])
+        .to eq([false, false, true, true])
+    end
   end
 
   def write_backup(filename, archive: { 'helios/config.yaml' => 'system: {}' }, mtime: nil)

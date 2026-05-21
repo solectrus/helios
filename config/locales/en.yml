@@ -205,7 +205,7 @@ en:
       errors:
         backup_in_progress: 'A backup is already in progress.'
         restore_in_progress: 'A restore is already in progress.'
-        external_destination: 'Upload is only available with a local backup destination. Place the file directly in the external directory or switch the destination to local temporarily.'
+        remote_destination: 'Upload is only available with a local backup destination. Place the file directly at the destination or switch the destination to local temporarily.'
         missing: 'No file selected.'
         not_tar: 'File is not a .tar file.'
         too_large: 'File exceeds the allowed maximum size.'
@@ -278,6 +278,12 @@ en:
       backup_path_not_absolute: 'Path must be absolute (start with "/")'
       backup_path_invalid_chars: 'Path contains invalid characters'
       backup_path_error: 'Path could not be checked'
+      s3_reachable: 'Bucket reachable, credentials valid'
+      s3_bucket_missing: 'Bucket not found – check name and region'
+      s3_invalid_credentials: 'Access key or secret is invalid'
+      s3_access_denied: 'Access denied – check permissions'
+      s3_endpoint_unreachable: 'Endpoint not reachable – check URL and region'
+      s3_error: 'Connection to S3 storage failed'
       incomplete: 'Please fill in all fields first'
       error: 'Check failed'
     settings:
@@ -326,7 +332,7 @@ en:
         description: 'Domain & HTTPS with Traefik. Only useful if this host is reachable from the internet.'
       backup:
         title: 'Backup'
-        description: 'Configuration of S3 data backup'
+        description: 'Backup destination (local, external mount, or S3)'
       influxdb:
         title: 'InfluxDB'
         description: 'Settings for the time-series database'

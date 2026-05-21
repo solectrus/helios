@@ -93,6 +93,14 @@ class BackupRepository
       # Rebuilds the index from the actual filesystem. Reuses cached entries
       # for tars that didn't change (name + size + mtime match), so a new
       # or overwritten backup only triggers a single tar read.
+      # No-op: the local adapter sees writes by the detached runner as soon
+      # as the tar file lands in `directory`, so there is no need for a
+      # marker. Implemented so the facade can call `mark_pending!` without
+      # branching on the active destination.
+      def mark_pending!
+        nil
+      end
+
       def refresh!
         listing = scan_filesystem
         Index.write(

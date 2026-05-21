@@ -7,10 +7,16 @@ module Backup
   # will work too. Uses `--mount type=bind` (not `-v`) on purpose: that
   # form fails if the host source does not exist, instead of silently
   # creating an empty directory.
+  #
+  # The `aws_credentials` check follows the same pattern for the S3
+  # destination: an `amazon/aws-cli` sidecar runs `aws s3 ls` against the
+  # configured bucket and prefix, then classifies AWS's error responses
+  # into specific i18n reasons.
   class ConnectionTest
     include ConnectionTesting::ResultBuilder
 
     PROBE_IMAGE = 'docker:cli'.freeze
+    AWS_CLI_IMAGE = 'amazon/aws-cli:latest'.freeze
     WRITE_PROBE_NAME = '.helios-write-test'.freeze
 
     SAFE_PATH = %r{\A/[A-Za-z0-9_/.-]+\z}
@@ -18,9 +24,12 @@ module Backup
     EXIT_NOT_DIRECTORY = 10
     EXIT_NOT_WRITABLE = 11
 
+    S3Probe = Data.define(:access, :secret, :region, :bucket, :prefix, :endpoint)
+
     def call(check:, values:)
       case check
       when 'external_path' then external_path(values)
+      when 'aws_credentials' then aws_credentials(values)
       else result(false, :error)
       end
     end
@@ -74,6 +83,65 @@ module Backup
       else
         Rails.logger.warn("External backup path probe failed: #{output.strip}")
         result(false, :backup_path_error)
+      end
+    end
+
+    def aws_credentials(values)
+      probe = build_s3_probe(values)
+      return result(false, :incomplete) if probe.nil?
+
+      probe_s3(probe)
+    rescue StandardError => e
+      Rails.logger.warn("S3 credentials probe failed (#{e.class}): #{e.message}")
+      result(false, :s3_error)
+    end
+
+    def build_s3_probe(values)
+      fields = %w[aws_access_key_id aws_secret_access_key aws_region aws_bucket]
+               .index_with { |key| values[key].to_s.strip }
+      return nil if fields.value?('')
+
+      S3Probe.new(
+        access: fields['aws_access_key_id'], secret: fields['aws_secret_access_key'],
+        region: fields['aws_region'], bucket: fields['aws_bucket'],
+        prefix: values['s3_prefix'].to_s.strip.gsub(%r{\A/+|/+\z}, ''),
+        endpoint: values['s3_endpoint_url'].to_s.strip
+      )
+    end
+
+    def probe_s3(probe)
+      output, status = Open3.capture2e(*aws_probe_command(probe))
+      classify_s3(status, output)
+    end
+
+    def aws_probe_command(probe)
+      env_args = [
+        '-e', "AWS_ACCESS_KEY_ID=#{probe.access}",
+        '-e', "AWS_SECRET_ACCESS_KEY=#{probe.secret}",
+        '-e', "AWS_DEFAULT_REGION=#{probe.region}"
+      ]
+      env_args.push('-e', "AWS_ENDPOINT_URL=#{probe.endpoint}") unless probe.endpoint.empty?
+
+      ['docker', 'run', '--rm', *env_args, AWS_CLI_IMAGE, 's3', 'ls', probe_uri(probe)]
+    end
+
+    def probe_uri(probe)
+      parts = [probe.bucket, probe.prefix.presence].compact
+      "s3://#{parts.join('/')}/"
+    end
+
+    def classify_s3(status, output)
+      return result(true, :s3_reachable) if status.success?
+
+      case output
+      when /NoSuchBucket/i then result(false, :s3_bucket_missing)
+      when /InvalidAccessKeyId|SignatureDoesNotMatch/i then result(false, :s3_invalid_credentials)
+      when /AccessDenied|Forbidden/i then result(false, :s3_access_denied)
+      when /Could not connect|Failed to connect|name or service not known|NameResolutionError|EndpointConnectionError/i
+        result(false, :s3_endpoint_unreachable)
+      else
+        Rails.logger.warn("S3 credentials probe failed: #{output.strip}")
+        result(false, :s3_error)
       end
     end
   end

@@ -290,11 +290,13 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     aws_secret_access_key
     aws_region
     aws_bucket
+    s3_prefix
+    s3_endpoint_url
   ].freeze
 
   BACKUP_ALL = BACKUP_FIELDS
 
-  BACKUP_DESTINATIONS = %w[local external].freeze
+  BACKUP_DESTINATIONS = %w[local external s3].freeze
   BACKUP_DEFAULT_DESTINATION = 'local'.freeze
 
   # Sensors is a dynamic mapping (sensor_name => config hash),

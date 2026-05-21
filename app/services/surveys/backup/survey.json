@@ -35,6 +35,13 @@
                 "de": "Externer Mount (z. B. NAS)",
                 "default": "External mount (e.g. NAS)"
               }
+            },
+            {
+              "value": "s3",
+              "text": {
+                "de": "S3-kompatibler Speicher (AWS, MinIO, Backblaze …)",
+                "default": "S3-compatible storage (AWS, MinIO, Backblaze …)"
+              }
             }
           ]
         }
@@ -74,6 +81,86 @@
           "html": {
             "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"backup\" data-test-check=\"external_path\" data-test-fields=\"external_path\">Pfad prüfen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
             "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"backup\" data-test-check=\"external_path\" data-test-fields=\"external_path\">Check path</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_s3",
+      "visibleIf": "{destination} = 's3'",
+      "elements": [
+        {
+          "type": "text",
+          "name": "aws_access_key_id",
+          "title": {
+            "de": "Access Key ID",
+            "default": "Access Key ID"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "aws_secret_access_key",
+          "title": {
+            "de": "Secret Access Key",
+            "default": "Secret Access Key"
+          },
+          "isRequired": true,
+          "inputType": "password"
+        },
+        {
+          "type": "text",
+          "name": "s3_endpoint_url",
+          "title": {
+            "de": "Endpoint URL (optional)",
+            "default": "Endpoint URL (optional)"
+          },
+          "description": {
+            "de": "Nur für S3-kompatible Dienste wie MinIO, Backblaze B2 oder Wasabi. Leer lassen für AWS S3.",
+            "default": "Only for S3-compatible services like MinIO, Backblaze B2 or Wasabi. Leave empty for AWS S3."
+          },
+          "placeholder": "https://s3.example.com"
+        },
+        {
+          "type": "text",
+          "name": "aws_region",
+          "title": {
+            "de": "Region",
+            "default": "Region"
+          },
+          "isRequired": true,
+          "placeholder": "eu-central-1"
+        },
+        {
+          "type": "text",
+          "name": "aws_bucket",
+          "title": {
+            "de": "Bucket",
+            "default": "Bucket"
+          },
+          "isRequired": true,
+          "placeholder": "my-solectrus-backups"
+        },
+        {
+          "type": "text",
+          "name": "s3_prefix",
+          "title": {
+            "de": "Prefix (optional)",
+            "default": "Prefix (optional)"
+          },
+          "description": {
+            "de": "Unterordner innerhalb des Buckets. Leer lassen, um direkt im Bucket-Stamm zu speichern.",
+            "default": "Sub-folder inside the bucket. Leave empty to store at the bucket root."
+          },
+          "defaultValue": "solectrus/",
+          "placeholder": "solectrus/"
+        },
+        {
+          "type": "html",
+          "name": "connection_test",
+          "html": {
+            "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"backup\" data-test-check=\"aws_credentials\" data-test-fields=\"aws_access_key_id,aws_secret_access_key,aws_region,aws_bucket,s3_prefix,s3_endpoint_url\">Verbindung prüfen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
+            "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"backup\" data-test-check=\"aws_credentials\" data-test-fields=\"aws_access_key_id,aws_secret_access_key,aws_region,aws_bucket,s3_prefix,s3_endpoint_url\">Test connection</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
           }
         }
       ]

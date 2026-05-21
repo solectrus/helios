@@ -181,7 +181,7 @@ de:
       errors:
         backup_in_progress: 'Eine Sicherung läuft bereits.'
         restore_in_progress: 'Eine Wiederherstellung läuft bereits.'
-        external_destination: 'Upload ist nur bei lokalem Sicherungsziel möglich. Lege die Datei direkt im externen Verzeichnis ab oder stelle das Ziel vorübergehend auf „Lokal“ um.'
+        remote_destination: 'Upload ist nur bei lokalem Sicherungsziel möglich. Lege die Datei direkt am Ziel ab oder stelle das Ziel vorübergehend auf „Lokal“ um.'
         missing: 'Keine Datei ausgewählt.'
         not_tar: 'Datei ist keine .tar-Datei.'
         too_large: 'Datei ist größer als das erlaubte Maximum.'
@@ -254,6 +254,12 @@ de:
       backup_path_not_absolute: 'Pfad muss absolut sein (mit „/“ beginnen)'
       backup_path_invalid_chars: 'Pfad enthält ungültige Zeichen'
       backup_path_error: 'Pfad konnte nicht geprüft werden'
+      s3_reachable: 'Bucket erreichbar, Zugangsdaten gültig'
+      s3_bucket_missing: 'Bucket nicht gefunden – prüfe Namen und Region'
+      s3_invalid_credentials: 'Access Key oder Secret ungültig'
+      s3_access_denied: 'Zugriff verweigert – Berechtigungen prüfen'
+      s3_endpoint_unreachable: 'Endpoint nicht erreichbar – prüfe URL und Region'
+      s3_error: 'Verbindung zum S3-Speicher fehlgeschlagen'
       incomplete: 'Bitte zuerst alle Felder ausfüllen'
       error: 'Prüfung fehlgeschlagen'
     settings:
@@ -302,7 +308,7 @@ de:
         description: 'Domain & HTTPS mit Traefik. Nur sinnvoll, wenn dieser Host über das Internet erreichbar ist.'
       backup:
         title: 'Backup'
-        description: 'Konfiguration der S3-Datensicherung'
+        description: 'Ablageort für Sicherungen (lokal, externer Mount oder S3)'
       influxdb:
         title: 'InfluxDB'
         description: 'Einstellungen für die Zeitreihen-Datenbank'

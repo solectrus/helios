@@ -64,8 +64,9 @@ Scenarios A and B can coexist (e.g. SENEC collector for the inverter + ioBroker 
 
 ### Backup
 
-- Optional `postgresql-backup` and `influxdb-backup` services can be enabled to push daily dumps to any S3-compatible bucket (AWS S3, MinIO, etc.).
-- Restore is manual — there is no restore UI in HELIOS.
+- HELIOS' built-in backup runner writes one tar archive per backup, bundling the PostgreSQL dump, the InfluxDB export and the active `config.yaml`. Backups are created on demand from the UI; the five newest are kept, older ones are pruned automatically.
+- Three destinations are available: the local backups directory under the HELIOS data path, an external host mount (e.g. an NFS share on a NAS) or an S3-compatible object store (AWS S3, MinIO, Backblaze B2, Wasabi …).
+- Restore is initiated from the UI; it runs in a detached container, stops the stack, wipes the database directories, imports the dumps and restarts everything.
 
 ### Support Bundle
 
@@ -76,14 +77,13 @@ Scenarios A and B can coexist (e.g. SENEC collector for the inverter + ioBroker 
 
 ## Technical Constraints
 
-| Area               | Constraint                                                                                                                                    |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| Architectures      | AMD64, ARM64                                                                                                                                  |
-| Target hosts       | Raspberry Pi (3/4/5), NAS (Synology, QNAP with Docker), VPS, any Linux with Docker                                                            |
-| Tech stack         | Rails 8.1+, Hotwire (Turbo + Stimulus, TypeScript), Tailwind v4 + daisyUI, Vite, SQLite, RSpec. See [ADR-0007](adr/0007-technology-stack.md). |
-| Network            | LAN-only by default, port 3999 (`http://<host-ip>:3999`). No outbound internet required.                                                      |
+| Area               | Constraint                                                                                                                                              |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Architectures      | AMD64, ARM64                                                                                                                                            |
+| Target hosts       | Raspberry Pi (3/4/5), NAS (Synology, QNAP with Docker), VPS, any Linux with Docker                                                                      |
+| Tech stack         | Rails 8.1+, Hotwire (Turbo + Stimulus, TypeScript), Tailwind v4 + daisyUI, Vite, SQLite, RSpec. See [ADR-0007](adr/0007-technology-stack.md).           |
+| Network            | LAN-only by default, port 3999 (`http://<host-ip>:3999`). No outbound internet required.                                                                |
 | Security           | Single admin with random password (stored plaintext in `config.yaml`, mirrored to `.env`). Docker socket mount required. Session persists indefinitely. |
-| Resource footprint | Target < 256 MB RAM for the HELIOS container (suitable for Raspberry Pi)                                                                      |
-| Localization       | German + English UI                                                                                                                           |
-| Telemetry          | Planned: opt-in update checks + anonymous usage stats via `update.solectrus.de`. Not yet implemented.                                         |
-
+| Resource footprint | Target < 256 MB RAM for the HELIOS container (suitable for Raspberry Pi)                                                                                |
+| Localization       | German + English UI                                                                                                                                     |
+| Telemetry          | Planned: opt-in update checks + anonymous usage stats via `update.solectrus.de`. Not yet implemented.                                                   |

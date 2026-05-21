@@ -63,7 +63,7 @@ class BackupRunner
     BackupRepository.prune!
     BackupRepository.clear_error!
     run_container!
-    BackupRepository::External.mark_pending! if BackupRepository.external?
+    BackupRepository.mark_pending!
     self.class.invalidate_in_progress_cache!
   end
 
@@ -123,12 +123,38 @@ class BackupRunner
       '-v', '/var/run/docker.sock:/var/run/docker.sock',
       '-v', "#{BackupRepository.host_directory}:/output",
       '-v', "#{host_config_path}:/config.yaml:ro",
+      *aws_env_args,
       '--entrypoint', 'sh',
       IMAGE,
       '-c', SCRIPT, '_',
       influx_admin_token, backup_filename, backup_date,
-      postgres_container_name, influxdb_container_name
+      postgres_container_name, influxdb_container_name,
+      BackupRepository.destination, BackupRepository.host_directory.to_s,
+      BackupRepository::S3::IMAGE, s3_dir_uri
     ]
+  end
+
+  # AWS credentials and optional endpoint are forwarded to the outer
+  # docker:cli container so backup.sh can re-export them to the nested
+  # aws-cli sidecar that performs the actual upload. Only set when the
+  # active destination is S3 — keeps the env clean for the local case
+  # and avoids leaking credentials into unrelated runs.
+  def aws_env_args
+    return [] unless BackupRepository.s3?
+
+    backup = Configuration.current.backup
+    args = [
+      '-e', "AWS_ACCESS_KEY_ID=#{backup.aws_access_key_id}",
+      '-e', "AWS_SECRET_ACCESS_KEY=#{backup.aws_secret_access_key}",
+      '-e', "AWS_DEFAULT_REGION=#{backup.aws_region}"
+    ]
+    endpoint = backup.s3_endpoint_url.to_s.strip
+    args.push('-e', "AWS_ENDPOINT_URL=#{endpoint}") if endpoint.present?
+    args
+  end
+
+  def s3_dir_uri
+    BackupRepository.s3? ? BackupRepository::S3.s3_dir_uri : ''
   end
 
   def host_config_path

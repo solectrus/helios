@@ -57,7 +57,7 @@ class RestoreRunner
     prepare_restored_stack!
     clear_errors!
     run_container!
-    BackupRepository::External.mark_pending! if BackupRepository.external?
+    BackupRepository.mark_pending!
     self.class.invalidate_in_progress_cache!
   rescue BackupRepository::NotFound
     raise Error, error(:backup_not_found)
@@ -127,14 +127,41 @@ class RestoreRunner
       '--name', CONTAINER_NAME,
       '-v', '/var/run/docker.sock:/var/run/docker.sock',
       '-v', "#{BackupRepository.host_directory}:/output",
-      *data_mount_args,
-      '--entrypoint', 'sh',
-      IMAGE, '-c', SCRIPT, '_',
+      *data_mount_args, *aws_env_args,
+      '--entrypoint', 'sh', IMAGE, '-c', SCRIPT, '_',
+      *positional_args
+    ]
+  end
+
+  def positional_args
+    [
       influx_admin_token, backup.filename, host_data_path,
       postgresql_data_path, influxdb_data_path, redis_data_path,
       restart_after_flag, services_except_self.join(' '),
-      ::Compose.filename
+      ::Compose.filename,
+      BackupRepository.destination, BackupRepository.host_directory.to_s,
+      BackupRepository::S3::IMAGE, s3_dir_uri
     ]
+  end
+
+  # Mirrors BackupRunner#aws_env_args — only forwarded for S3 destinations
+  # so the nested aws-cli sidecar in restore.sh can fetch the tar.
+  def aws_env_args
+    return [] unless BackupRepository.s3?
+
+    backup_config = Configuration.current.backup
+    args = [
+      '-e', "AWS_ACCESS_KEY_ID=#{backup_config.aws_access_key_id}",
+      '-e', "AWS_SECRET_ACCESS_KEY=#{backup_config.aws_secret_access_key}",
+      '-e', "AWS_DEFAULT_REGION=#{backup_config.aws_region}"
+    ]
+    endpoint = backup_config.s3_endpoint_url.to_s.strip
+    args.push('-e', "AWS_ENDPOINT_URL=#{endpoint}") if endpoint.present?
+    args
+  end
+
+  def s3_dir_uri
+    BackupRepository.s3? ? BackupRepository::S3.s3_dir_uri : ''
   end
 
   def data_mount_args

@@ -8,9 +8,10 @@ class BackupRepository
   # detached-run completion detection, and the sidecar invocation helpers.
   #
   # Including adapters must provide: `cache_fresh?`, `refresh!`,
-  # `state_script`, `parse_listing_line`, `sidecar_command`,
-  # `in_progress_cache_key`, `pending_marker_path` and
-  # `destination_configured?`.
+  # `sidecar_command`, `in_progress_cache_key`, `pending_marker_path` and
+  # `destination_configured?`. Adapters that rebuild their index through the
+  # shared `fetch_state` helper also provide `state_script` and
+  # `parse_listing_line` — External does; S3 has its own two-sidecar refresh.
   module SidecarAdapter # rubocop:disable Metrics/ModuleLength
     # Detects the moment a detached BackupRunner finished — the sidecar
     # writes the tar without HELIOS knowing, so the index has to be rebuilt
