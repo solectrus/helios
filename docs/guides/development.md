@@ -58,8 +58,9 @@ Both modes use the same hybrid Docker access (docker-api gem + `docker compose` 
 ### Run Tests
 
 ```bash
-bin/rspec                                      # all Ruby specs (serial)
+bin/rspec                                      # all Ruby specs (serial, integration excluded)
 bin/rspec spec/services/compose/file_spec.rb   # single file
+bin/rspec --tag integration                    # integration specs only (real Docker, slow)
 bin/turbo_tests                                # full suite, sharded across cores
 bin/coverage                                   # merged coverage report (after bin/turbo_tests)
 bin/yarn test                                  # Vitest (frontend specs)
@@ -77,6 +78,7 @@ SimpleCov runs unconditionally from [`spec/spec_helper.rb`](../../spec/spec_help
 - `spec/models/`, `spec/services/`, `spec/jobs/`, `spec/channels/`, `spec/lib/` — unit tests, one file per class / module
 - `spec/requests/` — HTTP-level specs per controller (plus nested folders for nested controllers)
 - `spec/system/` — currently only `smoke_spec.rb` (Playwright); most flows are covered at the request level
+- `spec/integration/` — slow specs that drive real Docker stacks (auto-tagged `:integration` by location; run on CI, locally only with `--tag integration`). Among them, the backup specs guard the pinned sidecar image versions — see [ADR-0006](../adr/0006-image-versioning-strategy.md#verifying-a-bump)
 - `spec/frontend/` — Vitest specs for Stimulus controllers and frontend utils
 - `spec/bats/` — Bats specs for shell scripts (e.g. `spec/bats/bootstrap/` for the bootstrap installer)
 - `spec/fixtures/import_scenarios/` — real `compose.yaml` / `.env` samples driving the Scenario C auto-import tests

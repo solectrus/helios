@@ -6,7 +6,7 @@
 # CI and is skipped in local runs unless requested with `--tag integration`.
 # Also skipped when Docker is unavailable. Slow: it pulls PostgreSQL images
 # and runs initdb several times.
-RSpec.describe Orchestration::PostgresqlUpgrade do
+RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
   let(:data_path) { Rails.root.join('tmp/pg-upgrade-itest').to_s }
   let(:starting_image) { 'postgres:17-alpine' }
 
@@ -17,12 +17,12 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
     FileUtils.mkdir_p(data_path)
     write_config!
     Export::Builder.new(Configuration.current).write!
-    compose_down! # clear any leftovers from a previous interrupted run
+    compose_down!(data_path) # clear any leftovers from a previous interrupted run
   end
 
   after do
-    compose_down!
-    remove_data_path!
+    compose_down!(data_path)
+    remove_data_path!(data_path, cleanup_image: starting_image)
   end
 
   describe '.call (real major-version upgrade)' do
@@ -157,32 +157,5 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
         'postgresql', 'pg_isready', '-h', '127.0.0.1', '-U', 'postgres', '-q'
       )
     code&.zero?
-  end
-
-  def compose_down!
-    return unless File.exist?(Compose.path)
-
-    system(
-      'docker', 'compose', '-f', Compose.path, '--project-directory', data_path,
-      'down', '-v', '--remove-orphans',
-      out: File::NULL, err: File::NULL
-    )
-  end
-
-  # A plain rm_rf succeeds wherever the bind mount maps PostgreSQL's files to
-  # the host user (e.g. Docker Desktop). Only when files survive — on Linux,
-  # where they stay root-owned — fall back to emptying the directory from
-  # inside a container.
-  def remove_data_path!
-    FileUtils.rm_rf(data_path)
-    return unless File.exist?(data_path)
-
-    system(
-      'docker', 'run', '--rm', '--entrypoint', 'find',
-      '-v', "#{data_path}:/cleanup", starting_image,
-      '/cleanup', '-mindepth', '1', '-delete',
-      out: File::NULL, err: File::NULL
-    )
-    FileUtils.rm_rf(data_path)
   end
 end

@@ -86,5 +86,12 @@ RSpec/DescribeClass:
     - spec/services/import/configuration_importer/**/*_spec.rb
     - spec/system/**/*_spec.rb
 
+# Integration specs manage expensive external resources (Docker containers,
+# real stacks) once per group via before/after(:all) — that is intentional,
+# not leaked DB state.
+RSpec/BeforeAfterAll:
+  Exclude:
+    - spec/integration/**/*_spec.rb
+
 Metrics/AbcSize:
   Max: 20
