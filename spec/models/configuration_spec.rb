@@ -235,6 +235,20 @@ RSpec.describe Configuration do
       expect(described_class.current.active_sources).to be_empty
     end
 
+    it 'includes shelly when standalone devices are configured without a shelly sensor' do
+      devices = [{ 'name' => 'Oven', 'host' => 'oven.local', 'measurement' => 'oven' }]
+      with_config_yaml(
+        'shelly' => { 'connection' => 'local', 'devices' => devices },
+        'sensors' => { 'custom_power_01' => { 'source' => 'mqtt', 'measurement' => 'oven' } },
+      )
+      expect(described_class.current.active_sources).to eq(%w[mqtt shelly])
+    end
+
+    it 'omits shelly when the section is set without devices or sensors' do
+      with_config_yaml('shelly' => { 'connection' => 'local' })
+      expect(described_class.current.active_sources).to be_empty
+    end
+
     it 'lists configured collector sections in collectors_only mode even without sensors' do
       with_config_yaml(
         'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },

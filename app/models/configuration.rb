@@ -250,8 +250,10 @@ class Configuration # rubocop:disable Metrics/ClassLength
   end
 
   # Sources currently in use by at least one sensor — plus `mqtt` whenever
-  # standalone mappings exist, so the broker stays editable in the UI even
-  # when no HELIOS sensor consumes them. In collectors_only mode the import
+  # standalone mappings exist and `shelly` whenever standalone devices exist,
+  # so the broker / Shelly section stays editable in the UI even when no
+  # HELIOS sensor consumes them (multi-device Shelly setups feed `external`
+  # sensors, never `source: shelly`). In collectors_only mode the import
   # deliberately skips logical sensors (canonicalization happens on the
   # remote dashboard host), so we fall back to "section is configured" —
   # otherwise senec/shelly stay invisible despite running collectors.
@@ -842,6 +844,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   def collected_sources
     used = (@data['sensors'] || {}).each_value.filter_map { |config| config['source'] }.to_set
     used << 'mqtt' if mqtt_topics.any?
+    used << 'shelly' if shelly_devices.any?
     SOURCE_CONFIGS.each { |source| used << source if configured?(source) } if collectors_only?
     used
   end

@@ -113,27 +113,37 @@ module SettingSection
     end
 
     # Returns drill-down link metadata, or nil when the card has no follow-up
-    # screen. Shelly devices only get a dedicated CRUD UI in collectors_only
-    # mode; in full mode they are derived from sensor configurations and
-    # edited on the Sensors screen.
+    # screen. The Shelly device CRUD is reachable in collectors_only mode and,
+    # in full mode, for multi-device setups where `shelly.devices` is a
+    # standalone array — single-device full-mode setups derive the device from
+    # the `source: shelly` sensor and are edited on the Sensors screen instead.
     def drill_down
       case setting
-      when 'mqtt'
-        # In full mode, sensors set on MQTT define their own topics. The ones
-        # listed here are extras the user adds explicitly — surface that.
-        count_key = configuration.collectors_only? ? 'count' : 'additional_count'
-        {
-          path: helpers.datasources_mqtt_topics_path,
-          count_text: I18n.t("datasources.mqtt_topics.inline.#{count_key}", count: configuration.mqtt_topics.size),
-        }
-      when 'shelly'
-        return unless configuration.collectors_only?
-
-        {
-          path: helpers.datasources_shelly_devices_path,
-          count_text: I18n.t('datasources.shelly_devices.inline.count', count: configuration.shelly_devices.size),
-        }
+      when 'mqtt' then mqtt_drill_down
+      when 'shelly' then shelly_drill_down
       end
+    end
+
+    private
+
+    def mqtt_drill_down
+      # In full mode, sensors set on MQTT define their own topics. The ones
+      # listed here are extras the user adds explicitly — surface that.
+      count_key = configuration.collectors_only? ? 'count' : 'additional_count'
+      {
+        path: helpers.datasources_mqtt_topics_path,
+        count_text: I18n.t("datasources.mqtt_topics.inline.#{count_key}", count: configuration.mqtt_topics.size),
+      }
+    end
+
+    def shelly_drill_down
+      devices = configuration.shelly_devices
+      return unless configuration.collectors_only? || devices.any?
+
+      {
+        path: helpers.datasources_shelly_devices_path,
+        count_text: I18n.t('datasources.shelly_devices.inline.count', count: devices.size),
+      }
     end
   end
 end

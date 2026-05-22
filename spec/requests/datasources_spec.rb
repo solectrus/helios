@@ -78,10 +78,24 @@ RSpec.describe 'Datasources', :with_admin_password do
       end
     end
 
-    it 'does not link to the Shelly devices CRUD in full mode' do
+    it 'does not link to the Shelly devices CRUD in full mode without devices' do
       get datasources_path
 
       expect(response.body).not_to match(/href="#{datasources_shelly_devices_path}"/)
+    end
+
+    it 'shows the Shelly card and device CRUD in full mode with standalone devices' do
+      with_config_yaml(
+        'shelly' => {
+          'connection' => 'local',
+          'devices' => [{ 'name' => 'Oven', 'host' => 'oven.local', 'measurement' => 'oven' }],
+        },
+      )
+
+      get datasources_path
+
+      expect(response.body).to include(I18n.t('configurations.settings.shelly.title'))
+      expect(response.body).to match(/href="#{datasources_shelly_devices_path}"/)
     end
   end
 end
