@@ -91,6 +91,7 @@ module Configurations
     def redirect_target
       return sensors_path if sensor_setting?
       return datasources_path if Configuration.source?(setting)
+      return backups_path if setting == 'backup'
 
       advanced_path
     end

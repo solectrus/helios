@@ -71,33 +71,46 @@
             <p class="text-base-content/70 max-w-prose text-base leading-relaxed"><%= t('.note') %></p>
           </header>
 
-          <%= form_with url: backups_path, method: :post, data: { turbo: false } do %>
-            <% button_class = "btn btn-outline btn-lg w-full md:w-auto md:min-w-64" %>
+          <div class="flex flex-col gap-3">
+            <%= form_with url: backups_path, method: :post, data: { turbo: false } do %>
+              <% button_class = "btn btn-outline btn-lg w-full md:w-auto md:min-w-64" %>
 
-            <% if @backup_in_progress %>
-              <button type="submit" class="<%= button_class %>" disabled>
-                <span class="loading loading-spinner loading-sm"></span>
-                <%= t('.in_progress') %>
-              </button>
-            <% elsif @restore_in_progress || @backup_unavailable_reason %>
-              <button type="submit" class="<%= button_class %>" disabled>
-                <i class="fa-solid fa-box-archive"></i>
-                <%= t('.download') %>
-              </button>
-            <% else %>
-              <button
-                type="submit"
-                class="<%= button_class %>"
-                data-controller="loading"
-                data-action="click->loading#click"
-                data-loading-text-value="<%= t('.in_progress') %>"
-                data-loading-spinner-value="loading loading-spinner loading-sm"
-              >
-                <i class="fa-solid fa-box-archive"></i>
-                <%= t('.download') %>
-              </button>
+              <% if @backup_in_progress %>
+                <button type="submit" class="<%= button_class %>" disabled>
+                  <span class="loading loading-spinner loading-sm"></span>
+                  <%= t('.in_progress') %>
+                </button>
+              <% elsif @restore_in_progress || @backup_unavailable_reason %>
+                <button type="submit" class="<%= button_class %>" disabled>
+                  <i class="fa-solid fa-box-archive"></i>
+                  <%= t('.download') %>
+                </button>
+              <% else %>
+                <button
+                  type="submit"
+                  class="<%= button_class %>"
+                  data-controller="loading"
+                  data-action="click->loading#click"
+                  data-loading-text-value="<%= t('.in_progress') %>"
+                  data-loading-spinner-value="loading loading-spinner loading-sm"
+                >
+                  <i class="fa-solid fa-box-archive"></i>
+                  <%= t('.download') %>
+                </button>
+              <% end %>
             <% end %>
-          <% end %>
+
+            <% destination_path = @backup_destination_configured ?
+                 edit_configuration_setting_path(setting: "backup", name: "backup") :
+                 new_configuration_setting_path(setting: "backup") %>
+
+            <%= link_to destination_path,
+                        data: { turbo_frame: "setting-modal-content" },
+                        class: "btn btn-ghost btn-sm w-full md:w-auto md:min-w-64" do %>
+              <i class="fa-solid fa-gear"></i>
+              <%= t('.configure_destination') %>
+            <% end %>
+          </div>
         </div>
 
         <div class="border-base-content/10 relative border-t px-6 py-4 md:px-10 md:py-5">
@@ -185,5 +198,7 @@
         <p class="text-base-content/60 text-sm"><%= t('.existing_empty') %></p>
       <% end %>
     </section>
+
+    <%= render DialogModal::Component.new(id: "setting-modal", turbo_frame: "setting-modal-content") %>
   </div>
 <% end %>

@@ -93,6 +93,15 @@ RSpec.describe 'Backups', :with_admin_password do
       end
     end
 
+    it 'offers a link to configure the backup destination' do
+      get backups_path
+
+      aggregate_failures do
+        expect(response.body).to include(I18n.t('backups.index.configure_destination'))
+        expect(response.body).to include(new_configuration_setting_path(setting: 'backup'))
+      end
+    end
+
     it 'disables the create button and explains why when the databases are not running' do
       reason = I18n.t('backups.runner.unavailable_reasons.postgres_not_running')
       allow(BackupRunner).to receive(:unavailable_reason).and_return(reason)

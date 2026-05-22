@@ -189,6 +189,14 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
       expect(Configuration.current.dashboard.ui_theme).to eq('dark')
     end
+
+    it 'redirects to the backups page after saving the backup destination' do
+      patch configuration_setting_path(setting: 'backup', name: 'backup'),
+            params: { data: { 'destination' => 'local' }.to_json }
+
+      expect(response).to redirect_to(backups_path)
+      expect(Configuration.current.backup.destination).to eq('local')
+    end
   end
 
   describe 'DELETE /configuration/:setting/:name' do

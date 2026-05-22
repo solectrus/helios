@@ -744,7 +744,6 @@ RSpec.describe Configuration do
       expect(described_class.current.advanced_groups).to eq(
         'installation' => %w[deployment software system_general],
         'access' => %w[system_network influxdb dashboard_network reverse_proxy system_security],
-        'data' => %w[backup],
         'dashboard' => %w[dashboard_co2 dashboard_theme],
       )
     end
@@ -756,12 +755,12 @@ RSpec.describe Configuration do
       )
     end
 
-    it 'pulls ingest_settings into the data group when a balcony sensor activates it' do
+    it 'surfaces the data group with ingest_settings when a balcony sensor activates it' do
       with_config_yaml(
         'sensors' => { 'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true } },
       )
       expect(described_class.current.advanced_groups.fetch('data')).to eq(
-        %w[ingest_settings backup],
+        %w[ingest_settings],
       )
     end
 
@@ -773,9 +772,9 @@ RSpec.describe Configuration do
       )
     end
 
-    it 'narrows the data group to backup in dashboard_only mode without a balcony sensor' do
+    it 'omits the data group in dashboard_only mode without a balcony sensor' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY })
-      expect(described_class.current.advanced_groups.fetch('data')).to eq(%w[backup])
+      expect(described_class.current.advanced_groups).not_to have_key('data')
     end
   end
 end

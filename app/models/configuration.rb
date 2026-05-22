@@ -55,14 +55,15 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # Per-service singletons whose `image` is owned by the Software survey.
   SOFTWARE_IMAGE_OWNERS = SOFTWARE_SERVICES.values.pluck(:singleton).uniq.freeze
 
-  # Settings shown in the configuration UI in full mode. `influxdb` exposes
+  # Settings shown on the Advanced page in full mode. `influxdb` exposes
   # only a couple of host-level toggles (e.g. UI port publication) here —
   # bucket/org/tokens are auto-managed and never user-editable in full mode.
+  # `backup` is intentionally absent: its survey lives on the Backups page.
   SETTINGS = %w[
     deployment software
     system_general system_network system_security
     dashboard_co2 dashboard_theme dashboard_network
-    influxdb reverse_proxy backup
+    influxdb reverse_proxy
   ].freeze
 
   # On the Advanced page, settings render as compact chips clustered into
@@ -73,7 +74,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   ADVANCED_GROUPS = {
     'installation' => %w[deployment software system_general],
     'access' => %w[system_network influxdb dashboard_network reverse_proxy system_security],
-    'data' => %w[ingest_settings backup],
+    'data' => %w[ingest_settings],
     'dashboard' => %w[dashboard_co2 dashboard_theme],
   }.freeze
 
@@ -95,7 +96,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     deployment software
     system_general system_network system_security
     dashboard_co2 dashboard_theme dashboard_network
-    reverse_proxy backup
+    reverse_proxy
   ].freeze
 
   # Source configurations shown when at least one sensor uses that source
