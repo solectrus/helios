@@ -272,6 +272,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
     @data['sensors'][name.to_s] = sanitized
     save!
+    prune_shadowed_shelly_devices!
     true
   end
 
@@ -357,6 +358,35 @@ class Configuration # rubocop:disable Metrics/ClassLength
     return unless list.delete_at(index.to_i)
 
     write_shelly_devices(list)
+  end
+
+  # Measurements already produced by a HELIOS-managed collector other than
+  # Shelly. A Shelly device targeting one of these would be a duplicate
+  # writer — `source: external` is excluded on purpose, since the external
+  # writer may well be the shelly-collector itself.
+  def shadowing_measurements
+    shadowing_sources = SOURCE_CONFIGS - %w[shelly]
+    (@data['sensors'] || {}).each_value.filter_map do |config|
+      config['measurement'] if shadowing_sources.include?(config['source'])
+    end.to_set
+  end
+
+  # Shelly devices whose measurement another collector already writes —
+  # stale leftovers from moving the consuming sensor to a different source.
+  def shadowed_shelly_devices
+    measurements = shadowing_measurements
+    shelly_devices.select { |device| measurements.include?(device['measurement']) }
+  end
+
+  # Drops shelly.devices entries that another collector already writes, so a
+  # shelly-collector left without any device can be orphaned in /services.
+  # Returns true when something was removed.
+  def prune_shadowed_shelly_devices! # rubocop:disable Naming/PredicateMethod
+    shadowed = shadowed_shelly_devices
+    return false if shadowed.empty?
+
+    write_shelly_devices(shelly_devices - shadowed)
+    true
   end
 
   # --- Source requirements ---

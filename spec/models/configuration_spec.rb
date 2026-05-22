@@ -218,6 +218,63 @@ RSpec.describe Configuration do
     end
   end
 
+  describe '#prune_shadowed_shelly_devices!' do
+    it 'removes devices whose measurement another collector writes' do
+      with_config_yaml(
+        'shelly' => {
+          'connection' => 'local',
+          'devices' => [
+            { 'name' => 'oven', 'host' => 'oven.local', 'measurement' => 'oven' },
+            { 'name' => 'attic', 'host' => 'attic.local', 'measurement' => 'attic' },
+          ],
+        },
+        'sensors' => { 'custom_power_01' => { 'source' => 'mqtt', 'measurement' => 'oven' } },
+      )
+      config = described_class.current
+
+      expect(config.prune_shadowed_shelly_devices!).to be(true)
+      expect(config.shelly_devices.pluck('measurement')).to eq(%w[attic])
+    end
+
+    it 'keeps devices consumed by an external sensor' do
+      with_config_yaml(
+        'shelly' => { 'devices' => [{ 'name' => 'oven', 'measurement' => 'oven' }] },
+        'sensors' => { 'custom_power_01' => { 'source' => 'external', 'measurement' => 'oven' } },
+      )
+      expect(described_class.current.prune_shadowed_shelly_devices!).to be(false)
+    end
+  end
+
+  describe '#update_sensor pruning shadowed Shelly devices' do
+    it 'drops a Shelly device once its measurement moves to another source' do
+      with_config_yaml(
+        'shelly' => {
+          'connection' => 'local',
+          'devices' => [{ 'name' => 'oven', 'host' => 'oven.local', 'measurement' => 'oven' }],
+        },
+      )
+      config = described_class.current
+
+      config.update_sensor('custom_power_01', { 'source' => 'mqtt', 'measurement' => 'oven', 'field' => 'power' })
+
+      expect(config.shelly_devices).to be_empty
+    end
+
+    it 'leaves Shelly devices intact when the saved sensor does not shadow them' do
+      with_config_yaml(
+        'shelly' => {
+          'connection' => 'local',
+          'devices' => [{ 'name' => 'oven', 'host' => 'oven.local', 'measurement' => 'oven' }],
+        },
+      )
+      config = described_class.current
+
+      config.update_sensor('custom_power_01', { 'source' => 'mqtt', 'measurement' => 'attic', 'field' => 'power' })
+
+      expect(config.shelly_devices.pluck('measurement')).to eq(%w[oven])
+    end
+  end
+
   describe '#active_sources' do
     it 'lists sources used by at least one sensor' do
       with_config_yaml('sensors' => { 'inverter_power' => { 'source' => 'senec' } })
