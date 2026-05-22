@@ -1,46 +1,18 @@
-require 'open3'
-
-# Restores a stored HELIOS backup in a detached `docker:cli` container.
-# The runner keeps working even if the browser is closed. It clears the
-# database directories, starts empty database services from the restored
-# configuration and imports PostgreSQL plus InfluxDB from the archive.
-class RestoreRunner
-  class Error < StandardError; end
-
+# Restores a stored HELIOS backup in a detached `docker:cli` container (see
+# DetachedRunner for the shared launch / in-progress machinery). It clears
+# the database directories, starts empty database services from the
+# restored configuration and imports PostgreSQL plus InfluxDB.
+class RestoreRunner < DetachedRunner
   CONTAINER_NAME = 'helios-restore-runner'.freeze
   IMAGE = BackupRunner::IMAGE
   POSTGRES_SERVICE = BackupRunner::POSTGRES_SERVICE
   INFLUXDB_SERVICE = BackupRunner::INFLUXDB_SERVICE
   ERROR_FILENAME = 'restore-error.txt'.freeze
-  IN_PROGRESS_CACHE_KEY = 'helios_restore_runner_in_progress'.freeze
-  IN_PROGRESS_CACHE_TTL = 3.seconds
+  I18N_SCOPE = 'backups.restorer'.freeze
 
   SCRIPT = ::File.read(::File.join(__dir__, 'restore_runner', 'restore.sh')).freeze
 
   class << self
-    delegate :start, to: :new
-
-    def in_progress
-      Current.instance.fetch(:restore_runner_in_progress) do
-        Rails
-          .cache
-          .fetch(IN_PROGRESS_CACHE_KEY, expires_in: IN_PROGRESS_CACHE_TTL) do
-            container =
-              Orchestration::DockerCli.running_container(CONTAINER_NAME)
-            next nil unless container
-
-            BackupRepository::InProgress.new(
-              started_at: container.started_at,
-              filename: container.args[4],
-            )
-          end
-      end
-    end
-
-    def invalidate_in_progress_cache!
-      Rails.cache.delete(IN_PROGRESS_CACHE_KEY)
-    end
-
     def error_message
       BackupRepository.error_message(ERROR_FILENAME)
     end
@@ -67,13 +39,9 @@ class RestoreRunner
 
   attr_reader :backup
 
-  def error(key, **)
-    I18n.t("backups.restorer.errors.#{key}", **)
-  end
-
   def validate!
     validate_archive!
-    raise Error, error(:backup_in_progress) if BackupRunner.in_progress
+    raise Error, error(:backup_in_progress) if BackupRunner.running?
     raise Error, error(:already_in_progress) if self.class.in_progress
   end
 
@@ -96,29 +64,9 @@ class RestoreRunner
     Current.configuration = nil
   end
 
-  def pull_image_if_needed!
-    return if Orchestration::DockerCli.image_present?(IMAGE)
-
-    ok, output = Orchestration::DockerCli.pull_image(IMAGE)
-    return if ok
-
-    raise Error, error(:image_pull_failed, output: output.strip)
-  end
-
   def clear_errors!
     BackupRepository.clear_error!
     self.class.clear_error!
-  end
-
-  def run_container!
-    FileUtils.mkdir_p(BackupRepository.directory) if BackupRepository.directory
-
-    output, status = Open3.capture2e(*docker_run_command)
-    return if status.success?
-
-    raise Error, error(:already_in_progress) if output.include?('is already in use')
-
-    raise Error, error(:start_failed, output: output.strip)
   end
 
   def docker_run_command
@@ -127,7 +75,7 @@ class RestoreRunner
       '--name', CONTAINER_NAME,
       '-v', '/var/run/docker.sock:/var/run/docker.sock',
       '-v', "#{BackupRepository.host_directory}:/output",
-      *data_mount_args, *aws_env_args,
+      *data_mount_args, *BackupRepository.s3_env_args,
       '--entrypoint', 'sh', IMAGE, '-c', SCRIPT, '_',
       *positional_args
     ]
@@ -140,28 +88,8 @@ class RestoreRunner
       restart_after_flag, services_except_self.join(' '),
       ::Compose.filename,
       BackupRepository.destination, BackupRepository.host_directory.to_s,
-      BackupRepository::S3::IMAGE, s3_dir_uri
+      BackupRepository::S3::IMAGE, BackupRepository.s3_dir_uri
     ]
-  end
-
-  # Mirrors BackupRunner#aws_env_args — only forwarded for S3 destinations
-  # so the nested aws-cli sidecar in restore.sh can fetch the tar.
-  def aws_env_args
-    return [] unless BackupRepository.s3?
-
-    backup_config = Configuration.current.backup
-    args = [
-      '-e', "AWS_ACCESS_KEY_ID=#{backup_config.aws_access_key_id}",
-      '-e', "AWS_SECRET_ACCESS_KEY=#{backup_config.aws_secret_access_key}",
-      '-e', "AWS_DEFAULT_REGION=#{backup_config.aws_region}"
-    ]
-    endpoint = backup_config.s3_endpoint_url.to_s.strip
-    args.push('-e', "AWS_ENDPOINT_URL=#{endpoint}") if endpoint.present?
-    args
-  end
-
-  def s3_dir_uri
-    BackupRepository.s3? ? BackupRepository::S3.s3_dir_uri : ''
   end
 
   def data_mount_args

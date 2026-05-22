@@ -35,7 +35,6 @@ RSpec.describe RestoreRunner do
     allow(BackupRepository).to receive(:find!).with(filename).and_return(
       BackupRepository::Backup.new(
         filename:,
-        path: File.join(data_path, 'helios', 'backups', filename),
         bytes: 7,
         created_at: Time.zone.local(2026, 5, 8, 11, 0, 0),
         files: [],
@@ -44,7 +43,7 @@ RSpec.describe RestoreRunner do
       ),
     )
     allow(Export::Builder).to receive(:new).and_return(instance_double(Export::Builder, write!: nil))
-    allow(BackupRunner).to receive(:in_progress).and_return(nil)
+    allow(BackupRunner).to receive(:running?).and_return(false)
     allow(Orchestration::Runner).to receive(:host_data_path).and_return(host_data_path)
     allow(Compose).to receive(:load).and_return(
       instance_double(
@@ -93,7 +92,7 @@ RSpec.describe RestoreRunner do
         expect(run).to include('-v', "#{host_data_path}/helios/backups:/output")
         expect(run).to include('-v', "#{host_data_path}:/data")
         expect(run).to include('-v', "#{host_data_path}:#{host_data_path}")
-        expect(run).to include('--entrypoint', 'sh', 'docker:cli', '-c')
+        expect(run).to include('--entrypoint', 'sh', described_class::IMAGE, '-c')
       end
     end
 
@@ -220,7 +219,7 @@ RSpec.describe RestoreRunner do
 
       described_class.start(filename)
 
-      expect(state[:open3_calls]).to include(%w[docker pull docker:cli])
+      expect(state[:open3_calls]).to include(['docker', 'pull', described_class::IMAGE])
     end
 
     it 'clears previous backup and restore errors before launching' do
@@ -234,9 +233,7 @@ RSpec.describe RestoreRunner do
     end
 
     it 'raises when a backup is already running' do
-      allow(BackupRunner).to receive(:in_progress).and_return(
-        BackupRepository::InProgress.new(started_at: Time.zone.now, filename: 'other.tar.gz'),
-      )
+      allow(BackupRunner).to receive(:running?).and_return(true)
 
       expect { described_class.start(filename) }.to raise_error(described_class::Error, /backup is already/)
     end
@@ -322,9 +319,9 @@ RSpec.describe RestoreRunner do
 
   def stub_open3_response(args)
     case args
-    in ['docker', 'image', 'inspect', 'docker:cli']
+    in ['docker', 'image', 'inspect', ^(described_class::IMAGE)]
       ['', instance_double(Process::Status, success?: state[:image_present])]
-    in ['docker', 'pull', 'docker:cli']
+    in ['docker', 'pull', ^(described_class::IMAGE)]
       [state[:docker_pull_output], instance_double(Process::Status, success?: state[:docker_pull_success])]
     in ['docker', 'inspect', 'helios-restore-runner']
       docker_inspect_response

@@ -112,11 +112,12 @@ RSpec.describe Backup::ConnectionTest do
       expect(probe(full_values)).to have_attributes(ok: false, reason: :s3_error)
     end
 
-    it 'targets the bucket+prefix URI in the probe command' do
+    it 'targets the bucket and prefix in the probe command' do
       stub_probe(exitstatus: 0, output: '')
       probe(full_values)
       expect(Open3).to have_received(:capture2e) do |*args|
-        expect(args.last).to eq('s3://my-backups/solectrus/')
+        expect(args).to include('s3api', 'list-objects-v2', '--bucket', 'my-backups')
+        expect(args).to include('--prefix', 'solectrus/')
       end
     end
 

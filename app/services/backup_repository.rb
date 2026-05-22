@@ -102,6 +102,19 @@ class BackupRepository
       !local?
     end
 
+    # AWS credential `-e` docker args forwarded to the detached runners'
+    # outer docker:cli container, or [] for non-S3 destinations — keeps
+    # credentials out of unrelated runs.
+    def s3_env_args
+      s3? ? S3.runner_env_args : []
+    end
+
+    # Trailing-slash `s3://bucket/prefix/` URI passed to the runner shell
+    # scripts, or '' for non-S3 destinations (the scripts ignore it then).
+    def s3_dir_uri
+      s3? ? S3.s3_dir_uri : ''
+    end
+
     # Reads a tar at an arbitrary local path. Used by `BackupUploader` for
     # validating uploaded tempfiles (which always sit inside the HELIOS
     # container) and by the local adapter for its stored archives.

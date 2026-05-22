@@ -200,6 +200,7 @@ de:
         already_in_progress: 'Eine Sicherung läuft bereits.'
         image_pull_failed: 'Hintergrundprozess konnte nicht vorbereitet werden: %{output}'
         start_failed: 'Hintergrundprozess konnte nicht gestartet werden: %{output}'
+        incomplete: 'der Hintergrundprozess wurde abgebrochen, bevor er abgeschlossen war. Es wurde keine Sicherung erstellt.'
       unavailable_reasons:
         env_missing: '.env-Datei fehlt.'
         config_missing: 'helios/config.yaml fehlt.'

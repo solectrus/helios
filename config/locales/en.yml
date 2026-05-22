@@ -224,6 +224,7 @@ en:
         already_in_progress: 'A backup is already in progress.'
         image_pull_failed: 'Background process could not be prepared: %{output}'
         start_failed: 'Background process could not be started: %{output}'
+        incomplete: 'the background process stopped before it finished. No backup was created.'
       unavailable_reasons:
         env_missing: '.env file is missing.'
         config_missing: 'helios/config.yaml is missing.'

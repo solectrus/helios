@@ -29,7 +29,7 @@ RSpec.describe BackupRunner do
     allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(
       instance_double(Orchestration::Container, name: 'solectrus-influxdb-1'),
     )
-    allow(RestoreRunner).to receive(:in_progress).and_return(nil)
+    allow(RestoreRunner).to receive(:running?).and_return(false)
 
     allow(Time).to receive(:current).and_return(Time.zone.local(2026, 5, 8, 14, 30, 0))
 
@@ -55,7 +55,7 @@ RSpec.describe BackupRunner do
         expect(run).to include('-v', '/var/run/docker.sock:/var/run/docker.sock')
         expect(run).to include('-v', "#{host_data_path}/helios/backups:/output")
         expect(run).to include('-v', "#{host_data_path}/helios/config.yaml:/config.yaml:ro")
-        expect(run).to include('--entrypoint', 'sh', 'docker:cli', '-c')
+        expect(run).to include('--entrypoint', 'sh', described_class::IMAGE, '-c')
       end
     end
 
@@ -75,13 +75,13 @@ RSpec.describe BackupRunner do
 
       described_class.start
 
-      expect(state[:open3_calls]).to include(%w[docker pull docker:cli])
+      expect(state[:open3_calls]).to include(['docker', 'pull', described_class::IMAGE])
     end
 
     it 'skips docker pull when the image is already present' do
       described_class.start
 
-      expect(state[:open3_calls]).not_to include(%w[docker pull docker:cli])
+      expect(state[:open3_calls]).not_to include(['docker', 'pull', described_class::IMAGE])
     end
 
     it 'prunes old backups before launching the new container' do
@@ -138,9 +138,7 @@ RSpec.describe BackupRunner do
     end
 
     it 'raises when a restore is already running' do
-      allow(RestoreRunner).to receive(:in_progress).and_return(
-        BackupRepository::InProgress.new(started_at: Time.zone.now, filename: 'backup.tar.gz'),
-      )
+      allow(RestoreRunner).to receive(:running?).and_return(true)
 
       expect { described_class.start }.to raise_error(described_class::Error, /restore is already/)
     end
@@ -203,7 +201,7 @@ RSpec.describe BackupRunner do
         expect(run.last(4)).to eq([
                                     's3',
                                     "#{host_data_path}/helios/backups-staging",
-                                    'amazon/aws-cli:latest',
+                                    BackupRepository::S3::IMAGE,
                                     's3://my-bucket/solectrus/',
                                   ])
       end
@@ -306,9 +304,9 @@ RSpec.describe BackupRunner do
 
   def stub_open3_response(args)
     case args
-    in ['docker', 'image', 'inspect', 'docker:cli']
+    in ['docker', 'image', 'inspect', ^(described_class::IMAGE)]
       ['', instance_double(Process::Status, success?: state[:image_present])]
-    in ['docker', 'pull', 'docker:cli']
+    in ['docker', 'pull', ^(described_class::IMAGE)]
       [state[:docker_pull_output], instance_double(Process::Status, success?: state[:docker_pull_success])]
     in ['docker', 'inspect', 'helios-backup-runner']
       docker_inspect_response

@@ -15,8 +15,7 @@ module Backup
   class ConnectionTest
     include ConnectionTesting::ResultBuilder
 
-    PROBE_IMAGE = 'docker:cli'.freeze
-    AWS_CLI_IMAGE = 'amazon/aws-cli:latest'.freeze
+    PROBE_IMAGE = BackupRunner::IMAGE
     WRITE_PROBE_NAME = '.helios-write-test'.freeze
 
     SAFE_PATH = %r{\A/[A-Za-z0-9_/.-]+\z}
@@ -104,7 +103,7 @@ module Backup
       S3Probe.new(
         access: fields['aws_access_key_id'], secret: fields['aws_secret_access_key'],
         region: fields['aws_region'], bucket: fields['aws_bucket'],
-        prefix: values['s3_prefix'].to_s.strip.gsub(%r{\A/+|/+\z}, ''),
+        prefix: BackupRepository::S3.normalize_prefix(values['s3_prefix']),
         endpoint: values['s3_endpoint_url'].to_s.strip
       )
     end
@@ -114,6 +113,10 @@ module Backup
       classify_s3(status, output)
     end
 
+    # Uses `s3api list-objects-v2`, not `s3 ls`, on purpose: `s3 ls` exits
+    # non-zero when the prefix holds no objects — the normal state of a
+    # freshly configured bucket — which would misreport valid credentials
+    # as a failure. The raw API call succeeds regardless of result count.
     def aws_probe_command(probe)
       env_args = [
         '-e', "AWS_ACCESS_KEY_ID=#{probe.access}",
@@ -122,12 +125,10 @@ module Backup
       ]
       env_args.push('-e', "AWS_ENDPOINT_URL=#{probe.endpoint}") unless probe.endpoint.empty?
 
-      ['docker', 'run', '--rm', *env_args, AWS_CLI_IMAGE, 's3', 'ls', probe_uri(probe)]
-    end
+      list_args = ['s3api', 'list-objects-v2', '--bucket', probe.bucket, '--max-keys', '1']
+      list_args.push('--prefix', "#{probe.prefix}/") if probe.prefix.present?
 
-    def probe_uri(probe)
-      parts = [probe.bucket, probe.prefix.presence].compact
-      "s3://#{parts.join('/')}/"
+      ['docker', 'run', '--rm', *env_args, BackupRepository::S3::IMAGE, *list_args]
     end
 
     def classify_s3(status, output)

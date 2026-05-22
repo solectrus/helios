@@ -47,3 +47,24 @@ During development, some SOLECTRUS services may temporarily use the `develop` ta
 | Redis          | `redis:8-alpine`                          |
 | InfluxDB       | `influxdb:2-alpine`                       |
 | Watchtower     | `nickfedor/watchtower:latest`             |
+
+## Sidecar Images
+
+Backups and restores run short-lived sidecar containers that are **not** Compose services and so do not appear in the table above. Their tags are pinned in Ruby constants:
+
+| Image            | Constant                      | Pin               | Rationale                                                                                                                           |
+| ---------------- | ----------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `docker:cli`     | `BackupRunner::IMAGE`         | Major (`29-cli`)  | Third-party — major-pinned like the table above.                                                                                    |
+| `amazon/aws-cli` | `BackupRepository::S3::IMAGE` | Exact (`2.34.52`) | Amazon publishes no major/minor tags, only full `MAJOR.MINOR.PATCH` — an exact pin is the closest equivalent to the major-pin rule. |
+
+`docker:cli` is defined once (`BackupRunner::IMAGE`); `BackupRepository::External` and `Backup::ConnectionTest` reuse that constant. `amazon/aws-cli` is defined once (`BackupRepository::S3::IMAGE`). A bump is therefore a one-line change in each case.
+
+### Verifying a bump
+
+The backup adapters parse the sidecars' CLI output (aws-cli's `list-objects-v2` text format, busybox `tar -tvf`) and classify their error wording with regexes — a version bump can break this silently. Before raising a pin, run the integration suite, which exercises both images against a real S3-compatible server (MinIO) and a real Docker stack:
+
+```bash
+bin/rspec --tag integration
+```
+
+The relevant specs are `spec/integration/backup_repository/{s3,external}_spec.rb` and `spec/integration/backup_runner_s3_spec.rb`.
