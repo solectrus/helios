@@ -59,7 +59,7 @@ class BackupRepository
   class << self
     delegate :directory, :host_directory, :all, :find!, :destroy!,
              :error_message, :clear_error!, :prune!, :read_archive_for,
-             :download, :mark_pending!, to: :storage
+             :download, :mark_pending!, :index_fresh?, to: :storage
 
     def valid_filename?(filename)
       filename.to_s.match?(FILENAME_PATTERN)
@@ -100,6 +100,14 @@ class BackupRepository
     # to mark a detached run as pending or reject local-only operations.
     def remote?
       !local?
+    end
+
+    # Drops the cached index so the next /backups render rebuilds it from
+    # scratch. Called when the destination survey is saved: a changed
+    # destination, bucket or set of credentials must take effect at once,
+    # and cache_fresh? cannot by itself detect a credentials-only change.
+    def reset_index!
+      Index.delete!
     end
 
     # AWS credential `-e` docker args forwarded to the detached runners'

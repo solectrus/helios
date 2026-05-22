@@ -29,6 +29,32 @@ RSpec.describe 'Backups', :with_admin_password do
       expect(response.body).not_to include('helios/config.yaml')
     end
 
+    it 'defers a remote destination behind a loading spinner' do
+      with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/nas' })
+
+      get backups_path
+
+      aggregate_failures do
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include(I18n.t('backups.index.loading'))
+        expect(response.body).to include('loading loading-spinner loading-lg')
+        # the actual list and create section are deferred to the lazy frame
+        expect(response.body).not_to include(I18n.t('backups.index.note'))
+      end
+    end
+
+    it 'renders the list inside the backups-content frame without deferring' do
+      with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/nas' })
+      allow(BackupRepository).to receive_messages(all: [], error_message: nil)
+
+      get backups_path, headers: { 'Turbo-Frame' => 'backups-content' }
+
+      aggregate_failures do
+        expect(response.body).to include(I18n.t('backups.index.note'))
+        expect(response.body).not_to include(I18n.t('backups.index.loading'))
+      end
+    end
+
     it 'renders existing backups with database sizes' do
       persist_backup('solectrus-backup-20260508-110000.tar')
 
@@ -93,11 +119,14 @@ RSpec.describe 'Backups', :with_admin_password do
       end
     end
 
-    it 'offers a link to configure the backup destination' do
+    it 'offers a link to configure the backup destination, showing the current one' do
       get backups_path
 
       aggregate_failures do
-        expect(response.body).to include(I18n.t('backups.index.configure_destination'))
+        expect(response.body).to include(
+          I18n.t('backups.index.configure_destination',
+                 destination: I18n.t('backups.index.destinations.local')),
+        )
         expect(response.body).to include(new_configuration_setting_path(setting: 'backup'))
       end
     end

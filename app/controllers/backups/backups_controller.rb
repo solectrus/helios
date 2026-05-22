@@ -1,9 +1,10 @@
 module Backups
   class BackupsController < ApplicationController
-    before_action :load_state, only: :index
     before_action :set_backup, only: :show
 
     def index
+      @lazy = backup_list_deferred?
+      load_state unless @lazy
       render 'backups/index'
     end
 
@@ -35,6 +36,18 @@ module Backups
 
     private
 
+    # The /backups list renders from a JSON index. For a remote destination
+    # (external mount, S3) a stale index means the render would block on a
+    # Docker/aws-cli sidecar refresh — defer that behind a lazy turbo frame
+    # so the page paints at once and shows a loading spinner. The frame's own
+    # request (Turbo-Frame: backups-content) then carries out the refresh.
+    # Local stays synchronous: its refresh is in-process and instant.
+    def backup_list_deferred?
+      return false if turbo_frame_request_id == 'backups-content'
+
+      BackupRepository.remote? && !BackupRepository.index_fresh?
+    end
+
     def prepare_download_response(backup)
       response.headers['Content-Type'] = 'application/x-tar'
       response.headers['Content-Disposition'] =
@@ -65,6 +78,7 @@ module Backups
       @backup_databases_configured = BackupRunner.databases_configured?
       @backup_unavailable_reason = BackupRunner.unavailable_reason unless @backup_in_progress || @restore_in_progress
       @backup_destination_configured = Configuration.current.setting_data('backup').present?
+      @backup_destination = BackupRepository.destination
     end
   end
 end

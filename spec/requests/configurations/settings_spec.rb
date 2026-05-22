@@ -197,6 +197,26 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(response).to redirect_to(backups_path)
       expect(Configuration.current.backup.destination).to eq('local')
     end
+
+    it 'drops the cached backup index when the destination actually changed' do
+      Configuration.current.update('backup', { 'destination' => 'local' })
+      BackupRepository::Index.write('destination' => 'local', 'backups' => [])
+
+      patch configuration_setting_path(setting: 'backup', name: 'backup'),
+            params: { data: { 'destination' => 'external', 'external_path' => '/mnt/nas' }.to_json }
+
+      expect(BackupRepository::Index.read).to be_nil
+    end
+
+    it 'keeps the cached backup index when the survey is saved unchanged' do
+      Configuration.current.update('backup', { 'destination' => 'local' })
+      BackupRepository::Index.write('destination' => 'local', 'backups' => [])
+
+      patch configuration_setting_path(setting: 'backup', name: 'backup'),
+            params: { data: { 'destination' => 'local' }.to_json }
+
+      expect(BackupRepository::Index.read).to be_present
+    end
   end
 
   describe 'DELETE /configuration/:setting/:name' do

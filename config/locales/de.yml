@@ -145,7 +145,12 @@ de:
       title: 'Datensicherung'
       create_title: 'Neue Sicherung erstellen'
       note: 'Sichert die komplette SOLECTRUS-Installation (mit den Datenbanken aus InfluxDB und PostgreSQL sowie der Konfiguration) in einer einzigen Datei.'
-      configure_destination: 'Ablageort konfigurieren'
+      configure_destination: 'Ziel: %{destination}'
+      destinations:
+        local: 'Lokal'
+        external: 'Externer Mount'
+        s3: 'S3'
+      loading: 'Sicherungen werden geladen…'
       download: 'Sicherung erstellen'
       in_progress: 'Wird erstellt…'
       duration_hint: 'Läuft im Hintergrund und kann bei größerer Datenmenge mehrere Minuten dauern. Du kannst die Seite verlassen, die Sicherung läuft weiter. SOLECTRUS bleibt währenddessen normal nutzbar. Die fünf neuesten Sicherungen werden aufbewahrt, ältere automatisch entfernt.'
@@ -310,7 +315,7 @@ de:
         description: 'Domain & HTTPS mit Traefik. Nur sinnvoll, wenn dieser Host über das Internet erreichbar ist.'
       backup:
         title: 'Backup'
-        description: 'Ablageort für Sicherungen (lokal, externer Mount oder S3)'
+        description: 'Ziel für Sicherungen (lokal, externer Mount oder S3)'
       influxdb:
         title: 'InfluxDB'
         description: 'Einstellungen für die Zeitreihen-Datenbank'

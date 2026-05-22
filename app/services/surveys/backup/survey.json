@@ -1,12 +1,12 @@
 {
   "locale": "de",
   "title": {
-    "de": "Sicherung",
+    "de": "Datensicherung",
     "default": "Backup"
   },
   "description": {
-    "de": "Wo HELIOS deine Sicherungen ablegt.",
-    "default": "Where HELIOS stores your backups."
+    "de": "Wo soll HELIOS die Sicherungen ablegen?",
+    "default": "Where should HELIOS store your backups?"
   },
   "pages": [
     {
@@ -16,7 +16,7 @@
           "type": "radiogroup",
           "name": "destination",
           "title": {
-            "de": "Ablageort",
+            "de": "Ziel",
             "default": "Destination"
           },
           "isRequired": true,
@@ -86,7 +86,7 @@
       ]
     },
     {
-      "name": "p_s3",
+      "name": "p_s3_connection",
       "visibleIf": "{destination} = 's3'",
       "elements": [
         {
@@ -142,6 +142,20 @@
           "placeholder": "my-solectrus-backups"
         },
         {
+          "type": "html",
+          "name": "connection_test",
+          "html": {
+            "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"backup\" data-test-check=\"aws_credentials\" data-test-fields=\"aws_access_key_id,aws_secret_access_key,aws_region,aws_bucket,s3_endpoint_url\">Verbindung prüfen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
+            "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"backup\" data-test-check=\"aws_credentials\" data-test-fields=\"aws_access_key_id,aws_secret_access_key,aws_region,aws_bucket,s3_endpoint_url\">Test connection</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_s3_details",
+      "visibleIf": "{destination} = 's3'",
+      "elements": [
+        {
           "type": "text",
           "name": "s3_prefix",
           "title": {
@@ -154,14 +168,6 @@
           },
           "defaultValue": "solectrus/",
           "placeholder": "solectrus/"
-        },
-        {
-          "type": "html",
-          "name": "connection_test",
-          "html": {
-            "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"backup\" data-test-check=\"aws_credentials\" data-test-fields=\"aws_access_key_id,aws_secret_access_key,aws_region,aws_bucket,s3_prefix,s3_endpoint_url\">Verbindung prüfen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
-            "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"backup\" data-test-check=\"aws_credentials\" data-test-fields=\"aws_access_key_id,aws_secret_access_key,aws_region,aws_bucket,s3_prefix,s3_endpoint_url\">Test connection</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
-          }
         }
       ]
     }

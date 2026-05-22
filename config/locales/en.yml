@@ -169,7 +169,12 @@ en:
       title: 'Backup'
       create_title: 'Create new backup'
       note: 'Saves the complete SOLECTRUS installation (including the InfluxDB and PostgreSQL databases as well as the configuration) as a single file.'
-      configure_destination: 'Configure destination'
+      configure_destination: 'Destination: %{destination}'
+      destinations:
+        local: 'Local'
+        external: 'External mount'
+        s3: 'S3'
+      loading: 'Loading backups…'
       download: 'Create backup'
       in_progress: 'In progress…'
       duration_hint: 'Runs in the background and may take several minutes for larger data volumes. You can leave this page; the backup will keep running. SOLECTRUS stays usable in the meantime. The five most recent backups are kept; older ones are removed automatically.'

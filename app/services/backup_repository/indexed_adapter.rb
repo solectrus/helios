@@ -4,8 +4,8 @@ class BackupRepository
   # archives on each visit; this module holds the read/query half, which is
   # identical across all three adapters.
   #
-  # Including adapters must provide: `ensure_index_fresh!`, `read_index`,
-  # `read_archive_for` and `destination_configured?`.
+  # Including adapters must provide: `ensure_index_fresh!`, `cache_fresh?`,
+  # `read_index`, `read_archive_for` and `destination_configured?`.
   module IndexedAdapter
     # Tar-sidecar text files an adapter tracks: their contents surface as
     # the backup / restore failure banner. Keyed by on-disk filename,
@@ -38,6 +38,15 @@ class BackupRepository
 
       ensure_index_fresh!
       read_index[index_key].presence
+    end
+
+    # True when the cached index already matches the configured destination.
+    # A cheap, Docker-free check — it only reads the index file. False means
+    # the next listing would trigger a (for remote destinations slow) refresh;
+    # the /backups page consults this to decide whether to defer that refresh
+    # behind a loading spinner.
+    def index_fresh?
+      cache_fresh?
     end
 
     private
