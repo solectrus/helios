@@ -102,3 +102,4 @@ Metrics/AbcSize:
 Layout/LineLength:
   AllowedPatterns:
     - '^#\s+\w+\s+\([^)]+\)' # annotaterb index lines: `#  index_name  (cols)`
+    - '^#\s+\S*\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\s+/' # annotaterb route lines

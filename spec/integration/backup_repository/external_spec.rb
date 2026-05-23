@@ -19,19 +19,19 @@ RSpec.describe BackupRepository::External do
 
   after { FileUtils.rm_rf(external_path) }
 
-  describe '.all / .refresh!' do
+  describe '.all' do
     it 'returns an empty list for an empty mount' do
-      expect(described_class.all).to eq([])
+      expect(described_class.all).to be_empty
     end
 
-    it 'lists and fully parses a stored backup tar' do
-      write_backup(filename)
+    it 'returns the recorded backups' do
+      write_and_record(filename)
 
       backups = described_class.all
       aggregate_failures do
         expect(backups.map(&:filename)).to eq([filename])
         expect(backups.first.bytes).to eq(File.size(File.join(external_path, filename)))
-        expect(backups.first.files.map(&:name)).to include('helios/config.yaml')
+        expect(backups.first.files.pluck('name')).to include('helios/config.yaml')
         expect(backups.first.influxdb_image).to eq('influxdb:2-alpine')
         expect(backups.first.postgresql_image).to eq('postgres:18-alpine')
       end
@@ -40,16 +40,29 @@ RSpec.describe BackupRepository::External do
     it 'orders backups newest first' do
       older = 'solectrus-backup-20260508-100000.tar'
       newer = 'solectrus-backup-20260508-140000.tar'
-      write_backup(older, mtime: Time.zone.local(2026, 5, 8, 10))
-      write_backup(newer, mtime: Time.zone.local(2026, 5, 8, 14))
+      write_and_record(older)
+      write_and_record(newer)
 
       expect(described_class.all.map(&:filename)).to eq([newer, older])
     end
   end
 
+  describe '.record_backup!' do
+    it 'reads tar metadata via a single docker:cli sidecar (real `stat` + `tar -tvf` + `tar -xOf`)' do
+      write_tar(filename)
+
+      described_class.record_backup!(filename)
+
+      backup = described_class.find!(filename)
+      expect(backup.bytes).to eq(File.size(File.join(external_path, filename)))
+      expect(backup.influxdb_image).to eq('influxdb:2-alpine')
+      expect(backup.postgresql_image).to eq('postgres:18-alpine')
+    end
+  end
+
   describe '.find!' do
     it 'returns the stored backup' do
-      write_backup(filename)
+      write_and_record(filename)
 
       expect(described_class.find!(filename).filename).to eq(filename)
     end
@@ -61,7 +74,7 @@ RSpec.describe BackupRepository::External do
 
   describe '.download' do
     it 'streams the stored tar back byte-for-byte' do
-      write_backup(filename)
+      write_and_record(filename)
 
       streamed = +''
       described_class.download(filename) { |chunk| streamed << chunk }
@@ -70,25 +83,23 @@ RSpec.describe BackupRepository::External do
   end
 
   describe '.destroy!' do
-    it 'removes the tar from the mount and the index' do
-      write_backup(filename)
-      described_class.all # warm the index
+    it 'removes the tar from the mount and the row from the DB' do
+      write_and_record(filename)
 
       described_class.destroy!(filename)
 
       aggregate_failures do
         expect(File).not_to exist(File.join(external_path, filename))
-        expect(described_class.all).to eq([])
+        expect(described_class.all).to be_empty
       end
     end
   end
 
   describe '.prune!' do
     it 'deletes all but the newest backups' do
-      write_backup('solectrus-backup-20260508-100000.tar', mtime: Time.zone.local(2026, 5, 8, 10))
-      write_backup('solectrus-backup-20260508-120000.tar', mtime: Time.zone.local(2026, 5, 8, 12))
-      write_backup('solectrus-backup-20260508-140000.tar', mtime: Time.zone.local(2026, 5, 8, 14))
-      described_class.all # warm the index
+      write_and_record('solectrus-backup-20260508-100000.tar')
+      write_and_record('solectrus-backup-20260508-120000.tar')
+      write_and_record('solectrus-backup-20260508-140000.tar')
 
       described_class.prune!(keep: 1)
 
@@ -96,23 +107,19 @@ RSpec.describe BackupRepository::External do
     end
   end
 
-  describe '.error_message / .clear_error!' do
-    it 'reads the error file from the mount' do
+  describe 'error file IO via real sidecar' do
+    it 'reads error.txt from the mount via `cat` sidecar' do
       File.write(File.join(external_path, 'error.txt'), "Disk full\n")
 
-      expect(described_class.error_message).to eq('Disk full')
+      expect(described_class.send(:read_error_file)).to eq('Disk full')
     end
 
-    it 'clears the error file' do
+    it 'removes error.txt via `rm` sidecar' do
       File.write(File.join(external_path, 'error.txt'), "Disk full\n")
-      described_class.all # warm the index
 
-      described_class.clear_error!
+      described_class.send(:remove_error_file!)
 
-      aggregate_failures do
-        expect(File).not_to exist(File.join(external_path, 'error.txt'))
-        expect(described_class.error_message).to be_nil
-      end
+      expect(File).not_to exist(File.join(external_path, 'error.txt'))
     end
   end
 
@@ -122,10 +129,18 @@ RSpec.describe BackupRepository::External do
     'solectrus-backup-20260508-120000.tar'
   end
 
+  # Writes a valid HELIOS backup tar to the external mount AND inserts the
+  # matching Backup row via the production path, mirroring what
+  # detect_completion! does after a real run.
+  def write_and_record(name)
+    write_tar(name)
+    described_class.record_backup!(name)
+  end
+
   # Writes a valid HELIOS backup tar to the external mount. Entries are
   # `./`-prefixed exactly as backup.sh produces them (`tar -cf -C dir .`),
   # so the adapter's `tar -xOf ./helios/config.yaml` member match is real.
-  def write_backup(name, mtime: nil)
+  def write_tar(name)
     path = File.join(external_path, name)
     File.binwrite(path, tar_archive(
                           './helios/config.yaml' => { 'influxdb' => { 'image' => 'influxdb:2-alpine' },
@@ -133,7 +148,6 @@ RSpec.describe BackupRepository::External do
                           './solectrus-postgresql-backup-2026-05-08.sql.gz' => 'postgres dump',
                           './solectrus-influxdb-backup-2026-05-08.tar.gz' => 'influx export',
                         ))
-    File.utime(mtime.to_i, mtime.to_i, path) if mtime
   end
 
   def tar_archive(entries)

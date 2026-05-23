@@ -12,9 +12,9 @@ RSpec.describe BackupRepository do
   after { FileUtils.remove_entry(data_path) }
 
   describe '.all' do
-    it 'returns Backup entries for each archive, newest first' do
-      write_backup('solectrus-backup-20260508-110000.tar')
-      write_backup('solectrus-backup-20260508-120000.tar')
+    it 'returns Backup entries for each recorded backup, newest first' do
+      record_backup('solectrus-backup-20260508-110000.tar')
+      record_backup('solectrus-backup-20260508-120000.tar')
 
       filenames = described_class.all.map(&:filename)
       expect(filenames).to eq([
@@ -24,17 +24,17 @@ RSpec.describe BackupRepository do
     end
 
     it 'reads the file list from the archive' do
-      write_backup(
+      record_backup(
         'solectrus-backup-20260508-110000.tar',
         archive: { 'helios/config.yaml' => 'system: {}' },
       )
 
       backup = described_class.all.first # rubocop:disable Rails/RedundantActiveRecordAllMethod
-      expect(backup.files.map(&:name)).to contain_exactly('helios/config.yaml')
+      expect(backup.files.pluck('name')).to contain_exactly('helios/config.yaml')
     end
 
     it 'exposes PostgreSQL and InfluxDB sizes from the archive' do
-      write_backup(
+      record_backup(
         'solectrus-backup-20260508-110000.tar',
         archive: {
           'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'p' * 100,
@@ -50,11 +50,10 @@ RSpec.describe BackupRepository do
 
     it 'returns created_at in the active Time.zone' do
       Time.use_zone('Europe/Berlin') do
-        # File mtimes are stored as UTC by the OS; the repository must convert to Time.zone
-        # so views render in the user-configured timezone (e.g. backup at 07:40 Berlin must
-        # not appear as 05:40).
-        mtime = Time.utc(2026, 7, 1, 5, 40)
-        write_backup('solectrus-backup-20260701-074000.tar', mtime: mtime)
+        # The filename's embedded timestamp is the backup's `created_at` and is
+        # produced with Time.zone, so a 07:40 Berlin filename must surface as
+        # 07:40 CEST regardless of how AR stores the underlying datetime.
+        record_backup('solectrus-backup-20260701-074000.tar')
 
         backup = described_class.all.first # rubocop:disable Rails/RedundantActiveRecordAllMethod
         expect(backup.created_at.zone).to eq('CEST')
@@ -62,26 +61,24 @@ RSpec.describe BackupRepository do
       end
     end
 
-    it 'ignores partial files and unrelated entries' do
-      write_backup('solectrus-backup-20260508-110000.tar')
-      FileUtils.mkdir_p(backups_dir)
+    it 'never auto-imports tars dropped onto the filesystem out-of-band' do
+      write_tar('solectrus-backup-20260508-110000.tar')
       File.write(File.join(backups_dir, 'solectrus-backup-20260508-120000.tar.part'), 'in-progress')
       File.write(File.join(backups_dir, 'README.txt'), 'hello')
 
-      filenames = described_class.all.map(&:filename)
-      expect(filenames).to contain_exactly('solectrus-backup-20260508-110000.tar')
+      expect(described_class.all).to be_empty
     end
   end
 
   describe '.find!' do
-    it 'returns a Backup for an existing filename' do
-      write_backup('solectrus-backup-20260508-110000.tar')
+    it 'returns a Backup for an existing recorded filename' do
+      record_backup('solectrus-backup-20260508-110000.tar')
 
       backup = described_class.find!('solectrus-backup-20260508-110000.tar')
       expect(backup.filename).to eq('solectrus-backup-20260508-110000.tar')
     end
 
-    it 'raises NotFound for missing files' do
+    it 'raises NotFound when no row exists for the filename' do
       expect do
         described_class.find!('solectrus-backup-20260508-110000.tar')
       end.to raise_error(described_class::NotFound)
@@ -93,20 +90,21 @@ RSpec.describe BackupRepository do
   end
 
   describe '.destroy!' do
-    it 'removes the archive and any legacy manifest sidecar' do
+    it 'removes the archive, the row, and any legacy manifest sidecar' do
       filename = 'solectrus-backup-20260508-110000.tar'
-      write_backup(filename)
+      record_backup(filename)
       File.write(File.join(backups_dir, "#{filename}.json"), '{}') # legacy sidecar
 
       described_class.destroy!(filename)
 
       expect(File).not_to exist(File.join(backups_dir, filename))
       expect(File).not_to exist(File.join(backups_dir, "#{filename}.json"))
+      expect(Backup.where(filename: filename)).not_to exist
     end
 
     it 'works when no legacy sidecar exists' do
       filename = 'solectrus-backup-20260508-110000.tar'
-      write_backup(filename)
+      record_backup(filename)
 
       expect { described_class.destroy!(filename) }.not_to raise_error
       expect(File).not_to exist(File.join(backups_dir, filename))
@@ -125,9 +123,8 @@ RSpec.describe BackupRepository do
 
   describe '.prune!' do
     it 'keeps only the four most recent backups (MAX_BACKUPS - 1)' do
-      now = Time.zone.now
       6.times do |i|
-        write_backup("solectrus-backup-20260508-11000#{i}.tar", mtime: now + i.seconds)
+        record_backup("solectrus-backup-20260508-11000#{i}.tar")
       end
 
       described_class.prune!
@@ -142,7 +139,7 @@ RSpec.describe BackupRepository do
 
     it 'removes any legacy manifest sidecar alongside the backup file' do
       filename = 'solectrus-backup-20260508-110000.tar'
-      write_backup(filename)
+      record_backup(filename)
       File.write(File.join(backups_dir, "#{filename}.json"), '{}') # legacy sidecar
 
       described_class.prune!(keep: 0)
@@ -154,7 +151,7 @@ RSpec.describe BackupRepository do
 
   describe 'image versions' do
     it 'reads the InfluxDB and PostgreSQL images from the archived config.yaml' do
-      write_backup(
+      record_backup(
         'solectrus-backup-20260508-110000.tar',
         archive: {
           'helios/config.yaml' => "influxdb:\n  image: influxdb:2.6-alpine\npostgresql:\n  image: postgres:13-alpine\n",
@@ -167,7 +164,7 @@ RSpec.describe BackupRepository do
     end
 
     it 'is nil when config.yaml carries no image' do
-      write_backup('solectrus-backup-20260508-110000.tar')
+      record_backup('solectrus-backup-20260508-110000.tar')
 
       backup = described_class.find!('solectrus-backup-20260508-110000.tar')
       expect(backup.influxdb_image).to be_nil
@@ -176,27 +173,26 @@ RSpec.describe BackupRepository do
   end
 
   describe '.error_message' do
-    it 'returns nil when no error.txt exists' do
+    it 'returns nil when no error was recorded' do
       expect(described_class.error_message).to be_nil
     end
 
-    it 'returns the trimmed contents of error.txt' do
-      FileUtils.mkdir_p(backups_dir)
-      File.write(File.join(backups_dir, 'error.txt'), "Disk full\n")
+    it 'returns the message captured for the backup runner' do
+      RunnerLog.record_error!(:backup, 'Disk full')
 
       expect(described_class.error_message).to eq('Disk full')
     end
 
-    it 'returns nil when error.txt is empty' do
-      FileUtils.mkdir_p(backups_dir)
-      File.write(File.join(backups_dir, 'error.txt'), '')
+    it 'returns the message captured for the restore runner when asked' do
+      RunnerLog.record_error!(:restore, 'Restore aborted')
 
-      expect(described_class.error_message).to be_nil
+      expect(described_class.error_message(RestoreRunner::ERROR_FILENAME)).to eq('Restore aborted')
     end
   end
 
   describe '.clear_error!' do
-    it 'removes error.txt' do
+    it 'removes error.txt and clears the RunnerLog row' do
+      RunnerLog.record_error!(:backup, 'oops')
       FileUtils.mkdir_p(backups_dir)
       path = File.join(backups_dir, 'error.txt')
       File.write(path, 'oops')
@@ -204,10 +200,31 @@ RSpec.describe BackupRepository do
       described_class.clear_error!
 
       expect(File).not_to exist(path)
+      expect(described_class.error_message).to be_nil
     end
 
-    it 'is a no-op when no error.txt exists' do
+    it 'is a no-op when no error exists' do
       expect { described_class.clear_error! }.not_to raise_error
+    end
+  end
+
+  describe 'destination switching' do
+    it 'preserves Backup rows when the destination changes' do
+      record_backup('solectrus-backup-20260508-110000.tar')
+
+      switch_destination('external', external_path: '/mnt/x')
+
+      expect(described_class.all).to be_empty
+      expect(Backup.where(destination: 'local').count).to eq(1)
+    end
+
+    it 'reveals the local list again when the destination is switched back' do
+      record_backup('solectrus-backup-20260508-110000.tar')
+      switch_destination('external', external_path: '/mnt/x')
+      expect(described_class.all).to be_empty
+
+      switch_destination('local')
+      expect(described_class.all.map(&:filename)).to contain_exactly('solectrus-backup-20260508-110000.tar')
     end
   end
 
@@ -234,32 +251,46 @@ RSpec.describe BackupRepository do
     end
   end
 
-  describe '.local?, .external?, .s3?, .remote?' do
-    it 'classifies the configured destination' do
+  describe '.s3?, .remote?' do
+    it 'classifies local as neither s3 nor remote' do
       with_config_yaml('backup' => { 'destination' => 'local' })
-      expect([described_class.local?, described_class.external?, described_class.s3?, described_class.remote?])
-        .to eq([true, false, false, false])
+      expect([described_class.s3?, described_class.remote?]).to eq([false, false])
     end
 
-    it 'flags external as remote' do
+    it 'flags external as remote but not s3' do
       with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/x' })
-      expect([described_class.local?, described_class.external?, described_class.s3?, described_class.remote?])
-        .to eq([false, true, false, true])
+      expect([described_class.s3?, described_class.remote?]).to eq([false, true])
     end
 
-    it 'flags s3 as remote' do
+    it 'flags s3 as both' do
       with_config_yaml('backup' => { 'destination' => 's3', 'aws_bucket' => 'b',
                                      'aws_access_key_id' => 'k', 'aws_secret_access_key' => 's', 'aws_region' => 'eu' })
-      expect([described_class.local?, described_class.external?, described_class.s3?, described_class.remote?])
-        .to eq([false, false, true, true])
+      expect([described_class.s3?, described_class.remote?]).to eq([true, true])
     end
   end
 
-  def write_backup(filename, archive: { 'helios/config.yaml' => 'system: {}' }, mtime: nil)
+  # Drops a tar on disk *and* records the matching Backup row via the
+  # production code path, so the spec exercises the same insert that
+  # detect_completion! triggers in production.
+  def record_backup(filename, archive: { 'helios/config.yaml' => 'system: {}' })
+    write_tar(filename, archive: archive)
+    described_class.record_backup!(filename)
+  end
+
+  def write_tar(filename, archive: { 'helios/config.yaml' => 'system: {}' })
     FileUtils.mkdir_p(backups_dir)
-    path = File.join(backups_dir, filename)
-    File.binwrite(path, tar_archive(archive))
-    File.utime(mtime.to_i, mtime.to_i, path) if mtime
+    File.binwrite(File.join(backups_dir, filename), tar_archive(archive))
+  end
+
+  # Writes a minimal config.yaml at the existing data_path and clears the
+  # Configuration cache so the new destination is observable immediately —
+  # the alternative (`with_config_yaml`) swaps data_path to a fresh tmpdir,
+  # which would orphan the recorded backups under the old path.
+  def switch_destination(destination, **fields)
+    FileUtils.mkdir_p(File.join(data_path, 'helios'))
+    File.write(Configuration.path,
+               YAML.dump('backup' => { 'destination' => destination, **fields.transform_keys(&:to_s) }))
+    Current.reset
   end
 
   def tar_archive(entries)

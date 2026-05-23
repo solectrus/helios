@@ -1,17 +1,24 @@
 require 'rubygems/package'
 
-# Facade over the configured backup storage (local filesystem or an external
-# host mount). The storage choice is read from `config.yaml.backup.destination`
-# at every call so a freshly-saved survey applies immediately without a HELIOS
-# restart. All filesystem-aware operations are delegated to the matching
-# storage adapter (`Local` or `External`); tar parsing and the data classes
-# live here because they are storage-agnostic.
+# Facade over the configured backup storage (local filesystem, an external
+# host mount, or S3). The storage choice is read from
+# `config.yaml.backup.destination` at every call so a freshly-saved survey
+# applies immediately without a HELIOS restart. All destination-aware
+# operations are delegated to the matching adapter (Local / External / S3);
+# tar parsing and the data classes live here because they are
+# storage-agnostic.
+#
+# Backup rows are written exactly once when a detached run completes —
+# never by retroactive filesystem/S3 scans — and removed only by explicit
+# destroy or prune. Destination switches therefore preserve the previous
+# list: a user who moves local → S3 → local sees the local list again as
+# soon as the destination is switched back.
 class BackupRepository
   class NotFound < StandardError; end
 
-  # Raised when a storage operation (e.g. an external docker:cli sidecar
-  # call) fails. The message carries the underlying tool output so the
-  # controller can surface it.
+  # Raised when a destination IO operation (e.g. a sidecar `rm`) fails.
+  # The message carries the underlying tool output so the controller can
+  # surface it.
   class Error < StandardError; end
 
   MAX_BACKUPS = 5
@@ -32,34 +39,22 @@ class BackupRepository
   ArchiveContents = Data.define(:entries, :config)
   EMPTY_ARCHIVE = ArchiveContents.new(entries: [], config: nil).freeze
 
-  Backup = Data.define(:filename, :bytes, :created_at, :files, :influxdb_image, :postgresql_image) do
-    def in_progress? = false
-
-    def to_param = ::File.basename(filename, '.tar')
-
-    def postgresql_bytes
-      entry_bytes(POSTGRESQL_ENTRY_PATTERN)
-    end
-
-    def influxdb_bytes
-      entry_bytes(INFLUXDB_ENTRY_PATTERN)
-    end
-
-    private
-
-    def entry_bytes(pattern)
-      files.find { |entry| entry.name.match?(pattern) }&.bytes
-    end
-  end
-
-  InProgress = Data.define(:started_at, :filename) do
-    def in_progress? = true
-  end
+  InProgress = Data.define(:started_at, :filename)
 
   class << self
-    delegate :directory, :host_directory, :all, :find!, :destroy!,
-             :error_message, :clear_error!, :prune!, :read_archive_for,
-             :download, :mark_pending!, :index_fresh?, to: :storage
+    delegate :all, :directory, :host_directory, :destroy!, :prune!, :download,
+             :mark_pending!, :detect_completion!, :record_backup!,
+             :clear_error!, :read_archive_for, to: :storage
+
+    def find!(filename)
+      raise NotFound unless valid_filename?(filename)
+
+      storage.find!(filename)
+    end
+
+    def error_message(filename = ERROR_FILENAME)
+      RunnerLog.message_for(RunnerLog.kind_for(filename))
+    end
 
     def valid_filename?(filename)
       filename.to_s.match?(FILENAME_PATTERN)
@@ -67,9 +62,9 @@ class BackupRepository
 
     # The active storage adapter, picked from configuration at every call.
     # Survey changes therefore take effect immediately, without restarting
-    # HELIOS — the external and S3 adapters route every IO through a
-    # short-lived sidecar, so they do not depend on any HELIOS bind-mount
-    # that would only refresh on container recreation.
+    # HELIOS — external and S3 route every IO through a short-lived
+    # sidecar, so they do not depend on any HELIOS bind-mount that would
+    # only refresh on container recreation.
     def storage
       case destination
       when 'external' then External
@@ -82,33 +77,11 @@ class BackupRepository
       Configuration.current.backup.destination.to_s.presence || ConfigSchema::BACKUP_DEFAULT_DESTINATION
     end
 
-    def local?
-      destination == 'local'
-    end
+    def s3? = destination == 's3'
 
-    def external?
-      destination == 'external'
-    end
-
-    def s3?
-      destination == 's3'
-    end
-
-    # True when the active destination is not the locally mounted backups
-    # directory — i.e. when the destination is reached only through a
-    # short-lived sidecar (external mount, S3). Used by callers that need
-    # to mark a detached run as pending or reject local-only operations.
-    def remote?
-      !local?
-    end
-
-    # Drops the cached index so the next /backups render rebuilds it from
-    # scratch. Called when the destination survey is saved: a changed
-    # destination, bucket or set of credentials must take effect at once,
-    # and cache_fresh? cannot by itself detect a credentials-only change.
-    def reset_index!
-      Index.delete!
-    end
+    # True when the active destination is reached only through a short-lived
+    # sidecar (external mount, S3) — never the locally mounted backups dir.
+    def remote? = destination != 'local'
 
     # AWS credential `-e` docker args forwarded to the detached runners'
     # outer docker:cli container, or [] for non-S3 destinations — keeps
@@ -123,9 +96,19 @@ class BackupRepository
       s3? ? S3.s3_dir_uri : ''
     end
 
-    # Reads a tar at an arbitrary local path. Used by `BackupUploader` for
-    # validating uploaded tempfiles (which always sit inside the HELIOS
-    # container) and by the local adapter for its stored archives.
+    # Parses the filename's embedded timestamp as the backup's `created_at`.
+    # The filename is produced by BackupRunner with Time.zone, so reading
+    # it back as a Time.zone time is consistent end-to-end. Returns nil
+    # when the filename does not match the pattern.
+    def created_at_from(filename)
+      match = filename.to_s.match(FILENAME_PATTERN)
+      return nil unless match
+
+      Time.zone.strptime("#{match[1]}-#{match[2]}", '%Y%m%d-%H%M%S')
+    rescue ArgumentError
+      nil
+    end
+
     def read_archive(path)
       ::File.open(path, 'rb') do |io|
         parse_tar_stream(io)
@@ -134,10 +117,8 @@ class BackupRepository
       EMPTY_ARCHIVE
     end
 
-    # Walks a HELIOS backup tar from an IO, capturing every entry plus the
-    # parsed `helios/config.yaml`. Shared between local file IO and the
-    # external adapter's `docker run cat` pipe — TarReader seeks past file
-    # bodies, so this stays cheap even for multi-GB backups.
+    # TarReader seeks past file bodies, so this stays cheap even for multi-GB
+    # backups — only the inner helios/config.yaml is actually read.
     def parse_tar_stream(io)
       entries = []
       config = nil
@@ -155,8 +136,6 @@ class BackupRepository
       ArchiveContents.new(entries: entries, config: config)
     end
 
-    # The configured InfluxDB / PostgreSQL image tags from the backed-up
-    # `helios/config.yaml`, e.g. "influxdb:2.9-alpine".
     def images_from_config(config)
       { influxdb: config&.dig('influxdb', 'image').presence,
         postgresql: config&.dig('postgresql', 'image').presence }

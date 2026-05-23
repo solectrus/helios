@@ -160,6 +160,7 @@ de:
       existing_title: 'Vorhandene Sicherungen'
       existing_empty: 'Noch keine Sicherungen vorhanden.'
       upload: 'Hochladen'
+      upload_unavailable_remote: 'Nur bei Sicherungsziel „Lokal“ möglich. Stelle es dafür vorübergehend um.'
       download_existing: 'Herunterladen'
       restore_existing: 'Wiederherstellen'
       restore_confirm: 'Deine aktuellen Daten sowie die Konfiguration werden überschrieben und gehen somit verloren.<br><br>Danach ist SOLECTRUS wieder auf dem Stand vom <strong>%{date}, %{time}</strong>.'

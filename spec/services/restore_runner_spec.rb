@@ -33,13 +33,12 @@ RSpec.describe RestoreRunner do
     )
 
     allow(BackupRepository).to receive(:find!).with(filename).and_return(
-      BackupRepository::Backup.new(
+      Backup.new(
         filename:,
         bytes: 7,
         created_at: Time.zone.local(2026, 5, 8, 11, 0, 0),
+        destination: 'local',
         files: [],
-        influxdb_image: nil,
-        postgresql_image: nil,
       ),
     )
     allow(Export::Builder).to receive(:new).and_return(instance_double(Export::Builder, write!: nil))
@@ -304,16 +303,7 @@ RSpec.describe RestoreRunner do
         expect(result).to be_a(BackupRepository::InProgress)
         expect(result.filename).to eq(filename)
         expect(result.started_at).to eq(Time.zone.parse('2026-05-08T14:30:00Z'))
-        expect(result.in_progress?).to be(true)
       end
-    end
-  end
-
-  describe '.error_message' do
-    it 'returns the restore error text' do
-      File.write(File.join(data_path, 'helios', 'backups', 'restore-error.txt'), "InfluxDB restore failed\n")
-
-      expect(described_class.error_message).to eq('InfluxDB restore failed')
     end
   end
 

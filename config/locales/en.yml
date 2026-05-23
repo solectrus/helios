@@ -184,6 +184,7 @@ en:
       existing_title: 'Existing backups'
       existing_empty: 'No backups yet.'
       upload: 'Upload'
+      upload_unavailable_remote: 'Only available when the destination is set to “Local”. Switch it temporarily.'
       download_existing: 'Download'
       restore_existing: 'Restore'
       restore_confirm: 'Your current data and configuration will be overwritten and thus lost.<br><br>SOLECTRUS will then be back at the state from <strong>%{date}, %{time}</strong>.'

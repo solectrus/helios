@@ -51,15 +51,16 @@ RSpec.describe BackupRunner, :docker_stack do
 
       described_class.start
       wait_for_backup_completion!
+      BackupRepository.detect_completion!
 
-      expect(BackupRepository::S3.error_message).to be_nil,
-                                                    "backup failed: #{BackupRepository::S3.error_message}"
+      expect(BackupRepository.error_message).to be_nil,
+                                                "backup failed: #{BackupRepository.error_message}"
 
       backups = BackupRepository::S3.all
       aggregate_failures do
         expect(backups.size).to eq(1)
         expect(s3_object_keys(bucket)).to contain_exactly("#{prefix}/#{backups.first.filename}")
-        expect(backups.first.files.map(&:name)).to include(
+        expect(backups.first.files.pluck('name')).to include(
           'helios/config.yaml',
           a_string_matching(/solectrus-postgresql-backup/),
           a_string_matching(/solectrus-influxdb-backup/),

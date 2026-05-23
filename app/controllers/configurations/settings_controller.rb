@@ -15,8 +15,6 @@ module Configurations
     before_action :set_configuration
     before_action :validate_setting
     before_action :require_turbo_frame, only: %i[new edit]
-    after_action :reset_backup_index, only: %i[create update],
-                                      if: -> { setting == 'backup' && @setting_changed }
 
     def new
       if sensor_setting?
@@ -98,15 +96,6 @@ module Configurations
       advanced_path
     end
 
-    # A backup destination survey that *changed* something must take effect
-    # on /backups at once: drop the cached index so the next render rebuilds
-    # it. Gated on @setting_changed so a survey saved unchanged does not
-    # trigger a needless full S3 re-listing. The reset is necessary because
-    # cache_fresh? cannot detect a credentials-only change on its own.
-    def reset_backup_index
-      BackupRepository.reset_index!
-    end
-
     def save_setting
       data = setting_params
       return unless data
@@ -116,7 +105,7 @@ module Configurations
         @configuration.update_sensor(sensor_name, data)
         @configuration.auto_enable_senec_sensors! if data['source'] == 'senec'
       else
-        @setting_changed = persist_setting(data)
+        persist_setting(data)
       end
     end
 
@@ -125,7 +114,6 @@ module Configurations
     # (e.g. reverse_proxy's trusted_proxy_ranges) live in a different section,
     # so clearing this one never touches them — Configuration#update routes
     # them to their own section regardless of the toggle.
-    # Returns whether the section's stored data actually changed.
     def persist_setting(data)
       strip_theme_sentinel!(data)
 

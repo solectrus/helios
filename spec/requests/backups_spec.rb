@@ -29,29 +29,14 @@ RSpec.describe 'Backups', :with_admin_password do
       expect(response.body).not_to include('helios/config.yaml')
     end
 
-    it 'defers a remote destination behind a loading spinner' do
+    it 'renders the page synchronously for a remote destination — the DB-backed listing needs no sidecar' do
       with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/nas' })
 
       get backups_path
 
       aggregate_failures do
         expect(response).to have_http_status(:ok)
-        expect(response.body).to include(I18n.t('backups.index.loading'))
-        expect(response.body).to include('loading loading-spinner loading-lg')
-        # the actual list and create section are deferred to the lazy frame
-        expect(response.body).not_to include(I18n.t('backups.index.note'))
-      end
-    end
-
-    it 'renders the list inside the backups-content frame without deferring' do
-      with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/nas' })
-      allow(BackupRepository).to receive_messages(all: [], error_message: nil)
-
-      get backups_path, headers: { 'Turbo-Frame' => 'backups-content' }
-
-      aggregate_failures do
         expect(response.body).to include(I18n.t('backups.index.note'))
-        expect(response.body).not_to include(I18n.t('backups.index.loading'))
       end
     end
 
@@ -206,10 +191,8 @@ RSpec.describe 'Backups', :with_admin_password do
       expect(status_bar).not_to match(%r{<form[^>]*action="/services/batch"})
     end
 
-    it 'shows a failure alert when error.txt exists' do
-      backups_dir = File.join(data_path, 'helios', 'backups')
-      FileUtils.mkdir_p(backups_dir)
-      File.write(File.join(backups_dir, 'error.txt'), 'PostgreSQL dump failed')
+    it 'shows a failure alert when a backup error was recorded' do
+      RunnerLog.record_error!(:backup, 'PostgreSQL dump failed')
 
       get backups_path
 
@@ -217,10 +200,8 @@ RSpec.describe 'Backups', :with_admin_password do
       expect(response.body).to include('role="alert"')
     end
 
-    it 'shows a restore failure alert when restore-error.txt exists' do
-      backups_dir = File.join(data_path, 'helios', 'backups')
-      FileUtils.mkdir_p(backups_dir)
-      File.write(File.join(backups_dir, 'restore-error.txt'), 'InfluxDB restore failed')
+    it 'shows a restore failure alert when a restore error was recorded' do
+      RunnerLog.record_error!(:restore, 'InfluxDB restore failed')
 
       get backups_path
 
@@ -374,6 +355,18 @@ RSpec.describe 'Backups', :with_admin_password do
       document = Capybara.string(response.body)
       expect(document).to have_button(I18n.t('backups.index.upload'), disabled: true)
     end
+
+    it 'disables the upload button with a tooltip for a remote destination' do
+      with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/nas' })
+
+      get backups_path
+
+      document = Capybara.string(response.body)
+      aggregate_failures do
+        expect(document).to have_button(I18n.t('backups.index.upload'), disabled: true)
+        expect(response.body).to include(I18n.t('backups.index.upload_unavailable_remote'))
+      end
+    end
   end
 
   describe 'DELETE /backups/failure' do
@@ -451,6 +444,8 @@ RSpec.describe 'Backups', :with_admin_password do
     # regardless of when the test runs and of the host TZ.
     time = Time.zone.strptime(filename[/\d{8}-\d{6}/], '%Y%m%d-%H%M%S').to_time
     File.utime(time, time, path)
+
+    BackupRepository.record_backup!(filename)
   end
 
   # config.yaml as stored inside the backup archive — the source of truth for

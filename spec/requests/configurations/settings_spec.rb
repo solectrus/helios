@@ -198,24 +198,27 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(Configuration.current.backup.destination).to eq('local')
     end
 
-    it 'drops the cached backup index when the destination actually changed' do
+    it 'preserves existing Backup rows when the destination changes' do
       Configuration.current.update('backup', { 'destination' => 'local' })
-      BackupRepository::Index.write('destination' => 'local', 'backups' => [])
+      Backup.create!(filename: 'solectrus-backup-20260508-110000.tar', bytes: 100,
+                     created_at: Time.zone.parse('2026-05-08 11:00:00'), destination: 'local')
 
       patch configuration_setting_path(setting: 'backup', name: 'backup'),
             params: { data: { 'destination' => 'external', 'external_path' => '/mnt/nas' }.to_json }
 
-      expect(BackupRepository::Index.read).to be_nil
+      expect(Backup.where(destination: 'local').count).to eq(1)
     end
 
-    it 'keeps the cached backup index when the survey is saved unchanged' do
+    it 'rescopes the visible list to the new destination on switch' do
       Configuration.current.update('backup', { 'destination' => 'local' })
-      BackupRepository::Index.write('destination' => 'local', 'backups' => [])
+      Backup.create!(filename: 'solectrus-backup-20260508-110000.tar', bytes: 100,
+                     created_at: Time.zone.parse('2026-05-08 11:00:00'), destination: 'local')
 
       patch configuration_setting_path(setting: 'backup', name: 'backup'),
-            params: { data: { 'destination' => 'local' }.to_json }
+            params: { data: { 'destination' => 'external', 'external_path' => '/mnt/nas' }.to_json }
 
-      expect(BackupRepository::Index.read).to be_present
+      expect(BackupRepository.all).to be_empty
+      expect(Backup.where(destination: 'local').count).to eq(1)
     end
   end
 

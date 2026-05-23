@@ -254,7 +254,6 @@ RSpec.describe BackupRunner do
         expect(result).to be_a(BackupRepository::InProgress)
         expect(result.filename).to eq('solectrus-backup-20260508-143000.tar')
         expect(result.started_at).to eq(Time.zone.parse('2026-05-08T14:30:00Z'))
-        expect(result.in_progress?).to be(true)
       end
     end
   end

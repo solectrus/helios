@@ -13,10 +13,6 @@ class RestoreRunner < DetachedRunner
   SCRIPT = ::File.read(::File.join(__dir__, 'restore_runner', 'restore.sh')).freeze
 
   class << self
-    def error_message
-      BackupRepository.error_message(ERROR_FILENAME)
-    end
-
     def clear_error!
       BackupRepository.clear_error!(ERROR_FILENAME)
     end

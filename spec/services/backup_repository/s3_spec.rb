@@ -4,6 +4,7 @@ RSpec.describe BackupRepository::S3 do
   let(:data_path) { Dir.mktmpdir }
   let(:host_data_path) { '/host/data' }
   let(:bucket) { 'my-backups' }
+  let(:staging_dir) { File.join(data_path, 'helios', 'backups-staging') }
 
   before do
     allow(Rails.configuration).to receive(:data_path).and_return(data_path)
@@ -21,6 +22,7 @@ RSpec.describe BackupRepository::S3 do
 
     allow(Rails).to receive(:cache).and_return(ActiveSupport::Cache::MemoryStore.new)
     allow(BackupRunner).to receive(:in_progress).and_return(nil)
+    allow(RestoreRunner).to receive(:in_progress).and_return(nil)
   end
 
   after { FileUtils.remove_entry(data_path) }
@@ -70,53 +72,28 @@ RSpec.describe BackupRepository::S3 do
   end
 
   describe '.all' do
-    it 'returns the cached backups, newest first, without hitting docker' do
-      write_index(
-        'bucket' => bucket, 'prefix' => 'solectrus', 'endpoint_url' => nil,
-        'backups' => [
-          backup_entry('solectrus-backup-20260508-100000.tar', bytes: 1024, mtime: '2026-05-08T10:00:00Z'),
-          backup_entry('solectrus-backup-20260508-120000.tar', bytes: 2048, mtime: '2026-05-08T12:00:00Z'),
-        ]
-      )
+    it 'returns DB rows scoped to the current bucket+prefix without hitting docker' do
+      create_row('solectrus-backup-20260508-100000.tar')
+      create_row('solectrus-backup-20260508-120000.tar')
       allow(Open3).to receive(:capture2)
       allow(Open3).to receive(:capture2e)
 
       filenames = described_class.all.map(&:filename)
 
-      expect(filenames).to contain_exactly(
-        'solectrus-backup-20260508-100000.tar',
-        'solectrus-backup-20260508-120000.tar',
-      )
+      expect(filenames).to eq(%w[solectrus-backup-20260508-120000.tar solectrus-backup-20260508-100000.tar])
       expect(Open3).not_to have_received(:capture2)
       expect(Open3).not_to have_received(:capture2e)
     end
 
-    it 'rebuilds the index when the cached bucket no longer matches' do
-      write_index('bucket' => 'other-bucket', 'prefix' => 'solectrus', 'endpoint_url' => nil, 'backups' => [])
-      stub_list([obj('solectrus/solectrus-backup-20260508-100000.tar', 1024, '2026-05-08T10:00:00+00:00')])
-      stub_download({ 'solectrus-backup-20260508-100000.tar' => sample_tar })
+    it 'does not surface rows recorded for a different bucket' do
+      create_row('solectrus-backup-20260508-100000.tar', bucket: 'other-bucket')
 
-      described_class.all
-
-      expect(read_index['bucket']).to eq(bucket)
-    end
-
-    it 'rebuilds the index when a cached entry has empty files (a failed earlier read)' do
-      write_index(
-        'bucket' => bucket, 'prefix' => 'solectrus', 'endpoint_url' => nil,
-        'backups' => [backup_entry('solectrus-backup-20260508-100000.tar', files: [])]
-      )
-      stub_list([obj('solectrus/solectrus-backup-20260508-100000.tar', 1024, '2026-05-08T10:00:00+00:00')])
-      stub_download({ 'solectrus-backup-20260508-100000.tar' => sample_tar })
-
-      described_class.all
-
-      expect(read_index['backups']).to all(include('files' => be_present))
+      expect(described_class.all).to be_empty
     end
 
     it 'returns an empty list when destination is not configured' do
       with_config_yaml('backup' => { 'destination' => 's3' })
-      expect(described_class.all).to eq([])
+      expect(described_class.all).to be_empty
     end
   end
 
@@ -125,36 +102,28 @@ RSpec.describe BackupRepository::S3 do
       expect { described_class.find!('garbage') }.to raise_error(BackupRepository::NotFound)
     end
 
-    it 'raises NotFound when the filename is not in the index' do
-      write_index('bucket' => bucket, 'prefix' => 'solectrus', 'endpoint_url' => nil, 'backups' => [])
+    it 'raises NotFound when no row exists for the filename' do
       expect { described_class.find!('solectrus-backup-20260508-100000.tar') }
         .to raise_error(BackupRepository::NotFound)
     end
 
-    it 'returns the cached Backup when the filename is in the index' do
-      write_index(
-        'bucket' => bucket, 'prefix' => 'solectrus', 'endpoint_url' => nil,
-        'backups' => [backup_entry('solectrus-backup-20260508-100000.tar', bytes: 1024, mtime: '2026-05-08T10:00:00Z')]
-      )
+    it 'returns the Backup row when the filename matches' do
+      create_row('solectrus-backup-20260508-100000.tar')
 
       backup = described_class.find!('solectrus-backup-20260508-100000.tar')
       expect(backup.filename).to eq('solectrus-backup-20260508-100000.tar')
-      expect(backup.bytes).to eq(1024)
     end
   end
 
   describe '.destroy!' do
-    it 'runs `aws s3 rm` via sidecar and removes the entry from the index' do
-      write_index(
-        'bucket' => bucket, 'prefix' => 'solectrus', 'endpoint_url' => nil,
-        'backups' => [backup_entry('solectrus-backup-20260508-100000.tar')]
-      )
+    it 'runs `aws s3 rm` via sidecar and removes the DB row' do
+      create_row('solectrus-backup-20260508-100000.tar')
       stub_capture2e(success: true)
 
       described_class.destroy!('solectrus-backup-20260508-100000.tar')
 
       expect(Open3).to have_received(:capture2e).with(*captured_destroy_args)
-      expect(read_index['backups']).to be_empty
+      expect(Backup.where(filename: 'solectrus-backup-20260508-100000.tar')).not_to exist
     end
 
     def captured_destroy_args
@@ -169,41 +138,75 @@ RSpec.describe BackupRepository::S3 do
       ]
     end
 
-    it 'raises BackupRepository::Error and leaves the index untouched when the sidecar fails' do
-      write_index(
-        'bucket' => bucket, 'prefix' => 'solectrus', 'endpoint_url' => nil,
-        'backups' => [backup_entry('solectrus-backup-20260508-100000.tar')]
-      )
+    it 'raises BackupRepository::Error and leaves the DB row in place when the sidecar fails' do
+      create_row('solectrus-backup-20260508-100000.tar')
       stub_capture2e(success: false, output: 'AccessDenied')
 
       expect { described_class.destroy!('solectrus-backup-20260508-100000.tar') }
         .to raise_error(BackupRepository::Error, /AccessDenied/)
-      expect(read_index['backups'].size).to eq(1)
+      expect(Backup.where(filename: 'solectrus-backup-20260508-100000.tar')).to exist
     end
 
-    it 'raises NotFound when the filename is not in the index' do
-      write_index('bucket' => bucket, 'prefix' => 'solectrus', 'endpoint_url' => nil, 'backups' => [])
-
+    it 'raises NotFound when no row exists' do
       expect { described_class.destroy!('solectrus-backup-20260508-100000.tar') }
         .to raise_error(BackupRepository::NotFound)
     end
   end
 
   describe '.error_message' do
-    it 'returns the cached error_message from the index' do
-      write_index('bucket' => bucket, 'prefix' => 'solectrus', 'endpoint_url' => nil,
-                  'backups' => [], 'error_message' => 'disk full')
-
-      expect(described_class.error_message).to eq('disk full')
+    it 'reads the backup runner error from RunnerLog' do
+      RunnerLog.record_error!(:backup, 'Disk full')
+      expect(BackupRepository.error_message).to eq('Disk full')
     end
 
-    it 'returns nil when destination is not configured' do
-      with_config_yaml('backup' => { 'destination' => 's3' })
-      expect(described_class.error_message).to be_nil
+    it 'returns nil when no error was recorded' do
+      expect(BackupRepository.error_message).to be_nil
+    end
+  end
+
+  describe '.record_backup!' do
+    let(:filename) { 'solectrus-backup-20260508-100000.tar' }
+
+    it 'downloads the tar to staging, parses it locally, then inserts a row and clears staging' do
+      tar_bytes = sample_tar(influxdb: 'influxdb:2.9-alpine', postgresql: 'postgres:18-alpine')
+      stub_staging_download(filename => tar_bytes)
+
+      described_class.record_backup!(filename)
+
+      backup = described_class.find!(filename)
+      expect(backup.bytes).to eq(tar_bytes.bytesize)
+      expect(backup.influxdb_image).to eq('influxdb:2.9-alpine')
+      expect(backup.postgresql_image).to eq('postgres:18-alpine')
+      expect(File).not_to exist(File.join(described_class.directory, filename))
+    end
+
+    it 'records the destination coordinates so a bucket change hides the row' do
+      stub_staging_download(filename => sample_tar)
+
+      described_class.record_backup!(filename)
+
+      row = Backup.find_by(filename: filename)
+      expect(row.destination).to eq('s3')
+      expect(row.s3_bucket).to eq(bucket)
+      expect(row.s3_prefix).to eq('solectrus')
+    end
+
+    it 'rejects filenames that do not match the canonical pattern' do
+      expect { described_class.record_backup!('garbage.tar') }.to raise_error(BackupRepository::NotFound)
+    end
+
+    it 'is a no-op when the download sidecar fails' do
+      stub_capture2e(success: false, output: 'AccessDenied')
+
+      expect { described_class.record_backup!(filename) }.not_to raise_error
+      expect(Backup.count).to eq(0)
+      expect(File).not_to exist(File.join(described_class.directory, filename))
     end
   end
 
   describe '.mark_pending! / .detect_completion!' do
+    let(:filename) { 'solectrus-backup-20260508-100000.tar' }
+
     it 'creates the pending marker only when the destination is ready' do
       described_class.mark_pending!
       expect(File).to exist(described_class.pending_marker_path)
@@ -215,192 +218,81 @@ RSpec.describe BackupRepository::S3 do
       expect(File).not_to exist(described_class.pending_marker_path)
     end
 
-    it 'refreshes the index and clears the marker once the backup is no longer in progress' do
-      FileUtils.mkdir_p(File.dirname(described_class.pending_marker_path))
-      FileUtils.touch(described_class.pending_marker_path)
-      stub_list([])
+    it 'inserts the Backup row when the expected tar is available in S3' do
+      described_class.mark_pending!(filename)
+      stub_capture2_sequence(
+        ['', success_status], # restore-error.txt read
+        ['', success_status], # error.txt read
+      )
+      stub_staging_download(filename => sample_tar)
 
       described_class.detect_completion!
 
-      expect(described_class.pending_refresh?).to be(false)
+      expect(Backup.find_by(filename: filename)).to be_present
+      expect(File).not_to exist(described_class.pending_marker_path)
     end
 
-    it 'records a failure when a pending backup never appeared and left no error' do
-      described_class.mark_pending!('solectrus-backup-20260508-100000.tar')
-      stub_list([])
+    it 'captures error.txt into RunnerLog when the run failed' do
+      described_class.mark_pending!(filename)
+      stub_capture2_sequence(
+        ['', success_status],          # restore-error.txt empty
+        ['Disk full', success_status], # error.txt
+      )
+      stub_capture2e(success: true)
 
       described_class.detect_completion!
 
-      expect(read_index['error_message']).to eq(I18n.t('backups.runner.errors.incomplete'))
+      expect(RunnerLog.message_for(:backup)).to eq('Disk full')
+      expect(Backup.count).to eq(0)
     end
-  end
 
-  describe '.refresh!' do
-    it 'lists the bucket and parses backups via a single bulk download' do
-      stub_list([
-                  obj('solectrus/solectrus-backup-20260508-100000.tar', 1024, '2026-05-08T10:00:00+00:00'),
-                  obj('solectrus/solectrus-backup-20260508-120000.tar', 2048, '2026-05-08T12:00:00+00:00'),
-                ])
-      stub_download(
-        'solectrus-backup-20260508-100000.tar' => sample_tar,
-        'solectrus-backup-20260508-120000.tar' => sample_tar(influxdb: 'influxdb:2.9-alpine'),
+    it 'records "incomplete" when no tar and no error are present' do
+      described_class.mark_pending!(filename)
+      stub_capture2_sequence(
+        ['', success_status], # restore-error.txt
+        ['', success_status], # error.txt
       )
+      stub_capture2e(success: false, output: 'NoSuchKey') # download_to_staging! fails → record_backup! returns nil
 
-      described_class.refresh!
+      described_class.detect_completion!
 
-      index = read_index
-      aggregate_failures do
-        expect(index['backups'].pluck('filename')).to eq(
-          ['solectrus-backup-20260508-120000.tar', 'solectrus-backup-20260508-100000.tar'],
-        )
-        expect(index['backups'].first['influxdb_image']).to eq('influxdb:2.9-alpine')
-        expect(index['backups'].first['files'].pluck('name')).to include('helios/config.yaml')
-        expect(index['bucket']).to eq(bucket)
-        expect(index['prefix']).to eq('solectrus')
-      end
-    end
-
-    it 'downloads every wanted object in one `aws s3 cp` sidecar' do
-      stub_list([
-                  obj('solectrus/solectrus-backup-20260508-100000.tar', 1024, '2026-05-08T10:00:00+00:00'),
-                  obj('solectrus/solectrus-backup-20260508-120000.tar', 2048, '2026-05-08T12:00:00+00:00'),
-                ])
-      stub_download(
-        'solectrus-backup-20260508-100000.tar' => sample_tar,
-        'solectrus-backup-20260508-120000.tar' => sample_tar,
-      )
-
-      described_class.refresh!
-
-      expect(Open3).to have_received(:capture2e).once
-    end
-
-    it 'deletes the index when destination is not ready' do
-      File.write(BackupRepository::Index.path, '{"bucket":"old"}')
-      with_config_yaml('backup' => { 'destination' => 's3' })
-
-      described_class.refresh!
-
-      expect(File).not_to exist(BackupRepository::Index.path)
-    end
-
-    it 'reads the error file from the bulk download' do
-      stub_list([
-                  obj('solectrus/solectrus-backup-20260508-100000.tar', 1024, '2026-05-08T10:00:00+00:00'),
-                  obj('solectrus/error.txt', 10, '2026-05-08T13:00:00+00:00'),
-                ])
-      stub_download(
-        'solectrus-backup-20260508-100000.tar' => sample_tar,
-        'error.txt' => "Disk full\n",
-      )
-
-      described_class.refresh!
-
-      expect(read_index['error_message']).to eq('Disk full')
-    end
-
-    it 'reuses a cached entry and bulk-downloads only the new backup' do
-      cached = 'solectrus-backup-20260508-100000.tar'
-      fresh = 'solectrus-backup-20260508-120000.tar'
-      write_index(
-        'bucket' => bucket, 'prefix' => 'solectrus', 'endpoint_url' => nil,
-        'backups' => [backup_entry(cached, bytes: 1024, mtime: '2026-05-08T10:00:00Z',
-                                           files: [{ 'name' => 'cached-marker', 'bytes' => 1 }])]
-      )
-      stub_list([
-                  obj("solectrus/#{cached}", 1024, '2026-05-08T10:00:00+00:00'),
-                  obj("solectrus/#{fresh}", 2048, '2026-05-08T12:00:00+00:00'),
-                ])
-      stub_download(fresh => sample_tar)
-
-      described_class.refresh!
-
-      backups = read_index['backups'].index_by { |entry| entry['filename'] }
-      aggregate_failures do
-        # the cached entry is kept verbatim — never re-downloaded or re-parsed
-        expect(backups[cached]['files']).to eq([{ 'name' => 'cached-marker', 'bytes' => 1 }])
-        # the new backup is parsed from the freshly downloaded tar
-        expect(backups[fresh]['files'].pluck('name')).to include('helios/config.yaml')
-      end
-    end
-
-    it 'keeps the existing index when the listing sidecar fails (a transient outage)' do
-      write_index(
-        'bucket' => bucket, 'prefix' => 'solectrus', 'endpoint_url' => nil,
-        'backups' => [backup_entry('solectrus-backup-20260508-100000.tar')]
-      )
-      stub_list([], success: false)
-
-      described_class.refresh!
-
-      expect(read_index['backups'].pluck('filename')).to eq(['solectrus-backup-20260508-100000.tar'])
-    end
-
-    it 'still writes the listing when the bulk download fails, leaving entries to heal later' do
-      stub_list([obj('solectrus/solectrus-backup-20260508-100000.tar', 1024, '2026-05-08T10:00:00+00:00')])
-      stub_download_failure
-
-      described_class.refresh!
-
-      entry = read_index['backups'].first
-      aggregate_failures do
-        expect(entry['filename']).to eq('solectrus-backup-20260508-100000.tar')
-        expect(entry['files']).to be_empty
-      end
+      expect(RunnerLog.message_for(:backup)).to eq(I18n.t('backups.runner.errors.incomplete'))
     end
   end
 
-  def write_index(data)
-    FileUtils.mkdir_p(File.dirname(BackupRepository::Index.path))
-    File.write(BackupRepository::Index.path, JSON.pretty_generate({ 'destination' => 's3' }.merge(data)))
+  def create_row(filename, bucket: self.bucket, prefix: 'solectrus', endpoint_url: nil)
+    Backup.create!(
+      filename: filename,
+      bytes: 1024,
+      created_at: BackupRepository.created_at_from(filename) || Time.current,
+      destination: 's3',
+      s3_bucket: bucket,
+      s3_prefix: prefix,
+      s3_endpoint_url: endpoint_url,
+      files: [{ 'name' => 'helios/config.yaml', 'bytes' => 10 }],
+    )
   end
 
-  def read_index
-    JSON.parse(File.read(BackupRepository::Index.path))
-  end
-
-  # `files` defaults to a non-empty list: an entry with empty files counts
-  # as a stale cache (see IndexedAdapter#index_complete?), so tests relying
-  # on a fresh cache need complete entries.
-  def backup_entry(filename, bytes: 1024, mtime: '2026-05-08T10:00:00Z',
-                   files: [{ 'name' => 'helios/config.yaml', 'bytes' => 10 }])
-    {
-      'filename' => filename,
-      'bytes' => bytes,
-      'mtime' => mtime,
-      'files' => files,
-      'influxdb_image' => nil,
-      'postgresql_image' => nil,
-    }
-  end
-
-  # A `list-objects-v2` output line as emitted by the run-1 listing script.
-  def obj(key, size, mtime)
-    "OBJ|#{key}|#{size}|#{mtime}"
-  end
-
-  # Stubs run 1 (the `list_objects` sidecar).
-  def stub_list(lines, success: true)
-    output = lines.empty? ? '' : "#{lines.join("\n")}\n"
-    allow(Open3).to receive(:capture2)
-      .and_return([output, instance_double(Process::Status, success?: success)])
-  end
-
-  # Stubs run 2 (the `aws s3 cp --recursive` sidecar): drops the given files
-  # into the staging dir, exactly where the real sidecar would, so HELIOS
-  # parses them for real.
-  def stub_download(files = {})
+  # Drops the given files into the staging dir, exactly where the real
+  # aws s3 cp sidecar would, so HELIOS parses them for real. Uses the
+  # live `described_class.directory` rather than a local lazy `let`,
+  # because `with_config_yaml` resets Rails.configuration.data_path
+  # mid-setup.
+  def stub_staging_download(files = {})
     status = instance_double(Process::Status, success?: true, exitstatus: 0)
     allow(Open3).to receive(:capture2e) do
+      FileUtils.mkdir_p(described_class.directory)
       files.each { |name, content| File.binwrite(File.join(described_class.directory, name), content) }
       ['', status]
     end
   end
 
-  # Stubs run 2 as a failed download (no files land in the staging dir).
-  def stub_download_failure
-    status = instance_double(Process::Status, success?: false, exitstatus: 1)
-    allow(Open3).to receive(:capture2e).and_return(['AccessDenied', status])
+  def stub_capture2_sequence(*responses)
+    allow(Open3).to receive(:capture2).and_return(*responses)
+  end
+
+  def success_status
+    instance_double(Process::Status, success?: true)
   end
 
   def stub_capture2e(success:, output: '')

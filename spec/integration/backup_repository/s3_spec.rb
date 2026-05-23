@@ -25,19 +25,19 @@ RSpec.describe BackupRepository::S3 do
     s3_create_bucket!(bucket)
   end
 
-  describe '.all / .refresh!' do
+  describe '.all' do
     it 'returns an empty list for an empty bucket' do
-      expect(described_class.all).to eq([])
+      expect(described_class.all).to be_empty
     end
 
-    it 'lists and fully parses a stored backup tar' do
-      s3_put_object!(bucket:, key: "#{prefix}/#{filename}", body: backup_tar)
+    it 'returns the recorded backups' do
+      put_and_record(filename)
 
       backups = described_class.all
       aggregate_failures do
         expect(backups.map(&:filename)).to eq([filename])
         expect(backups.first.bytes).to eq(backup_tar.bytesize)
-        expect(backups.first.files.map(&:name)).to include('helios/config.yaml')
+        expect(backups.first.files.pluck('name')).to include('helios/config.yaml')
         expect(backups.first.influxdb_image).to eq('influxdb:2-alpine')
         expect(backups.first.postgresql_image).to eq('postgres:18-alpine')
       end
@@ -46,16 +46,28 @@ RSpec.describe BackupRepository::S3 do
     it 'orders backups newest first' do
       older = 'solectrus-backup-20260508-100000.tar'
       newer = 'solectrus-backup-20260508-140000.tar'
-      s3_put_object!(bucket:, key: "#{prefix}/#{older}", body: backup_tar)
-      s3_put_object!(bucket:, key: "#{prefix}/#{newer}", body: backup_tar)
+      put_and_record(older)
+      put_and_record(newer)
 
       expect(described_class.all.map(&:filename)).to eq([newer, older])
     end
   end
 
+  describe '.record_backup!' do
+    it 'pulls the tar through aws-cli, parses it locally, and inserts a Backup row' do
+      s3_put_object!(bucket:, key: "#{prefix}/#{filename}", body: backup_tar)
+
+      described_class.record_backup!(filename)
+
+      backup = described_class.find!(filename)
+      expect(backup.bytes).to eq(backup_tar.bytesize)
+      expect(backup.influxdb_image).to eq('influxdb:2-alpine')
+    end
+  end
+
   describe '.find!' do
     it 'returns the stored backup' do
-      s3_put_object!(bucket:, key: "#{prefix}/#{filename}", body: backup_tar)
+      put_and_record(filename)
 
       expect(described_class.find!(filename).filename).to eq(filename)
     end
@@ -67,7 +79,7 @@ RSpec.describe BackupRepository::S3 do
 
   describe '.download' do
     it 'streams the stored tar back byte-for-byte' do
-      s3_put_object!(bucket:, key: "#{prefix}/#{filename}", body: backup_tar)
+      put_and_record(filename)
 
       streamed = +''
       described_class.download(filename) { |chunk| streamed << chunk }
@@ -76,15 +88,14 @@ RSpec.describe BackupRepository::S3 do
   end
 
   describe '.destroy!' do
-    it 'removes the object from the bucket and the index' do
-      s3_put_object!(bucket:, key: "#{prefix}/#{filename}", body: backup_tar)
-      described_class.all # warm the index
+    it 'removes the object from the bucket and the row from the DB' do
+      put_and_record(filename)
 
       described_class.destroy!(filename)
 
       aggregate_failures do
         expect(s3_object_keys(bucket)).not_to include("#{prefix}/#{filename}")
-        expect(described_class.all).to eq([])
+        expect(described_class.all).to be_empty
       end
     end
   end
@@ -95,8 +106,7 @@ RSpec.describe BackupRepository::S3 do
         solectrus-backup-20260508-100000.tar
         solectrus-backup-20260508-120000.tar
         solectrus-backup-20260508-140000.tar
-      ].each { |name| s3_put_object!(bucket:, key: "#{prefix}/#{name}", body: backup_tar) }
-      described_class.all # warm the index
+      ].each { |name| put_and_record(name) }
 
       described_class.prune!(keep: 1)
 
@@ -104,27 +114,23 @@ RSpec.describe BackupRepository::S3 do
     end
   end
 
-  describe '.error_message / .clear_error!' do
-    it 'reads the framed error file from the bucket' do
+  describe 'error file IO via real sidecar' do
+    it 'reads error.txt from the bucket via `aws s3 cp -`' do
       s3_put_object!(bucket:, key: "#{prefix}/error.txt", body: "Disk full\n")
 
-      expect(described_class.error_message).to eq('Disk full')
+      expect(described_class.send(:read_error_file)).to eq('Disk full')
     end
 
-    it 'clears the error file' do
+    it 'removes the object via `aws s3 rm`' do
       s3_put_object!(bucket:, key: "#{prefix}/error.txt", body: "Disk full\n")
-      described_class.all # warm the index
 
-      described_class.clear_error!
+      described_class.send(:remove_error_file!)
 
-      aggregate_failures do
-        expect(s3_object_keys(bucket)).not_to include("#{prefix}/error.txt")
-        expect(described_class.error_message).to be_nil
-      end
+      expect(s3_object_keys(bucket)).not_to include("#{prefix}/error.txt")
     end
   end
 
-  describe 'Backup::ConnectionTest#aws_credentials' do
+  describe 'Backups::ConnectionTest#aws_credentials' do
     it 'reports the bucket as reachable with valid credentials' do
       result = connection_test
       expect(result).to have_attributes(ok: true, reason: :s3_reachable)
@@ -145,6 +151,14 @@ RSpec.describe BackupRepository::S3 do
 
   def filename
     'solectrus-backup-20260508-120000.tar'
+  end
+
+  # Uploads a valid HELIOS backup tar to the bucket AND inserts the matching
+  # Backup row via the production path, mirroring what
+  # detect_completion! does after a real run.
+  def put_and_record(name)
+    s3_put_object!(bucket:, key: "#{prefix}/#{name}", body: backup_tar)
+    described_class.record_backup!(name)
   end
 
   def configure_s3!
@@ -182,7 +196,7 @@ RSpec.describe BackupRepository::S3 do
   end
 
   def connection_test(bucket: self.bucket, secret: s3_server.secret_key)
-    Backup::ConnectionTest.new.call(
+    Backups::ConnectionTest.new.call(
       check: 'aws_credentials',
       values: {
         'aws_access_key_id' => s3_server.access_key,

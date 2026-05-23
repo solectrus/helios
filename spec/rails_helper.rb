@@ -10,6 +10,11 @@ end
 # that will avoid rails generators crashing because migrations haven't been run yet
 # return unless Rails.env.test?
 require 'rspec/rails'
+
+# Each turbo_tests worker boots with an empty test<N>.sqlite3, so we have to
+# load db/schema.rb on demand — there is no separate db:test:prepare step.
+ActiveRecord::Migration.maintain_test_schema!
+
 # Add additional requires below this line. Rails is not loaded until this point!
 
 # Requires supporting ruby files with custom matchers and macros, etc, in
@@ -63,6 +68,10 @@ RSpec.configure do |config|
   # The Anonymizer keeps a per-bundle value→letter registry; reset between
   # specs so expectations don't depend on the order tests happen to run in.
   config.before { SupportBundle::Anonymizer.reset_registry! }
+
+  # AR rows are scoped to one example via a transaction that's rolled back
+  # at teardown, so a Backup created in one example never leaks into the next.
+  config.use_transactional_fixtures = true
 end
 
 Shoulda::Matchers.configure do |config|

@@ -23,6 +23,7 @@ class BackupUploader
     BackupRepository.prune!
     BackupRepository.clear_error!
     persist!(target_path)
+    BackupRepository.record_backup!(target_filename)
   end
 
   private
@@ -100,16 +101,13 @@ class BackupUploader
     raise Error, error(:write_failed, message: e.message)
   end
 
-  # The list view sorts by mtime and shows it as the backup's creation date,
-  # so the file's mtime must match the timestamp baked into the filename
-  # rather than the time of the upload.
+  # Align the file's mtime with the timestamp baked into the filename, so
+  # `ls -l` (and any tooling outside HELIOS) shows when the backup was taken
+  # rather than when it was uploaded.
   def apply_mtime_from_filename!(target_path)
-    match = ::File.basename(target_path).match(/(\d{8})-(\d{6})/)
-    return unless match
+    timestamp = BackupRepository.created_at_from(::File.basename(target_path))
+    return unless timestamp
 
-    timestamp = Time.zone.strptime("#{match[1]}-#{match[2]}", '%Y%m%d-%H%M%S').to_i
-    ::File.utime(timestamp, timestamp, target_path)
-  rescue ArgumentError
-    nil
+    ::File.utime(timestamp.to_i, timestamp.to_i, target_path)
   end
 end
