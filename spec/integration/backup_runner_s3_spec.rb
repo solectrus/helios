@@ -73,12 +73,21 @@ RSpec.describe BackupRunner, :docker_stack do
 
   # --- helpers ---
 
-  # A known-good HELIOS configuration (real fixture stack) with the backup
-  # section pointed at the throwaway S3 bucket.
+  # Minimal HELIOS configuration with only the backup section seeded —
+  # Export::Builder.ensure_defaults! materializes the rest (passwords, tokens,
+  # images) for postgresql, influxdb, redis and dashboard. No `publish_port`
+  # is set, so no service publishes a host port and the stack coexists with
+  # other dev containers on 8086. The backup script reaches both databases
+  # via `docker exec` over the compose network, so host ports are not needed.
   def write_config!
-    source = Rails.root.join('spec/fixtures/import_scenarios/with_ingest/helios/config.yaml')
-    data = YAML.safe_load_file(source, permitted_classes: [Date])
-    data['backup'] = {
+    data = { 'backup' => backup_config }
+    FileUtils.mkdir_p(File.dirname(Configuration.path))
+    File.write(Configuration.path, YAML.dump(data))
+    Current.reset
+  end
+
+  def backup_config
+    {
       'destination' => 's3',
       'aws_bucket' => bucket,
       'aws_access_key_id' => s3_server.access_key,
@@ -87,10 +96,6 @@ RSpec.describe BackupRunner, :docker_stack do
       's3_prefix' => prefix,
       's3_endpoint_url' => s3_server.endpoint,
     }
-
-    FileUtils.mkdir_p(File.dirname(Configuration.path))
-    File.write(Configuration.path, YAML.dump(data))
-    Current.reset
   end
 
   # backup.sh dumps `solectrus_production` — the database the SOLECTRUS
