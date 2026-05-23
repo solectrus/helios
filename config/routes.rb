@@ -1,3 +1,73 @@
+# == Route Map
+#
+#                            Prefix Verb   URI Pattern                                    Controller#Action
+#                rails_health_check GET    /up(.:format)                                  health#show
+#                        restarting GET    /restarting(.:format)                          restarting#show
+#                       new_session GET    /session/new(.:format)                         sessions#new
+#                           session DELETE /session(.:format)                             sessions#destroy
+#                                   POST   /session(.:format)                             sessions#create
+#                             start GET    /start(.:format)                               starts#show
+#                                   POST   /start(.:format)                               starts#create
+#                  sensors_readings GET    /sensors/readings(.:format)                    sensors/readings#show
+#                           sensors GET    /sensors(.:format)                             sensors#show
+#  datasources_mqtt_topics_readings GET    /datasources/mqtt-topics/readings(.:format)    datasources/mqtt_topics/readings#show
+#           datasources_mqtt_topics GET    /datasources/mqtt-topics(.:format)             datasources/mqtt_topics#index
+#                                   POST   /datasources/mqtt-topics(.:format)             datasources/mqtt_topics#create
+#        new_datasources_mqtt_topic GET    /datasources/mqtt-topics/new(.:format)         datasources/mqtt_topics#new
+#       edit_datasources_mqtt_topic GET    /datasources/mqtt-topics/:id/edit(.:format)    datasources/mqtt_topics#edit
+#            datasources_mqtt_topic PATCH  /datasources/mqtt-topics/:id(.:format)         datasources/mqtt_topics#update
+#                                   PUT    /datasources/mqtt-topics/:id(.:format)         datasources/mqtt_topics#update
+#                                   DELETE /datasources/mqtt-topics/:id(.:format)         datasources/mqtt_topics#destroy
+#        datasources_shelly_devices GET    /datasources/shelly-devices(.:format)          datasources/shelly_devices#index
+#                                   POST   /datasources/shelly-devices(.:format)          datasources/shelly_devices#create
+#     new_datasources_shelly_device GET    /datasources/shelly-devices/new(.:format)      datasources/shelly_devices#new
+#    edit_datasources_shelly_device GET    /datasources/shelly-devices/:id/edit(.:format) datasources/shelly_devices#edit
+#         datasources_shelly_device PATCH  /datasources/shelly-devices/:id(.:format)      datasources/shelly_devices#update
+#                                   PUT    /datasources/shelly-devices/:id(.:format)      datasources/shelly_devices#update
+#                                   DELETE /datasources/shelly-devices/:id(.:format)      datasources/shelly_devices#destroy
+#                       datasources GET    /datasources(.:format)                         datasources#show
+#                          advanced GET    /advanced(.:format)                            advanced#show
+#                        host_stats GET    /host-stats(.:format)                          host_stats#show
+#                        status_bar GET    /status-bar(.:format)                          status_bars#show
+#                   backups_failure DELETE /backups/failure(.:format)                     backups/failures#destroy
+#           backups_restore_failure DELETE /backups/restore_failure(.:format)             backups/restore_failures#destroy
+#                    backups_upload POST   /backups/upload(.:format)                      backups/uploads#create
+#                    backup_restore POST   /backups/:backup_id/restore(.:format)          backups/restores#create
+#                           backups GET    /backups(.:format)                             backups/backups#index
+#                                   POST   /backups(.:format)                             backups/backups#create
+#                            backup GET    /backups/:id(.:format)                         backups/backups#show
+#                                   DELETE /backups/:id(.:format)                         backups/backups#destroy
+#                       new_support GET    /support/new(.:format)                         supports#new
+#                           support POST   /support(.:format)                             supports#create
+#            configuration_settings POST   /configuration/settings(.:format)              configurations/settings#create
+#         new_configuration_setting GET    /configuration/settings/new(.:format)          configurations/settings#new
+#              configuration_survey GET    /configuration/surveys/:id(.:format)           configurations/surveys#show
+#               configuration_reset DELETE /configuration/reset(.:format)                 configurations/resets#destroy
+#                                   POST   /configuration/reset(.:format)                 configurations/resets#create
+#     configuration_connection_test POST   /configuration/connection_test(.:format)       configurations/connection_tests#create
+#        edit_configuration_setting GET    /configuration/:setting/:name/edit(.:format)   configurations/settings#edit {name: /[^\/]+/}
+#             configuration_setting PATCH  /configuration/:setting/:name(.:format)        configurations/settings#update {name: /[^\/]+/}
+#                                   DELETE /configuration/:setting/:name(.:format)        configurations/settings#destroy {name: /[^\/]+/}
+#                       service_row GET    /services/:service_id/row(.:format)            services/rows#show
+#                       service_log GET    /services/:service_id/log(.:format)            services/logs#show
+#                      service_task PATCH  /services/:service_id/task(.:format)           services/tasks#update
+#                                   PUT    /services/:service_id/task(.:format)           services/tasks#update
+#                                   DELETE /services/:service_id/task(.:format)           services/tasks#destroy
+#                                   POST   /services/:service_id/task(.:format)           services/tasks#create
+#                     service_cache DELETE /services/:service_id/cache(.:format)          services/caches#destroy
+#                   service_upgrade POST   /services/:service_id/upgrade(.:format)        services/upgrades#create
+#                     service_image PATCH  /services/:service_id/image(.:format)          services/images#update
+#                                   PUT    /services/:service_id/image(.:format)          services/images#update
+#             service_orphaned_task DELETE /services/:service_id/orphaned_task(.:format)  services/orphaned_tasks#destroy
+#                             batch DELETE /services/batch(.:format)                      services/batches#destroy
+#                                   POST   /services/batch(.:format)                      services/batches#create
+#                              file GET    /services/files/:id(.:format)                  services/files#show
+#                          services GET    /services(.:format)                            services#index
+#                              root GET    /                                              redirect(301, /services)
+#  turbo_recede_historical_location GET    /recede_historical_location(.:format)          turbo/native/navigation#recede
+#  turbo_resume_historical_location GET    /resume_historical_location(.:format)          turbo/native/navigation#resume
+# turbo_refresh_historical_location GET    /refresh_historical_location(.:format)         turbo/native/navigation#refresh
+
 Rails.application.routes.draw do
   # Health check with boot ID header for restart detection
   get 'up' => 'health#show', as: :rails_health_check

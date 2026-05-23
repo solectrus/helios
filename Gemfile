@@ -47,6 +47,7 @@ end
 
 group :development do
   gem 'amazing_print'
+  gem 'annotaterb'
   gem 'foreman'
   gem 'herb'
   gem 'syntax_tree'

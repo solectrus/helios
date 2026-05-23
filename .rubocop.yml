@@ -95,3 +95,10 @@ RSpec/BeforeAfterAll:
 
 Metrics/AbcSize:
   Max: 20
+
+# annotaterb's "Schema Information" block can produce long comment lines
+# for composite indexes — they are auto-generated and would be re-introduced
+# on every annotation run, so don't enforce length on them.
+Layout/LineLength:
+  AllowedPatterns:
+    - '^#\s+\w+\s+\([^)]+\)' # annotaterb index lines: `#  index_name  (cols)`
