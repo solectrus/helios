@@ -1,4 +1,4 @@
-RSpec.describe Backup::ConnectionTest do
+RSpec.describe Backups::ConnectionTest do
   subject(:tester) { described_class.new }
 
   describe 'external_path check' do

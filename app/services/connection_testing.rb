@@ -24,7 +24,7 @@ module ConnectionTesting
     'senec' => Senec::ConnectionTest,
     'shelly' => Shelly::ConnectionTest,
     'mqtt' => Mqtt::ConnectionTest,
-    'backup' => Backup::ConnectionTest,
+    'backup' => Backups::ConnectionTest,
   }.freeze
 
   def self.run(target:, check:, values:)

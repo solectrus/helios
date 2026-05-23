@@ -1,6 +1,6 @@
 require 'open3'
 
-module Backup
+module Backups
   # Probes the configured external backup path from inside a docker:cli
   # sidecar — the exact same mount the External storage adapter uses
   # at runtime, so a successful probe guarantees that listing and writing
