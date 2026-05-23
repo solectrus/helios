@@ -72,6 +72,30 @@ RSpec.describe BackupRunner, :docker_stack do
     end
   end
 
+  describe '.start (pg_dump fails)' do
+    # Skips create_production_database! so pg_dump aborts with "database does
+    # not exist". Asserts that the actual pg_dump stderr surfaces in the
+    # error message instead of just the generic "PostgreSQL dump failed".
+    it 'surfaces pg_dump stderr in the recorded error message' do
+      Orchestration::Runner.start('postgresql', 'influxdb')
+      wait_for_postgresql_ready!
+      wait_for_healthy!('influxdb')
+
+      described_class.start
+      wait_for_backup_completion!
+      BackupRepository.detect_completion!
+
+      aggregate_failures do
+        expect(BackupRepository.error_message).to start_with('PostgreSQL dump failed: ')
+        expect(BackupRepository.error_message).to include('solectrus_production')
+        expect(BackupRepository.error_message).to match(/does not exist/i)
+        expect(BackupRepository::S3.all).to be_empty
+        expect(s3_object_keys(bucket)).not_to include(a_string_matching(/\.tar$/))
+        expect(Dir.children(File.join(data_path, 'helios', 'backups-staging'))).to be_empty
+      end
+    end
+  end
+
   # --- helpers ---
 
   # Minimal HELIOS configuration with only the backup section seeded —

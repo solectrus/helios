@@ -64,14 +64,20 @@ rm -rf "$WORK_DIR"
 rm -f "$PART_PATH" "$ERROR_PATH"
 mkdir -p "$WORK_DIR/helios"
 
-docker exec "$POSTGRES_CONTAINER" \
-  pg_dump -U postgres --clean --if-exists --dbname=solectrus_production \
-  | gzip > "$PG_FILE" \
-  || fail "PostgreSQL dump failed"
+# pg_dump's stderr is redirected to a log so the actual cause (e.g. "database
+# does not exist") surfaces in error.txt instead of just the generic prefix.
+PG_LOG="$WORK_DIR/postgresql-dump.log"
+if ! docker exec "$POSTGRES_CONTAINER" \
+       pg_dump -U postgres --clean --if-exists --dbname=solectrus_production \
+     2> "$PG_LOG" \
+     | gzip > "$PG_FILE"; then
+  fail "PostgreSQL dump failed: $(tail -n 20 "$PG_LOG" | tr '\n' ' ')"
+fi
 
 [ -s "$PG_FILE" ] || fail "PostgreSQL dump produced empty output"
 
-docker exec "$INFLUXDB_CONTAINER" sh -c '
+INFLUX_LOG="$WORK_DIR/influxdb-backup.log"
+if ! docker exec "$INFLUXDB_CONTAINER" sh -c '
   set -e
   NAME="solectrus-influxdb-backup-$2"
   WORK="/tmp/$NAME"
@@ -79,8 +85,9 @@ docker exec "$INFLUXDB_CONTAINER" sh -c '
   trap "rm -rf $WORK" EXIT
   influx backup "$WORK" -t "$1" 1>&2
   tar -cz -C /tmp "$NAME"
-' _ "$TOKEN" "$BACKUP_DATE" > "$INFLUX_FILE" \
-  || fail "InfluxDB backup failed"
+' _ "$TOKEN" "$BACKUP_DATE" 2> "$INFLUX_LOG" > "$INFLUX_FILE"; then
+  fail "InfluxDB backup failed: $(tail -n 20 "$INFLUX_LOG" | tr '\n' ' ')"
+fi
 
 [ -s "$INFLUX_FILE" ] || fail "InfluxDB backup produced empty output"
 
