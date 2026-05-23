@@ -45,7 +45,7 @@ RSpec.describe BackupRunner, :docker_stack do
   describe '.start (real backup uploaded to S3)' do
     it 'dumps the live stack and uploads the tar to the S3 bucket' do
       Orchestration::Runner.start('postgresql', 'influxdb')
-      wait_for_healthy!('postgresql')
+      wait_for_postgresql_ready!
       wait_for_healthy!('influxdb')
       create_production_database!
 
@@ -116,6 +116,30 @@ RSpec.describe BackupRunner, :docker_stack do
 
       sleep 2
     end
+  end
+
+  # On a first-time start the postgres image runs a temporary bootstrap server
+  # that listens on the Unix socket only. The container healthcheck
+  # (`pg_isready` over that socket) can flip to "healthy" against the throwaway
+  # server, which then shuts down — so a query racing it dies with "the
+  # database system is shutting down". A TCP probe stays negative until the
+  # real server is up.
+  def wait_for_postgresql_ready!(timeout: 180)
+    wait_for_healthy!('postgresql', timeout:)
+    deadline = Time.current + timeout
+
+    until postgresql_accepting_tcp_connections?
+      raise "postgresql did not accept TCP connections within #{timeout}s" if Time.current > deadline
+
+      sleep 1
+    end
+  end
+
+  def postgresql_accepting_tcp_connections?
+    _stdout, _stderr, code = Orchestration::Runner.compose_exec(
+      'postgresql', 'pg_isready', '-h', '127.0.0.1', '-U', 'postgres', '-q'
+    )
+    code&.zero?
   end
 
   # Container state plus its last log lines — surfaced in the failure
