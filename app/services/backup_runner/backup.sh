@@ -30,18 +30,26 @@ CONFIG_DEST="$WORK_DIR/helios/config.yaml"
 PART_PATH="$OUTPUT_DIR/$BACKUP_FILENAME.part"
 FINAL_PATH="$OUTPUT_DIR/$BACKUP_FILENAME"
 ERROR_PATH="$OUTPUT_DIR/error.txt"
+PHASE_PATH="$OUTPUT_DIR/backup-phase.txt"
+
+# Atomic write so BackupRunner.current_phase never reads a half-written name.
+set_phase() {
+  printf '%s\n' "$1" > "$PHASE_PATH.tmp" && mv "$PHASE_PATH.tmp" "$PHASE_PATH"
+}
 
 fail() {
   echo "$1" > "$ERROR_PATH"
+  rm -f "$PHASE_PATH"
   rm -rf "$WORK_DIR"
   rm -f "$PART_PATH"
   exit 1
 }
 
 rm -rf "$WORK_DIR"
-rm -f "$PART_PATH" "$ERROR_PATH"
+rm -f "$PART_PATH" "$ERROR_PATH" "$PHASE_PATH"
 mkdir -p "$WORK_DIR/helios"
 
+set_phase dumping_postgres
 # pg_dump's stderr is redirected to a log so the actual cause (e.g. "database
 # does not exist") surfaces in error.txt instead of just the generic prefix.
 PG_LOG="$WORK_DIR/postgresql-dump.log"
@@ -54,6 +62,7 @@ fi
 
 [ -s "$PG_FILE" ] || fail "PostgreSQL dump produced empty output"
 
+set_phase dumping_influx
 INFLUX_LOG="$WORK_DIR/influxdb-backup.log"
 if ! docker exec "$INFLUXDB_CONTAINER" sh -c '
   set -e
@@ -69,6 +78,7 @@ fi
 
 [ -s "$INFLUX_FILE" ] || fail "InfluxDB backup produced empty output"
 
+set_phase bundling
 cp /config.yaml "$CONFIG_DEST" || fail "Failed to copy config.yaml"
 
 # Outer tar is uncompressed: PG dump and Influx archive are already gzipped,
@@ -76,4 +86,5 @@ cp /config.yaml "$CONFIG_DEST" || fail "Failed to copy config.yaml"
 tar -cf "$PART_PATH" -C "$WORK_DIR" . || fail "Failed to bundle backup archive"
 
 mv "$PART_PATH" "$FINAL_PATH"
+rm -f "$PHASE_PATH"
 rm -rf "$WORK_DIR"

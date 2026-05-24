@@ -165,6 +165,20 @@ RSpec.describe BackupRunner do
       expect { described_class.start }.to raise_error(described_class::Error, /network unreachable/)
     end
 
+    it 'marks every backup phase via set_phase so the UI can show progress' do
+      described_class.start
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      script = run[run.index('-c') + 1]
+      aggregate_failures do
+        described_class::KNOWN_PHASES.each do |phase|
+          expect(script).to include("set_phase #{phase}"),
+                            "expected backup.sh to mark phase #{phase}"
+        end
+        expect(script).to include('rm -f "$PHASE_PATH"')
+      end
+    end
+
     context 'with S3 destination' do
       let(:s3_client) { Aws::S3::Client.new(stub_responses: true, region: 'eu-central-1') }
 
@@ -252,6 +266,32 @@ RSpec.describe BackupRunner do
         expect(result).to be_a(BackupRepository::InProgress)
         expect(result.filename).to eq('solectrus-backup-20260508-143000.tar')
         expect(result.started_at).to eq(Time.zone.parse('2026-05-08T14:30:00Z'))
+      end
+    end
+
+    context 'with a phase marker on disk' do
+      before do
+        state[:docker_inspect_args] = [
+          '-c', 'script-body', '_', 'token', 'solectrus-backup-20260508-143000.tar',
+          '2026-05-08', 'pg', 'influx'
+        ]
+        FileUtils.mkdir_p(File.join(data_path, 'helios', 'backups'))
+      end
+
+      it 'enriches the InProgress with the current phase' do
+        File.write(File.join(data_path, 'helios', 'backups', 'backup-phase.txt'), "dumping_influx\n")
+
+        expect(described_class.in_progress.phase).to eq(:dumping_influx)
+      end
+
+      it 'ignores unknown phase names and falls back to :running' do
+        File.write(File.join(data_path, 'helios', 'backups', 'backup-phase.txt'), 'something-else')
+
+        expect(described_class.in_progress.phase).to eq(:running)
+      end
+
+      it 'tolerates a missing phase file (window before the first set_phase)' do
+        expect(described_class.in_progress.phase).to eq(:running)
       end
     end
 

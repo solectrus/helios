@@ -28,5 +28,53 @@ RSpec.describe BackupsHelper do
 
       expect(helper.backup_in_progress_label(in_progress)).to include('0')
     end
+
+    BackupRunner::KNOWN_PHASES.each do |phase|
+      it "returns a localized label for the :#{phase} phase" do
+        in_progress = BackupRepository::InProgress.new(
+          started_at: Time.current, filename: filename, phase: phase,
+        )
+
+        expect(helper.backup_in_progress_label(in_progress)).to eq(
+          I18n.t("backups.index.backup_phases.#{phase}"),
+        )
+      end
+    end
+  end
+
+  describe '#restore_in_progress_label' do
+    let(:filename) { 'solectrus-backup-20260508-100000.tar' }
+
+    it 'returns the generic restore label without a known phase' do
+      in_progress = BackupRepository::InProgress.new(started_at: Time.current, filename: filename)
+
+      expect(helper.restore_in_progress_label(in_progress)).to eq(
+        I18n.t('backups.index.restore_in_progress'),
+      )
+    end
+
+    it 'returns the download label with percentage during :downloading' do
+      in_progress = BackupRepository::InProgress.new(
+        started_at: Time.current, filename: filename,
+        phase: :downloading, progress: 0.42
+      )
+
+      expect(helper.restore_in_progress_label(in_progress)).to eq(
+        I18n.t('backups.index.phase_downloading',
+               percent: helper.number_to_percentage(42, precision: 0)),
+      )
+    end
+
+    RestoreRunner::KNOWN_PHASES.each do |phase|
+      it "returns a localized label for the :#{phase} phase" do
+        in_progress = BackupRepository::InProgress.new(
+          started_at: Time.current, filename: filename, phase: phase,
+        )
+
+        expect(helper.restore_in_progress_label(in_progress)).to eq(
+          I18n.t("backups.index.restore_phases.#{phase}"),
+        )
+      end
+    end
   end
 end

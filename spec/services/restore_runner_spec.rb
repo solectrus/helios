@@ -170,6 +170,20 @@ RSpec.describe RestoreRunner do
       end
     end
 
+    it 'marks every restore phase via set_phase so the UI can show progress' do
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      script = run[run.index('-c') + 1]
+      aggregate_failures do
+        described_class::KNOWN_PHASES.each do |phase|
+          expect(script).to include("set_phase #{phase}"),
+                            "expected restore.sh to mark phase #{phase}"
+        end
+        expect(script).to include('rm -f "$PHASE_PATH"')
+      end
+    end
+
     it 'never lists helios in the services arg passed to compose down/up' do
       described_class.start(filename)
 
@@ -382,6 +396,50 @@ RSpec.describe RestoreRunner do
         expect(result.filename).to eq(filename)
         expect(result.started_at).to eq(Time.zone.parse('2026-05-08T14:30:00Z'))
       end
+    end
+
+    context 'with a phase marker on disk' do
+      before do
+        state[:docker_inspect_success] = true
+        state[:docker_inspect_running] = true
+        state[:docker_inspect_args] = [
+          '-c', 'script-body', '_', 'token', filename, 'pg', 'influx', 'helios', 'dashboard'
+        ]
+      end
+
+      it 'enriches the InProgress with the current phase' do
+        File.write(File.join(data_path, 'helios', 'backups', 'restore-phase.txt'), "restoring_influx\n")
+
+        expect(described_class.in_progress.phase).to eq(:restoring_influx)
+      end
+
+      it 'ignores unknown phase names and falls back to :running' do
+        File.write(File.join(data_path, 'helios', 'backups', 'restore-phase.txt'), 'something-else')
+
+        expect(described_class.in_progress.phase).to eq(:running)
+      end
+
+      it 'tolerates a missing phase file (window before the first set_phase)' do
+        expect(described_class.in_progress.phase).to eq(:running)
+      end
+    end
+  end
+
+  describe '.current_phase' do
+    it 'returns nil when the marker file is missing' do
+      expect(described_class.current_phase).to be_nil
+    end
+
+    it 'returns the phase symbol when the marker matches the allowlist' do
+      File.write(File.join(data_path, 'helios', 'backups', 'restore-phase.txt'), "extracting\n")
+
+      expect(described_class.current_phase).to eq(:extracting)
+    end
+
+    it 'returns nil for unknown phase names' do
+      File.write(File.join(data_path, 'helios', 'backups', 'restore-phase.txt'), 'bogus')
+
+      expect(described_class.current_phase).to be_nil
     end
   end
 

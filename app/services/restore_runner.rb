@@ -8,7 +8,13 @@ class RestoreRunner < DetachedRunner
   POSTGRES_SERVICE = BackupRunner::POSTGRES_SERVICE
   INFLUXDB_SERVICE = BackupRunner::INFLUXDB_SERVICE
   ERROR_FILENAME = 'restore-error.txt'.freeze
+  PHASE_FILENAME = 'restore-phase.txt'.freeze
   I18N_SCOPE = 'backups.restorer'.freeze
+
+  # Phase names the restore script writes into PHASE_FILENAME. Anything
+  # outside this allowlist falls back to the generic "Restoring…" label.
+  KNOWN_PHASES = %i[extracting stopping_services starting_databases
+                    restoring_postgres restoring_influx starting_services].freeze
 
   SCRIPT = ::File.read(::File.join(__dir__, 'restore_runner', 'restore.sh')).freeze
 
@@ -17,9 +23,10 @@ class RestoreRunner < DetachedRunner
       BackupRepository.clear_error!(ERROR_FILENAME)
     end
 
-    # Extends the inherited in_progress with the S3 download phase, so
-    # the UI keeps showing "in progress" while HELIOS fetches the tar
-    # before the detached restore container runs.
+    # Extends the inherited in_progress with the S3 download phase, so the
+    # UI keeps showing "in progress" while HELIOS fetches the tar before
+    # the detached restore container runs. The script-phase enrichment
+    # itself happens in DetachedRunner.
     def in_progress
       super || s3_download_in_progress
     end

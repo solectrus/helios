@@ -35,10 +35,17 @@ OUTPUT_DIR="/output"
 WORK_DIR="$OUTPUT_DIR/.restore-work"
 BACKUP_PATH="$OUTPUT_DIR/$BACKUP_FILENAME"
 ERROR_PATH="$OUTPUT_DIR/restore-error.txt"
+PHASE_PATH="$OUTPUT_DIR/restore-phase.txt"
 COMPOSE_PATH="$HOST_DATA_PATH/$COMPOSE_FILENAME"
+
+# Atomic write so RestoreRunner.current_phase never reads a half-written name.
+set_phase() {
+  printf '%s\n' "$1" > "$PHASE_PATH.tmp" && mv "$PHASE_PATH.tmp" "$PHASE_PATH"
+}
 
 fail() {
   echo "$1" > "$ERROR_PATH"
+  rm -f "$PHASE_PATH"
   rm -rf "$WORK_DIR"
   exit 1
 }
@@ -52,8 +59,10 @@ compose() {
 }
 
 rm -rf "$WORK_DIR"
-rm -f "$ERROR_PATH"
+rm -f "$ERROR_PATH" "$PHASE_PATH"
 mkdir -p "$WORK_DIR"
+
+set_phase extracting
 
 [ -f "$BACKUP_PATH" ] || fail "Backup archive is missing"
 
@@ -82,6 +91,7 @@ CONFIG_FILE="$WORK_DIR/helios/config.yaml"
 # survives the wipe of the bind-mounted data dir, the next setup run
 # aborts with `config name "default" already exists` and the entrypoint
 # self-wipes bolt+engine in a restart loop.
+set_phase stopping_services
 STOP_LOG="$WORK_DIR/compose-down.log"
 # Intentionally unquoted: SERVICES is a space-separated list of service
 # names that must be word-split into individual `down` arguments. Compose
@@ -96,6 +106,7 @@ rm -rf "$POSTGRES_DATA_PATH" "$INFLUXDB_DATA_PATH" "$REDIS_DATA_PATH" \
 mkdir -p "$POSTGRES_DATA_PATH" "$INFLUXDB_DATA_PATH" "$REDIS_DATA_PATH" \
   || fail "Failed to recreate database directories"
 
+set_phase starting_databases
 DB_START_LOG="$WORK_DIR/compose-db-up.log"
 if ! compose up --no-build --wait -d postgresql influxdb > "$DB_START_LOG" 2>&1; then
   fail "Failed to start database services: $(tail -n 20 "$DB_START_LOG" | tr '\n' ' ')"
@@ -126,6 +137,7 @@ if ! grep -q '^1$' "$POSTGRES_CREATE_LOG"; then
   fi
 fi
 
+set_phase restoring_postgres
 POSTGRES_RESTORE_LOG="$WORK_DIR/postgresql-restore.log"
 if ! gunzip -c "$PG_FILE" \
   | docker exec -i "$POSTGRES_CONTAINER" \
@@ -134,6 +146,7 @@ if ! gunzip -c "$PG_FILE" \
   fail "PostgreSQL restore failed: $(tail -n 20 "$POSTGRES_RESTORE_LOG" | tr '\n' ' ')"
 fi
 
+set_phase restoring_influx
 INFLUX_RESTORE_LOG="$WORK_DIR/influx-restore.log"
 if ! docker exec -i "$INFLUXDB_CONTAINER" sh -c '
   set -eu
@@ -161,6 +174,7 @@ fi
 # If any service was stopped before the restore, leave the rest stopped —
 # only the DBs (started fresh above for the import) keep running.
 if [ "$RESTART_AFTER" = "1" ]; then
+  set_phase starting_services
   START_LOG="$WORK_DIR/compose-up.log"
   # See SERVICES note above for why this is unquoted.
   # shellcheck disable=SC2086
@@ -169,4 +183,5 @@ if [ "$RESTART_AFTER" = "1" ]; then
   fi
 fi
 
+rm -f "$PHASE_PATH"
 rm -rf "$WORK_DIR"

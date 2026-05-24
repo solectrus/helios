@@ -5,7 +5,12 @@ class BackupRunner < DetachedRunner
   IMAGE = 'docker:29-cli'.freeze
   POSTGRES_SERVICE = 'postgresql'.freeze
   INFLUXDB_SERVICE = 'influxdb'.freeze
+  PHASE_FILENAME = 'backup-phase.txt'.freeze
   I18N_SCOPE = 'backups.runner'.freeze
+
+  # Phase names the backup script writes into PHASE_FILENAME. Anything
+  # outside this allowlist falls back to the generic "In progress…" label.
+  KNOWN_PHASES = %i[dumping_postgres dumping_influx bundling].freeze
 
   SCRIPT = ::File.read(::File.join(__dir__, 'backup_runner', 'backup.sh')).freeze
 

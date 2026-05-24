@@ -23,18 +23,22 @@ class DetachedRunner
   class << self
     delegate :start, to: :new
 
-    # The live run as a BackupRepository::InProgress struct, or nil. Cached
-    # per request (Current) and then for IN_PROGRESS_CACHE_TTL (Rails.cache)
-    # because it is read on every /backups render.
+    # The live run as a BackupRepository::InProgress struct, or nil. The
+    # container-detection half is cached (per request + IN_PROGRESS_CACHE_TTL)
+    # because it is read on every /backups render; the phase marker is read
+    # fresh on every call — it flips every few seconds and the auto-reload
+    # UI polls /backups every 3 s, so caching it would just add a lag
+    # without saving meaningful IO.
     def in_progress
-      Current.instance.fetch(:"#{name.underscore}_in_progress") do
-        Rails.cache.fetch(in_progress_cache_key, expires_in: IN_PROGRESS_CACHE_TTL) do
-          container = Orchestration::DockerCli.running_container(self::CONTAINER_NAME)
-          next nil unless container
+      base = container_in_progress
+      return nil unless base
 
-          BackupRepository::InProgress.new(started_at: container.started_at, filename: container.args[4])
-        end
-      end
+      phase = current_phase
+      return base unless phase
+
+      BackupRepository::InProgress.new(
+        started_at: base.started_at, filename: base.filename, phase: phase,
+      )
     end
 
     # Uncached "is this runner's container live right now?". The cross-runner
@@ -50,7 +54,39 @@ class DetachedRunner
       Rails.cache.delete(in_progress_cache_key)
     end
 
+    # Current script phase, read fresh from PHASE_FILENAME in the backup
+    # directory. Returns nil if the subclass declares no marker file, the
+    # file is absent (window before the first set_phase write or after a
+    # successful cleanup), or its content is not in the allowlist.
+    def current_phase
+      filename = phase_filename
+      return nil unless filename
+
+      raw = ::File.read(::File.join(BackupRepository.directory, filename)).strip
+      phase = raw.to_sym
+      self::KNOWN_PHASES.include?(phase) ? phase : nil
+    rescue Errno::ENOENT
+      nil
+    end
+
     private
+
+    def container_in_progress
+      Current.instance.fetch(:"#{name.underscore}_in_progress") do
+        Rails.cache.fetch(in_progress_cache_key, expires_in: IN_PROGRESS_CACHE_TTL) do
+          container = Orchestration::DockerCli.running_container(self::CONTAINER_NAME)
+          next nil unless container
+
+          BackupRepository::InProgress.new(started_at: container.started_at, filename: container.args[4])
+        end
+      end
+    end
+
+    def phase_filename
+      return nil unless const_defined?(:PHASE_FILENAME)
+
+      self::PHASE_FILENAME
+    end
 
     def in_progress_cache_key
       "helios_#{name.underscore}_in_progress"
