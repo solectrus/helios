@@ -21,11 +21,16 @@ class BackupRepository
             # Bare Thread.new is intentional: process-local single-flight
             # work, see class docstring. `on_complete` is captured as a
             # named block because anonymous `&` does not survive the
-            # Thread.new-block boundary.
+            # Thread.new-block boundary. The trailing broadcast tells the
+            # status bar (and /backups) the worker is done — without it
+            # the UI would keep showing "in progress" until the user
+            # navigates back to /backups.
             @thread = Thread.new(filename) do |f| # rubocop:disable ThreadSafety/NewThread
               # rubocop:disable Naming/BlockForwarding
               Rails.application.executor.wrap { run(f, &on_complete) }
               # rubocop:enable Naming/BlockForwarding
+            ensure
+              Orchestration::HeliosOperationBroadcaster.broadcast!
             end
             true
           end

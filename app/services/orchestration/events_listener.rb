@@ -228,16 +228,8 @@ module Orchestration
     # be missing from the map and compute_overall would falsely report :ok
     # while several services are actually stopped.
     def broadcast_helios_operation
-      BackupRunner.invalidate_in_progress_cache!
-      RestoreRunner.invalidate_in_progress_cache!
       Orchestration::StackStatus.refresh!
-
-      I18n.with_locale(self.class.locale) do
-        Orchestration::StatusBarBroadcaster.new.broadcast
-        Turbo::StreamsChannel.broadcast_refresh_to('backups')
-      end
-    rescue StandardError => e
-      logger.error("[#{id}] Helios operation broadcast failed: #{e.class}: #{e.message}")
+      Orchestration::HeliosOperationBroadcaster.broadcast!(locale: self.class.locale)
     end
 
     def scheduler_loop

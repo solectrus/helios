@@ -54,6 +54,16 @@ RSpec.describe BackupRepository::S3::Uploader do
       described_class.send(:instance_variable_get, :@thread).join
       expect(described_class.current).to be_nil
     end
+
+    it 'broadcasts a status-bar refresh after the worker thread finishes' do
+      allow(described_class).to receive(:run)
+      allow(Orchestration::HeliosOperationBroadcaster).to receive(:broadcast!)
+
+      described_class.start_async(filename)
+      described_class.send(:instance_variable_get, :@thread).join
+
+      expect(Orchestration::HeliosOperationBroadcaster).to have_received(:broadcast!)
+    end
   end
 
   describe 'progress reporting' do
