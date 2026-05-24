@@ -64,11 +64,11 @@
         <%= turbo_stream_from "status_bar" %>
         <%= render StatusBar::Component.new %>
       </div>
-      <%= render "shared/log_modal",
+      <%= render "shared/frame_modal",
                  id: "support-modal",
                  turbo_frame: "support-modal-content",
                  box_classes: "overflow-y-auto sm:max-w-2xl!" %>
-      <%= render "shared/log_modal",
+      <%= render "shared/frame_modal",
                  id: "file-modal",
                  turbo_frame: "file-modal-content",
                  box_classes: "overflow-hidden sm:w-[95vw]! sm:max-w-[95vw]! sm:overflow-y-auto" %>

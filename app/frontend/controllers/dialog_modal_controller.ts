@@ -1,5 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
 import { loadingSpinner } from '../utils/loading_spinner';
+import { attachFrameModalAutoOpen } from '../utils/frame_modal_auto_open';
 
 export default class extends Controller<HTMLDialogElement> {
   static targets = ['frame', 'confirm', 'box'];
@@ -12,6 +13,7 @@ export default class extends Controller<HTMLDialogElement> {
   private dirty = false;
   private confirming = false;
   private pendingResolve: ((discard: boolean) => void) | null = null;
+  private detachFrameAutoOpen: (() => void) | null = null;
 
   connect() {
     this.element.addEventListener(
@@ -32,14 +34,12 @@ export default class extends Controller<HTMLDialogElement> {
     document.addEventListener('keydown', this.handleKeyDown, true);
 
     if (this.hasFrameTarget) {
-      this.frameTarget.addEventListener(
-        'turbo:before-fetch-request',
-        this.handleFrameFetchStart,
-      );
-      this.frameTarget.addEventListener(
-        'turbo:frame-load',
-        this.handleFrameLoad,
-      );
+      this.detachFrameAutoOpen = attachFrameModalAutoOpen({
+        frame: this.frameTarget,
+        open: () => this.open(),
+        // Replace any stale content from a previous open with the spinner.
+        onFetchStart: () => this.frameTarget.replaceChildren(loadingSpinner()),
+      });
     }
   }
 
@@ -58,16 +58,8 @@ export default class extends Controller<HTMLDialogElement> {
 
     document.removeEventListener('keydown', this.handleKeyDown, true);
 
-    if (this.hasFrameTarget) {
-      this.frameTarget.removeEventListener(
-        'turbo:before-fetch-request',
-        this.handleFrameFetchStart,
-      );
-      this.frameTarget.removeEventListener(
-        'turbo:frame-load',
-        this.handleFrameLoad,
-      );
-    }
+    this.detachFrameAutoOpen?.();
+    this.detachFrameAutoOpen = null;
 
     this.resolveConfirm(false);
   }
@@ -99,22 +91,6 @@ export default class extends Controller<HTMLDialogElement> {
     this.pendingResolve?.(discard);
     this.pendingResolve = null;
   }
-
-  // Open the modal as soon as the frame starts fetching, so the user sees a
-  // spinner immediately instead of waiting for the response to arrive.
-  private handleFrameFetchStart = (event: Event) => {
-    // Only react to navigation of the frame itself, not form submissions
-    // bubbling up from inside the modal.
-    if (event.target !== this.frameTarget) return;
-
-    // Replace any stale content from a previous open with the spinner.
-    this.frameTarget.replaceChildren(loadingSpinner());
-    this.open();
-  };
-
-  private handleFrameLoad = () => {
-    this.open();
-  };
 
   private handleFormSubmitted = () => {
     this.close();

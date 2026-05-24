@@ -24,6 +24,16 @@ export default class extends Controller {
   open(event: ActionEvent) {
     const id = event.params.id as string;
     const dialog = document.getElementById(id);
-    if (dialog instanceof HTMLDialogElement) dialog.showModal();
+    if (!(dialog instanceof HTMLDialogElement)) return;
+
+    // Strip the focus ring the browser restores onto the trigger after the
+    // dialog closes (notably via ESC, which counts as keyboard and matches
+    // :focus-visible).
+    const trigger = event.currentTarget;
+    if (trigger instanceof HTMLElement) {
+      dialog.addEventListener('close', () => trigger.blur(), { once: true });
+    }
+
+    dialog.showModal();
   }
 }

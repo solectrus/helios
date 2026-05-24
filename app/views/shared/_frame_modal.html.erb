@@ -1,7 +1,7 @@
 <%# locals: (id:, turbo_frame:, box_classes:) %>
-<dialog id="<%= id %>" class="modal" data-controller="log-modal">
+<dialog id="<%= id %>" class="modal" data-controller="frame-modal">
   <div class="modal-box bg-base-300 sm:bg-base-200 relative h-dvh! w-full! max-w-none! rounded-none p-0 sm:h-auto! sm:max-h-[95vh] sm:rounded-2xl sm:p-6 <%= box_classes %>">
-    <%= turbo_frame_tag turbo_frame, class: "flex h-full flex-col", data: { log_modal_target: "frame" } do %>
+    <%= turbo_frame_tag turbo_frame, class: "flex h-full flex-col", data: { frame_modal_target: "frame" } do %>
       <%= render LoadingSpinner::Component.new %>
     <% end %>
 
