@@ -60,10 +60,7 @@ class BackupRepository
         return if filenames.empty?
         return unless host_directory
 
-        args = filenames.flat_map do |filename|
-          ["/data/#{filename}",
-           "/data/#{filename}#{BackupRepository::LEGACY_MANIFEST_SUFFIX}"]
-        end
+        args = filenames.map { |filename| "/data/#{filename}" }
         sidecar_run!('rm', '-f', *args)
       end
 

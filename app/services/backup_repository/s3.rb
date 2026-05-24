@@ -107,7 +107,7 @@ class BackupRepository
         return if filenames.empty?
         return unless destination_configured?
 
-        keys = filenames.flat_map { |name| [object_key(name), object_key("#{name}#{BackupRepository::LEGACY_MANIFEST_SUFFIX}")] }
+        keys = filenames.map { |name| object_key(name) }
         delete_keys!(keys, ignore_missing: true)
       end
 

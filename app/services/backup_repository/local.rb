@@ -59,9 +59,7 @@ class BackupRepository
 
       def remove_files!(filenames)
         filenames.each do |filename|
-          path = ::File.join(directory, filename)
-          FileUtils.rm_f(path)
-          FileUtils.rm_f("#{path}#{BackupRepository::LEGACY_MANIFEST_SUFFIX}")
+          FileUtils.rm_f(::File.join(directory, filename))
         end
       end
 

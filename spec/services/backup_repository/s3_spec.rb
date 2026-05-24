@@ -113,7 +113,7 @@ RSpec.describe BackupRepository::S3 do
   describe '.destroy!' do
     let(:filename) { 'solectrus-backup-20260508-100000.tar' }
 
-    it 'issues a delete_objects call for the tar and its legacy sidecar, then removes the DB row' do
+    it 'issues a delete_objects call for the tar, then removes the DB row' do
       create_row(filename)
 
       described_class.destroy!(filename)
@@ -121,10 +121,7 @@ RSpec.describe BackupRepository::S3 do
       delete_calls = s3_client.api_requests.select { |r| r[:operation_name] == :delete_objects }
       expect(delete_calls.size).to eq(1)
       keys = delete_calls.first[:params][:delete][:objects].pluck(:key)
-      expect(keys).to contain_exactly(
-        "solectrus/#{filename}",
-        "solectrus/#{filename}#{BackupRepository::LEGACY_MANIFEST_SUFFIX}",
-      )
+      expect(keys).to contain_exactly("solectrus/#{filename}")
       expect(Backup.where(filename: filename)).not_to exist
     end
 

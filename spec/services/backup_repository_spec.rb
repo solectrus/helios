@@ -90,24 +90,14 @@ RSpec.describe BackupRepository do
   end
 
   describe '.destroy!' do
-    it 'removes the archive, the row, and any legacy manifest sidecar' do
+    it 'removes the archive and the row' do
       filename = 'solectrus-backup-20260508-110000.tar'
       record_backup(filename)
-      File.write(File.join(backups_dir, "#{filename}.json"), '{}') # legacy sidecar
 
       described_class.destroy!(filename)
 
       expect(File).not_to exist(File.join(backups_dir, filename))
-      expect(File).not_to exist(File.join(backups_dir, "#{filename}.json"))
       expect(Backup.where(filename: filename)).not_to exist
-    end
-
-    it 'works when no legacy sidecar exists' do
-      filename = 'solectrus-backup-20260508-110000.tar'
-      record_backup(filename)
-
-      expect { described_class.destroy!(filename) }.not_to raise_error
-      expect(File).not_to exist(File.join(backups_dir, filename))
     end
 
     it 'raises NotFound for a missing backup' do
@@ -135,17 +125,6 @@ RSpec.describe BackupRepository do
                                                           solectrus-backup-20260508-110003.tar
                                                           solectrus-backup-20260508-110002.tar
                                                         ])
-    end
-
-    it 'removes any legacy manifest sidecar alongside the backup file' do
-      filename = 'solectrus-backup-20260508-110000.tar'
-      record_backup(filename)
-      File.write(File.join(backups_dir, "#{filename}.json"), '{}') # legacy sidecar
-
-      described_class.prune!(keep: 0)
-
-      expect(File).not_to exist(File.join(backups_dir, filename))
-      expect(File).not_to exist(File.join(backups_dir, "#{filename}.json"))
     end
   end
 

@@ -86,8 +86,7 @@ RSpec.describe BackupRepository::External do
       expect(Open3).to have_received(:capture2e).with(
         'docker', 'run', '--rm', '-v', "#{external_path}:/data",
         '--entrypoint', 'rm', described_class::IMAGE,
-        '-f', '/data/solectrus-backup-20260508-100000.tar',
-        '/data/solectrus-backup-20260508-100000.tar.json'
+        '-f', '/data/solectrus-backup-20260508-100000.tar'
       )
       expect(Backup.where(filename: 'solectrus-backup-20260508-100000.tar')).not_to exist
     end

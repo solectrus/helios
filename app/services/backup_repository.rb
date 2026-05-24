@@ -25,10 +25,6 @@ class BackupRepository
   ERROR_FILENAME = 'error.txt'.freeze
   CONFIG_ENTRY_PATH = 'helios/config.yaml'.freeze
 
-  # Per-backup `<archive>.tar.json` sidecars written by older HELIOS versions.
-  # No longer produced; only cleaned up when their backup is deleted/pruned.
-  LEGACY_MANIFEST_SUFFIX = '.json'.freeze
-
   # Capture groups isolate the date (yyyymmdd) and time (hhmmss) digits so a
   # validated filename can be rebuilt from integers — see External#sidecar_path.
   FILENAME_PATTERN = /\Asolectrus-backup-(\d{8})-(\d{6})\.tar\z/

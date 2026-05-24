@@ -75,8 +75,5 @@ cp /config.yaml "$CONFIG_DEST" || fail "Failed to copy config.yaml"
 # so a second gzip layer wastes CPU on the (often Pi-class) host.
 tar -cf "$PART_PATH" -C "$WORK_DIR" . || fail "Failed to bundle backup archive"
 
-# No manifest sidecar is written here: file list, sizes and image versions
-# are all read back from the archive itself. The `.json` sidecar only ever
-# records a restore timestamp, and is written by restore.sh.
 mv "$PART_PATH" "$FINAL_PATH"
 rm -rf "$WORK_DIR"
