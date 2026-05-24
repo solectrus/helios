@@ -4,5 +4,7 @@ en:
   services: 'Services'
   backup: 'Backup'
   support: 'Support'
+  about: 'About HELIOS'
+  more_menu: 'More options'
   menu: 'Menu'
   close_menu: 'Close menu'

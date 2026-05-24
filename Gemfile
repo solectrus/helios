@@ -13,6 +13,7 @@ gem 'rubyzip', require: 'zip'
 
 # Frontend
 gem 'accept_language'
+gem 'commonmarker'
 gem 'rack-brotli'
 gem 'rails_vite'
 gem 'stimulus-rails'

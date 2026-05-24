@@ -16,6 +16,28 @@ de:
     boolean_yes: 'JA'
     boolean_no: 'NEIN'
 
+  about:
+    show:
+      title: 'Über'
+      hero_title_prefix: 'Konfiguration von'
+      copyright_notice: 'Alle Rechte vorbehalten.'
+      version_label: 'Version'
+      version_unknown: 'unbekannt'
+      branch_label: 'Branch'
+      built_label: 'Erstellt'
+      license_heading: 'Lizenz'
+      summary_private_title: 'Frei für nicht-kommerzielle Zwecke'
+      summary_private_text: 'HELIOS darf von Privatpersonen, gemeinnützigen Organisationen und öffentlichen Einrichtungen unentgeltlich für eigene Zwecke betrieben werden. Das umfasst auch private PV-Anlagen mit Einspeisevergütung.'
+      summary_commercial_title: 'Gewerblich nur nach Vereinbarung'
+      summary_commercial_text: 'Jede Nutzung mit Gewinnerzielungsabsicht erfordert eine gesonderte Vereinbarung, etwa als Installations-, Beratungs- oder Hostingdienstleister, bei Bündelung mit kommerziellen Produkten oder beim Einsatz für gewerbliche PV-Anlagen.'
+      summary_source_title: 'Kein Open Source'
+      summary_source_text: 'Der Quelltext ist zur Transparenz und Begutachtung öffentlich einsehbar. Kopieren, Verändern, Verbreiten oder das Erstellen eigener Images aus dem Quelltext sind nicht gestattet. Lizenziert zur Nutzung ist ausschließlich das offizielle Docker-Image.'
+      sponsorship_note: 'SOLECTRUS selbst bleibt frei unter der AGPL‑3.0 und finanziert sich über Sponsoring. Aktive Förderer erhalten dort den vollen Funktionsumfang.'
+      show_full_license: 'Vollständige Lizenz anzeigen'
+      full_license_title: 'Lizenzbedingungen für HELIOS'
+      components_heading: 'Verwendete Bibliotheken'
+      components_intro: 'HELIOS bündelt die folgenden Komponenten zur Laufzeit, jeweils unter eigener Lizenz. Klick auf eine Zeile zeigt den vollständigen LICENSE-Text.'
+
   services:
     index:
       title: 'Dienste'
@@ -448,6 +470,7 @@ de:
       step_backup_html: 'Beide Dateien werden als Sicherheitskopie gespeichert (<code class="rounded bg-base-300 px-1 font-mono">.bak</code>)'
       step_manage: 'Anschließend erfolgt die gesamte Konfiguration von SOLECTRUS sowie der Betrieb der Container webbasiert über HELIOS – die Kommandozeile wird nicht mehr benötigt'
       hint_exclusive_html: 'Da HELIOS die Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> zukünftig selbst schreibt und ändert, ist eine parallele Nutzung von Portainer, Dockge, Arcane oder ähnlichen Tools nicht mehr vorgesehen.'
+      license_notice_html: 'HELIOS ist quellverfügbare Software. Mit dem Start des Imports gelten die <a href="https://github.com/solectrus/helios/blob/develop/docs/legal/LICENSE.de.md" target="_blank" rel="noopener" class="link">Lizenzbedingungen</a> als akzeptiert.'
       agree: 'Einverstanden, Import starten'
       unsupported_heading: 'HELIOS kann diese Konfiguration leider nicht verwalten'
       unsupported_reason: 'Folgende Dienste sind unbekannt:'

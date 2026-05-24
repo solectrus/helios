@@ -1,0 +1,203 @@
+<% content_for :title, t('.title') %>
+
+<div class="mx-auto max-w-6xl px-4 py-6 md:p-8">
+  <section class="animate-about-rise relative mb-12 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_auto] lg:items-start">
+    <div>
+      <p class="text-base-content/50 font-mono text-xs tracking-[0.25em] uppercase">HELIOS</p>
+
+      <h1 class="text-base-content mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
+        <span class="block"><%= t('.hero_title_prefix') %></span>
+
+        <%= render 'shared/solectrus_logo' %>
+      </h1>
+
+      <p class="text-base-content/55">
+        © 2026 Georg Ledermann · <%= t('.copyright_notice') %>
+      </p>
+    </div>
+
+    <aside
+      class="
+        bg-base-100 border-base-content/10 -mx-4 flex flex-col gap-3 self-start border-y p-5 md:mx-0 md:rounded-2xl
+        md:border lg:min-w-[18rem]
+      "
+    >
+      <div>
+        <p class="text-base-content/50 text-[0.65rem] font-medium tracking-[0.2em] uppercase">
+          <%= t('.version_label') %>
+        </p>
+
+        <p class="text-base-content mt-1 font-mono text-sm break-all">
+          <%= @git.commit_version.presence || t('.version_unknown') %>
+        </p>
+      </div>
+
+      <% if @git.commit_branch.present? %>
+        <div class="border-base-content/10 border-t pt-3">
+          <p class="text-base-content/50 text-[0.65rem] font-medium tracking-[0.2em] uppercase">
+            <%= t('.branch_label') %>
+          </p>
+
+          <p class="text-base-content/80 mt-1 font-mono text-sm"><%= @git.commit_branch %></p>
+        </div>
+      <% end %>
+
+      <% if @commit_time %>
+        <div class="border-base-content/10 border-t pt-3">
+          <p class="text-base-content/50 text-[0.65rem] font-medium tracking-[0.2em] uppercase">
+            <%= t('.built_label') %>
+          </p>
+
+          <p class="text-base-content/80 mt-1 font-mono text-sm tabular-nums">
+            <time datetime="<%= @commit_time.iso8601 %>"><%= @commit_time.strftime('%Y-%m-%d · %H:%M') %></time>
+          </p>
+        </div>
+      <% end %>
+    </aside>
+  </section>
+
+  <section class="animate-about-rise mb-12 [animation-delay:80ms]">
+    <article class="bg-base-100 border-base-content/10 -mx-4 overflow-hidden border-y md:mx-0 md:rounded-2xl md:border">
+      <div class="p-6 md:p-10">
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <h2 class="text-base-content text-2xl font-semibold tracking-tight">
+            <%= t('.license_heading') %>
+          </h2>
+
+          <button
+            type="button"
+            class="btn btn-outline btn-sm"
+            data-controller="modal-opener"
+            data-action="modal-opener#open"
+            data-modal-opener-id-param="full-license-modal"
+          >
+            <i aria-hidden="true" class="fa-solid fa-file-lines"></i>
+            <%= t('.show_full_license') %>
+          </button>
+        </div>
+
+        <ul class="grid gap-6 md:grid-cols-3 md:gap-8">
+          <li class="flex flex-col gap-3">
+            <div class="flex items-center gap-3 md:flex-col md:items-start">
+              <i aria-hidden="true" class="fa-solid fa-house-user text-success text-2xl"></i>
+
+              <h3 class="text-base-content text-base font-semibold tracking-tight">
+                <%= t('.summary_private_title') %>
+              </h3>
+            </div>
+
+            <% t('.summary_private_text').split("\n\n").each do |para| %>
+              <p class="text-base-content/80 text-base leading-relaxed"><%= para %></p>
+            <% end %>
+          </li>
+
+          <li class="flex flex-col gap-3">
+            <div class="flex items-center gap-3 md:flex-col md:items-start">
+              <i aria-hidden="true" class="fa-solid fa-handshake text-primary text-2xl"></i>
+
+              <h3 class="text-base-content text-base font-semibold tracking-tight">
+                <%= t('.summary_commercial_title') %>
+              </h3>
+            </div>
+
+            <% t('.summary_commercial_text').split("\n\n").each do |para| %>
+              <p class="text-base-content/80 text-base leading-relaxed"><%= para %></p>
+            <% end %>
+          </li>
+
+          <li class="flex flex-col gap-3">
+            <div class="flex items-center gap-3 md:flex-col md:items-start">
+              <i aria-hidden="true" class="fa-solid fa-eye text-warning text-2xl"></i>
+
+              <h3 class="text-base-content text-base font-semibold tracking-tight">
+                <%= t('.summary_source_title') %>
+              </h3>
+            </div>
+
+            <% t('.summary_source_text').split("\n\n").each do |para| %>
+              <p class="text-base-content/80 text-base leading-relaxed"><%= para %></p>
+            <% end %>
+          </li>
+        </ul>
+      </div>
+
+      <footer class="border-base-content/10 border-t px-6 py-4 md:px-10">
+        <p class="text-base-content/70 text-center text-sm leading-relaxed"><%= t('.sponsorship_note') %></p>
+      </footer>
+    </article>
+  </section>
+
+  <section id="components" class="animate-about-rise scroll-mt-24 [animation-delay:160ms]">
+    <details class="group bg-base-100 border-base-content/10 -mx-4 overflow-hidden border-y md:mx-0 md:rounded-2xl md:border">
+      <summary
+        class="
+          hover:bg-base-200/60 flex cursor-pointer list-none items-center justify-between gap-3 px-6 py-5
+          transition-colors
+        "
+      >
+        <h2 class="text-base-content text-xl font-semibold tracking-tight"><%= t('.components_heading') %></h2>
+
+        <i
+          class="
+            fa-solid fa-chevron-down text-base-content/40 text-sm transition-transform duration-200 ease-out
+            group-open:rotate-180
+          "
+        ></i>
+      </summary>
+
+      <p class="text-base-content/60 border-base-content/10 border-t px-5 py-4 text-sm leading-relaxed">
+        <%= t('.components_intro') %>
+      </p>
+
+      <ul class="border-base-content/10 divide-base-content/5 divide-y border-t">
+        <% @components.each do |component| %>
+          <li>
+            <a
+              href="<%= about_component_path(category: component[:category], name: component[:name]) %>"
+              data-turbo-frame="about-modal-content"
+              class="hover:bg-base-200/60 flex items-center gap-4 px-5 py-2.5 transition-colors"
+            >
+              <span class="text-base-content/90 min-w-0 grow truncate font-mono text-xs"><%= component[:name] %></span>
+
+              <span class="text-base-content/55 shrink-0 text-xs"><%= component[:license] %></span>
+
+              <i class="fa-solid fa-chevron-right text-base-content/30 shrink-0 text-[0.6rem]"></i>
+            </a>
+          </li>
+        <% end %>
+      </ul>
+    </details>
+  </section>
+</div>
+
+<%= render "shared/frame_modal",
+           id: "about-modal",
+           turbo_frame: "about-modal-content",
+           box_classes: "overflow-y-auto sm:max-w-3xl!" %>
+
+<dialog id="full-license-modal" class="modal">
+  <div
+    class="
+      modal-box bg-base-100 relative flex h-dvh! w-full! max-w-none! flex-col rounded-none p-0 sm:h-auto!
+      sm:max-h-[95vh] sm:max-w-3xl! sm:rounded-2xl sm:p-6
+    "
+  >
+    <h3 class="text-base-content mb-4 px-4 pt-4 pr-12 text-lg font-semibold tracking-tight sm:px-0 sm:pt-0">
+      <%= t('.full_license_title') %>
+    </h3>
+
+    <div class="min-h-0 flex-1 overflow-auto px-4 pb-4 sm:px-0 sm:pb-0">
+      <%= render_markdown(@license) %>
+    </div>
+
+    <form method="dialog" class="fixed top-2 right-2 z-10 sm:absolute">
+      <button type="submit" class="btn btn-circle btn-ghost btn-sm">
+        <i aria-hidden="true" class="fa-solid fa-xmark"></i>
+      </button>
+    </form>
+  </div>
+
+  <form method="dialog" class="modal-backdrop">
+    <button type="submit">close</button>
+  </form>
+</dialog>

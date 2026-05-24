@@ -9,3 +9,18 @@
 @utility overflow-anchor-none {
   overflow-anchor: none;
 }
+
+/* Soft entrance for /about sections — opacity + transform only (GPU-friendly). */
+@utility animate-about-rise {
+  animation: about-rise 600ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+@keyframes about-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}

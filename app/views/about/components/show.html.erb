@@ -1,0 +1,26 @@
+<%= turbo_frame_tag "about-modal-content", class: "flex h-full flex-col" do %>
+  <header class="border-base-content/10 border-b px-6 pt-6 pb-4">
+    <h3 class="text-base-content text-lg font-semibold tracking-tight break-all"><%= @payload[:heading] %></h3>
+
+    <% if @payload[:subtitle].present? %>
+      <p class="text-base-content/60 mt-1 font-mono text-xs"><%= @payload[:subtitle] %></p>
+    <% end %>
+
+    <% if @payload[:url].present? %>
+      <p class="mt-2">
+        <a
+          href="<%= @payload[:url] %>"
+          class="link link-primary text-xs"
+          rel="noopener noreferrer"
+          target="_blank"
+        >
+          <%= @payload[:url] %>
+        </a>
+      </p>
+    <% end %>
+  </header>
+
+  <div class="bg-base-200 min-h-0 flex-1 overflow-auto p-6">
+    <pre class="text-base-content/85 ligatures-none font-mono text-xs leading-relaxed whitespace-pre"><%= @payload[:text] %></pre>
+  </div>
+<% end %>

@@ -33,23 +33,64 @@
     <div class="ml-auto flex items-center gap-3">
       <%= render HostStats::Component.new %>
 
-      <a
-        href="<%= helpers.new_support_path %>"
-        data-turbo-frame="support-modal-content"
-        class="btn btn-ghost btn-sm max-sm:btn-square gap-2"
-        title="<%= t(".support") %>"
-      >
-        <i class="fa-solid fa-life-ring"></i>
-        <span class="hidden sm:inline"><%= t(".support") %></span>
-      </a>
+      <div class="dropdown dropdown-end" data-controller="locale-switcher">
+        <div
+          tabindex="0"
+          role="button"
+          class="btn btn-ghost btn-sm btn-square"
+          aria-label="<%= t(".more_menu") %>"
+          title="<%= t(".more_menu") %>"
+        >
+          <i class="text-base-content/80 fa-solid fa-ellipsis-vertical text-lg"></i>
+        </div>
 
-      <%= render LanguageSelect::Component.new %>
+        <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-10 mt-1 w-56 p-2 shadow-2xl">
+          <li>
+            <a href="<%= helpers.new_support_path %>" data-turbo-frame="support-modal-content">
+              <i class="fa-solid fa-life-ring fa-fw"></i>
+              <%= t(".support") %>
+            </a>
+          </li>
 
-      <% if helpers.password_required? %>
-        <%= button_to session_path, method: :delete, class: "btn btn-ghost btn-sm btn-square", title: t('.logout') do %>
-          <i class="fa-solid fa-right-from-bracket"></i>
-        <% end %>
-      <% end %>
+          <li class="border-base-content/10 mt-2 border-t pt-2">
+            <button
+              type="button"
+              class="<%= 'font-semibold' if I18n.locale == :de %>"
+              data-action="click->locale-switcher#select"
+              data-locale-switcher-locale-param="de"
+            >
+              <span class="w-4"><% if I18n.locale == :de %><i class="fa-solid fa-check"></i><% end %></span> Deutsch
+            </button>
+          </li>
+
+          <li>
+            <button
+              type="button"
+              class="<%= 'font-semibold' if I18n.locale == :en %>"
+              data-action="click->locale-switcher#select"
+              data-locale-switcher-locale-param="en"
+            >
+              <span class="w-4"><% if I18n.locale == :en %><i class="fa-solid fa-check"></i><% end %></span> English
+            </button>
+          </li>
+
+          <li class="border-base-content/10 mt-2 border-t pt-2">
+            <a href="<%= helpers.about_path %>" data-turbo-frame="_top">
+              <i class="fa-solid fa-id-card fa-fw"></i>
+              <%= t(".about") %>
+            </a>
+          </li>
+
+          <% if helpers.password_required? %>
+            <li>
+              <%= button_to session_path, method: :delete do %>
+                <i class="fa-solid fa-right-from-bracket fa-fw"></i>
+                <%= t('.logout') %>
+              <% end %>
+            </li>
+          <% end %>
+        </ul>
+      </div>
     </div>
   </div>
 </nav>

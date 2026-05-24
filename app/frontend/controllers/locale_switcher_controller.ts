@@ -1,6 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
 import * as Turbo from '@hotwired/turbo';
-import { updatePreferences } from '../../frontend/utils/preferences_cookie';
+import { updatePreferences } from '../utils/preferences_cookie';
 
 export default class extends Controller {
   select(

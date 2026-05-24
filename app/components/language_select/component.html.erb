@@ -1,4 +1,4 @@
-<div class="dropdown dropdown-end" data-controller="language-select--component">
+<div class="dropdown dropdown-end" data-controller="locale-switcher">
   <div tabindex="0" role="button" class="btn btn-ghost btn-sm">
     <i class="fa-solid fa-globe"></i>
     <i class="fa-solid fa-chevron-down fa-2xs"></i>
@@ -9,8 +9,8 @@
       <button
         type="button"
         class="justify-end <%= 'active font-bold' if I18n.locale == :en %>"
-        data-action="click->language-select--component#select"
-        data-language-select--component-locale-param="en"
+        data-action="click->locale-switcher#select"
+        data-locale-switcher-locale-param="en"
       >
         English
       </button>
@@ -20,8 +20,8 @@
       <button
         type="button"
         class="justify-end <%= 'active font-bold' if I18n.locale == :de %>"
-        data-action="click->language-select--component#select"
-        data-language-select--component-locale-param="de"
+        data-action="click->locale-switcher#select"
+        data-locale-switcher-locale-param="de"
       >
         Deutsch
       </button>

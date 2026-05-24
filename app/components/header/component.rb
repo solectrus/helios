@@ -45,7 +45,7 @@ module Header
       class_names(
         TAB_BASE_CLASSES,
         'text-primary bg-primary/10 font-semibold': tab[:id] == active_tab,
-        'text-base-content/65 hover:bg-base-content/5 hover:text-base-content': tab[:id] != active_tab,
+        'text-base-content/80 hover:bg-base-content/5 hover:text-base-content': tab[:id] != active_tab,
       )
     end
   end

@@ -41,6 +41,7 @@ config/environments/test.rb
 coverage
 Dockerfile
 docs
+!docs/legal
 eslint.config.mjs
 Guardfile
 log/*

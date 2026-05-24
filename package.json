@@ -1,6 +1,7 @@
 {
   "name": "helios",
   "private": true,
+  "license": "UNLICENSED",
   "scripts": {
     "erb:format": "herb-format",
     "erb:check": "herb-format --check .",

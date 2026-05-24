@@ -187,7 +187,19 @@ welcome() {
 TEXT
   highlight "    $(pwd)"
   printf '\n'
-  prompt_yn "  Continue? [y/N] " || { warn "  Aborted."; exit 0; }
+
+  bold "  License"
+  cat <<TEXT
+  HELIOS is source-available proprietary software. The official Docker
+  image may be used free of charge for non-commercial, personal purposes.
+  Commercial use requires prior written permission.
+
+  Full license terms:
+TEXT
+  highlight "    https://github.com/${HELIOS_REPO}/blob/${HELIOS_REF}/LICENSE.md"
+  printf '\n'
+  prompt_yn "  Accept license terms and continue? [y/N] " \
+    || { warn "  Aborted."; exit 0; }
   printf '\n'
 }
 

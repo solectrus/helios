@@ -111,6 +111,11 @@ Rails.application.routes.draw do
     resource :restore, only: :create, module: :backups
   end
   resource :support, only: %i[new create]
+  resource :about, only: :show, controller: 'about' do
+    scope module: :about do
+      resource :component, only: :show
+    end
+  end
 
   scope 'configuration', as: :configuration do
     resources :settings, only: %i[new create], module: :configurations

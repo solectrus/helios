@@ -40,6 +40,28 @@ en:
     boolean_yes: 'YES'
     boolean_no: 'NO'
 
+  about:
+    show:
+      title: 'About'
+      hero_title_prefix: 'Configuration of'
+      copyright_notice: 'All rights reserved.'
+      version_label: 'Version'
+      version_unknown: 'unknown'
+      branch_label: 'Branch'
+      built_label: 'Built'
+      license_heading: 'License'
+      summary_private_title: 'Free for non-commercial purposes'
+      summary_private_text: 'HELIOS may be operated free of charge by private individuals, non-profit organizations, and public institutions for their own purposes. This includes private photovoltaic installations with feed-in tariffs.'
+      summary_commercial_title: 'Commercial use by arrangement only'
+      summary_commercial_text: 'Any use with the intent of financial gain requires a separate arrangement, for example as an installation, consulting, or hosting provider, when bundling with commercial products, or for use with commercial photovoltaic installations.'
+      summary_source_title: 'Not open source'
+      summary_source_text: 'The source code is publicly visible for transparency and review. Copying, modifying, redistributing, or building independent images from the source code is not permitted. Only the official Docker image is licensed for use.'
+      sponsorship_note: 'SOLECTRUS itself remains free under the AGPL‑3.0 and is funded through sponsorship. Active sponsors get its full feature set.'
+      show_full_license: 'Show full license'
+      full_license_title: 'HELIOS license terms'
+      components_heading: 'Bundled libraries'
+      components_intro: 'HELIOS bundles the following runtime components, each subject to its own license. Click any row for the full LICENSE text.'
+
   services:
     index:
       title: 'Services'
@@ -472,6 +494,7 @@ en:
       step_backup_html: 'Both files will be saved as backup copies (<code class="rounded bg-base-300 px-1 font-mono">.bak</code>)'
       step_manage: 'From now on, all SOLECTRUS configuration and container management will be handled web-based through HELIOS – the command line is no longer needed'
       hint_exclusive_html: 'Since HELIOS will write and modify the <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> and <code class="rounded bg-base-300 px-1 font-mono">.env</code> files itself going forward, parallel use of Portainer, Dockge, Arcane, or similar tools is no longer intended.'
+      license_notice_html: 'HELIOS is source-available software. Starting the import constitutes acceptance of the <a href="https://github.com/solectrus/helios/blob/develop/LICENSE.md" target="_blank" rel="noopener" class="link">license terms</a>.'
       agree: 'Agree and start import'
       unsupported_heading: 'Unfortunately, HELIOS cannot manage this configuration'
       unsupported_reason: 'The following services are unknown:'

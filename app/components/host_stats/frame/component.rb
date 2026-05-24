@@ -25,7 +25,7 @@ module HostStats
       end
 
       def value_class(value)
-        value.to_i >= 80 ? 'text-warning' : 'text-base-content/65'
+        value.to_i >= 80 ? 'text-warning' : 'text-base-content/80'
       end
 
       def cpu_tooltip
