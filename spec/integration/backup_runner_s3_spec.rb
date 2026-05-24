@@ -188,16 +188,29 @@ RSpec.describe BackupRunner, :docker_stack do
   end
 
   # The backup runs in a detached `--rm` container, so its disappearance
-  # from `docker ps` marks completion (success or failure alike).
+  # from `docker ps` marks the dump+tar phase done. For the S3 destination
+  # the in-process Uploader thread still has to push the tar and record
+  # the DB row; with a fast (near-empty) backup the test would otherwise
+  # race past the uploader and observe an empty Backup table.
   def wait_for_backup_completion!(timeout: 240)
     deadline = Time.current + timeout
-
-    loop do
+    wait_until(deadline) do
       running, = Open3.capture2('docker', 'ps', '-aq', '--filter', "name=#{described_class::CONTAINER_NAME}")
-      return if running.strip.empty?
-      raise "backup runner did not finish within #{timeout}s" if Time.current > deadline
+      running.strip.empty?
+    end || raise("backup runner container did not exit within #{timeout}s")
 
-      sleep 2
+    return unless BackupRepository.s3?
+
+    wait_until(deadline) { !BackupRepository::S3::Uploader.running? } ||
+      raise("S3 uploader thread did not finish within #{timeout}s")
+  end
+
+  def wait_until(deadline) # rubocop:disable Naming/PredicateMethod
+    until Time.current > deadline
+      return true if yield
+
+      sleep 0.5
     end
+    false
   end
 end
