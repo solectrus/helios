@@ -16,8 +16,8 @@ class BackupRepository
 
         private
 
-        def run(filename)
-          return unless perform_download(filename)
+        def run(filename, total: nil)
+          return unless perform_download(filename, total)
           return unless block_given?
 
           begin
@@ -33,8 +33,10 @@ class BackupRepository
         # Returns true if the tar is now in staging, false otherwise —
         # callers skip the on_complete step in the false case (no point
         # starting the restore container without a tar).
-        def perform_download(filename)
-          BackupRepository::S3.download_to_staging!(filename, progress_callback: progress_recorder)
+        def perform_download(filename, total)
+          BackupRepository::S3.download_to_staging!(
+            filename, progress_callback: progress_recorder, total: total
+          )
           true
         rescue BackupRepository::Error => e
           handle_download_failure(filename, e.message)

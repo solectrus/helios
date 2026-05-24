@@ -43,8 +43,10 @@ class RestoreRunner < DetachedRunner
       # download so the tar is only fetched once. The restored config
       # would overwrite the current S3 credentials anyway, so the
       # download must precede it. Failures surface via restore-error.txt
-      # in detect_completion!.
-      BackupRepository::S3::Downloader.start_async(backup.filename) { run_restore! }
+      # in detect_completion!. backup.bytes feeds the progress callback
+      # without a HEAD round-trip (some S3-compatible endpoints forbid
+      # HEAD while allowing GET).
+      BackupRepository::S3::Downloader.start_async(backup.filename, total: backup.bytes) { run_restore! }
     else
       run_restore!
     end

@@ -60,7 +60,7 @@ RSpec.describe BackupRepository::S3::Downloader do
 
       expect(BackupRepository::S3)
         .to have_received(:download_to_staging!)
-        .with(filename, progress_callback: kind_of(Proc))
+        .with(filename, progress_callback: kind_of(Proc), total: nil)
       expect(called_with).to eq(sentinel)
     end
 
@@ -87,12 +87,12 @@ RSpec.describe BackupRepository::S3::Downloader do
     it 'reflects the latest TransferManager callback in #current' do
       gate = Queue.new
       captured = nil
-      allow(BackupRepository::S3).to receive(:download_to_staging!) do |_filename, progress_callback:|
+      allow(BackupRepository::S3).to receive(:download_to_staging!) do |_filename, progress_callback:, **|
         captured = progress_callback
         gate.pop
       end
 
-      described_class.start_async(filename)
+      described_class.start_async(filename, total: 500)
       Timeout.timeout(1) { sleep 0.01 until captured }
 
       captured.call(125, 500)

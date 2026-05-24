@@ -321,7 +321,7 @@ RSpec.describe RestoreRunner do
         described_class.start(filename)
 
         expect(BackupRepository::S3::Downloader)
-          .to have_received(:start_async).with(filename)
+          .to have_received(:start_async).with(filename, total: 7)
       end
 
       it 'does not start the docker container synchronously (the Downloader will)' do

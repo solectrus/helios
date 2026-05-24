@@ -10,8 +10,10 @@ class BackupRepository
     class AsyncWorker
       class << self
         # Starts the worker thread. No-op if one is already alive.
-        # Returns true if a new thread was spawned.
-        def start_async(filename, &on_complete) # rubocop:disable Naming/BlockForwarding
+        # Returns true if a new thread was spawned. Extra kwargs are
+        # forwarded to the subclass's `run` (e.g. Downloader uses
+        # `total:` to size the progress callback).
+        def start_async(filename, **, &on_complete) # rubocop:disable Naming/BlockForwarding
           mutex.synchronize do
             return false if @thread&.alive?
 
@@ -27,7 +29,7 @@ class BackupRepository
             # navigates back to /backups.
             @thread = Thread.new(filename) do |f| # rubocop:disable ThreadSafety/NewThread
               # rubocop:disable Naming/BlockForwarding
-              Rails.application.executor.wrap { run(f, &on_complete) }
+              Rails.application.executor.wrap { run(f, **, &on_complete) }
               # rubocop:enable Naming/BlockForwarding
             ensure
               Orchestration::HeliosOperationBroadcaster.broadcast!
@@ -75,7 +77,7 @@ class BackupRepository
         # large transfer), but the UI only shows integer percent.
         def progress_recorder
           lambda do |done, total|
-            ratio = total.positive? ? done.to_f / total : 0.0
+            ratio = total.to_i.positive? ? done.to_f / total : 0.0
             rounded = (ratio.clamp(0.0, 1.0) * 100).round / 100.0
             mutex.synchronize { @progress = rounded unless @progress == rounded }
           end

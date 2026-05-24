@@ -171,13 +171,14 @@ class BackupRepository
         ::File.exist?(staging_path(filename))
       end
 
-      # Streams the tar from S3 into the local staging dir. With a
-      # progress_callback, calls head_object up-front so the total is
-      # known to the callback (one extra HEAD per call).
-      def download_to_staging!(filename, progress_callback: nil) # rubocop:disable Metrics/MethodLength
+      # Streams the tar from S3 into the local staging dir. The caller
+      # should pass `total:` (from Backup#bytes) when known — some
+      # S3-compatible endpoints (e.g. MinIO behind a reverse proxy that
+      # only whitelists GET/PUT) forbid HEAD while allowing GET, so a
+      # fallback head_object would break restore there.
+      def download_to_staging!(filename, progress_callback: nil, total: nil)
         path = staging_path(filename)
         key = object_key(filename)
-        total = progress_callback && client.head_object(bucket: bucket, key: key).content_length
         downloaded = 0
 
         FileUtils.mkdir_p(directory)
