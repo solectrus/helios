@@ -122,9 +122,9 @@ module Compose
       content = "  #{comment}  "
       width = [58, content.length].max
       [
-        "  # ┌#{'─' * width}┐\n",
-        "  # │#{content.ljust(width)}│\n",
-        "  # └#{'─' * width}┘\n",
+        "  # +#{'-' * width}+\n",
+        "  # |#{content.ljust(width)}|\n",
+        "  # +#{'-' * width}+\n",
         "  #\n",
       ]
     end

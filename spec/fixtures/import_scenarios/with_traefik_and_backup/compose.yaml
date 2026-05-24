@@ -21,9 +21,9 @@ name: solectrus
 
 services:
 
-  # ┌──────────────────────────────────────────────────────────┐
-  # │  SOLECTRUS — Web application                             │
-  # └──────────────────────────────────────────────────────────┘
+  # +----------------------------------------------------------+
+  # |  SOLECTRUS — Web application                             |
+  # +----------------------------------------------------------+
   #
   dashboard:
     image: ghcr.io/solectrus/solectrus:latest
@@ -75,9 +75,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌───────────────────────────────────────────────────────────┐
-  # │  InfluxDB — Time-series database for sensor measurements  │
-  # └───────────────────────────────────────────────────────────┘
+  # +-----------------------------------------------------------+
+  # |  InfluxDB — Time-series database for sensor measurements  |
+  # +-----------------------------------------------------------+
   #
   influxdb:
     image: influxdb:2-alpine
@@ -110,9 +110,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌──────────────────────────────────────────────────────────────────────────────────────────┐
-  # │  PostgreSQL — Relational database for daily summaries, electricity prices, and settings  │
-  # └──────────────────────────────────────────────────────────────────────────────────────────┘
+  # +------------------------------------------------------------------------------------------+
+  # |  PostgreSQL — Relational database for daily summaries, electricity prices, and settings  |
+  # +------------------------------------------------------------------------------------------+
   #
   postgresql:
     image: postgres:18-alpine
@@ -140,9 +140,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌──────────────────────────────────────────────────────────┐
-  # │  Redis — In-memory store for caching                     │
-  # └──────────────────────────────────────────────────────────┘
+  # +----------------------------------------------------------+
+  # |  Redis — In-memory store for caching                     |
+  # +----------------------------------------------------------+
   #
   redis:
     image: redis:8-alpine
@@ -169,9 +169,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌──────────────────────────────────────────────────────────┐
-  # │  Traefik — Reverse proxy with automatic HTTPS            │
-  # └──────────────────────────────────────────────────────────┘
+  # +----------------------------------------------------------+
+  # |  Traefik — Reverse proxy with automatic HTTPS            |
+  # +----------------------------------------------------------+
   #
   traefik:
     image: traefik:v3
@@ -199,9 +199,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌──────────────────────────────────────────────────────────┐
-  # │  Watchtower — Automatic Docker image updates             │
-  # └──────────────────────────────────────────────────────────┘
+  # +----------------------------------------------------------+
+  # |  Watchtower — Automatic Docker image updates             |
+  # +----------------------------------------------------------+
   #
   watchtower:
     image: nickfedor/watchtower:latest
@@ -231,9 +231,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌──────────────────────────────────────────────────────────┐
-  # │  HELIOS — Configuration management UI                    │
-  # └──────────────────────────────────────────────────────────┘
+  # +----------------------------------------------------------+
+  # |  HELIOS — Configuration management UI                    |
+  # +----------------------------------------------------------+
   #
   helios:
     image: ghcr.io/solectrus/helios:develop

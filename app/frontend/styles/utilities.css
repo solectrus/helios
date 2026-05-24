@@ -1,3 +1,10 @@
+/* Disable programmer-font ligatures (e.g. Geist Mono renders `---` as one
+   continuous bar). Apply to <pre>/<code> blocks that show verbatim text
+   where each character should look like itself. */
+@utility ligatures-none {
+  font-variant-ligatures: none;
+}
+
 /* Used when a controller owns scroll position (avoids browser double-compensation) */
 @utility overflow-anchor-none {
   overflow-anchor: none;

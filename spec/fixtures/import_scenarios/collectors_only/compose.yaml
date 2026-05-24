@@ -21,9 +21,9 @@ name: solectrus
 
 services:
 
-  # ┌───────────────────────────────────────────────────────────────────┐
-  # │  SENEC Collector — Reads data from SENEC battery storage systems  │
-  # └───────────────────────────────────────────────────────────────────┘
+  # +-------------------------------------------------------------------+
+  # |  SENEC Collector — Reads data from SENEC battery storage systems  |
+  # +-------------------------------------------------------------------+
   #
   senec-collector:
     image: ghcr.io/solectrus/senec-collector:develop
@@ -50,9 +50,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌───────────────────────────────────────────────────────────┐
-  # │  Shelly Collector — Reads data from Shelly energy meters  │
-  # └───────────────────────────────────────────────────────────┘
+  # +-----------------------------------------------------------+
+  # |  Shelly Collector — Reads data from Shelly energy meters  |
+  # +-----------------------------------------------------------+
   #
   shelly-collector:
     image: ghcr.io/solectrus/shelly-collector:develop
@@ -78,9 +78,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌───────────────────────────────────────────────────────────┐
-  # │  MQTT Collector — Receives sensor data via MQTT protocol  │
-  # └───────────────────────────────────────────────────────────┘
+  # +-----------------------------------------------------------+
+  # |  MQTT Collector — Receives sensor data via MQTT protocol  |
+  # +-----------------------------------------------------------+
   #
   mqtt-collector:
     image: ghcr.io/solectrus/mqtt-collector:develop
@@ -275,9 +275,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌──────────────────────────────────────────────────────────┐
-  # │  Watchtower — Automatic Docker image updates             │
-  # └──────────────────────────────────────────────────────────┘
+  # +----------------------------------------------------------+
+  # |  Watchtower — Automatic Docker image updates             |
+  # +----------------------------------------------------------+
   #
   watchtower:
     image: nickfedor/watchtower:latest
@@ -307,9 +307,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌──────────────────────────────────────────────────────────┐
-  # │  HELIOS — Configuration management UI                    │
-  # └──────────────────────────────────────────────────────────┘
+  # +----------------------------------------------------------+
+  # |  HELIOS — Configuration management UI                    |
+  # +----------------------------------------------------------+
   #
   helios:
     image: ghcr.io/solectrus/helios:develop

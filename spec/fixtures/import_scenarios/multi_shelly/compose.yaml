@@ -21,9 +21,9 @@ name: solectrus
 
 services:
 
-  # ┌──────────────────────────────────────────────────────────┐
-  # │  SOLECTRUS — Web application                             │
-  # └──────────────────────────────────────────────────────────┘
+  # +----------------------------------------------------------+
+  # |  SOLECTRUS — Web application                             |
+  # +----------------------------------------------------------+
   #
   dashboard:
     image: ghcr.io/solectrus/solectrus:latest
@@ -97,9 +97,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌───────────────────────────────────────────────────────────┐
-  # │  InfluxDB — Time-series database for sensor measurements  │
-  # └───────────────────────────────────────────────────────────┘
+  # +-----------------------------------------------------------+
+  # |  InfluxDB — Time-series database for sensor measurements  |
+  # +-----------------------------------------------------------+
   #
   influxdb:
     image: influxdb:2-alpine
@@ -132,9 +132,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌──────────────────────────────────────────────────────────────────────────────────────────┐
-  # │  PostgreSQL — Relational database for daily summaries, electricity prices, and settings  │
-  # └──────────────────────────────────────────────────────────────────────────────────────────┘
+  # +------------------------------------------------------------------------------------------+
+  # |  PostgreSQL — Relational database for daily summaries, electricity prices, and settings  |
+  # +------------------------------------------------------------------------------------------+
   #
   postgresql:
     image: postgres:18-alpine
@@ -162,9 +162,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌──────────────────────────────────────────────────────────┐
-  # │  Redis — In-memory store for caching                     │
-  # └──────────────────────────────────────────────────────────┘
+  # +----------------------------------------------------------+
+  # |  Redis — In-memory store for caching                     |
+  # +----------------------------------------------------------+
   #
   redis:
     image: redis:8-alpine
@@ -191,9 +191,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌───────────────────────────────────────────────────────────────────┐
-  # │  SENEC Collector — Reads data from SENEC battery storage systems  │
-  # └───────────────────────────────────────────────────────────────────┘
+  # +-------------------------------------------------------------------+
+  # |  SENEC Collector — Reads data from SENEC battery storage systems  |
+  # +-------------------------------------------------------------------+
   #
   senec-collector:
     image: ghcr.io/solectrus/senec-collector:latest
@@ -221,9 +221,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌───────────────────────────────────────────────────────────┐
-  # │  Shelly Collector — Reads data from Shelly energy meters  │
-  # └───────────────────────────────────────────────────────────┘
+  # +-----------------------------------------------------------+
+  # |  Shelly Collector — Reads data from Shelly energy meters  |
+  # +-----------------------------------------------------------+
   #
   shelly-collector:
     image: ghcr.io/solectrus/shelly-collector:latest
@@ -251,9 +251,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌───────────────────────────────────────────────────────────┐
-  # │  Forecast Collector — Fetches solar production forecasts  │
-  # └───────────────────────────────────────────────────────────┘
+  # +-----------------------------------------------------------+
+  # |  Forecast Collector — Fetches solar production forecasts  |
+  # +-----------------------------------------------------------+
   #
   forecast-collector:
     image: ghcr.io/solectrus/forecast-collector:latest
@@ -295,9 +295,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌──────────────────────────────────────────────────────────┐
-  # │  Power Splitter — Calculates derived power values        │
-  # └──────────────────────────────────────────────────────────┘
+  # +----------------------------------------------------------+
+  # |  Power Splitter — Calculates derived power values        |
+  # +----------------------------------------------------------+
   #
   power-splitter:
     image: ghcr.io/solectrus/power-splitter:latest
@@ -349,9 +349,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌──────────────────────────────────────────────────────────┐
-  # │  Traefik — Reverse proxy with automatic HTTPS            │
-  # └──────────────────────────────────────────────────────────┘
+  # +----------------------------------------------------------+
+  # |  Traefik — Reverse proxy with automatic HTTPS            |
+  # +----------------------------------------------------------+
   #
   traefik:
     image: traefik:v3.6
@@ -382,9 +382,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌──────────────────────────────────────────────────────────┐
-  # │  Watchtower — Automatic Docker image updates             │
-  # └──────────────────────────────────────────────────────────┘
+  # +----------------------------------------------------------+
+  # |  Watchtower — Automatic Docker image updates             |
+  # +----------------------------------------------------------+
   #
   watchtower:
     image: nickfedor/watchtower:latest
@@ -414,9 +414,9 @@ services:
         max-size: 10m
         max-file: '3'
 
-  # ┌──────────────────────────────────────────────────────────┐
-  # │  HELIOS — Configuration management UI                    │
-  # └──────────────────────────────────────────────────────────┘
+  # +----------------------------------------------------------+
+  # |  HELIOS — Configuration management UI                    |
+  # +----------------------------------------------------------+
   #
   helios:
     image: ghcr.io/solectrus/helios:develop

@@ -70,9 +70,9 @@ module Env
       content = "  #{title}  "
       width = [58, content.length].max
       @lines << '#'
-      @lines << "# ┌#{'─' * width}┐"
-      @lines << "# │#{content.ljust(width)}│"
-      @lines << "# └#{'─' * width}┘"
+      @lines << "# +#{'-' * width}+"
+      @lines << "# |#{content.ljust(width)}|"
+      @lines << "# +#{'-' * width}+"
       @lines << '#'
       @lines << ''
     end
