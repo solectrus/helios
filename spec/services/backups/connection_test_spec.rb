@@ -54,6 +54,7 @@ RSpec.describe Backups::ConnectionTest do
   end
 
   describe 'aws_credentials check' do
+    let(:s3_client) { Aws::S3::Client.new(stub_responses: true, region: 'eu-central-1') }
     let(:full_values) do
       {
         'aws_access_key_id' => 'AKIA...',
@@ -65,81 +66,74 @@ RSpec.describe Backups::ConnectionTest do
       }
     end
 
+    before { allow(Aws::S3::Client).to receive(:new).and_return(s3_client) }
+
     def probe(values)
       tester.call(check: 'aws_credentials', values: values)
     end
 
     it 'reports incomplete when any required field is blank' do
-      allow(Open3).to receive(:capture2e)
+      allow(Aws::S3::Client).to receive(:new).and_call_original
       result = probe(full_values.merge('aws_secret_access_key' => ''))
       expect(result).to have_attributes(ok: false, reason: :incomplete)
-      expect(Open3).not_to have_received(:capture2e)
+      expect(s3_client.api_requests).to be_empty
     end
 
-    it 'reports reachable on sidecar success' do
-      stub_probe(exitstatus: 0, output: "2026-05-08 12:00:00  1024 solectrus-backup-20260508-120000.tar\n")
+    it 'reports reachable on a successful list call' do
+      s3_client.stub_responses(:list_objects_v2, contents: [])
       expect(probe(full_values)).to have_attributes(ok: true, reason: :s3_reachable)
     end
 
     it 'maps NoSuchBucket to s3_bucket_missing' do
-      stub_probe(exitstatus: 255, output: 'An error occurred (NoSuchBucket) when calling the ListObjectsV2 operation')
+      s3_client.stub_responses(:list_objects_v2, 'NoSuchBucket')
       expect(probe(full_values)).to have_attributes(ok: false, reason: :s3_bucket_missing)
     end
 
     it 'maps InvalidAccessKeyId to s3_invalid_credentials' do
-      stub_probe(exitstatus: 255, output: 'An error occurred (InvalidAccessKeyId)')
+      s3_client.stub_responses(:list_objects_v2, 'InvalidAccessKeyId')
       expect(probe(full_values)).to have_attributes(ok: false, reason: :s3_invalid_credentials)
     end
 
     it 'maps SignatureDoesNotMatch to s3_invalid_credentials' do
-      stub_probe(exitstatus: 255, output: 'An error occurred (SignatureDoesNotMatch)')
+      s3_client.stub_responses(:list_objects_v2, 'SignatureDoesNotMatch')
       expect(probe(full_values)).to have_attributes(ok: false, reason: :s3_invalid_credentials)
     end
 
     it 'maps AccessDenied to s3_access_denied' do
-      stub_probe(exitstatus: 255, output: 'An error occurred (AccessDenied)')
+      s3_client.stub_responses(:list_objects_v2, 'AccessDenied')
       expect(probe(full_values)).to have_attributes(ok: false, reason: :s3_access_denied)
     end
 
-    it 'maps endpoint connection failures to s3_endpoint_unreachable' do
-      stub_probe(exitstatus: 255, output: 'Could not connect to the endpoint URL')
+    it 'maps networking errors to s3_endpoint_unreachable' do
+      net_error = Seahorse::Client::NetworkingError.new(StandardError.new('connect failed'))
+      s3_client.stub_responses(:list_objects_v2, net_error)
       expect(probe(full_values.merge('s3_endpoint_url' => 'https://minio.example.com')))
         .to have_attributes(ok: false, reason: :s3_endpoint_unreachable)
     end
 
-    it 'falls back to s3_error for unknown failures' do
-      stub_probe(exitstatus: 1, output: 'unexpected output')
+    it 'falls back to s3_error for unknown service errors' do
+      s3_client.stub_responses(:list_objects_v2, 'InternalError')
       expect(probe(full_values)).to have_attributes(ok: false, reason: :s3_error)
     end
 
-    it 'targets the bucket and prefix in the probe command' do
-      stub_probe(exitstatus: 0, output: '')
+    it 'sends the bucket and prefix to S3' do
+      s3_client.stub_responses(:list_objects_v2, contents: [])
       probe(full_values)
-      expect(Open3).to have_received(:capture2e) do |*args|
-        expect(args).to include('s3api', 'list-objects-v2', '--bucket', 'my-backups')
-        expect(args).to include('--prefix', 'solectrus/')
-      end
+      req = s3_client.api_requests.find { |r| r[:operation_name] == :list_objects_v2 }
+      expect(req[:params]).to include(bucket: 'my-backups', prefix: 'solectrus/', max_keys: 1)
     end
 
-    it 'forwards the endpoint URL via env when set' do
-      stub_probe(exitstatus: 0, output: '')
+    it 'configures path-style addressing when an endpoint URL is set' do
+      captured = nil
+      allow(Aws::S3::Client).to receive(:new) do |**opts|
+        captured = opts
+        s3_client
+      end
+      s3_client.stub_responses(:list_objects_v2, contents: [])
+
       probe(full_values.merge('s3_endpoint_url' => 'https://minio.example.com'))
-      expect(Open3).to have_received(:capture2e) do |*args|
-        expect(args).to include('-e', 'AWS_ENDPOINT_URL=https://minio.example.com')
-      end
-    end
 
-    it 'omits the endpoint env when blank' do
-      stub_probe(exitstatus: 0, output: '')
-      probe(full_values.merge('s3_endpoint_url' => ''))
-      expect(Open3).to have_received(:capture2e) do |*args|
-        expect(args.grep(/AWS_ENDPOINT_URL/)).to be_empty
-      end
-    end
-
-    it 'reports error when the docker call raises' do
-      allow(Open3).to receive(:capture2e).and_raise(Errno::ENOENT, 'docker missing')
-      expect(probe(full_values)).to have_attributes(ok: false, reason: :s3_error)
+      expect(captured).to include(endpoint: 'https://minio.example.com', force_path_style: true)
     end
   end
 

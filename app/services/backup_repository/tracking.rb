@@ -81,6 +81,13 @@ class BackupRepository
       ::File.join(Rails.configuration.data_path, 'helios', "#{destination_key}_backup_pending.flag")
     end
 
+    # Filename recorded in the pending marker, or nil. Public hook used by
+    # BackupRunner.in_progress to detect a tar that needs re-uploading
+    # after a HELIOS restart.
+    def pending_filename
+      pending_marker_content
+    end
+
     private
 
     def fetch_record!(filename)

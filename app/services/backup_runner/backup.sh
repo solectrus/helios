@@ -3,11 +3,15 @@
 # Alpine `ash` (not bash); `shell=bash` is the closest dialect Shellcheck
 # supports that allows `set -o pipefail`.
 # Receives positional args via `sh -c '<this script>' _ <token> <filename>
-# <date> <postgres-container> <influxdb-container> <destination>
-# <host-staging> <aws-cli-image> <s3-dir-uri>`. Positional args are passed
-# by argv (not interpolated) so values with shell metacharacters are safe.
-# The InfluxDB inner pipeline matches what HELIOS ran before (`influx
+# <date> <postgres-container> <influxdb-container>`. Positional args are
+# passed by argv (not interpolated) so values with shell metacharacters are
+# safe. The InfluxDB inner pipeline matches what HELIOS ran before (`influx
 # backup` + tar+gzip), just orchestrated from outside.
+#
+# This script no longer talks to the backup destination directly: it writes
+# the final tar (or an error file) into /output (the staging dir) and exits.
+# The HELIOS Rails process picks the artifact up afterwards and handles
+# any remote upload via aws-sdk-s3.
 
 set -eu
 set -o pipefail
@@ -17,10 +21,6 @@ BACKUP_FILENAME="$2"
 BACKUP_DATE="$3"
 POSTGRES_CONTAINER="$4"
 INFLUXDB_CONTAINER="$5"
-DESTINATION="$6"
-HOST_STAGING="$7"
-AWS_CLI_IMAGE="$8"
-S3_DIR_URI="$9"
 
 OUTPUT_DIR="/output"
 WORK_DIR="$OUTPUT_DIR/.work"
@@ -31,32 +31,10 @@ PART_PATH="$OUTPUT_DIR/$BACKUP_FILENAME.part"
 FINAL_PATH="$OUTPUT_DIR/$BACKUP_FILENAME"
 ERROR_PATH="$OUTPUT_DIR/error.txt"
 
-# Bind-mount + env forwarding for the nested aws-cli sidecar. AWS_ENDPOINT_URL
-# is omitted from the inherited env list when blank so the inner CLI falls
-# back to its default (AWS S3); $inner_env is intentionally word-split.
-inner_env="-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION"
-if [ -n "${AWS_ENDPOINT_URL:-}" ]; then
-  inner_env="$inner_env -e AWS_ENDPOINT_URL"
-fi
-
-s3_upload() {
-  src_basename="$(basename "$1")"
-  # shellcheck disable=SC2086
-  docker run --rm -v "$HOST_STAGING:/work" $inner_env "$AWS_CLI_IMAGE" \
-    s3 cp "/work/$src_basename" "$2"
-}
-
 fail() {
   echo "$1" > "$ERROR_PATH"
   rm -rf "$WORK_DIR"
   rm -f "$PART_PATH"
-  if [ "$DESTINATION" = "s3" ]; then
-    # Drop the local copy only once it is safely on S3 — otherwise an
-    # unreachable destination would erase the failure without a trace.
-    if s3_upload "$ERROR_PATH" "${S3_DIR_URI}error.txt" 2>/dev/null; then
-      rm -f "$ERROR_PATH"
-    fi
-  fi
   exit 1
 }
 
@@ -102,12 +80,3 @@ tar -cf "$PART_PATH" -C "$WORK_DIR" . || fail "Failed to bundle backup archive"
 # records a restore timestamp, and is written by restore.sh.
 mv "$PART_PATH" "$FINAL_PATH"
 rm -rf "$WORK_DIR"
-
-# For S3 destinations the local tar is staging only: upload it through a
-# nested aws-cli container (the outer docker:cli image carries no AWS CLI)
-# and remove the local copy. The staging directory then holds at most one
-# in-flight backup, never a full archive listing.
-if [ "$DESTINATION" = "s3" ]; then
-  s3_upload "$FINAL_PATH" "${S3_DIR_URI}${BACKUP_FILENAME}" || fail "S3 upload failed"
-  rm -f "$FINAL_PATH"
-fi

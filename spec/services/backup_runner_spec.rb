@@ -166,6 +166,8 @@ RSpec.describe BackupRunner do
     end
 
     context 'with S3 destination' do
+      let(:s3_client) { Aws::S3::Client.new(stub_responses: true, region: 'eu-central-1') }
+
       before do
         with_config_yaml('backup' => {
                            'destination' => 's3',
@@ -179,48 +181,44 @@ RSpec.describe BackupRunner do
         # with_config_yaml overrides data_path; reseed the dependencies used by start
         File.write(File.join(Rails.configuration.data_path, '.env'), "INFLUX_ADMIN_TOKEN=secret-token\n")
         FileUtils.mkdir_p(File.join(Rails.configuration.data_path, 'helios'))
+        allow(BackupRepository::S3).to receive(:client).and_return(s3_client)
       end
 
-      it 'mounts the staging directory and forwards AWS credentials as env vars' do
+      it 'mounts the staging directory as /output and does not forward AWS credentials to the container' do
+        allow(BackupRepository::S3::Uploader).to receive(:start_async)
+
         described_class.start
 
         run = find_backup_runner_call
         aggregate_failures do
           expect(run).to include('-v', "#{host_data_path}/helios/backups-staging:/output")
-          expect(run).to include('-e', 'AWS_ACCESS_KEY_ID=AKIA')
-          expect(run).to include('-e', 'AWS_SECRET_ACCESS_KEY=secret')
-          expect(run).to include('-e', 'AWS_DEFAULT_REGION=eu-central-1')
-          expect(run).to include('-e', 'AWS_ENDPOINT_URL=https://minio.example.com')
+          # The container only ever does the dump+tar work; HELIOS handles
+          # every S3 call itself through aws-sdk-s3.
+          expect(run.grep(/\AAWS_/)).to be_empty
+          expect(run).not_to include('AWS_ACCESS_KEY_ID=AKIA')
         end
       end
 
-      it 'passes destination, staging host path, aws-cli image and s3 dir URI as trailing positional args' do
+      it 'passes only the runner positional args (no destination, no S3 image)' do
+        allow(BackupRepository::S3::Uploader).to receive(:start_async)
+
         described_class.start
 
         run = find_backup_runner_call
-        expect(run.last(4)).to eq([
-                                    's3',
-                                    "#{host_data_path}/helios/backups-staging",
-                                    BackupRepository::S3::IMAGE,
-                                    's3://my-bucket/solectrus/',
-                                  ])
+        placeholder_index = run.index('_')
+        expect(run[(placeholder_index + 1)..]).to eq(
+          ['secret-token', 'solectrus-backup-20260508-143000.tar', '2026-05-08',
+           'solectrus-postgresql-1', 'solectrus-influxdb-1'],
+        )
       end
 
-      it 'omits the endpoint URL env when no custom endpoint is configured' do
-        with_config_yaml('backup' => {
-                           'destination' => 's3',
-                           'aws_bucket' => 'my-bucket',
-                           'aws_access_key_id' => 'AKIA',
-                           'aws_secret_access_key' => 'secret',
-                           'aws_region' => 'eu-central-1',
-                         })
-        File.write(File.join(Rails.configuration.data_path, '.env'), "INFLUX_ADMIN_TOKEN=secret-token\n")
-        FileUtils.mkdir_p(File.join(Rails.configuration.data_path, 'helios'))
+      it 'spawns the S3 Uploader after launching the container' do
+        allow(BackupRepository::S3::Uploader).to receive(:start_async).and_return(true)
 
         described_class.start
 
-        run = find_backup_runner_call
-        expect(run.grep(/\AAWS_ENDPOINT_URL=/)).to be_empty
+        expect(BackupRepository::S3::Uploader)
+          .to have_received(:start_async).with('solectrus-backup-20260508-143000.tar')
       end
 
       def find_backup_runner_call
@@ -254,6 +252,43 @@ RSpec.describe BackupRunner do
         expect(result).to be_a(BackupRepository::InProgress)
         expect(result.filename).to eq('solectrus-backup-20260508-143000.tar')
         expect(result.started_at).to eq(Time.zone.parse('2026-05-08T14:30:00Z'))
+      end
+    end
+
+    context 'when resuming after a HELIOS restart with an S3 destination' do
+      let(:filename) { 'solectrus-backup-20260508-143000.tar' }
+
+      before do
+        with_config_yaml('backup' => {
+                           'destination' => 's3', 'aws_bucket' => 'my-bucket',
+                           'aws_access_key_id' => 'AKIA', 'aws_secret_access_key' => 'secret',
+                           'aws_region' => 'eu-central-1'
+                         })
+        # Container is no longer running (it exited before the restart).
+        state[:docker_inspect_success] = false
+        # Pending marker exists with the filename of the interrupted run.
+        BackupRepository::S3.mark_pending!(filename)
+        FileUtils.mkdir_p(BackupRepository::S3.directory)
+      end
+
+      it 'does not respawn the uploader when no staged tar is present' do
+        allow(BackupRepository::S3::Uploader).to receive(:start_async)
+        allow(BackupRepository::S3::Uploader).to receive(:current).and_return(nil)
+
+        expect(described_class.in_progress).to be_nil
+        expect(BackupRepository::S3::Uploader).not_to have_received(:start_async)
+      end
+
+      it 'respawns the uploader when a tar is sitting in staging without a live thread' do
+        FileUtils.touch(File.join(BackupRepository::S3.directory, filename))
+        allow(BackupRepository::S3::Uploader).to receive(:start_async).and_return(true)
+        running_snapshot = BackupRepository::InProgress.new(started_at: Time.current, filename: filename)
+        allow(BackupRepository::S3::Uploader).to receive(:current).and_return(nil, running_snapshot)
+
+        result = described_class.in_progress
+
+        expect(BackupRepository::S3::Uploader).to have_received(:start_async).with(filename)
+        expect(result).to eq(running_snapshot)
       end
     end
   end

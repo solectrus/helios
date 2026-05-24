@@ -1,22 +1,25 @@
-require 'shellwords'
-require 'open3'
+require 'aws-sdk-s3'
 
 class BackupRepository
-  # aws-cli-backed adapter for S3 and S3-compatible object stores (MinIO,
+  # aws-sdk-s3-backed adapter for S3 and S3-compatible object stores (MinIO,
   # Backblaze B2, Wasabi …) via an optional `endpoint_url`. New tars are
   # downloaded once into a local staging dir to parse them locally;
   # backup.sh writes the same staging dir before uploading.
   module S3 # rubocop:disable Metrics/ModuleLength
-    # Pinned to an exact version: amazon/aws-cli publishes no major/minor
-    # tags (only full semver + `latest`), so this is the closest we get to
-    # the third-party pinning rule of ADR-0006. The S3 adapter parses the
-    # CLI's text output, so an unpinned tag risks silent breakage.
-    IMAGE = 'amazon/aws-cli:2.34.52'.freeze
     STAGING_DIRNAME = 'backups-staging'.freeze
+
+    # Switch to multipart at 50 MB. AWS's default is 100 MB, but on Raspi
+    # the smaller chunks let the progress bar move sooner and keep memory
+    # use predictable on flaky home uplinks.
+    MULTIPART_THRESHOLD = 50 * 1024 * 1024
+
+    # Two parallel parts is the sweet spot for the typical home upstream:
+    # one part keeps the pipe full, a second one absorbs TCP slow start
+    # for the next chunk while the first is committing.
+    UPLOAD_THREAD_COUNT = 2
 
     class << self
       include BackupRepository::Tracking
-      include BackupRepository::Sidecar
 
       # Container-internal staging path. Returned even when the
       # destination is not yet configured so callers that mkdir up front
@@ -50,14 +53,18 @@ class BackupRepository
         { s3_endpoint_url: endpoint_url, s3_bucket: bucket, s3_prefix: prefix }
       end
 
-      def record_backup!(filename) # rubocop:disable Metrics/MethodLength
+      def record_backup!(filename) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
         raise BackupRepository::NotFound unless BackupRepository.valid_filename?(filename)
         return nil unless destination_configured?
 
+        # Uploader thread may have already recorded the row from the
+        # local copy; skip the S3 round-trip in that case.
+        return scoped_records.find_by(filename: filename) if recorded?(filename)
+
         FileUtils.mkdir_p(directory)
-        path = ::File.join(directory, filename)
+        path = staging_path(filename)
         begin
-          download_to_staging!([filename])
+          download_to_staging!(filename)
           return nil unless ::File.exist?(path)
 
           stat = ::File.stat(path)
@@ -76,48 +83,123 @@ class BackupRepository
         raise BackupRepository::NotFound unless destination_configured?
         raise BackupRepository::NotFound unless recorded?(filename)
 
-        stream_sidecar_download('aws', 's3', 'cp', s3_uri(filename), '-', &)
+        stream_object(object_key(filename), &)
+      rescue Aws::S3::Errors::NoSuchKey
+        raise BackupRepository::NotFound
       end
 
       def read_archive_for(filename)
         return BackupRepository::EMPTY_ARCHIVE unless destination_configured?
 
-        stream_sidecar_archive('aws', 's3', 'cp', s3_uri(filename), '-')
+        io = StringIO.new(String.new(encoding: Encoding::ASCII_8BIT))
+        stream_object(object_key(filename)) { |chunk| io.write(chunk) }
+        io.rewind
+        BackupRepository.parse_tar_stream(io)
+      rescue Aws::S3::Errors::ServiceError, Seahorse::Client::NetworkingError => e
+        Rails.logger.warn("#{name}: read_archive_for failed for #{filename} — #{e.class}: #{e.message}")
+        BackupRepository::EMPTY_ARCHIVE
+      rescue Gem::Package::TarInvalidError => e
+        Rails.logger.warn("#{name}: tar for #{filename} unreadable — #{e.message}")
+        BackupRepository::EMPTY_ARCHIVE
       end
 
       def remove_files!(filenames)
         return if filenames.empty?
         return unless destination_configured?
 
-        sidecar_run!('sh', '-c', destroy_script(filenames))
+        keys = filenames.flat_map { |name| [object_key(name), object_key("#{name}#{BackupRepository::LEGACY_MANIFEST_SUFFIX}")] }
+        delete_keys!(keys, ignore_missing: true)
       end
 
+      # Error files are written by backup.sh / restore.sh into the local
+      # staging dir (the bind-mounted /output) and never reach S3 — only
+      # successful tars are uploaded. read/remove therefore touch the
+      # local filesystem, not the remote bucket.
       def read_error_file(filename = BackupRepository::ERROR_FILENAME)
-        return nil unless destination_configured?
+        path = staging_path(filename)
+        return nil unless ::File.exist?(path)
 
-        output, status = sidecar_capture('sh', '-c', error_file_script(filename))
-        return nil unless status.success?
-
-        output.strip.presence
+        ::File.read(path).strip.presence
       end
 
       def remove_error_file!(filename = BackupRepository::ERROR_FILENAME)
-        return unless destination_configured?
-
-        sidecar_run!('sh', '-c', "aws s3 rm #{shellescape(s3_uri(filename))} 2>/dev/null || true")
+        FileUtils.rm_f(staging_path(filename))
       end
 
-      # Normalizes empty / leading- / trailing-slash prefixes to a single
-      # `bucket/prefix/filename` layout.
-      def s3_uri(filename = nil)
-        parts = [bucket, prefix.presence, filename].compact
-        "s3://#{parts.join('/')}"
+      # Uploads the staged tar to S3 using TransferManager — automatic
+      # multipart above the threshold and a progress callback that
+      # forwards (bytes_uploaded, bytes_total) to the caller. Multipart
+      # uploads aborted mid-flight are cleaned up by the SDK before the
+      # error propagates.
+      def upload_from_staging!(filename, progress_callback: nil)
+        path = staging_path(filename)
+        raise BackupRepository::Error, "staged tar missing: #{filename}" unless ::File.exist?(path)
+
+        bridge = progress_bridge(progress_callback)
+        transfer_manager.upload_file(
+          path,
+          bucket: bucket,
+          key: object_key(filename),
+          multipart_threshold: MULTIPART_THRESHOLD,
+          thread_count: UPLOAD_THREAD_COUNT,
+          progress_callback: bridge,
+        )
+      rescue Aws::S3::Errors::ServiceError, Seahorse::Client::NetworkingError => e
+        raise BackupRepository::Error, "#{e.class}: #{e.message}"
       end
 
-      # Trailing-slash variant for shell concatenation inside backup.sh.
-      def s3_dir_uri
-        parts = [bucket, prefix.presence].compact
-        "s3://#{parts.join('/')}/"
+      def transfer_manager
+        Aws::S3::TransferManager.new(client: client)
+      end
+
+      # Records a freshly-uploaded tar in the DB straight from the staged
+      # copy — avoids the round-trip of re-downloading what we just
+      # uploaded. Used by Uploader after upload_from_staging! completes;
+      # for detached/resumed paths where no local copy exists any more,
+      # `record_backup!` re-downloads from S3 instead.
+      def record_from_staging!(filename)
+        raise BackupRepository::NotFound unless BackupRepository.valid_filename?(filename)
+
+        path = staging_path(filename)
+        return nil unless ::File.exist?(path)
+
+        stat = ::File.stat(path)
+        archive = BackupRepository.read_archive(path)
+        upsert_backup_record(filename, stat.size, archive)
+      end
+
+      # Local path the detached BackupRunner writes the finished tar to,
+      # before HELIOS uploads it. Public so the resume path can probe
+      # whether a previous upload was interrupted.
+      def staging_path(filename)
+        ::File.join(directory, filename)
+      end
+
+      def staged_tar_exists?(filename)
+        ::File.exist?(staging_path(filename))
+      end
+
+      # Streams the tar from S3 into the local staging dir while reporting
+      # progress to the caller as (bytes_downloaded, bytes_total). Used by
+      # the Downloader before kicking off the RestoreRunner container.
+      # Calls head_object once up-front so the total is known to the
+      # callback; this adds one cheap HEAD per restore.
+      def download_to_staging_with_progress!(filename, progress_callback:)
+        path = staging_path(filename)
+        total = client.head_object(bucket: bucket, key: object_key(filename)).content_length
+        downloaded = 0
+
+        FileUtils.mkdir_p(directory)
+        ::File.open(path, 'wb') do |io|
+          stream_object(object_key(filename)) do |chunk|
+            io.write(chunk)
+            downloaded += chunk.bytesize
+            progress_callback.call(downloaded, total)
+          end
+        end
+      rescue Aws::S3::Errors::ServiceError, Seahorse::Client::NetworkingError => e
+        FileUtils.rm_f(path)
+        raise BackupRepository::Error, "#{e.class}: #{e.message}"
       end
 
       def bucket
@@ -138,85 +220,79 @@ class BackupRepository
         Configuration.current.backup.s3_endpoint_url.to_s.strip.presence
       end
 
-      # `-e` args for the detached runners' outer docker:cli container.
-      # Omits AWS_REGION — the runner scripts only forward
-      # AWS_DEFAULT_REGION to the nested aws-cli sidecar.
-      def runner_env_args
+      # Builds a fresh Aws::S3::Client for every call so a config change
+      # (new credentials, switched endpoint) is picked up without a restart.
+      # The SDK reuses underlying HTTP connections via Net::HTTP keep-alive,
+      # so the per-call cost is small.
+      def client
         backup = Configuration.current.backup
-        args = [
-          '-e', "AWS_ACCESS_KEY_ID=#{backup.aws_access_key_id}",
-          '-e', "AWS_SECRET_ACCESS_KEY=#{backup.aws_secret_access_key}",
-          '-e', "AWS_DEFAULT_REGION=#{backup.aws_region}"
-        ]
-        args.push('-e', "AWS_ENDPOINT_URL=#{endpoint_url}") if endpoint_url
-        args
+        opts = {
+          region: backup.aws_region,
+          credentials: Aws::Credentials.new(backup.aws_access_key_id, backup.aws_secret_access_key),
+          retry_mode: 'standard',
+          max_attempts: 3,
+        }
+        if endpoint_url
+          opts[:endpoint] = endpoint_url
+          # MinIO and most self-hosted S3-compatible servers don't resolve
+          # virtual-hosted-style URLs (bucket.host) — force path-style for
+          # any custom endpoint.
+          opts[:force_path_style] = true
+        end
+        Aws::S3::Client.new(**opts)
       end
 
       private
 
-      def error_file_script(filename)
-        <<~SH
-          if aws s3 cp #{shellescape(s3_uri(filename))} - 2>/dev/null; then
-            :
-          fi
-        SH
+      def object_key(filename)
+        [prefix.presence, filename].compact.join('/')
       end
 
-      def destroy_script(filenames)
-        commands = filenames.flat_map do |filename|
-          legacy = "#{filename}#{BackupRepository::LEGACY_MANIFEST_SUFFIX}"
-          [
-            "aws s3 rm #{shellescape(s3_uri(filename))}",
-            "aws s3 rm #{shellescape(s3_uri(legacy))} 2>/dev/null || true",
-          ]
+      # Translates the TransferManager's (bytes_per_part_array, totals_array)
+      # callback into the simpler (bytes_uploaded, bytes_total) shape the
+      # Uploader stores — UI code shouldn't need to know about the
+      # part-array layout.
+      def progress_bridge(progress_callback)
+        return nil unless progress_callback
+
+        lambda do |bytes_per_part, totals_per_part|
+          progress_callback.call(Array(bytes_per_part).sum, Array(totals_per_part).sum)
         end
-        (['set -e'] + commands).join("\n")
       end
 
-      def download_to_staging!(filenames)
-        output, status = Open3.capture2e(*download_command(filenames))
-        return if status.success?
-
-        raise BackupRepository::Error, output.to_s.strip.presence || "exited #{status.exitstatus}"
+      # Streams an S3 object to the given block in 64 KB chunks. Uses the
+      # SDK's block form which writes each network chunk straight to the
+      # block — no full-object buffering.
+      def stream_object(key, &)
+        client.get_object(bucket: bucket, key: key, &)
       end
 
-      # `docker run` argument array (never a shell string) for
-      # `aws s3 cp --recursive` restricted to the wanted objects. Two
-      # `--include` patterns per file so the filter matches whether
-      # aws-cli applies it to the prefix-relative name or the full key.
-      def download_command(filenames)
-        includes = filenames.flat_map { |name| ['--include', name, '--include', "*/#{name}"] }
-        [
-          'docker', 'run', '--rm', *aws_env_args,
-          '-v', "#{host_directory}:/output",
-          '--entrypoint', 'aws', IMAGE,
-          's3', 'cp', s3_dir_uri, '/output/', '--recursive', '--exclude', '*', *includes
-        ]
+      # Downloads the named tar from S3 into the local staging dir so the
+      # adapter can parse it. Raises BackupRepository::Error on any S3
+      # failure — record_backup! turns that into a no-op.
+      def download_to_staging!(filename)
+        path = ::File.join(directory, filename)
+        ::File.open(path, 'wb') do |io|
+          stream_object(object_key(filename)) { |chunk| io.write(chunk) }
+        end
+      rescue Aws::S3::Errors::ServiceError, Seahorse::Client::NetworkingError => e
+        FileUtils.rm_f(path)
+        raise BackupRepository::Error, "#{e.class}: #{e.message}"
       end
 
-      # amazon/aws-cli's default entrypoint is `aws`, so an unspecified
-      # entrypoint would forward every argument to the AWS CLI. Pull the
-      # binary out of `cmd` and pass it via `--entrypoint` so this helper
-      # covers both `aws s3 …` and the `sh -c '<script>'` form.
-      def sidecar_command(*cmd)
-        entrypoint, *args = cmd
-        [
-          'docker', 'run', '--rm',
-          *aws_env_args,
-          '--entrypoint', entrypoint,
-          IMAGE,
-          *args
-        ]
-      end
+      def delete_keys!(keys, ignore_missing: false)
+        return if keys.empty?
 
-      # Adds AWS_REGION on top of #runner_env_args: aws-cli honours it
-      # too, whereas the runner shell scripts only need AWS_DEFAULT_REGION.
-      def aws_env_args
-        runner_env_args + ['-e', "AWS_REGION=#{Configuration.current.backup.aws_region}"]
-      end
-
-      def shellescape(value)
-        ::Shellwords.escape(value.to_s)
+        # delete_objects accepts up to 1000 keys per request; backup
+        # batches stay well below that.
+        client.delete_objects(
+          bucket: bucket,
+          delete: { objects: keys.map { |k| { key: k } }, quiet: true },
+        )
+      rescue Aws::S3::Errors::NoSuchKey
+        raise unless ignore_missing
+      rescue Aws::S3::Errors::ServiceError => e
+        raise BackupRepository::Error, "#{e.class}: #{e.message}"
       end
     end
   end

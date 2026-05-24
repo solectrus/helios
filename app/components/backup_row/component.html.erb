@@ -24,23 +24,19 @@
   </div>
 
   <div class="backup-row-actions ml-auto flex gap-2">
-    <%= link_to helpers.backup_path(backup),
-                class: "btn btn-outline btn-square",
-                title: t('backups.index.download_existing'),
-                aria: { label: t('backups.index.download_existing') },
-                data: { turbo: false } do %>
-      <i class="fa-solid fa-download"></i>
-    <% end %>
-
     <% if restore_current? %>
-      <span
-        class="btn btn-ghost btn-square cursor-default"
-        title="<%= t('backups.index.restore_in_progress') %>"
-        aria-label="<%= t('backups.index.restore_in_progress') %>"
-      >
-        <span class="loading loading-spinner loading-sm"></span>
+      <span class="text-base-content/60 inline-flex items-center gap-2 px-2 text-sm tabular-nums">
+        <span class="loading loading-spinner loading-sm" aria-hidden="true"></span>
+        <%= restore_label %>
       </span>
     <% else %>
+      <%= link_to helpers.backup_path(backup),
+                  class: "btn btn-outline btn-square",
+                  title: t('backups.index.download_existing'),
+                  aria: { label: t('backups.index.download_existing') },
+                  data: { turbo: false } do %>
+        <i class="fa-solid fa-download"></i>
+      <% end %>
       <div class="dropdown dropdown-end">
         <div
           tabindex="0"

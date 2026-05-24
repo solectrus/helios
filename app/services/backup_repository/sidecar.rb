@@ -55,7 +55,7 @@ class BackupRepository
 
     # Runs a sidecar whose stdout is a tar stream and yields it to the block
     # in 64 KB chunks (HTTP download). `popen2` keeps stderr off the stdout
-    # pipe so a docker/aws-cli warning can never end up inside the download;
+    # pipe so a docker warning can never end up inside the download;
     # a non-zero exit raises BackupRepository::Error.
     def stream_sidecar_download(*cmd)
       Open3.popen2(*sidecar_command(*cmd)) do |_in, out, wait|

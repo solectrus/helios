@@ -4,14 +4,19 @@
 # supports that allows `set -o pipefail`.
 # Receives positional args via `sh -c '<this script>' _ <token> <filename>
 # <host-data-path> <pg-data> <influx-data> <redis-data> <restart-after>
-# <services> <compose-filename> <destination> <host-staging>
-# <aws-cli-image> <s3-dir-uri>`. Positional args are passed by argv (not
+# <services> <compose-filename>`. Positional args are passed by argv (not
 # interpolated) so values with shell metacharacters are safe. SERVICES is
 # a space-separated list of compose service names (excluding `helios`) —
 # the HELIOS service itself must never be torn down by this script, since
 # stopping our own container would kill the user's UI mid-restore.
 # COMPOSE_FILENAME is the basename of the compose file on the host (e.g.
 # `compose.yaml` or `compose.yml`); HELIOS supports both.
+#
+# This script no longer talks to the backup destination directly: it
+# expects the tar to be present in /output (the staging dir) already.
+# For S3 destinations HELIOS fetches the tar via aws-sdk-s3 before
+# launching the container; for local/external destinations the tar is
+# served from its usual location through the same bind mount.
 
 set -eu
 set -o pipefail
@@ -25,10 +30,6 @@ REDIS_DATA_PATH="$6"
 RESTART_AFTER="$7"
 SERVICES="$8"
 COMPOSE_FILENAME="$9"
-DESTINATION="${10}"
-HOST_STAGING="${11}"
-AWS_CLI_IMAGE="${12}"
-S3_DIR_URI="${13}"
 
 OUTPUT_DIR="/output"
 WORK_DIR="$OUTPUT_DIR/.restore-work"
@@ -36,30 +37,9 @@ BACKUP_PATH="$OUTPUT_DIR/$BACKUP_FILENAME"
 ERROR_PATH="$OUTPUT_DIR/restore-error.txt"
 COMPOSE_PATH="$HOST_DATA_PATH/$COMPOSE_FILENAME"
 
-inner_env="-e AWS_ACCESS_KEY_ID -e AWS_SECRET_ACCESS_KEY -e AWS_DEFAULT_REGION"
-if [ -n "${AWS_ENDPOINT_URL:-}" ]; then
-  inner_env="$inner_env -e AWS_ENDPOINT_URL"
-fi
-
-s3_transfer() {
-  # $1: source URI or local path, $2: destination URI or local path.
-  # shellcheck disable=SC2086
-  docker run --rm -v "$HOST_STAGING:/work" $inner_env "$AWS_CLI_IMAGE" \
-    s3 cp "$1" "$2"
-}
-
 fail() {
   echo "$1" > "$ERROR_PATH"
   rm -rf "$WORK_DIR"
-  if [ "$DESTINATION" = "s3" ]; then
-    error_basename="$(basename "$ERROR_PATH")"
-    # Drop the local copy only once it is safely on S3 — otherwise an
-    # unreachable destination would erase the failure without a trace.
-    if s3_transfer "/work/$error_basename" "${S3_DIR_URI}restore-error.txt" 2>/dev/null; then
-      rm -f "$ERROR_PATH"
-    fi
-    rm -f "$BACKUP_PATH"
-  fi
   exit 1
 }
 
@@ -75,15 +55,7 @@ rm -rf "$WORK_DIR"
 rm -f "$ERROR_PATH"
 mkdir -p "$WORK_DIR"
 
-# For S3 destinations the tar is not present locally yet — pull it down
-# into the staging dir via a nested aws-cli sidecar before validation
-# starts. After a successful restore the local copy is removed so the
-# staging dir does not accumulate archives across runs.
-if [ "$DESTINATION" = "s3" ]; then
-  rm -f "$BACKUP_PATH"
-  s3_transfer "${S3_DIR_URI}${BACKUP_FILENAME}" "/work/${BACKUP_FILENAME}" \
-    || fail "S3 download failed"
-fi
+[ -f "$BACKUP_PATH" ] || fail "Backup archive is missing"
 
 tar -tf "$BACKUP_PATH" > "$WORK_DIR/entries.txt" || fail "Backup archive could not be read"
 while IFS= read -r entry; do
@@ -198,7 +170,3 @@ if [ "$RESTART_AFTER" = "1" ]; then
 fi
 
 rm -rf "$WORK_DIR"
-
-if [ "$DESTINATION" = "s3" ]; then
-  rm -f "$BACKUP_PATH"
-fi

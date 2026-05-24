@@ -4,7 +4,7 @@ RSpec.describe BackupRepository::S3 do
   let(:data_path) { Dir.mktmpdir }
   let(:host_data_path) { '/host/data' }
   let(:bucket) { 'my-backups' }
-  let(:staging_dir) { File.join(data_path, 'helios', 'backups-staging') }
+  let(:s3_client) { Aws::S3::Client.new(stub_responses: true, region: 'eu-central-1') }
 
   before do
     allow(Rails.configuration).to receive(:data_path).and_return(data_path)
@@ -23,6 +23,7 @@ RSpec.describe BackupRepository::S3 do
     allow(Rails).to receive(:cache).and_return(ActiveSupport::Cache::MemoryStore.new)
     allow(BackupRunner).to receive(:in_progress).and_return(nil)
     allow(RestoreRunner).to receive(:in_progress).and_return(nil)
+    allow(described_class).to receive(:client).and_return(s3_client)
   end
 
   after { FileUtils.remove_entry(data_path) }
@@ -57,32 +58,26 @@ RSpec.describe BackupRepository::S3 do
     end
   end
 
-  describe '.s3_uri / .s3_dir_uri' do
-    it 'normalizes a non-empty prefix into a single-slash separator' do
-      with_config_yaml('backup' => valid_backup.merge('s3_prefix' => '/solectrus//'))
-      expect(described_class.s3_uri('foo.tar')).to eq('s3://my-backups/solectrus/foo.tar')
-      expect(described_class.s3_dir_uri).to eq('s3://my-backups/solectrus/')
+  describe '.normalize_prefix' do
+    it 'strips leading and trailing slashes' do
+      expect(described_class.normalize_prefix('/solectrus//')).to eq('solectrus')
     end
 
-    it 'omits the prefix segment when blank' do
-      with_config_yaml('backup' => valid_backup.merge('s3_prefix' => ''))
-      expect(described_class.s3_uri('foo.tar')).to eq('s3://my-backups/foo.tar')
-      expect(described_class.s3_dir_uri).to eq('s3://my-backups/')
+    it 'returns an empty string for nil or blank input' do
+      expect(described_class.normalize_prefix(nil)).to eq('')
+      expect(described_class.normalize_prefix('  ')).to eq('')
     end
   end
 
   describe '.all' do
-    it 'returns DB rows scoped to the current bucket+prefix without hitting docker' do
+    it 'returns DB rows scoped to the current bucket+prefix without contacting S3' do
       create_row('solectrus-backup-20260508-100000.tar')
       create_row('solectrus-backup-20260508-120000.tar')
-      allow(Open3).to receive(:capture2)
-      allow(Open3).to receive(:capture2e)
 
       filenames = described_class.all.map(&:filename)
 
       expect(filenames).to eq(%w[solectrus-backup-20260508-120000.tar solectrus-backup-20260508-100000.tar])
-      expect(Open3).not_to have_received(:capture2)
-      expect(Open3).not_to have_received(:capture2e)
+      expect(s3_client.api_requests).to be_empty
     end
 
     it 'does not surface rows recorded for a different bucket' do
@@ -116,39 +111,34 @@ RSpec.describe BackupRepository::S3 do
   end
 
   describe '.destroy!' do
-    it 'runs `aws s3 rm` via sidecar and removes the DB row' do
-      create_row('solectrus-backup-20260508-100000.tar')
-      stub_capture2e(success: true)
+    let(:filename) { 'solectrus-backup-20260508-100000.tar' }
 
-      described_class.destroy!('solectrus-backup-20260508-100000.tar')
+    it 'issues a delete_objects call for the tar and its legacy sidecar, then removes the DB row' do
+      create_row(filename)
 
-      expect(Open3).to have_received(:capture2e).with(*captured_destroy_args)
-      expect(Backup.where(filename: 'solectrus-backup-20260508-100000.tar')).not_to exist
+      described_class.destroy!(filename)
+
+      delete_calls = s3_client.api_requests.select { |r| r[:operation_name] == :delete_objects }
+      expect(delete_calls.size).to eq(1)
+      keys = delete_calls.first[:params][:delete][:objects].pluck(:key)
+      expect(keys).to contain_exactly(
+        "solectrus/#{filename}",
+        "solectrus/#{filename}#{BackupRepository::LEGACY_MANIFEST_SUFFIX}",
+      )
+      expect(Backup.where(filename: filename)).not_to exist
     end
 
-    def captured_destroy_args
-      [
-        'docker', 'run', '--rm',
-        '-e', 'AWS_ACCESS_KEY_ID=AKIA',
-        '-e', 'AWS_SECRET_ACCESS_KEY=secret',
-        '-e', 'AWS_DEFAULT_REGION=eu-central-1',
-        '-e', 'AWS_REGION=eu-central-1',
-        '--entrypoint', 'sh', described_class::IMAGE,
-        '-c', a_string_including('aws s3 rm s3://my-backups/solectrus/solectrus-backup-20260508-100000.tar')
-      ]
-    end
+    it 'raises BackupRepository::Error and leaves the DB row in place when the S3 call fails' do
+      create_row(filename)
+      s3_client.stub_responses(:delete_objects, 'AccessDenied')
 
-    it 'raises BackupRepository::Error and leaves the DB row in place when the sidecar fails' do
-      create_row('solectrus-backup-20260508-100000.tar')
-      stub_capture2e(success: false, output: 'AccessDenied')
-
-      expect { described_class.destroy!('solectrus-backup-20260508-100000.tar') }
+      expect { described_class.destroy!(filename) }
         .to raise_error(BackupRepository::Error, /AccessDenied/)
-      expect(Backup.where(filename: 'solectrus-backup-20260508-100000.tar')).to exist
+      expect(Backup.where(filename: filename)).to exist
     end
 
     it 'raises NotFound when no row exists' do
-      expect { described_class.destroy!('solectrus-backup-20260508-100000.tar') }
+      expect { described_class.destroy!(filename) }
         .to raise_error(BackupRepository::NotFound)
     end
   end
@@ -169,7 +159,7 @@ RSpec.describe BackupRepository::S3 do
 
     it 'downloads the tar to staging, parses it locally, then inserts a row and clears staging' do
       tar_bytes = sample_tar(influxdb: 'influxdb:2.9-alpine', postgresql: 'postgres:18-alpine')
-      stub_staging_download(filename => tar_bytes)
+      s3_client.stub_responses(:get_object, body: tar_bytes)
 
       described_class.record_backup!(filename)
 
@@ -181,7 +171,7 @@ RSpec.describe BackupRepository::S3 do
     end
 
     it 'records the destination coordinates so a bucket change hides the row' do
-      stub_staging_download(filename => sample_tar)
+      s3_client.stub_responses(:get_object, body: sample_tar)
 
       described_class.record_backup!(filename)
 
@@ -195,8 +185,8 @@ RSpec.describe BackupRepository::S3 do
       expect { described_class.record_backup!('garbage.tar') }.to raise_error(BackupRepository::NotFound)
     end
 
-    it 'is a no-op when the download sidecar fails' do
-      stub_capture2e(success: false, output: 'AccessDenied')
+    it 'is a no-op when the S3 download fails' do
+      s3_client.stub_responses(:get_object, 'NoSuchKey')
 
       expect { described_class.record_backup!(filename) }.not_to raise_error
       expect(Backup.count).to eq(0)
@@ -220,11 +210,10 @@ RSpec.describe BackupRepository::S3 do
 
     it 'inserts the Backup row when the expected tar is available in S3' do
       described_class.mark_pending!(filename)
-      stub_capture2_sequence(
-        ['', success_status], # restore-error.txt read
-        ['', success_status], # error.txt read
-      )
-      stub_staging_download(filename => sample_tar)
+      # error files live in the local staging dir now (backup.sh writes
+      # them there); no S3 fetches happen for them. Only the tar download
+      # by record_backup! hits S3.
+      s3_client.stub_responses(:get_object, body: sample_tar)
 
       described_class.detect_completion!
 
@@ -232,13 +221,10 @@ RSpec.describe BackupRepository::S3 do
       expect(File).not_to exist(described_class.pending_marker_path)
     end
 
-    it 'captures error.txt into RunnerLog when the run failed' do
+    it 'captures a local error.txt into RunnerLog when the run failed' do
       described_class.mark_pending!(filename)
-      stub_capture2_sequence(
-        ['', success_status],          # restore-error.txt empty
-        ['Disk full', success_status], # error.txt
-      )
-      stub_capture2e(success: true)
+      FileUtils.mkdir_p(described_class.directory)
+      File.write(File.join(described_class.directory, 'error.txt'), 'Disk full')
 
       described_class.detect_completion!
 
@@ -248,15 +234,31 @@ RSpec.describe BackupRepository::S3 do
 
     it 'records "incomplete" when no tar and no error are present' do
       described_class.mark_pending!(filename)
-      stub_capture2_sequence(
-        ['', success_status], # restore-error.txt
-        ['', success_status], # error.txt
-      )
-      stub_capture2e(success: false, output: 'NoSuchKey') # download_to_staging! fails → record_backup! returns nil
+      s3_client.stub_responses(:get_object, 'NoSuchKey')
 
       described_class.detect_completion!
 
       expect(RunnerLog.message_for(:backup)).to eq(I18n.t('backups.runner.errors.incomplete'))
+    end
+  end
+
+  describe '.client' do
+    before { allow(described_class).to receive(:client).and_call_original }
+
+    it 'forces path-style addressing when an endpoint_url is configured' do
+      with_config_yaml('backup' => valid_backup.merge('s3_endpoint_url' => 'http://minio.local:9000'))
+
+      client = described_class.client
+      expect(client.config.endpoint.to_s).to eq('http://minio.local:9000')
+      expect(client.config.force_path_style).to be(true)
+    end
+
+    it 'leaves AWS defaults in place when no endpoint_url is configured' do
+      with_config_yaml('backup' => valid_backup)
+
+      client = described_class.client
+      expect(client.config.region).to eq('eu-central-1')
+      expect(client.config.force_path_style).to be(false)
     end
   end
 
@@ -271,33 +273,6 @@ RSpec.describe BackupRepository::S3 do
       s3_endpoint_url: endpoint_url,
       files: [{ 'name' => 'helios/config.yaml', 'bytes' => 10 }],
     )
-  end
-
-  # Drops the given files into the staging dir, exactly where the real
-  # aws s3 cp sidecar would, so HELIOS parses them for real. Uses the
-  # live `described_class.directory` rather than a local lazy `let`,
-  # because `with_config_yaml` resets Rails.configuration.data_path
-  # mid-setup.
-  def stub_staging_download(files = {})
-    status = instance_double(Process::Status, success?: true, exitstatus: 0)
-    allow(Open3).to receive(:capture2e) do
-      FileUtils.mkdir_p(described_class.directory)
-      files.each { |name, content| File.binwrite(File.join(described_class.directory, name), content) }
-      ['', status]
-    end
-  end
-
-  def stub_capture2_sequence(*responses)
-    allow(Open3).to receive(:capture2).and_return(*responses)
-  end
-
-  def success_status
-    instance_double(Process::Status, success?: true)
-  end
-
-  def stub_capture2e(success:, output: '')
-    status = instance_double(Process::Status, success?: success, exitstatus: success ? 0 : 1)
-    allow(Open3).to receive(:capture2e).and_return([output, status])
   end
 
   # A valid HELIOS backup tar — config.yaml resolves the image tags, the

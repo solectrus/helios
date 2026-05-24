@@ -39,7 +39,15 @@ class BackupRepository
   ArchiveContents = Data.define(:entries, :config)
   EMPTY_ARCHIVE = ArchiveContents.new(entries: [], config: nil).freeze
 
-  InProgress = Data.define(:started_at, :filename)
+  # `phase` discriminates the detached BackupRunner container (:running,
+  # the dump+tar work in the docker:cli sidecar) from the HELIOS-side
+  # S3 upload (:uploading, driven by BackupRepository::S3::Uploader).
+  # `progress` is a Float 0.0..1.0 during :uploading, nil otherwise.
+  InProgress = Data.define(:started_at, :filename, :phase, :progress) do
+    def initialize(started_at:, filename:, phase: :running, progress: nil)
+      super
+    end
+  end
 
   class << self
     delegate :all, :directory, :host_directory, :destroy!, :prune!, :download,
@@ -82,19 +90,6 @@ class BackupRepository
     # True when the active destination is reached only through a short-lived
     # sidecar (external mount, S3) — never the locally mounted backups dir.
     def remote? = destination != 'local'
-
-    # AWS credential `-e` docker args forwarded to the detached runners'
-    # outer docker:cli container, or [] for non-S3 destinations — keeps
-    # credentials out of unrelated runs.
-    def s3_env_args
-      s3? ? S3.runner_env_args : []
-    end
-
-    # Trailing-slash `s3://bucket/prefix/` URI passed to the runner shell
-    # scripts, or '' for non-S3 destinations (the scripts ignore it then).
-    def s3_dir_uri
-      s3? ? S3.s3_dir_uri : ''
-    end
 
     # Parses the filename's embedded timestamp as the backup's `created_at`.
     # The filename is produced by BackupRunner with Time.zone, so reading

@@ -8,6 +8,9 @@ gem 'sqlite3'
 # Docker API access
 gem 'docker-api'
 
+# S3 client for backup destination
+gem 'aws-sdk-s3'
+
 # Zip archive generation (support bundle downloads)
 gem 'rubyzip', require: 'zip'
 

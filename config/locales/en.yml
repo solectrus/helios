@@ -199,6 +199,8 @@ en:
       loading: 'Loading backups…'
       download: 'Create backup'
       in_progress: 'In progress…'
+      phase_uploading: 'Uploading … %{percent}'
+      phase_downloading: 'Downloading … %{percent}'
       duration_hint: 'Runs in the background and may take several minutes for larger data volumes. You can leave this page; the backup will keep running. SOLECTRUS stays usable in the meantime. The five most recent backups are kept; older ones are removed automatically.'
       unavailable: 'Backup currently unavailable: %{message}'
       unavailable_title: 'Backup not available yet'

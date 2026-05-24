@@ -1,4 +1,5 @@
 require 'open3'
+require 'aws-sdk-s3'
 
 # Helpers for integration specs that exercise the S3 backup adapter against
 # a throwaway, real S3-compatible server (MinIO).
@@ -13,17 +14,22 @@ require 'open3'
 # skips auth could not test that, and it is faster per request than the
 # maintained S3-compatible alternatives (SeaweedFS, Garage).
 #
-# The server runs on the default bridge network. HELIOS reaches S3 only
-# through aws-cli sidecars, which share that network, so the endpoint
-# HELIOS is configured with is the server's bridge IP — no host port.
+# MinIO publishes its API on a 127.0.0.1 host port (one per turbo_tests
+# worker via TEST_ENV_NUMBER). aws-sdk-s3 in the test process — and the
+# adapter under test in the runtime — both reach MinIO through the host
+# port, which keeps WebMock's `allow_localhost: true` default in play.
 #
-# The aws-cli sidecars here deliberately use `BackupRepository::S3::IMAGE`,
-# the same pinned image HELIOS uses, so a version bump is exercised by both
-# the arrange steps and the code under test.
+# The arrange steps here use a separate aws-sdk-s3 Client so a bug in
+# the adapter's own client cannot silently fix or mask itself by sharing
+# the seeding code path.
 module S3ServerHelpers
   S3_SERVER_IMAGE = 'minio/minio:RELEASE.2025-09-07T16-13-09Z'.freeze
   S3_ACCESS_KEY = 'helios-integration-test'.freeze
   S3_SECRET_KEY = 'helios-integration-test-secret'.freeze
+
+  # Each worker (turbo_tests) needs its own port so parallel runs don't
+  # collide on the same MinIO listener.
+  S3_HOST_PORT_BASE = 19_000
 
   S3Server = Struct.new(:container, :endpoint, :access_key, :secret_key, keyword_init: true)
 
@@ -31,19 +37,20 @@ module S3ServerHelpers
 
   def start_s3_server!
     name = "helios-itest-s3-#{ENV.fetch('TEST_ENV_NUMBER', '0')}"
+    port = s3_host_port
     system('docker', 'rm', '-f', name, out: File::NULL, err: File::NULL)
-    run_s3_container!(name)
+    run_s3_container!(name, port)
 
     @s3_server = S3Server.new(
       container: name,
-      endpoint: "http://#{container_bridge_ip(name)}:9000",
+      endpoint: "http://127.0.0.1:#{port}",
       access_key: S3_ACCESS_KEY,
       secret_key: S3_SECRET_KEY,
     )
     wait_for_s3_server!
     @s3_server
   rescue StandardError
-    # Don't leak the container if bridge-IP lookup or the readiness poll fails.
+    # Don't leak the container if the readiness poll fails.
     system('docker', 'rm', '-f', name, out: File::NULL, err: File::NULL)
     raise
   end
@@ -55,36 +62,29 @@ module S3ServerHelpers
     @s3_server = nil
   end
 
-  # Creates a bucket via an aws-cli sidecar, bypassing HELIOS code so the
-  # spec's arrange step stays independent of the code under test.
+  # Creates a bucket against the live MinIO via the seed client.
   def s3_create_bucket!(bucket)
-    aws_sidecar!('s3', 'mb', "s3://#{bucket}")
+    seed_client.create_bucket(bucket: bucket)
   end
 
   # Uploads a byte string as an object — used to seed backup tars and error
   # files before exercising the adapter.
   def s3_put_object!(bucket:, key:, body:)
-    Dir.mktmpdir do |dir|
-      File.binwrite(File.join(dir, 'payload'), body)
-      aws_sidecar!('s3', 'cp', '/work/payload', "s3://#{bucket}/#{key}", mount: dir)
-    end
+    seed_client.put_object(bucket: bucket, key: key, body: body)
   end
 
-  # Object keys currently in the bucket, read via `s3api --output json` — a
-  # different aws-cli code path than HELIOS's `--output text` parsing, so it
-  # is a genuine independent check.
+  # Object keys currently in the bucket.
   def s3_object_keys(bucket)
-    output = aws_sidecar!('s3api', 'list-objects-v2', '--bucket', bucket, '--output', 'json')
-    return [] if output.strip.empty?
-
-    Array(JSON.parse(output)['Contents']).pluck('Key')
+    resp = seed_client.list_objects_v2(bucket: bucket)
+    Array(resp.contents).map(&:key)
   end
 
   private
 
-  def run_s3_container!(name)
+  def run_s3_container!(name, host_port)
     output, status = Open3.capture2e(
       'docker', 'run', '-d', '--rm', '--name', name,
+      '-p', "127.0.0.1:#{host_port}:9000",
       '-e', "MINIO_ROOT_USER=#{S3_ACCESS_KEY}",
       '-e', "MINIO_ROOT_PASSWORD=#{S3_SECRET_KEY}",
       S3_SERVER_IMAGE, 'server', '/data'
@@ -92,44 +92,31 @@ module S3ServerHelpers
     raise "Failed to start MinIO: #{output}" unless status.success?
   end
 
-  def aws_sidecar(*, mount: nil)
-    cmd = [
-      'docker', 'run', '--rm',
-      '-e', "AWS_ACCESS_KEY_ID=#{@s3_server.access_key}",
-      '-e', "AWS_SECRET_ACCESS_KEY=#{@s3_server.secret_key}",
-      '-e', 'AWS_DEFAULT_REGION=us-east-1',
-      '-e', "AWS_ENDPOINT_URL=#{@s3_server.endpoint}"
-    ]
-    cmd.push('-v', "#{mount}:/work") if mount
-    cmd.push(BackupRepository::S3::IMAGE, *)
-
-    Open3.capture2e(*cmd)
+  def s3_host_port
+    S3_HOST_PORT_BASE + ENV.fetch('TEST_ENV_NUMBER', '0').to_i
   end
 
-  def aws_sidecar!(*args, mount: nil)
-    output, status = aws_sidecar(*args, mount:)
-    raise "aws-cli sidecar failed (#{args.inspect}): #{output}" unless status.success?
-
-    output
-  end
-
-  def container_bridge_ip(name)
-    ip, status = Open3.capture2(
-      'docker', 'inspect', '-f', '{{.NetworkSettings.Networks.bridge.IPAddress}}', name
+  # Independent aws-sdk-s3 client used by the spec's arrange steps. Built
+  # once per running fixture so the live MinIO endpoint is the single
+  # source of truth for both seed and probe paths.
+  def seed_client
+    @seed_client ||= Aws::S3::Client.new(
+      region: 'us-east-1',
+      credentials: Aws::Credentials.new(@s3_server.access_key, @s3_server.secret_key),
+      endpoint: @s3_server.endpoint,
+      force_path_style: true,
     )
-    raise "Could not read S3 server bridge IP for #{name}" unless status.success? && ip.strip.present?
-
-    ip.strip
   end
 
-  # Polls with a real `aws s3 ls` until it succeeds — confirms the S3 API is
+  # Polls with `list_buckets` until it succeeds — confirms the S3 API is
   # actually serving, not just that the container started.
   def wait_for_s3_server!(timeout: 40)
     deadline = Time.current + timeout
 
     loop do
-      _output, status = aws_sidecar('s3', 'ls')
-      return if status.success?
+      seed_client.list_buckets
+      return
+    rescue Seahorse::Client::NetworkingError, Aws::S3::Errors::ServiceError
       raise "MinIO did not become ready within #{timeout}s" if Time.current > deadline
 
       sleep 1

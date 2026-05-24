@@ -222,14 +222,31 @@ RSpec.describe 'Backups', :with_admin_password do
 
       document = Capybara.string(response.body)
       row = document.find('li', visible: false) do |li|
-        li.has_css?("[aria-label='#{I18n.t('backups.index.restore_in_progress')}']", visible: false)
+        li.has_text?(I18n.t('backups.index.restore_in_progress'))
       end
 
       expect(row).to have_text('08.05.2026').or have_text('2026-05-08')
       expect(document).to have_button(I18n.t('backups.index.download'), disabled: true)
-      expect(response.body).to match(/<button[^>]*disabled/)
-      visible_restore_text = ">\n                        #{I18n.t('backups.index.restore_in_progress')}\n"
-      expect(response.body).not_to include(visible_restore_text)
+    end
+
+    it 'shows the download percentage in the restore row while HELIOS fetches the tar from S3' do
+      allow(RestoreRunner).to receive(:in_progress).and_return(
+        BackupRepository::InProgress.new(
+          started_at: Time.zone.local(2026, 5, 8, 14, 30, 0),
+          filename: 'solectrus-backup-20260508-110000.tar',
+          phase: :downloading, progress: 0.42
+        ),
+      )
+      persist_backup('solectrus-backup-20260508-110000.tar')
+
+      get backups_path
+
+      document = Capybara.string(response.body)
+      row = document.find('li', visible: false) do |li|
+        li.has_text?('Wird heruntergeladen') || li.has_text?('Downloading')
+      end
+
+      expect(row).to have_text('42 %').or have_text('42%')
     end
   end
 

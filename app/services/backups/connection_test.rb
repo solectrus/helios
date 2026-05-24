@@ -1,4 +1,5 @@
 require 'open3'
+require 'aws-sdk-s3'
 
 module Backups
   # Probes the configured external backup path from inside a docker:cli
@@ -9,9 +10,9 @@ module Backups
   # creating an empty directory.
   #
   # The `aws_credentials` check follows the same pattern for the S3
-  # destination: an `amazon/aws-cli` sidecar runs `aws s3 ls` against the
-  # configured bucket and prefix, then classifies AWS's error responses
-  # into specific i18n reasons.
+  # destination, but reaches the bucket directly from the HELIOS process
+  # via `aws-sdk-s3` (the same gem the S3 storage adapter uses), and
+  # classifies the SDK's typed errors into specific i18n reasons.
   class ConnectionTest
     include ConnectionTesting::ResultBuilder
 
@@ -108,42 +109,50 @@ module Backups
       )
     end
 
+    # `list_objects_v2`, not `head_bucket`, is used on purpose: it returns
+    # success regardless of whether the prefix has any objects (the normal
+    # state of a freshly configured bucket) and additionally verifies that
+    # list permissions are in place — exactly what later runtime use needs.
     def probe_s3(probe)
-      output, status = Open3.capture2e(*aws_probe_command(probe))
-      classify_s3(status, output)
+      client_for(probe).list_objects_v2(
+        bucket: probe.bucket,
+        prefix: probe.prefix.present? ? "#{probe.prefix}/" : nil,
+        max_keys: 1,
+      )
+      result(true, :s3_reachable)
+    rescue Aws::S3::Errors::ServiceError, Seahorse::Client::NetworkingError, Errno::ECONNREFUSED => e
+      classify_s3_error(e)
     end
 
-    # Uses `s3api list-objects-v2`, not `s3 ls`, on purpose: `s3 ls` exits
-    # non-zero when the prefix holds no objects — the normal state of a
-    # freshly configured bucket — which would misreport valid credentials
-    # as a failure. The raw API call succeeds regardless of result count.
-    def aws_probe_command(probe)
-      env_args = [
-        '-e', "AWS_ACCESS_KEY_ID=#{probe.access}",
-        '-e', "AWS_SECRET_ACCESS_KEY=#{probe.secret}",
-        '-e', "AWS_DEFAULT_REGION=#{probe.region}"
-      ]
-      env_args.push('-e', "AWS_ENDPOINT_URL=#{probe.endpoint}") unless probe.endpoint.empty?
-
-      list_args = ['s3api', 'list-objects-v2', '--bucket', probe.bucket, '--max-keys', '1']
-      list_args.push('--prefix', "#{probe.prefix}/") if probe.prefix.present?
-
-      ['docker', 'run', '--rm', *env_args, BackupRepository::S3::IMAGE, *list_args]
-    end
-
-    def classify_s3(status, output)
-      return result(true, :s3_reachable) if status.success?
-
-      case output
-      when /NoSuchBucket/i then result(false, :s3_bucket_missing)
-      when /InvalidAccessKeyId|SignatureDoesNotMatch/i then result(false, :s3_invalid_credentials)
-      when /AccessDenied|Forbidden/i then result(false, :s3_access_denied)
-      when /Could not connect|Failed to connect|name or service not known|NameResolutionError|EndpointConnectionError/i
+    def classify_s3_error(error)
+      case error
+      when Aws::S3::Errors::NoSuchBucket
+        result(false, :s3_bucket_missing)
+      when Aws::S3::Errors::InvalidAccessKeyId, Aws::S3::Errors::SignatureDoesNotMatch
+        result(false, :s3_invalid_credentials)
+      when Aws::S3::Errors::AccessDenied, Aws::S3::Errors::Forbidden
+        result(false, :s3_access_denied)
+      when Seahorse::Client::NetworkingError, Errno::ECONNREFUSED
+        Rails.logger.warn("S3 credentials probe failed (network): #{error.class}: #{error.message}")
         result(false, :s3_endpoint_unreachable)
       else
-        Rails.logger.warn("S3 credentials probe failed: #{output.strip}")
+        Rails.logger.warn("S3 credentials probe failed: #{error.class}: #{error.message}")
         result(false, :s3_error)
       end
+    end
+
+    def client_for(probe)
+      opts = {
+        region: probe.region,
+        credentials: Aws::Credentials.new(probe.access, probe.secret),
+        retry_mode: 'standard',
+        max_attempts: 3,
+      }
+      if probe.endpoint.present?
+        opts[:endpoint] = probe.endpoint
+        opts[:force_path_style] = true
+      end
+      Aws::S3::Client.new(**opts)
     end
   end
 end

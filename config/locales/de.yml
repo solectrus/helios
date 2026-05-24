@@ -175,6 +175,8 @@ de:
       loading: 'Sicherungen werden geladen…'
       download: 'Sicherung erstellen'
       in_progress: 'Wird erstellt…'
+      phase_uploading: 'Wird hochgeladen … %{percent}'
+      phase_downloading: 'Wird heruntergeladen … %{percent}'
       duration_hint: 'Läuft im Hintergrund und kann bei größerer Datenmenge mehrere Minuten dauern. Du kannst die Seite verlassen, die Sicherung läuft weiter. SOLECTRUS bleibt währenddessen normal nutzbar. Die fünf neuesten Sicherungen werden aufbewahrt, ältere automatisch entfernt.'
       unavailable: 'Sicherung derzeit nicht möglich: %{message}'
       unavailable_title: 'Sicherung noch nicht möglich'

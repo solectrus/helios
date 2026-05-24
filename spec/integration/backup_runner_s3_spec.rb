@@ -1,22 +1,22 @@
 require 'securerandom'
 
 # End-to-end coverage of the S3 backup path: a real detached BackupRunner
-# `docker:cli` container dumps a live PostgreSQL + InfluxDB stack, bundles
-# the tar and uploads it to a real S3 bucket (MinIO) through the
-# nested, pinned `amazon/aws-cli` sidecar that backup.sh spawns.
+# `docker:cli` container dumps a live PostgreSQL + InfluxDB stack and
+# writes the tar into the staging dir, then the HELIOS-side uploader
+# pushes the tar to a real S3 bucket (MinIO) and records the DB row.
 #
-# This is the only test that exercises the full chain at once — the outer
-# docker:cli container, the AWS-credential env forwarding into the nested
-# aws-cli container, and the staging-dir mechanics — so it guards both
-# pinned images (docker:cli and amazon/aws-cli) together.
+# This is the only test that exercises the full chain at once — the
+# docker:cli container, the staging-dir hand-off, the aws-sdk-s3
+# upload and the post-upload DB record — so it guards the pinned
+# docker:cli image and the upload flow together.
 #
-# Restore-from-S3 is intentionally not covered here: a restore tears the
-# whole stack down, wipes the data directories and rebuilds it, which is
-# far heavier and destructive. The S3 download path it relies on is
-# already covered by spec/integration/backup_repository/s3_spec.rb.
+# Restore-from-S3 is intentionally not covered here: a restore tears
+# the whole stack down, wipes the data directories and rebuilds it,
+# which is far heavier and destructive. The S3 download path it relies
+# on is already covered by spec/integration/backup_repository/s3_spec.rb.
 #
 # Tagged :integration by its spec/integration/ location. Slow: pulls
-# Postgres, InfluxDB, docker:cli and aws-cli images and runs a real backup.
+# Postgres, InfluxDB and docker:cli images and runs a real backup.
 RSpec.describe BackupRunner, :docker_stack do
   let(:data_path) { Rails.root.join("tmp/backup-s3-itest#{ENV.fetch('TEST_ENV_NUMBER', nil)}").to_s }
   let(:bucket) { "helios-itest-#{SecureRandom.hex(6)}" }

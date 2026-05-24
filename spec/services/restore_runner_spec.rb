@@ -282,6 +282,65 @@ RSpec.describe RestoreRunner do
 
       expect { described_class.start(filename) }.to raise_error(described_class::Error, /already in progress/)
     end
+
+    context 'with S3 destination' do
+      let(:s3_client) { Aws::S3::Client.new(stub_responses: true, region: 'eu-central-1') }
+
+      before do
+        with_config_yaml('backup' => {
+                           'destination' => 's3', 'aws_bucket' => 'my-bucket',
+                           'aws_access_key_id' => 'AKIA', 'aws_secret_access_key' => 'secret',
+                           'aws_region' => 'eu-central-1'
+                         })
+        # with_config_yaml overrides data_path; re-seed deps used by start.
+        File.write(File.join(Rails.configuration.data_path, '.env'), "INFLUX_ADMIN_TOKEN=secret-token\n")
+        FileUtils.mkdir_p(BackupRepository::S3.directory)
+        File.binwrite(
+          File.join(BackupRepository::S3.directory, filename),
+          tar_archive(
+            'helios/config.yaml' => restored_config_yaml,
+            'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'postgres dump',
+            'solectrus-influxdb-backup-2026-05-08.tar.gz' => 'influx backup',
+          ),
+        )
+        allow(BackupRepository).to receive(:find!).with(filename).and_return(
+          Backup.new(filename:, bytes: 7, created_at: Time.zone.local(2026, 5, 8, 11, 0, 0),
+                     destination: 's3', files: []),
+        )
+        allow(BackupRepository::S3).to receive(:client).and_return(s3_client)
+        s3_client.stub_responses(:get_object, body: tar_archive(
+          'helios/config.yaml' => restored_config_yaml,
+          'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'postgres dump',
+          'solectrus-influxdb-backup-2026-05-08.tar.gz' => 'influx backup',
+        ))
+      end
+
+      it 'hands the run to the Downloader, which kicks off the container on completion' do
+        allow(BackupRepository::S3::Downloader).to receive(:start_async)
+
+        described_class.start(filename)
+
+        expect(BackupRepository::S3::Downloader)
+          .to have_received(:start_async).with(filename)
+      end
+
+      it 'does not start the docker container synchronously (the Downloader will)' do
+        allow(BackupRepository::S3::Downloader).to receive(:start_async)
+
+        described_class.start(filename)
+
+        expect(state[:open3_calls].any? { |args| args[0..1] == %w[docker run] }).to be(false)
+      end
+
+      it 'still pulls the docker image up-front so the Downloader does not hit a cold cache later' do
+        allow(BackupRepository::S3::Downloader).to receive(:start_async)
+        state[:image_present] = false
+
+        described_class.start(filename)
+
+        expect(state[:open3_calls]).to include(['docker', 'pull', described_class::IMAGE])
+      end
+    end
   end
 
   describe '.in_progress' do

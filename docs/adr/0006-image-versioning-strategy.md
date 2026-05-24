@@ -50,18 +50,19 @@ During development, some SOLECTRUS services may temporarily use the `develop` ta
 
 ## Sidecar Images
 
-Backups and restores run short-lived sidecar containers that are **not** Compose services and so do not appear in the table above. Their tags are pinned in Ruby constants:
+Backups and restores run a short-lived sidecar container that is **not** a Compose service and so does not appear in the table above. Its tag is pinned in a Ruby constant:
 
-| Image            | Constant                      | Pin               | Rationale                                                                                                                           |
-| ---------------- | ----------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `docker:cli`     | `BackupRunner::IMAGE`         | Major (`29-cli`)  | Third-party — major-pinned like the table above.                                                                                    |
-| `amazon/aws-cli` | `BackupRepository::S3::IMAGE` | Exact (`2.34.52`) | Amazon publishes no major/minor tags, only full `MAJOR.MINOR.PATCH` — an exact pin is the closest equivalent to the major-pin rule. |
+| Image        | Constant              | Pin              | Rationale                                        |
+| ------------ | --------------------- | ---------------- | ------------------------------------------------ |
+| `docker:cli` | `BackupRunner::IMAGE` | Major (`29-cli`) | Third-party — major-pinned like the table above. |
 
-`docker:cli` is defined once (`BackupRunner::IMAGE`); `BackupRepository::External` and `Backup::ConnectionTest` reuse that constant. `amazon/aws-cli` is defined once (`BackupRepository::S3::IMAGE`). A bump is therefore a one-line change in each case.
+`docker:cli` is defined once (`BackupRunner::IMAGE`); `BackupRepository::External` and `Backup::ConnectionTest` reuse that constant. A bump is therefore a one-line change.
+
+S3 access has no sidecar image at all: HELIOS talks to S3 directly through the `aws-sdk-s3` gem, so its version moves with Bundler (`bundle update aws-sdk-s3`) like any other Ruby dependency.
 
 ### Verifying a bump
 
-The backup adapters parse the sidecars' CLI output (aws-cli's `list-objects-v2` text format, busybox `tar -tvf`) and classify their error wording with regexes — a version bump can break this silently. Before raising a pin, run the integration suite, which exercises both images against a real S3-compatible server (MinIO) and a real Docker stack:
+The backup adapter parses the sidecar's output (`tar -tvf`) and classifies its error wording with regexes — a version bump can break this silently. Before raising the pin, run the integration suite, which exercises the docker:cli image and the S3 adapter against a real S3-compatible server (MinIO):
 
 ```bash
 bin/rspec --tag integration

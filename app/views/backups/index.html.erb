@@ -79,7 +79,7 @@
                 <% if @backup_in_progress %>
                   <button type="submit" class="<%= button_class %>" disabled>
                     <span class="loading loading-spinner loading-sm"></span>
-                    <%= t('.in_progress') %>
+                    <%= backup_in_progress_label(@backup_in_progress) %>
                   </button>
                 <% elsif @restore_in_progress || @backup_unavailable_reason %>
                   <button type="submit" class="<%= button_class %>" disabled>
@@ -189,7 +189,7 @@
 
                   <span class="backup-row-actions text-base-content/60 ml-auto inline-flex items-center gap-2">
                     <span class="loading loading-spinner loading-sm"></span>
-                    <%= t('.in_progress') %>
+                    <%= backup_in_progress_label(@backup_in_progress) %>
                   </span>
                 </div>
               </li>
@@ -199,7 +199,7 @@
               <li class="py-3 first:pt-0 last:pb-0">
                 <%= render BackupRow::Component.new(
                 backup:,
-                restore_current: @restore_in_progress&.filename == backup.filename,
+                restore_in_progress: @restore_in_progress&.filename == backup.filename ? @restore_in_progress : nil,
                 actions_disabled: @backup_in_progress || @restore_in_progress,
               ) %>
               </li>

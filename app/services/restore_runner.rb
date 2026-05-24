@@ -16,16 +16,44 @@ class RestoreRunner < DetachedRunner
     def clear_error!
       BackupRepository.clear_error!(ERROR_FILENAME)
     end
+
+    # Extends the inherited in_progress with an S3 download phase: for
+    # S3-sourced restores HELIOS fetches the tar before the detached
+    # container runs, and the Downloader surfaces the running thread so
+    # the UI keeps showing "in progress" during that fetch.
+    def in_progress
+      super || s3_download_in_progress
+    end
+
+    def s3_download_in_progress
+      return nil unless BackupRepository.s3?
+
+      BackupRepository::S3::Downloader.current
+    end
   end
 
-  def start(filename)
+  def start(filename) # rubocop:disable Metrics/MethodLength
     @backup = BackupRepository.find!(filename)
     validate!
     pull_image_if_needed!
-    prepare_restored_stack!
     clear_errors!
-    run_container!
     BackupRepository.mark_pending!
+
+    if BackupRepository.s3?
+      # The restored config will overwrite the current (S3) credentials,
+      # so the download has to happen FIRST — and inside the thread, so
+      # we run the config switch and container start only after the tar
+      # is in staging. The request returns immediately; failures show up
+      # via restore-error.txt in detect_completion!.
+      BackupRepository::S3::Downloader.start_async(backup.filename) do
+        prepare_restored_stack!
+        run_container!
+      end
+    else
+      prepare_restored_stack!
+      run_container!
+    end
+
     self.class.invalidate_in_progress_cache!
   rescue BackupRepository::NotFound
     raise Error, error(:backup_not_found)
@@ -71,7 +99,7 @@ class RestoreRunner < DetachedRunner
       '--name', CONTAINER_NAME,
       '-v', '/var/run/docker.sock:/var/run/docker.sock',
       '-v', "#{BackupRepository.host_directory}:/output",
-      *data_mount_args, *BackupRepository.s3_env_args,
+      *data_mount_args,
       '--entrypoint', 'sh', IMAGE, '-c', SCRIPT, '_',
       *positional_args
     ]
@@ -82,9 +110,7 @@ class RestoreRunner < DetachedRunner
       influx_admin_token, backup.filename, host_data_path,
       postgresql_data_path, influxdb_data_path, redis_data_path,
       restart_after_flag, services_except_self.join(' '),
-      ::Compose.filename,
-      BackupRepository.destination, BackupRepository.host_directory.to_s,
-      BackupRepository::S3::IMAGE, BackupRepository.s3_dir_uri
+      ::Compose.filename
     ]
   end
 

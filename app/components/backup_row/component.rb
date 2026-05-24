@@ -1,9 +1,13 @@
 module BackupRow
   class Component < ViewComponent::Base
-    def initialize(backup:, restore_current:, actions_disabled:)
+    # `restore_in_progress` is a BackupRepository::InProgress when *this*
+    # specific backup is the one being restored right now, or nil
+    # otherwise. The helper turns it into a localized label that includes
+    # the live S3 download percentage during the :downloading phase.
+    def initialize(backup:, restore_in_progress:, actions_disabled:)
       super()
       @backup = backup
-      @restore_current = restore_current
+      @restore_in_progress = restore_in_progress
       @actions_disabled = actions_disabled
     end
 
@@ -12,7 +16,11 @@ module BackupRow
     attr_reader :backup
 
     def restore_current?
-      @restore_current
+      @restore_in_progress.present?
+    end
+
+    def restore_label
+      helpers.restore_in_progress_label(@restore_in_progress) if restore_current?
     end
 
     def actions_disabled?

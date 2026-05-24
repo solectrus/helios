@@ -18,6 +18,30 @@ class BackupRunner < DetachedRunner
     # the Backup tab shows an empty state; when they merely aren't running,
     # the create form stays visible with a disabled button.
     delegate :databases_configured?, to: :new
+
+    # Extends the inherited in_progress with an S3 upload phase: once the
+    # detached container exits, BackupRepository::S3::Uploader keeps the
+    # run "in progress" until the tar is on S3 and the DB row is written.
+    # Also handles the resume path: if a tar is sitting in staging without
+    # a live uploader thread (e.g. after a HELIOS restart killed the
+    # original thread), the uploader is re-spawned here.
+    def in_progress
+      super || s3_upload_in_progress_or_resume
+    end
+
+    def s3_upload_in_progress_or_resume
+      return nil unless BackupRepository.s3?
+
+      current = BackupRepository::S3::Uploader.current
+      return current if current
+
+      filename = BackupRepository.storage.pending_filename
+      return nil if filename.blank?
+      return nil unless BackupRepository::S3.staged_tar_exists?(filename)
+
+      BackupRepository::S3::Uploader.start_async(filename)
+      BackupRepository::S3::Uploader.current
+    end
   end
 
   def start
@@ -27,6 +51,7 @@ class BackupRunner < DetachedRunner
     BackupRepository.clear_error!
     run_container!
     BackupRepository.mark_pending!(backup_filename)
+    BackupRepository::S3::Uploader.start_async(backup_filename) if BackupRepository.s3?
     self.class.invalidate_in_progress_cache!
   end
 
@@ -66,14 +91,11 @@ class BackupRunner < DetachedRunner
       '-v', '/var/run/docker.sock:/var/run/docker.sock',
       '-v', "#{BackupRepository.host_directory}:/output",
       '-v', "#{host_config_path}:/config.yaml:ro",
-      *BackupRepository.s3_env_args,
       '--entrypoint', 'sh',
       IMAGE,
       '-c', SCRIPT, '_',
       influx_admin_token, backup_filename, backup_date,
-      postgres_container_name, influxdb_container_name,
-      BackupRepository.destination, BackupRepository.host_directory.to_s,
-      BackupRepository::S3::IMAGE, BackupRepository.s3_dir_uri
+      postgres_container_name, influxdb_container_name
     ]
   end
 

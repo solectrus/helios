@@ -1,13 +1,10 @@
 require 'securerandom'
 
 # Integration coverage for the S3 backup adapter against a real
-# S3-compatible server (MinIO) and the real, pinned `amazon/aws-cli`
-# image.
-#
-# This is the guard for the BackupRepository::S3::IMAGE pin: the adapter
-# parses aws-cli's text output (`list-objects-v2 --query --output text`)
-# and classifies its error wording with regexes. A version bump that
-# changed either would break here, before it ever reaches a user.
+# S3-compatible server (MinIO) reached through aws-sdk-s3 — the same
+# client construction the runtime uses, so a regression in SigV4
+# handling, endpoint resolution or force_path_style addressing breaks
+# here before it ever reaches a user.
 #
 # Tagged :integration by its spec/integration/ location — runs on CI and
 # locally only with `--tag integration`. Skipped when Docker is absent.
@@ -54,7 +51,7 @@ RSpec.describe BackupRepository::S3 do
   end
 
   describe '.record_backup!' do
-    it 'pulls the tar through aws-cli, parses it locally, and inserts a Backup row' do
+    it 'streams the tar from S3, parses it locally, and inserts a Backup row' do
       s3_put_object!(bucket:, key: "#{prefix}/#{filename}", body: backup_tar)
 
       described_class.record_backup!(filename)
@@ -114,19 +111,26 @@ RSpec.describe BackupRepository::S3 do
     end
   end
 
-  describe 'error file IO via real sidecar' do
-    it 'reads error.txt from the bucket via `aws s3 cp -`' do
-      s3_put_object!(bucket:, key: "#{prefix}/error.txt", body: "Disk full\n")
+  describe 'error file IO (local staging)' do
+    # error.txt and restore-error.txt are written by the detached
+    # runners into /output (the staging dir on the host); they never
+    # touch S3 anymore — HELIOS reads them straight off the filesystem
+    # in detect_completion!.
+    it 'reads the local error.txt from the staging dir' do
+      FileUtils.mkdir_p(described_class.directory)
+      File.write(File.join(described_class.directory, 'error.txt'), "Disk full\n")
 
       expect(described_class.send(:read_error_file)).to eq('Disk full')
     end
 
-    it 'removes the object via `aws s3 rm`' do
-      s3_put_object!(bucket:, key: "#{prefix}/error.txt", body: "Disk full\n")
+    it 'removes the local error.txt from the staging dir' do
+      FileUtils.mkdir_p(described_class.directory)
+      path = File.join(described_class.directory, 'error.txt')
+      File.write(path, "Disk full\n")
 
       described_class.send(:remove_error_file!)
 
-      expect(s3_object_keys(bucket)).not_to include("#{prefix}/error.txt")
+      expect(File).not_to exist(path)
     end
   end
 
