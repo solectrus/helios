@@ -9,16 +9,18 @@ export const application = Application.start();
 // Configure Stimulus development experience
 application.debug = false; // process.env.NODE_ENV === 'development';
 
-// Load and register global controllers
+// Register both the global frontend controllers and the ViewComponent
+// sidecar controllers. Vite resolves both globs at build time into a single
+// module map.
 registerControllers(
   application,
-  import.meta.glob('../controllers/*_controller.{js,ts}', { eager: true }),
-);
-
-// Load and register view_components controllers
-registerControllers(
-  application,
-  import.meta.glob('../../components/**/*_controller.{js,ts}', { eager: true }),
+  import.meta.glob(
+    [
+      '../controllers/*_controller.{js,ts}',
+      '../../components/**/*_controller.{js,ts}',
+    ],
+    { eager: true },
+  ),
 );
 
 // Error handling for missing Turbo frames
