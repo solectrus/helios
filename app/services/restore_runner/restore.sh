@@ -117,6 +117,21 @@ INFLUXDB_CONTAINER="$(compose ps -q influxdb)"
 [ -n "$POSTGRES_CONTAINER" ] || fail "PostgreSQL container is missing after start"
 [ -n "$INFLUXDB_CONTAINER" ] || fail "InfluxDB container is missing after start"
 
+# On a fresh data dir the postgres image runs a bootstrap server that only
+# listens on the Unix socket (`listen_addresses=''`). The compose healthcheck
+# (`pg_isready -U postgres`, socket-based) can flip "healthy" against that
+# throwaway server, so `compose up --wait` returns before TCP is open. Probe
+# TCP directly until the production server is up — otherwise the first psql
+# below races into "Connection refused". Mirrors
+# orchestration/postgresql_upgrade.rb#wait_until_ready!.
+PG_TCP_DEADLINE=$(( $(date +%s) + 120 ))
+until docker exec "$POSTGRES_CONTAINER" pg_isready -h 127.0.0.1 -U postgres -q > /dev/null 2>&1; do
+  if [ "$(date +%s)" -ge "$PG_TCP_DEADLINE" ]; then
+    fail "PostgreSQL did not accept TCP connections within 120 seconds"
+  fi
+  sleep 1
+done
+
 # The pg_dump archive expects database `solectrus_production`, but a fresh
 # init only creates `POSTGRES_DB` (`solectrus`). On a normal stack SOLECTRUS
 # creates the production DB on its first boot; during restore SOLECTRUS is
