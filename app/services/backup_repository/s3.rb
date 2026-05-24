@@ -88,19 +88,17 @@ class BackupRepository
         raise BackupRepository::NotFound
       end
 
+      # Reads the archive from the local staging copy that the Downloader
+      # (or BackupRunner) leaves behind. RestoreRunner is the only caller
+      # and now always invokes this after the download — buffering the
+      # tar in RAM is therefore neither needed nor desirable.
       def read_archive_for(filename)
         return BackupRepository::EMPTY_ARCHIVE unless destination_configured?
 
-        io = StringIO.new(String.new(encoding: Encoding::ASCII_8BIT))
-        stream_object(object_key(filename)) { |chunk| io.write(chunk) }
-        io.rewind
-        BackupRepository.parse_tar_stream(io)
-      rescue Aws::S3::Errors::ServiceError, Seahorse::Client::NetworkingError => e
-        Rails.logger.warn("#{name}: read_archive_for failed for #{filename} — #{e.class}: #{e.message}")
-        BackupRepository::EMPTY_ARCHIVE
-      rescue Gem::Package::TarInvalidError => e
-        Rails.logger.warn("#{name}: tar for #{filename} unreadable — #{e.message}")
-        BackupRepository::EMPTY_ARCHIVE
+        path = staging_path(filename)
+        return BackupRepository::EMPTY_ARCHIVE unless ::File.exist?(path)
+
+        BackupRepository.read_archive(path)
       end
 
       def remove_files!(filenames)
@@ -126,11 +124,8 @@ class BackupRepository
         FileUtils.rm_f(staging_path(filename))
       end
 
-      # Uploads the staged tar to S3 using TransferManager — automatic
-      # multipart above the threshold and a progress callback that
-      # forwards (bytes_uploaded, bytes_total) to the caller. Multipart
-      # uploads aborted mid-flight are cleaned up by the SDK before the
-      # error propagates.
+      # Multipart uploads aborted mid-flight are cleaned up by the SDK
+      # before the error propagates, so retries don't leak partials.
       def upload_from_staging!(filename, progress_callback: nil)
         path = staging_path(filename)
         raise BackupRepository::Error, "staged tar missing: #{filename}" unless ::File.exist?(path)
@@ -168,9 +163,6 @@ class BackupRepository
         upsert_backup_record(filename, stat.size, archive)
       end
 
-      # Local path the detached BackupRunner writes the finished tar to,
-      # before HELIOS uploads it. Public so the resume path can probe
-      # whether a previous upload was interrupted.
       def staging_path(filename)
         ::File.join(directory, filename)
       end
@@ -179,20 +171,21 @@ class BackupRepository
         ::File.exist?(staging_path(filename))
       end
 
-      # Streams the tar from S3 into the local staging dir while reporting
-      # progress to the caller as (bytes_downloaded, bytes_total). Used by
-      # the Downloader before kicking off the RestoreRunner container.
-      # Calls head_object once up-front so the total is known to the
-      # callback; this adds one cheap HEAD per restore.
-      def download_to_staging_with_progress!(filename, progress_callback:)
+      # Streams the tar from S3 into the local staging dir. With a
+      # progress_callback, calls head_object up-front so the total is
+      # known to the callback (one extra HEAD per call).
+      def download_to_staging!(filename, progress_callback: nil) # rubocop:disable Metrics/MethodLength
         path = staging_path(filename)
-        total = client.head_object(bucket: bucket, key: object_key(filename)).content_length
+        key = object_key(filename)
+        total = progress_callback && client.head_object(bucket: bucket, key: key).content_length
         downloaded = 0
 
         FileUtils.mkdir_p(directory)
         ::File.open(path, 'wb') do |io|
-          stream_object(object_key(filename)) do |chunk|
+          stream_object(key) do |chunk|
             io.write(chunk)
+            next unless progress_callback
+
             downloaded += chunk.bytesize
             progress_callback.call(downloaded, total)
           end
@@ -222,24 +215,23 @@ class BackupRepository
 
       # Builds a fresh Aws::S3::Client for every call so a config change
       # (new credentials, switched endpoint) is picked up without a restart.
-      # The SDK reuses underlying HTTP connections via Net::HTTP keep-alive,
-      # so the per-call cost is small.
       def client
         backup = Configuration.current.backup
-        opts = {
+        ClientFactory.build(
+          access_key_id: backup.aws_access_key_id,
+          secret_access_key: backup.aws_secret_access_key,
           region: backup.aws_region,
-          credentials: Aws::Credentials.new(backup.aws_access_key_id, backup.aws_secret_access_key),
-          retry_mode: 'standard',
-          max_attempts: 3,
-        }
-        if endpoint_url
-          opts[:endpoint] = endpoint_url
-          # MinIO and most self-hosted S3-compatible servers don't resolve
-          # virtual-hosted-style URLs (bucket.host) — force path-style for
-          # any custom endpoint.
-          opts[:force_path_style] = true
-        end
-        Aws::S3::Client.new(**opts)
+          endpoint: backup.s3_endpoint_url,
+        )
+      end
+
+      # Writes a runner-style error file into the local staging dir so
+      # detect_completion! surfaces the failure to the user. Used by the
+      # Uploader (backup error) and Downloader (restore error) on top of
+      # what backup.sh / restore.sh themselves write into the same dir.
+      def write_error_file!(filename, message)
+        FileUtils.mkdir_p(directory)
+        ::File.write(::File.join(directory, filename), message)
       end
 
       private
@@ -265,19 +257,6 @@ class BackupRepository
       # block — no full-object buffering.
       def stream_object(key, &)
         client.get_object(bucket: bucket, key: key, &)
-      end
-
-      # Downloads the named tar from S3 into the local staging dir so the
-      # adapter can parse it. Raises BackupRepository::Error on any S3
-      # failure — record_backup! turns that into a no-op.
-      def download_to_staging!(filename)
-        path = ::File.join(directory, filename)
-        ::File.open(path, 'wb') do |io|
-          stream_object(object_key(filename)) { |chunk| io.write(chunk) }
-        end
-      rescue Aws::S3::Errors::ServiceError, Seahorse::Client::NetworkingError => e
-        FileUtils.rm_f(path)
-        raise BackupRepository::Error, "#{e.class}: #{e.message}"
       end
 
       def delete_keys!(keys, ignore_missing: false)

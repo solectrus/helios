@@ -17,10 +17,9 @@ class RestoreRunner < DetachedRunner
       BackupRepository.clear_error!(ERROR_FILENAME)
     end
 
-    # Extends the inherited in_progress with an S3 download phase: for
-    # S3-sourced restores HELIOS fetches the tar before the detached
-    # container runs, and the Downloader surfaces the running thread so
-    # the UI keeps showing "in progress" during that fetch.
+    # Extends the inherited in_progress with the S3 download phase, so
+    # the UI keeps showing "in progress" while HELIOS fetches the tar
+    # before the detached restore container runs.
     def in_progress
       super || s3_download_in_progress
     end
@@ -32,26 +31,22 @@ class RestoreRunner < DetachedRunner
     end
   end
 
-  def start(filename) # rubocop:disable Metrics/MethodLength
+  def start(filename)
     @backup = BackupRepository.find!(filename)
-    validate!
+    validate_locks!
     pull_image_if_needed!
     clear_errors!
     BackupRepository.mark_pending!
 
     if BackupRepository.s3?
-      # The restored config will overwrite the current (S3) credentials,
-      # so the download has to happen FIRST — and inside the thread, so
-      # we run the config switch and container start only after the tar
-      # is in staging. The request returns immediately; failures show up
-      # via restore-error.txt in detect_completion!.
-      BackupRepository::S3::Downloader.start_async(backup.filename) do
-        prepare_restored_stack!
-        run_container!
-      end
+      # Validation, config switch and container start all run after the
+      # download so the tar is only fetched once. The restored config
+      # would overwrite the current S3 credentials anyway, so the
+      # download must precede it. Failures surface via restore-error.txt
+      # in detect_completion!.
+      BackupRepository::S3::Downloader.start_async(backup.filename) { run_restore! }
     else
-      prepare_restored_stack!
-      run_container!
+      run_restore!
     end
 
     self.class.invalidate_in_progress_cache!
@@ -63,8 +58,7 @@ class RestoreRunner < DetachedRunner
 
   attr_reader :backup
 
-  def validate!
-    validate_archive!
+  def validate_locks!
     raise Error, error(:backup_in_progress) if BackupRunner.running?
     raise Error, error(:already_in_progress) if self.class.in_progress
   end
@@ -73,6 +67,12 @@ class RestoreRunner < DetachedRunner
     raise Error, error(:missing_config) if restored_configuration_data.blank?
     raise Error, error(:missing_postgres) unless postgresql_entry?
     raise Error, error(:missing_influx) unless influxdb_entry?
+  end
+
+  def run_restore!
+    validate_archive!
+    prepare_restored_stack!
+    run_container!
   end
 
   def prepare_restored_stack!
@@ -166,8 +166,16 @@ class RestoreRunner < DetachedRunner
     archive_contents.entries.any? { |entry| entry.name.match?(BackupRepository::INFLUXDB_ENTRY_PATTERN) }
   end
 
+  # For S3, validation runs after Downloader has fetched the tar into
+  # staging — parsing the local copy avoids a second remote read and
+  # the 400 MB-class StringIO that the in-memory variant would buffer.
   def archive_contents
-    @archive_contents ||= BackupRepository.read_archive_for(backup.filename)
+    @archive_contents ||=
+      if BackupRepository.s3?
+        BackupRepository.read_archive(BackupRepository::S3.staging_path(backup.filename))
+      else
+        BackupRepository.read_archive_for(backup.filename)
+      end
   end
 
   def postgresql_data_path

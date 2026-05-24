@@ -49,7 +49,7 @@ RSpec.describe BackupRepository::S3::Downloader do
   end
 
   describe '.run (synchronous worker)' do
-    before { allow(BackupRepository::S3).to receive(:download_to_staging_with_progress!) }
+    before { allow(BackupRepository::S3).to receive(:download_to_staging!) }
 
     it 'downloads then invokes the on_complete block' do
       sentinel = Object.new
@@ -59,7 +59,7 @@ RSpec.describe BackupRepository::S3::Downloader do
       described_class.send(:run, filename, &callback)
 
       expect(BackupRepository::S3)
-        .to have_received(:download_to_staging_with_progress!)
+        .to have_received(:download_to_staging!)
         .with(filename, progress_callback: kind_of(Proc))
       expect(called_with).to eq(sentinel)
     end
@@ -67,7 +67,7 @@ RSpec.describe BackupRepository::S3::Downloader do
     it 'writes a restore-error and clears the staged tar on download failure' do
       FileUtils.touch(staged_tar)
       allow(BackupRepository::S3)
-        .to receive(:download_to_staging_with_progress!)
+        .to receive(:download_to_staging!)
         .and_raise(BackupRepository::Error, 'AccessDenied: bucket missing')
 
       described_class.send(:run, filename) { raise 'on_complete must not be called on failure' }
@@ -87,7 +87,7 @@ RSpec.describe BackupRepository::S3::Downloader do
     it 'reflects the latest TransferManager callback in #current' do
       gate = Queue.new
       captured = nil
-      allow(BackupRepository::S3).to receive(:download_to_staging_with_progress!) do |_filename, progress_callback:|
+      allow(BackupRepository::S3).to receive(:download_to_staging!) do |_filename, progress_callback:|
         captured = progress_callback
         gate.pop
       end

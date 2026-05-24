@@ -19,12 +19,9 @@ class BackupRunner < DetachedRunner
     # the create form stays visible with a disabled button.
     delegate :databases_configured?, to: :new
 
-    # Extends the inherited in_progress with an S3 upload phase: once the
-    # detached container exits, BackupRepository::S3::Uploader keeps the
-    # run "in progress" until the tar is on S3 and the DB row is written.
-    # Also handles the resume path: if a tar is sitting in staging without
-    # a live uploader thread (e.g. after a HELIOS restart killed the
-    # original thread), the uploader is re-spawned here.
+    # Extends the inherited in_progress with the S3 upload phase, and
+    # re-spawns the uploader if a HELIOS restart killed the thread while
+    # the staged tar is still on disk.
     def in_progress
       super || s3_upload_in_progress_or_resume
     end

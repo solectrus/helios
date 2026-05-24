@@ -340,6 +340,25 @@ RSpec.describe RestoreRunner do
 
         expect(state[:open3_calls]).to include(['docker', 'pull', described_class::IMAGE])
       end
+
+      it 'validates the archive in the Downloader callback (after the tar has been staged)' do
+        captured_block = nil
+        allow(BackupRepository::S3::Downloader).to receive(:start_async) do |_, &block|
+          captured_block = block
+        end
+        # Drop the postgres entry from the staged tar so validate_archive! raises.
+        File.binwrite(
+          File.join(BackupRepository::S3.directory, filename),
+          tar_archive('helios/config.yaml' => restored_config_yaml),
+        )
+
+        described_class.start(filename)
+        expect(captured_block).not_to be_nil
+
+        expect { captured_block.call }.to raise_error(
+          described_class::Error, I18n.t('backups.restorer.errors.missing_postgres')
+        )
+      end
     end
   end
 

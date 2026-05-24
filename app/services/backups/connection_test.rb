@@ -142,17 +142,10 @@ module Backups
     end
 
     def client_for(probe)
-      opts = {
-        region: probe.region,
-        credentials: Aws::Credentials.new(probe.access, probe.secret),
-        retry_mode: 'standard',
-        max_attempts: 3,
-      }
-      if probe.endpoint.present?
-        opts[:endpoint] = probe.endpoint
-        opts[:force_path_style] = true
-      end
-      Aws::S3::Client.new(**opts)
+      BackupRepository::S3::ClientFactory.build(
+        access_key_id: probe.access, secret_access_key: probe.secret,
+        region: probe.region, endpoint: probe.endpoint
+      )
     end
   end
 end
