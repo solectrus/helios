@@ -118,30 +118,4 @@ RSpec.describe SupportBundle::SystemInfo::InfluxReport do
       expect(described_class.overview).to start_with('unavailable: InfluxDb::ConnectionError:')
     end
   end
-
-  describe '.measurements_list' do
-    it 'renders one measurement name per line' do
-      stub_flux(/schema\.measurements/, measurements_csv('SENEC', 'Forecast'))
-
-      expect(described_class.measurements_list).to eq("SENEC\nForecast")
-    end
-
-    it 'reports unreachable when the query fails' do
-      stub_request(:post, query_url).to_raise(Errno::ECONNREFUSED)
-
-      expect(described_class.measurements_list).to eq('InfluxDB unreachable.')
-    end
-
-    it 'reports an empty bucket' do
-      stub_flux(/schema\.measurements/, ",result,table,_value\n")
-
-      expect(described_class.measurements_list).to eq('No measurements found in bucket.')
-    end
-
-    it 'returns a friendly notice when no bucket is configured' do
-      with_config_yaml('influxdb' => {})
-
-      expect(described_class.measurements_list).to eq('InfluxDB not configured.')
-    end
-  end
 end

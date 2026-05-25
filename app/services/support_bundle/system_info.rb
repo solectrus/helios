@@ -45,7 +45,6 @@ module SupportBundle
       {
         'PostgreSQL Tables' => PostgresReport.tables,
         'InfluxDB' => InfluxReport.overview,
-        'InfluxDB Measurements' => InfluxReport.measurements_list,
       }
     end
 

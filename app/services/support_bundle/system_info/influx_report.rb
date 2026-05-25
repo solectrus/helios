@@ -57,21 +57,6 @@ module SupportBundle
         }
       end
 
-      def measurements_list
-        return 'InfluxDB not configured.' if bucket.blank?
-
-        client = InfluxDb::Client.from_configuration(Configuration.current)
-        rows = client.query(measurements_flux)
-        return 'InfluxDB unreachable.' if rows.nil?
-
-        names = list_values(rows)
-        return 'No measurements found in bucket.' if names.empty?
-
-        names.join("\n")
-      rescue StandardError => e
-        "unavailable: #{e.class}: #{e.message}"
-      end
-
       def bucket
         Configuration.current.influxdb.bucket
       end
