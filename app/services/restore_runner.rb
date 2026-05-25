@@ -2,6 +2,77 @@
 # DetachedRunner for the shared launch / in-progress machinery). It clears
 # the database directories, starts empty database services from the
 # restored configuration and imports PostgreSQL plus InfluxDB.
+#
+# End-to-end flow (three actors, like BackupRunner, but reversed: the tar
+# is the input and the running stack is the output):
+#
+#   1. `start(filename)` (this class, Ruby/HELIOS side)
+#      - validate_locks!   — no concurrent backup, no concurrent restore
+#      - pull_image_if_needed!  (docker:cli)
+#      - clear_errors!     — wipe last run's error markers
+#      - mark_pending!     — UI shows the target filename
+#
+#      Then the S3 vs. local/external paths diverge so the tar is fetched
+#      at most once:
+#        - S3:    Downloader thread fetches the tar into local staging;
+#                 the rest of the restore runs in its on-complete block
+#                 because the restored config will overwrite the current
+#                 S3 credentials. See `s3_download_in_progress` for how
+#                 the UI keeps reporting "in progress" during the fetch.
+#        - other: tar already lives at the destination — run inline.
+#
+#   2. run_restore! (still HELIOS-side, but only once the tar is local)
+#      - validate_archive!         — config.yaml + PostgreSQL + InfluxDB
+#                                    entries must all be present in the
+#                                    archive (read via tar index, no
+#                                    full extraction)
+#      - prepare_restored_stack!   — atomic swap of `config.yaml` to the
+#                                    archive's copy, regenerate
+#                                    `compose.yaml` + `.env` from it
+#                                    (Export::Builder), then re-read
+#                                    INFLUX_ADMIN_TOKEN from the new env
+#      - run_container!            — `docker run -d` against restore.sh
+#
+#   3. restore.sh (inside the detached sidecar; positional argv)
+#      Phases written atomically to /runtime/restore-phase.txt:
+#        :extracting          → safe-path check on the tar index, then
+#                               extract the influx subdir straight into
+#                               the shared /influx-backup-staging mount
+#                               and the rest into local /runtime work
+#        :stopping_services   → `compose down -v --remove-orphans` for
+#                               every service except `helios` (stopping
+#                               our own container would kill the user's
+#                               UI mid-restore). `-v` drops the InfluxDB
+#                               image's anonymous /etc/influxdb2 volume,
+#                               which otherwise traps a stale CLI config
+#                               and breaks the next setup run.
+#        :starting_databases  → fresh `compose up -d postgresql influxdb`
+#                               on empty data dirs, then poll TCP
+#                               readiness (the compose healthcheck flips
+#                               "healthy" against the bootstrap server
+#                               that only listens on the Unix socket,
+#                               so `--wait` returns too early), then
+#                               create the `solectrus_production` DB
+#                               that SOLECTRUS would normally create on
+#                               its own first boot.
+#        :restoring_postgres  → `gunzip | psql` the dump
+#        :restoring_influx    → `influx restore --full` against the
+#                               shared staging mount;
+#                               `--operator-token` is required when the
+#                               source instance had hashed tokens
+#                               (InfluxDB OSS 2.9+ default), otherwise
+#                               auth breaks after --full overwrites the
+#                               bolt
+#        :starting_services   → only if every non-HELIOS service was
+#                               running before the restore; otherwise
+#                               leave manually-stopped services alone
+#      Failures land in /runtime/restore-error.txt (local, never
+#      /output — the destination may be the cause).
+#
+# Mutual exclusion: same CONTAINER_NAME lock as BackupRunner; the
+# cross-runner check (`BackupRunner.running?`) reads docker live, not
+# the IN_PROGRESS_CACHE_TTL cache, so a restore cannot launch against a
+# database that a still-running backup is reading.
 class RestoreRunner < DetachedRunner
   CONTAINER_NAME = 'helios-restore-runner'.freeze
   IMAGE = BackupRunner::IMAGE

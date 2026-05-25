@@ -1,5 +1,56 @@
 # Runs the backup as a detached `docker:cli` container (see DetachedRunner
 # for the shared launch / in-progress machinery).
+#
+# End-to-end flow (the work is split across three actors that share state
+# through bind mounts and small marker files):
+#
+#   1. `start` (this class, Ruby/HELIOS side)
+#      - validate!         — env, config, tokens, destination, both DB
+#                            services running, no concurrent restore
+#      - pull_image_if_needed!  (docker:cli)
+#      - preflight_destination! — sidecar probe of an external mount
+#                                 *before* the long-running container, so
+#                                 NAS-offline / USB-unplugged surfaces as
+#                                 a precise red banner on click
+#      - prune!            — keep the configured number of backups
+#      - run_container!    — `docker run -d` (detached, --rm); the runner
+#                            container outlives the HTTP request and
+#                            even survives a HELIOS restart
+#      - mark_pending!     — record the planned filename for the UI
+#      - start S3 uploader thread if destination == 's3'
+#
+#   2. backup.sh (inside the detached sidecar; positional argv)
+#      Phases written atomically to /runtime/backup-phase.txt and read
+#      back by `DetachedRunner.current_phase` on every /backups poll:
+#        :dumping_postgres → docker exec pg_dump | gzip → /runtime/work
+#        :dumping_influx   → docker exec influx backup  → /influx-backup-staging
+#                            (shared bind mount with the InfluxDB
+#                             container; no docker-exec stdio pipe, no
+#                             gzip-on-gzip)
+#        :bundling         → symlink staging into /runtime/work, then
+#                            `tar -h -cf` the whole work dir into
+#                            /output/<file>.part; rename to final on
+#                            success. Failures land in
+#                            /runtime/error.txt (local, never /output —
+#                            the destination itself may be the cause).
+#      The sidecar writes the tar to /output and exits. /output is:
+#        - local destination:    HELIOS's own backups dir
+#        - external destination: the user's bind-mounted NAS/USB path
+#        - S3 destination:       local S3 staging dir (uploaded next)
+#
+#   3. BackupRepository::S3::Uploader (HELIOS-side background thread,
+#      only when destination == 's3')
+#      Waits for the sidecar to exit, uploads the staged tar via
+#      aws-sdk-s3, records the DB row, removes the local copy. A HELIOS
+#      restart mid-upload (e.g. Watchtower self-update) kills the thread;
+#      `in_progress` re-spawns it on the next render so the user does
+#      not have to resubmit.
+#
+# Mutual exclusion: the fixed CONTAINER_NAME doubles as a lock — a second
+# `docker run --name` collides and fails. The cross-runner check against
+# RestoreRunner (in `validate!`) reads docker live, never the
+# IN_PROGRESS_CACHE_TTL cache — a backup and restore launching within
+# the same 3 s window must not both observe a stale nil.
 class BackupRunner < DetachedRunner
   CONTAINER_NAME = 'helios-backup-runner'.freeze
   IMAGE = 'docker:29-cli'.freeze
