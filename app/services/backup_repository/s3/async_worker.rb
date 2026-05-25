@@ -20,6 +20,10 @@ class BackupRepository
             @started_at = Time.current
             @filename = filename
             @progress = nil
+            # Inherit the request thread's zone so Time.current and any
+            # filename-timestamp parsing in the worker match what the
+            # controller and BackupRunner used.
+            zone = Time.zone
             # Bare Thread.new is intentional: process-local single-flight
             # work, see class docstring. `on_complete` is captured as a
             # named block because anonymous `&` does not survive the
@@ -28,6 +32,7 @@ class BackupRepository
             # the UI would keep showing "in progress" until the user
             # navigates back to /backups.
             @thread = Thread.new(filename) do |f| # rubocop:disable ThreadSafety/NewThread
+              Time.zone = zone if zone
               # rubocop:disable Naming/BlockForwarding
               Rails.application.executor.wrap { run(f, **, &on_complete) }
               # rubocop:enable Naming/BlockForwarding

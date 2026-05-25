@@ -137,6 +137,26 @@ RSpec.describe BackupRepository do
     end
   end
 
+  describe '.created_at_from' do
+    it 'parses the filename timestamp using the configured system timezone, not Time.zone' do
+      with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
+
+      # Background workers (S3 uploader thread, etc.) run with Rails' default
+      # Time.zone = UTC. The filename was produced in Berlin local time, so
+      # parsing it must use the system zone regardless of caller thread.
+      result = Time.use_zone('UTC') do
+        described_class.created_at_from('solectrus-backup-20260525-222658.tar')
+      end
+
+      expected = ActiveSupport::TimeZone['Europe/Berlin'].local(2026, 5, 25, 22, 26, 58)
+      expect(result).to eq(expected)
+    end
+
+    it 'returns nil for an unparseable filename' do
+      expect(described_class.created_at_from('not-a-backup.txt')).to be_nil
+    end
+  end
+
   describe '.prune!' do
     it 'keeps only the four most recent backups (MAX_BACKUPS - 1)' do
       6.times do |i|
