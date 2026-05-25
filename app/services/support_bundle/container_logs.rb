@@ -4,7 +4,7 @@ module SupportBundle
   # bypasses the Docker multiplex stream protocol and works for stopped
   # containers too.
   module ContainerLogs
-    TAIL_LINES = 200
+    TAIL_LINES = 500
 
     module_function
 
