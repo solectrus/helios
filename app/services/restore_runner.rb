@@ -107,7 +107,10 @@ class RestoreRunner < DetachedRunner
       'docker', 'run', '--rm', '-d',
       '--name', CONTAINER_NAME,
       '-v', '/var/run/docker.sock:/var/run/docker.sock',
-      '-v', "#{BackupRepository.host_directory}:/output",
+      # See BackupRunner#docker_run_command for why the destination uses
+      # `--mount type=bind` instead of `-v` — refusing the start beats
+      # restoring from a phantom directory.
+      '--mount', "type=bind,source=#{BackupRepository.host_directory},target=/output",
       '-v', "#{self.class.host_runtime_directory}:#{RUNTIME_MOUNT}",
       *data_mount_args,
       '--entrypoint', 'sh', IMAGE, '-c', SCRIPT, '_',

@@ -91,7 +91,13 @@ class BackupRunner < DetachedRunner
       'docker', 'run', '--rm', '-d',
       '--name', CONTAINER_NAME,
       '-v', '/var/run/docker.sock:/var/run/docker.sock',
-      '-v', "#{BackupRepository.host_directory}:/output",
+      # `--mount type=bind` (not `-v`) for the destination on purpose:
+      # if the host source is missing (NAS offline, USB unplugged,
+      # path renamed) `-v` would silently create an empty directory and
+      # the backup would land in a phantom dir on the docker host, lost
+      # the moment the real mount returns. `--mount` fails the container
+      # start instead — the controller surfaces that as a clean error.
+      '--mount', "type=bind,source=#{BackupRepository.host_directory},target=/output",
       '-v', "#{self.class.host_runtime_directory}:#{RUNTIME_MOUNT}",
       '-v', "#{host_config_path}:/config.yaml:ro",
       '--entrypoint', 'sh',

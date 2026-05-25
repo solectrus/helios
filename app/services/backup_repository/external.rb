@@ -137,9 +137,15 @@ class BackupRepository
       # `docker:cli` ships with `docker` as its default entrypoint, so
       # `docker run docker:cli rm /data/foo` would invoke `docker rm`
       # against the Docker API rather than the busybox `rm` we want.
+      #
+      # `--mount type=bind` (not `-v`) refuses to start the sidecar when
+      # the external mount source has vanished, instead of fabricating an
+      # empty `/data` and silently returning bogus results (an empty
+      # listing, "delete succeeded" on a non-existent file, …).
       def sidecar_command(*cmd)
         entrypoint, *args = cmd
-        ['docker', 'run', '--rm', '-v', "#{host_directory}:/data",
+        ['docker', 'run', '--rm',
+         '--mount', "type=bind,source=#{host_directory},target=/data",
          '--entrypoint', entrypoint, IMAGE, *args]
       end
     end

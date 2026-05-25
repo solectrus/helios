@@ -88,7 +88,7 @@ RSpec.describe RestoreRunner do
       aggregate_failures do
         expect(run).to include('--name', 'helios-restore-runner')
         expect(run).to include('-v', '/var/run/docker.sock:/var/run/docker.sock')
-        expect(run).to include('-v', "#{host_data_path}/helios/backups:/output")
+        expect(run).to include('--mount', "type=bind,source=#{host_data_path}/helios/backups,target=/output")
         expect(run).to include('-v', "#{host_data_path}/helios/runners:/runtime")
         expect(run).to include('-v', "#{host_data_path}:/data")
         expect(run).to include('-v', "#{host_data_path}:#{host_data_path}")

@@ -84,7 +84,8 @@ RSpec.describe BackupRepository::External do
       described_class.destroy!('solectrus-backup-20260508-100000.tar')
 
       expect(Open3).to have_received(:capture2e).with(
-        'docker', 'run', '--rm', '-v', "#{external_path}:/data",
+        'docker', 'run', '--rm',
+        '--mount', "type=bind,source=#{external_path},target=/data",
         '--entrypoint', 'rm', described_class::IMAGE,
         '-f', '/data/solectrus-backup-20260508-100000.tar'
       )

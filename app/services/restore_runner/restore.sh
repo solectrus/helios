@@ -65,7 +65,7 @@ compose() {
   fi
 }
 
-rm -rf "$WORK_DIR"
+rm -rf "$WORK_DIR" || fail "Failed to clean work directory: $WORK_DIR"
 rm -f "$ERROR_PATH" "$PHASE_PATH"
 mkdir -p "$WORK_DIR"
 
@@ -206,4 +206,4 @@ if [ "$RESTART_AFTER" = "1" ]; then
 fi
 
 rm -f "$PHASE_PATH"
-rm -rf "$WORK_DIR"
+rm -rf "$WORK_DIR" || fail "Failed to clean work directory after restore: $WORK_DIR"

@@ -53,7 +53,7 @@ RSpec.describe BackupRunner do
       aggregate_failures do
         expect(run).to include('--name', 'helios-backup-runner')
         expect(run).to include('-v', '/var/run/docker.sock:/var/run/docker.sock')
-        expect(run).to include('-v', "#{host_data_path}/helios/backups:/output")
+        expect(run).to include('--mount', "type=bind,source=#{host_data_path}/helios/backups,target=/output")
         expect(run).to include('-v', "#{host_data_path}/helios/runners:/runtime")
         expect(run).to include('-v', "#{host_data_path}/helios/config.yaml:/config.yaml:ro")
         expect(run).to include('--entrypoint', 'sh', described_class::IMAGE, '-c')
@@ -206,7 +206,7 @@ RSpec.describe BackupRunner do
 
         run = find_backup_runner_call
         aggregate_failures do
-          expect(run).to include('-v', "#{host_data_path}/helios/backups-staging:/output")
+          expect(run).to include('--mount', "type=bind,source=#{host_data_path}/helios/backups-staging,target=/output")
           # The container only ever does the dump+tar work; HELIOS handles
           # every S3 call itself through aws-sdk-s3.
           expect(run.grep(/\AAWS_/)).to be_empty
