@@ -180,6 +180,39 @@ RSpec.describe BackupRunner do
       end
     end
 
+    context 'with external destination' do
+      let(:external_path) { '/mnt/nas' }
+      let(:probe_result) { ConnectionTesting::Result.new(ok: true, reason: :backup_path_writable) }
+
+      before do
+        with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => external_path })
+        File.write(File.join(Rails.configuration.data_path, '.env'), "INFLUX_ADMIN_TOKEN=secret-token\n")
+        FileUtils.mkdir_p(File.join(Rails.configuration.data_path, 'helios'))
+        allow_any_instance_of(Backups::ConnectionTest).to receive(:call).and_return(probe_result) # rubocop:disable RSpec/AnyInstance
+      end
+
+      it 'mounts the configured external path as /output via --mount type=bind' do
+        described_class.start
+
+        expect(find_backup_runner_call).to include(
+          '--mount', "type=bind,source=#{external_path},target=/output"
+        )
+      end
+
+      it 'aborts with destination_unreachable and never launches the runner when the probe fails' do
+        allow_any_instance_of(Backups::ConnectionTest).to receive(:call).and_return( # rubocop:disable RSpec/AnyInstance
+          ConnectionTesting::Result.new(ok: false, reason: :backup_path_missing),
+        )
+        expected = I18n.t(
+          'backups.runner.errors.destination_unreachable',
+          reason: I18n.t('configurations.connection_test.backup_path_missing'),
+        )
+
+        expect { described_class.start }.to raise_error(described_class::Error, expected)
+        expect(find_backup_runner_call).to be_nil
+      end
+    end
+
     context 'with S3 destination' do
       let(:s3_client) { Aws::S3::Client.new(stub_responses: true, region: 'eu-central-1') }
 

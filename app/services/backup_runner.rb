@@ -49,6 +49,7 @@ class BackupRunner < DetachedRunner
   def start
     validate!
     pull_image_if_needed!
+    preflight_destination!
     BackupRepository.prune!
     BackupRepository.clear_error!
     run_container!
@@ -84,6 +85,25 @@ class BackupRunner < DetachedRunner
 
     reason = unavailable_reason
     raise Error, reason if reason
+  end
+
+  # External-only: probe the destination once via a short-lived sidecar
+  # *before* spawning the long-running backup container. Catches the
+  # common operational failures (NAS offline, USB unplugged, mount turned
+  # read-only, root_squash permission-denied) up-front, so the user sees
+  # a precise red banner on click instead of waiting for a generic
+  # "process stopped" half a minute later. Skipped for local (no remote
+  # to probe) and S3 (covered by the SDK during the upload phase).
+  def preflight_destination!
+    return unless BackupRepository.destination == 'external'
+
+    result = Backups::ConnectionTest.new.call(
+      check: 'external_path',
+      values: { 'external_path' => BackupRepository.host_directory },
+    )
+    return if result.ok
+
+    raise Error, error(:destination_unreachable, reason: I18n.t("configurations.connection_test.#{result.reason}"))
   end
 
   def docker_run_command
