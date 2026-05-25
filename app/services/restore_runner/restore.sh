@@ -4,13 +4,17 @@
 # supports that allows `set -o pipefail`.
 # Receives positional args via `sh -c '<this script>' _ <token> <filename>
 # <host-data-path> <pg-data> <influx-data> <redis-data> <restart-after>
-# <services> <compose-filename>`. Positional args are passed by argv (not
-# interpolated) so values with shell metacharacters are safe. SERVICES is
-# a space-separated list of compose service names (excluding `helios`) —
-# the HELIOS service itself must never be torn down by this script, since
-# stopping our own container would kill the user's UI mid-restore.
-# COMPOSE_FILENAME is the basename of the compose file on the host (e.g.
-# `compose.yaml` or `compose.yml`); HELIOS supports both.
+# <services> <compose-filename> <cleanup-tar-after>`. Positional args are
+# passed by argv (not interpolated) so values with shell metacharacters
+# are safe. SERVICES is a space-separated list of compose service names
+# (excluding `helios`) — the HELIOS service itself must never be torn
+# down by this script, since stopping our own container would kill the
+# user's UI mid-restore. COMPOSE_FILENAME is the basename of the compose
+# file on the host (e.g. `compose.yaml` or `compose.yml`); HELIOS
+# supports both. CLEANUP_TAR_AFTER is "1" only when /output is the S3
+# staging dir (which HELIOS pre-populates with a downloaded tar) — for
+# local/external destinations /output is the user's actual backups dir,
+# and the tar must be left alone.
 #
 # This script no longer talks to the backup destination directly: it
 # expects the tar to be present in /output (the staging dir) already.
@@ -30,6 +34,10 @@ REDIS_DATA_PATH="$6"
 RESTART_AFTER="$7"
 SERVICES="$8"
 COMPOSE_FILENAME="$9"
+# `${10:-0}` because positional args ≥ 10 must use braces ("$10" parses as
+# "$1" plus the literal "0") and `set -u` would fail on an absent arg. The
+# default keeps older invocations safe; the active caller always passes it.
+CLEANUP_TAR_AFTER="${10:-0}"
 
 OUTPUT_DIR="/output"
 RUNTIME_DIR="/runtime"
@@ -59,6 +67,7 @@ fail() {
   rm -f "$PHASE_PATH"
   rm -rf "$WORK_DIR"
   [ -n "${INFLUX_STAGED_DIR:-}" ] && rm -rf "$INFLUX_STAGED_DIR"
+  [ "$CLEANUP_TAR_AFTER" = "1" ] && rm -f "$BACKUP_PATH"
   exit 1
 }
 
@@ -229,3 +238,9 @@ fi
 
 rm -f "$PHASE_PATH"
 rm -rf "$WORK_DIR" || fail "Failed to clean work directory after restore: $WORK_DIR"
+# Wrapped in `if`, not `[ … ] && rm`: as the script's last command an
+# AND-OR list that short-circuits would propagate a non-zero exit and
+# make the detached container look failed on the local/external path.
+if [ "$CLEANUP_TAR_AFTER" = "1" ]; then
+  rm -f "$BACKUP_PATH"
+fi

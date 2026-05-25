@@ -124,8 +124,16 @@ class RestoreRunner < DetachedRunner
       influx_admin_token, backup.filename, host_data_path,
       postgresql_data_path, influxdb_data_path, redis_data_path,
       restart_after_flag, services_except_self.join(' '),
-      ::Compose.filename
+      ::Compose.filename, cleanup_tar_after_flag
     ]
+  end
+
+  # "1" iff /output is the S3 staging dir — the tar there is a throwaway
+  # copy the Downloader fetched and should be removed once the restore
+  # consumed it. For local/external destinations /output is the user's
+  # actual backups dir; the tar must survive the restore.
+  def cleanup_tar_after_flag
+    BackupRepository.s3? ? '1' : '0'
   end
 
   def data_mount_args

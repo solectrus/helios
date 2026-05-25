@@ -102,12 +102,12 @@ RSpec.describe RestoreRunner do
 
       run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
       placeholder_index = run.index('_')
-      expect(run[placeholder_index + 1, 9]).to eq(
+      expect(run[placeholder_index + 1, 10]).to eq(
         [
           'secret-token', filename, host_data_path, "#{host_data_path}/postgresql",
           "#{host_data_path}/influxdb", "#{host_data_path}/redis", '0',
           'postgresql influxdb dashboard senec-collector forecast-collector',
-          'compose.yaml'
+          'compose.yaml', '0'
         ],
       )
     end
@@ -120,6 +120,28 @@ RSpec.describe RestoreRunner do
       run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
       placeholder_index = run.index('_')
       expect(run[placeholder_index + 9]).to eq('compose.yml')
+    end
+
+    it 'passes cleanup-tar flag "1" for the S3 destination so restore.sh removes the staged tar' do
+      allow(BackupRepository).to receive(:s3?).and_return(true)
+      # The S3 branch parses the archive from the local staging copy that
+      # the Downloader would have produced — mirror that by copying the
+      # fixture tar to the staging path.
+      staging_path = BackupRepository::S3.staging_path(filename)
+      FileUtils.mkdir_p(File.dirname(staging_path))
+      FileUtils.cp(File.join(data_path, 'helios', 'backups', filename), staging_path)
+      # Run the on-complete block inline so docker_run_command actually
+      # fires without spawning a download thread or touching S3.
+      allow(BackupRepository::S3::Downloader).to receive(:start_async) do |_filename, **_opts, &block|
+        block&.call
+        true
+      end
+
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      placeholder_index = run.index('_')
+      expect(run[placeholder_index + 10]).to eq('1')
     end
 
     it 'passes restart-after flag "1" when every configured service has a running container' do
