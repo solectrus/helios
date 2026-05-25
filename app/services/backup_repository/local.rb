@@ -44,6 +44,12 @@ class BackupRepository
         BackupRepository.read_archive(::File.join(directory, filename))
       end
 
+      # Local files are served through the Rails action itself — there is no
+      # browser-reachable URL we could hand out.
+      def direct_download_url(_filename)
+        nil
+      end
+
       # 64 KB chunks: keep multi-GB downloads streamed instead of buffered.
       def download(filename)
         raise BackupRepository::NotFound unless BackupRepository.valid_filename?(filename)

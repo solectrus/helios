@@ -140,6 +140,37 @@ RSpec.describe BackupRepository::S3 do
     end
   end
 
+  describe '.direct_download_url' do
+    let(:filename) { 'solectrus-backup-20260508-100000.tar' }
+
+    it 'returns a presigned URL pointing at the object key, with attachment disposition' do
+      create_row(filename)
+
+      url = described_class.direct_download_url(filename)
+      uri = URI.parse(url)
+      query = URI.decode_www_form(uri.query.to_s).to_h
+
+      expect(uri.host).to eq("#{bucket}.s3.eu-central-1.amazonaws.com")
+      expect(uri.path).to eq("/solectrus/#{filename}")
+      expect(query['X-Amz-Expires']).to eq(BackupRepository::S3::DOWNLOAD_URL_TTL.to_i.to_s)
+      expect(query['response-content-disposition']).to include("filename=\"#{filename}\"")
+      expect(query['response-content-type']).to eq('application/x-tar')
+    end
+
+    it 'raises NotFound for an invalid filename' do
+      expect { described_class.direct_download_url('garbage') }.to raise_error(BackupRepository::NotFound)
+    end
+
+    it 'raises NotFound when the destination is not configured' do
+      with_config_yaml('backup' => { 'destination' => 's3' })
+      expect { described_class.direct_download_url(filename) }.to raise_error(BackupRepository::NotFound)
+    end
+
+    it 'raises NotFound when no row is recorded for the filename' do
+      expect { described_class.direct_download_url(filename) }.to raise_error(BackupRepository::NotFound)
+    end
+  end
+
   describe '.error_message' do
     it 'reads the backup runner error from RunnerLog' do
       RunnerLog.record_error!(:backup, 'Disk full')

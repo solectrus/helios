@@ -50,6 +50,12 @@ class BackupRepository
         stream_sidecar_download('cat', sidecar_path(filename), &)
       end
 
+      # An external bind mount is not reachable from the browser; downloads
+      # must go through the sidecar stream.
+      def direct_download_url(_filename)
+        nil
+      end
+
       def read_archive_for(filename)
         return BackupRepository::EMPTY_ARCHIVE unless host_directory
 

@@ -297,6 +297,17 @@ RSpec.describe 'Backups', :with_admin_password do
 
       expect(response).to have_http_status(:not_found)
     end
+
+    it 'redirects to the presigned URL when the storage adapter exposes one' do
+      filename = 'solectrus-backup-20260508-110000.tar'
+      persist_backup(filename)
+      presigned = 'https://example.invalid/presigned'
+      allow(BackupRepository).to receive(:direct_download_url).with(filename).and_return(presigned)
+
+      get backup_path('solectrus-backup-20260508-110000')
+
+      expect(response).to redirect_to(presigned)
+    end
   end
 
   describe 'DELETE /backups/:id' do

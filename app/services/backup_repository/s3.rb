@@ -18,6 +18,10 @@ class BackupRepository
     # for the next chunk while the first is committing.
     UPLOAD_THREAD_COUNT = 2
 
+    # Presigned download URLs leak via browser history / proxy logs, so the
+    # TTL is just long enough for a click-then-download workflow.
+    DOWNLOAD_URL_TTL = 5.minutes
+
     class << self
       include BackupRepository::Tracking
 
@@ -86,6 +90,24 @@ class BackupRepository
         stream_object(object_key(filename), &)
       rescue Aws::S3::Errors::NoSuchKey
         raise BackupRepository::NotFound
+      end
+
+      # Presigned GET URL so the browser can pull the tar straight from S3
+      # instead of streaming it through the HELIOS Ruby process.
+      def direct_download_url(filename)
+        raise BackupRepository::NotFound unless BackupRepository.valid_filename?(filename)
+        raise BackupRepository::NotFound unless destination_configured?
+        raise BackupRepository::NotFound unless recorded?(filename)
+
+        Aws::S3::Presigner.new(client: client).presigned_url(
+          :get_object,
+          bucket: bucket,
+          key: object_key(filename),
+          expires_in: DOWNLOAD_URL_TTL.to_i,
+          response_content_disposition:
+            ActionDispatch::Http::ContentDisposition.format(disposition: 'attachment', filename: filename),
+          response_content_type: 'application/x-tar',
+        )
       end
 
       # Reads the archive from the local staging copy that the Downloader

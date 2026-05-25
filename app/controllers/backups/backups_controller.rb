@@ -9,6 +9,11 @@ module Backups
     end
 
     def show
+      if (url = BackupRepository.direct_download_url(@backup.filename))
+        redirect_to url, allow_other_host: true, status: :found
+        return
+      end
+
       prepare_download_response(@backup)
       self.response_body = Enumerator.new do |yielder|
         BackupRepository.download(@backup.filename) { |chunk| yielder << chunk }
