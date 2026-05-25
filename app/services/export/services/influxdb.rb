@@ -56,7 +56,7 @@ module Export
         config = {
           image: configuration.influxdb.image,
           environment: influxdb_environment,
-          volumes: [bind_mount('/var/lib/influxdb2')],
+          volumes: influxdb_volumes,
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD', 'influx', 'ping'),
         }
@@ -115,6 +115,19 @@ module Export
           'traefik.http.routers.influxdb.entrypoints=influxdb',
           'traefik.http.routers.influxdb.tls.certresolver=letsencrypt',
           "traefik.http.services.influxdb.loadbalancer.server.port=#{CONTAINER_PORT}",
+        ]
+      end
+
+      # The second mount is the shared influx-backup staging directory.
+      # `influx backup` writes its (already-gzipped) output there, and the
+      # backup/restore sidecars see the same path under the same name —
+      # avoids a docker-exec stdio pipe for multi-GB dumps and a wasted
+      # gzip-on-gzip pass. `./` resolves against the compose project
+      # directory (HELIOS's data path).
+      def influxdb_volumes
+        [
+          bind_mount('/var/lib/influxdb2'),
+          "./#{DetachedRunner::INFLUX_STAGING_DIRNAME}:#{DetachedRunner::INFLUX_STAGING_MOUNT}",
         ]
       end
 

@@ -62,7 +62,7 @@ RSpec.describe BackupUploader do
     end
 
     it 'rejects an archive without an InfluxDB backup' do
-      archive = valid_archive_entries.except('solectrus-influxdb-backup-2026-05-07.tar.gz')
+      archive = valid_archive_entries.except('solectrus-influxdb-backup-2026-05-07/data.tar.gz')
       uploaded = build_upload('solectrus-backup-20260507-101234.tar', tar_archive(archive))
 
       expect { described_class.start(uploaded) }
@@ -156,7 +156,7 @@ RSpec.describe BackupUploader do
   def valid_archive_entries
     {
       'solectrus-postgresql-backup-2026-05-07.sql.gz' => 'p' * 64,
-      'solectrus-influxdb-backup-2026-05-07.tar.gz' => 'i' * 128,
+      'solectrus-influxdb-backup-2026-05-07/data.tar.gz' => 'i' * 128,
       'helios/config.yaml' => "system:\n  admin_password: secret\n",
     }
   end

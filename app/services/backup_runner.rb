@@ -12,7 +12,16 @@ class BackupRunner < DetachedRunner
   # outside this allowlist falls back to the generic "In progress…" label.
   KNOWN_PHASES = %i[dumping_postgres dumping_influx bundling].freeze
 
-  SCRIPT = ::File.read(::File.join(__dir__, 'backup_runner', 'backup.sh')).freeze
+  SCRIPT_PATH = ::File.join(__dir__, 'backup_runner', 'backup.sh').freeze
+
+  # Read on every start instead of caching into a frozen constant: Rails'
+  # autoreloader only watches .rb files, so a constant would pin the script
+  # to whatever was on disk at boot — edits would silently no-op until the
+  # dev server is restarted. In production the container is spawned fresh
+  # per backup anyway, so the file read is noise.
+  def self.script
+    ::File.read(SCRIPT_PATH)
+  end
 
   class << self
     # Reason why a fresh backup cannot be started right now, or nil if it can.
@@ -119,10 +128,11 @@ class BackupRunner < DetachedRunner
       # start instead — the controller surfaces that as a clean error.
       '--mount', "type=bind,source=#{BackupRepository.host_directory},target=/output",
       '-v', "#{self.class.host_runtime_directory}:#{RUNTIME_MOUNT}",
+      '-v', "#{self.class.host_influx_staging_directory}:#{INFLUX_STAGING_MOUNT}",
       '-v', "#{host_config_path}:/config.yaml:ro",
       '--entrypoint', 'sh',
       IMAGE,
-      '-c', SCRIPT, '_',
+      '-c', self.class.script, '_',
       influx_admin_token, backup_filename, backup_date,
       postgres_container_name, influxdb_container_name
     ]

@@ -55,6 +55,7 @@ RSpec.describe BackupRunner do
         expect(run).to include('-v', '/var/run/docker.sock:/var/run/docker.sock')
         expect(run).to include('--mount', "type=bind,source=#{host_data_path}/helios/backups,target=/output")
         expect(run).to include('-v', "#{host_data_path}/helios/runners:/runtime")
+        expect(run).to include('-v', "#{host_data_path}/influx-backup-staging:/influx-backup-staging")
         expect(run).to include('-v', "#{host_data_path}/helios/config.yaml:/config.yaml:ro")
         expect(run).to include('--entrypoint', 'sh', described_class::IMAGE, '-c')
       end

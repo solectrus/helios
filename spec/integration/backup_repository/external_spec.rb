@@ -130,7 +130,7 @@ RSpec.describe BackupRepository::External do
                           './helios/config.yaml' => { 'influxdb' => { 'image' => 'influxdb:2-alpine' },
                                                       'postgresql' => { 'image' => 'postgres:18-alpine' } }.to_yaml,
                           './solectrus-postgresql-backup-2026-05-08.sql.gz' => 'postgres dump',
-                          './solectrus-influxdb-backup-2026-05-08.tar.gz' => 'influx export',
+                          './solectrus-influxdb-backup-2026-05-08/data.tar.gz' => 'influx export',
                         ))
   end
 

@@ -116,6 +116,7 @@ services:
     - DOCKER_INFLUXDB_INIT_USERNAME=admin
     volumes:
     - "${INFLUX_VOLUME_PATH}:/var/lib/influxdb2"
+    - "./influx-backup-staging:/influx-backup-staging"
     ports:
     - 8086:8086
     labels:

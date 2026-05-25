@@ -28,7 +28,7 @@ RSpec.describe RestoreRunner do
       tar_archive(
         'helios/config.yaml' => restored_config_yaml,
         'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'postgres dump',
-        'solectrus-influxdb-backup-2026-05-08.tar.gz' => 'influx backup',
+        'solectrus-influxdb-backup-2026-05-08/data.tar.gz' => 'influx backup',
       ),
     )
 
@@ -90,6 +90,7 @@ RSpec.describe RestoreRunner do
         expect(run).to include('-v', '/var/run/docker.sock:/var/run/docker.sock')
         expect(run).to include('--mount', "type=bind,source=#{host_data_path}/helios/backups,target=/output")
         expect(run).to include('-v', "#{host_data_path}/helios/runners:/runtime")
+        expect(run).to include('-v', "#{host_data_path}/influx-backup-staging:/influx-backup-staging")
         expect(run).to include('-v', "#{host_data_path}:/data")
         expect(run).to include('-v', "#{host_data_path}:#{host_data_path}")
         expect(run).to include('--entrypoint', 'sh', described_class::IMAGE, '-c')
@@ -200,7 +201,7 @@ RSpec.describe RestoreRunner do
       run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
       script = run[run.index('-c') + 1]
       expect(script).to include('influx restore --full --host http://localhost:8086 \\')
-      expect(script).to include('-t "$TOKEN" --operator-token "$TOKEN" "$1"')
+      expect(script).to include('-t "$TOKEN" --operator-token "$TOKEN" "$INFLUX_STAGED_DIR"')
     end
 
     it 'reports PostgreSQL restore command output on failure' do
@@ -284,7 +285,7 @@ RSpec.describe RestoreRunner do
         tar_archive(
           './helios/config.yaml' => restored_config_yaml,
           './solectrus-postgresql-backup-2026-05-08.sql.gz' => 'postgres dump',
-          './solectrus-influxdb-backup-2026-05-08.tar.gz' => 'influx backup',
+          './solectrus-influxdb-backup-2026-05-08/data.tar.gz' => 'influx backup',
         ),
       )
 
@@ -316,7 +317,7 @@ RSpec.describe RestoreRunner do
           tar_archive(
             'helios/config.yaml' => restored_config_yaml,
             'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'postgres dump',
-            'solectrus-influxdb-backup-2026-05-08.tar.gz' => 'influx backup',
+            'solectrus-influxdb-backup-2026-05-08/data.tar.gz' => 'influx backup',
           ),
         )
         allow(BackupRepository).to receive(:find!).with(filename).and_return(
@@ -327,7 +328,7 @@ RSpec.describe RestoreRunner do
         s3_client.stub_responses(:get_object, body: tar_archive(
           'helios/config.yaml' => restored_config_yaml,
           'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'postgres dump',
-          'solectrus-influxdb-backup-2026-05-08.tar.gz' => 'influx backup',
+          'solectrus-influxdb-backup-2026-05-08/data.tar.gz' => 'influx backup',
         ))
       end
 

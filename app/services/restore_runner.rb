@@ -112,6 +112,7 @@ class RestoreRunner < DetachedRunner
       # restoring from a phantom directory.
       '--mount', "type=bind,source=#{BackupRepository.host_directory},target=/output",
       '-v', "#{self.class.host_runtime_directory}:#{RUNTIME_MOUNT}",
+      '-v', "#{self.class.host_influx_staging_directory}:#{INFLUX_STAGING_MOUNT}",
       *data_mount_args,
       '--entrypoint', 'sh', IMAGE, '-c', SCRIPT, '_',
       *positional_args

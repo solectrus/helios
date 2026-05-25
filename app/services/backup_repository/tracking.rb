@@ -166,7 +166,7 @@ class BackupRepository
         created_at: BackupRepository.created_at_from(filename) || Time.current,
         influxdb_image: images[:influxdb],
         postgresql_image: images[:postgresql],
-        files: archive.entries.map { |entry| { 'name' => entry.name, 'bytes' => entry.bytes } },
+        files: BackupRepository.summarize_entries(archive.entries),
       )
       record.save!
       record

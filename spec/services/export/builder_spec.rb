@@ -1801,7 +1801,10 @@ RSpec.describe Export::Builder do
       expect(compose.services.find('postgresql').config['volumes'])
         .to eq(['${DB_VOLUME_PATH}:/var/lib/postgresql'])
       expect(compose.services.find('influxdb').config['volumes'])
-        .to eq(['${INFLUX_VOLUME_PATH}:/var/lib/influxdb2'])
+        .to eq([
+                 '${INFLUX_VOLUME_PATH}:/var/lib/influxdb2',
+                 './influx-backup-staging:/influx-backup-staging',
+               ])
       expect(compose.services.find('redis').config['volumes'])
         .to eq(['${REDIS_VOLUME_PATH}:/data'])
 

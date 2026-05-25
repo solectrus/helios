@@ -33,17 +33,21 @@ COMPOSE_FILENAME="$9"
 
 OUTPUT_DIR="/output"
 RUNTIME_DIR="/runtime"
-# Work + control files stay in /runtime (HELIOS-local). Two reasons:
-# (1) macOS SMB leaves `.smbdelete*` tombstones after in-place unlinks,
-# breaking `rmdir` on the next run; (2) writing the error file to /output
-# would also fail when /output itself is the cause (vanished mount,
-# read-only, full) and HELIOS would only see the generic "process
-# stopped" fallback. /runtime sidesteps both.
+# Work + control files stay in /runtime (HELIOS-local). For an external
+# NAS/SMB mount: (1) macOS SMB leaves `.smbdelete*` tombstones after
+# in-place unlinks, breaking `rmdir` on the next run; (2) writing the
+# error file to /output would also fail if /output itself is the cause
+# (vanished mount, read-only, full) and HELIOS would only see the
+# generic "process stopped" fallback. /runtime sidesteps both.
 WORK_DIR="$RUNTIME_DIR/restore-work"
 BACKUP_PATH="$OUTPUT_DIR/$BACKUP_FILENAME"
 ERROR_PATH="$RUNTIME_DIR/restore-error.txt"
 PHASE_PATH="$RUNTIME_DIR/restore-phase.txt"
 COMPOSE_PATH="$HOST_DATA_PATH/$COMPOSE_FILENAME"
+# Shared bind mount with the InfluxDB container; we extract the influx
+# backup subdirectory directly here so `influx restore` can read it in
+# place — no docker-cp, no stdio pipe.
+INFLUX_STAGING="/influx-backup-staging"
 
 # Atomic write so RestoreRunner.current_phase never reads a half-written name.
 set_phase() {
@@ -54,6 +58,7 @@ fail() {
   echo "$1" > "$ERROR_PATH"
   rm -f "$PHASE_PATH"
   rm -rf "$WORK_DIR"
+  [ -n "${INFLUX_STAGED_DIR:-}" ] && rm -rf "$INFLUX_STAGED_DIR"
   exit 1
 }
 
@@ -80,15 +85,39 @@ while IFS= read -r entry; do
   esac
 done < "$WORK_DIR/entries.txt"
 
-tar -xf "$BACKUP_PATH" -C "$WORK_DIR" || fail "Backup archive could not be extracted"
+# Identify the influx subdirectory in the archive. backup.sh writes
+# entries with a leading `./` (tar's normal behaviour when called with
+# `.` as argument); BusyBox tar requires positional patterns to match
+# the entry name verbatim, so we keep the `./` prefix end-to-end and
+# strip it only when we need the bare directory name on the host side.
+INFLUX_ENTRY="$(grep -E '^\./solectrus-influxdb-backup-[0-9]{4}-[0-9]{2}-[0-9]{2}/' "$WORK_DIR/entries.txt" | head -n1)"
+[ -n "$INFLUX_ENTRY" ] || fail "InfluxDB backup is missing from archive"
+# cut -d/ -f1-2 keeps `./solectrus-influxdb-backup-DATE` (strips the
+# trailing `/file…` portion). Shell glob `%%/[^/]*` would match the
+# very first `/` and collapse the result to `.`, so we use cut.
+INFLUX_DIR_ENTRY="$(printf '%s\n' "$INFLUX_ENTRY" | cut -d/ -f1-2)"
+INFLUX_NAME="${INFLUX_DIR_ENTRY#./}"
+INFLUX_STAGED_DIR="$INFLUX_STAGING/$INFLUX_NAME"
+
+# Influx subdirectory goes straight to the shared staging mount so
+# `influx restore` can read it in place — no copying multi-GB files
+# across the runtime/staging mount boundary. tar resolves the `./`
+# prefix relative to -C automatically, landing the files at
+# $INFLUX_STAGING/$INFLUX_NAME/.
+mkdir -p "$INFLUX_STAGING" || fail "Failed to prepare InfluxDB staging dir: $INFLUX_STAGING"
+rm -rf "$INFLUX_STAGED_DIR" || fail "Failed to clean InfluxDB staging dir: $INFLUX_STAGED_DIR"
+tar -xf "$BACKUP_PATH" -C "$INFLUX_STAGING" "$INFLUX_DIR_ENTRY" \
+  || fail "InfluxDB backup could not be extracted"
+
+# Everything else (postgres dump, helios config) goes to the local
+# work dir; --exclude keeps the influx subdir out.
+tar -xf "$BACKUP_PATH" -C "$WORK_DIR" \
+  --exclude="$INFLUX_DIR_ENTRY" --exclude="$INFLUX_DIR_ENTRY/*" \
+  || fail "Backup archive could not be extracted"
 
 set -- "$WORK_DIR"/solectrus-postgresql-backup-*.sql.gz
 [ -f "$1" ] || fail "PostgreSQL backup is missing"
 PG_FILE="$1"
-
-set -- "$WORK_DIR"/solectrus-influxdb-backup-*.tar.gz
-[ -f "$1" ] || fail "InfluxDB backup is missing"
-INFLUX_FILE="$1"
 
 CONFIG_FILE="$WORK_DIR/helios/config.yaml"
 [ -f "$CONFIG_FILE" ] || fail "HELIOS configuration is missing"
@@ -170,28 +199,21 @@ fi
 
 set_phase restoring_influx
 INFLUX_RESTORE_LOG="$WORK_DIR/influx-restore.log"
-if ! docker exec -i "$INFLUXDB_CONTAINER" sh -c '
-  set -eu
-  TOKEN="$1"
-  ARCHIVE="/tmp/solectrus-influxdb-restore.tar.gz"
-  WORK_PARENT="/tmp/solectrus-influxdb-restore"
-  rm -rf "$WORK_PARENT" "$ARCHIVE"
-  mkdir -p "$WORK_PARENT"
-  trap "rm -rf $WORK_PARENT $ARCHIVE" EXIT
-  cat > "$ARCHIVE"
-  tar -xzf "$ARCHIVE" -C "$WORK_PARENT"
-  set -- "$WORK_PARENT"/solectrus-influxdb-backup-*
-  [ -d "$1" ]
-  # --operator-token sets a known operator token after the restore.
-  # Required when the backup was taken from an instance with hashed
-  # tokens enabled (InfluxDB OSS 2.9+ default) — those backups contain
-  # no plaintext operator token, so without this flag authentication
-  # would break after --full overwrites the bolt. Harmless otherwise.
-  influx restore --full --host http://localhost:8086 \
-    -t "$TOKEN" --operator-token "$TOKEN" "$1"
-' _ "$TOKEN" < "$INFLUX_FILE" > "$INFLUX_RESTORE_LOG" 2>&1; then
+# `influx restore` reads from the shared staging mount in place —
+# same path inside both containers, no stdio pipe, no /tmp copy.
+# --operator-token sets a known operator token after the restore.
+# Required when the backup was taken from an instance with hashed
+# tokens enabled (InfluxDB OSS 2.9+ default) — those backups contain
+# no plaintext operator token, so without this flag authentication
+# would break after --full overwrites the bolt. Harmless otherwise.
+if ! docker exec "$INFLUXDB_CONTAINER" \
+       influx restore --full --host http://localhost:8086 \
+         -t "$TOKEN" --operator-token "$TOKEN" "$INFLUX_STAGED_DIR" \
+     > "$INFLUX_RESTORE_LOG" 2>&1; then
   fail "InfluxDB restore failed: $(tail -n 20 "$INFLUX_RESTORE_LOG" | tr '\n' ' ')"
 fi
+
+rm -rf "$INFLUX_STAGED_DIR" || true
 
 # If any service was stopped before the restore, leave the rest stopped —
 # only the DBs (started fresh above for the import) keep running.

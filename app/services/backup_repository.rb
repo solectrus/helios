@@ -29,7 +29,16 @@ class BackupRepository
   # validated filename can be rebuilt from integers — see External#sidecar_path.
   FILENAME_PATTERN = /\Asolectrus-backup-(\d{8})-(\d{6})\.tar\z/
   POSTGRESQL_ENTRY_PATTERN = /\Asolectrus-postgresql-backup-\d{4}-\d{2}-\d{2}\.sql\.gz\z/
-  INFLUXDB_ENTRY_PATTERN = /\Asolectrus-influxdb-backup-\d{4}-\d{2}-\d{2}\.tar\.gz\z/
+  # InfluxDB ships its backup as a directory of already-gzipped files
+  # (`*.tar.gz`, `*.bolt.gz`, `*.sqlite.gz`, plus a manifest) — `influx
+  # backup`'s native output format. Wrapping it in a second gzip layer
+  # would cost CPU for ~1 % size win, so HELIOS stores those files
+  # verbatim under `solectrus-influxdb-backup-YYYY-MM-DD/`. The trailing
+  # `(?:/.+)?` matches both the raw per-shard tar entries (validation
+  # paths in RestoreRunner / BackupUploader) and the aggregated entry
+  # name that `summarize_entries` writes into `Backup#files`.
+  INFLUXDB_ENTRY_PATTERN = %r{\Asolectrus-influxdb-backup-\d{4}-\d{2}-\d{2}(?:/.+)?\z}
+  INFLUXDB_PREFIX_PATTERN = /\Asolectrus-influxdb-backup-\d{4}-\d{2}-\d{2}/
 
   Entry = Data.define(:name, :bytes)
   ArchiveContents = Data.define(:entries, :config)
@@ -127,6 +136,22 @@ class BackupRepository
       ArchiveContents.new(entries: entries, config: config)
     end
 
+    # Collapses the raw tar entries into the three logical artifacts a
+    # backup carries: the HELIOS config, the PostgreSQL dump, and the
+    # InfluxDB backup. `influx backup` writes one tarball per shard, so a
+    # multi-year database produces hundreds of entries — persisting each
+    # one would bloat `backups.files` linearly with retention while the
+    # UI only ever reads three aggregates. Missing artifacts are omitted
+    # rather than recorded as zero-byte entries; that keeps the
+    # representation truthful for partial/corrupt archives.
+    def summarize_entries(entries)
+      [
+        find_entry(entries) { |e| e.name == CONFIG_ENTRY_PATH },
+        find_entry(entries) { |e| e.name.match?(POSTGRESQL_ENTRY_PATTERN) },
+        influx_aggregate(entries),
+      ].compact
+    end
+
     def images_from_config(config)
       { influxdb: config&.dig('influxdb', 'image').presence,
         postgresql: config&.dig('postgresql', 'image').presence }
@@ -136,6 +161,20 @@ class BackupRepository
       YAML.safe_load(raw, permitted_classes: [Date]) || {}
     rescue Psych::Exception
       nil
+    end
+
+    private
+
+    def find_entry(entries, &)
+      entry = entries.find(&)
+      entry && { 'name' => entry.name, 'bytes' => entry.bytes }
+    end
+
+    def influx_aggregate(entries)
+      shards = entries.select { |e| e.name.match?(INFLUXDB_ENTRY_PATTERN) }
+      return nil if shards.empty?
+
+      { 'name' => shards.first.name[INFLUXDB_PREFIX_PATTERN], 'bytes' => shards.sum(&:bytes) }
     end
   end
 end

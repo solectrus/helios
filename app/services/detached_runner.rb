@@ -28,6 +28,15 @@ class DetachedRunner
   RUNTIME_DIRNAME = 'runners'.freeze
   RUNTIME_MOUNT = '/runtime'.freeze
 
+  # Shared bind mount that lives on the InfluxDB container *and* the
+  # backup/restore sidecar. `influx backup` writes its (already
+  # gzipped) output directly into this directory, the sidecar tar-streams
+  # it into the final archive in place, and `influx restore` reads it
+  # back from here on a restore. The shared mount avoids a docker-exec
+  # stdio pipe for multi-GB dumps and the wasted CPU of gzip-on-gzip.
+  INFLUX_STAGING_DIRNAME = 'influx-backup-staging'.freeze
+  INFLUX_STAGING_MOUNT = '/influx-backup-staging'.freeze
+
   class << self
     delegate :start, to: :new
 
@@ -89,6 +98,18 @@ class DetachedRunner
       ::File.join(Orchestration::Runner.host_data_path, 'helios', RUNTIME_DIRNAME)
     end
 
+    # HELIOS-side path of the shared influx-staging directory.
+    def influx_staging_directory
+      ::File.join(Rails.configuration.data_path, INFLUX_STAGING_DIRNAME)
+    end
+
+    # Host-side equivalent — bind-mount source for the staging directory
+    # that is shared between the InfluxDB service (see
+    # Export::Services::Influxdb) and every backup/restore sidecar.
+    def host_influx_staging_directory
+      ::File.join(Orchestration::Runner.host_data_path, INFLUX_STAGING_DIRNAME)
+    end
+
     private
 
     def container_in_progress
@@ -125,9 +146,17 @@ class DetachedRunner
     raise Error, error(:image_pull_failed, output: output.strip)
   end
 
-  def run_container!
+  # Docker accepts missing bind-mount sources (creates them as empty dirs
+  # silently with `-v`, refuses with `--mount`) — predictable behavior
+  # requires we create the HELIOS-owned ones ourselves up-front.
+  def ensure_bind_mount_sources!
     FileUtils.mkdir_p(BackupRepository.directory) if BackupRepository.directory
     FileUtils.mkdir_p(self.class.runtime_directory)
+    FileUtils.mkdir_p(self.class.influx_staging_directory)
+  end
+
+  def run_container!
+    ensure_bind_mount_sources!
 
     output, status = Open3.capture2e(*docker_run_command)
     return if status.success?

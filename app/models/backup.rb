@@ -45,8 +45,16 @@ class Backup < ApplicationRecord
     entry_bytes(BackupRepository::POSTGRESQL_ENTRY_PATTERN)
   end
 
+  # New backups collapse the per-shard influx entries into one aggregate
+  # row at write time (see `BackupRepository.summarize_entries`), so a
+  # multi-year database doesn't bloat `backups.files` linearly with
+  # retention. Summing — rather than first-match — keeps records written
+  # before the collapse correct: they still have one entry per file.
   def influxdb_bytes
-    entry_bytes(BackupRepository::INFLUXDB_ENTRY_PATTERN)
+    matched = files.select { |entry| entry['name']&.match?(BackupRepository::INFLUXDB_ENTRY_PATTERN) }
+    return nil if matched.empty?
+
+    matched.sum { |entry| entry['bytes'].to_i }
   end
 
   private

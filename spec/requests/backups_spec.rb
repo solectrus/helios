@@ -448,7 +448,7 @@ RSpec.describe 'Backups', :with_admin_password do
   def persist_backup(filename, influxdb_image: nil, postgresql_image: nil)
     entries = {
       'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'p' * 2816,
-      'solectrus-influxdb-backup-2026-05-08.tar.gz' => 'i' * 7168,
+      'solectrus-influxdb-backup-2026-05-08/data.tar.gz' => 'i' * 7168,
       'helios/config.yaml' => backup_config_yaml(influxdb_image, postgresql_image),
     }
 

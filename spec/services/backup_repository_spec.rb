@@ -38,13 +38,39 @@ RSpec.describe BackupRepository do
         'solectrus-backup-20260508-110000.tar',
         archive: {
           'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'p' * 100,
-          'solectrus-influxdb-backup-2026-05-08.tar.gz' => 'i' * 200,
+          'solectrus-influxdb-backup-2026-05-08/data.tar.gz' => 'i' * 200,
           'helios/config.yaml' => 'system: {}',
         },
       )
 
       backup = described_class.all.first # rubocop:disable Rails/RedundantActiveRecordAllMethod
       expect(backup.postgresql_bytes).to eq(100)
+      expect(backup.influxdb_bytes).to eq(200)
+    end
+
+    it 'collapses many influx shard entries into a single aggregate row' do
+      # `influx backup` writes one tarball per shard, so a multi-year database
+      # produces hundreds of entries. `backups.files` must stay bounded — the
+      # UI only ever surfaces three aggregates (config, postgres, influx).
+      record_backup(
+        'solectrus-backup-20260508-110000.tar',
+        archive: {
+          'helios/config.yaml' => 'system: {}',
+          'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'p' * 100,
+          'solectrus-influxdb-backup-2026-05-08/20260508T100000Z.manifest' => 'm' * 50,
+          'solectrus-influxdb-backup-2026-05-08/20260508T100000Z.bolt.gz' => 'b' * 30,
+          'solectrus-influxdb-backup-2026-05-08/20260508T100000Z.sqlite.gz' => 's' * 20,
+          'solectrus-influxdb-backup-2026-05-08/20260508T100000Z.1.tar.gz' => 'x' * 40,
+          'solectrus-influxdb-backup-2026-05-08/20260508T100000Z.2.tar.gz' => 'y' * 60,
+        },
+      )
+
+      backup = described_class.all.first # rubocop:disable Rails/RedundantActiveRecordAllMethod
+      expect(backup.files).to contain_exactly(
+        { 'name' => 'helios/config.yaml', 'bytes' => 10 },
+        { 'name' => 'solectrus-postgresql-backup-2026-05-08.sql.gz', 'bytes' => 100 },
+        { 'name' => 'solectrus-influxdb-backup-2026-05-08', 'bytes' => 200 },
+      )
       expect(backup.influxdb_bytes).to eq(200)
     end
 

@@ -85,7 +85,8 @@ RSpec.describe Backup do
     it 'returns the matching entry size when the patterned filename is present' do
       record = described_class.new(files: [
                                      { 'name' => 'solectrus-postgresql-backup-2026-05-08.sql.gz', 'bytes' => 100 },
-                                     { 'name' => 'solectrus-influxdb-backup-2026-05-08.tar.gz', 'bytes' => 200 },
+                                     { 'name' => 'solectrus-influxdb-backup-2026-05-08/bolt.gz', 'bytes' => 120 },
+                                     { 'name' => 'solectrus-influxdb-backup-2026-05-08/data.tar.gz', 'bytes' => 80 },
                                    ])
 
       expect(record.postgresql_bytes).to eq(100)

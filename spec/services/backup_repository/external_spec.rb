@@ -121,7 +121,9 @@ RSpec.describe BackupRepository::External do
       stub_capture2(success: true, output: <<~OUT)
         SIZE|1024
         ENTRY|2816|./solectrus-postgresql-backup-2026-05-08.sql.gz
-        ENTRY|7168|./solectrus-influxdb-backup-2026-05-08.tar.gz
+        ENTRY|4096|./solectrus-influxdb-backup-2026-05-08/20260508T100000Z.1.tar.gz
+        ENTRY|2048|./solectrus-influxdb-backup-2026-05-08/20260508T100000Z.bolt.gz
+        ENTRY|1024|./solectrus-influxdb-backup-2026-05-08/20260508T100000Z.manifest
         ENTRY|154|./helios/config.yaml
         CONFIG_BEGIN
         postgresql:
@@ -139,10 +141,13 @@ RSpec.describe BackupRepository::External do
         influxdb_image: 'influxdb:2.9-alpine',
         postgresql_image: 'postgres:18',
       )
-      expect(backup.files.pluck('name')).to contain_exactly(
-        'solectrus-postgresql-backup-2026-05-08.sql.gz',
-        'solectrus-influxdb-backup-2026-05-08.tar.gz',
-        'helios/config.yaml',
+      # The three per-shard influx entries collapse into a single aggregate row
+      # under the directory prefix, so `files` stays at three entries regardless
+      # of how many shards `influx backup` produced.
+      expect(backup.files).to contain_exactly(
+        { 'name' => 'helios/config.yaml', 'bytes' => 154 },
+        { 'name' => 'solectrus-postgresql-backup-2026-05-08.sql.gz', 'bytes' => 2816 },
+        { 'name' => 'solectrus-influxdb-backup-2026-05-08', 'bytes' => 7168 },
       )
     end
 
