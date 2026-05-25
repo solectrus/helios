@@ -2,7 +2,7 @@ class BackupRepository
   # docker:cli-backed adapter for an external host mount (#105). Listing
   # is served from SQLite; mutating ops dispatch a short-lived sidecar
   # that mounts the configured `external_path` as `/data`.
-  module External # rubocop:disable Metrics/ModuleLength
+  module External
     IMAGE = BackupRunner::IMAGE
     LIST_GLOB = 'solectrus-backup-*.tar'.freeze
 
@@ -62,21 +62,6 @@ class BackupRepository
 
         args = filenames.map { |filename| "/data/#{filename}" }
         sidecar_run!('rm', '-f', *args)
-      end
-
-      def read_error_file(filename = BackupRepository::ERROR_FILENAME)
-        return nil unless host_directory
-
-        output, status = sidecar_capture('sh', '-c', "[ -f /data/#{filename} ] && cat /data/#{filename}")
-        return nil unless status.success?
-
-        output.strip.presence
-      end
-
-      def remove_error_file!(filename = BackupRepository::ERROR_FILENAME)
-        return unless host_directory
-
-        sidecar_run!('rm', '-f', "/data/#{filename}")
       end
 
       private

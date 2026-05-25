@@ -23,14 +23,23 @@ POSTGRES_CONTAINER="$4"
 INFLUXDB_CONTAINER="$5"
 
 OUTPUT_DIR="/output"
-WORK_DIR="$OUTPUT_DIR/.work"
+RUNTIME_DIR="/runtime"
+# Intermediate dumps + control files stay in /runtime (HELIOS-local), never
+# on /output. On a remote destination (NAS/SMB/S3 staging) writing multi-GB
+# dumps there is wasteful — the final tar is the only artifact that has to
+# land at the destination. Error + phase markers move along for the same
+# reason plus: when /output itself is the cause of the failure (vanished
+# mount, read-only, full, NFS root_squash), writing the failure note there
+# would also fail and HELIOS would only see the generic "process stopped"
+# fallback. /runtime is HELIOS-local and always writable.
+WORK_DIR="$RUNTIME_DIR/work"
 PG_FILE="$WORK_DIR/solectrus-postgresql-backup-$BACKUP_DATE.sql.gz"
 INFLUX_FILE="$WORK_DIR/solectrus-influxdb-backup-$BACKUP_DATE.tar.gz"
 CONFIG_DEST="$WORK_DIR/helios/config.yaml"
 PART_PATH="$OUTPUT_DIR/$BACKUP_FILENAME.part"
 FINAL_PATH="$OUTPUT_DIR/$BACKUP_FILENAME"
-ERROR_PATH="$OUTPUT_DIR/error.txt"
-PHASE_PATH="$OUTPUT_DIR/backup-phase.txt"
+ERROR_PATH="$RUNTIME_DIR/error.txt"
+PHASE_PATH="$RUNTIME_DIR/backup-phase.txt"
 
 # Atomic write so BackupRunner.current_phase never reads a half-written name.
 set_phase() {

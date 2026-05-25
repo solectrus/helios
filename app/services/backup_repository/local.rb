@@ -62,16 +62,6 @@ class BackupRepository
           FileUtils.rm_f(::File.join(directory, filename))
         end
       end
-
-      def read_error_file(filename = BackupRepository::ERROR_FILENAME)
-        ::File.read(::File.join(directory, filename)).strip.presence
-      rescue Errno::ENOENT
-        nil
-      end
-
-      def remove_error_file!(filename = BackupRepository::ERROR_FILENAME)
-        FileUtils.rm_f(::File.join(directory, filename))
-      end
     end
   end
 end

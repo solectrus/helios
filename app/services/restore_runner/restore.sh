@@ -32,10 +32,17 @@ SERVICES="$8"
 COMPOSE_FILENAME="$9"
 
 OUTPUT_DIR="/output"
-WORK_DIR="$OUTPUT_DIR/.restore-work"
+RUNTIME_DIR="/runtime"
+# Work + control files stay in /runtime (HELIOS-local). Two reasons:
+# (1) macOS SMB leaves `.smbdelete*` tombstones after in-place unlinks,
+# breaking `rmdir` on the next run; (2) writing the error file to /output
+# would also fail when /output itself is the cause (vanished mount,
+# read-only, full) and HELIOS would only see the generic "process
+# stopped" fallback. /runtime sidesteps both.
+WORK_DIR="$RUNTIME_DIR/restore-work"
 BACKUP_PATH="$OUTPUT_DIR/$BACKUP_FILENAME"
-ERROR_PATH="$OUTPUT_DIR/restore-error.txt"
-PHASE_PATH="$OUTPUT_DIR/restore-phase.txt"
+ERROR_PATH="$RUNTIME_DIR/restore-error.txt"
+PHASE_PATH="$RUNTIME_DIR/restore-phase.txt"
 COMPOSE_PATH="$HOST_DATA_PATH/$COMPOSE_FILENAME"
 
 # Atomic write so RestoreRunner.current_phase never reads a half-written name.

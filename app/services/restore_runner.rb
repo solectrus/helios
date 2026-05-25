@@ -108,6 +108,7 @@ class RestoreRunner < DetachedRunner
       '--name', CONTAINER_NAME,
       '-v', '/var/run/docker.sock:/var/run/docker.sock',
       '-v', "#{BackupRepository.host_directory}:/output",
+      '-v', "#{self.class.host_runtime_directory}:#{RUNTIME_MOUNT}",
       *data_mount_args,
       '--entrypoint', 'sh', IMAGE, '-c', SCRIPT, '_',
       *positional_args

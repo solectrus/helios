@@ -137,13 +137,15 @@ RSpec.describe BackupUploader do
     end
 
     it 'clears a stale error.txt' do
-      FileUtils.mkdir_p(backups_dir)
-      File.write(File.join(backups_dir, 'error.txt'), 'previous failure')
+      runtime_dir = File.join(Rails.configuration.data_path, 'helios', 'runners')
+      FileUtils.mkdir_p(runtime_dir)
+      error_path = File.join(runtime_dir, 'error.txt')
+      File.write(error_path, 'previous failure')
       uploaded = build_upload('solectrus-backup-20260507-101234.tar', valid_archive)
 
       described_class.start(uploaded)
 
-      expect(File).not_to exist(File.join(backups_dir, 'error.txt'))
+      expect(File).not_to exist(error_path)
     end
   end
 

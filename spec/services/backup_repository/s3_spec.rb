@@ -218,10 +218,11 @@ RSpec.describe BackupRepository::S3 do
       expect(File).not_to exist(described_class.pending_marker_path)
     end
 
-    it 'captures a local error.txt into RunnerLog when the run failed' do
+    it 'captures a runtime error.txt into RunnerLog when the run failed' do
       described_class.mark_pending!(filename)
-      FileUtils.mkdir_p(described_class.directory)
-      File.write(File.join(described_class.directory, 'error.txt'), 'Disk full')
+      runtime_dir = File.join(Rails.configuration.data_path, 'helios', 'runners')
+      FileUtils.mkdir_p(runtime_dir)
+      File.write(File.join(runtime_dir, 'error.txt'), 'Disk full')
 
       described_class.detect_completion!
 

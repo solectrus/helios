@@ -20,6 +20,14 @@ class DetachedRunner
   # its own probe, short enough to still feel live.
   IN_PROGRESS_CACHE_TTL = 3.seconds
 
+  # Local sidecar directory bind-mounted into every runner as `/runtime`.
+  # Phase markers (and any other short-lived control files HELIOS reads
+  # while a run is live) belong here, not in the backup destination —
+  # an external (NAS, SMB) or S3 staging mount must not be touched on
+  # every /backups poll just to read a couple of bytes.
+  RUNTIME_DIRNAME = 'runners'.freeze
+  RUNTIME_MOUNT = '/runtime'.freeze
+
   class << self
     delegate :start, to: :new
 
@@ -54,19 +62,31 @@ class DetachedRunner
       Rails.cache.delete(in_progress_cache_key)
     end
 
-    # Current script phase, read fresh from PHASE_FILENAME in the backup
-    # directory. Returns nil if the subclass declares no marker file, the
-    # file is absent (window before the first set_phase write or after a
-    # successful cleanup), or its content is not in the allowlist.
+    # Current script phase, read fresh from PHASE_FILENAME in the local
+    # runtime directory. Returns nil if the subclass declares no marker
+    # file, the file is absent (window before the first set_phase write
+    # or after a successful cleanup), or its content is not in the
+    # allowlist.
     def current_phase
       filename = phase_filename
       return nil unless filename
 
-      raw = ::File.read(::File.join(BackupRepository.directory, filename)).strip
+      raw = ::File.read(::File.join(runtime_directory, filename)).strip
       phase = raw.to_sym
       self::KNOWN_PHASES.include?(phase) ? phase : nil
     rescue Errno::ENOENT
       nil
+    end
+
+    # HELIOS-side path of the runtime directory — read directly by
+    # `current_phase` on every /backups poll.
+    def runtime_directory
+      ::File.join(Rails.configuration.data_path, 'helios', RUNTIME_DIRNAME)
+    end
+
+    # Host-side equivalent — the bind-mount source passed to `docker run`.
+    def host_runtime_directory
+      ::File.join(Orchestration::Runner.host_data_path, 'helios', RUNTIME_DIRNAME)
     end
 
     private
@@ -107,6 +127,7 @@ class DetachedRunner
 
   def run_container!
     FileUtils.mkdir_p(BackupRepository.directory) if BackupRepository.directory
+    FileUtils.mkdir_p(self.class.runtime_directory)
 
     output, status = Open3.capture2e(*docker_run_command)
     return if status.success?

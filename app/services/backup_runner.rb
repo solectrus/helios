@@ -92,6 +92,7 @@ class BackupRunner < DetachedRunner
       '--name', CONTAINER_NAME,
       '-v', '/var/run/docker.sock:/var/run/docker.sock',
       '-v', "#{BackupRepository.host_directory}:/output",
+      '-v', "#{self.class.host_runtime_directory}:#{RUNTIME_MOUNT}",
       '-v', "#{host_config_path}:/config.yaml:ro",
       '--entrypoint', 'sh',
       IMAGE,

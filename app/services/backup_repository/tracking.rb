@@ -6,8 +6,12 @@ class BackupRepository
   #
   # Adapters must provide: `destination_key`, `destination_coords`,
   # `destination_configured?`, `remove_files!(filenames)`,
-  # `read_error_file(filename)`, `remove_error_file!(filename)`,
   # `record_backup!(filename)`.
+  #
+  # Error-file IO is destination-independent: backup.sh / restore.sh write
+  # error.txt into the HELIOS-local runtime dir (see the comment in those
+  # scripts), so all adapters share the same read/remove implementation
+  # provided here.
   module Tracking
     def all
       return Backup.none unless destination_configured?
@@ -36,8 +40,22 @@ class BackupRepository
     end
 
     def clear_error!(filename = BackupRepository::ERROR_FILENAME)
-      remove_error_file!(filename) if destination_configured?
+      remove_error_file!(filename)
       RunnerLog.clear!(RunnerLog.kind_for(filename))
+    end
+
+    def read_error_file(filename = BackupRepository::ERROR_FILENAME)
+      ::File.read(runtime_error_path(filename)).strip.presence
+    rescue Errno::ENOENT
+      nil
+    end
+
+    def remove_error_file!(filename = BackupRepository::ERROR_FILENAME)
+      FileUtils.rm_f(runtime_error_path(filename))
+    end
+
+    def runtime_error_path(filename)
+      ::File.join(DetachedRunner.runtime_directory, filename)
     end
 
     # Detects the moment a detached BackupRunner/RestoreRunner finished

@@ -111,29 +111,6 @@ RSpec.describe BackupRepository::S3 do
     end
   end
 
-  describe 'error file IO (local staging)' do
-    # error.txt and restore-error.txt are written by the detached
-    # runners into /output (the staging dir on the host); they never
-    # touch S3 anymore — HELIOS reads them straight off the filesystem
-    # in detect_completion!.
-    it 'reads the local error.txt from the staging dir' do
-      FileUtils.mkdir_p(described_class.directory)
-      File.write(File.join(described_class.directory, 'error.txt'), "Disk full\n")
-
-      expect(described_class.send(:read_error_file)).to eq('Disk full')
-    end
-
-    it 'removes the local error.txt from the staging dir' do
-      FileUtils.mkdir_p(described_class.directory)
-      path = File.join(described_class.directory, 'error.txt')
-      File.write(path, "Disk full\n")
-
-      described_class.send(:remove_error_file!)
-
-      expect(File).not_to exist(path)
-    end
-  end
-
   describe 'Backups::ConnectionTest#aws_credentials' do
     it 'reports the bucket as reachable with valid credentials' do
       result = connection_test

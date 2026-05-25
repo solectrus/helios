@@ -181,12 +181,9 @@ RSpec.describe BackupRepository::External do
 
     it 'inserts the Backup row for the expected filename when the run finishes successfully' do
       described_class.mark_pending!(filename)
-      sidecar_responses(
-        ['', success_status],              # capture_restore_error reads restore-error.txt (empty)
-        ['', success_status],              # record_backup_error reads error.txt (empty)
-        [metadata_output, success_status], # record_backup! fetch_metadata
-      )
-      stub_capture2e(success: true)
+      # No error files on disk → read_error_file returns nil.
+      # The single sidecar call left is fetch_metadata for the new tar.
+      stub_capture2(success: true, output: metadata_output)
 
       described_class.detect_completion!
 
@@ -196,25 +193,18 @@ RSpec.describe BackupRepository::External do
 
     it 'captures error.txt into RunnerLog when the run failed' do
       described_class.mark_pending!(filename)
-      sidecar_responses(
-        ['', success_status],          # restore-error.txt (empty)
-        ['Disk full', success_status], # error.txt
-      )
-      stub_capture2e(success: true)
+      write_runtime_error(BackupRepository::ERROR_FILENAME, 'Disk full')
 
       described_class.detect_completion!
 
       expect(RunnerLog.message_for(:backup)).to eq('Disk full')
       expect(Backup.count).to eq(0)
+      expect(File).not_to exist(runtime_error_path(BackupRepository::ERROR_FILENAME))
     end
 
     it 'records a generic "incomplete" message when no tar and no error file are present' do
       described_class.mark_pending!(filename)
-      sidecar_responses(
-        ['', success_status],   # restore-error.txt (empty)
-        ['', success_status],   # error.txt (empty)
-        ['', success_status],   # record_backup! fetch_metadata returns no bytes
-      )
+      stub_capture2(success: true, output: '') # fetch_metadata returns no bytes
 
       described_class.detect_completion!
 
@@ -295,6 +285,16 @@ RSpec.describe BackupRepository::External do
 
       expect { described_class.download(filename) { nil } }.to raise_error(BackupRepository::Error, /status 1/)
     end
+  end
+
+  def runtime_error_path(filename)
+    File.join(Rails.configuration.data_path, 'helios', 'runners', filename)
+  end
+
+  def write_runtime_error(filename, content)
+    path = runtime_error_path(filename)
+    FileUtils.mkdir_p(File.dirname(path))
+    File.write(path, content)
   end
 
   def create_row(filename, external_path: self.external_path)

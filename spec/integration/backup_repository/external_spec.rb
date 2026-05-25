@@ -107,22 +107,6 @@ RSpec.describe BackupRepository::External do
     end
   end
 
-  describe 'error file IO via real sidecar' do
-    it 'reads error.txt from the mount via `cat` sidecar' do
-      File.write(File.join(external_path, 'error.txt'), "Disk full\n")
-
-      expect(described_class.send(:read_error_file)).to eq('Disk full')
-    end
-
-    it 'removes error.txt via `rm` sidecar' do
-      File.write(File.join(external_path, 'error.txt'), "Disk full\n")
-
-      described_class.send(:remove_error_file!)
-
-      expect(File).not_to exist(File.join(external_path, 'error.txt'))
-    end
-  end
-
   # --- helpers ---
 
   def filename

@@ -49,11 +49,12 @@ RSpec.describe BackupRunner do
     it 'launches docker:cli with the backup script and required mounts' do
       described_class.start
 
-      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      run = find_backup_runner_call
       aggregate_failures do
         expect(run).to include('--name', 'helios-backup-runner')
         expect(run).to include('-v', '/var/run/docker.sock:/var/run/docker.sock')
         expect(run).to include('-v', "#{host_data_path}/helios/backups:/output")
+        expect(run).to include('-v', "#{host_data_path}/helios/runners:/runtime")
         expect(run).to include('-v', "#{host_data_path}/helios/config.yaml:/config.yaml:ro")
         expect(run).to include('--entrypoint', 'sh', described_class::IMAGE, '-c')
       end
@@ -62,7 +63,7 @@ RSpec.describe BackupRunner do
     it 'passes runtime values as positional shell args (not interpolated)' do
       described_class.start
 
-      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      run = find_backup_runner_call
       placeholder_index = run.index('_')
       expect(run[placeholder_index + 1, 5]).to eq(
         ['secret-token', 'solectrus-backup-20260508-143000.tar', '2026-05-08',
@@ -93,12 +94,12 @@ RSpec.describe BackupRunner do
     end
 
     it 'clears a previous error file before launching' do
-      FileUtils.mkdir_p(File.join(data_path, 'helios', 'backups'))
-      File.write(File.join(data_path, 'helios', 'backups', 'error.txt'), 'old failure')
+      FileUtils.mkdir_p(File.join(data_path, 'helios', 'runners'))
+      File.write(File.join(data_path, 'helios', 'runners', 'error.txt'), 'old failure')
 
       described_class.start
 
-      expect(File).not_to exist(File.join(data_path, 'helios', 'backups', 'error.txt'))
+      expect(File).not_to exist(File.join(data_path, 'helios', 'runners', 'error.txt'))
     end
 
     it 'creates the backups directory if missing' do
@@ -168,7 +169,7 @@ RSpec.describe BackupRunner do
     it 'marks every backup phase via set_phase so the UI can show progress' do
       described_class.start
 
-      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      run = find_backup_runner_call
       script = run[run.index('-c') + 1]
       aggregate_failures do
         described_class::KNOWN_PHASES.each do |phase|
@@ -234,10 +235,6 @@ RSpec.describe BackupRunner do
         expect(BackupRepository::S3::Uploader)
           .to have_received(:start_async).with('solectrus-backup-20260508-143000.tar')
       end
-
-      def find_backup_runner_call
-        state[:open3_calls].find { |args| args[0..1] == %w[docker run] && args.include?('helios-backup-runner') }
-      end
     end
   end
 
@@ -275,23 +272,34 @@ RSpec.describe BackupRunner do
           '-c', 'script-body', '_', 'token', 'solectrus-backup-20260508-143000.tar',
           '2026-05-08', 'pg', 'influx'
         ]
-        FileUtils.mkdir_p(File.join(data_path, 'helios', 'backups'))
+        FileUtils.mkdir_p(File.join(data_path, 'helios', 'runners'))
       end
 
       it 'enriches the InProgress with the current phase' do
-        File.write(File.join(data_path, 'helios', 'backups', 'backup-phase.txt'), "dumping_influx\n")
+        File.write(File.join(data_path, 'helios', 'runners', 'backup-phase.txt'), "dumping_influx\n")
 
         expect(described_class.in_progress.phase).to eq(:dumping_influx)
       end
 
       it 'ignores unknown phase names and falls back to :running' do
-        File.write(File.join(data_path, 'helios', 'backups', 'backup-phase.txt'), 'something-else')
+        File.write(File.join(data_path, 'helios', 'runners', 'backup-phase.txt'), 'something-else')
 
         expect(described_class.in_progress.phase).to eq(:running)
       end
 
       it 'tolerates a missing phase file (window before the first set_phase)' do
         expect(described_class.in_progress.phase).to eq(:running)
+      end
+
+      it 'reads the marker from the local runtime dir regardless of destination' do
+        with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/nas' })
+        FileUtils.mkdir_p(File.join(Rails.configuration.data_path, 'helios', 'runners'))
+        File.write(
+          File.join(Rails.configuration.data_path, 'helios', 'runners', 'backup-phase.txt'),
+          "bundling\n",
+        )
+
+        expect(described_class.in_progress.phase).to eq(:bundling)
       end
     end
 
@@ -374,6 +382,10 @@ RSpec.describe BackupRunner do
     it 'is false when compose.yaml does not exist' do
       expect(described_class.databases_configured?).to be(false)
     end
+  end
+
+  def find_backup_runner_call
+    state[:open3_calls].find { |args| args[0..1] == %w[docker run] && args.include?('helios-backup-runner') }
   end
 
   def stub_open3_response(args)

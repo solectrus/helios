@@ -109,21 +109,6 @@ class BackupRepository
         delete_keys!(keys, ignore_missing: true)
       end
 
-      # Error files are written by backup.sh / restore.sh into the local
-      # staging dir (the bind-mounted /output) and never reach S3 — only
-      # successful tars are uploaded. read/remove therefore touch the
-      # local filesystem, not the remote bucket.
-      def read_error_file(filename = BackupRepository::ERROR_FILENAME)
-        path = staging_path(filename)
-        return nil unless ::File.exist?(path)
-
-        ::File.read(path).strip.presence
-      end
-
-      def remove_error_file!(filename = BackupRepository::ERROR_FILENAME)
-        FileUtils.rm_f(staging_path(filename))
-      end
-
       # Multipart uploads aborted mid-flight are cleaned up by the SDK
       # before the error propagates, so retries don't leak partials.
       def upload_from_staging!(filename, progress_callback: nil)

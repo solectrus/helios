@@ -172,8 +172,9 @@ RSpec.describe BackupRepository do
   describe '.clear_error!' do
     it 'removes error.txt and clears the RunnerLog row' do
       RunnerLog.record_error!(:backup, 'oops')
-      FileUtils.mkdir_p(backups_dir)
-      path = File.join(backups_dir, 'error.txt')
+      runners_dir = File.join(data_path, 'helios', 'runners')
+      FileUtils.mkdir_p(runners_dir)
+      path = File.join(runners_dir, 'error.txt')
       File.write(path, 'oops')
 
       described_class.clear_error!

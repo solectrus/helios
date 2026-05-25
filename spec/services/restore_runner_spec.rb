@@ -89,6 +89,7 @@ RSpec.describe RestoreRunner do
         expect(run).to include('--name', 'helios-restore-runner')
         expect(run).to include('-v', '/var/run/docker.sock:/var/run/docker.sock')
         expect(run).to include('-v', "#{host_data_path}/helios/backups:/output")
+        expect(run).to include('-v', "#{host_data_path}/helios/runners:/runtime")
         expect(run).to include('-v', "#{host_data_path}:/data")
         expect(run).to include('-v', "#{host_data_path}:#{host_data_path}")
         expect(run).to include('--entrypoint', 'sh', described_class::IMAGE, '-c')
@@ -236,13 +237,14 @@ RSpec.describe RestoreRunner do
     end
 
     it 'clears previous backup and restore errors before launching' do
-      File.write(File.join(data_path, 'helios', 'backups', 'error.txt'), 'backup failure')
-      File.write(File.join(data_path, 'helios', 'backups', 'restore-error.txt'), 'restore failure')
+      FileUtils.mkdir_p(File.join(data_path, 'helios', 'runners'))
+      File.write(File.join(data_path, 'helios', 'runners', 'error.txt'), 'backup failure')
+      File.write(File.join(data_path, 'helios', 'runners', 'restore-error.txt'), 'restore failure')
 
       described_class.start(filename)
 
-      expect(File).not_to exist(File.join(data_path, 'helios', 'backups', 'error.txt'))
-      expect(File).not_to exist(File.join(data_path, 'helios', 'backups', 'restore-error.txt'))
+      expect(File).not_to exist(File.join(data_path, 'helios', 'runners', 'error.txt'))
+      expect(File).not_to exist(File.join(data_path, 'helios', 'runners', 'restore-error.txt'))
     end
 
     it 'raises when a backup is already running' do
@@ -405,16 +407,17 @@ RSpec.describe RestoreRunner do
         state[:docker_inspect_args] = [
           '-c', 'script-body', '_', 'token', filename, 'pg', 'influx', 'helios', 'dashboard'
         ]
+        FileUtils.mkdir_p(File.join(data_path, 'helios', 'runners'))
       end
 
       it 'enriches the InProgress with the current phase' do
-        File.write(File.join(data_path, 'helios', 'backups', 'restore-phase.txt'), "restoring_influx\n")
+        File.write(File.join(data_path, 'helios', 'runners', 'restore-phase.txt'), "restoring_influx\n")
 
         expect(described_class.in_progress.phase).to eq(:restoring_influx)
       end
 
       it 'ignores unknown phase names and falls back to :running' do
-        File.write(File.join(data_path, 'helios', 'backups', 'restore-phase.txt'), 'something-else')
+        File.write(File.join(data_path, 'helios', 'runners', 'restore-phase.txt'), 'something-else')
 
         expect(described_class.in_progress.phase).to eq(:running)
       end
@@ -426,18 +429,20 @@ RSpec.describe RestoreRunner do
   end
 
   describe '.current_phase' do
+    before { FileUtils.mkdir_p(File.join(data_path, 'helios', 'runners')) }
+
     it 'returns nil when the marker file is missing' do
       expect(described_class.current_phase).to be_nil
     end
 
     it 'returns the phase symbol when the marker matches the allowlist' do
-      File.write(File.join(data_path, 'helios', 'backups', 'restore-phase.txt'), "extracting\n")
+      File.write(File.join(data_path, 'helios', 'runners', 'restore-phase.txt'), "extracting\n")
 
       expect(described_class.current_phase).to eq(:extracting)
     end
 
     it 'returns nil for unknown phase names' do
-      File.write(File.join(data_path, 'helios', 'backups', 'restore-phase.txt'), 'bogus')
+      File.write(File.join(data_path, 'helios', 'runners', 'restore-phase.txt'), 'bogus')
 
       expect(described_class.current_phase).to be_nil
     end

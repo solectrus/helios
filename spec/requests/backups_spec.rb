@@ -388,9 +388,9 @@ RSpec.describe 'Backups', :with_admin_password do
 
   describe 'DELETE /backups/failure' do
     it 'clears the backup error file and redirects' do
-      backups_dir = File.join(data_path, 'helios', 'backups')
-      FileUtils.mkdir_p(backups_dir)
-      error_path = File.join(backups_dir, 'error.txt')
+      runtime_dir = File.join(data_path, 'helios', 'runners')
+      FileUtils.mkdir_p(runtime_dir)
+      error_path = File.join(runtime_dir, 'error.txt')
       File.write(error_path, 'PostgreSQL dump failed')
 
       delete backups_failure_path
@@ -402,9 +402,9 @@ RSpec.describe 'Backups', :with_admin_password do
 
   describe 'DELETE /backups/restore_failure' do
     it 'clears the restore error file and redirects' do
-      backups_dir = File.join(data_path, 'helios', 'backups')
-      FileUtils.mkdir_p(backups_dir)
-      error_path = File.join(backups_dir, 'restore-error.txt')
+      runtime_dir = File.join(data_path, 'helios', 'runners')
+      FileUtils.mkdir_p(runtime_dir)
+      error_path = File.join(runtime_dir, 'restore-error.txt')
       File.write(error_path, 'InfluxDB restore failed')
 
       delete backups_restore_failure_path
