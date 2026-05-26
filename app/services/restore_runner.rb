@@ -109,8 +109,9 @@ class RestoreRunner < DetachedRunner
     end
   end
 
-  def start(filename)
+  def start(filename) # rubocop:disable Metrics/AbcSize,Metrics/MethodLength
     @backup = BackupRepository.find!(filename)
+    Rails.logger.info("[RestoreRunner] start filename=#{filename} s3=#{BackupRepository.s3?}")
     validate_locks!
     pull_image_if_needed!
     clear_errors!
@@ -125,7 +126,12 @@ class RestoreRunner < DetachedRunner
       # in detect_completion!. backup.bytes feeds the progress callback
       # without a HEAD round-trip (some S3-compatible endpoints forbid
       # HEAD while allowing GET).
-      BackupRepository::S3::Downloader.start_async(backup.filename, total: backup.bytes) { run_restore! }
+      Rails.logger.info("[RestoreRunner] handing off to Downloader (bytes=#{backup.bytes})")
+      BackupRepository::S3::Downloader.start_async(backup.filename, total: backup.bytes) do
+        Rails.logger.info('[RestoreRunner] download complete, entering run_restore!')
+        run_restore!
+        Rails.logger.info('[RestoreRunner] run_restore! returned cleanly')
+      end
     else
       run_restore!
     end

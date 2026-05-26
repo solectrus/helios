@@ -13,7 +13,7 @@ class BackupRepository
         # Returns true if a new thread was spawned. Extra kwargs are
         # forwarded to the subclass's `run` (e.g. Downloader uses
         # `total:` to size the progress callback).
-        def start_async(filename, **, &on_complete) # rubocop:disable Naming/BlockForwarding
+        def start_async(filename, **, &on_complete) # rubocop:disable Naming/BlockForwarding,Metrics/AbcSize,Metrics/MethodLength
           mutex.synchronize do
             return false if @thread&.alive?
 
@@ -34,10 +34,13 @@ class BackupRepository
             # navigates back to /backups.
             @thread = Thread.new(filename) do |f| # rubocop:disable ThreadSafety/NewThread
               Time.zone = zone if zone
+              Rails.logger.info("[#{name}] thread starting filename=#{f}")
               # rubocop:disable Naming/BlockForwarding
               Rails.application.executor.wrap { run(f, **, &on_complete) }
               # rubocop:enable Naming/BlockForwarding
+              Rails.logger.info("[#{name}] thread run() returned")
             ensure
+              Rails.logger.info("[#{name}] thread ensure → broadcast!")
               Orchestration::HeliosOperationBroadcaster.broadcast!
             end
             true
@@ -97,6 +100,7 @@ class BackupRepository
         end
 
         def reset_state!
+          Rails.logger.info("[#{name}] reset_state!")
           mutex.synchronize do
             @thread = nil
             @started_at = nil

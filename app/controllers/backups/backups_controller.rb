@@ -86,6 +86,10 @@ module Backups
       @restore_failure = failures[:restore]
       @completion = evaluate_completion
       @progress_kind = progress_kind
+      Rails.logger.info(
+        "[BackupsController] in_progress=#{@in_progress.inspect} " \
+        "completion=#{@completion.inspect} kind=#{@progress_kind.inspect}",
+      )
     end
 
     def progress_kind
@@ -105,6 +109,10 @@ module Backups
       return if @in_progress
 
       row = RunnerLog.latest_completion_within(%i[backup restore], COMPLETION_WINDOW)
+      Rails.logger.info(
+        "[evaluate_completion] row=#{row.inspect} now=#{Time.current.iso8601(3)} " \
+        "window=#{COMPLETION_WINDOW.ago.iso8601(3)}..",
+      )
       row && completion_for(row)
     end
 

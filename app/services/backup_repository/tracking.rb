@@ -66,16 +66,24 @@ class BackupRepository
     # and persists what it left behind: error.txt → RunnerLog, fresh tar
     # → Backup. Triggered by either a live in_progress observation
     # (Rails.cache marker) or the pending-marker file from start.
-    def detect_completion!
-      current = BackupRunner.in_progress&.filename || RestoreRunner.in_progress&.filename
+    def detect_completion! # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
+      backup_ip = BackupRunner.in_progress
+      restore_ip = RestoreRunner.in_progress
+      current = backup_ip&.filename || restore_ip&.filename
 
       if current
         Rails.cache.write(in_progress_cache_key, current, expires_in: 1.hour)
         return
       end
 
-      return unless Rails.cache.read(in_progress_cache_key) || pending_refresh?
+      cached = Rails.cache.read(in_progress_cache_key)
+      pending = pending_refresh?
+      return unless cached || pending
 
+      Rails.logger.info(
+        "[detect_completion!] firing — backup_ip=#{backup_ip.inspect} restore_ip=#{restore_ip.inspect} " \
+        "cached=#{cached.inspect} pending=#{pending} marker=#{pending_marker_content.inspect}",
+      )
       Rails.cache.delete(in_progress_cache_key)
       process_completion!(pending_marker_content)
       clear_pending!
@@ -140,7 +148,13 @@ class BackupRepository
     # `expected_filename` is BackupRunner.start's planned tar name, blank
     # from RestoreRunner.start — disambiguates backup vs restore on a clean
     # exit (no error file).
-    def process_completion!(expected_filename)
+    def process_completion!(expected_filename) # rubocop:disable Metrics/MethodLength
+      restore_err = read_error_file(RestoreRunner::ERROR_FILENAME)
+      backup_err = read_error_file(BackupRepository::ERROR_FILENAME)
+      Rails.logger.info(
+        "[process_completion!] expected=#{expected_filename.inspect} " \
+        "restore_err=#{restore_err.inspect} backup_err=#{backup_err.inspect}",
+      )
       restore_failed = capture_error!(:restore, RestoreRunner::ERROR_FILENAME)
       backup_failed = capture_error!(:backup, BackupRepository::ERROR_FILENAME)
 

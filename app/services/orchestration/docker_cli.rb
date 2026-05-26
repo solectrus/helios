@@ -20,12 +20,25 @@ module Orchestration
 
     def running_container(name)
       info = inspect_container(name)
-      return nil unless info&.dig('State', 'Running')
+      state = info&.dig('State')
+      return nil unless state
 
-      RunningContainer.new(
-        started_at: Time.zone.parse(info.dig('State', 'StartedAt')),
-        args: Array(info['Args']),
-      )
+      if state['Running']
+        RunningContainer.new(
+          started_at: Time.zone.parse(state['StartedAt']),
+          args: Array(info['Args']),
+        )
+      else
+        # Container exists but isn't running — the exited/removing window
+        # that masks crashes from the UI (the SIGPIPE-141 restore.sh bug
+        # surfaced exactly here). Logging fires once per such transition,
+        # never during the steady "container absent" state.
+        Rails.logger.info(
+          "[DockerCli] #{name} not running: status=#{state['Status'].inspect} " \
+          "exit_code=#{state['ExitCode'].inspect} error=#{state['Error'].inspect}",
+        )
+        nil
+      end
     end
 
     def image_present?(image)

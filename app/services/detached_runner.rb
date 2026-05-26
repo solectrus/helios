@@ -161,10 +161,12 @@ class DetachedRunner
   # Without this, an S3 restore briefly observes no Downloader (reset_state!
   # has run) and no container (stale cache) at once — long enough for
   # detect_completion! to fire prematurely and paint the card green.
-  def run_container!
+  def run_container! # rubocop:disable Metrics/AbcSize
     ensure_bind_mount_sources!
 
+    Rails.logger.info("[#{self.class.name}] docker run -d (image=#{self.class::IMAGE})")
     output, status = Open3.capture2e(*docker_run_command)
+    Rails.logger.info("[#{self.class.name}] docker run success=#{status.success?} output=#{output.strip.inspect}")
     if status.success?
       self.class.invalidate_in_progress_cache!
       return
