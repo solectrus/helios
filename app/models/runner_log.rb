@@ -6,6 +6,7 @@
 #  id                 :integer          not null, primary key
 #  kind               :string           not null
 #  last_error_message :text
+#  last_finished_at   :datetime
 #  created_at         :datetime         not null
 #  updated_at         :datetime         not null
 #
@@ -41,10 +42,33 @@ class RunnerLog < ApplicationRecord
       entry.save!
     end
 
+    # `created_at` marks the start of the run — used by the completion
+    # card to compute duration without a separate column.
+    def record_started!(kind)
+      entry = find_or_initialize_by(kind: kind)
+      entry.assign_attributes(created_at: Time.current, last_error_message: nil, last_finished_at: nil)
+      entry.save!
+    end
+
+    def record_finished!(kind)
+      entry = find_or_initialize_by(kind: kind)
+      entry.last_finished_at = Time.current
+      entry.save!
+    end
+
+    def finished_at_for(kind)
+      find_by(kind: kind)&.last_finished_at
+    end
+
+    def latest_completion_within(kinds, window)
+      where(kind: kinds)
+        .where(last_finished_at: window.ago..)
+        .order(last_finished_at: :desc)
+        .first
+    end
+
     def clear!(kind)
-      where(kind: kind)
-        .where.not(last_error_message: nil)
-        .update_all(last_error_message: nil) # rubocop:disable Rails/SkipsModelValidations
+      where(kind: kind).update_all(last_error_message: nil, last_finished_at: nil) # rubocop:disable Rails/SkipsModelValidations
     end
   end
 end

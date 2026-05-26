@@ -1,0 +1,128 @@
+<section
+  class="bg-base-100 border-base-content/10 relative overflow-hidden border-y shadow-sm md:rounded-2xl md:border"
+  aria-live="polite"
+>
+  <% if success? %>
+    <div
+      data-controller="auto-redirect"
+      data-auto-redirect-delay-value="<%= AUTO_DISMISS_AFTER_MS %>"
+      data-auto-redirect-url-value="<%= helpers.backups_path %>"
+      class="hidden"
+    ></div>
+  <% end %>
+
+  <div
+    class="
+      pointer-events-none absolute -top-32 -right-32 h-72 w-72 rounded-full bg-linear-to-br to-transparent blur-3xl
+      <%= header_glow_class %>
+    "
+    aria-hidden="true"
+  ></div>
+
+  <div class="relative space-y-8 p-6 md:p-10">
+    <header class="flex flex-col gap-3">
+      <span class="inline-flex items-center gap-3 text-sm font-medium tracking-wider uppercase <%= header_color_class %>">
+        <i class="<%= header_icon %>" aria-hidden="true"></i>
+        <%= kind_label %>
+      </span>
+
+      <h2 class="text-2xl font-semibold tracking-tight md:text-3xl"><%= title %></h2>
+
+      <% if started_at_label || filename.present? %>
+        <p class="text-base-content/70 text-sm leading-relaxed">
+          <% if started_at_label %>
+            <span><%= started_at_label %></span>
+          <% end %>
+
+          <% if started_at_label && filename.present? %>
+            <span class="text-base-content/40 mx-1" aria-hidden="true">·</span>
+          <% end %>
+
+          <% if filename.present? %>
+            <span class="font-mono text-xs break-all"><%= filename %></span>
+          <% end %>
+        </p>
+      <% end %>
+    </header>
+
+    <% if failure? %>
+      <div class="alert alert-error" role="alert">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+        <span><%= failure_message %></span>
+      </div>
+    <% end %>
+
+    <ol class="space-y-4">
+      <% steps.each do |step| %>
+        <li class="flex items-center gap-4">
+          <% case step.state %>
+          <% when :done %>
+            <span
+              class="text-success flex h-7 w-7 shrink-0 items-center justify-center"
+              aria-label="<%= t('.state.done') %>"
+            >
+              <i class="fa-solid fa-circle-check text-xl" aria-hidden="true"></i>
+            </span>
+            <span class="text-base-content/80"><%= step.label %></span>
+          <% when :current %>
+            <span class="flex h-7 w-7 shrink-0 items-center justify-center" aria-label="<%= t('.state.current') %>">
+              <span class="loading loading-spinner loading-sm text-primary" aria-hidden="true"></span>
+            </span>
+            <span class="font-semibold"><%= step.label %></span>
+            <% if step.progress_value %>
+              <progress
+                class="progress progress-primary h-2 flex-1 basis-0"
+                value="<%= step.progress_value %>"
+                max="100"
+              ></progress>
+              <span class="text-base-content/70 w-10 text-right tabular-nums">
+                <%= number_to_percentage(step.progress_value, precision: 0) %>
+              </span>
+            <% end %>
+          <% else %>
+            <span
+              class="text-base-content/30 flex h-7 w-7 shrink-0 items-center justify-center"
+              aria-label="<%= t('.state.pending') %>"
+            >
+              <i class="fa-regular fa-circle text-lg" aria-hidden="true"></i>
+            </span>
+            <span class="text-base-content/50"><%= step.label %></span>
+          <% end %>
+        </li>
+      <% end %>
+    </ol>
+
+    <% if success_stats %>
+      <dl class="grid grid-cols-2 gap-6">
+        <% success_stats.each do |key, value| %>
+          <div>
+            <dt class="text-base-content/60 text-xs font-medium tracking-wider uppercase">
+              <%= t(".stats.#{key}") %>
+            </dt>
+
+            <dd class="mt-1 text-3xl font-semibold tabular-nums md:text-4xl"><%= value %></dd>
+          </div>
+        <% end %>
+      </dl>
+    <% end %>
+
+    <div
+      class="
+        text-base-content/60 border-base-content/10 flex flex-wrap items-center justify-between gap-3 border-t pt-5
+        text-sm leading-relaxed
+      "
+    >
+      <% if running? %>
+        <p><%= running_hint %></p>
+      <% else %>
+        <% if success? %>
+          <p><%= t('.auto_dismiss_hint') %></p>
+        <% end %>
+        <%= button_to t('.dismiss'),
+                      dismiss_path,
+                      method: :delete,
+                      class: 'btn btn-outline btn-sm' %>
+      <% end %>
+    </div>
+  </div>
+</section>

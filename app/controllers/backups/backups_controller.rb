@@ -1,5 +1,10 @@
 module Backups
   class BackupsController < ApplicationController
+    # Must outlive the Docker-event broadcast burst (die→destroy ≈ <1 s) and
+    # expire *before* the 5 s client-side auto-redirect — otherwise the
+    # follow-up GET still finds a fresh stamp and the page re-loops the card.
+    COMPLETION_WINDOW = 3.seconds
+
     before_action :set_backup, only: :show
 
     def index
@@ -63,17 +68,55 @@ module Backups
     end
 
     def load_state
+      load_runner_state!
+      load_destination_state!
+      return if @in_progress || @completion
+
       @backups = BackupRepository.all.to_a
+      @backup_databases_configured = BackupRunner.databases_configured?
+      @backup_unavailable_reason = BackupRunner.unavailable_reason
+    end
+
+    def load_runner_state!
       @backup_in_progress = BackupRunner.in_progress
       @restore_in_progress = RestoreRunner.in_progress
+      @in_progress = @backup_in_progress || @restore_in_progress
       failures = RunnerLog.messages_for(%i[backup restore])
       @backup_failure = failures[:backup]
       @restore_failure = failures[:restore]
-      @backup_databases_configured = BackupRunner.databases_configured?
-      @backup_unavailable_reason = BackupRunner.unavailable_reason unless @backup_in_progress || @restore_in_progress
+      @completion = evaluate_completion
+      @progress_kind = progress_kind
+    end
+
+    def progress_kind
+      return :restore if @restore_in_progress
+      return :backup if @backup_in_progress
+
+      @completion&.kind
+    end
+
+    def load_destination_state!
       @backup_destination_configured = Configuration.current.setting_data('backup').present?
       @backup_destination = BackupRepository.destination
       @backup_destination_remote = BackupRepository.remote?
+    end
+
+    def evaluate_completion
+      return if @in_progress
+
+      row = RunnerLog.latest_completion_within(%i[backup restore], COMPLETION_WINDOW)
+      row && completion_for(row)
+    end
+
+    def completion_for(row)
+      kind = row.kind.to_sym
+      failure = kind == :backup ? @backup_failure : @restore_failure
+      status = failure.present? ? :failure : :success
+      backup = kind == :backup && status == :success ? BackupRepository.latest : nil
+      BackupProgress::Completion.new(
+        kind: kind, status: status, backup: backup, message: failure,
+        started_at: row.created_at, finished_at: row.last_finished_at
+      )
     end
   end
 end

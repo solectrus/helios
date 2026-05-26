@@ -15,18 +15,15 @@ class BackupRepository
       CONTAINER_WAIT_TIMEOUT = 2.hours
 
       class << self
-        def phase = :uploading
+        def default_phase = :uploading
 
         private
 
         def run(filename)
           wait_for_container_exit
           return if error_file_present?
-          return unless ::File.exist?(BackupRepository::S3.staging_path(filename))
 
-          BackupRepository::S3.upload_from_staging!(filename, progress_callback: progress_recorder)
-          BackupRepository::S3.record_from_staging!(filename)
-          FileUtils.rm_f(BackupRepository::S3.staging_path(filename))
+          upload_and_prune!(filename)
         rescue BackupRepository::Error => e
           handle_failure(filename, e.message)
         rescue StandardError => e
@@ -34,6 +31,17 @@ class BackupRepository
           handle_failure(filename, "#{e.class}: #{e.message}")
         ensure
           reset_state!
+        end
+
+        def upload_and_prune!(filename)
+          staging = BackupRepository::S3.staging_path(filename)
+          return unless ::File.exist?(staging)
+
+          BackupRepository::S3.upload_from_staging!(filename, progress_callback: progress_recorder)
+          BackupRepository::S3.record_from_staging!(filename)
+          FileUtils.rm_f(staging)
+          advance_phase(:pruning)
+          BackupRepository.prune!
         end
 
         def handle_failure(filename, message)

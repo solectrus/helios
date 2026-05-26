@@ -20,10 +20,10 @@ class BackupUploader
     target_path = ::File.join(BackupRepository.directory, target_filename)
     raise Error, error(:already_exists) if ::File.exist?(target_path)
 
-    BackupRepository.prune!
     BackupRepository.clear_error!
     persist!(target_path)
     BackupRepository.record_backup!(target_filename)
+    BackupRepository.prune!
   end
 
   private

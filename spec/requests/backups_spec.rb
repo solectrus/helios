@@ -1,6 +1,8 @@
 require 'rubygems/package'
 
 RSpec.describe 'Backups', :with_admin_password do
+  include ActiveSupport::Testing::TimeHelpers
+
   let(:data_path) { Dir.mktmpdir }
 
   before do
@@ -141,18 +143,29 @@ RSpec.describe 'Backups', :with_admin_password do
       end
     end
 
-    it 'shows the in-progress row and disables the create button while running' do
+    it 'replaces the page with the backup progress takeover while a backup is running' do
       allow(BackupRunner).to receive(:in_progress).and_return(
         BackupRepository::InProgress.new(
           started_at: Time.zone.local(2026, 5, 8, 14, 30, 0),
           filename: 'solectrus-backup-20260508-143000.tar',
+          phase: :dumping_influx,
         ),
       )
+      persist_backup('solectrus-backup-20260508-110000.tar')
 
       get backups_path
 
-      expect(response.body).to include(I18n.t('backups.index.in_progress'))
-      expect(response.body).to match(/<button[^>]*disabled/)
+      aggregate_failures do
+        expect(response.body).to include('Creating backup')
+        expect(response.body).to include('Back up PostgreSQL')
+        expect(response.body).to include('Back up InfluxDB')
+        # The currently-running phase carries the spinner; an earlier phase shows the done checkmark.
+        expect(response.body).to include('fa-circle-check')
+        expect(response.body).to include('loading-spinner')
+        # Takeover hides the existing list and the create/upload buttons entirely.
+        expect(response.body).not_to include(I18n.t('backups.index.existing_title'))
+        expect(response.body).not_to include(I18n.t('backups.index.download'))
+      end
     end
 
     it 'shows the backup hint in the status bar while a backup is running' do
@@ -209,27 +222,31 @@ RSpec.describe 'Backups', :with_admin_password do
       expect(response.body).to include('role="alert"')
     end
 
-    it 'shows restore progress inside the matching backup row and keeps the create button label' do
+    it 'replaces the page with the restore progress takeover while a restore is running' do
       allow(RestoreRunner).to receive(:in_progress).and_return(
         BackupRepository::InProgress.new(
           started_at: Time.zone.local(2026, 5, 8, 14, 30, 0),
           filename: 'solectrus-backup-20260508-110000.tar',
+          phase: :restoring_postgres,
         ),
       )
       persist_backup('solectrus-backup-20260508-110000.tar')
 
       get backups_path
 
-      document = Capybara.string(response.body)
-      row = document.find('li', visible: false) do |li|
-        li.has_text?(I18n.t('backups.index.restore_in_progress'))
+      aggregate_failures do
+        expect(response.body).to include('Restoring backup')
+        expect(response.body).to include('Extract archive')
+        expect(response.body).to include('Restore PostgreSQL')
+        expect(response.body).not_to include(I18n.t('backups.index.existing_title'))
+        expect(response.body).not_to include(I18n.t('backups.index.download'))
       end
-
-      expect(row).to have_text('08.05.2026').or have_text('2026-05-08')
-      expect(document).to have_button(I18n.t('backups.index.download'), disabled: true)
     end
 
-    it 'shows the download percentage in the restore row while HELIOS fetches the tar from S3' do
+    it 'shows the S3 download progress bar with percentage while HELIOS fetches the tar from S3' do
+      with_config_yaml('backup' => { 'destination' => 's3',
+                                     's3_bucket' => 'b', 's3_region' => 'r', 's3_endpoint' => 'https://e',
+                                     's3_access_key_id' => 'a', 's3_secret_access_key' => 's' })
       allow(RestoreRunner).to receive(:in_progress).and_return(
         BackupRepository::InProgress.new(
           started_at: Time.zone.local(2026, 5, 8, 14, 30, 0),
@@ -237,16 +254,153 @@ RSpec.describe 'Backups', :with_admin_password do
           phase: :downloading, progress: 0.42
         ),
       )
-      persist_backup('solectrus-backup-20260508-110000.tar')
 
       get backups_path
 
-      document = Capybara.string(response.body)
-      row = document.find('li', visible: false) do |li|
-        li.has_text?('Wird heruntergeladen') || li.has_text?('Downloading')
+      aggregate_failures do
+        expect(response.body).to include('Download backup from S3')
+        expect(response.body).to include('42%')
+        expect(response.body).to match(/<progress[^>]*value="42"[^>]*max="100"/)
+      end
+    end
+
+    it 'shows the success takeover with auto-redirect right after a backup finishes' do
+      filename = 'solectrus-backup-20260508-143000.tar'
+      persist_backup(filename)
+      RunnerLog.record_finished!(:backup)
+
+      get backups_path
+
+      aggregate_failures do
+        expect(response.body).to include('Backup successful')
+        expect(response.body).to include('Redirecting to the overview')
+        expect(response.body).to include('data-controller="auto-redirect"')
+        expect(response.body).to include(filename)
+      end
+    end
+
+    it 'shows headline stats (size + duration) on the success takeover' do
+      filename = 'solectrus-backup-20260508-143000.tar'
+      travel_to(Time.zone.local(2026, 5, 8, 14, 30, 0)) { RunnerLog.record_started!(:backup) }
+      travel_to(Time.zone.local(2026, 5, 8, 14, 32, 30)) do
+        persist_backup(filename)
+        RunnerLog.record_finished!(:backup)
+
+        get backups_path
       end
 
-      expect(row).to have_text('42 %').or have_text('42%')
+      aggregate_failures do
+        expect(response.body).to include('2:30 min')
+        # Exact archive size depends on tar padding; assert label + a KB figure.
+        expect(response.body).to match(/Size/i)
+        expect(response.body).to match(/\d+ KB/)
+      end
+    end
+
+    it 'shows the failure takeover with a manual dismiss link when a backup failed' do
+      RunnerLog.record_error!(:backup, 'PostgreSQL dump failed')
+      RunnerLog.record_finished!(:backup)
+
+      get backups_path
+
+      aggregate_failures do
+        expect(response.body).to include('Backup failed')
+        expect(response.body).to include('PostgreSQL dump failed')
+        # No auto-redirect when the operation failed — user must read the message.
+        expect(response.body).not_to include('data-controller="auto-redirect"')
+      end
+    end
+
+    it 'keeps the completion card visible across the broadcast burst' do
+      persist_backup('solectrus-backup-20260508-143000.tar')
+      RunnerLog.record_finished!(:backup)
+
+      # Three back-to-back refreshes simulate the burst of Docker-event
+      # broadcasts (die + destroy) that hit the page when a runner container
+      # exits — all of them must still render the completion card.
+      3.times do
+        get backups_path
+        expect(response.body).to include('Backup successful')
+      end
+    end
+
+    it 'reveals the normal page once the completion window has elapsed' do
+      persist_backup('solectrus-backup-20260508-143000.tar')
+      RunnerLog.record_finished!(:backup)
+      get backups_path
+      expect(response.body).to include('Backup successful')
+
+      travel_to(Backups::BackupsController::COMPLETION_WINDOW.from_now + 1.second) do
+        get backups_path
+        aggregate_failures do
+          expect(response.body).not_to include('Backup successful')
+          expect(response.body).to include(I18n.t('backups.index.existing_title'))
+        end
+      end
+    end
+
+    it 'shows the completion card again on a second backup cycle' do
+      persist_backup('solectrus-backup-20260508-110000.tar')
+      RunnerLog.record_finished!(:backup)
+      get backups_path
+      expect(response.body).to include('Backup successful')
+
+      # Window passes — normal page is back.
+      travel_to(Backups::BackupsController::COMPLETION_WINDOW.from_now + 1.second) do
+        get backups_path
+        expect(response.body).not_to include('Backup successful')
+
+        # Second backup finishes — completion card returns.
+        persist_backup('solectrus-backup-20260509-120000.tar')
+        RunnerLog.record_finished!(:backup)
+        get backups_path
+        expect(response.body).to include('Backup successful')
+      end
+    end
+
+    it 'shows a restore-success card when the restore runner finished cleanly' do
+      RunnerLog.record_finished!(:restore)
+
+      get backups_path
+
+      aggregate_failures do
+        expect(response.body).to include('Restore successful')
+        expect(response.body).to include('data-controller="auto-redirect"')
+      end
+    end
+
+    it 'offers a shortcut button on the success card that skips the auto-redirect' do
+      persist_backup('solectrus-backup-20260508-143000.tar')
+      RunnerLog.record_started!(:backup)
+      RunnerLog.record_finished!(:backup)
+      get backups_path
+
+      expect(response.body).to include(%(action="#{backups_failure_path}"))
+      expect(response.body).to include('Back to overview')
+
+      delete backups_failure_path
+
+      aggregate_failures do
+        expect(RunnerLog.finished_at_for(:backup)).to be_nil
+        get backups_path
+        expect(response.body).not_to include('Backup successful')
+      end
+    end
+
+    it 'dismissing a backup-failure card clears both the message and the finished timestamp' do
+      RunnerLog.record_error!(:backup, 'Disk full')
+      RunnerLog.record_finished!(:backup)
+
+      delete backups_failure_path
+
+      aggregate_failures do
+        expect(RunnerLog.message_for(:backup)).to be_nil
+        expect(RunnerLog.finished_at_for(:backup)).to be_nil
+        # Next GET shows the normal page, not a phantom success card.
+        get backups_path
+        expect(response.body).not_to include('Backup successful')
+        expect(response.body).to include(I18n.t('backups.index.existing_title'))
+      end
     end
   end
 
@@ -370,7 +524,7 @@ RSpec.describe 'Backups', :with_admin_password do
       expect(response.body).to include(backups_upload_path)
     end
 
-    it 'disables the upload button while a backup is in progress' do
+    it 'hides the upload button entirely while a backup is in progress (takeover replaces the page)' do
       allow(BackupRunner).to receive(:in_progress).and_return(
         BackupRepository::InProgress.new(
           started_at: Time.zone.local(2026, 5, 8, 14, 30, 0),
@@ -380,8 +534,7 @@ RSpec.describe 'Backups', :with_admin_password do
 
       get backups_path
 
-      document = Capybara.string(response.body)
-      expect(document).to have_button(I18n.t('backups.index.upload'), disabled: true)
+      expect(response.body).not_to include(I18n.t('backups.index.upload'))
     end
 
     it 'disables the upload button with a tooltip for a remote destination' do

@@ -114,6 +114,7 @@ class RestoreRunner < DetachedRunner
     validate_locks!
     pull_image_if_needed!
     clear_errors!
+    RunnerLog.record_started!(:restore)
     BackupRepository.mark_pending!
 
     if BackupRepository.s3?

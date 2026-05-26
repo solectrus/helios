@@ -55,7 +55,7 @@ class BackupRepository
   end
 
   class << self
-    delegate :all, :directory, :host_directory, :destroy!, :prune!, :download,
+    delegate :all, :latest, :directory, :host_directory, :destroy!, :prune!, :download,
              :direct_download_url, :mark_pending!, :detect_completion!,
              :record_backup!, :clear_error!, :read_archive_for, to: :storage
 

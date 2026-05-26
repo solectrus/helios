@@ -86,12 +86,12 @@ RSpec.describe BackupRunner do
       expect(state[:open3_calls]).not_to include(['docker', 'pull', described_class::IMAGE])
     end
 
-    it 'prunes old backups before launching the new container' do
+    it 'does not prune before launching — prune runs after a successful add' do
       allow(BackupRepository).to receive(:prune!)
 
       described_class.start
 
-      expect(BackupRepository).to have_received(:prune!).ordered
+      expect(BackupRepository).not_to have_received(:prune!)
     end
 
     it 'clears a previous error file before launching' do

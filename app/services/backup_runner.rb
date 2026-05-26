@@ -110,8 +110,8 @@ class BackupRunner < DetachedRunner
     validate!
     pull_image_if_needed!
     preflight_destination!
-    BackupRepository.prune!
     BackupRepository.clear_error!
+    RunnerLog.record_started!(:backup)
     run_container!
     BackupRepository.mark_pending!(backup_filename)
     BackupRepository::S3::Uploader.start_async(backup_filename) if BackupRepository.s3?

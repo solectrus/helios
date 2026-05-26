@@ -12,11 +12,15 @@ class BackupRepository
   # error.txt into the HELIOS-local runtime dir (see the comment in those
   # scripts), so all adapters share the same read/remove implementation
   # provided here.
-  module Tracking
+  module Tracking # rubocop:disable Metrics/ModuleLength
     def all
       return Backup.none unless destination_configured?
 
       Backup.for_destination(destination_key, **destination_coords).newest_first
+    end
+
+    def latest
+      all.first
     end
 
     def find!(filename)
@@ -29,7 +33,7 @@ class BackupRepository
       record.destroy!
     end
 
-    def prune!(keep: BackupRepository::MAX_BACKUPS - 1)
+    def prune!(keep: BackupRepository::MAX_BACKUPS)
       return unless destination_configured?
 
       stale = scoped_records.newest_first.offset(keep).to_a
@@ -133,21 +137,32 @@ class BackupRepository
       nil
     end
 
+    # `expected_filename` is BackupRunner.start's planned tar name, blank
+    # from RestoreRunner.start — disambiguates backup vs restore on a clean
+    # exit (no error file).
     def process_completion!(expected_filename)
-      capture_error!(:restore, RestoreRunner::ERROR_FILENAME)
-      return if capture_error!(:backup, BackupRepository::ERROR_FILENAME)
+      restore_failed = capture_error!(:restore, RestoreRunner::ERROR_FILENAME)
+      backup_failed = capture_error!(:backup, BackupRepository::ERROR_FILENAME)
 
-      return if expected_filename.blank?
-      return if record_backup!(expected_filename)
+      kind =
+        if backup_failed
+          :backup
+        elsif restore_failed || expected_filename.blank?
+          :restore
+        elsif record_backup!(expected_filename)
+          # S3 uploader prunes earlier (so :pruning phase is visible); this
+          # second call is a no-op in that path and handles every other adapter.
+          prune!
+          :backup
+        else
+          # Detached backup died without tar or error file (OOM, host crash).
+          RunnerLog.record_error!(:backup, I18n.t('backups.runner.errors.incomplete'))
+          :backup
+        end
 
-      # A detached backup that died without writing error.txt (OOM, host
-      # crash) leaves neither a tar nor an error file — record an
-      # "incomplete" message so the run is visibly surfaced as a failure.
-      RunnerLog.record_error!(:backup, I18n.t('backups.runner.errors.incomplete'))
+      RunnerLog.record_finished!(kind)
     end
 
-    # Returns truthy when an error file was found, so process_completion!
-    # can branch on the backup error and stop before record_backup!.
     def capture_error!(kind, filename) # rubocop:disable Naming/PredicateMethod
       message = read_error_file(filename)
       return false if message.blank?

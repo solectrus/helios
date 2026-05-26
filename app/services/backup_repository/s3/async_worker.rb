@@ -20,6 +20,7 @@ class BackupRepository
             @started_at = Time.current
             @filename = filename
             @progress = nil
+            @phase = default_phase
             # Inherit the request thread's zone so Time.current and any
             # filename-timestamp parsing in the worker match what the
             # controller and BackupRunner used.
@@ -51,7 +52,7 @@ class BackupRepository
 
             BackupRepository::InProgress.new(
               started_at: @started_at, filename: @filename,
-              phase: phase, progress: @progress || 0.0
+              phase: @phase, progress: @progress || 0.0
             )
           end
         end
@@ -60,12 +61,19 @@ class BackupRepository
           mutex.synchronize { @thread&.alive? || false }
         end
 
-        # Subclass hook — returned as InProgress#phase.
-        def phase
+        # Subclass hook for the initial / fallback phase. Long workers can
+        # advance the visible phase mid-run via `advance_phase`.
+        def default_phase
           raise NotImplementedError
         end
 
         private
+
+        # Atomic update of the visible phase, picked up by the next
+        # `current` call. Reset to nil by reset_state!.
+        def advance_phase(value)
+          mutex.synchronize { @phase = value }
+        end
 
         # State guarded by @mutex; the ThreadSafety cop is silenced for
         # this single-flight singleton state.
@@ -94,6 +102,7 @@ class BackupRepository
             @started_at = nil
             @filename = nil
             @progress = nil
+            @phase = nil
           end
         end
       end

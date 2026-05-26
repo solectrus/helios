@@ -12,7 +12,7 @@ class BackupRepository
   module S3
     class Downloader < AsyncWorker
       class << self
-        def phase = :downloading
+        def default_phase = :downloading
 
         private
 

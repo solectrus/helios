@@ -64,6 +64,23 @@ RSpec.describe BackupRepository::S3::Uploader do
 
       expect(Orchestration::HeliosOperationBroadcaster).to have_received(:broadcast!)
     end
+
+    it 'switches the visible phase to :pruning and runs prune! after upload' do
+      gate = Queue.new
+      allow(BackupRepository::S3).to receive(:upload_from_staging!)
+      allow(BackupRepository::S3).to receive(:record_from_staging!)
+      allow(BackupRepository).to receive(:prune!) { gate.pop }
+      FileUtils.touch(staged_tar)
+
+      described_class.start_async(filename)
+      Timeout.timeout(1) { sleep 0.01 until described_class.current&.phase == :pruning }
+
+      expect(described_class.current.phase).to eq(:pruning)
+
+      gate << :go
+      described_class.send(:instance_variable_get, :@thread).join
+      expect(BackupRepository).to have_received(:prune!)
+    end
   end
 
   describe 'progress reporting' do

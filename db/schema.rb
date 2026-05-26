@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_23_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_25_160000) do
   create_table "backups", force: :cascade do |t|
     t.bigint "bytes", null: false
     t.datetime "created_at", null: false
@@ -31,6 +31,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_23_120000) do
     t.datetime "created_at", null: false
     t.string "kind", null: false
     t.text "last_error_message"
+    t.datetime "last_finished_at"
     t.datetime "updated_at", null: false
     t.index ["kind"], name: "index_runner_logs_on_kind", unique: true
   end

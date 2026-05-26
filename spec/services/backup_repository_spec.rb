@@ -158,7 +158,7 @@ RSpec.describe BackupRepository do
   end
 
   describe '.prune!' do
-    it 'keeps only the four most recent backups (MAX_BACKUPS - 1)' do
+    it 'keeps only the MAX_BACKUPS most recent rows (called after a fresh add)' do
       6.times do |i|
         record_backup("solectrus-backup-20260508-11000#{i}.tar")
       end
@@ -170,6 +170,7 @@ RSpec.describe BackupRepository do
                                                           solectrus-backup-20260508-110004.tar
                                                           solectrus-backup-20260508-110003.tar
                                                           solectrus-backup-20260508-110002.tar
+                                                          solectrus-backup-20260508-110001.tar
                                                         ])
     end
   end
