@@ -1,10 +1,5 @@
 module Backups
   class BackupsController < ApplicationController
-    # Must outlive the Docker-event broadcast burst (die→destroy ≈ <1 s) and
-    # expire *before* the 5 s client-side auto-redirect — otherwise the
-    # follow-up GET still finds a fresh stamp and the page re-loops the card.
-    COMPLETION_WINDOW = 3.seconds
-
     before_action :set_backup, only: :show
 
     def index
@@ -86,10 +81,6 @@ module Backups
       @restore_failure = failures[:restore]
       @completion = evaluate_completion
       @progress_kind = progress_kind
-      Rails.logger.info(
-        "[BackupsController] in_progress=#{@in_progress.inspect} " \
-        "completion=#{@completion.inspect} kind=#{@progress_kind.inspect}",
-      )
     end
 
     def progress_kind
@@ -105,14 +96,15 @@ module Backups
       @backup_destination_remote = BackupRepository.remote?
     end
 
+    # The completion card sticks around until the user dismisses it — even
+    # across HELIOS restarts or days of inactivity. clear!/clear_error! on
+    # dismiss wipes last_finished_at, and the next record_started! does the
+    # same for the kind that's running again, so a fresh operation always
+    # supersedes the previous result.
     def evaluate_completion
       return if @in_progress
 
-      row = RunnerLog.latest_completion_within(%i[backup restore], COMPLETION_WINDOW)
-      Rails.logger.info(
-        "[evaluate_completion] row=#{row.inspect} now=#{Time.current.iso8601(3)} " \
-        "window=#{COMPLETION_WINDOW.ago.iso8601(3)}..",
-      )
+      row = RunnerLog.latest_completion(%i[backup restore])
       row && completion_for(row)
     end
 

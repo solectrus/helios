@@ -83,7 +83,7 @@ RSpec.describe RunnerLog do
     it 'creates a new row stamped with the current time' do
       freeze_time do
         expect { described_class.record_finished!(:backup) }.to change(described_class, :count).by(1)
-        expect(described_class.finished_at_for(:backup)).to eq(Time.current)
+        expect(described_class.find_by(kind: :backup).last_finished_at).to eq(Time.current)
       end
     end
 
@@ -91,20 +91,8 @@ RSpec.describe RunnerLog do
       described_class.record_error!(:backup, 'oops')
 
       expect { described_class.record_finished!(:backup) }.not_to change(described_class, :count)
-      expect(described_class.finished_at_for(:backup)).to be_present
+      expect(described_class.find_by(kind: :backup).last_finished_at).to be_present
       expect(described_class.message_for(:backup)).to eq('oops')
-    end
-  end
-
-  describe '.finished_at_for' do
-    it 'returns nil when the row is missing' do
-      expect(described_class.finished_at_for(:backup)).to be_nil
-    end
-
-    it 'returns nil when no finish has been recorded yet' do
-      described_class.record_error!(:backup, 'oops')
-
-      expect(described_class.finished_at_for(:backup)).to be_nil
     end
   end
 
@@ -130,59 +118,59 @@ RSpec.describe RunnerLog do
     end
   end
 
-  describe '.latest_completion_within' do
-    it 'returns the most recent row within the window, skipping never-finished kinds' do
+  describe '.latest_completion' do
+    it 'returns the most recently finished row, skipping never-finished kinds' do
       described_class.record_started!(:backup)
       described_class.record_finished!(:backup)
       described_class.record_error!(:restore, 'oops') # row exists but no finish stamp
 
-      row = described_class.latest_completion_within(%i[backup restore], 1.minute)
+      row = described_class.latest_completion(%i[backup restore])
 
       expect(row.kind.to_sym).to eq(:backup)
       expect(row.last_finished_at).to be_within(1.second).of(Time.current)
     end
 
-    it 'returns nil when the latest finish predates the window' do
+    it 'still returns a row days after the finish — the card sticks until the user dismisses' do
       described_class.record_finished!(:backup)
-      travel 2.minutes
+      travel 3.days
 
-      expect(described_class.latest_completion_within(%i[backup restore], 1.minute)).to be_nil
+      expect(described_class.latest_completion(%i[backup restore])).to be_present
     end
 
-    it 'picks the most recently finished kind when several are in the window' do
+    it 'picks the most recently finished kind when several rows exist' do
       described_class.record_finished!(:backup)
       travel 1.second
       described_class.record_finished!(:restore)
 
-      row = described_class.latest_completion_within(%i[backup restore], 1.minute)
+      row = described_class.latest_completion(%i[backup restore])
       expect(row.kind.to_sym).to eq(:restore)
     end
   end
 
   describe '.clear!' do
-    it 'wipes the message but leaves the row in place' do
+    it 'deletes the row so no phantom record lingers' do
       described_class.record_error!(:backup, 'oops')
 
-      expect { described_class.clear!(:backup) }.not_to change(described_class, :count)
+      expect { described_class.clear!(:backup) }.to change(described_class, :count).by(-1)
       expect(described_class.message_for(:backup)).to be_nil
     end
 
-    it 'also drops the finish timestamp so the completion card disappears' do
+    it 'also drops the row of a failed run so the completion card disappears' do
       described_class.record_error!(:backup, 'oops')
       described_class.record_finished!(:backup)
 
       described_class.clear!(:backup)
 
-      expect(described_class.finished_at_for(:backup)).to be_nil
+      expect(described_class.find_by(kind: :backup)).to be_nil
     end
 
-    it 'also drops the finish timestamp on a successful run (no error message present)' do
+    it 'also drops the row of a successful run (no error message present)' do
       described_class.record_started!(:backup)
       described_class.record_finished!(:backup)
 
       described_class.clear!(:backup)
 
-      expect(described_class.finished_at_for(:backup)).to be_nil
+      expect(described_class.find_by(kind: :backup)).to be_nil
     end
 
     it 'is a no-op when no row exists for the kind' do

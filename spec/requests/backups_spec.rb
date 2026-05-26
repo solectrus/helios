@@ -264,7 +264,7 @@ RSpec.describe 'Backups', :with_admin_password do
       end
     end
 
-    it 'shows the success takeover with auto-redirect right after a backup finishes' do
+    it 'shows the success takeover right after a backup finishes' do
       filename = 'solectrus-backup-20260508-143000.tar'
       persist_backup(filename)
       RunnerLog.record_finished!(:backup)
@@ -273,8 +273,6 @@ RSpec.describe 'Backups', :with_admin_password do
 
       aggregate_failures do
         expect(response.body).to include('Backup successful')
-        expect(response.body).to include('Redirecting to the overview')
-        expect(response.body).to include('data-controller="auto-redirect"')
         expect(response.body).to include(filename)
       end
     end
@@ -306,8 +304,6 @@ RSpec.describe 'Backups', :with_admin_password do
       aggregate_failures do
         expect(response.body).to include('Backup failed')
         expect(response.body).to include('PostgreSQL dump failed')
-        # No auto-redirect when the operation failed — user must read the message.
-        expect(response.body).not_to include('data-controller="auto-redirect"')
       end
     end
 
@@ -324,18 +320,16 @@ RSpec.describe 'Backups', :with_admin_password do
       end
     end
 
-    it 'reveals the normal page once the completion window has elapsed' do
+    it 'keeps the completion card visible indefinitely until the user dismisses it' do
       persist_backup('solectrus-backup-20260508-143000.tar')
       RunnerLog.record_finished!(:backup)
       get backups_path
       expect(response.body).to include('Backup successful')
 
-      travel_to(Backups::BackupsController::COMPLETION_WINDOW.from_now + 1.second) do
+      # Days later — still the same card, no auto-dismiss.
+      travel_to(3.days.from_now) do
         get backups_path
-        aggregate_failures do
-          expect(response.body).not_to include('Backup successful')
-          expect(response.body).to include(I18n.t('backups.index.existing_title'))
-        end
+        expect(response.body).to include('Backup successful')
       end
     end
 
@@ -345,17 +339,16 @@ RSpec.describe 'Backups', :with_admin_password do
       get backups_path
       expect(response.body).to include('Backup successful')
 
-      # Window passes — normal page is back.
-      travel_to(Backups::BackupsController::COMPLETION_WINDOW.from_now + 1.second) do
-        get backups_path
-        expect(response.body).not_to include('Backup successful')
+      # User dismisses, normal page is back.
+      delete backups_completion_path
+      get backups_path
+      expect(response.body).not_to include('Backup successful')
 
-        # Second backup finishes — completion card returns.
-        persist_backup('solectrus-backup-20260509-120000.tar')
-        RunnerLog.record_finished!(:backup)
-        get backups_path
-        expect(response.body).to include('Backup successful')
-      end
+      # Second backup finishes — completion card returns.
+      persist_backup('solectrus-backup-20260509-120000.tar')
+      RunnerLog.record_finished!(:backup)
+      get backups_path
+      expect(response.body).to include('Backup successful')
     end
 
     it 'shows a restore-success card when the restore runner finished cleanly' do
@@ -363,39 +356,52 @@ RSpec.describe 'Backups', :with_admin_password do
 
       get backups_path
 
-      aggregate_failures do
-        expect(response.body).to include('Restore successful')
-        expect(response.body).to include('data-controller="auto-redirect"')
-      end
+      expect(response.body).to include('Restore successful')
     end
 
-    it 'offers a shortcut button on the success card that skips the auto-redirect' do
+    it 'offers a direct download link on a backup-success card' do
+      persist_backup('solectrus-backup-20260510-090000.tar')
+      RunnerLog.record_finished!(:backup)
+
+      get backups_path
+
+      expect(response.body).to include(%(href="#{backup_path('solectrus-backup-20260510-090000')}"))
+      expect(response.body).to include('Download backup')
+    end
+
+    it 'omits the download link on a restore-success card' do
+      RunnerLog.record_finished!(:restore)
+
+      get backups_path
+
+      expect(response.body).not_to include('Download backup')
+    end
+
+    it 'dismisses the success card via the OK button' do
       persist_backup('solectrus-backup-20260508-143000.tar')
       RunnerLog.record_started!(:backup)
       RunnerLog.record_finished!(:backup)
       get backups_path
 
-      expect(response.body).to include(%(action="#{backups_failure_path}"))
-      expect(response.body).to include('Back to overview')
+      expect(response.body).to include(%(action="#{backups_completion_path}"))
 
-      delete backups_failure_path
+      delete backups_completion_path
 
       aggregate_failures do
-        expect(RunnerLog.finished_at_for(:backup)).to be_nil
+        expect(RunnerLog.find_by(kind: :backup)).to be_nil
         get backups_path
         expect(response.body).not_to include('Backup successful')
       end
     end
 
-    it 'dismissing a backup-failure card clears both the message and the finished timestamp' do
+    it 'dismissing a backup-failure card deletes the runner-log row' do
       RunnerLog.record_error!(:backup, 'Disk full')
       RunnerLog.record_finished!(:backup)
 
-      delete backups_failure_path
+      delete backups_completion_path
 
       aggregate_failures do
-        expect(RunnerLog.message_for(:backup)).to be_nil
-        expect(RunnerLog.finished_at_for(:backup)).to be_nil
+        expect(RunnerLog.find_by(kind: :backup)).to be_nil
         # Next GET shows the normal page, not a phantom success card.
         get backups_path
         expect(response.body).not_to include('Backup successful')
@@ -550,28 +556,28 @@ RSpec.describe 'Backups', :with_admin_password do
     end
   end
 
-  describe 'DELETE /backups/failure' do
+  describe 'DELETE /backups/completion' do
     it 'clears the backup error file and redirects' do
       runtime_dir = File.join(data_path, 'helios', 'runners')
       FileUtils.mkdir_p(runtime_dir)
       error_path = File.join(runtime_dir, 'error.txt')
       File.write(error_path, 'PostgreSQL dump failed')
 
-      delete backups_failure_path
+      delete backups_completion_path
 
       expect(File).not_to exist(error_path)
       expect(response).to redirect_to(backups_path)
     end
   end
 
-  describe 'DELETE /backups/restore_failure' do
+  describe 'DELETE /backups/restore_completion' do
     it 'clears the restore error file and redirects' do
       runtime_dir = File.join(data_path, 'helios', 'runners')
       FileUtils.mkdir_p(runtime_dir)
       error_path = File.join(runtime_dir, 'restore-error.txt')
       File.write(error_path, 'InfluxDB restore failed')
 
-      delete backups_restore_failure_path
+      delete backups_restore_completion_path
 
       expect(File).not_to exist(error_path)
       expect(response).to redirect_to(backups_path)

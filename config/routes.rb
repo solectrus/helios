@@ -29,8 +29,8 @@
 #                          advanced GET    /advanced(.:format)                            advanced#show
 #                        host_stats GET    /host-stats(.:format)                          host_stats#show
 #                        status_bar GET    /status-bar(.:format)                          status_bars#show
-#                   backups_failure DELETE /backups/failure(.:format)                     backups/failures#destroy
-#           backups_restore_failure DELETE /backups/restore_failure(.:format)             backups/restore_failures#destroy
+#                backups_completion DELETE /backups/completion(.:format)                  backups/completions#destroy
+#        backups_restore_completion DELETE /backups/restore_completion(.:format)          backups/restore_completions#destroy
 #                    backups_upload POST   /backups/upload(.:format)                      backups/uploads#create
 #                    backup_restore POST   /backups/:backup_id/restore(.:format)          backups/restores#create
 #                           backups GET    /backups(.:format)                             backups/backups#index
@@ -101,8 +101,8 @@ Rails.application.routes.draw do
   resource :host_stats, only: :show, path: 'host-stats'
   resource :status_bar, only: :show, path: 'status-bar'
   scope 'backups', module: :backups, as: :backups do
-    resource :failure, only: :destroy
-    resource :restore_failure, only: :destroy
+    resource :completion, only: :destroy
+    resource :restore_completion, only: :destroy
     resource :upload, only: :create
   end
   resources :backups,

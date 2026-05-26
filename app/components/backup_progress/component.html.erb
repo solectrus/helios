@@ -2,15 +2,6 @@
   class="bg-base-100 border-base-content/10 relative overflow-hidden border-y shadow-sm md:rounded-2xl md:border"
   aria-live="polite"
 >
-  <% if success? %>
-    <div
-      data-controller="auto-redirect"
-      data-auto-redirect-delay-value="<%= AUTO_DISMISS_AFTER_MS %>"
-      data-auto-redirect-url-value="<%= helpers.backups_path %>"
-      class="hidden"
-    ></div>
-  <% end %>
-
   <div
     class="
       pointer-events-none absolute -top-32 -right-32 h-72 w-72 rounded-full bg-linear-to-br to-transparent blur-3xl
@@ -40,6 +31,16 @@
 
           <% if filename.present? %>
             <span class="font-mono text-xs break-all"><%= filename %></span>
+          <% end %>
+
+          <% if downloadable_backup %>
+            <%= link_to helpers.backup_path(downloadable_backup),
+                        class: 'btn btn-ghost btn-xs btn-square align-middle',
+                        title: t('.download'),
+                        aria: { label: t('.download') },
+                        data: { turbo: false } do %>
+              <i class="fa-solid fa-download" aria-hidden="true"></i>
+            <% end %>
           <% end %>
         </p>
       <% end %>
@@ -115,13 +116,11 @@
       <% if running? %>
         <p><%= running_hint %></p>
       <% else %>
-        <% if success? %>
-          <p><%= t('.auto_dismiss_hint') %></p>
-        <% end %>
         <%= button_to t('.dismiss'),
                       dismiss_path,
                       method: :delete,
-                      class: 'btn btn-outline btn-sm' %>
+                      class: 'btn btn-outline',
+                      form: { class: 'ml-auto' } %>
       <% end %>
     </div>
   </div>

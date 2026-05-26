@@ -21,8 +21,8 @@ de:
     duration_hours: '%{hours}:%{minutes}:%{seconds} h'
   hint_backup: 'Der Vorgang läuft im Hintergrund. Die Seite kann verlassen werden, die Sicherung wird fertiggestellt. SOLECTRUS bleibt währenddessen nutzbar.'
   hint_restore: 'Der Vorgang läuft im Hintergrund. SOLECTRUS ist erst wieder verfügbar, sobald alle Phasen abgeschlossen sind.'
-  auto_dismiss_hint: 'Weiterleitung zur Übersicht in wenigen Sekunden …'
-  dismiss: 'Zur Übersicht'
+  dismiss: 'OK'
+  download: 'Sicherung herunterladen'
   state:
     done: 'Abgeschlossen'
     current: 'Läuft gerade'

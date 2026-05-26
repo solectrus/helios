@@ -39,7 +39,7 @@
             <i class="fa-solid fa-triangle-exclamation"></i>
             <span><%= t('.error', message: @backup_failure) %></span>
 
-            <%= button_to backups_failure_path,
+            <%= button_to backups_completion_path,
                       method: :delete,
                       class: "btn btn-ghost btn-sm btn-square ml-auto",
                       title: t('.dismiss'),
@@ -52,7 +52,7 @@
             <i class="fa-solid fa-triangle-exclamation"></i>
             <span><%= t('.restore_error', message: @restore_failure) %></span>
 
-            <%= button_to backups_restore_failure_path,
+            <%= button_to backups_restore_completion_path,
                       method: :delete,
                       class: "btn btn-ghost btn-sm btn-square ml-auto",
                       title: t('.dismiss'),

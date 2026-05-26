@@ -56,19 +56,15 @@ class RunnerLog < ApplicationRecord
       entry.save!
     end
 
-    def finished_at_for(kind)
-      find_by(kind: kind)&.last_finished_at
-    end
-
-    def latest_completion_within(kinds, window)
+    def latest_completion(kinds)
       where(kind: kinds)
-        .where(last_finished_at: window.ago..)
+        .where.not(last_finished_at: nil)
         .order(last_finished_at: :desc)
         .first
     end
 
     def clear!(kind)
-      where(kind: kind).update_all(last_error_message: nil, last_finished_at: nil) # rubocop:disable Rails/SkipsModelValidations
+      where(kind: kind).delete_all
     end
   end
 end

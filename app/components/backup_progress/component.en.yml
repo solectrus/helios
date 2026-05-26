@@ -21,8 +21,8 @@ en:
     duration_hours: '%{hours}:%{minutes}:%{seconds} h'
   hint_backup: 'The operation runs in the background. This page can be left; the backup keeps running. SOLECTRUS stays usable in the meantime.'
   hint_restore: 'The operation runs in the background. SOLECTRUS becomes available again once all phases have completed.'
-  auto_dismiss_hint: 'Redirecting to the overview in a few seconds …'
-  dismiss: 'Back to overview'
+  dismiss: 'OK'
+  download: 'Download backup'
   state:
     done: 'Completed'
     current: 'In progress'

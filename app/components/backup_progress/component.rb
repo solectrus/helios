@@ -1,13 +1,10 @@
 module BackupProgress
-  Completion = Data.define(:kind, :status, :backup, :message, :started_at, :finished_at)
-
   # Single container for the full backup/restore lifecycle so Turbo can
   # morph the body in place when the operation finishes.
   class Component < ViewComponent::Base
     Step = Data.define(:key, :label, :state, :progress_value)
 
     PROGRESS_PHASES = %i[uploading downloading].freeze
-    AUTO_DISMISS_AFTER_MS = 5_000
 
     def initialize(kind:, include_s3:, in_progress: nil, completion: nil)
       super()
@@ -63,6 +60,12 @@ module BackupProgress
       @in_progress&.filename || @completion&.backup&.filename
     end
 
+    def downloadable_backup
+      return nil unless success? && @kind == :backup
+
+      @completion&.backup
+    end
+
     def failure_message
       @completion&.message
     end
@@ -92,7 +95,7 @@ module BackupProgress
     end
 
     def dismiss_path
-      @kind == :restore ? helpers.backups_restore_failure_path : helpers.backups_failure_path
+      @kind == :restore ? helpers.backups_restore_completion_path : helpers.backups_completion_path
     end
 
     private
