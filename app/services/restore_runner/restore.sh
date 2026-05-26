@@ -99,7 +99,12 @@ done < "$WORK_DIR/entries.txt"
 # `.` as argument); BusyBox tar requires positional patterns to match
 # the entry name verbatim, so we keep the `./` prefix end-to-end and
 # strip it only when we need the bare directory name on the host side.
-INFLUX_ENTRY="$(grep -E '^\./solectrus-influxdb-backup-[0-9]{4}-[0-9]{2}-[0-9]{2}/' "$WORK_DIR/entries.txt" | head -n1)"
+# `grep -m1` (not `grep | head -n1`): with `set -o pipefail` head closes
+# its stdin after the first line, grep keeps writing and dies with
+# SIGPIPE → pipeline exits 141, set -e terminates the script before any
+# fail() runs, the container disappears via --rm without an error file
+# and detect_completion! paints the card green on a non-restore.
+INFLUX_ENTRY="$(grep -m1 -E '^\./solectrus-influxdb-backup-[0-9]{4}-[0-9]{2}-[0-9]{2}/' "$WORK_DIR/entries.txt")"
 [ -n "$INFLUX_ENTRY" ] || fail "InfluxDB backup is missing from archive"
 # cut -d/ -f1-2 keeps `./solectrus-influxdb-backup-DATE` (strips the
 # trailing `/file…` portion). Shell glob `%%/[^/]*` would match the
