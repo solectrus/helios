@@ -241,7 +241,14 @@ if [ "$RESTART_AFTER" = "1" ]; then
   fi
 fi
 
-rm -f "$PHASE_PATH"
+# PHASE_PATH is deliberately NOT removed here. There is a small window
+# between this line and the actual container exit (the rm -rf below plus
+# the optional BACKUP_PATH cleanup) during which /backups can poll while
+# the container is still running. Without the marker, BackupProgress'
+# current_index falls back to script_phases.first and the UI jumps from
+# the last phase back to :extracting for ~1-3 s. The next run wipes
+# PHASE_PATH on entry (see the top-of-script cleanup), so leaving a
+# zombie marker here is safe.
 rm -rf "$WORK_DIR" || fail "Failed to clean work directory after restore: $WORK_DIR"
 # Wrapped in `if`, not `[ … ] && rm`: as the script's last command an
 # AND-OR list that short-circuits would propagate a non-zero exit and

@@ -119,6 +119,12 @@ tar -cf "$PART_PATH" -C "$WORK_DIR" -h . \
   || fail "Failed to bundle backup archive"
 
 mv "$PART_PATH" "$FINAL_PATH" || fail "Failed to publish backup archive: $FINAL_PATH"
-rm -f "$PHASE_PATH"
+# PHASE_PATH is deliberately NOT removed here. There is a small window
+# between this line and the actual container exit (the rm -rf calls
+# below) during which /backups can poll while the container is still
+# running. Without the marker, BackupProgress' current_index falls back
+# to script_phases.first and the UI jumps from :bundling back to
+# :dumping_postgres for ~1-3 s. The next run wipes PHASE_PATH on entry
+# (see the top-of-script cleanup), so leaving a zombie marker is safe.
 rm -rf "$WORK_DIR" || fail "Failed to clean work directory after backup: $WORK_DIR"
 rm -rf "$INFLUX_DIR" || fail "Failed to clean InfluxDB staging dir after backup: $INFLUX_DIR"
