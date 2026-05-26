@@ -155,11 +155,20 @@ class DetachedRunner
     FileUtils.mkdir_p(self.class.influx_staging_directory)
   end
 
+  # Drops the IN_PROGRESS_CACHE_TTL snapshot the moment the container is
+  # live so the next /backups poll re-reads docker instead of trusting a
+  # stale "no container yet" entry written during the S3 download phase.
+  # Without this, an S3 restore briefly observes no Downloader (reset_state!
+  # has run) and no container (stale cache) at once — long enough for
+  # detect_completion! to fire prematurely and paint the card green.
   def run_container!
     ensure_bind_mount_sources!
 
     output, status = Open3.capture2e(*docker_run_command)
-    return if status.success?
+    if status.success?
+      self.class.invalidate_in_progress_cache!
+      return
+    end
 
     raise Error, error(:already_in_progress) if output.include?('is already in use')
 

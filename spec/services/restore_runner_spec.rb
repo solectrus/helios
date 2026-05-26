@@ -398,6 +398,28 @@ RSpec.describe RestoreRunner do
           described_class::Error, I18n.t('backups.restorer.errors.missing_postgres')
         )
       end
+
+      # Regression: a stale "no container" entry written into the
+      # IN_PROGRESS_CACHE_TTL snapshot during the download would otherwise
+      # outlive the Downloader's reset_state! and trick detect_completion!
+      # into finishing the restore the moment the container starts.
+      it 'invalidates the in-progress cache once the Downloader has launched the container' do
+        captured_block = nil
+        allow(BackupRepository::S3::Downloader).to receive(:start_async) do |_, &block|
+          captured_block = block
+        end
+        # Stage the tar at the path validate_archive! reads from.
+        FileUtils.cp(
+          File.join(data_path, 'helios', 'backups', filename),
+          BackupRepository::S3.staging_path(filename),
+        )
+
+        described_class.start(filename)
+        allow(described_class).to receive(:invalidate_in_progress_cache!).and_call_original
+        captured_block.call
+
+        expect(described_class).to have_received(:invalidate_in_progress_cache!).at_least(:once)
+      end
     end
   end
 
