@@ -48,5 +48,29 @@ module Header
         'text-base-content/80 hover:bg-base-content/5 hover:text-base-content': tab[:id] != active_tab,
       )
     end
+
+    # Cache keys for the two fragment-cached regions in the template. The
+    # right-side dropdown (HostStats, locale switcher, CSRF logout) stays
+    # uncached.
+    #
+    # NOTE: Rails' template digest only fingerprints this template, not the
+    # ConfigNav::Component rendered inside the drawer cache. With
+    # :memory_store this self-clears on every process restart, so a stale
+    # drawer can never outlive a deploy. If the cache store ever moves to a
+    # persistent backend (Redis, Memcached, file store), add a version
+    # element to the keys and bump it whenever ConfigNav's template or
+    # render-affecting logic changes.
+    def tabs_cache_key
+      [:header_tabs, active_tab, I18n.locale, Configuration.current.collectors_only?]
+    end
+
+    def drawer_cache_key
+      [
+        :header_drawer,
+        I18n.locale,
+        Configuration.current.setup_completed?,
+        StackBackup.exist?,
+      ]
+    end
   end
 end
