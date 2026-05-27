@@ -188,7 +188,7 @@ RSpec.describe ConfigSchema do
   end
 
   describe 'consistency with surveys' do
-    survey_settings = (Configuration::ALL - Configuration::HIDDEN)
+    survey_settings = (Configuration::ALL - Configuration::HIDDEN - Configuration::READ_ONLY_SETTINGS)
     survey_settings.select { |s| Rails.root.join("app/services/surveys/#{s}/survey.json").exist? }.each do |setting|
       next if setting == 'software' # custom channel-token persistence, not a simple field map
 

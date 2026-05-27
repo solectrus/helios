@@ -23,6 +23,13 @@ module Export
       SERVICE_ORDER.find { |klass| klass.service_name == name.to_s }
     end
 
+    # Service classes that persist data to a host volume. Single source of
+    # truth for "which services have a volume_path?" — read off the existing
+    # `volume_env_key` declarations on each service class.
+    def self.persistent_services
+      SERVICE_ORDER.select(&:persistent?)
+    end
+
     def initialize(configuration)
       @configuration = configuration
     end

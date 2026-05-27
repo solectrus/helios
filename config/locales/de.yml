@@ -359,6 +359,9 @@ de:
       ingest_settings:
         title: 'Ingest'
         description: 'Korrigiert den Hausverbrauch bei Balkonkraftwerken'
+      storage:
+        title: 'Speicherorte'
+        description: 'Wo die einzelnen Dienste ihre Daten ablegen'
       invalid_setting: 'Unbekannte Einstellung'
       add: 'Hinzufügen'
       edit: 'Bearbeiten'
@@ -505,3 +508,6 @@ de:
   flash:
     session:
       invalid_password: 'Ungültiges Passwort'
+
+  storage_paths:
+    docker_volume: 'Docker-Volume: %{name}'

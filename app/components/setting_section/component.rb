@@ -17,6 +17,7 @@ module SettingSection
       'shelly' => 'fa-plug-circle-bolt',
       'influxdb' => 'fa-database',
       'ingest_settings' => 'fa-house-signal',
+      'storage' => 'fa-hard-drive',
     }.freeze
 
     FORECAST_PROVIDERS = {

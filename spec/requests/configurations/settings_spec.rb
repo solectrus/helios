@@ -233,4 +233,34 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(Configuration.current.sensor_enabled?('inverter_power')).to be false
     end
   end
+
+  describe 'read-only settings (storage)' do
+    it 'renders the edit form' do
+      get edit_configuration_setting_path(setting: 'storage', name: 'storage'),
+          headers: turbo_frame_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('survey')
+    end
+
+    it 'refuses POST' do
+      post configuration_settings_path,
+           params: { setting: 'storage', data: { 'postgresql' => '/evil' }.to_json }
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it 'refuses PATCH' do
+      patch configuration_setting_path(setting: 'storage', name: 'storage'),
+            params: { setting: 'storage', data: { 'postgresql' => '/evil' }.to_json }
+
+      expect(response).to have_http_status(:forbidden)
+    end
+
+    it 'refuses DELETE' do
+      delete configuration_setting_path(setting: 'storage', name: 'storage')
+
+      expect(response).to have_http_status(:forbidden)
+    end
+  end
 end

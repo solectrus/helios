@@ -1,0 +1,49 @@
+{
+  "locale": "de",
+  "mode": "display",
+  "title": {
+    "de": "Speicherorte",
+    "default": "Storage locations"
+  },
+  "description": {
+    "de": "Die Ordner, in denen die einzelnen Dienste ihre Daten ablegen. Werden bei der Einrichtung festgelegt und können hier nicht geändert werden.",
+    "default": "The folders where each service stores its data. Set during initial setup and cannot be changed here."
+  },
+  "pages": [
+    {
+      "name": "p_storage",
+      "elements": [
+        {
+          "type": "text",
+          "name": "postgresql",
+          "title": "PostgreSQL"
+        },
+        {
+          "type": "text",
+          "name": "influxdb",
+          "title": "InfluxDB"
+        },
+        {
+          "type": "text",
+          "name": "redis",
+          "title": "Redis"
+        },
+        {
+          "type": "text",
+          "name": "ingest",
+          "title": "Ingest"
+        },
+        {
+          "type": "text",
+          "name": "reverse_proxy",
+          "title": {
+            "de": "Eigene Domain (Traefik)",
+            "default": "Custom domain (Traefik)"
+          }
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "showCompletePage": false
+}

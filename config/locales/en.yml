@@ -383,6 +383,9 @@ en:
       ingest_settings:
         title: 'Ingest'
         description: 'Recalculates house consumption for balcony plants'
+      storage:
+        title: 'Storage locations'
+        description: 'Where each service stores its data'
       invalid_setting: 'Unknown setting'
       add: 'Add'
       edit: 'Edit'
@@ -529,3 +532,6 @@ en:
   flash:
     session:
       invalid_password: 'Invalid password'
+
+  storage_paths:
+    docker_volume: 'Docker volume: %{name}'

@@ -14,6 +14,7 @@ module Configurations
 
     before_action :set_configuration
     before_action :validate_setting
+    before_action :reject_read_only_writes, only: %i[new create update destroy]
     before_action :require_turbo_frame, only: %i[new edit]
 
     def new
@@ -86,6 +87,16 @@ module Configurations
       return if Configuration.valid?(setting)
 
       redirect_to sensors_path
+    end
+
+    # Read-only pseudo-settings (see Configuration::READ_ONLY_SETTINGS) render
+    # the survey in display mode; the surrounding form has no Save button. A
+    # crafted POST/PATCH/DELETE bypasses the UI, so refuse it here before
+    # Configuration#update raises.
+    def reject_read_only_writes
+      return unless Configuration::READ_ONLY_SETTINGS.include?(setting)
+
+      head :forbidden
     end
 
     def redirect_target

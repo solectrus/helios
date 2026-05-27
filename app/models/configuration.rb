@@ -37,6 +37,12 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'reverse_proxy' => { 'trusted_proxy_ranges' => 'dashboard' },
   }.freeze
 
+  # Read-only pseudo-settings: they appear in the Advanced UI like real
+  # settings (chip → modal with survey) but expose derived state instead of
+  # persisting anything. `Configuration#setting_data` synthesises the payload
+  # the survey prefills with, and `#update` refuses writes.
+  READ_ONLY_SETTINGS = %w[storage].freeze
+
   # The Software survey shows a matrix of services (rows) × release
   # channels (columns). Each row stores its persisted image in a different
   # singleton, so we translate between the survey's channel tokens
@@ -64,6 +70,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     system_general system_network system_security
     dashboard_co2 dashboard_theme dashboard_network
     influxdb reverse_proxy
+    storage
   ].freeze
 
   # On the Advanced page, settings render as compact chips clustered into
@@ -74,7 +81,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   ADVANCED_GROUPS = {
     'installation' => %w[deployment software system_general],
     'access' => %w[system_network influxdb dashboard_network reverse_proxy system_security],
-    'data' => %w[ingest_settings],
+    'data' => %w[ingest_settings storage],
     'dashboard' => %w[dashboard_co2 dashboard_theme],
   }.freeze
 
@@ -97,6 +104,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     system_general system_network system_security
     dashboard_co2 dashboard_theme dashboard_network
     reverse_proxy
+    storage
   ].freeze
 
   # Source configurations shown when at least one sensor uses that source
@@ -112,10 +120,12 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # the dashboard, so it stays available together with `external`.
   DASHBOARD_ONLY_SOURCES = %w[external forecast].freeze
 
-  # All valid setting names (real singletons + mini-survey IDs + software).
-  # Software has its own translation layer (see SOFTWARE_SERVICES) instead of
-  # the generic SETTING_GROUPS mapping, but is still a routable setting ID.
-  ALL = (SINGLETONS + SETTING_GROUPS.keys + %w[software]).freeze
+  # All valid setting names (real singletons + mini-survey IDs + software +
+  # read-only pseudo-settings). Software has its own translation layer (see
+  # SOFTWARE_SERVICES) instead of the generic SETTING_GROUPS mapping, but is
+  # still a routable setting ID. READ_ONLY_SETTINGS are routable too — their
+  # survey renders but writes are rejected.
+  ALL = (SINGLETONS + SETTING_GROUPS.keys + READ_ONLY_SETTINGS + %w[software]).freeze
 
   # Key for unmanaged services and env vars (preserved from existing installations)
   UNMANAGED_KEY = '_unmanaged'.freeze
@@ -546,6 +556,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   def setting_data(setting)
     setting = setting.to_s
     return software_setting_data if setting == 'software'
+    return read_only_setting_data(setting) if READ_ONLY_SETTINGS.include?(setting)
 
     Data.wrap(merge_borrowed_fields(own_section_data(setting), setting))
   end
@@ -566,6 +577,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   def update(setting, data)
     setting = setting.to_s
     return update_software(data) if setting == 'software'
+    raise ArgumentError, "Setting '#{setting}' is read-only" if READ_ONLY_SETTINGS.include?(setting)
 
     raw = deep_unwrap(data)
     borrowed_changed = store_borrowed_fields!(setting, raw)
@@ -685,6 +697,15 @@ class Configuration # rubocop:disable Metrics/ClassLength
   }.freeze
 
   private
+
+  # Synthesises the payload a read-only pseudo-setting's survey prefills
+  # with. Routed via `setting_data` so the SettingForm component picks it up
+  # without any special-casing on its side.
+  def read_only_setting_data(setting)
+    case setting
+    when 'storage' then Data.wrap(StoragePaths.call(configuration: self))
+    end
+  end
 
   # The raw section/slice a survey owns, before borrowed fields are merged in.
   def own_section_data(setting)

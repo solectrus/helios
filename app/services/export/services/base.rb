@@ -24,6 +24,17 @@ module Export
         nil
       end
 
+      # .env variable that carries the service's bind-mount host path
+      # (e.g. `DB_VOLUME_PATH`). Defined only by services that persist
+      # data to a host volume; `persistent?` reads off this.
+      def self.volume_env_key
+        nil
+      end
+
+      def self.persistent?
+        !volume_env_key.nil?
+      end
+
       def data_directories
         []
       end

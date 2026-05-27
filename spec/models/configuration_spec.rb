@@ -86,6 +86,24 @@ RSpec.describe Configuration do
         { 'admin_password' => 'secret', 'lockup_codeword' => 'open-sesame' },
       )
     end
+
+    it 'synthesises read-only storage data from StoragePaths' do
+      dir = with_config_yaml('postgresql' => { 'volume_path' => '/mnt/disk1/postgres' })
+
+      data = described_class.current.setting_data('storage')
+
+      expect(data['postgresql']).to eq('/mnt/disk1/postgres')
+      expect(data['influxdb']).to eq("#{dir}/influxdb")
+    end
+  end
+
+  describe '#update with a read-only setting' do
+    it 'refuses to write storage' do
+      config = described_class.current
+
+      expect { config.update('storage', { 'postgresql' => '/evil' }) }
+        .to raise_error(ArgumentError, /read-only/)
+    end
   end
 
   describe 'mqtt_topics CRUD' do
@@ -815,6 +833,7 @@ RSpec.describe Configuration do
       expect(described_class.current.advanced_groups).to eq(
         'installation' => %w[deployment software system_general],
         'access' => %w[system_network influxdb dashboard_network reverse_proxy system_security],
+        'data' => %w[storage],
         'dashboard' => %w[dashboard_co2 dashboard_theme],
       )
     end
@@ -831,7 +850,7 @@ RSpec.describe Configuration do
         'sensors' => { 'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true } },
       )
       expect(described_class.current.advanced_groups.fetch('data')).to eq(
-        %w[ingest_settings],
+        %w[ingest_settings storage],
       )
     end
 
@@ -843,9 +862,9 @@ RSpec.describe Configuration do
       )
     end
 
-    it 'omits the data group in dashboard_only mode without a balcony sensor' do
+    it 'keeps the data group with storage in dashboard_only mode without a balcony sensor' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY })
-      expect(described_class.current.advanced_groups).not_to have_key('data')
+      expect(described_class.current.advanced_groups.fetch('data')).to eq(%w[storage])
     end
   end
 end
