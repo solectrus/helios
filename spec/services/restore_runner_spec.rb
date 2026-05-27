@@ -322,6 +322,52 @@ RSpec.describe RestoreRunner do
       expect { described_class.start(filename) }.to raise_error(described_class::Error, /already in progress/)
     end
 
+    # Issue #145: volume_path is host infrastructure. A backup carries the
+    # source host's paths in config.yaml; the target's paths must always win
+    # so restoring across hosts (Pi → Proxmox, etc.) doesn't write data into
+    # directories that don't exist or don't belong there.
+    context 'when restoring across hosts with diverging volume_path values' do
+      let(:backup_with_volume_paths) do
+        YAML.dump(
+          'postgresql' => { 'image' => 'postgres:18-alpine', 'volume_path' => '/old/source/postgres' },
+          'influxdb' => { 'image' => 'influxdb:2-alpine', 'volume_path' => '/old/source/influx',
+                          'token_admin' => 'tok' },
+        )
+      end
+
+      before do
+        File.binwrite(
+          File.join(data_path, 'helios', 'backups', filename),
+          tar_archive(
+            'helios/config.yaml' => backup_with_volume_paths,
+            'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'postgres dump',
+            'solectrus-influxdb-backup-2026-05-08/data.tar.gz' => 'influx backup',
+          ),
+        )
+      end
+
+      it "drops the backup's volume_path when the target uses the default mount" do
+        described_class.start(filename)
+
+        config = Configuration.load_file(Configuration.path)
+        expect(config['postgresql']).not_to have_key('volume_path')
+        expect(config['influxdb']).not_to have_key('volume_path')
+      end
+
+      it "forces the target's volume_path into the restored config when the target sets one" do
+        FileUtils.mkdir_p(File.dirname(Configuration.path))
+        File.write(Configuration.path, YAML.dump(
+                                         'postgresql' => { 'volume_path' => '/local/target/pg' },
+                                       ))
+
+        described_class.start(filename)
+
+        config = Configuration.load_file(Configuration.path)
+        expect(config.dig('postgresql', 'volume_path')).to eq('/local/target/pg')
+        expect(config['influxdb']).not_to have_key('volume_path')
+      end
+    end
+
     context 'with S3 destination' do
       let(:s3_client) { Aws::S3::Client.new(stub_responses: true, region: 'eu-central-1') }
 

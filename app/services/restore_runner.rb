@@ -163,9 +163,32 @@ class RestoreRunner < DetachedRunner
   end
 
   def prepare_restored_stack!
-    write_restored_configuration!(restored_configuration_data.deep_dup)
+    restored = restored_configuration_data.deep_dup
+    preserve_target_volume_paths!(restored)
+    write_restored_configuration!(restored)
     Export::Builder.new(Configuration.current).write!
     raise Error, error(:missing_token) if influx_admin_token.blank?
+  end
+
+  # `volume_path` is host infrastructure — the target's storage layout, not
+  # backup payload. Cross-host restores (e.g. Pi → Proxmox/LXC) would
+  # otherwise replay the source's absolute paths onto a system where they
+  # don't exist or don't belong. Force the target's value (or its absence,
+  # which means "use the default `<host_data_path>/<service>` mount") for
+  # every persistent service before writing the restored config to disk.
+  # See issue #145.
+  def preserve_target_volume_paths!(restored)
+    target = Configuration.current
+    Export::Compose.persistent_services.each do |service_class|
+      setting = service_class.config_keys.first
+      target_path = target.public_send(setting).volume_path
+
+      if target_path.present?
+        (restored[setting] ||= {})['volume_path'] = target_path
+      else
+        restored[setting]&.delete('volume_path')
+      end
+    end
   end
 
   def write_restored_configuration!(data)
