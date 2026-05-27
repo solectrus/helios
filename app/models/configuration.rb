@@ -186,11 +186,24 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # Load and parse a config.yaml file from disk, returning the raw hash. Returns
   # an empty hash when the file is missing or empty. Centralizes the YAML
   # loader options (permitted classes) shared with ConfigurationMigrator.
+  #
+  # The parsed data is cached process-wide, keyed by file mtime — every request
+  # builds a fresh Configuration instance (see `.current`) which used to re-parse
+  # the YAML. Each call returns a deep_dup so per-instance mutations
+  # (`#update`, `#save!`, ConfigurationMigrator) stay local; the atomic file
+  # rename in `#save!` / `write_atomic!` bumps mtime and the next loader sees
+  # the updated content.
   def self.load_file(path)
     return {} unless File.exist?(path)
 
+    mtime = File.mtime(path).to_f
+    Rails.cache.fetch([:configuration_data, path, mtime]) { parse_yaml_file(path) }.deep_dup
+  end
+
+  def self.parse_yaml_file(path)
     YAML.safe_load_file(path, permitted_classes: [Date]) || {}
   end
+  private_class_method :parse_yaml_file
 
   def self.singleton?(setting)
     setting.to_s.in?(SINGLETONS)
