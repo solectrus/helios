@@ -18,14 +18,17 @@ module Compose
       @service_comments = {}
     end
 
+    # The parsed @data is cached process-wide, keyed by file mtime — every
+    # render of /services hits 1 + 8 (rows) requests, each of which used to
+    # re-parse the YAML. Each call returns a deep_dup so per-instance mutations
+    # (add_service, remove_service, save) stay local; the disk write then
+    # changes mtime and the next loader sees the updated content.
     def load
       return self unless ::File.exist?(path)
 
-      content = ::File.read(path)
-      @data = YAML.safe_load(content, permitted_classes: [Symbol]) || {}
+      mtime = ::File.mtime(path).to_f
+      @data = Rails.cache.fetch([:compose_file_data, path, mtime]) { parse_yaml }.deep_dup
       self
-    rescue Psych::SyntaxError => e
-      raise ParseError, "Invalid YAML: #{e.message}"
     end
 
     def services
@@ -73,8 +76,12 @@ module Compose
       @data['services']&.delete(name.to_s)
     end
 
+    # Atomic write: a concurrent reader observing a partial truncated file
+    # would cache empty/partial YAML under the file's mtime via #load.
     def save
-      ::File.write(path, to_yaml)
+      tmp_path = "#{path}.tmp"
+      ::File.write(tmp_path, to_yaml)
+      ::File.rename(tmp_path, path)
     end
 
     def to_yaml
@@ -88,6 +95,12 @@ module Compose
     end
 
     private
+
+    def parse_yaml
+      YAML.safe_load_file(path, permitted_classes: [Symbol]) || {}
+    rescue Psych::SyntaxError => e
+      raise ParseError, "Invalid YAML: #{e.message}"
+    end
 
     def stringify_keys(hash)
       hash.deep_stringify_keys
