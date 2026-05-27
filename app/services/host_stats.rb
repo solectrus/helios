@@ -1,6 +1,12 @@
 module HostStats # rubocop:disable Metrics/ModuleLength
   Snapshot = Data.define(:cpu_percent, :cpu_cores, :ram_percent, :ram_free, :ram_total)
 
+  # Placeholder used by the navbar's HostStats::Component on initial render
+  # so a page render never pays for sampling. Real values are filled in by
+  # the immediate poll the Stimulus controller fires on first connect
+  # (when its polledAt value is still 0) and then every 5 s.
+  EMPTY_SNAPSHOT = Snapshot.new(nil, nil, nil, nil, nil).freeze
+
   # Cache briefly so concurrent renders and the 5 s poller don't each pay the
   # cost (cheap on Linux, expensive on macOS dev — sysctl + vm_stat shell-outs).
   CACHE_TTL_SECONDS = 1.0

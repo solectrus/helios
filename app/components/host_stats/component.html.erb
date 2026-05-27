@@ -1,4 +1,15 @@
+<%#
+  data-turbo-permanent: keep the previously polled values visible across
+  Turbo Drive navigations instead of swapping in a fresh server-rendered
+  empty snapshot every click. It also lets the Stimulus controller's
+  polledAt value (a data-* attribute on this element) survive
+  disconnect/reconnect, so the controller can skip the connect-time
+  refresh whenever the visible snapshot is still within the poll interval.
+%>
+
 <div
+  id="host-stats-wrapper"
+  data-turbo-permanent
   class="inline-flex cursor-default items-center gap-3 font-mono text-xs tabular-nums"
   data-controller="host-stats--component"
   data-host-stats--component-url-value="<%= helpers.host_stats_path %>"
