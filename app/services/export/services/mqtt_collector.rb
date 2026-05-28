@@ -30,8 +30,13 @@ module Export
       # Standalone topics (full mode) keep the collector running even when
       # no HELIOS sensor consumes MQTT — drop the gate and the collector
       # stops ingesting, leaving a gap in InfluxDB.
+      #
+      # Without an mqtt_host the collector would restart-loop trying to
+      # reach an empty broker, so we skip it (mappings stay in config.yaml,
+      # the section reappears once the host is filled in via the UI).
       def self.enabled?(configuration)
         return false if configuration.dashboard_only?
+        return false if configuration.mqtt&.mqtt_host.blank?
 
         configuration.mqtt_required? || configuration.mqtt_topics.any?
       end

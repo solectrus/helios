@@ -1506,6 +1506,54 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'with MQTT mappings but blank broker host' do
+    before do
+      configuration.update('mqtt', { 'mqtt_host' => '' })
+      configuration.add_mqtt_topic({
+                                     'topic' => 'foo/bar/baz',
+                                     'measurement' => 'test',
+                                     'field' => 'test',
+                                     'type' => 'integer',
+                                   })
+      described_class.new(Configuration.current).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'omits the mqtt-collector service from compose.yaml' do
+      compose = Compose.load
+      expect(compose.services.names).not_to include('mqtt-collector')
+    end
+
+    it 'omits the MQTT broker section from .env' do
+      env = Env.load
+      expect(env['MQTT_HOST']).to be_nil
+      expect(env['MQTT_PORT']).to be_nil
+      expect(env['MAPPING_0_TOPIC']).to be_nil
+    end
+
+    it 'retains the mapping in config.yaml for later UI editing' do
+      expect(Configuration.current.mqtt_topics).to eq([
+                                                        {
+                                                          'topic' => 'foo/bar/baz',
+                                                          'measurement' => 'test',
+                                                          'field' => 'test',
+                                                          'type' => 'integer',
+                                                        },
+                                                      ])
+    end
+
+    it 're-emits the collector once the host is filled in' do
+      configuration.update('mqtt', configuration.mqtt.to_h.merge('mqtt_host' => '192.168.1.50'))
+      described_class.new(Configuration.current).write!
+      compose = Compose.load
+      env = Env.load
+      expect(compose.services.names).to include('mqtt-collector')
+      expect(env['MQTT_HOST']).to eq('192.168.1.50')
+      expect(env['MAPPING_0_TOPIC']).to eq('foo/bar/baz')
+    end
+  end
+
   describe 'power-splitter service' do
     before do
       configuration.update_sensor('grid_import_power', { 'source' => 'senec' })
