@@ -148,5 +148,8 @@ Rails.application.routes.draw do
     end
   end
 
+  # CSV import (SENEC, Sungrow, SolarEdge) — full page.
+  resource :csv_imports, only: %i[show create destroy], path: 'csv-imports'
+
   root to: redirect('/services')
 end

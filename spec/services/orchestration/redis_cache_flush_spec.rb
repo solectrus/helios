@@ -1,7 +1,7 @@
 RSpec.describe Orchestration::RedisCacheFlush do
   describe '.call' do
     it 'runs FLUSHALL and SAVE in a running container' do
-      container = instance_double(Orchestration::Container, running?: true)
+      container = instance_double(Orchestration::Container, running?: true, name: 'solectrus-redis-1')
       allow(container).to receive(:exec).and_return([[], [], 0])
 
       expect(described_class.call(container)).to be(true)
@@ -21,7 +21,7 @@ RSpec.describe Orchestration::RedisCacheFlush do
     end
 
     it 'returns false and skips SAVE when FLUSHALL fails' do
-      container = instance_double(Orchestration::Container, running?: true)
+      container = instance_double(Orchestration::Container, running?: true, name: 'solectrus-redis-1')
       allow(container).to receive(:exec)
         .with(%w[redis-cli FLUSHALL])
         .and_return([[], ['error'], 1])
@@ -32,7 +32,7 @@ RSpec.describe Orchestration::RedisCacheFlush do
     end
 
     it 'returns false on Docker errors' do
-      container = instance_double(Orchestration::Container, running?: true)
+      container = instance_double(Orchestration::Container, running?: true, name: 'solectrus-redis-1')
       allow(container).to receive(:exec).and_raise(Docker::Error::DockerError)
 
       expect(described_class.call(container)).to be(false)

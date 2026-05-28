@@ -37,64 +37,75 @@
                   data: { turbo: false } do %>
         <i class="fa-solid fa-download"></i>
       <% end %>
-      <div class="dropdown dropdown-end">
-        <div
-          tabindex="0"
-          role="button"
-          class="btn btn-outline btn-square"
-          title="<%= t('backups.index.actions') %>"
-          aria-label="<%= t('backups.index.actions') %>"
-        >
-          <i class="fa-solid fa-ellipsis-vertical"></i>
+      <% if actions_disabled? %>
+        <div class="tooltip tooltip-left" data-tip="<%= actions_disabled_reason %>">
+          <button
+            type="button"
+            class="btn btn-outline btn-square"
+            disabled
+            aria-label="<%= t('backups.index.actions') %>"
+          >
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+          </button>
         </div>
+      <% else %>
+        <div class="dropdown dropdown-end">
+          <div
+            tabindex="0"
+            role="button"
+            class="btn btn-outline btn-square"
+            title="<%= t('backups.index.actions') %>"
+            aria-label="<%= t('backups.index.actions') %>"
+          >
+            <i class="fa-solid fa-ellipsis-vertical"></i>
+          </div>
 
-        <div
-          tabindex="0"
-          class="
-            dropdown-content bg-base-300 ring-base-content/15 rounded-box z-10 mt-1 w-60 space-y-1 p-2 shadow-2xl
-            ring-1
-          "
-        >
-          <%= button_to helpers.backup_restore_path(backup),
-                        method: :post,
-                        class: "btn btn-ghost w-full justify-start gap-3 text-warning",
-                        data: { turbo_submits_with: t('backups.index.restore_in_progress') },
-                        form: {
-                          class: "w-full",
-                          data: {
-                            turbo_confirm: t('backups.index.restore_confirm',
-                                             date: l(backup.created_at, format: :backup_date),
-                                             time: l(backup.created_at, format: :backup_time)),
-                            turbo_confirm_variant: 'error',
-                            turbo_confirm_button: t('backups.index.restore_confirm_button'),
-                            turbo_frame: "_top",
-                          },
-                        },
-                        disabled: actions_disabled? do %>
-            <i class="fa-solid fa-arrow-rotate-left fa-fw"></i>
-            <%= t('backups.index.restore_existing') %>
-          <% end %>
+          <div
+            tabindex="0"
+            class="
+              dropdown-content bg-base-300 ring-base-content/15 rounded-box z-10 mt-1 w-60 space-y-1 p-2 shadow-2xl
+              ring-1
+            "
+          >
+            <%= button_to helpers.backup_restore_path(backup),
+                          method: :post,
+                          class: "btn btn-ghost w-full justify-start gap-3 text-warning",
+                          data: { turbo_submits_with: t('backups.index.restore_in_progress') },
+                          form: {
+                            class: "w-full",
+                            data: {
+                              turbo_confirm: t('backups.index.restore_confirm',
+                                               date: l(backup.created_at, format: :backup_date),
+                                               time: l(backup.created_at, format: :backup_time)),
+                              turbo_confirm_variant: 'error',
+                              turbo_confirm_button: t('backups.index.restore_confirm_button'),
+                              turbo_frame: "_top",
+                            },
+                          } do %>
+              <i class="fa-solid fa-arrow-rotate-left fa-fw"></i>
+              <%= t('backups.index.restore_existing') %>
+            <% end %>
 
-          <%= button_to helpers.backup_path(backup),
-                        method: :delete,
-                        class: "btn btn-ghost w-full justify-start gap-3 text-error",
-                        form: {
-                          class: "w-full",
-                          data: {
-                            turbo_confirm: t('backups.index.delete_confirm',
-                                             date: l(backup.created_at, format: :backup_date),
-                                             time: l(backup.created_at, format: :backup_time)),
-                            turbo_confirm_variant: 'error',
-                            turbo_confirm_button: t('backups.index.delete_confirm_button'),
-                            turbo_frame: "_top",
-                          },
-                        },
-                        disabled: actions_disabled? do %>
-            <i class="fa-solid fa-trash fa-fw"></i>
-            <%= t('backups.index.delete_existing') %>
-          <% end %>
+            <%= button_to helpers.backup_path(backup),
+                          method: :delete,
+                          class: "btn btn-ghost w-full justify-start gap-3 text-error",
+                          form: {
+                            class: "w-full",
+                            data: {
+                              turbo_confirm: t('backups.index.delete_confirm',
+                                               date: l(backup.created_at, format: :backup_date),
+                                               time: l(backup.created_at, format: :backup_time)),
+                              turbo_confirm_variant: 'error',
+                              turbo_confirm_button: t('backups.index.delete_confirm_button'),
+                              turbo_frame: "_top",
+                            },
+                          } do %>
+              <i class="fa-solid fa-trash fa-fw"></i>
+              <%= t('backups.index.delete_existing') %>
+            <% end %>
+          </div>
         </div>
-      </div>
+      <% end %>
     <% end %>
   </div>
 </div>

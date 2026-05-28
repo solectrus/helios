@@ -1,0 +1,17 @@
+en:
+  heading_running: 'Import running'
+  heading_succeeded: 'Import complete'
+  heading_failed: 'Import failed'
+  phases:
+    preparing: 'Preparing'
+    importing: 'Importing CSV files'
+    flushing: 'Flush Redis cache'
+    truncating: 'Reset daily summaries'
+  state:
+    done: 'Completed'
+    current: 'In progress'
+    pending: 'Pending'
+  success_summary:
+    one: '1 CSV file was imported.'
+    other: '%{count} CSV files were imported.'
+  dismiss: 'OK'

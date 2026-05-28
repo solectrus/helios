@@ -9,6 +9,7 @@ RSpec.describe 'Backups', :with_admin_password do
     login
     allow(Rails.configuration).to receive(:data_path).and_return(data_path)
     allow(RestoreRunner).to receive(:in_progress).and_return(nil)
+    allow(CsvImportRunner).to receive(:in_progress?).and_return(false)
     # Default to "backup available" so the create section renders; the
     # preconditions-unmet cases override this in their own examples.
     allow(BackupRunner).to receive_messages(

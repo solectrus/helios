@@ -22,6 +22,11 @@ export default class extends Controller {
   click(event: Event) {
     const button = event.currentTarget as HTMLButtonElement;
 
+    // Don't engage the loading state if the form is going to fail HTML5
+    // validation — the native tooltip ("please fill out this field") will
+    // show and the form won't submit, so a spinning button would just lie.
+    if (button.form && !button.form.checkValidity()) return;
+
     // Lock current width so the button doesn't reflow when its label changes.
     button.style.minWidth = `${button.getBoundingClientRect().width}px`;
 

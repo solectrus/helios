@@ -147,6 +147,7 @@ class RestoreRunner < DetachedRunner
 
   def validate_locks!
     raise Error, error(:backup_in_progress) if BackupRunner.running?
+    raise Error, error(:csv_import_in_progress) if CsvImportRunner.in_progress?
     raise Error, error(:already_in_progress) if self.class.in_progress
   end
 

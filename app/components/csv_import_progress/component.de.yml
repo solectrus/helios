@@ -1,0 +1,17 @@
+de:
+  heading_running: 'Import läuft'
+  heading_succeeded: 'Import abgeschlossen'
+  heading_failed: 'Import fehlgeschlagen'
+  phases:
+    preparing: 'Vorbereitung'
+    importing: 'CSV-Dateien importieren'
+    flushing: 'Redis-Cache leeren'
+    truncating: 'Tageszusammenfassungen zurücksetzen'
+  state:
+    done: 'Abgeschlossen'
+    current: 'Läuft'
+    pending: 'Ausstehend'
+  success_summary:
+    one: '1 CSV-Datei wurde übernommen.'
+    other: '%{count} CSV-Dateien wurden übernommen.'
+  dismiss: 'OK'

@@ -42,6 +42,7 @@ RSpec.describe RestoreRunner do
     )
     allow(Export::Builder).to receive(:new).and_return(instance_double(Export::Builder, write!: nil))
     allow(BackupRunner).to receive(:running?).and_return(false)
+    allow(CsvImportRunner).to receive_messages(running?: false, in_progress?: false)
     allow(Orchestration::Runner).to receive(:host_data_path).and_return(host_data_path)
     allow(Compose).to receive(:load).and_return(
       instance_double(

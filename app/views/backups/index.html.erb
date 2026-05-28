@@ -124,7 +124,12 @@
             </div>
 
             <div class="border-base-content/10 relative border-t px-6 py-4 md:px-10 md:py-5">
-              <% if @backup_unavailable_reason %>
+              <% if @csv_import_running %>
+                <p class="text-warning text-sm">
+                  <%= t('.unavailable_csv_import_html',
+                        link: link_to(t('.csv_import_link_text'), csv_imports_path, class: 'underline')) %>
+                </p>
+              <% elsif @backup_unavailable_reason %>
                 <p class="text-warning text-sm"><%= t('.unavailable', message: @backup_unavailable_reason) %></p>
               <% else %>
                 <p class="text-base-content/60 text-sm leading-relaxed"><%= t('.duration_hint') %></p>
@@ -209,7 +214,7 @@
                   <%= render BackupRow::Component.new(
                 backup:,
                 restore_in_progress: @restore_in_progress&.filename == backup.filename ? @restore_in_progress : nil,
-                actions_disabled: @backup_in_progress || @restore_in_progress,
+                actions_disabled_reason: @actions_disabled_reason,
               ) %>
                 </li>
               <% end %>

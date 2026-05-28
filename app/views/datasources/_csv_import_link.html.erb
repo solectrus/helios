@@ -1,0 +1,30 @@
+<article
+  class="
+    border-base-content/25 hover:border-primary/60 group relative flex h-full flex-col border-y border-dashed
+    transition-colors duration-300 md:rounded-2xl md:border
+  "
+>
+  <div class="flex flex-1 flex-col p-7">
+    <div class="flex items-start justify-between">
+      <i aria-hidden="true" class="fa-solid fa-file-csv text-primary text-2xl"></i>
+
+      <i
+        aria-hidden="true"
+        class="
+          fa-solid fa-arrow-right text-base-content/25 group-hover:text-primary text-sm transition-colors
+          duration-200
+        "
+      ></i>
+    </div>
+
+    <h2 class="text-base-content mt-6 text-xl leading-tight font-semibold tracking-tight text-balance">
+      <%= link_to t('datasources.show.csv_import.title'), csv_imports_path,
+                  data: { turbo_frame: "_top" },
+                  class: "before:absolute before:inset-0 focus:outline-none focus-visible:before:ring-2 focus-visible:before:ring-primary/40 md:before:rounded-2xl" %>
+    </h2>
+
+    <p class="text-base-content/65 mt-2 max-w-[42ch] text-base leading-relaxed">
+      <%= t('datasources.show.csv_import.body') %>
+    </p>
+  </div>
+</article>

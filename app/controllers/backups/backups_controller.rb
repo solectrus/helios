@@ -75,12 +75,25 @@ module Backups
     def load_runner_state!
       @backup_in_progress = BackupRunner.in_progress
       @restore_in_progress = RestoreRunner.in_progress
+      @csv_import_running = CsvImportRunner.in_progress?
       @in_progress = @backup_in_progress || @restore_in_progress
+      @actions_disabled_reason = actions_disabled_reason
       failures = RunnerLog.messages_for(%i[backup restore])
       @backup_failure = failures[:backup]
       @restore_failure = failures[:restore]
       @completion = evaluate_completion
       @progress_kind = progress_kind
+    end
+
+    # Localized reason the per-backup action dropdown is disabled, or nil
+    # if actions are available. Determines both the disabled state of the
+    # trigger and its hover tooltip.
+    def actions_disabled_reason
+      return t('backups.index.actions_disabled.backup_in_progress') if @backup_in_progress
+      return t('backups.index.actions_disabled.restore_in_progress') if @restore_in_progress
+      return t('backups.index.actions_disabled.csv_import_in_progress') if @csv_import_running
+
+      nil
     end
 
     def progress_kind

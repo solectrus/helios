@@ -119,12 +119,21 @@ class BackupRunner < DetachedRunner
   end
 
   def unavailable_reason
-    return reason(:env_missing) if env.nil?
-    return reason(:config_missing) unless ::File.exist?(Configuration.path)
-    return reason(:influx_token_missing) if env['INFLUX_ADMIN_TOKEN'].blank?
-    return reason(:destination_unconfigured) if BackupRepository.host_directory.blank?
-    return reason(:postgres_not_running) unless postgres_container_name
-    return reason(:influxdb_not_running) unless influxdb_container_name
+    key = unavailable_reason_key
+    key && reason(key)
+  end
+
+  def unavailable_reason_key
+    # CSV import is checked first to match `validate!` priority — otherwise a
+    # transient env hiccup (e.g. token reload mid-import) would show a stale
+    # config error in the UI while the actual block is the running import.
+    return :csv_import_in_progress if CsvImportRunner.in_progress?
+    return :env_missing if env.nil?
+    return :config_missing unless ::File.exist?(Configuration.path)
+    return :influx_token_missing if env['INFLUX_ADMIN_TOKEN'].blank?
+    return :destination_unconfigured if BackupRepository.host_directory.blank?
+    return :postgres_not_running unless postgres_container_name
+    return :influxdb_not_running unless influxdb_container_name
 
     nil
   end
@@ -142,6 +151,7 @@ class BackupRunner < DetachedRunner
 
   def validate!
     raise Error, error(:restore_in_progress) if RestoreRunner.running?
+    raise Error, error(:csv_import_in_progress) if CsvImportRunner.in_progress?
 
     reason = unavailable_reason
     raise Error, reason if reason

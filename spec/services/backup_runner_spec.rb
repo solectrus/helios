@@ -29,6 +29,7 @@ RSpec.describe BackupRunner do
       instance_double(Orchestration::Container, name: 'solectrus-influxdb-1'),
     )
     allow(RestoreRunner).to receive(:running?).and_return(false)
+    allow(CsvImportRunner).to receive_messages(running?: false, in_progress?: false)
 
     allow(Time).to receive(:current).and_return(Time.zone.local(2026, 5, 8, 14, 30, 0))
 

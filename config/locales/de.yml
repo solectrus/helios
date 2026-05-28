@@ -51,6 +51,51 @@ de:
         success: 'Redis-Cache geleert.'
         failure: 'Redis-Cache konnte nicht geleert werden. Läuft der Redis-Dienst?'
 
+  csv_imports:
+    show:
+      title: 'Historische Daten importieren'
+      description: 'Messwerte aus CSV-Dateien nachträglich in InfluxDB übernehmen.'
+      back: 'Zurück zu den Datenquellen'
+    form:
+      instructions_html: 'Die von den unterstützten Portalen exportierten CSV-Dateien können entweder einzeln oder als <strong>ZIP-Archiv</strong> (empfohlen) hochgeladen werden. Das Format wird automatisch erkannt. Identische Datenpunkte werden überschrieben statt dupliziert, ein erneuter Import ist also gefahrlos.'
+      formats_heading: 'Unterstützte Formate'
+      formats:
+        senec: 'SENEC (mein-senec.de)'
+        sungrow: 'Sungrow (iSolarCloud)'
+        solaredge: 'SolarEdge (Monitoring)'
+      submit: 'Import starten'
+      submitting: 'Wird hochgeladen…'
+      unavailable: 'Import derzeit nicht möglich: %{reason}'
+    runner:
+      errors:
+        already_in_progress: 'Es läuft bereits ein CSV-Import.'
+        exit_pending: 'Ein vorheriger Import-Container ist noch nicht aufgeräumt. Bitte die Seite neu laden.'
+        backup_in_progress: 'Eine Datensicherung läuft gerade. Bitte später erneut versuchen.'
+        restore_in_progress: 'Eine Wiederherstellung läuft gerade. Bitte später erneut versuchen.'
+        image_pull_failed: 'Das csv-importer-Image konnte nicht geladen werden: %{output}'
+        start_failed: 'Der csv-importer konnte nicht gestartet werden: %{output}'
+        nonzero_exit: 'csv-importer wurde mit Exit-Code %{code} beendet.'
+        phases_failed_header: 'Import war erfolgreich, aber die folgenden Schritte sind fehlgeschlagen:'
+        redis_flush_failed: '• Redis-Cache konnte nicht geleert werden.'
+        summaries_reset_failed: '• Tageszusammenfassungen konnten nicht zurückgesetzt werden.'
+      unavailable:
+        no_csv_files: 'Keine CSV-Dateien im Upload-Verzeichnis gefunden.'
+        env_missing: '.env-Datei fehlt.'
+        influx_target_missing: 'InfluxDB-Zugangsdaten unvollständig.'
+        influxdb_not_running: 'InfluxDB-Dienst läuft nicht.'
+        postgresql_not_running: 'PostgreSQL-Dienst läuft nicht.'
+    uploader:
+      errors:
+        missing: 'Keine Datei ausgewählt.'
+        invalid_extension: 'Es muss ein ZIP-Archiv (.zip) oder eine CSV-Datei (.csv) hochgeladen werden.'
+        too_large: 'Die Datei ist zu groß (maximal 100 MB).'
+        invalid_zip: 'Die ZIP-Datei ist beschädigt oder kein gültiges Archiv.'
+        no_csv: 'Das ZIP-Archiv enthält keine CSV-Dateien.'
+        extract_failed: 'Das Entpacken ist fehlgeschlagen: %{message}'
+        too_large_extracted: 'Das ZIP-Archiv enthält zu viele oder zu große Daten (entpackt mehr als 1 GB).'
+        unsafe_entry: 'Eintrag „%{name}“ würde außerhalb des Zielverzeichnisses landen und wurde abgelehnt.'
+        write_failed: 'Datei konnte nicht gespeichert werden: %{message}'
+
   orchestration:
     postgresql_upgrade:
       not_upgradable: 'Es ist kein PostgreSQL-Upgrade verfügbar.'
@@ -71,6 +116,9 @@ de:
         title: 'Noch keine Datenquellen in Verwendung'
         body: 'Sobald du Sensoren aktivierst, erscheinen hier ihre Datenquellen zur Konfiguration.'
         cta: 'Sensoren öffnen'
+      csv_import:
+        title: 'Historische Daten importieren'
+        body: 'Einmaliger Import historischer Messwerte aus CSV-Dateien (SENEC, Sungrow, SolarEdge).'
     mqtt_topics:
       index:
         title: 'MQTT-Topics'
@@ -183,6 +231,12 @@ de:
         bundling: 'Archiv wird gepackt…'
       duration_hint: 'Läuft im Hintergrund und kann bei größerer Datenmenge mehrere Minuten dauern. Du kannst die Seite verlassen, die Sicherung läuft weiter. SOLECTRUS bleibt währenddessen normal nutzbar. Die fünf neuesten Sicherungen werden aufbewahrt, ältere automatisch entfernt.'
       unavailable: 'Sicherung derzeit nicht möglich: %{message}'
+      unavailable_csv_import_html: 'Sicherung derzeit nicht möglich: Ein %{link} läuft gerade.'
+      csv_import_link_text: 'CSV-Import'
+      actions_disabled:
+        backup_in_progress: 'Eine Sicherung läuft gerade.'
+        restore_in_progress: 'Eine Wiederherstellung läuft gerade.'
+        csv_import_in_progress: 'Ein CSV-Import läuft gerade.'
       unavailable_title: 'Sicherung noch nicht möglich'
       unavailable_description: 'Eine Sicherung umfasst die Datenbanken von InfluxDB und PostgreSQL. Sobald beide Dienste eingerichtet sind und laufen, kannst du hier eine Sicherung erstellen.'
       existing_title: 'Vorhandene Sicherungen'
@@ -239,6 +293,7 @@ de:
     runner:
       errors:
         restore_in_progress: 'Eine Wiederherstellung läuft bereits.'
+        csv_import_in_progress: 'Ein CSV-Import läuft gerade. Bitte erneut versuchen, sobald er abgeschlossen ist.'
         already_in_progress: 'Eine Sicherung läuft bereits.'
         image_pull_failed: 'Hintergrundprozess konnte nicht vorbereitet werden: %{output}'
         start_failed: 'Hintergrundprozess konnte nicht gestartet werden: %{output}'
@@ -251,9 +306,11 @@ de:
         destination_unconfigured: 'Sicherungsziel ist noch nicht vollständig konfiguriert.'
         postgres_not_running: 'PostgreSQL-Dienst läuft nicht.'
         influxdb_not_running: 'InfluxDB-Dienst läuft nicht.'
+        csv_import_in_progress: 'Ein CSV-Import läuft gerade.'
     restorer:
       errors:
         backup_in_progress: 'Eine Sicherung läuft bereits.'
+        csv_import_in_progress: 'Ein CSV-Import läuft gerade. Bitte erneut versuchen, sobald er abgeschlossen ist.'
         already_in_progress: 'Eine Wiederherstellung läuft bereits.'
         backup_not_found: 'Sicherungsdatei wurde nicht gefunden.'
         missing_config: 'Sicherung enthält keine helios/config.yaml.'

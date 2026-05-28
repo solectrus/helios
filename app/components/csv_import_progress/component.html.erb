@@ -1,0 +1,79 @@
+<section
+  class="bg-base-100 border-base-content/10 relative overflow-hidden border-y shadow-sm md:rounded-2xl md:border"
+  aria-live="polite"
+>
+  <div
+    class="
+      pointer-events-none absolute -top-32 -right-32 h-72 w-72 rounded-full bg-linear-to-br to-transparent blur-3xl
+      <%= header_glow_class %>
+    "
+    aria-hidden="true"
+  ></div>
+
+  <div class="relative space-y-8 p-6 md:p-10">
+    <header>
+      <h2 class="text-2xl font-semibold tracking-tight md:text-3xl"><%= heading %></h2>
+    </header>
+
+    <% if failed? && error_message_text.present? %>
+      <div class="bg-base-300 max-h-96 overflow-auto rounded-lg p-4">
+        <pre class="ligatures-none text-error font-mono text-xs leading-relaxed"><%= error_message_text %></pre>
+      </div>
+    <% end %>
+
+    <% if show_steps? %>
+      <ol class="space-y-4">
+        <% steps.each do |step| %>
+          <li class="flex items-center gap-4">
+            <% case step.state %>
+            <% when :done %>
+              <span
+                class="text-success flex h-7 w-7 shrink-0 items-center justify-center"
+                aria-label="<%= t('.state.done') %>"
+              >
+                <i class="fa-solid fa-circle-check text-xl" aria-hidden="true"></i>
+              </span>
+              <span class="text-base-content/80"><%= step.label %></span>
+            <% when :current %>
+              <span class="flex h-7 w-7 shrink-0 items-center justify-center" aria-label="<%= t('.state.current') %>">
+                <span class="loading loading-spinner loading-sm text-primary" aria-hidden="true"></span>
+              </span>
+              <span class="font-semibold"><%= step.label %></span>
+              <% if importing_progress_value %>
+                <progress
+                  class="progress progress-primary h-2 flex-1 basis-0"
+                  value="<%= importing_progress_value %>"
+                  max="100"
+                ></progress>
+                <span class="text-base-content/70 w-12 text-right tabular-nums">
+                  <%= number_to_percentage(importing_progress_value, precision: 0) %>
+                </span>
+              <% end %>
+            <% else %>
+              <span
+                class="text-base-content/30 flex h-7 w-7 shrink-0 items-center justify-center"
+                aria-label="<%= t('.state.pending') %>"
+              >
+                <i class="fa-regular fa-circle text-lg" aria-hidden="true"></i>
+              </span>
+              <span class="text-base-content/50"><%= step.label %></span>
+            <% end %>
+          </li>
+        <% end %>
+      </ol>
+    <% end %>
+
+    <% if success_summary %>
+      <p class="text-base-content text-base"><%= success_summary %></p>
+    <% end %>
+
+    <% unless running? %>
+      <div class="border-base-content/10 flex justify-end border-t pt-5">
+        <%= button_to t('.dismiss'),
+                      helpers.csv_imports_path,
+                      method: :delete,
+                      class: 'btn btn-outline' %>
+      </div>
+    <% end %>
+  </div>
+</section>

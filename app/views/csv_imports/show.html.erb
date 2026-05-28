@@ -1,0 +1,48 @@
+<%#
+  Lazy lookups (t('.…')) inside the shared/configuration_page yield-block resolve against
+  the partial's scope instead of this template's, so we eagerly resolve them up front.
+%>
+
+<% page_title = t('.title')
+   page_description = t('.description')
+   back_label = t('.back') %>
+
+<% content_for :title, page_title %>
+
+<%= render "shared/configuration_page", active_tab: :datasources do %>
+  <%= link_to datasources_path,
+              class: "text-base-content/60 hover:text-base-content focus-visible:text-base-content inline-flex items-center gap-1.5 text-sm",
+              data: { turbo_frame: "_top" } do %>
+    <i class="fa-solid fa-arrow-left text-xs"></i>
+    <%= back_label %>
+  <% end %>
+
+  <h1 class="mt-3 mb-2 text-3xl font-semibold tracking-tight"><%= page_title %></h1>
+
+  <p class="text-base-content/60 mb-6 max-w-prose text-sm"><%= page_description %></p>
+
+  <%# Inner turbo-frame so auto-reload swaps only the dynamic body, not the sidebar around it %>
+  <%= turbo_frame_tag "csv-import-content" do %>
+    <% if @running %>
+      <div
+        data-controller="auto-reload"
+        data-auto-reload-interval-value="3000"
+        data-auto-reload-url-value="<%= csv_imports_path %>"
+        class="hidden"
+      ></div>
+    <% end %>
+
+    <% if @running %>
+      <%= render CsvImportProgress::Component.new(state: :running, progress: @progress) %>
+    <% elsif @upload_error %>
+      <%# Upload validation error wins over stale success/error state from a previous run %>
+      <%= render "form", upload_error: @upload_error, unavailable_reason: @unavailable_reason %>
+    <% elsif @error_message %>
+      <%= render CsvImportProgress::Component.new(state: :failed, error_message: @error_message) %>
+    <% elsif @success_count %>
+      <%= render CsvImportProgress::Component.new(state: :succeeded, success_count: @success_count) %>
+    <% else %>
+      <%= render "form", upload_error: @upload_error, unavailable_reason: @unavailable_reason %>
+    <% end %>
+  <% end %>
+<% end %>

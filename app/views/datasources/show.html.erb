@@ -10,6 +10,8 @@
       <% Configuration::SOURCE_CONFIGS.each do |source| %>
         <%= render SettingSection::Component.new(setting: source, configuration: @configuration) %>
       <% end %>
+
+      <%= render "csv_import_link" %>
     </div>
   <% else %>
     <% sources = @configuration.active_sources %>
@@ -22,6 +24,8 @@
             <%= render SettingSection::Component.new(setting: source, configuration: @configuration) %>
           <% end %>
         <% end %>
+
+        <%= render "csv_import_link" %>
       </div>
     <% else %>
       <div class="max-w-2xl py-8 md:py-12">

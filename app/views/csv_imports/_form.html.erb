@@ -1,0 +1,50 @@
+<% if upload_error.present? %>
+  <div class="alert alert-error" role="alert">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+
+    <span><%= upload_error %></span>
+  </div>
+<% end %>
+
+<section class="space-y-6">
+  <p class="text-base-content/80 text-base leading-relaxed"><%= t('.instructions_html') %></p>
+
+  <div class="space-y-2">
+    <p class="text-base-content/80 text-base font-medium"><%= t('.formats_heading') %></p>
+
+    <ul class="text-base-content/70 list-inside list-disc space-y-1 text-base">
+      <li><%= t('.formats.senec') %></li>
+      <li><%= t('.formats.sungrow') %></li>
+      <li><%= t('.formats.solaredge') %></li>
+    </ul>
+  </div>
+
+  <% if unavailable_reason %>
+    <p class="text-warning text-base"><%= t('.unavailable', reason: unavailable_reason) %></p>
+  <% else %>
+    <%= form_with url: csv_imports_path,
+              method: :post,
+              multipart: true,
+              data: { turbo: false } do |f| %>
+      <div class="space-y-4">
+        <%= f.file_field :file,
+                     accept: ".zip,.csv",
+                     required: true,
+                     class: "file-input file-input-bordered w-full" %>
+
+        <button
+          type="submit"
+          class="btn btn-primary w-full md:w-auto"
+          data-controller="loading"
+          data-action="click->loading#click"
+          data-loading-text-value="<%= t('.submitting') %>"
+          data-loading-spinner-value="loading loading-spinner loading-sm"
+        >
+          <i class="fa-solid fa-upload"></i>
+
+          <%= t('.submit') %>
+        </button>
+      </div>
+    <% end %>
+  <% end %>
+</section>
