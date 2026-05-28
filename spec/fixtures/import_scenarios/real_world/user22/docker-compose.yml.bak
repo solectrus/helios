@@ -1,0 +1,618 @@
+services:
+  dashboard:
+    image: ghcr.io/solectrus/solectrus:1-0-beta
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - 3000:3000
+    environment:
+      - TZ
+      - APP_HOST
+      - FORCE_SSL
+      - SECRET_KEY_BASE
+      - WEB_CONCURRENCY
+      - INSTALLATION_DATE
+      - ADMIN_PASSWORD
+      - FRAME_ANCESTORS
+      - UI_THEME
+      - CO2_EMISSION_FACTOR
+      - DB_HOST=postgresql
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_USER=postgres
+      - REDIS_URL
+      - INFLUX_HOST
+      - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_POLL_INTERVAL
+      - INFLUX_SENSOR_INVERTER_POWER
+      - INFLUX_SENSOR_INVERTER_POWER_1
+      - INFLUX_SENSOR_INVERTER_POWER_2
+      - INFLUX_SENSOR_INVERTER_POWER_3
+      - INFLUX_SENSOR_INVERTER_POWER_4
+      - INFLUX_SENSOR_INVERTER_POWER_5
+      - INFLUX_SENSOR_HOUSE_POWER
+      - INFLUX_SENSOR_GRID_IMPORT_POWER
+      - INFLUX_SENSOR_GRID_EXPORT_POWER
+      - INFLUX_SENSOR_BATTERY_CHARGING_POWER
+      - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
+      - INFLUX_SENSOR_BATTERY_SOC
+      - INFLUX_SENSOR_WALLBOX_POWER
+      - INFLUX_SENSOR_WALLBOX_CAR_CONNECTED
+      - INFLUX_SENSOR_CASE_TEMP
+      - INFLUX_SENSOR_INVERTER_POWER_FORECAST
+      - INFLUX_SENSOR_SYSTEM_STATUS
+      - INFLUX_SENSOR_SYSTEM_STATUS_OK
+      - INFLUX_SENSOR_GRID_EXPORT_LIMIT
+      - INFLUX_SENSOR_HEATPUMP_POWER
+      - INFLUX_SENSOR_CAR_BATTERY_SOC
+      - INFLUX_SENSOR_CUSTOM_POWER_01
+      - INFLUX_SENSOR_CUSTOM_POWER_02
+      - INFLUX_SENSOR_CUSTOM_POWER_03
+      - INFLUX_SENSOR_CUSTOM_POWER_04
+      - INFLUX_SENSOR_CUSTOM_POWER_05
+      - INFLUX_SENSOR_CUSTOM_POWER_06
+      - INFLUX_SENSOR_CUSTOM_POWER_07
+      - INFLUX_SENSOR_CUSTOM_POWER_08
+      - INFLUX_SENSOR_CUSTOM_POWER_09
+      - INFLUX_SENSOR_CUSTOM_POWER_10
+      - INFLUX_SENSOR_CUSTOM_POWER_11
+      - INFLUX_SENSOR_CUSTOM_POWER_12
+      - INFLUX_SENSOR_CUSTOM_POWER_13
+      - INFLUX_SENSOR_CUSTOM_POWER_14
+      - INFLUX_SENSOR_CUSTOM_POWER_15
+      - INFLUX_SENSOR_CUSTOM_POWER_16
+      - INFLUX_SENSOR_CUSTOM_POWER_17
+      - INFLUX_SENSOR_CUSTOM_POWER_18
+      - INFLUX_SENSOR_CUSTOM_POWER_19
+      - INFLUX_SENSOR_CUSTOM_POWER_20
+      - INFLUX_EXCLUDE_FROM_HOUSE_POWER
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 3000 || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  ingest:
+    image: ghcr.io/solectrus/ingest:latest
+    environment:
+      - TZ
+      - INFLUX_SENSOR_INVERTER_POWER
+      - INFLUX_SENSOR_INVERTER_POWER_1
+      - INFLUX_SENSOR_INVERTER_POWER_2
+      - INFLUX_SENSOR_INVERTER_POWER_3
+      - INFLUX_SENSOR_INVERTER_POWER_4
+      - INFLUX_SENSOR_INVERTER_POWER_5
+      - INFLUX_SENSOR_GRID_IMPORT_POWER
+      - INFLUX_SENSOR_GRID_EXPORT_POWER
+      - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
+      - INFLUX_SENSOR_BATTERY_CHARGING_POWER
+      - INFLUX_SENSOR_WALLBOX_POWER
+      - INFLUX_SENSOR_HEATPUMP_POWER
+      - INFLUX_SENSOR_HOUSE_POWER
+      - INFLUX_EXCLUDE_FROM_HOUSE_POWER
+      - INFLUX_SENSOR_HOUSE_POWER_CALCULATED
+      - INFLUX_HOST=influxdb
+      - INFLUX_SCHEMA
+      - INFLUX_PORT
+      - STATS_PASSWORD=${ADMIN_PASSWORD}
+    volumes:
+      - ${INGEST_VOLUME_PATH}:/app/data
+    ports:
+      - 4567:4567
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  influxdb:
+    image: influxdb:2.7-alpine
+    ports:
+      - ${INFLUX_PORT}:8086
+    volumes:
+      - ${INFLUX_VOLUME_PATH}:/var/lib/influxdb2
+    environment:
+      - TZ
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUX_USERNAME}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_ADMIN_TOKEN}
+    command: influxd run --bolt-path /var/lib/influxdb2/influxd.bolt --engine-path /var/lib/influxdb2/engine --store disk
+    healthcheck:
+      test:
+        - CMD
+        - influx
+        - ping
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  postgresql:
+    image: postgres:17-alpine
+    environment:
+      - TZ
+      - POSTGRES_PASSWORD
+    volumes:
+      - ${DB_VOLUME_PATH}:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U postgres
+      interval: 10s
+      timeout: 20s
+      retries: 5
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  redis:
+    image: redis:8-alpine
+    environment:
+      - TZ
+    volumes:
+      - ${REDIS_VOLUME_PATH}:/data
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 10s
+      timeout: 20s
+      retries: 5
+      start_period: 60s
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  senec-collector:
+    image: ghcr.io/solectrus/senec-collector:latest
+    environment:
+      - TZ
+      - SENEC_ADAPTER
+      - SENEC_HOST
+      - SENEC_SCHEMA
+      - SENEC_INTERVAL
+      - SENEC_LANGUAGE
+      - SENEC_USERNAME
+      - SENEC_PASSWORD
+      - SENEC_IGNORE
+      - SENEC_SYSTEM_ID
+      - INFLUX_HOST=ingest
+      - INFLUX_SCHEMA
+      - INFLUX_PORT=4567
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_SENEC}
+    depends_on:
+      ingest:
+        condition: service_healthy
+    links:
+      - ingest
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  mqtt-collector:
+    image: ghcr.io/solectrus/mqtt-collector:latest
+    environment:
+      - TZ
+      - INFLUX_SCHEMA
+      - INFLUX_HOST=ingest
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_PORT=4567
+      - MQTT_HOST
+      - MQTT_PORT
+      - MQTT_SSL
+      - MQTT_USERNAME
+      - MQTT_PASSWORD
+      - MAPPING_0_TOPIC
+      - MAPPING_0_JSON_KEY
+      - MAPPING_0_JSON_PATH
+      - MAPPING_0_JSON_FORMULA
+      - MAPPING_0_MEASUREMENT
+      - MAPPING_0_MEASUREMENT_POSITIVE
+      - MAPPING_0_MEASUREMENT_NEGATIVE
+      - MAPPING_0_FIELD
+      - MAPPING_0_FIELD_POSITIVE
+      - MAPPING_0_FIELD_NEGATIVE
+      - MAPPING_0_TYPE
+      - MAPPING_0_MIN
+      - MAPPING_0_MAX
+      - ... # weitere Mappings bei Bedarf
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    restart: unless-stopped
+    depends_on:
+      ingest:
+        condition: service_healthy
+    links:
+      - ingest
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  forecast-collector:
+    image: ghcr.io/solectrus/forecast-collector:latest
+    environment:
+      - TZ
+      - FORECAST_PROVIDER
+      - FORECAST_LATITUDE
+      - FORECAST_LONGITUDE
+      - FORECAST_DECLINATION
+      - FORECAST_AZIMUTH
+      - FORECAST_KWP
+      - FORECAST_CONFIGURATIONS
+      - FORECAST_0_DECLINATION
+      - FORECAST_0_AZIMUTH
+      - FORECAST_0_KWP
+      - FORECAST_1_DECLINATION
+      - FORECAST_1_AZIMUTH
+      - FORECAST_1_KWP
+      - FORECAST_2_DECLINATION
+      - FORECAST_2_AZIMUTH
+      - FORECAST_2_KWP
+      - FORECAST_3_DECLINATION
+      - FORECAST_3_AZIMUTH
+      - FORECAST_3_KWP
+      - FORECAST_INTERVAL
+      - FORECAST_SOLAR_APIKEY
+      - FORECAST_DAMPING_MORNING
+      - FORECAST_DAMPING_EVENING
+      - FORECAST_HORIZON
+      - FORECAST_INVERTER
+      - SOLCAST_APIKEY
+      - SOLCAST_SITE
+      - SOLCAST_0_SITE
+      - SOLCAST_1_SITE
+      - INFLUX_HOST
+      - INFLUX_PORT
+      - INFLUX_SCHEMA
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  power-splitter:
+    image: ghcr.io/solectrus/power-splitter:latest
+    environment:
+      - TZ
+      - POWER_SPLITTER_INTERVAL
+      - INFLUX_HOST
+      - INFLUX_SCHEMA
+      - INFLUX_PORT
+      - INFLUX_TOKEN=${INFLUX_ADMIN_TOKEN}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_SENSOR_GRID_IMPORT_POWER
+      - INFLUX_SENSOR_HOUSE_POWER
+      - INFLUX_SENSOR_WALLBOX_POWER
+      - INFLUX_SENSOR_HEATPUMP_POWER
+      - INFLUX_SENSOR_CUSTOM_POWER_01
+      - INFLUX_SENSOR_CUSTOM_POWER_02
+      - INFLUX_SENSOR_CUSTOM_POWER_03
+      - INFLUX_SENSOR_CUSTOM_POWER_04
+      - INFLUX_SENSOR_CUSTOM_POWER_05
+      - INFLUX_SENSOR_CUSTOM_POWER_06
+      - INFLUX_SENSOR_CUSTOM_POWER_07
+      - INFLUX_SENSOR_CUSTOM_POWER_08
+      - INFLUX_SENSOR_CUSTOM_POWER_09
+      - INFLUX_SENSOR_CUSTOM_POWER_10
+      - INFLUX_SENSOR_CUSTOM_POWER_11
+      - INFLUX_SENSOR_CUSTOM_POWER_12
+      - INFLUX_SENSOR_CUSTOM_POWER_13
+      - INFLUX_SENSOR_CUSTOM_POWER_14
+      - INFLUX_SENSOR_CUSTOM_POWER_15
+      - INFLUX_SENSOR_CUSTOM_POWER_16
+      - INFLUX_SENSOR_CUSTOM_POWER_17
+      - INFLUX_SENSOR_CUSTOM_POWER_18
+      - INFLUX_SENSOR_CUSTOM_POWER_19
+      - INFLUX_SENSOR_CUSTOM_POWER_20
+      - INFLUX_EXCLUDE_FROM_HOUSE_POWER
+      - REDIS_URL
+    depends_on:
+      influxdb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    links:
+      - influxdb
+      - redis
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  tibber-collector:
+    image: ghcr.io/solectrus/tibber-collector:latest
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    environment:
+      - TZ
+      - INFLUX_HOST=influxdb
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_PRICES}
+      - TIBBER_TOKEN
+      - TIBBER_INTERVAL
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  senec-charger:
+    image: ghcr.io/solectrus/senec-charger:latest
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    environment:
+      - TZ
+      - SENEC_HOST
+      - SENEC_SCHEMA
+      - INFLUX_HOST=influxdb
+      - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT_PRICES=${INFLUX_MEASUREMENT_PRICES}
+      - INFLUX_MEASUREMENT_FORECAST=${INFLUX_MEASUREMENT_FORECAST}
+      - CHARGER_PRICE_TIME_RANGE
+      - CHARGER_PRICE_MAX
+      - CHARGER_FORECAST_THRESHOLD
+      - CHARGER_DRY_RUN
+      - CHARGER_INTERVAL
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  shelly-collector-mw:
+    image: ghcr.io/solectrus/shelly-collector:latest
+    environment:
+      - TZ
+      - SHELLY_HOST=${SHELLY_HOST_MW}
+      - SHELLY_INTERVAL
+      - INFLUX_HOST
+      - INFLUX_SCHEMA
+      - INFLUX_PORT
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_SHELLY_MW}
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  shelly-collector-airfry:
+    image: ghcr.io/solectrus/shelly-collector:latest
+    environment:
+      - TZ
+      - SHELLY_HOST=${SHELLY_HOST_AIRFRY}
+      - SHELLY_INTERVAL
+      - INFLUX_HOST
+      - INFLUX_SCHEMA
+      - INFLUX_PORT
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_SHELLY_AIRFRY}
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  shelly-collector-gsa:
+    image: ghcr.io/solectrus/shelly-collector:latest
+    environment:
+      - TZ
+      - SHELLY_HOST=${SHELLY_HOST_GSA}
+      - SHELLY_INTERVAL
+      - INFLUX_HOST
+      - INFLUX_SCHEMA
+      - INFLUX_PORT
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_SHELLY_GSA}
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  shelly-collector-it:
+    image: ghcr.io/solectrus/shelly-collector:latest
+    environment:
+      - TZ
+      - SHELLY_HOST=${SHELLY_HOST_IT}
+      - SHELLY_INTERVAL
+      - INFLUX_HOST
+      - INFLUX_SCHEMA
+      - INFLUX_PORT
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_SHELLY_IT}
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  shelly-collector-server:
+    image: ghcr.io/solectrus/shelly-collector:latest
+    environment:
+      - TZ
+      - SHELLY_HOST=${SHELLY_HOST_SERVER}
+      - SHELLY_INTERVAL
+      - INFLUX_HOST
+      - INFLUX_SCHEMA
+      - INFLUX_PORT
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_SHELLY_SERVER}
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  shelly-collector-fence:
+    image: ghcr.io/solectrus/shelly-collector:latest
+    environment:
+      - TZ
+      - SHELLY_HOST=${SHELLY_HOST_FENCE}
+      - SHELLY_INTERVAL
+      - INFLUX_HOST
+      - INFLUX_SCHEMA
+      - INFLUX_PORT
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_SHELLY_FENCE}
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    links:
+      - influxdb
+    restart: unless-stopped
+    logging:
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+
+  watchtower:
+    image: containrrr/watchtower
+    environment:
+      - TZ
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    command: --scope solectrus --cleanup
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+    labels:
+      - com.centurylinklabs.watchtower.scope=solectrus

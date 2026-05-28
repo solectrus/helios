@@ -1,0 +1,212 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: my-admin-password
+  app_host: 192.168.0.19
+  installation_date: '2023-05-01'
+  secret_key_base: my-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:1-0-beta
+  influx_poll_interval: '5'
+postgresql:
+  image: postgres:17-alpine
+  password: my-secret-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2.7-alpine
+  org: solectrus
+  password: my-influx-password
+  publish_port: true
+  token_admin: my-super-secret-admin-token
+  token_read: my-super-secret-admin-token
+  token_readwrite: my-super-secret-admin-token
+  token_write: my-super-secret-admin-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: containrrr/watchtower:latest
+forecast:
+  forecast: forecast.solar
+  forecast_azimuth1: "-90"
+  forecast_declination1: '40'
+  forecast_interval: '900'
+  forecast_kwp1: '9'
+  forecast_latitude: '52.00000'
+  forecast_longitude: '13.00000'
+  forecast_roofs: '1'
+  measurement: forecast
+senec:
+  adapter: local
+  host: 192.168.0.66
+  interval: '5'
+  language: de
+  schema: https
+  version: v3
+mqtt:
+  mappings:
+  - field: test
+    measurement: test
+    topic: foo/bar/baz
+    type: integer
+  mqtt_host: ''
+  mqtt_password: ''
+  mqtt_port: '1883'
+  mqtt_ssl: 'false'
+  mqtt_username: ''
+shelly:
+  connection: local
+  devices:
+  - host: 192.168.2.50
+    measurement: airfry
+    name: airfry
+  - host: 192.168.2.55
+    measurement: Fence
+    name: fence
+  - host: 192.168.2.51
+    measurement: gas
+    name: gsa
+  - host: 192.168.3.53
+    measurement: it
+    name: it
+  - host: 192.168.2.52
+    measurement: mw
+    name: mw
+  - host: 192.168.2.54
+    measurement: server
+    name: server
+  interval: '5'
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  custom_power_01:
+    field: power
+    measurement: airfry
+    name: airfry
+    source: shelly
+  custom_power_02:
+    field: power
+    measurement: mw
+    name: mw
+    source: shelly
+  custom_power_03:
+    field: power
+    measurement: gsa
+    name: gsa
+    source: external
+  custom_power_04:
+    field: power
+    measurement: it
+    name: it
+    source: shelly
+  custom_power_05:
+    field: power
+    measurement: server
+    name: server
+    source: shelly
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power_1:
+    field: inverter_power
+    measurement: SENEC
+    source: senec
+  inverter_power_2:
+    field: power
+    is_balcony: true
+    measurement: Fence
+    source: shelly
+  inverter_power_forecast:
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_power:
+    source: senec
+ingest:
+  image: ghcr.io/solectrus/ingest:latest
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:latest
+_unmanaged:
+  services:
+    senec-charger:
+      depends_on:
+        influxdb:
+          condition: service_healthy
+      env_values:
+        CHARGER_DRY_RUN: 'false'
+        CHARGER_FORECAST_THRESHOLD: '20'
+        CHARGER_INTERVAL: '3600'
+        CHARGER_PRICE_MAX: '85'
+        CHARGER_PRICE_TIME_RANGE: '4'
+      environment:
+      - TZ
+      - INFLUX_BUCKET
+      - INFLUX_HOST=influxdb
+      - INFLUX_MEASUREMENT_FORECAST=${INFLUX_MEASUREMENT_FORECAST}
+      - INFLUX_MEASUREMENT_PRICES=${INFLUX_MEASUREMENT_PRICES}
+      - INFLUX_ORG
+      - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
+      - CHARGER_DRY_RUN
+      - CHARGER_FORECAST_THRESHOLD
+      - CHARGER_INTERVAL
+      - CHARGER_PRICE_MAX
+      - CHARGER_PRICE_TIME_RANGE
+      - SENEC_HOST
+      - SENEC_SCHEMA
+      image: ghcr.io/solectrus/senec-charger:latest
+      labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+      links:
+      - influxdb
+      logging:
+        options:
+          max-file: '3'
+          max-size: 10m
+      restart: unless-stopped
+    tibber-collector:
+      depends_on:
+        influxdb:
+          condition: service_healthy
+      env_values:
+        INFLUX_MEASUREMENT_PRICES: tibber
+        TIBBER_INTERVAL: '3600'
+        TIBBER_TOKEN: my-tibber-token
+      environment:
+      - TZ
+      - INFLUX_BUCKET
+      - INFLUX_HOST=influxdb
+      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_PRICES}
+      - INFLUX_ORG
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - TIBBER_INTERVAL
+      - TIBBER_TOKEN
+      image: ghcr.io/solectrus/tibber-collector:latest
+      labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+      links:
+      - influxdb
+      logging:
+        options:
+          max-file: '3'
+          max-size: 10m
+      restart: unless-stopped
