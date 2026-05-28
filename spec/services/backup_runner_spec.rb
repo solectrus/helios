@@ -4,7 +4,6 @@ RSpec.describe BackupRunner do
   let(:state) do
     {
       open3_calls: [],
-      image_present: true,
       docker_run_output: 'container-id',
       docker_run_success: true,
       docker_pull_output: '',
@@ -72,18 +71,10 @@ RSpec.describe BackupRunner do
       )
     end
 
-    it 'pulls docker:cli when the image is not present locally' do
-      state[:image_present] = false
-
+    it 'pulls docker:cli before launching so a stale local image is refreshed' do
       described_class.start
 
       expect(state[:open3_calls]).to include(['docker', 'pull', described_class::IMAGE])
-    end
-
-    it 'skips docker pull when the image is already present' do
-      described_class.start
-
-      expect(state[:open3_calls]).not_to include(['docker', 'pull', described_class::IMAGE])
     end
 
     it 'does not prune before launching — prune runs after a successful add' do
@@ -160,7 +151,6 @@ RSpec.describe BackupRunner do
     end
 
     it 'fails fast when the docker:cli pull fails' do
-      state[:image_present] = false
       state[:docker_pull_output] = 'network unreachable'
       state[:docker_pull_success] = false
 
@@ -424,8 +414,6 @@ RSpec.describe BackupRunner do
 
   def stub_open3_response(args)
     case args
-    in ['docker', 'image', 'inspect', ^(described_class::IMAGE)]
-      ['', instance_double(Process::Status, success?: state[:image_present])]
     in ['docker', 'pull', ^(described_class::IMAGE)]
       [state[:docker_pull_output], instance_double(Process::Status, success?: state[:docker_pull_success])]
     in ['docker', 'inspect', 'helios-backup-runner']

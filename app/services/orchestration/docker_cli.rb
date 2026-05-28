@@ -41,11 +41,6 @@ module Orchestration
       end
     end
 
-    def image_present?(image)
-      _, status = Open3.capture2e('docker', 'image', 'inspect', image)
-      status.success?
-    end
-
     def pull_image(image)
       output, status = Open3.capture2e('docker', 'pull', image)
       [status.success?, output]

@@ -7,7 +7,6 @@ RSpec.describe RestoreRunner do
   let(:state) do
     {
       open3_calls: [],
-      image_present: true,
       docker_run_output: 'container-id',
       docker_run_success: true,
       docker_pull_output: '',
@@ -251,9 +250,7 @@ RSpec.describe RestoreRunner do
       end
     end
 
-    it 'pulls docker:cli when the image is not present locally' do
-      state[:image_present] = false
-
+    it 'pulls docker:cli before launching so a stale local image is refreshed' do
       described_class.start(filename)
 
       expect(state[:open3_calls]).to include(['docker', 'pull', described_class::IMAGE])
@@ -419,7 +416,6 @@ RSpec.describe RestoreRunner do
 
       it 'still pulls the docker image up-front so the Downloader does not hit a cold cache later' do
         allow(BackupRepository::S3::Downloader).to receive(:start_async)
-        state[:image_present] = false
 
         described_class.start(filename)
 
@@ -541,8 +537,6 @@ RSpec.describe RestoreRunner do
 
   def stub_open3_response(args)
     case args
-    in ['docker', 'image', 'inspect', ^(described_class::IMAGE)]
-      ['', instance_double(Process::Status, success?: state[:image_present])]
     in ['docker', 'pull', ^(described_class::IMAGE)]
       [state[:docker_pull_output], instance_double(Process::Status, success?: state[:docker_pull_success])]
     in ['docker', 'inspect', 'helios-restore-runner']

@@ -136,10 +136,13 @@ class DetachedRunner
 
   private
 
+  # Always pull — some runners point at floating tags (csv-importer is on
+  # `:develop`), so a locally-cached image may be stale. `docker pull` is
+  # cheap when the digest already matches (manifest check only), and the
+  # cost is irrelevant compared to the user-initiated container run that
+  # follows.
   def pull_image_if_needed!
     image = self.class::IMAGE
-    return if Orchestration::DockerCli.image_present?(image)
-
     ok, output = Orchestration::DockerCli.pull_image(image)
     return if ok
 
