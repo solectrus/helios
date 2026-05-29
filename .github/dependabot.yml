@@ -44,6 +44,9 @@ updates:
         patterns:
           - 'rspec'
           - 'rspec-*'
+      aws:
+        patterns:
+          - 'aws-*'
 
   - package-ecosystem: npm
     directory: '/'
