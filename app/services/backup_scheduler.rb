@@ -26,7 +26,7 @@
 # Concurrency: ticks are serialized process-wide through an atomic gate, so
 # overlapping or leaked threads (e.g. from a dev-reload restart storm) can
 # never fire two backups at once.
-class BackupScheduler
+class BackupScheduler < ManagedThread
   TICK_INTERVAL = 30 # seconds
   LOG_PATH = 'log/backup_scheduler.log'.freeze
 
@@ -35,23 +35,8 @@ class BackupScheduler
   STATE_FILENAME = 'backup_schedule_last_run'.freeze
 
   class << self
-    def start
-      class_mutex.synchronize { start_instance }
-    end
-
-    def stop
-      class_mutex.synchronize { stop_instance }
-    end
-
-    def restart
-      class_mutex.synchronize do
-        stop_instance
-        start_instance
-      end
-    end
-
-    def running?
-      instance&.running?
+    def storage
+      BACKUP_SCHEDULER_STORAGE
     end
 
     def initialize_lifecycle
@@ -207,34 +192,6 @@ class BackupScheduler
 
       [hour, minute]
     end
-
-    def start_instance
-      return if instance&.running?
-
-      instance&.stop
-      new_instance = new
-      new_instance.start
-      self.instance = new_instance
-    end
-
-    def stop_instance
-      return unless instance
-
-      instance.stop
-      self.instance = nil
-    end
-
-    def class_mutex
-      BACKUP_SCHEDULER_STORAGE[:mutex] ||= Mutex.new
-    end
-
-    def instance
-      BACKUP_SCHEDULER_STORAGE[:instance]
-    end
-
-    def instance=(value)
-      BACKUP_SCHEDULER_STORAGE[:instance] = value
-    end
   end
 
   LOGGER =
@@ -248,52 +205,13 @@ class BackupScheduler
     end
   private_constant :LOGGER
 
-  attr_reader :id
-
-  def initialize
-    @id = SecureRandom.hex(4)
-    @running = Concurrent::AtomicBoolean.new(false)
-  end
-
-  def start
-    @running.make_true
-
-    # rubocop:disable ThreadSafety/NewThread -- background thread is intentional
-    self.thread = Thread.new { run_loop }
-    # rubocop:enable ThreadSafety/NewThread
-    thread.name = "backup-scheduler-#{id}"
-    self.class.logger.info("[#{id}] Started (#{thread.name})")
-  end
-
-  def stop
-    return unless @running.true? || thread&.alive?
-
-    self.class.logger.info("[#{id}] Stopping...")
-    @running.make_false
-    terminate_thread
-    self.class.logger.info("[#{id}] Stopped")
-  end
-
-  def running?
-    @running.true? && thread&.alive?
-  end
-
   private
 
-  attr_accessor :thread
-
-  def terminate_thread
-    thread&.wakeup rescue nil # rubocop:disable Style/RescueModifier
-    thread&.join(2)
-    thread.kill if thread&.alive?
+  def interval
+    TICK_INTERVAL
   end
 
-  def run_loop
-    while @running.true?
-      sleep TICK_INTERVAL
-      break unless @running.true?
-
-      self.class.tick
-    end
+  def run_once
+    self.class.tick
   end
 end

@@ -2,6 +2,7 @@ module Orchestration
   class EventsListener # rubocop:disable Metrics/ClassLength
     include Logging
     include Streaming
+    extend SingletonLifecycle
 
     BROADCAST_DELAY = 0.5
     SCHEDULER_INTERVAL = 1.0
@@ -10,14 +11,12 @@ module Orchestration
     RECONCILE_TICKS = 30
 
     class << self
-      def start
-        class_mutex.synchronize { start_instance }
+      def storage
+        DOCKER_EVENTS_STORAGE
       end
 
-      def stop
-        class_mutex.synchronize { stop_instance }
-      end
-
+      # Overrides SingletonLifecycle#restart to add a cooldown (avoids a
+      # restart storm on rapid dev-reloads) and a non-graceful stop.
       def restart
         class_mutex.synchronize do
           next if recently_restarted?
@@ -26,10 +25,6 @@ module Orchestration
           stop_instance(graceful: false)
           start_instance
         end
-      end
-
-      def running?
-        instance&.running?
       end
 
       def subscriber_connected(locale: nil)
@@ -61,7 +56,7 @@ module Orchestration
       end
 
       def initialize_lifecycle
-        DOCKER_EVENTS_STORAGE[:mutex] ||= Mutex.new
+        class_mutex
       end
 
       # Called from the scheduler thread when no subscribers remain.
@@ -80,15 +75,8 @@ module Orchestration
 
       private
 
-      def start_instance
-        return if instance&.running?
-
-        instance&.stop
-        new_instance = new
-        new_instance.start
-        self.instance = new_instance
-      end
-
+      # Overrides SingletonLifecycle#stop_instance to forward the graceful flag
+      # to the instance (the listener thread can drain in-flight events).
       def stop_instance(graceful: true)
         return unless instance
 
@@ -99,18 +87,6 @@ module Orchestration
       def recently_restarted?
         last = DOCKER_EVENTS_STORAGE[:last_restart]
         last && Time.current - last < RESTART_COOLDOWN
-      end
-
-      def class_mutex
-        DOCKER_EVENTS_STORAGE[:mutex] ||= Mutex.new
-      end
-
-      def instance
-        DOCKER_EVENTS_STORAGE[:instance]
-      end
-
-      def instance=(value)
-        DOCKER_EVENTS_STORAGE[:instance] = value
       end
     end
 
