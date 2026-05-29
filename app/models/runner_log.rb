@@ -4,6 +4,7 @@
 # Database name: primary
 #
 #  id                 :integer          not null, primary key
+#  automatic          :boolean          default(FALSE), not null
 #  kind               :string           not null
 #  last_error_message :text
 #  last_finished_at   :datetime
@@ -43,10 +44,19 @@ class RunnerLog < ApplicationRecord
     end
 
     # `created_at` marks the start of the run — used by the completion
-    # card to compute duration without a separate column.
-    def record_started!(kind)
+    # card to compute duration without a separate column. `automatic`
+    # records whether the scheduler triggered the run (Issue #106) rather
+    # than a user click; it decides whether a successful run leaves a
+    # completion card that has to be dismissed. It is set here and preserved
+    # by record_finished!/record_error! (find_or_initialize_by keeps it).
+    def record_started!(kind, automatic: false)
       entry = find_or_initialize_by(kind: kind)
-      entry.assign_attributes(created_at: Time.current, last_error_message: nil, last_finished_at: nil)
+      entry.assign_attributes(
+        created_at: Time.current,
+        automatic:,
+        last_error_message: nil,
+        last_finished_at: nil,
+      )
       entry.save!
     end
 

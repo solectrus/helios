@@ -299,6 +299,16 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   BACKUP_DESTINATIONS = %w[local external s3].freeze
   BACKUP_DEFAULT_DESTINATION = 'local'.freeze
 
+  # Automatic backup schedule (Issue #106). Lives in its own singleton section
+  # so the destination survey on the Backups page and the schedule survey edit
+  # independent slices of config.yaml without overwriting each other.
+  BACKUP_SCHEDULE_FIELDS = %w[
+    schedule_enabled
+    schedule_time
+  ].freeze
+
+  BACKUP_SCHEDULE_ALL = BACKUP_SCHEDULE_FIELDS
+
   # Sensors is a dynamic mapping (sensor_name => config hash),
   # validated via SensorRegistry instead of a fixed field list.
   SENSORS_FIELDS = :dynamic
@@ -330,6 +340,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     'forecast' => FORECAST_FIELDS,
     'reverse_proxy' => REVERSE_PROXY_FIELDS,
     'backup' => BACKUP_ALL,
+    'backup_schedule' => BACKUP_SCHEDULE_ALL,
     'sensors' => SENSORS_FIELDS,
     'power_splitter' => POWER_SPLITTER_FIELDS,
     'service_overrides' => SERVICE_OVERRIDES_FIELDS,

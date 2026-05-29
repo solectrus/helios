@@ -1,4 +1,16 @@
 module BackupsHelper
+  # Font Awesome icon per backup destination, used on the destination
+  # config row to hint at the storage kind at a glance.
+  DESTINATION_ICONS = {
+    'local' => 'fa-hard-drive',
+    'external' => 'fa-network-wired',
+    's3' => 'fa-cloud',
+  }.freeze
+
+  def backup_destination_icon(destination)
+    DESTINATION_ICONS.fetch(destination, 'fa-box-archive')
+  end
+
   # Localized label for a BackupRepository::InProgress. Covers the S3
   # upload (with percentage) and each phase the backup script marks via
   # backup-phase.txt; falls back to the generic "In progress…" label

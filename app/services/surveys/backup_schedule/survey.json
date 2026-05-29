@@ -1,0 +1,49 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Automatische Sicherung",
+    "default": "Automatic backup"
+  },
+  "description": {
+    "de": "Soll HELIOS täglich automatisch eine Sicherung erstellen?",
+    "default": "Should HELIOS create a backup automatically every day?"
+  },
+  "pages": [
+    {
+      "name": "p_schedule",
+      "elements": [
+        {
+          "type": "boolean",
+          "name": "schedule_enabled",
+          "title": {
+            "de": "Täglich automatisch sichern",
+            "default": "Create a backup automatically every day"
+          },
+          "defaultValue": false
+        },
+        {
+          "type": "text",
+          "name": "schedule_time",
+          "title": {
+            "de": "Uhrzeit",
+            "default": "Time of day"
+          },
+          "description": {
+            "de": "Gilt in der Zeitzone des Servers. Es werden weiterhin nur die fünf neuesten Sicherungen aufbewahrt, ältere automatisch entfernt.",
+            "default": "Applies in the server timezone. Only the five most recent backups are kept; older ones are removed automatically."
+          },
+          "visibleIf": "{schedule_enabled} = true",
+          "isRequired": true,
+          "inputType": "time",
+          "defaultValue": "03:00"
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

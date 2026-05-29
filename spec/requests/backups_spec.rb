@@ -43,6 +43,28 @@ RSpec.describe 'Backups', :with_admin_password do
       end
     end
 
+    it 'shows the configured time on the schedule row when enabled' do
+      with_config_yaml('backup_schedule' => { 'schedule_enabled' => true, 'schedule_time' => '03:00' })
+
+      get backups_path
+
+      aggregate_failures do
+        expect(response.body).to include(I18n.t('backups.index.schedule_value_on', time: '03:00'))
+        expect(response.body).not_to include(I18n.t('backups.index.schedule_off'))
+      end
+    end
+
+    it 'shows the schedule row as off when automatic backups are disabled' do
+      with_config_yaml('backup' => { 'destination' => 'local' })
+
+      get backups_path
+
+      aggregate_failures do
+        expect(response.body).to include(I18n.t('backups.index.schedule_off'))
+        expect(response.body).not_to include(I18n.t('backups.index.schedule_value_on', time: '03:00'))
+      end
+    end
+
     it 'renders existing backups with database sizes' do
       persist_backup('solectrus-backup-20260508-110000.tar')
 
@@ -111,11 +133,18 @@ RSpec.describe 'Backups', :with_admin_password do
       get backups_path
 
       aggregate_failures do
-        expect(response.body).to include(
-          I18n.t('backups.index.configure_destination',
-                 destination: I18n.t('backups.index.destinations.local')),
-        )
+        expect(response.body).to include(I18n.t('backups.index.destination_label'))
+        expect(response.body).to include(I18n.t('backups.index.destinations.local'))
         expect(response.body).to include(new_configuration_setting_path(setting: 'backup'))
+      end
+    end
+
+    it 'offers a link to configure the automatic-backup schedule' do
+      get backups_path
+
+      aggregate_failures do
+        expect(response.body).to include(I18n.t('backups.index.configure_schedule'))
+        expect(response.body).to include(new_configuration_setting_path(setting: 'backup_schedule'))
       end
     end
 
@@ -275,6 +304,35 @@ RSpec.describe 'Backups', :with_admin_password do
       aggregate_failures do
         expect(response.body).to include('Backup successful')
         expect(response.body).to include(filename)
+      end
+    end
+
+    it 'leaves no completion card after a successful automatic backup' do
+      filename = 'solectrus-backup-20260508-143000.tar'
+      persist_backup(filename)
+      RunnerLog.record_started!(:backup, automatic: true)
+      RunnerLog.record_finished!(:backup)
+
+      get backups_path
+
+      aggregate_failures do
+        # No card to acknowledge — the backup just lands in the list.
+        expect(response.body).not_to include('Backup successful')
+        expect(response.body).to include(I18n.t('backups.index.existing_title'))
+        expect(response.body).to include(%(href="#{backup_path('solectrus-backup-20260508-143000')}"))
+      end
+    end
+
+    it 'still surfaces a failed automatic backup so the problem stays visible' do
+      RunnerLog.record_started!(:backup, automatic: true)
+      RunnerLog.record_error!(:backup, 'PostgreSQL dump failed')
+      RunnerLog.record_finished!(:backup)
+
+      get backups_path
+
+      aggregate_failures do
+        expect(response.body).to include('Backup failed')
+        expect(response.body).to include('PostgreSQL dump failed')
       end
     end
 

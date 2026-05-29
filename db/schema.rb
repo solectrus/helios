@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_05_25_160000) do
+ActiveRecord::Schema[8.1].define(version: 2026_05_29_120000) do
   create_table "backups", force: :cascade do |t|
     t.bigint "bytes", null: false
     t.datetime "created_at", null: false
@@ -28,6 +28,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_05_25_160000) do
   end
 
   create_table "runner_logs", force: :cascade do |t|
+    t.boolean "automatic", default: false, null: false
     t.datetime "created_at", null: false
     t.string "kind", null: false
     t.text "last_error_message"

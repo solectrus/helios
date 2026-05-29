@@ -1,8 +1,8 @@
 {
   "locale": "de",
   "title": {
-    "de": "Datensicherung",
-    "default": "Backup"
+    "de": "Speicherort der Sicherung",
+    "default": "Backup destination"
   },
   "description": {
     "de": "Wo soll HELIOS die Sicherungen ablegen?",

@@ -37,3 +37,10 @@ plugin :tmp_restart
 # Specify the PID file. Defaults to tmp/pids/server.pid in development.
 # In other environments, only set the PID file if requested.
 pidfile ENV['PIDFILE'] if ENV['PIDFILE']
+
+# Run the automatic-backup scheduler only inside the real server process.
+# These hooks never fire under rake, console or RSpec, so the background
+# thread stays out of those environments. HELIOS runs single-mode Puma, so
+# the scheduler thread exists exactly once.
+after_booted { BackupScheduler.start }
+after_stopped { BackupScheduler.stop }

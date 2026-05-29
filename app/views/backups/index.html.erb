@@ -63,6 +63,39 @@
         <% end %>
 
         <% if @backup_databases_configured %>
+          <% destination_path = @backup_destination_configured ?
+           edit_configuration_setting_path(setting: "backup", name: "backup") :
+           new_configuration_setting_path(setting: "backup") %>
+          <% schedule_path = @backup_schedule_configured ?
+           edit_configuration_setting_path(setting: "backup_schedule", name: "backup_schedule") :
+           new_configuration_setting_path(setting: "backup_schedule") %>
+          <%#
+            Backup settings (destination + schedule) apply to manual *and* automatic
+            backups, so they live in their own bar above the create action — not nested
+            inside it.
+          %>
+          <section
+            class="
+              bg-base-100 border-base-content/10 divide-base-content/10 grid grid-cols-1 divide-y overflow-hidden
+              border-y shadow-sm sm:grid-cols-2 sm:divide-x sm:divide-y-0 md:rounded-2xl md:border
+            "
+            aria-label="<%= t('.settings_title') %>"
+          >
+            <%= render BackupSettingRow::Component.new(
+                  path: destination_path,
+                  icon: backup_destination_icon(@backup_destination),
+                  label: t('.destination_label'),
+                  value: t(".destinations.#{@backup_destination}"),
+                ) %>
+
+            <%= render BackupSettingRow::Component.new(
+                  path: schedule_path,
+                  icon: "fa-clock",
+                  icon_class: @backup_schedule_time ? "bg-primary/10 text-primary" : "bg-base-content/5 text-base-content/70",
+                  label: t('.configure_schedule'),
+                  value: @backup_schedule_time ? t('.schedule_value_on', time: @backup_schedule_time) : t('.schedule_off'),
+                ) %>
+          </section>
           <section class="bg-base-100 border-base-content/10 relative overflow-hidden border-y shadow-sm md:rounded-2xl md:border">
             <div
               class="
@@ -81,46 +114,33 @@
                 <p class="text-base-content/70 max-w-prose text-base leading-relaxed"><%= t('.note') %></p>
               </header>
 
-              <div class="flex flex-col gap-3">
-                <%= form_with url: backups_path, method: :post, data: { turbo: false } do %>
-                  <% button_class = "btn btn-outline btn-lg w-full md:w-auto md:min-w-64" %>
+              <%= form_with url: backups_path, method: :post, data: { turbo: false } do %>
+                <% button_class = "btn btn-outline btn-lg w-full md:w-auto md:min-w-64" %>
 
-                  <% if @backup_in_progress %>
-                    <button type="submit" class="<%= button_class %>" disabled>
-                      <span class="loading loading-spinner loading-sm"></span>
-                      <%= backup_in_progress_label(@backup_in_progress) %>
-                    </button>
-                  <% elsif @restore_in_progress || @backup_unavailable_reason %>
-                    <button type="submit" class="<%= button_class %>" disabled>
-                      <i class="fa-solid fa-box-archive"></i>
-                      <%= t('.download') %>
-                    </button>
-                  <% else %>
-                    <button
-                      type="submit"
-                      class="<%= button_class %>"
-                      data-controller="loading"
-                      data-action="click->loading#click"
-                      data-loading-text-value="<%= t('.in_progress') %>"
-                      data-loading-spinner-value="loading loading-spinner loading-sm"
-                    >
-                      <i class="fa-solid fa-box-archive"></i>
-                      <%= t('.download') %>
-                    </button>
-                  <% end %>
+                <% if @backup_in_progress %>
+                  <button type="submit" class="<%= button_class %>" disabled>
+                    <span class="loading loading-spinner loading-sm"></span>
+                    <%= backup_in_progress_label(@backup_in_progress) %>
+                  </button>
+                <% elsif @restore_in_progress || @backup_unavailable_reason %>
+                  <button type="submit" class="<%= button_class %>" disabled>
+                    <i class="fa-solid fa-box-archive"></i>
+                    <%= t('.download') %>
+                  </button>
+                <% else %>
+                  <button
+                    type="submit"
+                    class="<%= button_class %>"
+                    data-controller="loading"
+                    data-action="click->loading#click"
+                    data-loading-text-value="<%= t('.in_progress') %>"
+                    data-loading-spinner-value="loading loading-spinner loading-sm"
+                  >
+                    <i class="fa-solid fa-box-archive"></i>
+                    <%= t('.download') %>
+                  </button>
                 <% end %>
-
-                <% destination_path = @backup_destination_configured ?
-                 edit_configuration_setting_path(setting: "backup", name: "backup") :
-                 new_configuration_setting_path(setting: "backup") %>
-
-                <%= link_to destination_path,
-                        data: { turbo_frame: "setting-modal-content" },
-                        class: "btn btn-ghost btn-sm w-full md:w-auto md:min-w-64" do %>
-                  <%= t('.configure_destination', destination: t(".destinations.#{@backup_destination}")) %>
-                  <i class="fa-solid fa-wrench"></i>
-                <% end %>
-              </div>
+              <% end %>
             </div>
 
             <div class="border-base-content/10 relative border-t px-6 py-4 md:px-10 md:py-5">

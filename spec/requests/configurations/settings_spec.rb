@@ -1,4 +1,6 @@
 RSpec.describe 'Configurations::Settings', :with_admin_password do
+  include ActiveSupport::Testing::TimeHelpers
+
   before do
     with_config_yaml
     login
@@ -15,6 +17,13 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
     it 'renders the survey form for a singleton' do
       get new_configuration_setting_path(setting: 'system_general'), headers: turbo_frame_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('survey')
+    end
+
+    it 'renders the survey form for the backup schedule' do
+      get new_configuration_setting_path(setting: 'backup_schedule'), headers: turbo_frame_headers
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('survey')
@@ -80,6 +89,50 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
       config = Configuration.current
       expect(config.system.timezone).to eq('Europe/Berlin')
+    end
+
+    it 'persists the automatic-backup schedule in its own section' do
+      post configuration_settings_path,
+           params: { setting: 'backup_schedule',
+                     data: { schedule_enabled: true, schedule_time: '04:15' }.to_json }
+
+      config = Configuration.current
+      expect(config.backup_schedule.schedule_enabled).to be(true)
+      expect(config.backup_schedule.schedule_time).to eq('04:15')
+    end
+
+    it 'anchors a still-ahead time to run today' do
+      # OS-local 09:00 to match reschedule!'s Time.now.getlocal (not the test's UTC zone)
+      travel_to Time.new(2026, 5, 29, 9, 0, 0).getlocal do
+        BackupScheduler.send(:mark_handled!, Date.new(2026, 5, 29))
+
+        post configuration_settings_path,
+             params: { setting: 'backup_schedule', data: { schedule_enabled: true, schedule_time: '10:00' }.to_json }
+
+        expect(BackupScheduler.last_handled_date).to be_nil
+      end
+    end
+
+    it 'anchors an already-passed time to tomorrow' do
+      # OS-local 09:00 to match reschedule!'s Time.now.getlocal (not the test's UTC zone)
+      travel_to Time.new(2026, 5, 29, 9, 0, 0).getlocal do
+        post configuration_settings_path,
+             params: { setting: 'backup_schedule', data: { schedule_enabled: true, schedule_time: '03:00' }.to_json }
+
+        expect(BackupScheduler.last_handled_date).to eq(Date.new(2026, 5, 29))
+      end
+    end
+
+    it 'edits the schedule without touching the backup destination section' do
+      Configuration.current.update('backup', { 'destination' => 'external', 'external_path' => '/mnt/nas' })
+
+      post configuration_settings_path,
+           params: { setting: 'backup_schedule', data: { schedule_enabled: true, schedule_time: '02:00' }.to_json }
+
+      config = Configuration.current
+      expect(config.backup.destination).to eq('external')
+      expect(config.backup.external_path).to eq('/mnt/nas')
+      expect(config.backup_schedule.schedule_time).to eq('02:00')
     end
 
     it 'merges a mini-survey into its parent singleton without dropping siblings' do

@@ -75,6 +75,13 @@ class BackupRunner < DetachedRunner
   end
 
   class << self
+    # Overrides DetachedRunner's plain `delegate :start, to: :new` so the
+    # caller can flag a scheduler-triggered run (Issue #106). Automatic runs
+    # don't leave a completion card to dismiss on success.
+    def start(automatic: false)
+      new.start(automatic:)
+    end
+
     # Reason why a fresh backup cannot be started right now, or nil if it can.
     # In-progress states are excluded — the UI surfaces those separately.
     delegate :unavailable_reason, to: :new
@@ -106,12 +113,12 @@ class BackupRunner < DetachedRunner
     end
   end
 
-  def start
+  def start(automatic: false)
     validate!
     pull_image_if_needed!
     preflight_destination!
     BackupRepository.clear_error!
-    RunnerLog.record_started!(:backup)
+    RunnerLog.record_started!(:backup, automatic:)
     run_container!
     BackupRepository.mark_pending!(backup_filename)
     BackupRepository::S3::Uploader.start_async(backup_filename) if BackupRepository.s3?
@@ -222,10 +229,21 @@ class BackupRunner < DetachedRunner
   end
 
   def backup_filename
-    @backup_filename ||= "solectrus-backup-#{Time.current.strftime('%Y%m%d-%H%M%S')}.tar"
+    @backup_filename ||= "solectrus-backup-#{timestamp.strftime('%Y%m%d-%H%M%S')}.tar"
   end
 
   def backup_date
-    @backup_date ||= Time.current.strftime('%Y-%m-%d')
+    @backup_date ||= timestamp.strftime('%Y-%m-%d')
+  end
+
+  # Anchor the filename/date to the configured system timezone instead of the
+  # caller thread's Time.zone. A manual backup runs in a web request (Time.zone
+  # set to the system tz by ApplicationController), but an automatic backup
+  # runs in the scheduler thread where Time.zone is the UTC default. Both must
+  # embed the same wall-clock the list parses back with — BackupRepository
+  # .created_at_from uses system_zone too — otherwise the rendered time is off
+  # by the UTC offset for scheduler-created backups.
+  def timestamp
+    @timestamp ||= BackupRepository.system_zone.now
   end
 end

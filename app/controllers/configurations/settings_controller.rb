@@ -102,7 +102,7 @@ module Configurations
     def redirect_target
       return sensors_path if sensor_setting?
       return datasources_path if Configuration.source?(setting)
-      return backups_path if setting == 'backup'
+      return backups_path if setting.in?(%w[backup backup_schedule])
 
       advanced_path
     end
@@ -118,6 +118,11 @@ module Configurations
       else
         persist_setting(data)
       end
+
+      # Re-anchor the schedule so the next run is the next occurrence of the
+      # chosen time (today if still ahead, tomorrow if already passed) rather
+      # than an immediate catch-up.
+      BackupScheduler.reschedule! if setting == 'backup_schedule'
     end
 
     # Handle the `enabled` UI flag: when false, clear the section entirely;

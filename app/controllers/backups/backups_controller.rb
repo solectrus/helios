@@ -70,6 +70,7 @@ module Backups
       @backups = BackupRepository.all.to_a
       @backup_databases_configured = BackupRunner.databases_configured?
       @backup_unavailable_reason = BackupRunner.unavailable_reason
+      @backup_schedule_time = BackupScheduler.scheduled_time_label
     end
 
     def load_runner_state!
@@ -105,6 +106,7 @@ module Backups
 
     def load_destination_state!
       @backup_destination_configured = Configuration.current.setting_data('backup').present?
+      @backup_schedule_configured = Configuration.current.setting_data('backup_schedule').present?
       @backup_destination = BackupRepository.destination
       @backup_destination_remote = BackupRepository.remote?
     end
@@ -114,11 +116,20 @@ module Backups
     # dismiss wipes last_finished_at, and the next record_started! does the
     # same for the kind that's running again, so a fresh operation always
     # supersedes the previous result.
+    #
+    # Exception: a *successful* automatic backup leaves no card.
+    # Nobody is waiting to acknowledge it — it just lands in the list below.
+    # A failed automatic backup still surfaces, so the problem stays visible.
     def evaluate_completion
       return if @in_progress
 
       row = RunnerLog.latest_completion(%i[backup restore])
-      row && completion_for(row)
+      return unless row
+
+      completion = completion_for(row)
+      return if row.automatic? && completion.status == :success
+
+      completion
     end
 
     def completion_for(row)

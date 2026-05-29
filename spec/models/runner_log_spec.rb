@@ -4,6 +4,7 @@
 # Database name: primary
 #
 #  id                 :integer          not null, primary key
+#  automatic          :boolean          default(FALSE), not null
 #  kind               :string           not null
 #  last_error_message :text
 #  last_finished_at   :datetime
@@ -115,6 +116,21 @@ RSpec.describe RunnerLog do
       row = described_class.find_by(kind: :backup)
       expect(row.last_error_message).to be_nil
       expect(row.last_finished_at).to be_nil
+    end
+
+    it 'defaults automatic to false and records it when set' do
+      described_class.record_started!(:backup)
+      expect(described_class.find_by(kind: :backup).automatic).to be(false)
+
+      described_class.record_started!(:backup, automatic: true)
+      expect(described_class.find_by(kind: :backup).automatic).to be(true)
+    end
+
+    it 'preserves the automatic flag through finish' do
+      described_class.record_started!(:backup, automatic: true)
+      described_class.record_finished!(:backup)
+
+      expect(described_class.find_by(kind: :backup).automatic).to be(true)
     end
   end
 

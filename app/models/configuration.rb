@@ -4,7 +4,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # Singletons exist at most once per configuration
   SINGLETONS = %w[
     deployment system dashboard postgresql influxdb redis
-    watchtower forecast senec mqtt shelly reverse_proxy backup sensors ingest power_splitter
+    watchtower forecast senec mqtt shelly reverse_proxy backup backup_schedule sensors ingest power_splitter
     service_overrides
   ].freeze
 

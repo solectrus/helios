@@ -237,13 +237,17 @@ en:
   backups:
     index:
       title: 'Backup'
-      create_title: 'Create new backup'
+      create_title: 'Create manual backup'
       note: 'Saves the complete SOLECTRUS installation (including the InfluxDB and PostgreSQL databases as well as the configuration) as a single file.'
-      configure_destination: 'Destination: %{destination}'
+      settings_title: 'Backup settings'
+      destination_label: 'Destination'
+      configure_schedule: 'Automatic backup'
+      schedule_value_on: 'Daily at %{time}'
+      schedule_off: 'Off'
       destinations:
-        local: 'Local'
-        external: 'External mount'
-        s3: 'S3'
+        local: 'Local on this host'
+        external: 'External mount (e.g. NAS)'
+        s3: 'S3-compatible storage'
       loading: 'Loading backups…'
       download: 'Create backup'
       in_progress: 'In progress…'
