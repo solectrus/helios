@@ -108,9 +108,46 @@ class BackupScheduler < ManagedThread
       else
         FileUtils.rm_f(state_path) # still ahead (or disabled) → eligible today
       end
+
+      log_schedule_state(now:, config:)
+    end
+
+    # Emit a one-line summary of the active schedule. Called at boot (from
+    # #start) and after the settings form re-anchors the marker (from
+    # .reschedule!), so the log shows the scheduler is armed and for when —
+    # instead of staying silent until it actually fires. Also surfaces a
+    # pending catch-up and any earlier days missed while HELIOS was down.
+    def log_schedule_state(now: Time.now.getlocal, config: current_config)
+      unless enabled?(config)
+        logger.info('Automatic backups disabled')
+        return
+      end
+
+      label = scheduled_time_label(config)
+      unless label
+        logger.warn("Automatic backups enabled but schedule time #{config['schedule_time'].inspect} is invalid")
+        return
+      end
+
+      logger.info("Automatic backups enabled (daily at #{label})")
+      log_missed_windows(now:, config:)
     end
 
     private
+
+    # Surface windows that won't fire on schedule: today's already-passed window
+    # (caught up on the next tick) and whole days skipped while HELIOS was down.
+    def log_missed_windows(now:, config:)
+      logger.info("Today's window already passed; catching up on the next tick") if due?(now:, config:)
+
+      last = last_handled_date
+      return unless last
+
+      missed = (now.to_date - last).to_i - 1
+      return unless missed.positive?
+
+      logger.warn("#{missed} earlier scheduled backup(s) were missed (last automatic backup handled #{last})")
+    end
 
     def run_due_backup
       now = Time.now.getlocal
@@ -133,7 +170,10 @@ class BackupScheduler < ManagedThread
         logger.warn("Automatic backup skipped for #{today}: #{reason}")
         return
       end
-      return if BackupRunner.in_progress
+      if BackupRunner.in_progress
+        logger.warn("Automatic backup skipped for #{today}: another backup is already in progress")
+        return
+      end
 
       logger.info("Triggering automatic backup for #{today}")
       BackupRunner.start(automatic: true)
@@ -187,6 +227,13 @@ class BackupScheduler < ManagedThread
 
       [hour, minute]
     end
+  end
+
+  # Announce the schedule right after the thread comes up, so the log records
+  # that the scheduler is armed and for when — not just that a thread started.
+  def start
+    super
+    self.class.log_schedule_state
   end
 
   private

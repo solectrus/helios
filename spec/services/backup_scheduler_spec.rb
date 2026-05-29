@@ -1,11 +1,12 @@
 RSpec.describe BackupScheduler do
   # 03:00 schedule, evaluated at 03:30 the same day
   let(:now) { Time.zone.local(2026, 5, 29, 3, 30, 0) }
-  let(:today) { Date.new(2026, 5, 29) }
-  let(:yesterday) { Date.new(2026, 5, 28) }
   let(:enabled_config) { { 'schedule_enabled' => true, 'schedule_time' => '03:00' } }
 
   describe '.due?' do
+    let(:today) { Date.new(2026, 5, 29) }
+    let(:yesterday) { Date.new(2026, 5, 28) }
+
     it 'is false when scheduling is disabled' do
       expect(described_class.due?(now:, config: { 'schedule_enabled' => false, 'schedule_time' => '03:00' },
                                   last_handled_on: nil)).to be(false)
@@ -176,6 +177,53 @@ RSpec.describe BackupScheduler do
       described_class.reschedule!(now:, config: { 'schedule_enabled' => false, 'schedule_time' => '03:00' })
 
       expect(described_class.last_handled_date).to be_nil
+    end
+  end
+
+  describe '.log_schedule_state' do
+    let(:data_path) { Dir.mktmpdir }
+    let(:logger) { instance_spy(Logger) }
+
+    before do
+      allow(Rails.configuration).to receive(:data_path).and_return(data_path)
+      allow(described_class).to receive(:logger).and_return(logger)
+    end
+
+    after { FileUtils.remove_entry(data_path) }
+
+    it 'reports the daily time when enabled and still ahead today' do
+      # now is 03:30, so a 10:00 window is still ahead → armed, no catch-up
+      described_class.log_schedule_state(now:, config: { 'schedule_enabled' => true, 'schedule_time' => '10:00' })
+
+      aggregate_failures do
+        expect(logger).to have_received(:info).with('Automatic backups enabled (daily at 10:00)')
+        expect(logger).not_to have_received(:info).with(/catching up/)
+      end
+    end
+
+    it 'reports when scheduling is disabled' do
+      described_class.log_schedule_state(now:, config: { 'schedule_enabled' => false, 'schedule_time' => '10:00' })
+      expect(logger).to have_received(:info).with('Automatic backups disabled')
+    end
+
+    it 'warns about an unparseable time' do
+      described_class.log_schedule_state(now:, config: { 'schedule_enabled' => true, 'schedule_time' => 'oops' })
+      expect(logger).to have_received(:warn).with(/invalid/)
+    end
+
+    it 'notes a pending catch-up when today\'s window already passed' do
+      # now is 03:30, scheduled 03:00 already passed and never handled → due now
+      described_class.log_schedule_state(now:, config: enabled_config)
+      expect(logger).to have_received(:info).with(/catching up/)
+    end
+
+    it 'warns about earlier days missed while HELIOS was down' do
+      described_class.send(:mark_handled!, Date.new(2026, 5, 26)) # last run 3 days before today
+
+      described_class.log_schedule_state(now:, config: enabled_config)
+
+      expect(logger).to have_received(:warn)
+        .with('2 earlier scheduled backup(s) were missed (last automatic backup handled 2026-05-26)')
     end
   end
 end
