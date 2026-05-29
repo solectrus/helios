@@ -7,7 +7,7 @@ class PostgresqlUpgradeJob < ApplicationJob
     Orchestration::ErrorStore.clear(SERVICE)
     Orchestration::PostgresqlUpgrade.call
   rescue Orchestration::PostgresqlUpgrade::UpgradeError => e
-    Rails.logger.error("PostgresqlUpgradeJob failed: #{e.message}")
+    logger.error("PostgresqlUpgradeJob failed: #{e.message}")
     Orchestration::ErrorStore.set(SERVICE, e.message)
   ensure
     # Clear the pending flag before broadcasting so the row renders its real
@@ -31,6 +31,6 @@ class PostgresqlUpgradeJob < ApplicationJob
       error_message: Orchestration::ErrorStore.get(SERVICE),
     )
   rescue StandardError => e
-    Rails.logger.error("PostgresqlUpgradeJob broadcast failed: #{e.class}: #{e.message}")
+    logger.error("PostgresqlUpgradeJob broadcast failed: #{e.class}: #{e.message}")
   end
 end

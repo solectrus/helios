@@ -28,7 +28,6 @@
 # never fire two backups at once.
 class BackupScheduler < ManagedThread
   TICK_INTERVAL = 30 # seconds
-  LOG_PATH = 'log/backup_scheduler.log'.freeze
 
   # Persisted marker for the last calendar day the schedule was handled.
   # Lives in HELIOS's data dir next to the other runtime state.
@@ -86,10 +85,6 @@ class BackupScheduler < ManagedThread
 
       value = config['schedule_time'].to_s
       parse_hh_mm(value) ? value : nil
-    end
-
-    def logger
-      LOGGER
     end
 
     # The date the schedule was last handled, or nil if never (or unreadable).
@@ -193,17 +188,6 @@ class BackupScheduler < ManagedThread
       [hour, minute]
     end
   end
-
-  LOGGER =
-    ActiveSupport::Logger
-    .new(Rails.root.join(LOG_PATH), 5, 10.megabytes)
-    .tap do |log|
-      log.formatter =
-        proc do |severity, time, _, msg|
-          "[#{time.strftime('%Y-%m-%d %H:%M:%S')}] #{severity}: #{msg}\n"
-        end
-    end
-  private_constant :LOGGER
 
   private
 

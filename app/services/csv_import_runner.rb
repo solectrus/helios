@@ -207,7 +207,7 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
     run_container!
     self.class.invalidate_in_progress_cache!
   rescue StandardError => e
-    Rails.logger.warn("[CsvImportRunner] preparing failed: #{e.class}: #{e.message}")
+    logger.warn("preparing failed: #{e.class}: #{e.message}")
     State.write_error!(e.message.presence || "#{e.class}: (no message)")
     CsvImportUploader.cleanup!
   end
@@ -217,7 +217,7 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
   # phases before writing the final success file so the user-visible
   # outcome reflects whether the dashboard caches were actually reset.
   def process_completion!(raw) # rubocop:disable Metrics/AbcSize
-    Rails.logger.info('[CsvImportRunner] container finished, processing completion')
+    logger.info('container finished, processing completion')
     state = raw['State'] || {}
 
     if successful_exit?(state)
@@ -226,7 +226,7 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
       capture_failure!(raw)
     end
   rescue StandardError => e
-    Rails.logger.warn("[CsvImportRunner] completion failed: #{e.class}: #{e.message}")
+    logger.warn("completion failed: #{e.class}: #{e.message}")
     State.write_error!(e.message.presence || "#{e.class}: (no message)")
   ensure
     self.class.completion_phase = nil
@@ -438,7 +438,7 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
 
     Orchestration::RedisCacheFlush.call(container)
   rescue StandardError => e
-    Rails.logger.warn("[CsvImportRunner] redis flush failed: #{e.class}: #{e.message}")
+    logger.warn("redis flush failed: #{e.class}: #{e.message}")
     false
   end
 
@@ -495,7 +495,7 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
   def safely(label)
     yield
   rescue StandardError => e
-    Rails.logger.warn("[CsvImportRunner] #{label} failed: #{e.class}: #{e.message}")
+    logger.warn("#{label} failed: #{e.class}: #{e.message}")
   end
 
   # A failed `docker rm` leaves the exited container in place — detect_completion!
@@ -506,8 +506,8 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
     output, status = Open3.capture2e('docker', 'rm', '-f', CONTAINER_NAME)
     return if status.success?
 
-    Rails.logger.warn(
-      "[CsvImportRunner] docker rm failed (exit #{status.exitstatus}): #{output.strip}",
+    logger.warn(
+      "docker rm failed (exit #{status.exitstatus}): #{output.strip}",
     )
   end
 

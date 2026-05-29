@@ -75,7 +75,7 @@ RSpec.describe Orchestration::ServiceBroadcaster do
 
       before do
         allow(Orchestration::Container).to receive(:find).and_raise(StandardError, 'Docker API timeout')
-        allow(Orchestration::EventsListener::Logging).to receive(:logger).and_return(logger)
+        allow(broadcaster).to receive(:logger).and_return(logger)
       end
 
       it 'returns false' do
@@ -133,7 +133,7 @@ RSpec.describe Orchestration::ServiceBroadcaster do
 
       before do
         allow(Orchestration::Container).to receive(:find).and_raise(StandardError, 'fail')
-        allow(Orchestration::EventsListener::Logging).to receive(:logger).and_return(logger)
+        allow(broadcaster).to receive(:logger).and_return(logger)
       end
 
       it 'logs without prefix' do

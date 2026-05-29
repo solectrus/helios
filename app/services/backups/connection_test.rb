@@ -15,6 +15,8 @@ module Backups
   # classifies the SDK's typed errors into specific i18n reasons.
   class ConnectionTest
     include ConnectionTesting::ResultBuilder
+    include Loggable
+    extend Loggable
 
     PROBE_IMAGE = BackupRunner::IMAGE
     WRITE_PROBE_NAME = '.helios-write-test'.freeze
@@ -44,7 +46,7 @@ module Backups
 
       probe(path)
     rescue StandardError => e
-      Rails.logger.warn("External backup path probe failed (#{e.class}): #{e.message}")
+      logger.warn("External backup path probe failed (#{e.class}): #{e.message}")
       result(false, :backup_path_error)
     end
 
@@ -81,7 +83,7 @@ module Backups
       if output.include?('no such file') || output.include?('does not exist')
         result(false, :backup_path_missing)
       else
-        Rails.logger.warn("External backup path probe failed: #{output.strip}")
+        logger.warn("External backup path probe failed: #{output.strip}")
         result(false, :backup_path_error)
       end
     end
@@ -92,7 +94,7 @@ module Backups
 
       probe_s3(probe)
     rescue StandardError => e
-      Rails.logger.warn("S3 credentials probe failed (#{e.class}): #{e.message}")
+      logger.warn("S3 credentials probe failed (#{e.class}): #{e.message}")
       result(false, :s3_error)
     end
 
@@ -133,10 +135,10 @@ module Backups
       when Aws::S3::Errors::AccessDenied, Aws::S3::Errors::Forbidden
         result(false, :s3_access_denied)
       when Seahorse::Client::NetworkingError, Errno::ECONNREFUSED
-        Rails.logger.warn("S3 credentials probe failed (network): #{error.class}: #{error.message}")
+        logger.warn("S3 credentials probe failed (network): #{error.class}: #{error.message}")
         result(false, :s3_endpoint_unreachable)
       else
-        Rails.logger.warn("S3 credentials probe failed: #{error.class}: #{error.message}")
+        logger.warn("S3 credentials probe failed: #{error.class}: #{error.message}")
         result(false, :s3_error)
       end
     end

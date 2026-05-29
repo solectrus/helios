@@ -12,6 +12,8 @@ module Senec
   # self-signed certificate, so certificate verification is disabled.
   class ConnectionTest
     include ConnectionTesting::ResultBuilder
+    include Loggable
+    extend Loggable
 
     # SENEC devices are slow embedded boxes; allow generous timeouts so a slow
     # TLS handshake or a slow `/lala.cgi` response isn't mistaken for an
@@ -49,7 +51,7 @@ module Senec
     end
 
     def warn_and_result(error, context, reason)
-      Rails.logger.warn("SENEC reachability check — #{context} (#{error.class}): #{error.message}")
+      logger.warn("SENEC reachability check — #{context} (#{error.class}): #{error.message}")
       result(false, reason)
     end
 

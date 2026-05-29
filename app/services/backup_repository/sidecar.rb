@@ -8,6 +8,8 @@ class BackupRepository
   #
   # Including adapters must provide: `sidecar_command(*cmd)`.
   module Sidecar
+    include Loggable
+
     def sidecar_run(*cmd)
       Open3.capture2e(*sidecar_command(*cmd))
     end
@@ -20,7 +22,7 @@ class BackupRepository
       return output if status.success?
 
       message = output.to_s.strip.presence || "exited with status #{status.exitstatus}"
-      Rails.logger.error("#{name} sidecar failed: #{cmd.inspect} — #{message}")
+      logger.error("sidecar failed: #{cmd.inspect} — #{message}")
       raise BackupRepository::Error, message
     end
 
@@ -80,7 +82,7 @@ class BackupRepository
     end
 
     def warn_archive(reason, cmd)
-      Rails.logger.warn("#{name}: archive sidecar #{reason} — #{cmd.inspect}")
+      logger.warn("archive sidecar #{reason} — #{cmd.inspect}")
       BackupRepository::EMPTY_ARCHIVE
     end
   end

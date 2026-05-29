@@ -9,6 +9,8 @@ module Orchestration
   # now-empty state to dump.rdb, so a later container restart cannot reload
   # the stale data from disk.
   class RedisCacheFlush
+    include Loggable
+
     def self.call(container)
       new(container).call
     end
@@ -28,13 +30,13 @@ module Orchestration
     attr_reader :container
 
     def redis_cli(*command)
-      Rails.logger.info(
-        "[#{self.class.name}] docker exec #{container.name} redis-cli #{command.join(' ')}",
+      logger.info(
+        "docker exec #{container.name} redis-cli #{command.join(' ')}",
       )
       _stdout, _stderr, exit_code = container.exec(['redis-cli', *command])
       exit_code&.zero? || false
     rescue Docker::Error::DockerError, Excon::Error => e
-      Rails.logger.warn("[#{self.class.name}] failed: #{e.class}: #{e.message}")
+      logger.warn("failed: #{e.class}: #{e.message}")
       false
     end
   end

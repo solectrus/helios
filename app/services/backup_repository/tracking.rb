@@ -13,6 +13,8 @@ class BackupRepository
   # scripts), so all adapters share the same read/remove implementation
   # provided here.
   module Tracking # rubocop:disable Metrics/ModuleLength
+    include Loggable
+
     def all
       return Backup.none unless destination_configured?
 
@@ -80,7 +82,7 @@ class BackupRepository
       pending = pending_refresh?
       return unless cached || pending
 
-      Rails.logger.info(
+      logger.info(
         "[detect_completion!] firing — backup_ip=#{backup_ip.inspect} restore_ip=#{restore_ip.inspect} " \
         "cached=#{cached.inspect} pending=#{pending} marker=#{pending_marker_content.inspect}",
       )
@@ -151,7 +153,7 @@ class BackupRepository
     def process_completion!(expected_filename) # rubocop:disable Metrics/MethodLength
       restore_err = read_error_file(RestoreRunner::ERROR_FILENAME)
       backup_err = read_error_file(BackupRepository::ERROR_FILENAME)
-      Rails.logger.info(
+      logger.info(
         "[process_completion!] expected=#{expected_filename.inspect} " \
         "restore_err=#{restore_err.inspect} backup_err=#{backup_err.inspect}",
       )

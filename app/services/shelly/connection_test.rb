@@ -14,6 +14,8 @@ module Shelly
   #   collector uses and confirms the server URL and authentication key.
   class ConnectionTest
     include ConnectionTesting::ResultBuilder
+    include Loggable
+    extend Loggable
 
     OPEN_TIMEOUT = 2
     READ_TIMEOUT = 5
@@ -168,7 +170,7 @@ module Shelly
     end
 
     def warn_and_result(error, context, reason)
-      Rails.logger.warn("Shelly connection test — #{context} (#{error.class}): #{error.message}")
+      logger.warn("Shelly connection test — #{context} (#{error.class}): #{error.message}")
       result(false, reason)
     end
   end

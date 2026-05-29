@@ -13,6 +13,8 @@ module InfluxDb
   #   valid — without writing a single point into the user's bucket.
   class ConnectionTest
     include ConnectionTesting::ResultBuilder
+    include Loggable
+    extend Loggable
 
     OPEN_TIMEOUT = 2
     READ_TIMEOUT = 5
@@ -39,7 +41,7 @@ module InfluxDb
     rescue *InfluxDb::Http::CONNECTION_ERRORS
       result(false, :unreachable)
     rescue StandardError => e
-      Rails.logger.warn("InfluxDB reachability check failed: #{e.message}")
+      logger.warn("InfluxDB reachability check failed: #{e.message}")
       result(false, :error)
     end
 
@@ -52,7 +54,7 @@ module InfluxDb
     rescue *InfluxDb::Http::CONNECTION_ERRORS
       result(false, :unreachable)
     rescue StandardError => e
-      Rails.logger.warn("InfluxDB credentials check failed: #{e.message}")
+      logger.warn("InfluxDB credentials check failed: #{e.message}")
       result(false, :error)
     end
 

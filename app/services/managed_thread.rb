@@ -13,6 +13,8 @@
 # from ManagedThread (e.g. Orchestration::EventsListener with its two threads).
 class ManagedThread
   extend SingletonLifecycle
+  include Loggable
+  extend Loggable
 
   attr_reader :id
 
@@ -28,16 +30,16 @@ class ManagedThread
     self.thread = Thread.new { run_loop }
     # rubocop:enable ThreadSafety/NewThread
     thread.name = thread_name
-    self.class.logger.info("[#{id}] Started (#{thread.name})")
+    logger.info("Started (#{thread.name})")
   end
 
   def stop
     return unless @running.true? || thread&.alive?
 
-    self.class.logger.info("[#{id}] Stopping...")
+    logger.info("Stopping (#{id})")
     @running.make_false
     terminate_thread
-    self.class.logger.info("[#{id}] Stopped")
+    logger.info("Stopped (#{id})")
   end
 
   def running?

@@ -9,6 +9,8 @@ module Mqtt
   #   the CONNACK return code.
   class ConnectionTest
     include ConnectionTesting::ResultBuilder
+    include Loggable
+    extend Loggable
 
     DEFAULT_PORT = 1883
     DEFAULT_SSL_PORT = 8883
@@ -37,7 +39,7 @@ module Mqtt
         result(false, :mqtt_unreachable)
       end
     rescue StandardError => e
-      Rails.logger.warn("MQTT reachability check failed: #{e.message}")
+      logger.warn("MQTT reachability check failed: #{e.message}")
       result(false, :error)
     end
 
@@ -55,7 +57,7 @@ module Mqtt
     rescue *Mqtt::Probe::CONNECTION_ERRORS
       result(false, :mqtt_unreachable)
     rescue StandardError => e
-      Rails.logger.warn("MQTT credentials check failed: #{e.message}")
+      logger.warn("MQTT credentials check failed: #{e.message}")
       result(false, :error)
     end
 

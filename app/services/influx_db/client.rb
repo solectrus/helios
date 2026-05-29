@@ -3,6 +3,9 @@ require 'uri'
 
 module InfluxDb
   class Client
+    include Loggable
+    extend Loggable
+
     OPEN_TIMEOUT = 2
     READ_TIMEOUT = 10
 
@@ -70,7 +73,7 @@ module InfluxDb
     def with_http(default: {}, &)
       InfluxDb::Http.start(host:, port:, schema:, open_timeout: OPEN_TIMEOUT, read_timeout: READ_TIMEOUT, &)
     rescue *InfluxDb::Http::CONNECTION_ERRORS => e
-      Rails.logger.warn("InfluxDB unreachable at #{schema}://#{host}:#{port}: #{e.message}")
+      logger.warn("InfluxDB unreachable at #{schema}://#{host}:#{port}: #{e.message}")
       default
     end
 
@@ -92,7 +95,7 @@ module InfluxDb
     rescue *InfluxDb::Http::CONNECTION_ERRORS
       raise
     rescue StandardError => e
-      Rails.logger.warn("InfluxDB query failed for #{measurement}:#{field}: #{e.message}")
+      logger.warn("InfluxDB query failed for #{measurement}:#{field}: #{e.message}")
       nil
     end
 

@@ -27,7 +27,7 @@ class BackupRepository
         rescue BackupRepository::Error => e
           handle_failure(filename, e.message)
         rescue StandardError => e
-          Rails.logger.error("BackupRepository::S3::Uploader #{e.class}: #{e.message}")
+          logger.error("#{e.class}: #{e.message}")
           handle_failure(filename, "#{e.class}: #{e.message}")
         ensure
           reset_state!

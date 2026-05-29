@@ -36,7 +36,7 @@ module SensorReadings
 
     InfluxDb::Client.from_configuration(configuration).query_all_latest(mappings)
   rescue InfluxDb::ConnectionError => e
-    Rails.logger.warn("InfluxDB query failed: #{e.message}")
+    logger.warn("InfluxDB query failed: #{e.message}")
     {}
   end
 end

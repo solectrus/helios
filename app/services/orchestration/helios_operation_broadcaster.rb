@@ -4,6 +4,8 @@ module Orchestration
   # the detached docker container exiting, or the in-process Uploader /
   # Downloader thread completing its work.
   class HeliosOperationBroadcaster
+    extend Loggable
+
     def self.broadcast!(locale: nil)
       BackupRunner.invalidate_in_progress_cache!
       RestoreRunner.invalidate_in_progress_cache!
@@ -13,7 +15,7 @@ module Orchestration
         Turbo::StreamsChannel.broadcast_refresh_to('backups')
       end
     rescue StandardError => e
-      Rails.logger.error("HeliosOperationBroadcaster failed: #{e.class}: #{e.message}")
+      logger.error("failed: #{e.class}: #{e.message}")
     end
 
     def self.with_locale(locale, &)

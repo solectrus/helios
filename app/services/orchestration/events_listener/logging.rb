@@ -1,28 +1,10 @@
 module Orchestration
   class EventsListener
     module Logging
-      LOG_PATH = 'log/docker_events.log'.freeze
-
-      def self.logger
-        LOGGER
-      end
-
-      LOGGER =
-        ActiveSupport::Logger
-        .new(Rails.root.join(LOG_PATH), 5, 10.megabytes)
-        .tap do |log|
-          log.formatter =
-            proc do |severity, time, _, msg|
-              "[#{time.strftime('%Y-%m-%d %H:%M:%S')}] #{severity}: #{msg}\n"
-            end
-        end
-      private_constant :LOGGER
+      # The class tag ([Orchestration::EventsListener]) is applied centrally by
+      # Loggable; the `#{id}` prefix below is per-instance data.
 
       private
-
-      def logger
-        Orchestration::EventsListener::Logging.logger
-      end
 
       def log_started
         logger.info(

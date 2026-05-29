@@ -33,6 +33,8 @@ module Orchestration
   # regardless of whether PostgreSQL uses a bind mount, a custom path, or a
   # named volume.
   class PostgresqlUpgrade
+    include Loggable
+
     SERVICE = 'postgresql'.freeze
     DATABASE = 'solectrus'.freeze
     READY_TIMEOUT = 180 # seconds to wait for the upgraded server
@@ -213,7 +215,7 @@ module Orchestration
       mark_deployed!
       true
     rescue StandardError => e
-      Rails.logger.error("PostgresqlUpgrade rollback failed: #{e.class}: #{e.message}")
+      logger.error("rollback failed: #{e.class}: #{e.message}")
       @rollback_error = e
       false
     end

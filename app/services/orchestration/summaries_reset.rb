@@ -22,6 +22,8 @@ module Orchestration
   # rule, which breaks if the user has customized pg_hba.conf. Same
   # pattern as SupportBundle::SystemInfo::PostgresReport.
   class SummariesReset
+    include Loggable
+
     SERVICE = 'postgresql'.freeze
     POSTGRES_USER = 'postgres'.freeze
     POSTGRES_DATABASE = 'solectrus_production'.freeze
@@ -42,12 +44,12 @@ module Orchestration
       output, status = run_psql
       return true if status.success?
 
-      Rails.logger.warn(
-        "[Orchestration::SummariesReset] failed (exit #{status.exitstatus}): #{output.strip}",
+      logger.warn(
+        "failed (exit #{status.exitstatus}): #{output.strip}",
       )
       false
     rescue StandardError => e
-      Rails.logger.warn("[Orchestration::SummariesReset] failed: #{e.class}: #{e.message}")
+      logger.warn("failed: #{e.class}: #{e.message}")
       false
     end
 
@@ -86,8 +88,8 @@ module Orchestration
     end
 
     def run_psql
-      Rails.logger.info(
-        "[#{self.class.name}] docker exec #{container.name} psql -c #{sql.inspect}",
+      logger.info(
+        "docker exec #{container.name} psql -c #{sql.inspect}",
       )
       Open3.capture2e(
         'docker', 'exec', *password_env, container.name,

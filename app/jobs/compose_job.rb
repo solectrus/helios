@@ -9,7 +9,7 @@ class ComposeJob < ApplicationJob
     execute_action(action, service_name)
     @deploy_succeeded = true
   rescue Orchestration::Runner::CommandError => e
-    Rails.logger.error("ComposeJob failed: #{e.message}")
+    logger.error("ComposeJob failed: #{e.message}")
     store_errors(action, service_name, e)
   ensure
     clear_pending_operations(action, service_name)
@@ -93,7 +93,7 @@ class ComposeJob < ApplicationJob
     broadcast_affected_services(action, service_name)
     Orchestration::StackStatus.refresh!
   rescue StandardError => e
-    Rails.logger.error("ComposeJob broadcast failed: #{e.class}: #{e.message}")
+    logger.error("ComposeJob broadcast failed: #{e.class}: #{e.message}")
   end
 
   def update_deployed_hashes(action)

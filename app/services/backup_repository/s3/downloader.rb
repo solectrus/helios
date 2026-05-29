@@ -23,7 +23,7 @@ class BackupRepository
           begin
             yield
           rescue StandardError => e
-            Rails.logger.error("BackupRepository::S3::Downloader after-download #{e.class}: #{e.message}")
+            logger.error("after-download #{e.class}: #{e.message}")
             BackupRepository::S3.write_error_file!(RestoreRunner::ERROR_FILENAME, e.message)
           end
         ensure
@@ -42,7 +42,7 @@ class BackupRepository
           handle_download_failure(filename, e.message)
           false
         rescue StandardError => e
-          Rails.logger.error("BackupRepository::S3::Downloader download #{e.class}: #{e.message}")
+          logger.error("download #{e.class}: #{e.message}")
           handle_download_failure(filename, "#{e.class}: #{e.message}")
           false
         end

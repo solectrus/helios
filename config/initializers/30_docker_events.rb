@@ -17,7 +17,7 @@ end
 # Graceful shutdown when server stops
 at_exit do
   if Orchestration::EventsListener.running?
-    Orchestration::EventsListener::Logging.logger.info('Server shutting down...')
+    Orchestration::EventsListener.logger.info('Server shutting down...')
     Orchestration::EventsListener.stop
   end
 end

@@ -13,6 +13,9 @@ require 'open3'
 # Subclasses must define the constants CONTAINER_NAME, IMAGE and I18N_SCOPE
 # and the instance method `docker_run_command`.
 class DetachedRunner
+  include Loggable
+  extend Loggable
+
   class Error < StandardError; end
 
   # Docker-inspect is comparatively expensive, so the "is a run live?"
@@ -167,9 +170,9 @@ class DetachedRunner
   def run_container! # rubocop:disable Metrics/AbcSize
     ensure_bind_mount_sources!
 
-    Rails.logger.info("[#{self.class.name}] docker run -d (image=#{self.class::IMAGE})")
+    logger.info("docker run -d (image=#{self.class::IMAGE})")
     output, status = Open3.capture2e(*docker_run_command)
-    Rails.logger.info("[#{self.class.name}] docker run success=#{status.success?} output=#{output.strip.inspect}")
+    logger.info("docker run success=#{status.success?} output=#{output.strip.inspect}")
     if status.success?
       self.class.invalidate_in_progress_cache!
       return

@@ -1,5 +1,7 @@
 module Orchestration
   class ServiceBroadcaster
+    include Loggable
+
     def self.broadcast_row(service_name, container:, compose_service:, error_message: nil)
       component = ServiceRow::Component.new(
         compose_service:, container:, error_message:, lazy: false,
@@ -78,7 +80,7 @@ module Orchestration
 
     def log_error(service_name, error)
       prefix = @listener_id ? "[#{@listener_id}] " : ''
-      Orchestration::EventsListener::Logging.logger.error(
+      logger.error(
         "#{prefix}Broadcast error for #{service_name}: #{error.class}: #{error.message}",
       )
     end

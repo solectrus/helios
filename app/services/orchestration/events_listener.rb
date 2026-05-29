@@ -2,7 +2,9 @@ module Orchestration
   class EventsListener # rubocop:disable Metrics/ClassLength
     include Logging
     include Streaming
+    include Loggable
     extend SingletonLifecycle
+    extend Loggable
 
     BROADCAST_DELAY = 0.5
     SCHEDULER_INTERVAL = 1.0

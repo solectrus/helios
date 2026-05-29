@@ -5,6 +5,8 @@ module Orchestration
   # backup/restore runners. Each helper returns plain values so callers
   # can raise their own domain-specific errors with their own i18n keys.
   module DockerCli
+    extend Loggable
+
     RunningContainer = Data.define(:started_at, :args)
 
     module_function
@@ -33,8 +35,8 @@ module Orchestration
         # that masks crashes from the UI (the SIGPIPE-141 restore.sh bug
         # surfaced exactly here). Logging fires once per such transition,
         # never during the steady "container absent" state.
-        Rails.logger.info(
-          "[DockerCli] #{name} not running: status=#{state['Status'].inspect} " \
+        logger.info(
+          "#{name} not running: status=#{state['Status'].inspect} " \
           "exit_code=#{state['ExitCode'].inspect} error=#{state['Error'].inspect}",
         )
         nil

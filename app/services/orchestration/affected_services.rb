@@ -13,6 +13,9 @@ module Orchestration
   # Results are cached briefly to avoid repeated subprocess calls
   # within the same render cycle.
   class AffectedServices
+    include Loggable
+    extend Loggable
+
     CACHE_TTL = 5.seconds
     CONFIG_HASH_CACHE_KEY = 'orchestration/config_hashes'.freeze
     AFFECTED_CACHE_KEY = 'orchestration/affected_services'.freeze
@@ -43,8 +46,8 @@ module Orchestration
       write_deployed_hashes_file!(hashes)
       invalidate_affected_caches
     rescue StandardError => e
-      Rails.logger.error(
-        "AffectedServices: failed to store deployed hashes: #{e.message}",
+      logger.error(
+        "failed to store deployed hashes: #{e.message}",
       )
     end
 
@@ -73,8 +76,8 @@ module Orchestration
       Rails.cache.delete(CONFIG_HASH_CACHE_KEY)
       invalidate_affected_caches
     rescue StandardError => e
-      Rails.logger.error(
-        "AffectedServices: failed to update deployed hash for #{service_name}: #{e.message}",
+      logger.error(
+        "failed to update deployed hash for #{service_name}: #{e.message}",
       )
     end
 
@@ -119,7 +122,7 @@ module Orchestration
       containers = Container.all.index_by(&:service_name)
       yield(changed, containers)
     rescue Runner::CommandError, ConnectionError => e
-      Rails.logger.error("AffectedServices: #{e.message}")
+      logger.error(e.message)
       []
     end
 
@@ -144,8 +147,8 @@ module Orchestration
     def write_deployed_hashes(hashes)
       self.class.write_deployed_hashes_file!(hashes)
     rescue StandardError => e
-      Rails.logger.error(
-        "AffectedServices: failed to store deployed hashes: #{e.message}",
+      logger.error(
+        "failed to store deployed hashes: #{e.message}",
       )
     end
   end

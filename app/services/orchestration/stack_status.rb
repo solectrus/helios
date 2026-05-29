@@ -1,6 +1,7 @@
 module Orchestration
   class StackStatus
     include Singleton
+    include Loggable
 
     def initialize
       @service_statuses = Concurrent::Map.new
@@ -72,8 +73,8 @@ module Orchestration
       recompute_and_broadcast(force: true)
     rescue StandardError => e
       @initialized.make_true
-      Rails.logger.error(
-        "Orchestration::StackStatus.refresh! failed: #{e.class}: #{e.message}",
+      logger.error(
+        "refresh! failed: #{e.class}: #{e.message}",
       )
     end
 
@@ -159,8 +160,8 @@ module Orchestration
     def broadcast!
       Orchestration::StatusBarBroadcaster.new.broadcast
     rescue StandardError => e
-      Rails.logger.error(
-        "Orchestration::StackStatus broadcast failed: #{e.class}: #{e.message}",
+      logger.error(
+        "broadcast failed: #{e.class}: #{e.message}",
       )
     end
   end

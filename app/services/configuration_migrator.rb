@@ -7,6 +7,8 @@
 # removed once the migration has succeeded — failures leave it behind so the
 # original file can be recovered manually.
 class ConfigurationMigrator
+  include Loggable
+
   def self.run!
     new(Configuration.path).run!
   end
@@ -39,8 +41,8 @@ class ConfigurationMigrator
   end
 
   def log_migration(from, pending)
-    Rails.logger.info(
-      "ConfigurationMigrator: migrated #{File.basename(@path)} " \
+    logger.info(
+      "migrated #{File.basename(@path)} " \
       "from v#{from} to v#{ConfigurationMigrations.current_version} " \
       "(#{pending.map { |m| m.name&.demodulize || m.inspect }.join(', ')})",
     )

@@ -75,7 +75,7 @@ class BackupRepository
           archive = BackupRepository.read_archive(path)
           upsert_backup_record(filename, stat.size, archive)
         rescue BackupRepository::Error => e
-          Rails.logger.warn("#{name}: record_backup! download failed for #{filename} — #{e.message}")
+          logger.warn("record_backup! download failed for #{filename} — #{e.message}")
           nil
         ensure
           FileUtils.rm_f(path)

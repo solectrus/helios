@@ -110,13 +110,14 @@ RSpec.describe InfluxDb::Client do
     # stays responsive even with a broken InfluxDB.
     it 'aborts the batch on the first connection error and logs once' do
       stub_request(:post, query_url).to_raise(SocketError.new('getaddrinfo failed'))
-      allow(Rails.logger).to receive(:warn)
+      logger = instance_spy(ActiveSupport::Logger)
+      allow(client).to receive(:logger).and_return(logger)
 
       result = client.query_all_latest('a' => 'm:f1', 'b' => 'm:f2', 'c' => 'm:f3')
 
       expect(result).to eq({})
       expect(WebMock).to have_requested(:post, query_url).once
-      expect(Rails.logger).to have_received(:warn)
+      expect(logger).to have_received(:warn)
         .with(%r{InfluxDB unreachable at http://influxdb\.test:8086}).once
     end
 
