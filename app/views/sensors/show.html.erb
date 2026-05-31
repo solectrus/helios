@@ -1,8 +1,28 @@
 <% content_for :title, t('.title') %>
 
+<% content_for :head do %>
+  <%#
+    The cached snapshot holds the previously lazy-loaded readings table.
+    Showing it as a navigation preview would flash stale content, then blank
+    as the empty shell arrives, then reload — so opt out of previews.
+  %>
+  <meta name="turbo-cache-control" content="no-preview">
+<% end %>
+
 <%= render "shared/configuration_page", active_tab: :sensors do %>
-  <%= render SensorTable::Component.new(
-        configuration: @configuration,
-        readings: @readings,
-      ) %>
+  <% if rendering_content_frame?("configuration-content") %>
+    <%= turbo_frame_tag "configuration-content" do %>
+      <%= render SensorTable::Component.new(
+            configuration: @configuration,
+            readings: @readings,
+          ) %>
+    <% end %>
+  <% else %>
+    <%#
+      Shell paints instantly; the readings (Docker inspect + InfluxDB query)
+      load in this lazy frame so navigation is not blocked. Empty on purpose —
+      a placeholder would flash on quick loads.
+    %>
+    <%= turbo_frame_tag "configuration-content", src: sensors_path, loading: :lazy, aria: { busy: "true" } %>
+  <% end %>
 <% end %>

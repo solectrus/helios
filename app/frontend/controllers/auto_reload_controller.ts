@@ -31,8 +31,12 @@ export default class extends PollingController {
     const { signal } = this.abortController;
 
     try {
+      // Send the Turbo-Frame header so the server treats this poll as a frame
+      // request for this exact frame. Pages that lazy-load their body keyed on
+      // that header (e.g. backups) then return the real content here, not the
+      // shell's skeleton placeholder.
       const response = await fetch(this.urlValue, {
-        headers: { Accept: 'text/html' },
+        headers: { Accept: 'text/html', 'Turbo-Frame': frame.id },
         signal,
       });
       if (!response.ok) return;

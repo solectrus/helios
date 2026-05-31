@@ -3,8 +3,14 @@ module Backups
     before_action :set_backup, only: :show
 
     def index
-      BackupRepository.detect_completion!
-      load_state
+      # Paint the shell instantly; defer the expensive state load (notably the
+      # BackupRepository.all filesystem/S3 listing) to the lazy content frame.
+      if rendering_content_frame?('backups-content')
+        BackupRepository.detect_completion!
+        load_state
+      else
+        @lazy_content = true
+      end
       render 'backups/index'
     end
 

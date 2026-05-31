@@ -8,9 +8,16 @@ class ApplicationController < ActionController::Base
   before_action :require_consent
   before_action :set_locale
 
-  helper_method :authorized?, :password_required?, :show_app_chrome?, :preferences
+  helper_method :authorized?, :password_required?, :show_app_chrome?, :preferences, :rendering_content_frame?
 
   private
+
+  # True when the request originates from the named lazy content frame (the
+  # second round-trip), not the initial shell render. Lets a page paint its
+  # cheap shell instantly and defer expensive I/O to the frame's lazy load.
+  def rendering_content_frame?(frame_id)
+    turbo_frame_request_id == frame_id
+  end
 
   # Whether to render the app chrome (header, mobile dock, status bar). Shown on
   # every authenticated page — including the setup flow — so navigation and stack

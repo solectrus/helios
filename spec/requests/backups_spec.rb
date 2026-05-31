@@ -23,7 +23,7 @@ RSpec.describe 'Backups', :with_admin_password do
 
   describe 'GET /backups' do
     it 'renders the backup page' do
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include(I18n.t('backups.index.title'))
@@ -32,10 +32,25 @@ RSpec.describe 'Backups', :with_admin_password do
       expect(response.body).not_to include('helios/config.yaml')
     end
 
+    # The shell request paints instantly: it defers the (potentially slow)
+    # backup listing to the lazy content frame. The absent download button
+    # proves load_state did not run on the shell render.
+    it 'renders a lazy content frame on the shell request and defers the body' do
+      get backups_path
+
+      aggregate_failures do
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('id="backups-content"')
+        expect(response.body).to match(/loading="lazy"/)
+        expect(response.body).to match(/src="#{Regexp.escape(backups_path)}"/)
+        expect(response.body).not_to include(I18n.t('backups.index.download'))
+      end
+    end
+
     it 'renders the page synchronously for a remote destination — the DB-backed listing needs no sidecar' do
       with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/nas' })
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response).to have_http_status(:ok)
@@ -46,7 +61,7 @@ RSpec.describe 'Backups', :with_admin_password do
     it 'shows the configured time on the schedule row when enabled' do
       with_config_yaml('backup_schedule' => { 'schedule_enabled' => true, 'schedule_time' => '03:00' })
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include(I18n.t('backups.index.schedule_value_on', time: '03:00'))
@@ -57,7 +72,7 @@ RSpec.describe 'Backups', :with_admin_password do
     it 'shows the schedule row as off when automatic backups are disabled' do
       with_config_yaml('backup' => { 'destination' => 'local' })
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include(I18n.t('backups.index.schedule_off'))
@@ -68,7 +83,7 @@ RSpec.describe 'Backups', :with_admin_password do
     it 'renders existing backups with database sizes' do
       persist_backup('solectrus-backup-20260508-110000.tar')
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response).to have_http_status(:ok)
@@ -81,7 +96,7 @@ RSpec.describe 'Backups', :with_admin_password do
     it 'offers a restore action with confirmation dialog' do
       persist_backup('solectrus-backup-20260508-110000.tar')
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include(I18n.t('backups.index.restore_existing'))
@@ -101,7 +116,7 @@ RSpec.describe 'Backups', :with_admin_password do
     it 'offers a delete action with confirmation dialog' do
       persist_backup('solectrus-backup-20260508-110000.tar')
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include(I18n.t('backups.index.delete_existing'))
@@ -121,7 +136,7 @@ RSpec.describe 'Backups', :with_admin_password do
         postgresql_image: 'postgres:14-alpine',
       )
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include(I18n.t('backups.index.influxdb_version', version: '2.7'))
@@ -130,7 +145,7 @@ RSpec.describe 'Backups', :with_admin_password do
     end
 
     it 'offers a link to configure the backup destination, showing the current one' do
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include(I18n.t('backups.index.destination_label'))
@@ -140,7 +155,7 @@ RSpec.describe 'Backups', :with_admin_password do
     end
 
     it 'offers a link to configure the automatic-backup schedule' do
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include(I18n.t('backups.index.configure_schedule'))
@@ -152,7 +167,7 @@ RSpec.describe 'Backups', :with_admin_password do
       reason = I18n.t('backups.runner.unavailable_reasons.postgres_not_running')
       allow(BackupRunner).to receive(:unavailable_reason).and_return(reason)
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include(I18n.t('backups.index.create_title'))
@@ -164,7 +179,7 @@ RSpec.describe 'Backups', :with_admin_password do
     it 'shows an empty state when the database services do not exist yet' do
       allow(BackupRunner).to receive(:databases_configured?).and_return(false)
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include(I18n.t('backups.index.unavailable_title'))
@@ -183,7 +198,7 @@ RSpec.describe 'Backups', :with_admin_password do
       )
       persist_backup('solectrus-backup-20260508-110000.tar')
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include('Creating backup')
@@ -207,6 +222,8 @@ RSpec.describe 'Backups', :with_admin_password do
         ),
       )
 
+      # Status bar lives in the app chrome (shell), so this asserts on the
+      # full-layout shell render, not the lazy content frame.
       get backups_path
 
       status_bar = response.body[%r{<turbo-frame[^>]*id="status-bar"[^>]*>.*?</turbo-frame>}m]
@@ -224,6 +241,8 @@ RSpec.describe 'Backups', :with_admin_password do
         ),
       )
 
+      # Status bar lives in the app chrome (shell), so this asserts on the
+      # full-layout shell render, not the lazy content frame.
       get backups_path
 
       status_bar = response.body[%r{<turbo-frame[^>]*id="status-bar"[^>]*>.*?</turbo-frame>}m]
@@ -237,7 +256,7 @@ RSpec.describe 'Backups', :with_admin_password do
     it 'shows a failure alert when a backup error was recorded' do
       RunnerLog.record_error!(:backup, 'PostgreSQL dump failed')
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       expect(response.body).to include(I18n.t('backups.index.error', message: 'PostgreSQL dump failed'))
       expect(response.body).to include('role="alert"')
@@ -246,7 +265,7 @@ RSpec.describe 'Backups', :with_admin_password do
     it 'shows a restore failure alert when a restore error was recorded' do
       RunnerLog.record_error!(:restore, 'InfluxDB restore failed')
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       expect(response.body).to include(I18n.t('backups.index.restore_error', message: 'InfluxDB restore failed'))
       expect(response.body).to include('role="alert"')
@@ -262,7 +281,7 @@ RSpec.describe 'Backups', :with_admin_password do
       )
       persist_backup('solectrus-backup-20260508-110000.tar')
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include('Restoring backup')
@@ -285,7 +304,7 @@ RSpec.describe 'Backups', :with_admin_password do
         ),
       )
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include('Download backup from S3')
@@ -299,7 +318,7 @@ RSpec.describe 'Backups', :with_admin_password do
       persist_backup(filename)
       RunnerLog.record_finished!(:backup)
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include('Backup successful')
@@ -313,7 +332,7 @@ RSpec.describe 'Backups', :with_admin_password do
       RunnerLog.record_started!(:backup, automatic: true)
       RunnerLog.record_finished!(:backup)
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         # No card to acknowledge — the backup just lands in the list.
@@ -328,7 +347,7 @@ RSpec.describe 'Backups', :with_admin_password do
       RunnerLog.record_error!(:backup, 'PostgreSQL dump failed')
       RunnerLog.record_finished!(:backup)
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include('Backup failed')
@@ -343,7 +362,7 @@ RSpec.describe 'Backups', :with_admin_password do
         persist_backup(filename)
         RunnerLog.record_finished!(:backup)
 
-        get backups_path
+        get backups_path, headers: turbo_frame_headers('backups-content')
       end
 
       aggregate_failures do
@@ -358,7 +377,7 @@ RSpec.describe 'Backups', :with_admin_password do
       RunnerLog.record_error!(:backup, 'PostgreSQL dump failed')
       RunnerLog.record_finished!(:backup)
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       aggregate_failures do
         expect(response.body).to include('Backup failed')
@@ -374,7 +393,7 @@ RSpec.describe 'Backups', :with_admin_password do
       # broadcasts (die + destroy) that hit the page when a runner container
       # exits — all of them must still render the completion card.
       3.times do
-        get backups_path
+        get backups_path, headers: turbo_frame_headers('backups-content')
         expect(response.body).to include('Backup successful')
       end
     end
@@ -382,12 +401,12 @@ RSpec.describe 'Backups', :with_admin_password do
     it 'keeps the completion card visible indefinitely until the user dismisses it' do
       persist_backup('solectrus-backup-20260508-143000.tar')
       RunnerLog.record_finished!(:backup)
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
       expect(response.body).to include('Backup successful')
 
       # Days later — still the same card, no auto-dismiss.
       travel_to(3.days.from_now) do
-        get backups_path
+        get backups_path, headers: turbo_frame_headers('backups-content')
         expect(response.body).to include('Backup successful')
       end
     end
@@ -395,25 +414,25 @@ RSpec.describe 'Backups', :with_admin_password do
     it 'shows the completion card again on a second backup cycle' do
       persist_backup('solectrus-backup-20260508-110000.tar')
       RunnerLog.record_finished!(:backup)
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
       expect(response.body).to include('Backup successful')
 
       # User dismisses, normal page is back.
       delete backups_completion_path
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
       expect(response.body).not_to include('Backup successful')
 
       # Second backup finishes — completion card returns.
       persist_backup('solectrus-backup-20260509-120000.tar')
       RunnerLog.record_finished!(:backup)
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
       expect(response.body).to include('Backup successful')
     end
 
     it 'shows a restore-success card when the restore runner finished cleanly' do
       RunnerLog.record_finished!(:restore)
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       expect(response.body).to include('Restore successful')
     end
@@ -422,7 +441,7 @@ RSpec.describe 'Backups', :with_admin_password do
       persist_backup('solectrus-backup-20260510-090000.tar')
       RunnerLog.record_finished!(:backup)
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       expect(response.body).to include(%(href="#{backup_path('solectrus-backup-20260510-090000')}"))
       expect(response.body).to include('Download backup')
@@ -431,7 +450,7 @@ RSpec.describe 'Backups', :with_admin_password do
     it 'omits the download link on a restore-success card' do
       RunnerLog.record_finished!(:restore)
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       expect(response.body).not_to include('Download backup')
     end
@@ -440,7 +459,7 @@ RSpec.describe 'Backups', :with_admin_password do
       persist_backup('solectrus-backup-20260508-143000.tar')
       RunnerLog.record_started!(:backup)
       RunnerLog.record_finished!(:backup)
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       expect(response.body).to include(%(action="#{backups_completion_path}"))
 
@@ -448,7 +467,7 @@ RSpec.describe 'Backups', :with_admin_password do
 
       aggregate_failures do
         expect(RunnerLog.find_by(kind: :backup)).to be_nil
-        get backups_path
+        get backups_path, headers: turbo_frame_headers('backups-content')
         expect(response.body).not_to include('Backup successful')
       end
     end
@@ -462,7 +481,7 @@ RSpec.describe 'Backups', :with_admin_password do
       aggregate_failures do
         expect(RunnerLog.find_by(kind: :backup)).to be_nil
         # Next GET shows the normal page, not a phantom success card.
-        get backups_path
+        get backups_path, headers: turbo_frame_headers('backups-content')
         expect(response.body).not_to include('Backup successful')
         expect(response.body).to include(I18n.t('backups.index.existing_title'))
       end
@@ -583,7 +602,7 @@ RSpec.describe 'Backups', :with_admin_password do
     end
 
     it 'renders the upload button on the index page' do
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       expect(response.body).to include(I18n.t('backups.index.upload'))
       expect(response.body).to include(backups_upload_path)
@@ -597,7 +616,7 @@ RSpec.describe 'Backups', :with_admin_password do
         ),
       )
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       expect(response.body).not_to include(I18n.t('backups.index.upload'))
     end
@@ -605,7 +624,7 @@ RSpec.describe 'Backups', :with_admin_password do
     it 'disables the upload button with a tooltip for a remote destination' do
       with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/nas' })
 
-      get backups_path
+      get backups_path, headers: turbo_frame_headers('backups-content')
 
       document = Capybara.string(response.body)
       aggregate_failures do

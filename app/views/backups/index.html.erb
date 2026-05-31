@@ -4,248 +4,268 @@
 <% content_for :head do %>
   <meta name="turbo-refresh-method" content="morph">
   <meta name="turbo-refresh-scroll" content="preserve">
+
+  <%#
+    The cached snapshot holds the previously lazy-loaded body. Showing it as a
+    navigation preview would flash stale content, then blank as the empty shell
+    arrives, then reload — so opt out of previews (back/forward cache stays).
+  %>
+  <meta name="turbo-cache-control" content="no-preview">
 <% end %>
 
 <%= turbo_stream_from "backups" %>
 
 <%= turbo_frame_tag "tab-content" do %>
-  <%= turbo_frame_tag "backups-content" do %>
-    <% if @in_progress || @completion %>
-      <% if @in_progress %>
-        <div
-          data-controller="auto-reload"
-          data-auto-reload-interval-value="3000"
-          data-auto-reload-url-value="<%= backups_path %>"
-          class="hidden"
-        ></div>
-      <% end %>
-      <div class="mx-auto max-w-3xl py-4 md:p-8">
-        <%= render BackupProgress::Component.new(
+  <% if @lazy_content %>
+    <%#
+      Shell render: paint instantly, lazy-load the body (defers BackupRepository.all).
+      Empty on purpose: a placeholder would flash on quick loads.
+    %>
+    <%= turbo_frame_tag "backups-content", src: backups_path, loading: :lazy, aria: { busy: "true" } %>
+  <% else %>
+    <%= turbo_frame_tag "backups-content" do %>
+      <% if @in_progress || @completion %>
+        <% if @in_progress %>
+          <div
+            data-controller="auto-reload"
+            data-auto-reload-interval-value="3000"
+            data-auto-reload-url-value="<%= backups_path %>"
+            class="hidden"
+          ></div>
+        <% end %>
+        <div class="mx-auto max-w-3xl py-4 md:p-8">
+          <%= render BackupProgress::Component.new(
           kind: @progress_kind,
           in_progress: @in_progress,
           completion: @completion,
           include_s3: BackupRepository.s3?,
         ) %>
-      </div>
-    <% else %>
-      <div class="mx-auto max-w-6xl space-y-6 py-4 md:p-8">
-        <% if @backup_error.present? %>
-          <div class="alert alert-error" role="alert">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <span><%= @backup_error %></span>
-          </div>
-        <% elsif @backup_failure.present? %>
-          <div class="alert alert-error" role="alert">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <span><%= t('.error', message: @backup_failure) %></span>
+        </div>
+      <% else %>
+        <div class="mx-auto max-w-6xl space-y-6 py-4 md:p-8">
+          <% if @backup_error.present? %>
+            <div class="alert alert-error" role="alert">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span><%= @backup_error %></span>
+            </div>
+          <% elsif @backup_failure.present? %>
+            <div class="alert alert-error" role="alert">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span><%= t('.error', message: @backup_failure) %></span>
 
-            <%= button_to backups_completion_path,
+              <%= button_to backups_completion_path,
                       method: :delete,
                       class: "btn btn-ghost btn-sm btn-square ml-auto",
                       title: t('.dismiss'),
                       aria: { label: t('.dismiss') } do %>
-              <i class="fa-solid fa-xmark"></i>
-            <% end %>
-          </div>
-        <% elsif @restore_failure.present? %>
-          <div class="alert alert-error" role="alert">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-            <span><%= t('.restore_error', message: @restore_failure) %></span>
+                <i class="fa-solid fa-xmark"></i>
+              <% end %>
+            </div>
+          <% elsif @restore_failure.present? %>
+            <div class="alert alert-error" role="alert">
+              <i class="fa-solid fa-triangle-exclamation"></i>
+              <span><%= t('.restore_error', message: @restore_failure) %></span>
 
-            <%= button_to backups_restore_completion_path,
+              <%= button_to backups_restore_completion_path,
                       method: :delete,
                       class: "btn btn-ghost btn-sm btn-square ml-auto",
                       title: t('.dismiss'),
                       aria: { label: t('.dismiss') } do %>
-              <i class="fa-solid fa-xmark"></i>
-            <% end %>
-          </div>
-        <% end %>
+                <i class="fa-solid fa-xmark"></i>
+              <% end %>
+            </div>
+          <% end %>
 
-        <% if @backup_databases_configured %>
-          <% destination_path = @backup_destination_configured ?
+          <% if @backup_databases_configured %>
+            <% destination_path = @backup_destination_configured ?
            edit_configuration_setting_path(setting: "backup", name: "backup") :
            new_configuration_setting_path(setting: "backup") %>
-          <% schedule_path = @backup_schedule_configured ?
+            <% schedule_path = @backup_schedule_configured ?
            edit_configuration_setting_path(setting: "backup_schedule", name: "backup_schedule") :
            new_configuration_setting_path(setting: "backup_schedule") %>
-          <%#
-            Backup settings (destination + schedule) apply to manual *and* automatic
-            backups, so they live in their own bar above the create action — not nested
-            inside it.
-          %>
-          <section
-            class="
-              bg-base-100 border-base-content/10 divide-base-content/10 grid grid-cols-1 divide-y overflow-hidden
-              border-y shadow-sm sm:grid-cols-2 sm:divide-x sm:divide-y-0 md:rounded-2xl md:border
-            "
-            aria-label="<%= t('.settings_title') %>"
-          >
-            <%= render BackupSettingRow::Component.new(
+            <%#
+              Backup settings (destination + schedule) apply to manual *and* automatic
+              backups, so they live in their own bar above the create action — not nested
+              inside it.
+            %>
+            <section
+              class="
+                bg-base-100 border-base-content/10 divide-base-content/10 grid grid-cols-1 divide-y overflow-hidden
+                border-y shadow-sm sm:grid-cols-2 sm:divide-x sm:divide-y-0 md:rounded-2xl md:border
+              "
+              aria-label="<%= t('.settings_title') %>"
+            >
+              <%= render BackupSettingRow::Component.new(
                   path: destination_path,
                   icon: backup_destination_icon(@backup_destination),
                   label: t('.destination_label'),
                   value: t(".destinations.#{@backup_destination}"),
                 ) %>
 
-            <%= render BackupSettingRow::Component.new(
+              <%= render BackupSettingRow::Component.new(
                   path: schedule_path,
                   icon: "fa-clock",
                   icon_class: @backup_schedule_time ? "bg-primary/10 text-primary" : "bg-base-content/5 text-base-content/70",
                   label: t('.configure_schedule'),
                   value: @backup_schedule_time ? t('.schedule_value_on', time: @backup_schedule_time) : t('.schedule_off'),
                 ) %>
-          </section>
-          <section class="bg-base-100 border-base-content/10 relative overflow-hidden border-y shadow-sm md:rounded-2xl md:border">
-            <div
+            </section>
+            <section
               class="
-                from-primary/15 pointer-events-none absolute -top-32 -right-32 h-72 w-72 rounded-full
-                bg-linear-to-br to-transparent blur-3xl
+                bg-base-100 border-base-content/10 relative overflow-hidden border-y shadow-sm md:rounded-2xl
+                md:border
               "
-              aria-hidden="true"
-            ></div>
+            >
+              <div
+                class="
+                  from-primary/15 pointer-events-none absolute -top-32 -right-32 h-72 w-72 rounded-full
+                  bg-linear-to-br to-transparent blur-3xl
+                "
+                aria-hidden="true"
+              ></div>
 
-            <div class="relative grid gap-8 p-6 md:grid-cols-[1fr_auto] md:items-center md:gap-10 md:p-10">
-              <header class="space-y-3">
-                <h2 class="text-2xl font-semibold tracking-tight md:text-3xl">
-                  <%= t('.create_title') %>
-                </h2>
+              <div class="relative grid gap-8 p-6 md:grid-cols-[1fr_auto] md:items-center md:gap-10 md:p-10">
+                <header class="space-y-3">
+                  <h2 class="text-2xl font-semibold tracking-tight md:text-3xl">
+                    <%= t('.create_title') %>
+                  </h2>
 
-                <p class="text-base-content/70 max-w-prose text-base leading-relaxed"><%= t('.note') %></p>
-              </header>
+                  <p class="text-base-content/70 max-w-prose text-base leading-relaxed"><%= t('.note') %></p>
+                </header>
 
-              <%= form_with url: backups_path, method: :post, data: { turbo: false } do %>
-                <% button_class = "btn btn-outline btn-lg w-full md:w-auto md:min-w-64" %>
+                <%= form_with url: backups_path, method: :post, data: { turbo: false } do %>
+                  <% button_class = "btn btn-outline btn-lg w-full md:w-auto md:min-w-64" %>
 
-                <% if @backup_in_progress %>
-                  <button type="submit" class="<%= button_class %>" disabled>
-                    <span class="loading loading-spinner loading-sm"></span>
-                    <%= backup_in_progress_label(@backup_in_progress) %>
-                  </button>
-                <% elsif @restore_in_progress || @backup_unavailable_reason %>
-                  <button type="submit" class="<%= button_class %>" disabled>
-                    <i class="fa-solid fa-box-archive"></i>
-                    <%= t('.download') %>
+                  <% if @backup_in_progress %>
+                    <button type="submit" class="<%= button_class %>" disabled>
+                      <span class="loading loading-spinner loading-sm"></span>
+                      <%= backup_in_progress_label(@backup_in_progress) %>
+                    </button>
+                  <% elsif @restore_in_progress || @backup_unavailable_reason %>
+                    <button type="submit" class="<%= button_class %>" disabled>
+                      <i class="fa-solid fa-box-archive"></i>
+                      <%= t('.download') %>
+                    </button>
+                  <% else %>
+                    <button
+                      type="submit"
+                      class="<%= button_class %>"
+                      data-controller="loading"
+                      data-action="click->loading#click"
+                      data-loading-text-value="<%= t('.in_progress') %>"
+                      data-loading-spinner-value="loading loading-spinner loading-sm"
+                    >
+                      <i class="fa-solid fa-box-archive"></i>
+                      <%= t('.download') %>
+                    </button>
+                  <% end %>
+                <% end %>
+              </div>
+
+              <div class="border-base-content/10 relative border-t px-6 py-4 md:px-10 md:py-5">
+                <% if @csv_import_running %>
+                  <p class="text-warning text-sm">
+                    <%= t('.unavailable_csv_import_html',
+                        link: link_to(t('.csv_import_link_text'), csv_imports_path, class: 'underline')) %>
+                  </p>
+                <% elsif @backup_unavailable_reason %>
+                  <p class="text-warning text-sm"><%= t('.unavailable', message: @backup_unavailable_reason) %></p>
+                <% else %>
+                  <p class="text-base-content/60 text-sm leading-relaxed"><%= t('.duration_hint') %></p>
+                <% end %>
+              </div>
+            </section>
+          <% else %>
+            <%= render EmptyState::Component.new(
+        icon: "fa-solid fa-box-archive",
+        title: t('.unavailable_title'),
+        description: t('.unavailable_description'),
+      ) %>
+          <% end %>
+
+          <section class="bg-base-100 border-base-content/10 space-y-4 border-y p-6 shadow-sm md:rounded-2xl md:border md:p-8">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <h2 class="text-2xl font-semibold tracking-tight"><%= t('.existing_title') %></h2>
+
+              <% upload_disabled = @backup_in_progress || @restore_in_progress || @backup_destination_remote %>
+
+              <%= form_with url: backups_upload_path,
+                      method: :post,
+                      multipart: true,
+                      data: { turbo: false, controller: "backup-upload" } do |f| %>
+                <%= f.file_field :file,
+                           accept: ".tar",
+                           class: "hidden",
+                           data: { backup_upload_target: "input", action: "change->backup-upload#submit" } %>
+
+                <% if @backup_destination_remote %>
+                  <div
+                    class="tooltip tooltip-left before:max-w-2xs before:text-left before:text-xs before:wrap-break-word"
+                    data-tip="<%= t('.upload_unavailable_remote') %>"
+                  >
+                    <button type="button" class="btn btn-outline btn-sm" disabled>
+                      <i class="fa-solid fa-plus"></i>
+                      <%= t('.upload') %>
+                    </button>
+                  </div>
+                <% elsif upload_disabled %>
+                  <button type="button" class="btn btn-outline btn-sm" disabled>
+                    <i class="fa-solid fa-plus"></i>
+                    <%= t('.upload') %>
                   </button>
                 <% else %>
-                  <button
-                    type="submit"
-                    class="<%= button_class %>"
-                    data-controller="loading"
-                    data-action="click->loading#click"
-                    data-loading-text-value="<%= t('.in_progress') %>"
-                    data-loading-spinner-value="loading loading-spinner loading-sm"
-                  >
-                    <i class="fa-solid fa-box-archive"></i>
-                    <%= t('.download') %>
+                  <button type="button" class="btn btn-outline btn-sm" data-action="click->backup-upload#open">
+                    <i class="fa-solid fa-plus"></i>
+                    <%= t('.upload') %>
                   </button>
                 <% end %>
               <% end %>
             </div>
 
-            <div class="border-base-content/10 relative border-t px-6 py-4 md:px-10 md:py-5">
-              <% if @csv_import_running %>
-                <p class="text-warning text-sm">
-                  <%= t('.unavailable_csv_import_html',
-                        link: link_to(t('.csv_import_link_text'), csv_imports_path, class: 'underline')) %>
-                </p>
-              <% elsif @backup_unavailable_reason %>
-                <p class="text-warning text-sm"><%= t('.unavailable', message: @backup_unavailable_reason) %></p>
-              <% else %>
-                <p class="text-base-content/60 text-sm leading-relaxed"><%= t('.duration_hint') %></p>
-              <% end %>
-            </div>
-          </section>
-        <% else %>
-          <%= render EmptyState::Component.new(
-        icon: "fa-solid fa-box-archive",
-        title: t('.unavailable_title'),
-        description: t('.unavailable_description'),
-      ) %>
-        <% end %>
+            <% if @backup_in_progress || @backups.any? %>
+              <ul class="divide-base-content/10 divide-y">
+                <% if @backup_in_progress %>
+                  <li class="py-3 first:pt-0 last:pb-0">
+                    <div class="backup-row flex min-h-10 flex-wrap items-center gap-x-4 gap-y-1 sm:gap-y-2">
+                      <div class="backup-row-datetime flex items-baseline gap-2 sm:contents">
+                        <time
+                          datetime="<%= @backup_in_progress.started_at.iso8601 %>"
+                          class="font-semibold tabular-nums sm:w-26"
+                        >
+                          <%= l(@backup_in_progress.started_at, format: :backup_date) %>
+                        </time>
 
-        <section class="bg-base-100 border-base-content/10 space-y-4 border-y p-6 shadow-sm md:rounded-2xl md:border md:p-8">
-          <div class="flex flex-wrap items-center justify-between gap-3">
-            <h2 class="text-2xl font-semibold tracking-tight"><%= t('.existing_title') %></h2>
+                        <span class="text-base-content/60 tabular-nums sm:w-20">
+                          <%= l(@backup_in_progress.started_at, format: :backup_time) %>
+                        </span>
+                      </div>
 
-            <% upload_disabled = @backup_in_progress || @restore_in_progress || @backup_destination_remote %>
-
-            <%= form_with url: backups_upload_path,
-                      method: :post,
-                      multipart: true,
-                      data: { turbo: false, controller: "backup-upload" } do |f| %>
-              <%= f.file_field :file,
-                           accept: ".tar",
-                           class: "hidden",
-                           data: { backup_upload_target: "input", action: "change->backup-upload#submit" } %>
-
-              <% if @backup_destination_remote %>
-                <div
-                  class="tooltip tooltip-left before:max-w-2xs before:text-left before:text-xs before:wrap-break-word"
-                  data-tip="<%= t('.upload_unavailable_remote') %>"
-                >
-                  <button type="button" class="btn btn-outline btn-sm" disabled>
-                    <i class="fa-solid fa-plus"></i>
-                    <%= t('.upload') %>
-                  </button>
-                </div>
-              <% elsif upload_disabled %>
-                <button type="button" class="btn btn-outline btn-sm" disabled>
-                  <i class="fa-solid fa-plus"></i>
-                  <%= t('.upload') %>
-                </button>
-              <% else %>
-                <button type="button" class="btn btn-outline btn-sm" data-action="click->backup-upload#open">
-                  <i class="fa-solid fa-plus"></i>
-                  <%= t('.upload') %>
-                </button>
-              <% end %>
-            <% end %>
-          </div>
-
-          <% if @backup_in_progress || @backups.any? %>
-            <ul class="divide-base-content/10 divide-y">
-              <% if @backup_in_progress %>
-                <li class="py-3 first:pt-0 last:pb-0">
-                  <div class="backup-row flex min-h-10 flex-wrap items-center gap-x-4 gap-y-1 sm:gap-y-2">
-                    <div class="backup-row-datetime flex items-baseline gap-2 sm:contents">
-                      <time
-                        datetime="<%= @backup_in_progress.started_at.iso8601 %>"
-                        class="font-semibold tabular-nums sm:w-26"
-                      >
-                        <%= l(@backup_in_progress.started_at, format: :backup_date) %>
-                      </time>
-
-                      <span class="text-base-content/60 tabular-nums sm:w-20">
-                        <%= l(@backup_in_progress.started_at, format: :backup_time) %>
+                      <span class="backup-row-actions text-base-content/60 ml-auto inline-flex items-center gap-2">
+                        <span class="loading loading-spinner loading-sm"></span>
+                        <%= backup_in_progress_label(@backup_in_progress) %>
                       </span>
                     </div>
+                  </li>
+                <% end %>
 
-                    <span class="backup-row-actions text-base-content/60 ml-auto inline-flex items-center gap-2">
-                      <span class="loading loading-spinner loading-sm"></span>
-                      <%= backup_in_progress_label(@backup_in_progress) %>
-                    </span>
-                  </div>
-                </li>
-              <% end %>
-
-              <% @backups.each do |backup| %>
-                <li class="py-3 first:pt-0 last:pb-0">
-                  <%= render BackupRow::Component.new(
+                <% @backups.each do |backup| %>
+                  <li class="py-3 first:pt-0 last:pb-0">
+                    <%= render BackupRow::Component.new(
                 backup:,
                 restore_in_progress: @restore_in_progress&.filename == backup.filename ? @restore_in_progress : nil,
                 actions_disabled_reason: @actions_disabled_reason,
               ) %>
-                </li>
-              <% end %>
-            </ul>
-          <% else %>
-            <p class="text-base-content/60 text-sm"><%= t('.existing_empty') %></p>
-          <% end %>
-        </section>
+                  </li>
+                <% end %>
+              </ul>
+            <% else %>
+              <p class="text-base-content/60 text-sm"><%= t('.existing_empty') %></p>
+            <% end %>
+          </section>
 
-        <%= render DialogModal::Component.new(id: "setting-modal", turbo_frame: "setting-modal-content") %>
-      </div>
+          <%= render DialogModal::Component.new(id: "setting-modal", turbo_frame: "setting-modal-content") %>
+        </div>
+      <% end %>
     <% end %>
   <% end %>
 <% end %>
