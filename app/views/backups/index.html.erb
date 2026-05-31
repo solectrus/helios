@@ -185,7 +185,7 @@
 
           <section class="bg-base-100 border-base-content/10 space-y-4 border-y p-6 shadow-sm md:rounded-2xl md:border md:p-8">
             <div class="flex flex-wrap items-center justify-between gap-3">
-              <h2 class="text-2xl font-semibold tracking-tight"><%= t('.existing_title') %></h2>
+              <h2 class="text-2xl font-semibold tracking-tight"><%= t(".existing_titles.#{@backup_destination}") %></h2>
 
               <% upload_disabled = @backup_in_progress || @restore_in_progress || @backup_destination_remote %>
 

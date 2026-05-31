@@ -267,7 +267,10 @@ en:
         csv_import_in_progress: 'A CSV import is currently running.'
       unavailable_title: 'Backup not available yet'
       unavailable_description: 'A backup includes the InfluxDB and PostgreSQL databases. Once both services are set up and running, you can create a backup here.'
-      existing_title: 'Existing backups'
+      existing_titles:
+        local: 'Backups stored locally'
+        external: 'Backups stored on external mount'
+        s3: 'Backups stored on S3'
       existing_empty: 'No backups yet.'
       upload: 'Upload'
       upload_unavailable_remote: 'Only available when the destination is set to “Local”. Switch it temporarily.'

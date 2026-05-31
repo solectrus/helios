@@ -208,7 +208,9 @@ RSpec.describe 'Backups', :with_admin_password do
         expect(response.body).to include('fa-circle-check')
         expect(response.body).to include('loading-spinner')
         # Takeover hides the existing list and the create/upload buttons entirely.
-        expect(response.body).not_to include(I18n.t('backups.index.existing_title'))
+        expect(response.body).not_to include(
+          I18n.t('backups.index.existing_titles.local'),
+        )
         expect(response.body).not_to include(I18n.t('backups.index.download'))
       end
     end
@@ -287,7 +289,9 @@ RSpec.describe 'Backups', :with_admin_password do
         expect(response.body).to include('Restoring backup')
         expect(response.body).to include('Extract archive')
         expect(response.body).to include('Restore PostgreSQL')
-        expect(response.body).not_to include(I18n.t('backups.index.existing_title'))
+        expect(response.body).not_to include(
+          I18n.t('backups.index.existing_titles.local'),
+        )
         expect(response.body).not_to include(I18n.t('backups.index.download'))
       end
     end
@@ -337,7 +341,9 @@ RSpec.describe 'Backups', :with_admin_password do
       aggregate_failures do
         # No card to acknowledge — the backup just lands in the list.
         expect(response.body).not_to include('Backup successful')
-        expect(response.body).to include(I18n.t('backups.index.existing_title'))
+        expect(response.body).to include(
+          I18n.t('backups.index.existing_titles.local'),
+        )
         expect(response.body).to include(%(href="#{backup_path('solectrus-backup-20260508-143000')}"))
       end
     end
@@ -483,7 +489,9 @@ RSpec.describe 'Backups', :with_admin_password do
         # Next GET shows the normal page, not a phantom success card.
         get backups_path, headers: turbo_frame_headers('backups-content')
         expect(response.body).not_to include('Backup successful')
-        expect(response.body).to include(I18n.t('backups.index.existing_title'))
+        expect(response.body).to include(
+          I18n.t('backups.index.existing_titles.local'),
+        )
       end
     end
   end

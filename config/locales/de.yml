@@ -243,7 +243,10 @@ de:
         csv_import_in_progress: 'Ein CSV-Import läuft gerade.'
       unavailable_title: 'Sicherung noch nicht möglich'
       unavailable_description: 'Eine Sicherung umfasst die Datenbanken von InfluxDB und PostgreSQL. Sobald beide Dienste eingerichtet sind und laufen, kannst du hier eine Sicherung erstellen.'
-      existing_title: 'Vorhandene Sicherungen'
+      existing_titles:
+        local: 'Lokal vorhandene Sicherungen'
+        external: 'Auf externem Mount vorhandene Sicherungen'
+        s3: 'Auf S3 vorhandene Sicherungen'
       existing_empty: 'Noch keine Sicherungen vorhanden.'
       upload: 'Hochladen'
       upload_unavailable_remote: 'Nur bei Sicherungsziel „Lokal“ möglich. Stelle es dafür vorübergehend um.'
