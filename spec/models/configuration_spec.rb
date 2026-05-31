@@ -261,6 +261,26 @@ RSpec.describe Configuration do
       )
       expect(described_class.current.prune_shadowed_shelly_devices!).to be(false)
     end
+
+    # A heatpump whose total power comes from a Shelly plug and whose heating
+    # power comes from MQTT shares the `heatpump` measurement across two
+    # collectors writing different fields. The Shelly device must survive.
+    it 'keeps a device still consumed by a Shelly sensor sharing the measurement' do
+      with_config_yaml(
+        'shelly' => {
+          'connection' => 'local',
+          'devices' => [{ 'name' => 'heatpump', 'host' => 'hp.local', 'measurement' => 'heatpump' }],
+        },
+        'sensors' => {
+          'heatpump_power' => { 'source' => 'shelly', 'measurement' => 'heatpump', 'field' => 'power' },
+          'heatpump_heating_power' => { 'source' => 'mqtt', 'measurement' => 'heatpump', 'field' => 'heating_power' },
+        },
+      )
+      config = described_class.current
+
+      expect(config.prune_shadowed_shelly_devices!).to be(false)
+      expect(config.shelly_devices.pluck('measurement')).to eq(%w[heatpump])
+    end
   end
 
   describe '#update_sensor pruning shadowed Shelly devices' do

@@ -287,7 +287,14 @@ class Configuration # rubocop:disable Metrics/ClassLength
   end
 
   # Enable/update a sensor. Returns true if data changed.
-  def update_sensor(name, data) # rubocop:disable Naming/PredicateMethod
+  #
+  # `prune: false` defers shadowed-device cleanup to the caller — the batch
+  # importer persists sensors in alphabetical order, so a shadowing sensor
+  # (e.g. mqtt `heatpump_heating_power`) can land before the Shelly sensor
+  # that keeps the device alive (`heatpump_power`); pruning per sensor would
+  # then drop a device the later sensor still needs. The importer prunes once
+  # after the full batch instead.
+  def update_sensor(name, data, prune: true) # rubocop:disable Naming/PredicateMethod
     @data['sensors'] ||= {}
     raw = data.is_a?(Data) ? data.to_h : data
     sanitized = sanitize_sensor_data(raw)
@@ -295,7 +302,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
     @data['sensors'][name.to_s] = sanitized
     save!
-    prune_shadowed_shelly_devices!
+    prune_shadowed_shelly_devices! if prune
     true
   end
 
@@ -394,11 +401,27 @@ class Configuration # rubocop:disable Metrics/ClassLength
     end.to_set
   end
 
-  # Shelly devices whose measurement another collector already writes —
-  # stale leftovers from moving the consuming sensor to a different source.
+  # Measurements still consumed by a `source: shelly` sensor. A device feeding
+  # one of these must survive even when another collector writes the same
+  # measurement into a different field — SOLECTRUS lets several collectors
+  # share a measurement (e.g. a Shelly power sensor and an MQTT heating-power
+  # sensor both writing `heatpump`).
+  def shelly_consumed_measurements
+    (@data['sensors'] || {}).each_value.filter_map do |config|
+      config['measurement'] if config['source'] == 'shelly'
+    end.to_set
+  end
+
+  # Shelly devices whose measurement another collector already writes and that
+  # no Shelly sensor still consumes — stale leftovers from moving the consuming
+  # sensor to a different source.
   def shadowed_shelly_devices
-    measurements = shadowing_measurements
-    shelly_devices.select { |device| measurements.include?(device['measurement']) }
+    shadowing = shadowing_measurements
+    consumed = shelly_consumed_measurements
+    shelly_devices.select do |device|
+      measurement = device['measurement']
+      shadowing.include?(measurement) && consumed.exclude?(measurement)
+    end
   end
 
   # Drops shelly.devices entries that another collector already writes, so a

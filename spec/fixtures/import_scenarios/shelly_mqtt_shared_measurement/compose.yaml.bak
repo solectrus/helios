@@ -1,0 +1,122 @@
+---
+name: solectrus
+services:
+  # SOLECTRUS web application
+  dashboard:
+    image: ghcr.io/solectrus/solectrus:latest
+    environment:
+      - TZ
+      - INSTALLATION_DATE
+      - INFLUX_TOKEN
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - SECRET_KEY_BASE
+      - ADMIN_PASSWORD
+      - APP_HOST
+      - INFLUX_POLL_INTERVAL
+      - REDIS_URL=redis://redis:6379
+      - INFLUX_HOST=influxdb
+      - DB_HOST=postgresql
+      - DB_USER=postgres
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_DATABASE=solectrus
+      - INFLUX_EXCLUDE_FROM_HOUSE_POWER
+      - INFLUX_SENSOR_HEATPUMP_POWER
+      - INFLUX_SENSOR_HEATPUMP_HEATING_POWER
+      - INFLUX_SENSOR_CUSTOM_POWER_01
+    depends_on:
+      postgresql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+    ports:
+      - 3000:3000
+
+  # Time-series database for sensor measurements
+  influxdb:
+    image: influxdb:2-alpine
+    ports:
+      - 8086:8086
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=admin
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUX_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_TOKEN}
+    volumes:
+      - "./influxdb:/var/lib/influxdb2"
+    restart: unless-stopped
+
+  # Relational database for daily summaries, electricity prices, and settings
+  postgresql:
+    image: postgres:18-alpine
+    environment:
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB=solectrus
+    volumes:
+      - "./postgresql:/var/lib/postgresql"
+    restart: unless-stopped
+
+  # In-memory store for caching
+  redis:
+    image: redis:8-alpine
+    volumes:
+      - "./redis:/data"
+    restart: unless-stopped
+
+  # Configuration management UI
+  helios:
+    image: ghcr.io/solectrus/helios:develop
+    environment:
+      - ADMIN_PASSWORD
+      - SECRET_KEY_BASE
+    volumes:
+      - ".:/data"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    ports:
+      - 3999:3000
+    restart: unless-stopped
+
+  # Shelly collector: two devices via CSV. The "heatpump" device shares its
+  # measurement with the MQTT heatpump_heating_power sensor below.
+  shelly-collector:
+    image: ghcr.io/solectrus/shelly-collector:latest
+    environment:
+      - INFLUX_TOKEN
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - SHELLY_HOST
+      - SHELLY_INTERVAL
+      - INFLUX_MEASUREMENT
+      - INFLUX_HOST=influxdb
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # MQTT collector: writes a different field into the same "heatpump"
+  # measurement the Shelly heatpump device feeds.
+  mqtt-collector:
+    image: ghcr.io/solectrus/mqtt-collector:latest
+    environment:
+      - TZ
+      - INFLUX_TOKEN
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - MQTT_HOST
+      - INFLUX_HOST=influxdb
+      - MQTT_PORT
+      - MQTT_USERNAME
+      - MQTT_PASSWORD
+      - MAPPING_0_TOPIC
+      - MAPPING_0_MEASUREMENT
+      - MAPPING_0_FIELD
+      - MAPPING_0_TYPE
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped

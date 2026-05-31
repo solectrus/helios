@@ -39,8 +39,14 @@ module Import
           data = build_sensor_data(sensor_name, source)
           data['exclude_from_house_power'] = true if @excluded_sensors.include?(sensor_name)
           prefill_custom_label!(data, sensor_name)
-          config.update_sensor(sensor_name, data)
+          # Defer device pruning: sensors persist alphabetically, so a Shelly
+          # sensor may land after a shadowing sensor that shares its measurement.
+          config.update_sensor(sensor_name, data, prune: false)
         end
+
+        # Prune once the full sensor set is in place, so a device still
+        # consumed by a Shelly sensor survives regardless of persistence order.
+        config.prune_shadowed_shelly_devices!
       end
 
       private

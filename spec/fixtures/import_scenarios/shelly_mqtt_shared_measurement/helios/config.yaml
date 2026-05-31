@@ -1,0 +1,67 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: example-admin-password
+  app_host: solectrus.example.com
+  installation_date: '2024-01-01'
+  secret_key_base: my-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: my-secret-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: my-influx-password
+  publish_port: true
+  token_admin: my-super-secret-admin-token
+  token_read: my-super-secret-admin-token
+  token_readwrite: my-super-secret-admin-token
+  token_write: my-super-secret-admin-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+mqtt:
+  mqtt_host: mqtt-broker.local
+  mqtt_password: my-mqtt-password
+  mqtt_port: '1883'
+  mqtt_username: my-mqtt-username
+shelly:
+  connection: local
+  devices:
+  - host: shelly-heatpump.fritz.box
+    measurement: heatpump
+    name: device1
+  - host: shelly-fridge.fritz.box
+    measurement: fridge
+    name: device2
+  image: ghcr.io/solectrus/shelly-collector:latest
+  interval: '5'
+sensors:
+  custom_power_01:
+    field: power
+    measurement: fridge
+    name: fridge
+    source: shelly
+  heatpump_heating_power:
+    field: heating_power
+    measurement: heatpump
+    mqtt_payload_type: float
+    mqtt_topic: heatpump/heating
+    source: mqtt
+  heatpump_power:
+    exclude_from_house_power: true
+    field: power
+    measurement: heatpump
+    source: shelly
