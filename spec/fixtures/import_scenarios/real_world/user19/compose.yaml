@@ -241,53 +241,6 @@ services:
         max-file: '3'
 
   # +----------------------------------------------------------+
-  # |  Power Splitter — Calculates derived power values        |
-  # +----------------------------------------------------------+
-  #
-  power-splitter:
-    image: ghcr.io/solectrus/power-splitter:latest
-    environment:
-    - TZ
-    - DB_HOST=postgresql
-    - DB_PASSWORD=${POSTGRES_PASSWORD}
-    - DB_USER=postgres
-    - INFLUX_BUCKET
-    - INFLUX_HOST=influxdb
-    - INFLUX_ORG
-    - INFLUX_SENSOR_BATTERY_CHARGING_POWER
-    - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
-    - INFLUX_SENSOR_BATTERY_SOC
-    - INFLUX_SENSOR_CASE_TEMP
-    - INFLUX_SENSOR_GRID_EXPORT_LIMIT
-    - INFLUX_SENSOR_GRID_EXPORT_POWER
-    - INFLUX_SENSOR_GRID_IMPORT_POWER
-    - INFLUX_SENSOR_HOUSE_POWER
-    - INFLUX_SENSOR_INVERTER_POWER
-    - INFLUX_SENSOR_INVERTER_POWER_FORECAST
-    - INFLUX_SENSOR_SYSTEM_STATUS
-    - INFLUX_SENSOR_SYSTEM_STATUS_OK
-    - INFLUX_TOKEN=${INFLUX_TOKEN_READWRITE}
-    - INSTALLATION_DATE
-    - POSTGRES_PASSWORD
-    - POWER_SPLITTER_INTERVAL
-    - REDIS_URL=redis://redis:6379/1
-    labels:
-    - com.centurylinklabs.watchtower.scope=solectrus
-    depends_on:
-      influxdb:
-        condition: service_healthy
-      postgresql:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: unless-stopped
-    logging:
-      driver: json-file
-      options:
-        max-size: 10m
-        max-file: '3'
-
-  # +----------------------------------------------------------+
   # |  Watchtower — Automatic Docker image updates             |
   # +----------------------------------------------------------+
   #

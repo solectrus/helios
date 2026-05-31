@@ -1567,9 +1567,19 @@ RSpec.describe Export::Builder do
 
     it_behaves_like 'valid Docker Compose configuration'
 
-    it 'is always included in the stack' do
+    it 'is included once a second consumer joins the mandatory sensors' do
       compose = Compose.load
       expect(compose.services.names).to include('power-splitter')
+    end
+
+    it 'is omitted when only the mandatory sensors are mapped (single consumer)' do
+      configuration.remove_sensor('wallbox_power')
+      configuration.remove_sensor('heatpump_power')
+      configuration.remove_sensor('custom_power_01')
+      described_class.new(Configuration.current).write!
+
+      compose = Compose.load
+      expect(compose.services.names).not_to include('power-splitter')
     end
 
     it 'receives sensor environment for the sensors it consumes' do
@@ -1665,6 +1675,10 @@ RSpec.describe Export::Builder do
     end
 
     it 'keeps power-splitter pointing at InfluxDB directly' do
+      # The splitter only activates with a second consumer beyond house_power.
+      Configuration.current.update_sensor('heatpump_power', { 'source' => 'senec' })
+      described_class.new(Configuration.current).write!
+
       compose = Compose.load
       splitter = compose.services.find('power-splitter')
       expect(splitter.environment).to include('INFLUX_HOST=influxdb')

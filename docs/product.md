@@ -10,7 +10,7 @@ HELIOS covers three situations out of the box. They are detected automatically a
 
 ### A — Fresh install, standalone
 
-No other services running yet. HELIOS guides the user through device configuration (inverter, battery, wallbox, heat pump, custom consumers) and generates collector services to read data directly from hardware (SENEC, Shelly, MQTT). `Forecast-Collector` and `Power-Splitter` are always included.
+No other services running yet. HELIOS guides the user through device configuration (inverter, battery, wallbox, heat pump, custom consumers) and generates collector services to read data directly from hardware (SENEC, Shelly, MQTT). `Forecast-Collector` is always included; `Power-Splitter` is added once grid import, house power and at least one further consumer are mapped.
 
 ### B — Fresh install, smart home
 

@@ -51,7 +51,19 @@ RSpec.describe Surveys::Software::Survey do
       expect(matrix['rows'].pluck('value')).to include('ingest')
     end
 
-    it 'pulls in power-splitter once its mandatory sensors are mapped' do
+    it 'pulls in power-splitter once a second consumer joins the mandatory sensors' do
+      with_config_yaml(
+        'sensors' => {
+          'grid_import_power' => { 'source' => 'senec' },
+          'house_power' => { 'source' => 'senec' },
+          'wallbox_power' => { 'source' => 'senec' },
+        },
+      )
+
+      expect(matrix['rows'].pluck('value')).to include('power_splitter')
+    end
+
+    it 'omits power-splitter when only the mandatory sensors are mapped' do
       with_config_yaml(
         'sensors' => {
           'grid_import_power' => { 'source' => 'senec' },
@@ -59,7 +71,7 @@ RSpec.describe Surveys::Software::Survey do
         },
       )
 
-      expect(matrix['rows'].pluck('value')).to include('power_splitter')
+      expect(matrix['rows'].pluck('value')).not_to include('power_splitter')
     end
 
     it 'omits the matrix entirely when no service is active (collectors_only without sources)' do

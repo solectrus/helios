@@ -5,6 +5,13 @@ module Export
       # these mappings the container aborts on startup.
       MANDATORY_SENSORS = %w[grid_import_power house_power].freeze
 
+      # Named consumers the splitter can attribute grid draw to. house_power
+      # (the residual house) is always one consumer; the splitter only earns
+      # its keep once the grid draw can be divided across a second one, so at
+      # least one of these must be mapped on top of the mandatory sensors.
+      CONSUMER_SENSORS =
+        (%w[wallbox_power heatpump_power] + SensorRegistry::GROUPS.fetch(:custom)).freeze
+
       def self.service_name
         'power-splitter'
       end
@@ -21,7 +28,9 @@ module Export
         return false if configuration.collectors_only?
 
         mappings = configuration.effective_sensor_mappings
-        MANDATORY_SENSORS.all? { |name| mappings[name].present? }
+        return false unless MANDATORY_SENSORS.all? { |name| mappings[name].present? }
+
+        CONSUMER_SENSORS.any? { |name| mappings[name].present? }
       end
 
       def to_h
