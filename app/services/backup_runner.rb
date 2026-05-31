@@ -236,14 +236,11 @@ class BackupRunner < DetachedRunner
     @backup_date ||= timestamp.strftime('%Y-%m-%d')
   end
 
-  # Anchor the filename/date to the configured system timezone instead of the
-  # caller thread's Time.zone. A manual backup runs in a web request (Time.zone
-  # set to the system tz by ApplicationController), but an automatic backup
-  # runs in the scheduler thread where Time.zone is the UTC default. Both must
-  # embed the same wall-clock the list parses back with — BackupRepository
-  # .created_at_from uses system_zone too — otherwise the rendered time is off
-  # by the UTC offset for scheduler-created backups.
+  # The filename/date encode wall-clock time in the app timezone
+  # (config.time_zone, derived from the TZ env var). Web requests and the
+  # scheduler thread share that zone, so Time.current is correct in either —
+  # and BackupRepository.created_at_from parses it back with the same Time.zone.
   def timestamp
-    @timestamp ||= BackupRepository.system_zone.now
+    @timestamp ||= Time.current
   end
 end

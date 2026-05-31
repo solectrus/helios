@@ -44,4 +44,8 @@ Rails.application.configure do
 
   # Use fixtures directory as stack path for tests
   config.data_path = Rails.root.join('spec/fixtures').to_s
+
+  # Pin the app timezone for deterministic time specs, independent of the
+  # host's TZ env var (production derives it from TZ; see config/application.rb).
+  config.time_zone = 'Europe/Berlin'
 end

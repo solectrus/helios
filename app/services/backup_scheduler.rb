@@ -67,7 +67,7 @@ class BackupScheduler < ManagedThread
 
     # Pure decision: should an automatic backup be handled at `now`? True once
     # the configured time has passed today and the day hasn't been handled yet.
-    def due?(now: Time.now.getlocal, config: current_config, last_handled_on: last_handled_date)
+    def due?(now: Time.current, config: current_config, last_handled_on: last_handled_date)
       return false unless enabled?(config)
 
       scheduled = scheduled_time_on(config['schedule_time'], now)
@@ -100,7 +100,7 @@ class BackupScheduler < ManagedThread
     # therefore waits for tomorrow instead of firing an immediate catch-up,
     # while setting "10:00" at 09:00 still runs today. Called from the settings
     # controller on save.
-    def reschedule!(now: Time.now.getlocal, config: current_config)
+    def reschedule!(now: Time.current, config: current_config)
       scheduled = enabled?(config) && scheduled_time_on(config['schedule_time'], now)
 
       if scheduled && now >= scheduled
@@ -117,7 +117,7 @@ class BackupScheduler < ManagedThread
     # .reschedule!), so the log shows the scheduler is armed and for when —
     # instead of staying silent until it actually fires. Also surfaces a
     # pending catch-up and any earlier days missed while HELIOS was down.
-    def log_schedule_state(now: Time.now.getlocal, config: current_config)
+    def log_schedule_state(now: Time.current, config: current_config)
       unless enabled?(config)
         logger.info('Automatic backups disabled')
         return
@@ -150,7 +150,7 @@ class BackupScheduler < ManagedThread
     end
 
     def run_due_backup
-      now = Time.now.getlocal
+      now = Time.current
       return unless due?(now:)
 
       # Stamp the day before doing anything that can fail or block. This is the

@@ -105,7 +105,7 @@ RSpec.describe BackupScheduler do
 
       aggregate_failures do
         expect(BackupRunner).not_to have_received(:start)
-        expect(described_class.last_handled_date).to eq(Time.now.getlocal.to_date)
+        expect(described_class.last_handled_date).to eq(Time.current.to_date)
       end
     end
 

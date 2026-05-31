@@ -15,7 +15,7 @@ class BackupRepository
         # Returns true if a new thread was spawned. Extra kwargs are
         # forwarded to the subclass's `run` (e.g. Downloader uses
         # `total:` to size the progress callback).
-        def start_async(filename, **, &on_complete) # rubocop:disable Naming/BlockForwarding,Metrics/AbcSize,Metrics/MethodLength
+        def start_async(filename, **, &on_complete) # rubocop:disable Naming/BlockForwarding,Metrics/MethodLength
           mutex.synchronize do
             return false if @thread&.alive?
 
@@ -23,10 +23,6 @@ class BackupRepository
             @filename = filename
             @progress = nil
             @phase = default_phase
-            # Inherit the request thread's zone so Time.current and any
-            # filename-timestamp parsing in the worker match what the
-            # controller and BackupRunner used.
-            zone = Time.zone
             # Bare Thread.new is intentional: process-local single-flight
             # work, see class docstring. `on_complete` is captured as a
             # named block because anonymous `&` does not survive the
@@ -35,7 +31,6 @@ class BackupRepository
             # the UI would keep showing "in progress" until the user
             # navigates back to /backups.
             @thread = Thread.new(filename) do |f| # rubocop:disable ThreadSafety/NewThread
-              Time.zone = zone if zone
               logger.info("thread starting filename=#{f}")
               # rubocop:disable Naming/BlockForwarding
               Rails.application.executor.wrap { run(f, **, &on_complete) }

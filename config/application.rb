@@ -41,7 +41,11 @@ module Helios
     # These settings can be overridden in specific environments using the files
     # in config/environments, which are processed later.
     #
-    # config.time_zone = "Central Time (US & Canada)"
+    # The app timezone follows the container's TZ env var (set by HELIOS for
+    # the helios service). This makes Time.zone / Time.current correct in every
+    # thread — web requests and background workers (scheduler, S3 uploader) —
+    # without per-thread zone juggling.
+    config.time_zone = ENV.fetch('TZ', 'Europe/Berlin')
     # config.eager_load_paths << Rails.root.join("extras")
 
     # Don't generate system test files.

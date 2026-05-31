@@ -97,21 +97,16 @@ class BackupRepository
     def remote? = destination != 'local'
 
     # Parses the filename's embedded timestamp as the backup's `created_at`.
-    # The filename is produced by BackupRunner using the configured system
-    # timezone, so parse it back with the same zone — independent of the
-    # caller thread's Time.zone (background workers run with UTC default).
-    # Returns nil when the filename does not match the pattern.
+    # The filename encodes wall-clock time in the app timezone
+    # (config.time_zone), so parse it back with Time.zone — which is that same
+    # zone in every thread. Returns nil when the filename does not match.
     def created_at_from(filename)
       match = filename.to_s.match(FILENAME_PATTERN)
       return nil unless match
 
-      system_zone.strptime("#{match[1]}-#{match[2]}", '%Y%m%d-%H%M%S')
+      Time.zone.strptime("#{match[1]}-#{match[2]}", '%Y%m%d-%H%M%S')
     rescue ArgumentError
       nil
-    end
-
-    def system_zone
-      ActiveSupport::TimeZone[Configuration.current.system.timezone.presence.to_s] || Time.zone
     end
 
     def read_archive(path)

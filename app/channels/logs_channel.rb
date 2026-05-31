@@ -40,15 +40,13 @@ class LogsChannel < ApplicationCable::Channel
     io = @io
     stream_id = @stream_id
     pid = @pid
-    tz = Configuration.current.system.timezone.presence || Time.zone
 
     @reader_future = Concurrent::Promises.future do
-      read_log_stream(io, stream_id, pid, tz)
+      read_log_stream(io, stream_id, pid)
     end
   end
 
-  def read_log_stream(io, stream_id, pid, timezone)
-    Time.zone = timezone
+  def read_log_stream(io, stream_id, pid)
     io.each_line do |line|
       html = LogLineFormatter.call(line.chomp)
       ActionCable.server.broadcast(stream_id, { html: })

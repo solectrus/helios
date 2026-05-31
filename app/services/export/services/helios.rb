@@ -2,6 +2,7 @@ module Export
   module Services
     class Helios < Base
       ENVIRONMENT = %w[
+        TZ
         ADMIN_PASSWORD
         SECRET_KEY_BASE
       ].freeze

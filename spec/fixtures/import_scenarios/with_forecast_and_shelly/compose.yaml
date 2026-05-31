@@ -358,6 +358,7 @@ services:
   helios:
     image: ghcr.io/solectrus/helios:develop
     environment:
+    - TZ
     - ADMIN_PASSWORD
     - SECRET_KEY_BASE
     volumes:

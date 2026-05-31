@@ -138,15 +138,11 @@ RSpec.describe BackupRepository do
   end
 
   describe '.created_at_from' do
-    it 'parses the filename timestamp using the configured system timezone, not Time.zone' do
-      with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
-
-      # Background workers (S3 uploader thread, etc.) run with Rails' default
-      # Time.zone = UTC. The filename was produced in Berlin local time, so
-      # parsing it must use the system zone regardless of caller thread.
-      result = Time.use_zone('UTC') do
-        described_class.created_at_from('solectrus-backup-20260525-222658.tar')
-      end
+    it 'parses the filename timestamp in the app timezone' do
+      # The filename encodes wall-clock time in the app timezone
+      # (config.time_zone = Europe/Berlin in tests), and created_at_from parses
+      # it back with that same Time.zone — the same in every thread.
+      result = described_class.created_at_from('solectrus-backup-20260525-222658.tar')
 
       expected = ActiveSupport::TimeZone['Europe/Berlin'].local(2026, 5, 25, 22, 26, 58)
       expect(result).to eq(expected)

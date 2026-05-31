@@ -81,9 +81,7 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
       mutex.synchronize do
         return if @preparing_thread&.alive?
 
-        zone = Time.zone
         @preparing_thread = Thread.new do # rubocop:disable ThreadSafety/NewThread
-          Time.zone = zone if zone
           Rails.application.executor.wrap { instance.send(:run_preparing!) }
         end
       end
@@ -99,9 +97,7 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
         return if @completion_thread&.alive?
 
         @completion_phase = nil
-        zone = Time.zone
         @completion_thread = Thread.new do # rubocop:disable ThreadSafety/NewThread
-          Time.zone = zone if zone
           Rails.application.executor.wrap { new.process_completion!(raw) }
         end
       end

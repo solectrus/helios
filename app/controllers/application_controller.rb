@@ -7,7 +7,6 @@ class ApplicationController < ActionController::Base
   before_action :require_authentication
   before_action :require_consent
   before_action :set_locale
-  before_action :set_time_zone
 
   helper_method :authorized?, :password_required?, :show_app_chrome?, :preferences
 
@@ -60,10 +59,5 @@ class ApplicationController < ActionController::Base
 
   def set_locale
     I18n.locale = preferences.resolved_locale(request.headers['Accept-Language'])
-  end
-
-  def set_time_zone
-    tz = Configuration.current.system.timezone
-    Time.zone = tz if tz.present?
   end
 end

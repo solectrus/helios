@@ -102,8 +102,8 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
 
     it 'anchors a still-ahead time to run today' do
-      # OS-local 09:00 to match reschedule!'s Time.now.getlocal (not the test's UTC zone)
-      travel_to Time.new(2026, 5, 29, 9, 0, 0).getlocal do
+      # 09:00 in the app timezone; reschedule! reads Time.current in that zone
+      travel_to Time.zone.local(2026, 5, 29, 9, 0, 0) do
         BackupScheduler.send(:mark_handled!, Date.new(2026, 5, 29))
 
         post configuration_settings_path,
@@ -114,8 +114,8 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
 
     it 'anchors an already-passed time to tomorrow' do
-      # OS-local 09:00 to match reschedule!'s Time.now.getlocal (not the test's UTC zone)
-      travel_to Time.new(2026, 5, 29, 9, 0, 0).getlocal do
+      # 09:00 in the app timezone; reschedule! reads Time.current in that zone
+      travel_to Time.zone.local(2026, 5, 29, 9, 0, 0) do
         post configuration_settings_path,
              params: { setting: 'backup_schedule', data: { schedule_enabled: true, schedule_time: '03:00' }.to_json }
 

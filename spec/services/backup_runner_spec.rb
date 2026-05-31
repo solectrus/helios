@@ -31,11 +31,9 @@ RSpec.describe BackupRunner do
     allow(RestoreRunner).to receive(:running?).and_return(false)
     allow(CsvImportRunner).to receive_messages(running?: false, in_progress?: false)
 
-    # Freeze the instant to 14:30 in the configured system timezone
-    # (Europe/Berlin, set in the config.yaml above). The filename/date are
-    # anchored to system_zone (via Time.now), so this stays deterministic even
-    # though the spec's Time.zone is UTC — which also guards the bug: a UTC-zone
-    # caller (the scheduler thread) must still produce a Berlin-local filename.
+    # Freeze the instant to 14:30 in the app timezone (Europe/Berlin, set as
+    # config.time_zone for tests). The filename/date are built from Time.current,
+    # so they stay deterministic and encode 14:30 Berlin wall-clock.
     frozen = ActiveSupport::TimeZone['Europe/Berlin'].local(2026, 5, 8, 14, 30, 0)
     allow(Time).to receive_messages(current: frozen, now: frozen.to_time)
 
@@ -78,10 +76,11 @@ RSpec.describe BackupRunner do
       )
     end
 
-    it 'anchors the filename to the system timezone, not the caller thread (scheduler runs in UTC)' do
-      # The scheduler thread has no per-request Time.zone, so it defaults to UTC.
-      # The filename must still encode 14:30 Berlin (16:30 would be the UTC slip).
-      Time.use_zone('UTC') { described_class.start }
+    it 'encodes the filename timestamp in the app timezone' do
+      # config.time_zone is Europe/Berlin (set for the whole process), so the
+      # filename encodes 14:30 Berlin wall-clock in every thread — web request
+      # or scheduler alike. 16:30 would be the UTC slip we must not produce.
+      described_class.start
 
       run = find_backup_runner_call
       placeholder_index = run.index('_')
@@ -226,8 +225,6 @@ RSpec.describe BackupRunner do
 
       before do
         with_config_yaml(
-          # Match the outer system timezone so the filename (anchored to
-          # system_zone) stays 14:30 Berlin here too.
           'system' => { 'timezone' => 'Europe/Berlin' },
           'backup' => {
             'destination' => 's3',
