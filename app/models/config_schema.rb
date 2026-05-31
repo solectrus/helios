@@ -63,16 +63,13 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   # the dashboard mini-surveys; lockup_codeword and trusted_proxy_ranges are
   # Dashboard env vars stored here too, but surface in the security /
   # reverse-proxy surveys (see Configuration::BORROWED_FIELDS). `host_port`
-  # controls the published compose port. `influx_poll_interval` is not
-  # exposed in the UI but is captured on import so a non-default polling
-  # cadence survives the round-trip.
+  # controls the published compose port.
   DASHBOARD_FIELDS = %w[
     co2_emission_factor
     ui_theme
     frame_ancestors
     lockup_codeword
     trusted_proxy_ranges
-    influx_poll_interval
     host_port
   ].freeze
 

@@ -5,7 +5,7 @@ module Import
       # All .env variable keys that HELIOS manages (generates in .env)
       MANAGED_ENV_KEYS = %w[
         TZ INSTALLATION_DATE ADMIN_PASSWORD SECRET_KEY_BASE
-        APP_HOST INFLUX_POLL_INTERVAL CO2_EMISSION_FACTOR
+        APP_HOST CO2_EMISSION_FACTOR
         FORCE_SSL WEB_CONCURRENCY FRAME_ANCESTORS UI_THEME
         INFLUX_EXCLUDE_FROM_HOUSE_POWER
         LOCKUP_CODEWORD TRUSTED_PROXY_RANGES
@@ -60,8 +60,10 @@ module Import
       # LegacySensorAdapter and MqttExtractor::DEPRECATED_TOPIC_VARS — once
       # translated into sensors/mappings, the originals would only cause noise
       # if re-emitted. Also includes dashboard env vars superseded by UI-managed
-      # settings (e.g. historical prices), which would otherwise leak into
-      # _unmanaged.env_vars. The {FORECAST,SENEC,SHELLY,MQTT}_INFLUX_MEASUREMENT
+      # settings (e.g. historical prices) or obsoleted by newer dashboard
+      # releases (INFLUX_POLL_INTERVAL is ignored since dashboard v1.2.0), which
+      # would otherwise leak into _unmanaged.env_vars. The
+      # {FORECAST,SENEC,SHELLY,MQTT}_INFLUX_MEASUREMENT
       # quartet are non-canonical aliases of INFLUX_MEASUREMENT_* emitted by the
       # Online Configurator between 2024-03 and 2024-10: their value round-trips
       # via the canonical var, so the aliases are dead weight.
@@ -75,6 +77,7 @@ module Import
         DOCKER_INFLUXDB_INIT_ORG DOCKER_INFLUXDB_INIT_BUCKET
         POSTGRES_ADMIN_PASSWORD
         ELECTRICITY_PRICE FEED_IN_TARIFF
+        INFLUX_POLL_INTERVAL
       ].freeze
 
       # HELIOS-core env vars that belong to the helios container only —

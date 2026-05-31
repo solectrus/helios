@@ -39,7 +39,6 @@ services:
     - INFLUX_BUCKET
     - INFLUX_HOST=influxdb
     - INFLUX_ORG
-    - INFLUX_POLL_INTERVAL
     - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
     - INSTALLATION_DATE
     - REDIS_URL=redis://redis:6379/1

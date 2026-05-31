@@ -16,7 +16,6 @@ system:
 dashboard:
   host_port: '3010'
   image: ghcr.io/solectrus/solectrus:latest
-  influx_poll_interval: '5'
 postgresql:
   image: postgres:18-alpine
   password: CCCCC

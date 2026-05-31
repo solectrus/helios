@@ -16,7 +16,6 @@ system:
 dashboard:
   co2_emission_factor: '500'
   image: ghcr.io/solectrus/solectrus:latest
-  influx_poll_interval: '5'
 postgresql:
   image: postgres:18-alpine
   password: test-db-password

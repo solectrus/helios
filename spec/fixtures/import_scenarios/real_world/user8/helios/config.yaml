@@ -16,7 +16,6 @@ system:
 dashboard:
   frame_ancestors: http://192.168.168.101:8123
   image: ghcr.io/solectrus/solectrus:latest
-  influx_poll_interval: '5'
 postgresql:
   image: postgres:16-alpine
   password: CCCCC

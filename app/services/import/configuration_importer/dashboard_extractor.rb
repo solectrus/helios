@@ -19,7 +19,6 @@ module Import
           'ui_theme' => dashboard_env['UI_THEME'],
           'lockup_codeword' => dashboard_env['LOCKUP_CODEWORD'],
           'trusted_proxy_ranges' => dashboard_env['TRUSTED_PROXY_RANGES'],
-          'influx_poll_interval' => dashboard_env['INFLUX_POLL_INTERVAL'],
           'host_port' => host_port,
         ).compact
       end

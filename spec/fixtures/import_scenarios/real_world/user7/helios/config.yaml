@@ -16,7 +16,6 @@ system:
 dashboard:
   frame_ancestors: "*"
   image: ghcr.io/solectrus/solectrus:develop
-  influx_poll_interval: '5'
 postgresql:
   image: postgres:18-alpine
   password: CCCCC

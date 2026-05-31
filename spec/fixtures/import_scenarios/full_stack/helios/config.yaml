@@ -16,7 +16,6 @@ system:
   update_interval: '3600'
 dashboard:
   image: ghcr.io/solectrus/solectrus:latest
-  influx_poll_interval: '5'
   lockup_codeword: secret
   ui_theme: light
 postgresql:
