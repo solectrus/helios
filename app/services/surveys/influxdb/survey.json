@@ -5,8 +5,8 @@
     "default": "InfluxDB"
   },
   "description": {
-    "de": "Einstellungen für die Zeitreihen-Datenbank, in der SOLECTRUS deine Messwerte speichert.",
-    "default": "Settings for the time-series database where SOLECTRUS stores your measurements."
+    "de": "Zeitreihen-Datenbank für die Messwerte.",
+    "default": "Time-series database for the measurements."
   },
   "pages": [
     {
@@ -16,8 +16,8 @@
         "default": "Access"
       },
       "description": {
-        "de": "InfluxDB ist standardmäßig nur intern für SOLECTRUS erreichbar. Auf Wunsch kannst du sie von außen freigeben — etwa für die eigene Web-Oberfläche von InfluxDB oder für andere Anwendungen, die direkt auf die gespeicherten Messwerte zugreifen sollen.",
-        "default": "By default InfluxDB is only reachable internally by SOLECTRUS. You can optionally open it to the outside — for the InfluxDB web interface or for other applications that should access the stored measurements directly."
+        "de": "Standardmäßig ist InfluxDB nur intern für SOLECTRUS erreichbar.",
+        "default": "By default InfluxDB is reachable only internally by SOLECTRUS."
       },
       "visibleIfMode": "full",
       "elements": [
@@ -25,12 +25,12 @@
           "type": "boolean",
           "name": "publish_port",
           "title": {
-            "de": "InfluxDB von außen erreichbar machen",
-            "default": "Make InfluxDB reachable from outside"
+            "de": "InfluxDB im lokalen Netzwerk erreichbar machen",
+            "default": "Make InfluxDB reachable on the local network"
           },
           "description": {
-            "de": "Aktiviere das beispielsweise, wenn du selbst (im Browser) oder andere Anwendungen (eigene Skripte, Auswertungen, externe Collectoren) direkt auf die InfluxDB zugreifen sollen.",
-            "default": "Enable this for example when you (in the browser) or other applications (your own scripts, analyses, external collectors) should access InfluxDB directly."
+            "de": "Gibt den Port auf dem Host frei, sodass die InfluxDB im lokalen Netzwerk (LAN) erreichbar ist, etwa für die eingebaute Weboberfläche von InfluxDB oder externe Tools.",
+            "default": "Publishes the port on the host so InfluxDB is reachable on the local network (LAN), for example for the built-in InfluxDB web interface or external tools."
           },
           "defaultValue": false,
           "renderAs": "checkbox"
