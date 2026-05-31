@@ -1,7 +1,7 @@
 RSpec.describe 'Services::Tasks', :with_admin_password do
   before do
     login
-    with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
+    with_startable_config_yaml
     allow(ComposeJob).to receive(:perform_later)
   end
 
@@ -65,6 +65,18 @@ RSpec.describe 'Services::Tasks', :with_admin_password do
 
       expect(ComposeJob).not_to have_received(:perform_later)
       expect(response).to have_http_status(:forbidden)
+    end
+
+    it 'is blocked while the configuration is incomplete' do
+      with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' }) # no sensor, no installation date
+      mock_compose_service('influxdb')
+      allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(nil)
+
+      post service_task_path(service_id: 'influxdb')
+
+      expect(ComposeJob).not_to have_received(:perform_later)
+      expect(response).to redirect_to(services_path)
+      expect(flash[:alert]).to be_present
     end
   end
 

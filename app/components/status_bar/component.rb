@@ -70,13 +70,22 @@ module StatusBar
       I18n.available_locales.index_with { |locale| t('.backup_in_progress', locale:) }
     end
 
+    # Shown in place of the (hidden) start button while the stack could be
+    # started but the configuration is still incomplete — the visible
+    # counterpart to show_start?.
+    def configuration_incomplete_labels
+      return nil if operation_in_progress?
+      return nil unless @status.in?(%i[stopped partial error])
+      return nil if Configuration.current.configuration_complete?
+
+      I18n.available_locales.index_with { |locale| t('.configuration_incomplete', locale:) }
+    end
+
     def show_start?
       return false if operation_in_progress?
 
       @status.in?(%i[stopped partial error]) &&
-        Configuration.current.setup_completed? &&
-        !Configuration.current.incomplete? &&
-        !Configuration.current.incomplete_influxdb?
+        Configuration.current.configuration_complete?
     end
 
     def show_stop?

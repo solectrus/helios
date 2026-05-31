@@ -54,9 +54,10 @@ RSpec.describe 'Sensors', :with_admin_password do
       expect(response.body).not_to match(/fa-solid fa-play/)
     end
 
-    it 'shows the services nav tab and start button once a sensor is configured' do
+    it 'shows the services nav tab and start button once the configuration is complete' do
       Configuration.current.update_sensor('inverter_power', { 'source' => 'senec' })
       Configuration.current.update(:senec, { 'version' => 4 })
+      Configuration.current.update('system_general', { 'installation_date' => '2024-01-15' })
 
       get sensors_path
 

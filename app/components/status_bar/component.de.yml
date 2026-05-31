@@ -9,6 +9,7 @@ de:
   restart_required_services: 'Neustart erforderlich: %{services}'
   restore_in_progress: 'Wiederherstellung läuft…'
   backup_in_progress: 'Backup wird erstellt…'
+  configuration_incomplete: 'Konfiguration unvollständig'
   start: 'Start'
   stop: 'Stop'
   restart: 'Neustart'

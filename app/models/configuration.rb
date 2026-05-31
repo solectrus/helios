@@ -466,10 +466,34 @@ class Configuration # rubocop:disable Metrics/ClassLength
     collectors_only? && influxdb.host.blank?
   end
 
-  def setting_incomplete?(setting)
-    return incomplete_influxdb? if setting == 'influxdb'
+  # system_general carries the user-supplied basics (currently the PV
+  # commissioning date). The date is mandatory before the stack starts and is
+  # never auto-filled, so a blank value marks the group incomplete. Skipped in
+  # collectors_only mode, where the dashboard runs remotely (matches the survey).
+  def incomplete_system_general?
+    !collectors_only? && system.installation_date.blank?
+  end
 
-    incomplete_sources.include?(setting)
+  # Setting ids that are still incomplete and therefore block stack start.
+  # Single source of truth for both the per-setting warning badges and the
+  # overall #configuration_complete? gate.
+  def incomplete_settings
+    ids = incomplete_sources.dup
+    ids << 'influxdb' if incomplete_influxdb?
+    ids << 'system_general' if incomplete_system_general?
+    ids
+  end
+
+  def setting_incomplete?(setting)
+    incomplete_settings.include?(setting)
+  end
+
+  # True when the configuration holds everything required to bring the stack
+  # up: setup is done and no required section is still incomplete. Single
+  # source of truth for every start affordance (status-bar button, compose-up
+  # endpoints).
+  def configuration_complete?
+    setup_completed? && incomplete_settings.empty?
   end
 
   # Ingest recalculates house_power when a balcony power plant feeds into

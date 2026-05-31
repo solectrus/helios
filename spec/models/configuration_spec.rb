@@ -767,6 +767,55 @@ RSpec.describe Configuration do
     end
   end
 
+  describe '#incomplete_system_general?' do
+    it 'returns true in full mode without an installation date' do
+      expect(described_class.current.incomplete_system_general?).to be true
+    end
+
+    it 'returns false once an installation date is set' do
+      with_config_yaml('system' => { 'installation_date' => '2024-01-15' })
+      expect(described_class.current.incomplete_system_general?).to be false
+    end
+
+    it 'returns false in collectors_only mode even without a date' do
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      expect(described_class.current.incomplete_system_general?).to be false
+    end
+
+    it 'surfaces via setting_incomplete?(system_general) when the date is missing' do
+      expect(described_class.current.setting_incomplete?('system_general')).to be true
+    end
+
+    it 'clears setting_incomplete?(system_general) once the date is set' do
+      with_config_yaml('system' => { 'installation_date' => '2024-01-15' })
+      expect(described_class.current.setting_incomplete?('system_general')).to be false
+    end
+  end
+
+  describe '#configuration_complete?' do
+    it 'returns false when setup is not completed yet' do
+      with_config_yaml('system' => { 'installation_date' => '2024-01-15' })
+      expect(described_class.current.configuration_complete?).to be false
+    end
+
+    it 'returns false when a sensor is configured but the installation date is missing' do
+      with_config_yaml(
+        'senec' => { 'version' => '4' },
+        'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
+      )
+      expect(described_class.current.configuration_complete?).to be false
+    end
+
+    it 'returns true once setup is done and no setting is incomplete' do
+      with_config_yaml(
+        'system' => { 'installation_date' => '2024-01-15' },
+        'senec' => { 'version' => '4' },
+        'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
+      )
+      expect(described_class.current.configuration_complete?).to be true
+    end
+  end
+
   describe '#setup_completed?' do
     it 'returns false when no sensors are configured' do
       config = described_class.current

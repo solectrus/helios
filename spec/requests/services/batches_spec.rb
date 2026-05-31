@@ -1,7 +1,7 @@
 RSpec.describe 'Services::Batches', :with_admin_password do
   before do
     login
-    with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
+    with_startable_config_yaml
     allow(ComposeJob).to receive(:perform_later)
   end
 
@@ -77,6 +77,16 @@ RSpec.describe 'Services::Batches', :with_admin_password do
 
       expect(response.body).to include('service-influxdb')
       expect(response.body).not_to include('service-helios')
+    end
+
+    it 'is blocked while the configuration is incomplete' do
+      with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' }) # no sensor, no installation date
+
+      post batch_path
+
+      expect(ComposeJob).not_to have_received(:perform_later)
+      expect(response).to redirect_to(services_path)
+      expect(flash[:alert]).to be_present
     end
   end
 

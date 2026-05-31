@@ -18,6 +18,21 @@ module ConfigurationHelpers
   def config_yaml_dir
     @config_yaml_dir
   end
+
+  # Minimal configuration that satisfies Configuration#configuration_complete?:
+  # one enabled sensor with a complete source plus the mandatory installation
+  # date. Lets start-path request specs exercise the happy path without the
+  # require_configuration_complete guard blocking them. Pass `extra` to deep
+  # merge additional sections.
+  def with_startable_config_yaml(extra = {})
+    with_config_yaml(
+      {
+        'system' => { 'installation_date' => '2024-01-15', 'timezone' => 'Europe/Berlin' },
+        'senec' => { 'version' => '4' },
+        'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
+      }.deep_merge(extra),
+    )
+  end
 end
 
 RSpec.configure do |config|

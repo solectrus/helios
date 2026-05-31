@@ -1,6 +1,10 @@
 module Services
   class TasksController < BaseController
     before_action :reject_helios, only: %i[create destroy]
+    # create = start, update = recreate; both bring up a container. HELIOS
+    # self-recreate (update on the helios row) stays allowed so the app can
+    # always be restarted to fix configuration.
+    before_action :require_configuration_complete, only: %i[create update], unless: :helios?
 
     # POST /services/:service_id/task - Start
     def create

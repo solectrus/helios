@@ -42,6 +42,18 @@
           </span>
         <% end %>
 
+        <% if (incomplete_labels = configuration_incomplete_labels) %>
+          <%= link_to helpers.advanced_path,
+                      data: { turbo_frame: "_top" },
+                      class: "badge badge-sm badge-warning gap-1.5 font-medium" do %>
+            <i class="fa-solid fa-triangle-exclamation"></i>
+
+            <% incomplete_labels.each do |locale, text| %>
+              <span data-locale="<%= locale %>" class="status-bar-label"><%= text %></span>
+            <% end %>
+          <% end %>
+        <% end %>
+
         <% if show_start? %>
           <%= button_to batch_path, method: :post, class: "btn btn-outline btn-sm" do %>
             <i class="fa-solid fa-play"></i>

@@ -24,10 +24,7 @@ RSpec.describe 'Services::Images', :with_admin_password do
 
   describe 'PATCH /services/:service_id/image' do
     it 'writes the recommended image to config.yaml and recreates the service' do
-      with_config_yaml(
-        'system' => { 'timezone' => 'Europe/Berlin' },
-        'influxdb' => { 'image' => 'influxdb:2.5-alpine' },
-      )
+      with_startable_config_yaml('influxdb' => { 'image' => 'influxdb:2.5-alpine' })
       install_compose_with('influxdb', 'influxdb:2.5-alpine')
 
       patch service_image_path(service_id: 'influxdb'), as: :turbo_stream
@@ -38,10 +35,7 @@ RSpec.describe 'Services::Images', :with_admin_password do
     end
 
     it 'updates the watchtower repo and the section as a whole' do
-      with_config_yaml(
-        'system' => { 'timezone' => 'Europe/Berlin' },
-        'watchtower' => { 'image' => 'containrrr/watchtower:1.7.1' },
-      )
+      with_startable_config_yaml('watchtower' => { 'image' => 'containrrr/watchtower:1.7.1' })
       install_compose_with('watchtower', 'containrrr/watchtower:1.7.1')
 
       patch service_image_path(service_id: 'watchtower'), as: :turbo_stream
@@ -60,7 +54,7 @@ RSpec.describe 'Services::Images', :with_admin_password do
     end
 
     it 'returns 422 for an unknown service' do
-      with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
+      with_startable_config_yaml
       install_compose_with('foobar', 'foobar:1.0')
 
       patch service_image_path(service_id: 'foobar'), as: :turbo_stream

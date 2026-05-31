@@ -180,10 +180,16 @@ module ServiceRow
       restart_pending? || outdated_image?
     end
 
+    # Starting any service is blocked until the whole configuration is complete
+    # (sources, InfluxDB target, and the mandatory installation date). Mirrors
+    # the global start button and the server-side require_configuration_complete
+    # guard, so the UI never offers a start that the server would reject.
     def start_disabled?
-      lazy || pending || running? || incomplete_source?
+      lazy || pending || running? || !Configuration.current.configuration_complete?
     end
 
+    # Per-row source warning (links to /datasources). Narrower than
+    # start_disabled?: it flags only this collector's own incomplete source.
     def incomplete_source?
       return false unless service_name.end_with?('-collector')
 

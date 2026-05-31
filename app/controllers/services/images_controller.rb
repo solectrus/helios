@@ -1,6 +1,7 @@
 module Services
   class ImagesController < BaseController
     before_action :reject_helios
+    before_action :require_configuration_complete
 
     def update
       config_keys = Export::Compose.find_service(service_name)&.config_keys

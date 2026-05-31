@@ -46,6 +46,7 @@ de:
       empty_cta: 'Zur Konfiguration'
     errors:
       blocked_by_dependency: 'Blockiert: %{dependency} konnte nicht gestartet werden'
+      configuration_incomplete: 'Die Konfiguration ist noch unvollständig. Alle als offen markierten Einstellungen müssen ergänzt werden, bevor Dienste gestartet werden können.'
     caches:
       destroy:
         success: 'Redis-Cache geleert.'

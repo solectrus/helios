@@ -1,7 +1,7 @@
 RSpec.describe 'Services::Upgrades', :with_admin_password do
   before do
     login
-    with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
+    with_startable_config_yaml
     allow(PostgresqlUpgradeJob).to receive(:perform_later)
   end
 

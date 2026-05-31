@@ -19,6 +19,17 @@ class ApplicationController < ActionController::Base
     turbo_frame_request_id == frame_id
   end
 
+  # Guard for every compose-up path: no container may start until the
+  # configuration is complete (e.g. the PV commissioning date is set). The UI
+  # already hides the start affordances while incomplete; this is the
+  # server-side backstop for direct POSTs and stale pages.
+  def require_configuration_complete
+    return if Configuration.current.configuration_complete?
+
+    flash[:alert] = t('services.errors.configuration_incomplete')
+    redirect_to services_path
+  end
+
   # Whether to render the app chrome (header, mobile dock, status bar). Shown on
   # every authenticated page — including the setup flow — so navigation and stack
   # status stay reachable. Login and the /start import-consent page are

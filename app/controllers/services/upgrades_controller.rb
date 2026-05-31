@@ -1,6 +1,7 @@
 module Services
   class UpgradesController < BaseController
     before_action :require_postgresql_upgrade
+    before_action :require_configuration_complete
 
     # POST /services/:service_id/upgrade - PostgreSQL major-version upgrade
     def create

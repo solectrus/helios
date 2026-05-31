@@ -1,5 +1,7 @@
 module Services
   class BatchesController < ApplicationController
+    before_action :require_configuration_complete, only: :create
+
     # POST /services/batch - Start all services (also recreates containers
     # whose config has changed, since `docker compose up` is idempotent).
     def create

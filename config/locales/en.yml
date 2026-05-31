@@ -70,6 +70,7 @@ en:
       empty_cta: 'Go to configuration'
     errors:
       blocked_by_dependency: 'Blocked: %{dependency} failed to start'
+      configuration_incomplete: 'The configuration is still incomplete. Complete all settings marked as open before services can start.'
     caches:
       destroy:
         success: 'Redis cache cleared.'
