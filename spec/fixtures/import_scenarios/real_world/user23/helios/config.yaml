@@ -1,0 +1,272 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: my-admin-password
+  app_host: solectrus.example.de
+  installation_date: '2024-10-18'
+  secret_key_base: my-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+  lockup_codeword: my-lockup-codeword
+postgresql:
+  image: postgres:18-alpine
+  password: my-secret-db-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2-alpine
+  org: solectrus
+  password: my-influx-password
+  token_admin: my-super-secret-admin-token
+  token_read: my-super-secret-admin-token
+  token_readwrite: my-super-secret-admin-token
+  token_write: my-super-secret-admin-token
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: pvnode
+  forecast_declination1: '45'
+  forecast_declination2: '38'
+  forecast_declination3: '38'
+  forecast_declination4: '38'
+  forecast_kwp1: '6'
+  forecast_kwp2: '3.08'
+  forecast_kwp3: '3.85'
+  forecast_kwp4: '3.85'
+  forecast_latitude: '51.00000'
+  forecast_longitude: '12.00000'
+  forecast_pvnode_apikey: my-pvnode-api-key
+  forecast_pvnode_azimuth1: '180'
+  forecast_pvnode_azimuth2: '180'
+  forecast_pvnode_azimuth3: '90'
+  forecast_pvnode_azimuth4: '270'
+  forecast_pvnode_extra_params: diffuse_radiation_model=perez
+  forecast_pvnode_paid: 'true'
+  forecast_roofs: '4'
+  measurement: forecast
+senec:
+  adapter: cloud
+  interval: '60'
+  password: my-senec-password
+  request_mode: full
+  username: my-senec-username
+  version: v4
+shelly:
+  auth_key: my-shelly-auth-key
+  cloud_server: https://shelly-158-eu.shelly.cloud
+  connection: cloud
+  devices:
+  - device_id: my-dishwasher-device-id
+    measurement: Dishwasher
+    name: dishwasher
+  - device_id: my-dryer-device-id
+    measurement: Dryer
+    name: dryer
+  - device_id: my-fridge-device-id
+    measurement: Fridge
+    name: fridge
+  - device_id: my-froster-device-id
+    measurement: Froster
+    name: froster
+  - device_id: my-heating-wc-device-id
+    measurement: HeatingWC
+    name: heating_wc
+  - device_id: my-hob-device-id
+    measurement: Hob
+    name: hob
+  - device_id: my-lighting-device-id
+    measurement: Lighting
+    name: lighting
+  - device_id: my-office-device-id
+    measurement: Office
+    name: office
+  - device_id: my-outdoor-device-id
+    measurement: Outdoor
+    name: outdoor
+  - device_id: my-oven-device-id
+    measurement: Oven
+    name: oven
+  - device_id: my-pump17-device-id
+    measurement: Pump17
+    name: pump17
+  - device_id: my-pump22-device-id
+    measurement: Pump22
+    name: pump22
+  - device_id: my-sauna-device-id
+    measurement: Sauna
+    name: sauna
+  - device_id: my-trotec-device-id
+    measurement: TroTec
+    name: trotec
+  - device_id: my-tv-bose-device-id
+    measurement: TvBose
+    name: tv_bose
+  - device_id: my-utility-device-id
+    measurement: Utility
+    name: utility
+  - device_id: my-washer-device-id
+    measurement: Washer
+    name: washer
+  interval: '20'
+  mode: essential
+reverse_proxy:
+  app_domain: solectrus.example.de
+  command:
+  - "--providers.docker=true"
+  - "--providers.docker.exposedbydefault=false"
+  - "--entrypoints.web.address=:80"
+  - "--entrypoints.websecure.address=:443"
+  - "--entrypoints.influxdb.address=:8086"
+  - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+  - "--certificatesresolvers.myresolver.acme.email=${LETSENCRYPT_EMAIL}"
+  - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+  environment:
+  - TZ
+  image: traefik:v3.7
+  labels:
+  - com.centurylinklabs.watchtower.scope=solectrus
+  letsencrypt_email: mustermann@example.de
+  ports:
+  - 80:80
+  - 443:443
+  - 8086:8086
+  restart: unless-stopped
+  volumes:
+  - "${TRAEFIK_VOLUME_PATH}:/letsencrypt"
+  - "/var/run/docker.sock:/var/run/docker.sock:ro"
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  custom_power_01:
+    field: power
+    measurement: Fridge
+    name: Fridge
+    source: shelly
+  custom_power_02:
+    field: power
+    measurement: Dishwasher
+    name: Dishwasher
+    source: shelly
+  custom_power_03:
+    field: power
+    measurement: Washer
+    name: Washer
+    source: shelly
+  custom_power_04:
+    field: power
+    measurement: Oven
+    name: Oven
+    source: shelly
+  custom_power_05:
+    field: power
+    measurement: Dryer
+    name: Dryer
+    source: shelly
+  custom_power_06:
+    field: power
+    measurement: Hob
+    name: Hob
+    source: shelly
+  custom_power_07:
+    field: power
+    measurement: Sauna
+    name: Sauna
+    source: shelly
+  custom_power_08:
+    field: power
+    measurement: Pump22
+    name: Pump22
+    source: shelly
+  custom_power_09:
+    field: power
+    measurement: Pump17
+    name: Pump17
+    source: shelly
+  custom_power_10:
+    field: power
+    measurement: HeatingWC
+    name: HeatingWC
+    source: shelly
+  custom_power_11:
+    field: power
+    measurement: Outdoor
+    name: Outdoor
+    source: shelly
+  custom_power_12:
+    field: power
+    measurement: Froster
+    name: Froster
+    source: shelly
+  custom_power_13:
+    field: power
+    measurement: TvBose
+    name: TvBose
+    source: shelly
+  custom_power_14:
+    field: power
+    measurement: TroTec
+    name: TroTec
+    source: shelly
+  custom_power_15:
+    field: power
+    measurement: Office
+    name: Office
+    source: shelly
+  custom_power_16:
+    field: power
+    measurement: Lighting
+    name: Lighting
+    source: shelly
+  custom_power_17:
+    field: power
+    measurement: Utility
+    name: Utility
+    source: shelly
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_forecast:
+    source: forecast
+  inverter_power_forecast_clearsky:
+    source: forecast
+  outdoor_temp_forecast:
+    field: temp
+    measurement: forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_car_connected:
+    source: senec
+  wallbox_power:
+    source: senec
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:latest
+service_overrides:
+  dashboard:
+    labels:
+    - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+    - traefik.http.routers.redirs.middlewares=redirect-to-https
