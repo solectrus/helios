@@ -551,6 +551,25 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'with an external-Traefik bind IP configured' do
+    before do
+      configuration.update('reverse_proxy', { 'bind_ip' => '10.0.0.5' })
+      described_class.new(configuration).write!
+    end
+
+    it 'binds published ports to the configured IP' do
+      compose = Compose.load
+      dashboard = compose.services.find('dashboard')
+      expect(dashboard.ports).to include('10.0.0.5:3000:3000')
+      expect(dashboard.ports).not_to include('3000:3000')
+    end
+
+    it 'does not generate a Traefik service (external proxy)' do
+      compose = Compose.load
+      expect(compose.services.names).not_to include('traefik')
+    end
+  end
+
   describe 'with InfluxDB UI port exposure' do
     context 'without publish_port set' do
       before { described_class.new(configuration).write! }

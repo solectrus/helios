@@ -438,7 +438,7 @@ en:
         description: 'Host port and embedding into other websites'
       reverse_proxy:
         title: 'Custom domain'
-        description: 'Domain & HTTPS with Traefik. Only useful if this host is reachable from the internet.'
+        description: 'Domain & HTTPS via built-in or external Traefik. Only useful if this host is reachable from the internet.'
       backup:
         title: 'Backup'
         description: 'Backup destination (local, external mount, or S3)'

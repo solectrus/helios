@@ -78,8 +78,29 @@ module Export
       service_hash[:image] = ::Compose.normalize_image(service_hash[:image])
       ServiceOverrides.apply(configuration, service_class.service_name, service_hash)
       service_hash[:labels] = (Array(service_hash[:labels]) + [WATCHTOWER_LABEL]).uniq
+      bind_published_ports!(service_hash)
       sort_environment!(service_hash)
       service_hash
+    end
+
+    # In the "external Traefik" reverse-proxy mode the stack publishes host
+    # ports for an external proxy to route to. When a bind IP is configured,
+    # restrict every published port to that address (e.g. "3000:3000" ->
+    # "10.0.0.5:3000:3000"), so the ports are reachable on a single (private)
+    # interface instead of all of them. Entries that already carry an explicit
+    # IP, or aren't a plain host:container[/proto] mapping, are left untouched.
+    def bind_published_ports!(service_hash)
+      bind_ip = configuration.reverse_proxy['bind_ip'].presence
+      return unless bind_ip
+
+      ports = service_hash[:ports]
+      return unless ports.is_a?(Array)
+
+      service_hash[:ports] = ports.map do |entry|
+        next entry unless entry.is_a?(String) && entry.match?(%r{\A\d+:\d+(/\w+)?\z})
+
+        "#{bind_ip}:#{entry}"
+      end
     end
 
     # TZ stays first (Docker convention); the rest is alphabetized so each

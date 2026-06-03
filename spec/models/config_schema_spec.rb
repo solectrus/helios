@@ -203,7 +203,12 @@ RSpec.describe ConfigSchema do
         parent = Configuration::SETTING_GROUPS.dig(setting, :singleton) || setting
         borrowed = Configuration::BORROWED_FIELDS.fetch(setting, {})
 
-        survey_fields.reject { |f| f == 'enabled' }.each do |field|
+        # UI-only toggles that drive visibility but are not persisted: the
+        # boolean `enabled` flag, and reverse_proxy's tri-state `mode` selector
+        # (re-derived from app_domain/bind_ip on load, see SettingsController).
+        ui_only = setting == 'reverse_proxy' ? %w[enabled mode] : %w[enabled]
+
+        survey_fields.reject { |f| ui_only.include?(f) }.each do |field|
           section = borrowed[field] || parent
           schema_fields = described_class.fields_for(section)
           next if schema_fields == :dynamic

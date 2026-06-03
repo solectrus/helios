@@ -414,7 +414,7 @@ de:
         description: 'Host-Port und Einbettung in andere Webseiten'
       reverse_proxy:
         title: 'Eigene Domain'
-        description: 'Domain & HTTPS mit Traefik. Nur sinnvoll, wenn dieser Host über das Internet erreichbar ist.'
+        description: 'Domain & HTTPS über internen oder externen Traefik. Nur sinnvoll, wenn dieser Host über das Internet erreichbar ist.'
       backup:
         title: 'Backup'
         description: 'Ziel für Sicherungen (lokal, externer Mount oder S3)'

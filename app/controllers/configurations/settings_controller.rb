@@ -5,10 +5,8 @@ module Configurations
     # Settings whose survey uses an `enabled` boolean to toggle the whole
     # section. The flag is stripped on save; on load we re-derive it from the
     # gating field (or from "any data present" when no gating field applies).
-    # reverse_proxy gates on `app_domain` because its survey also carries the
-    # borrowed `trusted_proxy_ranges` field, which can be set with Traefik off.
+    # reverse_proxy is handled separately via a tri-state `mode` selector.
     ENABLED_FLAG_GATING_FIELD = {
-      'reverse_proxy' => 'app_domain',
       'backup' => nil,
     }.freeze
 
@@ -133,10 +131,32 @@ module Configurations
     def persist_setting(data)
       strip_theme_sentinel!(data)
 
+      return persist_reverse_proxy(data) if setting == 'reverse_proxy'
+
       return @configuration.update(setting, {}) if data.key?('enabled') && data.delete('enabled') == false
 
       preserve_software_owned_image!(data)
       @configuration.update(setting, data)
+    end
+
+    # reverse_proxy uses a tri-state `mode` (none/internal/external) instead of
+    # the boolean `enabled` toggle. The mode itself is not stored — it is
+    # re-derived on load from which fields are present (see #reverse_proxy_mode)
+    # — so strip it here and drop the fields that don't belong to the chosen
+    # mode before saving. Borrowed fields (trusted_proxy_ranges) are routed to
+    # their own section by Configuration#update.
+    def persist_reverse_proxy(data)
+      case data.delete('mode')
+      when 'external'
+        data.delete('app_domain')
+        data.delete('letsencrypt_email')
+        @configuration.update('reverse_proxy', data)
+      when 'internal'
+        data.delete('bind_ip')
+        @configuration.update('reverse_proxy', data)
+      else # 'none' (or missing): clear the whole section
+        @configuration.update('reverse_proxy', {})
+      end
     end
 
     # The `image` key on per-service singletons is owned by the Software
@@ -173,10 +193,27 @@ module Configurations
     # whether that field is set; otherwise, any persisted data flips it on.
     def inject_enabled_flag!(data)
       return if data.blank?
+
+      if setting == 'reverse_proxy'
+        data['mode'] = reverse_proxy_mode(data)
+        return
+      end
+
       return unless ENABLED_FLAG_GATING_FIELD.key?(setting)
 
       gating = ENABLED_FLAG_GATING_FIELD[setting]
       data['enabled'] = gating ? data[gating].present? : true
+    end
+
+    # Derive the UI-only reverse_proxy mode from persisted fields: a stored
+    # `app_domain` means HELIOS runs its own Traefik (internal), a stored
+    # `bind_ip` means an external Traefik routes to published ports (external),
+    # otherwise there is no custom domain (none).
+    def reverse_proxy_mode(data)
+      return 'internal' if data['app_domain'].present?
+      return 'external' if data['bind_ip'].present?
+
+      'none'
     end
 
     # The "user-selectable" theme is stored as an empty string (the dashboard's

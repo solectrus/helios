@@ -5,40 +5,51 @@
     "default": "Custom domain"
   },
   "description": {
-    "de": "Domain & HTTPS mit Traefik",
-    "default": "Domain & HTTPS with Traefik"
+    "de": "Domain & HTTPS über Traefik",
+    "default": "Domain & HTTPS via Traefik"
   },
   "pages": [
     {
-      "name": "p_reverse_proxy",
+      "name": "p_mode",
       "elements": [
         {
-          "type": "boolean",
-          "name": "enabled",
+          "type": "radiogroup",
+          "name": "mode",
           "title": {
-            "de": "Eigene Domain mit HTTPS über Traefik",
-            "default": "Custom domain with HTTPS via Traefik"
-          },
-          "description": {
-            "de": "Aktiviert Traefik als Reverse Proxy mit automatischem Let's Encrypt-Zertifikat.",
-            "default": "Enables Traefik as a reverse proxy with an automatic Let's Encrypt certificate."
+            "de": "Wie ist SOLECTRUS über eine eigene Domain erreichbar?",
+            "default": "How is SOLECTRUS reachable via a custom domain?"
           },
           "isRequired": true,
-          "defaultValue": false,
-          "labelTrue": {
-            "de": "An",
-            "default": "On"
-          },
-          "labelFalse": {
-            "de": "Aus",
-            "default": "Off"
-          }
+          "defaultValue": "none",
+          "choices": [
+            {
+              "value": "none",
+              "text": {
+                "de": "Keine eigene Domain",
+                "default": "No custom domain"
+              }
+            },
+            {
+              "value": "internal",
+              "text": {
+                "de": "Eigene Domain über internen Traefik (von HELIOS verwaltet)",
+                "default": "Custom domain via built-in Traefik (managed by HELIOS)"
+              }
+            },
+            {
+              "value": "external",
+              "text": {
+                "de": "Eigene Domain über externen Traefik (Sonderfall)",
+                "default": "Custom domain via external Traefik (advanced)"
+              }
+            }
+          ]
         }
       ]
     },
     {
-      "name": "p_domain",
-      "visibleIf": "{enabled} = true",
+      "name": "p_internal",
+      "visibleIf": "{mode} = 'internal'",
       "elements": [
         {
           "type": "text",
@@ -65,7 +76,39 @@
             "default": "For certificate notifications. Default: webmaster@{domain}"
           },
           "inputType": "email"
+        }
+      ]
+    },
+    {
+      "name": "p_external",
+      "visibleIf": "{mode} = 'external'",
+      "elements": [
+        {
+          "type": "html",
+          "name": "external_hint",
+          "html": {
+            "de": "<p>Ein externer Traefik (z.B. im Docker Swarm) routet auf die veröffentlichten Host-Ports dieses Stacks. HELIOS startet hier <strong>keinen</strong> eigenen Traefik; die Routen werden im externen Traefik gepflegt.</p>",
+            "default": "<p>An external Traefik (e.g. in a Docker Swarm) routes to this stack's published host ports. HELIOS does <strong>not</strong> start its own Traefik here; the routes are maintained in the external Traefik.</p>"
+          }
         },
+        {
+          "type": "text",
+          "name": "bind_ip",
+          "title": {
+            "de": "Host-IP für die veröffentlichten Ports (optional)",
+            "default": "Host IP for the published ports (optional)"
+          },
+          "description": {
+            "de": "Bindet alle veröffentlichten Ports an diese IP-Adresse, etwa die private IP des Hosts, damit sie nicht öffentlich erreichbar sind. Leer lassen, um auf allen Netzwerk-Schnittstellen zu lauschen.",
+            "default": "Binds all published ports to this IP address, e.g. the host's private IP, so they are not publicly reachable. Leave empty to listen on all network interfaces."
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_proxy",
+      "visibleIf": "{mode} <> 'none'",
+      "elements": [
         {
           "type": "text",
           "name": "trusted_proxy_ranges",

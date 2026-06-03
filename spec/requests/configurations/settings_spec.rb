@@ -147,6 +147,49 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
   end
 
+  describe 'POST /configuration/settings for the reverse_proxy mode' do
+    it 'stores app_domain for the internal Traefik mode' do
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'internal', app_domain: 'demo.example.com' }.to_json }
+
+      config = Configuration.current
+      expect(config.reverse_proxy.app_domain).to eq('demo.example.com')
+      expect(config.reverse_proxy.bind_ip).to be_blank
+    end
+
+    it 'stores bind_ip for the external Traefik mode and drops app_domain' do
+      Configuration.current.update('reverse_proxy', { 'app_domain' => 'old.example.com' })
+
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'external', bind_ip: '10.0.0.5', app_domain: 'old.example.com' }.to_json }
+
+      config = Configuration.current
+      expect(config.reverse_proxy.bind_ip).to eq('10.0.0.5')
+      expect(config.reverse_proxy.app_domain).to be_blank
+    end
+
+    it 'clears the section for mode none' do
+      Configuration.current.update('reverse_proxy', { 'app_domain' => 'old.example.com' })
+
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy', data: { mode: 'none' }.to_json }
+
+      expect(Configuration.current.reverse_proxy.app_domain).to be_blank
+    end
+
+    it 'derives mode=external from a stored bind_ip when editing' do
+      Configuration.current.update('reverse_proxy', { 'bind_ip' => '10.0.0.5' })
+
+      get edit_configuration_setting_path(setting: 'reverse_proxy', name: 'reverse_proxy'),
+          headers: turbo_frame_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('&quot;10.0.0.5&quot;')
+    end
+  end
+
   describe 'GET /configuration/:setting/:name/edit' do
     it 'renders the survey form for an existing sensor' do
       config = Configuration.current
