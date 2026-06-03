@@ -36,8 +36,22 @@ Web-based control panel for [SOLECTRUS](https://solectrus.de). HELIOS installs t
 - ≥ 1 GB free disk for the HELIOS Docker image and local data
 - A directory of your choice on the host with writable `compose.yaml` and `.env` for the SOLECTRUS stack (HELIOS regenerates both)
 
+## Supported setups and limitations
+
+HELIOS manages the SOLECTRUS stack as a plain `docker compose` project on **one Docker host**, through that host's local Docker socket. It controls only the containers on that host, keeps all data in **bind mounts** there ([ADR-0003](docs/adr/0003-bind-mounts-over-volumes.md)), and performs backups, restores, and database upgrades by exec-ing into the local containers. Everything HELIOS manages therefore lives on a single host.
+
+Because of this, HELIOS **cannot**:
+
+- **Spread services across multiple hosts or nodes.** The dashboard and its databases (PostgreSQL, Redis, InfluxDB) are an inseparable single-host unit. To distribute load, run the parts you want elsewhere _outside_ HELIOS.
+- **Deploy to Docker Swarm.** HELIOS uses `docker compose`, not `docker stack deploy`; `deploy` / `placement` / `replicas` and Swarm labels are dropped from managed services. HELIOS can run _next to_ a Swarm as a plain-compose project on one node, but it does not orchestrate the Swarm itself.
+- **Run on Kubernetes, Nomad, or other orchestrators.** Not supported.
+- **Use external or managed databases** (e.g. AWS RDS, or a PostgreSQL / Redis on another host). The dashboard always connects to a local `postgresql`, `redis`, and `influxdb`. The only exception is a **remote InfluxDB**, and only on a collectors-only host (no dashboard).
+- **Control a remote Docker daemon.** It needs a local `docker.sock`; pointing it at a Docker host over TCP is not supported.
+- **Use named volumes or network storage as the data layer.** HELIOS writes bind mounts; a node-portable storage strategy is not generated.
+- **Manage arbitrary images.** On import every service image must be on the HELIOS allowlist, otherwise the import is refused. Unrecognized services are preserved verbatim but stay unmanaged.
+
 > [!NOTE]
-> **Using Portainer or a similar Docker management tool?** HELIOS needs full control over the SOLECTRUS stack's `compose.yaml` and `.env`, so that stack must not be managed by such a tool. A mixed setup works fine: HELIOS owns the SOLECTRUS stack, the other tool keeps managing everything else. Take the SOLECTRUS stack out of the other tool and run it as a local directory containing `compose.yaml` and `.env`. Portainer, for example, will still list it, but mark it as _"This stack was created outside of Portainer. Control over this stack is limited."_ — exactly what you need.
+> **Mixed setups are fine.** Need any of the above? Run that part outside HELIOS and let HELIOS manage the rest. HELIOS only needs full control over the SOLECTRUS stack's `compose.yaml` and `.env`, so that stack must not be managed by another tool. Take it out of the other tool and run it as a local directory containing `compose.yaml` and `.env`. Portainer, for example, will still list it, but mark it as _"This stack was created outside of Portainer. Control over this stack is limited."_ — exactly what you need.
 
 ## Installation
 
