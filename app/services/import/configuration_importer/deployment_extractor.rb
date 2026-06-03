@@ -1,17 +1,17 @@
 module Import
   class ConfigurationImporter
-    # Detects the deployment mode of an existing installation. Only
-    # `collectors_only` is recorded — `full` is the implicit default and stays
-    # absent so the section is empty until the user opens the deployment card.
+    # Records the detected deployment mode. `full` is the implicit default and
+    # stays absent so the section is empty until the user opens the deployment
+    # card; `collectors_only` and `dashboard_only` are recorded explicitly.
     class DeploymentExtractor
-      def initialize(collectors_only:)
-        @collectors_only = collectors_only
+      def initialize(mode:)
+        @mode = mode
       end
 
       def section_data
-        return nil unless @collectors_only
+        return nil if @mode == ConfigSchema::MODE_FULL
 
-        { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY }
+        { 'mode' => @mode }
       end
     end
   end

@@ -47,6 +47,11 @@ module Import
 
     COLLECTOR_SERVICES = %w[senec-collector mqtt-collector shelly-collector forecast-collector].freeze
 
+    # Collectors that need local hardware/network access (vs. the API-based
+    # forecast-collector). Their absence — alongside an exposed InfluxDB — is the
+    # signal that the device collectors run remotely (dashboard_only mode).
+    DEVICE_COLLECTOR_SERVICES = %w[senec-collector mqtt-collector shelly-collector].freeze
+
     def initialize(compose_path:, env_path:)
       @compose_path = compose_path
       @env_path = env_path

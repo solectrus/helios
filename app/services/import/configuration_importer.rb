@@ -57,7 +57,48 @@ module Import
       @collectors_only = !has_local_target && has_any_collector
     end
 
+    # Dashboard + InfluxDB run locally, the InfluxDB is exposed for remote
+    # writes, and no local device collectors (senec/mqtt/shelly) are present —
+    # i.e. the collectors run elsewhere and push into this stack's InfluxDB.
+    # forecast-collector and power-splitter are fine (they're not device
+    # collectors). Mutually exclusive with collectors_only? (which has no local
+    # target at all).
+    def dashboard_only?
+      return @dashboard_only if defined?(@dashboard_only)
+
+      services = @reader.services
+      has_dashboard = services.key?('dashboard')
+      has_influxdb = services.key?('influxdb')
+      has_device_collector = StackReader::DEVICE_COLLECTOR_SERVICES.any? { |s| services.key?(s) }
+
+      @dashboard_only = has_dashboard && has_influxdb && influxdb_exposed? && !has_device_collector
+    end
+
+    # Resolved deployment mode (collectors_only and dashboard_only are mutually
+    # exclusive; everything else is the implicit full default).
+    def mode
+      if collectors_only?
+        ConfigSchema::MODE_COLLECTORS_ONLY
+      elsif dashboard_only?
+        ConfigSchema::MODE_DASHBOARD_ONLY
+      else
+        ConfigSchema::MODE_FULL
+      end
+    end
+
     private
+
+    # True when the imported compose publishes the InfluxDB container port 8086
+    # to the host (the defining trait of dashboard_only: remote collectors write
+    # in across the LAN).
+    def influxdb_exposed?
+      Array(@reader.service('influxdb')&.dig('ports')).any? do |entry|
+        case entry
+        when Hash then entry['target'].to_i == 8086
+        else entry.to_s.split(':').last == '8086'
+        end
+      end
+    end
 
     # --- Extractors (lazy-initialized) ---
 
@@ -89,7 +130,7 @@ module Import
     end
 
     def deployment_extractor
-      @deployment_extractor ||= DeploymentExtractor.new(collectors_only: collectors_only?)
+      @deployment_extractor ||= DeploymentExtractor.new(mode:)
     end
 
     def dashboard_extractor
