@@ -26,7 +26,13 @@ RSpec.describe Surveys::Builder do
     it 'passes sensor_name through to the Survey instance' do
       result = described_class.new(setting: 'sensor', sensor_name: 'inverter_power').call
 
-      expect(result['title']).to eq('INVERTER_POWER')
+      # Title shows the human-readable description, the SOLECTRUS sensor name
+      # moves to the description line.
+      expect(result['title']).to eq(
+        'default' => 'Total PV generation',
+        'de' => 'Gesamte PV-Erzeugung',
+      )
+      expect(result['description']).to eq('INVERTER_POWER')
     end
 
     it 'returns nil for a sensor setting with a missing sensor_name' do

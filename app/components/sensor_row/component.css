@@ -1,13 +1,13 @@
-/* Mobile: collapse sensor-row cells into a 3-column grid where the badge and
-   the live value sit side by side below the name, and the action buttons span
-   both rows on the right. */
+/* Mobile: collapse sensor-row cells into a 2-column card. The two-line name
+   (label + SOLECTRUS sensor name) sits top-left with the live value top-right,
+   the source badge and action buttons share the row below. */
 @media (width < 768px) {
   .sensor-row {
     display: grid;
-    grid-template-columns: auto 1fr auto;
+    grid-template-columns: 1fr auto;
     grid-template-areas:
-      'name name actions'
-      'badge value actions';
+      'name value'
+      'badge actions';
     column-gap: 0.5rem;
     row-gap: 0.25rem;
     align-items: center;
@@ -20,13 +20,21 @@
   }
   .sensor-row > td:nth-child(1) {
     grid-area: name;
+    align-self: start;
   }
   .sensor-row > td:nth-child(2) {
     grid-area: badge;
+    /* Indent so the badge lines up with the label text, not the leading icon
+       (icon w-4 = 1rem + flex gap-2 = 0.5rem). */
+    padding-left: 1.5rem;
   }
   .sensor-row > td:nth-child(3) {
     grid-area: value;
-    text-align: left;
+    align-self: start;
+    text-align: right;
+    /* Align the value's right edge with the action icons, which sit inset
+       inside their square buttons rather than at the button's edge. */
+    padding-right: 0.5rem;
   }
   .sensor-row > td:nth-child(4) {
     grid-area: actions;

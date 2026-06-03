@@ -1,5 +1,5 @@
 <td id="sensor-value-<%= sensor_name.parameterize %>" class="text-right font-mono text-sm <%= freshness_class %>">
-  <% if enabled? %>
+  <% if value? %>
     <span
       class="tooltip tooltip-left cursor-default"
       data-controller="relative-time"
@@ -9,10 +9,13 @@
         <span class="badge badge-sm badge-outline"><%= boolean_label %></span>
       <% else %>
         <%= formatted_value %>
-        <% if value? && unit.present? %>
+        <% if unit.present? %>
           <span class="text-base-content/50"><%= unit %></span>
         <% end %>
       <% end %>
     </span>
+  <% elsif unit_label.present? %>
+    <%# No live value yet: show the expected input unit as a hint. %>
+    <span class="text-base-content/40"><%= unit_label %></span>
   <% end %>
 </td>

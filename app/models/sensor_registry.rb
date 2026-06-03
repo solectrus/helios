@@ -13,6 +13,13 @@ class SensorRegistry
     inverter_power_5
   ].freeze
 
+  # Sensors carrying a yes/no value instead of a numeric measurement. They have
+  # no physical unit, so the UI shows a "yes/no" hint in place of the unit.
+  BOOLEAN_SENSORS = %w[
+    system_status_ok
+    wallbox_car_connected
+  ].freeze
+
   # Sensor groups for UI display
   GROUPS = {
     inverter: %w[
@@ -151,6 +158,10 @@ class SensorRegistry
 
   def self.unit_for(sensor_name)
     SENSORS.dig(sensor_name, :unit) || ''
+  end
+
+  def self.boolean?(sensor_name)
+    BOOLEAN_SENSORS.include?(sensor_name)
   end
 
   def self.sources_for(sensor_name)

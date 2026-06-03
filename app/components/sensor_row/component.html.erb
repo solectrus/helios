@@ -1,29 +1,26 @@
 <tr class="sensor-row" data-sensor-enabled="<%= enabled? %>">
   <%# Sensor name %>
-  <td class="pl-4 font-mono text-sm font-semibold uppercase <%= 'opacity-40' unless enabled? %>">
-    <% if custom_sensor? %>
-      <i class="fa-solid fa-microchip text-base-content/70 text-xs"></i>
-      <%= sensor_name %>
-      <% if enabled? && custom_name.present? %>
-        <span class="text-base-content/50 text-xs font-normal normal-case"><%= custom_name %></span>
-      <% end %>
-    <% else %>
-      <% if description.present? %>
-        <span class="tooltip tooltip-left before:text-xs before:normal-case" data-tip="<%= description %>">
-          <i class="fa-solid fa-microchip text-base-content/70 text-xs"></i>
-        </span>
-      <% end %>
-      <%= sensor_name %>
-    <% end %>
+  <td class="pl-4 text-sm <%= 'opacity-60' unless enabled? %>">
+    <div class="flex items-start gap-2">
+      <i class="fa-solid fa-microchip text-base-content/70 mt-1 w-4 text-center text-xs leading-5"></i>
 
-    <% if house_power_exclusions? %>
-      <span
-        class="tooltip tooltip-right before:text-xs before:normal-case"
-        data-tip="<%= house_power_exclusion_tooltip %>"
-      >
-        <i class="fa-solid fa-calculator text-info text-xs"></i>
-      </span>
-    <% end %>
+      <div>
+        <div class="font-semibold">
+          <%= display_label %>
+
+          <% if house_power_exclusions? %>
+            <span
+              class="tooltip tooltip-right before:text-xs before:normal-case"
+              data-tip="<%= house_power_exclusion_tooltip %>"
+            >
+              <i class="fa-solid fa-calculator text-info text-xs"></i>
+            </span>
+          <% end %>
+        </div>
+
+        <div class="text-base-content/50 font-mono text-xs uppercase"><%= sensor_name %></div>
+      </div>
+    </div>
   </td>
 
   <%# Source badge %>

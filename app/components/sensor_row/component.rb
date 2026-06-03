@@ -39,8 +39,29 @@ module SensorRow
       SensorRegistry.unit_for(sensor_name)
     end
 
+    # Hint shown in the value cell when no live value exists yet: the physical
+    # unit (W, %, °C) or a yes/no marker for boolean sensors. Status sensors
+    # have neither.
+    def unit_label
+      return unit if unit.present?
+
+      if SensorRegistry.boolean?(sensor_name)
+        return "#{I18n.t('common.boolean_yes')}/#{I18n.t('common.boolean_no')}"
+      end
+
+      nil
+    end
+
     def description
       I18n.t("sensors.#{sensor_name}")
+    end
+
+    # Prominent, human-readable label. Custom sensors prefer the user-supplied
+    # name and fall back to the generic "Consumer N" description.
+    def display_label
+      return custom_name if custom_sensor? && custom_name
+
+      description
     end
 
     def custom_sensor?

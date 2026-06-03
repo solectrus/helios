@@ -65,11 +65,11 @@ module Surveys
       end
 
       def inject_sensor_title!(data)
-        data['title'] = sensor_name.upcase
-        data['description'] = self.class.localized(
+        data['title'] = self.class.localized(
           en: I18n.t("sensors.#{sensor_name}", locale: :en),
           de: I18n.t("sensors.#{sensor_name}", locale: :de),
         )
+        data['description'] = sensor_name.upcase
       end
 
       def inject_source_choices!(data)
