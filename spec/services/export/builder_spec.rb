@@ -1678,6 +1678,12 @@ RSpec.describe Export::Builder do
       expect(ingest.environment).to include('INFLUX_HOST=influxdb')
     end
 
+    it 'gives ingest no INFLUX_TOKEN (it relays the caller-supplied token)' do
+      compose = Compose.load
+      ingest = compose.services.find('ingest')
+      expect(ingest.environment).not_to include(a_string_starting_with('INFLUX_TOKEN'))
+    end
+
     it 'redirects the SENEC collector to ingest' do
       compose = Compose.load
       senec = compose.services.find('senec-collector')

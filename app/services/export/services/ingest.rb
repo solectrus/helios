@@ -59,9 +59,13 @@ module Export
         %w[TZ INFLUX_ORG INFLUX_BUCKET RETENTION_HOURS]
       end
 
+      # Ingest deliberately gets no INFLUX_TOKEN: it is a write proxy that
+      # authenticates each downstream write with the token the calling client
+      # passes in the `Authorization: Token` header (see solectrus/ingest
+      # routes/write.rb + influx_writer.rb), so an env token would be dead config.
       # STATS_PASSWORD reuses ADMIN_PASSWORD so the Ingest stats dashboard shares admin auth.
       def explicit_vars
-        ['INFLUX_HOST=influxdb', influx_token_write_var, 'STATS_PASSWORD=${ADMIN_PASSWORD}']
+        ['INFLUX_HOST=influxdb', 'STATS_PASSWORD=${ADMIN_PASSWORD}']
       end
 
       def optional_vars
