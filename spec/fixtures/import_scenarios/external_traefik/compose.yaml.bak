@@ -1,0 +1,283 @@
+# helios-stack — HELIOS-managed (operating mode: dashboard_only)
+#
+# Runs as a plain `docker compose` project, with HELIOS in the stack managing
+# compose.yaml / .env from its config.yaml.
+#
+# Contains: dashboard, influxdb, db (postgres), redis, power-splitter,
+# forecast-collector (pvnode), helios, and the two S3 backups. The device
+# collectors run elsewhere and push into this stack's InfluxDB.
+#
+# ROUTING: an EXTERNAL Traefik (on another host/stack) routes to this stack.
+# Every externally reachable service publishes a HOST PORT, bound to a private
+# IP via HELIOS_BIND_IP, and the external Traefik reaches them through
+# file-provider entries. Internal service-to-service traffic uses the compose
+# default network and service names.
+#
+# The external collectors reach InfluxDB on <private-IP>:8086.
+#
+# HELIOS_BIND_IP defaults to 0.0.0.0 (all interfaces); set it to a private IP
+# so the host ports are not exposed publicly (the public path stays behind the
+# external Traefik).
+
+services:
+  dashboard:
+    image: ghcr.io/solectrus/solectrus:develop
+    environment:
+      - TZ
+      - APP_HOST
+      - FORCE_SSL
+      - ASSET_HOST
+      - TRUSTED_PROXY_RANGES
+      - DB_HOST=db
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+      - DB_USER=postgres
+      - SECRET_KEY_BASE
+      - INFLUX_HOST=influxdb
+      - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - LOCKUP_CODEWORD
+      - REDIS_URL
+      - HONEYBADGER_API_KEY
+      - RORVSWILD_API_KEY
+      - PLAUSIBLE_URL
+      - INSTALLATION_DATE
+      - ELECTRICITY_PRICE
+      - FEED_IN_TARIFF
+      - ADMIN_PASSWORD
+      - RUBY_YJIT_ENABLE=1
+      - FRAME_ANCESTORS
+      - INFLUX_SENSOR_INVERTER_POWER
+      - INFLUX_SENSOR_INVERTER_POWER_1
+      - INFLUX_SENSOR_INVERTER_POWER_2
+      - INFLUX_SENSOR_INVERTER_POWER_3
+      - INFLUX_SENSOR_INVERTER_POWER_4
+      - INFLUX_SENSOR_INVERTER_POWER_5
+      - INFLUX_SENSOR_HOUSE_POWER
+      - INFLUX_SENSOR_GRID_IMPORT_POWER
+      - INFLUX_SENSOR_GRID_EXPORT_POWER
+      - INFLUX_SENSOR_BATTERY_CHARGING_POWER
+      - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
+      - INFLUX_SENSOR_BATTERY_SOC
+      - INFLUX_SENSOR_CAR_BATTERY_SOC
+      - INFLUX_SENSOR_WALLBOX_POWER
+      - INFLUX_SENSOR_WALLBOX_CAR_CONNECTED
+      - INFLUX_SENSOR_CASE_TEMP
+      - INFLUX_SENSOR_INVERTER_POWER_FORECAST
+      - INFLUX_SENSOR_INVERTER_POWER_FORECAST_CLEARSKY
+      - INFLUX_SENSOR_SYSTEM_STATUS
+      - INFLUX_SENSOR_SYSTEM_STATUS_OK
+      - INFLUX_SENSOR_GRID_EXPORT_LIMIT
+      - INFLUX_SENSOR_HEATPUMP_POWER
+      - INFLUX_EXCLUDE_FROM_HOUSE_POWER
+      - INFLUX_SENSOR_HEATPUMP_HEATING_POWER
+      - INFLUX_SENSOR_HEATPUMP_LEAVING_TEMP
+      - INFLUX_SENSOR_HEATPUMP_STATUS
+      - INFLUX_SENSOR_HEATPUMP_SCORE
+      - INFLUX_SENSOR_HEATPUMP_TANK_TEMP
+      - INFLUX_SENSOR_HEATPUMP_TANK_TEMP_SETPOINT
+      - INFLUX_SENSOR_OUTDOOR_TEMP
+      - INFLUX_SENSOR_OUTDOOR_TEMP_FORECAST
+      - INFLUX_SENSOR_CAR_MILEAGE
+      - INFLUX_SENSOR_CUSTOM_POWER_01
+      - INFLUX_SENSOR_CUSTOM_POWER_02
+      - INFLUX_SENSOR_CUSTOM_POWER_03
+      - INFLUX_SENSOR_CUSTOM_POWER_04
+      - INFLUX_SENSOR_CUSTOM_POWER_05
+      - INFLUX_SENSOR_CUSTOM_POWER_06
+      - INFLUX_SENSOR_CUSTOM_POWER_07
+      - INFLUX_SENSOR_CUSTOM_POWER_08
+      - INFLUX_SENSOR_CUSTOM_POWER_09
+      - INFLUX_SENSOR_CUSTOM_POWER_10
+      - INFLUX_SENSOR_CUSTOM_POWER_11
+      - INFLUX_SENSOR_CUSTOM_POWER_12
+      - INFLUX_SENSOR_CUSTOM_POWER_13
+      - INFLUX_SENSOR_CUSTOM_POWER_14
+      - INFLUX_SENSOR_CUSTOM_POWER_15
+      - INFLUX_SENSOR_CUSTOM_POWER_16
+      - INFLUX_SENSOR_CUSTOM_POWER_17
+      - INFLUX_SENSOR_CUSTOM_POWER_18
+      - INFLUX_SENSOR_CUSTOM_POWER_19
+      - INFLUX_SENSOR_CUSTOM_POWER_20
+      - SKIP_BROWSER_CHECK
+    ports:
+      - ${HELIOS_BIND_IP:-0.0.0.0}:3000:3000
+    depends_on:
+      - db
+      - redis
+      - influxdb
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 3000 || exit 1
+    restart: unless-stopped
+    ulimits:
+      nofile:
+        soft: 20000
+        hard: 40000
+
+  influxdb:
+    image: influxdb:2.9-alpine
+    command: influxd run --bolt-path /var/lib/influxdb2/influxd.bolt --engine-path /var/lib/influxdb2/engine --store disk
+    environment:
+      - TZ
+    # Published so (a) Traefik can route influxdb.${APP_HOST} to it and (b) the
+    # portainer-stack collectors can write to <worker-stateful-IP>:8086.
+    ports:
+      - ${HELIOS_BIND_IP:-0.0.0.0}:8086:8086
+    healthcheck:
+      test: ['CMD', 'influx', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - ${INFLUX_VOLUME_PATH}:/var/lib/influxdb2
+    restart: unless-stopped
+
+  db:
+    environment:
+      - POSTGRES_PASSWORD
+    image: postgres:18-alpine
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres']
+      interval: 10s
+      timeout: 5s
+    volumes:
+      - ${DB_VOLUME_PATH}:/var/lib/postgresql
+    restart: unless-stopped
+
+  redis:
+    image: redis:8-alpine
+    command:
+      [
+        'redis-server',
+        '--appendonly',
+        'no',
+        '--maxmemory',
+        '500mb',
+        '--maxmemory-policy',
+        'allkeys-lru',
+      ]
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+    volumes:
+      - ${REDIS_VOLUME_PATH}:/data
+    restart: unless-stopped
+
+  # Power Splitter — attributes grid draw to named consumers. Reads/writes the
+  # local InfluxDB and uses Redis; no inbound route needed.
+  power-splitter:
+    image: ghcr.io/solectrus/power-splitter:develop
+    environment:
+      - TZ
+      - INSTALLATION_DATE
+      - INFLUX_HOST=influxdb
+      - INFLUX_SCHEMA=http
+      - INFLUX_PORT=8086
+      - INFLUX_TOKEN=${INFLUX_TOKEN_READWRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - POWER_SPLITTER_INTERVAL
+      - INFLUX_SENSOR_HOUSE_POWER
+      - INFLUX_SENSOR_GRID_IMPORT_POWER
+      - INFLUX_SENSOR_WALLBOX_POWER
+      - INFLUX_SENSOR_HEATPUMP_POWER
+      - INFLUX_SENSOR_BATTERY_CHARGING_POWER
+      - INFLUX_SENSOR_CUSTOM_POWER_01
+      - INFLUX_SENSOR_CUSTOM_POWER_02
+      - INFLUX_SENSOR_CUSTOM_POWER_03
+      - INFLUX_SENSOR_CUSTOM_POWER_04
+      - INFLUX_SENSOR_CUSTOM_POWER_05
+      - INFLUX_SENSOR_CUSTOM_POWER_06
+      - INFLUX_SENSOR_CUSTOM_POWER_07
+      - INFLUX_SENSOR_CUSTOM_POWER_08
+      - INFLUX_SENSOR_CUSTOM_POWER_09
+      - INFLUX_SENSOR_CUSTOM_POWER_10
+      - INFLUX_EXCLUDE_FROM_HOUSE_POWER
+      - REDIS_URL
+    depends_on:
+      - influxdb
+      - redis
+    restart: unless-stopped
+
+  # Forecast collector — the SINGLE forecast-collector HELIOS manages (pvnode).
+  # The other providers (solcast, forecast.solar) stay in the portainer-stack
+  # and write into the same InfluxDB under different measurements.
+  forecast-collector:
+    image: ghcr.io/solectrus/forecast-collector:develop
+    environment:
+      - TZ
+      - FORECAST_LATITUDE
+      - FORECAST_LONGITUDE
+      - FORECAST_DECLINATION
+      - FORECAST_AZIMUTH=209
+      - FORECAST_KWP
+      - FORECAST_INTERVAL
+      - FORECAST_PROVIDER=pvnode
+      - PVNODE_APIKEY
+      - PVNODE_PAID=nowcast
+      - PVNODE_EXTRA_PARAMS
+      - INFLUX_HOST=influxdb
+      - INFLUX_SCHEMA=http
+      - INFLUX_PORT=8086
+      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
+      - INFLUX_MEASUREMENT=Forecast
+    depends_on:
+      - influxdb
+    restart: unless-stopped
+
+  # HELIOS management UI — routed through Traefik at helios.${APP_HOST} via the
+  # file provider (host port 3999). `.:/data` is the compose project dir, so
+  # HELIOS reads config.yaml and (re)writes compose.yaml / .env right here.
+  helios:
+    image: ${HELIOS_IMAGE:-ghcr.io/solectrus/helios:latest}
+    environment:
+      - TZ
+      - ADMIN_PASSWORD
+      - SECRET_KEY_BASE
+    volumes:
+      - .:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /sys/fs/cgroup:/host/sys/fs/cgroup:ro
+    ports:
+      - ${HELIOS_BIND_IP:-0.0.0.0}:3999:3000
+    restart: unless-stopped
+
+  postgresbackup:
+    environment:
+      - POSTGRES_DATABASE=solectrus_production
+      - POSTGRES_HOST=db
+      - POSTGRES_PASSWORD
+      - POSTGRES_USER=postgres
+      - S3_ACCESS_KEY_ID=${AWS_ACCESS_KEY}
+      - S3_SECRET_ACCESS_KEY=${AWS_SECRET_KEY}
+      - S3_REGION=eu-central-1
+      - S3_BUCKET=solectrus
+      - S3_PREFIX=postgres_backup
+      - SCHEDULE=@daily
+    image: ghcr.io/solectrus/postgres-s3-backup:18
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  fluxbackup:
+    image: ghcr.io/solectrus/influxdb2-s3-backup:latest
+    environment:
+      INFLUXDB_HOST: influxdb
+      INFLUXDB_ORG: ${INFLUX_ORG}
+      INFLUXDB_TOKEN: ${INFLUX_TOKEN_OPERATOR}
+      INFLUXDB_BACKUP_PORT: 8086
+      BACKUP_PATH: '/data/influxdb/backup'
+      S3_BUCKET: 'solectrus'
+      S3_PREFIX: 'influxdb_backup'
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_KEY}
+      CRON: '0 2 * * *'
+    depends_on:
+      - influxdb
+    restart: unless-stopped

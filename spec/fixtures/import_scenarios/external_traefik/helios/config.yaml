@@ -1,0 +1,190 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+deployment:
+  mode: dashboard_only
+system:
+  admin_password: my-admin-password
+  app_host: solectrus.example.de
+  installation_date: '2020-11-27'
+  secret_key_base: my-secret-key-base
+  timezone: Europe/Berlin
+dashboard:
+  frame_ancestors: https://iframetester.com/
+  image: ghcr.io/solectrus/solectrus:develop
+  trusted_proxy_ranges: 173.245.48.0/20,103.21.244.0/22,103.22.200.0/22,103.31.4.0/22,141.101.64.0/18,108.162.192.0/18,190.93.240.0/20,188.114.96.0/20,197.234.240.0/22,198.41.128.0/17,162.158.0.0/15,104.16.0.0/13,104.24.0.0/14,172.64.0.0/13,131.0.72.0/22,2400:cb00::/32,2606:4700::/32,2803:f800::/32,2405:b500::/32,2405:8100::/32,2a06:98c0::/29,2c0f:f248::/32
+postgresql:
+  image: postgres:18-alpine
+  password: my-postgres-password
+  volume_path: "/my-volumes/solectrus/postgresql"
+influxdb:
+  bucket: my-bucket
+  image: influxdb:2.9-alpine
+  org: solectrus
+  password: my-influx-password
+  publish_port: true
+  token_admin: my-influx-readwrite-token
+  token_read: my-influx-read-token
+  token_readwrite: my-influx-readwrite-token
+  token_write: my-influx-write-token
+  volume_path: "/my-volumes/solectrus/influxdb"
+redis:
+  image: redis:8-alpine
+  volume_path: "/my-volumes/solectrus/redis"
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: pvnode
+  forecast_declination1: '29.1'
+  forecast_kwp1: '9.75'
+  forecast_latitude: '50.00000'
+  forecast_longitude: '6.00000'
+  forecast_pvnode_apikey: my-pvnode-api-key
+  forecast_pvnode_azimuth1: '209'
+  forecast_pvnode_extra_params: diffuse_radiation_model=perez&snow_slide_coefficient=0.8
+  forecast_pvnode_paid: nowcast
+  forecast_roofs: '1'
+  measurement: Forecast
+reverse_proxy:
+  bind_ip: 10.0.0.5
+backup: {}
+sensors:
+  battery_charging_power:
+    field: bat_power_plus
+    measurement: SENEC
+    source: external
+  battery_discharging_power:
+    field: bat_power_minus
+    measurement: SENEC
+    source: external
+  battery_soc:
+    field: bat_fuel_charge
+    measurement: SENEC
+    source: external
+  car_battery_soc:
+    field: battery_level
+    measurement: Car
+    source: external
+  case_temp:
+    field: case_temp
+    measurement: SENEC
+    source: external
+  custom_power_01:
+    field: power
+    measurement: Washer
+    name: Washer
+    source: external
+  custom_power_02:
+    field: power
+    measurement: Fridge
+    name: Fridge
+    source: external
+  custom_power_06:
+    field: power
+    measurement: Dishwasher
+    name: Dishwasher
+    source: external
+  custom_power_08:
+    field: power
+    measurement: TV
+    name: TV
+    source: external
+  custom_power_09:
+    field: power
+    measurement: IT
+    name: IT
+    source: external
+  grid_export_limit:
+    field: power_ratio
+    measurement: SENEC
+    source: external
+  grid_export_power:
+    field: grid_power_minus
+    measurement: SENEC
+    source: external
+  grid_import_power:
+    field: grid_power_plus
+    measurement: SENEC
+    source: external
+  heatpump_heating_power:
+    field: heat
+    measurement: ALTHERMA
+    source: external
+  heatpump_power:
+    exclude_from_house_power: true
+    field: power
+    measurement: Consumer
+    source: external
+  heatpump_status:
+    field: current_state
+    measurement: ALTHERMA
+    source: external
+  heatpump_tank_temp:
+    field: r5t_tank_temp
+    measurement: ALTHERMA
+    source: external
+  heatpump_tank_temp_setpoint:
+    field: setpoint_tank_water
+    measurement: ALTHERMA
+    source: external
+  house_power:
+    field: house_power
+    measurement: SENEC
+    source: external
+  inverter_power:
+    field: inverter_power
+    measurement: SENEC
+    source: external
+  inverter_power_1:
+    field: mpp1_power
+    measurement: SENEC
+    source: external
+  inverter_power_2:
+    field: mpp2_power
+    measurement: SENEC
+    source: external
+  inverter_power_3:
+    field: mpp3_power
+    measurement: SENEC
+    source: external
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  inverter_power_forecast_clearsky:
+    field: watt_clearsky
+    measurement: Forecast
+    source: forecast
+  outdoor_temp:
+    field: r6t_outdoor_temp
+    measurement: ALTHERMA
+    source: external
+  outdoor_temp_forecast:
+    field: temp
+    measurement: Forecast
+    source: forecast
+  system_status:
+    field: current_state
+    measurement: SENEC
+    source: external
+  system_status_ok:
+    field: current_state_ok
+    measurement: SENEC
+    source: external
+  wallbox_car_connected:
+    field: ev_connected
+    measurement: SENEC
+    source: external
+  wallbox_power:
+    field: wallbox_charge_power
+    measurement: SENEC
+    source: external
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:develop
+  interval: '300'
