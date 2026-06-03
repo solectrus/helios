@@ -14,12 +14,29 @@ module Import
       # "app-solectrus" or arbitrary user-chosen identifiers.
       ROUTER_RULE_KEY = /\Atraefik\.http\.routers\.[^.]+\.rule\b/
 
+      # Managed services that publish host ports in the "external Traefik" mode.
+      # HELIOS binds them all to the same IP, so reading it from any one is enough.
+      PORT_PUBLISHERS = %w[dashboard influxdb ingest helios].freeze
+
+      # Wildcard bind addresses are equivalent to "no explicit bind" — HELIOS
+      # already defaults to all interfaces, so they don't set a bind_ip.
+      WILDCARD_IPS = %w[0.0.0.0 ::].freeze
+
       def initialize(reader, volume_resolver)
         @reader = reader
         @volume_resolver = volume_resolver
       end
 
       def section_data
+        data = traefik_data || {}
+        ip = bind_ip
+        data['bind_ip'] = ip if ip.present?
+        data.presence
+      end
+
+      private
+
+      def traefik_data
         return nil unless @reader.services.key?('traefik')
 
         domain = extract_domain_from_dashboard_labels
@@ -33,10 +50,29 @@ module Import
           .merge(passthrough_data)
           .merge(@volume_resolver.path_data('reverse_proxy'))
           .compact
-          .presence
       end
 
-      private
+      # The host IP a published port is bound to (external-Traefik mode), read
+      # from any managed publisher's port mapping. Returns nil for wildcard
+      # binds, which carry no information HELIOS needs to persist.
+      def bind_ip
+        PORT_PUBLISHERS
+          .flat_map { |name| Array(@reader.service(name)&.dig('ports')) }
+          .filter_map { |entry| host_ip(entry) }
+          .first
+      end
+
+      def host_ip(entry)
+        ip =
+          if entry.is_a?(Hash)
+            entry['host_ip']
+          else
+            parts = entry.to_s.split(':', 3)
+            parts.first if parts.size == 3
+          end
+
+        ip if ip.present? && WILDCARD_IPS.exclude?(ip)
+      end
 
       def passthrough_data
         # Use the raw (unresolved) compose so ports/volumes stay in their
