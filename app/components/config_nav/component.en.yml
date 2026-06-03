@@ -3,6 +3,7 @@ en:
   datasources: 'Data Sources'
   advanced: 'Advanced'
   files_label: 'Generated for Docker'
+  traefik_files_label: 'Generated for Traefik'
   reset_label: 'Old Configuration'
   reset: 'Reset'
   discard: 'Delete backups'

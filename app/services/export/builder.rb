@@ -49,6 +49,10 @@ module Export
       Env.new(@configuration).to_s
     end
 
+    def traefik_content
+      TraefikConfig.new(@configuration).to_s
+    end
+
     # Materialize auto-generated values (passwords, tokens, …) into config.yaml
     # so compose_content/env_content reflect what would actually be written.
     # Public so a file preview can resolve defaults without writing the

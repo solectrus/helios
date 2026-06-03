@@ -542,6 +542,14 @@ class Configuration # rubocop:disable Metrics/ClassLength
     mode == ConfigSchema::MODE_DASHBOARD_ONLY
   end
 
+  # Reverse-proxy "external Traefik" mode: an external Traefik routes to the
+  # stack's published host ports, so HELIOS runs no Traefik of its own (no
+  # app_domain) but a bind_ip pins where the ports are published. Mirrors the
+  # tri-state derived in Configurations::SettingsController#reverse_proxy_mode.
+  def reverse_proxy_external?
+    reverse_proxy.app_domain.blank? && reverse_proxy.bind_ip.present?
+  end
+
   # Settings visible in the configuration UI for the current mode. Ingest is
   # inserted right after influxdb whenever it is activated by a balcony sensor
   # — the two services sit next to each other in the data path and read more

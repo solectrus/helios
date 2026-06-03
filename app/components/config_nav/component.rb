@@ -32,11 +32,18 @@ module ConfigNav
       only != :tabs && Configuration.current.setup_completed?
     end
 
-    def file_links
+    def docker_file_links
       [
         { key: 'compose', icon: 'fa-file-code', label: ::Compose.filename },
         { key: 'env', icon: 'fa-file-lines', label: '.env' },
       ]
+    end
+
+    # External-Traefik mode: offer the file-provider snippet to copy into the
+    # external Traefik (HELIOS only publishes host ports, see TraefikConfig).
+    # Shown under its own "Generated for Traefik" heading.
+    def show_traefik_file?
+      Configuration.current.reverse_proxy_external?
     end
 
     def active_tab
