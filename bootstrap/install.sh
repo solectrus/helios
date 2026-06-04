@@ -3,7 +3,7 @@
 # HELIOS bootstrap installer.
 #
 # Usage:
-#   curl -fsSL https://raw.githubusercontent.com/solectrus/helios/develop/bootstrap/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/solectrus/helios/main/bootstrap/install.sh | bash
 #
 # Detects whether the current directory already contains a SOLECTRUS stack
 # (compose.yaml + .env) and either:
@@ -15,14 +15,14 @@
 
 set -euo pipefail
 
-HELIOS_IMAGE="${HELIOS_IMAGE:-ghcr.io/solectrus/helios:develop}"
+HELIOS_IMAGE="${HELIOS_IMAGE:-ghcr.io/solectrus/helios:latest}"
 ENV_FILE=".env"
 PROJECT_NAME="solectrus"
 
 # GitHub repo + branch the installer was published from. Used to fetch the
 # script's last-update timestamp from the GitHub API on welcome.
 HELIOS_REPO="${HELIOS_REPO:-solectrus/helios}"
-HELIOS_REF="${HELIOS_REF:-develop}"
+HELIOS_REF="${HELIOS_REF:-main}"
 
 # Preflight thresholds. ABORT = the install will fail without this.
 # RECOMMENDED = it will work but the user runs out of headroom soon.

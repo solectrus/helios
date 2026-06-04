@@ -74,7 +74,7 @@ cd /path/to/your/solectrus
 Then run the bootstrap script:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/solectrus/helios/develop/bootstrap/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/solectrus/helios/main/bootstrap/install.sh | bash
 ```
 
 When it finishes, HELIOS is available at `http://<your-host>:3999`.
