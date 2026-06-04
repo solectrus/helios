@@ -31,6 +31,8 @@ redis:
 watchtower:
   image: nickfedor/watchtower:latest
 sensors: {}
+helios:
+  image: ghcr.io/solectrus/helios:latest
 _unmanaged:
   services:
     dozzle:

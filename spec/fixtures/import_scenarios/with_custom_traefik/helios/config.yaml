@@ -55,6 +55,8 @@ reverse_proxy:
   - "./letsencrypt:/letsencrypt"
   - "/var/run/docker.sock:/var/run/docker.sock:ro"
 sensors: {}
+helios:
+  image: ghcr.io/solectrus/helios:latest
 service_overrides:
   dashboard:
     labels:

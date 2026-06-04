@@ -21,7 +21,7 @@ module Export
 
       def to_h
         {
-          image: DockerImages.current(:HELIOS),
+          image: configuration.helios.image.presence || DockerImages.current(:HELIOS),
           environment: ENVIRONMENT,
           volumes: [
             '.:/data',

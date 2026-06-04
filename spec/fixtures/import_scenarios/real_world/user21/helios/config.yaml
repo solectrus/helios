@@ -76,3 +76,5 @@ sensors:
     source: senec
   wallbox_power:
     source: senec
+helios:
+  image: ghcr.io/solectrus/helios:latest

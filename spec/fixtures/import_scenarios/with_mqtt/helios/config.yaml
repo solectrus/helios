@@ -108,3 +108,5 @@ sensors:
     mqtt_payload_type: float
     mqtt_topic: go-eCharger/123456/nrg
     source: mqtt
+helios:
+  image: ghcr.io/solectrus/helios:latest

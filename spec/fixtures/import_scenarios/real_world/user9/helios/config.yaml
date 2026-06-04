@@ -142,6 +142,8 @@ sensors:
 power_splitter:
   image: ghcr.io/solectrus/power-splitter:develop
   interval: '300'
+helios:
+  image: ghcr.io/solectrus/helios:develop
 _unmanaged:
   services:
     dozzle:

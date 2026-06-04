@@ -68,3 +68,5 @@ sensors:
     source: senec
   system_status_ok:
     source: senec
+helios:
+  image: ghcr.io/solectrus/helios:latest

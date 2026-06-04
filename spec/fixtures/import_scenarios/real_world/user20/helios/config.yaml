@@ -247,3 +247,5 @@ sensors:
     source: external
 power_splitter:
   image: ghcr.io/solectrus/power-splitter:develop
+helios:
+  image: ghcr.io/solectrus/helios:develop

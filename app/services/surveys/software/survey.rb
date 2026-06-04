@@ -17,6 +17,7 @@ module Surveys
         'forecast_collector' => ->(c) { c.active_sources.include?('forecast') },
         'ingest' => ->(c) { c.ingest_required? },
         'power_splitter' => ->(c) { Export::Services::PowerSplitter.enabled?(c) },
+        'helios' => ->(c) { Export::Services::Helios.enabled?(c) },
       }.freeze
 
       SERVICE_LABELS = {
@@ -27,6 +28,7 @@ module Surveys
         'forecast_collector' => { de: 'Forecast-Collector', en: 'Forecast Collector' },
         'ingest' => { de: 'Ingest', en: 'Ingest' },
         'power_splitter' => { de: 'Power Splitter', en: 'Power Splitter' },
+        'helios' => { de: 'HELIOS', en: 'HELIOS' },
       }.freeze
 
       private

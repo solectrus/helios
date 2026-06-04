@@ -5,13 +5,13 @@ class Configuration # rubocop:disable Metrics/ClassLength
   SINGLETONS = %w[
     deployment system dashboard postgresql influxdb redis
     watchtower forecast senec mqtt shelly reverse_proxy backup backup_schedule sensors ingest power_splitter
-    service_overrides
+    helios service_overrides
   ].freeze
 
   # Sections hidden from the configuration UI (auto-managed). Ingest is not
   # listed: it has user-facing knobs (image, retention_hours) and is surfaced
   # via #visible_settings whenever a balcony sensor activates it.
-  HIDDEN = %w[postgresql redis watchtower power_splitter].freeze
+  HIDDEN = %w[postgresql redis watchtower power_splitter helios].freeze
 
   # Mini-surveys persist into a slice of one singleton section in config.yaml.
   # On save the listed keys overwrite, missing ones are cleared, and any
@@ -56,6 +56,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'forecast_collector' => { singleton: 'forecast', registry: :FORECAST_COLLECTOR },
     'ingest' => { singleton: 'ingest', registry: :INGEST },
     'power_splitter' => { singleton: 'power_splitter', registry: :POWER_SPLITTER },
+    'helios' => { singleton: 'helios', registry: :HELIOS },
   }.freeze
 
   # Per-service singletons whose `image` is owned by the Software survey.

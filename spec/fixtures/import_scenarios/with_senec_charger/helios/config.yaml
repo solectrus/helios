@@ -65,6 +65,8 @@ sensors:
     field: watts
     measurement: Forecast
     source: forecast
+helios:
+  image: ghcr.io/solectrus/helios:latest
 _unmanaged:
   services:
     senec-charger:

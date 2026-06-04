@@ -36,8 +36,8 @@ RSpec.describe ConfigSchema do
       expect(fields).to include('image')
     end
 
-    it 'returns nil for helios (not a config section)' do
-      expect(described_class.fields_for('helios')).to be_nil
+    it 'returns fields for helios (image channel)' do
+      expect(described_class.fields_for('helios')).to include('image')
     end
 
     it 'returns fields for watchtower' do
@@ -126,7 +126,7 @@ RSpec.describe ConfigSchema do
       config = Configuration.current
       missing = described_class.missing_auto_generated(config)
 
-      expect(missing.keys).to match_array(%w[system dashboard postgresql influxdb redis watchtower ingest])
+      expect(missing.keys).to match_array(%w[system dashboard postgresql influxdb redis watchtower ingest helios])
     end
 
     it 'returns all system defaults when empty' do

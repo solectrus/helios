@@ -253,3 +253,5 @@ shelly:
   interval: '5'
   mode: essential
   password: secret
+helios:
+  image: ghcr.io/solectrus/helios:latest

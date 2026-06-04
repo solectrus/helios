@@ -121,7 +121,12 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
       ghcr.io/solectrus/ingest:develop
     ],
   }.freeze
-  HELIOS = { current: 'ghcr.io/solectrus/helios:develop' }.freeze
+  HELIOS = {
+    current: %w[
+      ghcr.io/solectrus/helios:latest
+      ghcr.io/solectrus/helios:develop
+    ],
+  }.freeze
 
   WATCHTOWER = {
     current: 'nickfedor/watchtower:latest',

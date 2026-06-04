@@ -123,6 +123,8 @@ sensors:
     mqtt_payload_type: integer
     mqtt_topic: evcc/loadpoints/1/chargePower
     source: mqtt
+helios:
+  image: ghcr.io/solectrus/helios:latest
 _unmanaged:
   volumes:
     solectrus-db:

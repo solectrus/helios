@@ -265,6 +265,8 @@ sensors:
     source: senec
 power_splitter:
   image: ghcr.io/solectrus/power-splitter:latest
+helios:
+  image: ghcr.io/solectrus/helios:latest
 service_overrides:
   dashboard:
     labels:

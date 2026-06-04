@@ -65,3 +65,5 @@ sensors:
     field: power
     measurement: heatpump
     source: shelly
+helios:
+  image: ghcr.io/solectrus/helios:develop

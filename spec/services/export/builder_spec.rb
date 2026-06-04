@@ -253,6 +253,23 @@ RSpec.describe Export::Builder do
       helios = compose.services.find('helios')
       expect(helios.environment).to contain_exactly('TZ', 'ADMIN_PASSWORD', 'SECRET_KEY_BASE')
     end
+
+    it 'defaults the helios image to the stable channel' do
+      compose = Compose.load
+      expect(compose.services.find('helios').image).to eq('ghcr.io/solectrus/helios:latest')
+    end
+  end
+
+  describe 'helios image channel' do
+    before do
+      configuration.update('helios', { 'image' => 'ghcr.io/solectrus/helios:develop' })
+      described_class.new(configuration).write!
+    end
+
+    it 'honors the configured channel' do
+      helios = Compose.load.services.find('helios')
+      expect(helios.image).to eq('ghcr.io/solectrus/helios:develop')
+    end
   end
 
   describe 'env file generation' do

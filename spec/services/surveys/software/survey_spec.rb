@@ -11,12 +11,12 @@ RSpec.describe Surveys::Software::Survey do
       expect(matrix['columns'].pluck('value')).to eq(%w[latest develop])
     end
 
-    it 'lists the dashboard row in full mode' do
-      expect(matrix['rows'].pluck('value')).to eq(%w[dashboard])
+    it 'lists the dashboard and HELIOS rows in full mode' do
+      expect(matrix['rows'].pluck('value')).to eq(%w[dashboard helios])
     end
 
     it 'defaults every row to the stable channel' do
-      expect(matrix['defaultValue']).to eq('dashboard' => 'latest')
+      expect(matrix['defaultValue']).to eq('dashboard' => 'latest', 'helios' => 'latest')
     end
 
     it 'keeps the update-interval radiogroup with daily as the default' do
@@ -74,10 +74,10 @@ RSpec.describe Surveys::Software::Survey do
       expect(matrix['rows'].pluck('value')).not_to include('power_splitter')
     end
 
-    it 'omits the matrix entirely when no service is active (collectors_only without sources)' do
+    it 'always offers the HELIOS row, even in collectors_only mode without sources' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
 
-      expect(find_survey_element(result, 'service_channels')).to be_nil
+      expect(matrix['rows'].pluck('value')).to eq(%w[helios])
     end
   end
 end

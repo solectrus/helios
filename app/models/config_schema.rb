@@ -165,6 +165,14 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
 
   INGEST_ALL = (STORAGE_FIELDS + INGEST_FIELDS + INGEST_DEFAULTS.keys).uniq.freeze
 
+  # --- HELIOS: the management UI manages its own image channel too ---
+
+  HELIOS_DEFAULTS = {
+    'image' => DockerImages.current(:HELIOS),
+  }.freeze
+
+  HELIOS_ALL = HELIOS_DEFAULTS.keys.freeze
+
   # Combined auto-generated defaults keyed by section
   AUTO_GENERATED = {
     'system' => SYSTEM_DEFAULTS,
@@ -174,6 +182,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     'redis' => REDIS_DEFAULTS,
     'watchtower' => WATCHTOWER_DEFAULTS,
     'ingest' => INGEST_DEFAULTS,
+    'helios' => HELIOS_DEFAULTS,
   }.freeze
 
   # --- Source configuration fields ---
@@ -341,6 +350,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     'backup_schedule' => BACKUP_SCHEDULE_ALL,
     'sensors' => SENSORS_FIELDS,
     'power_splitter' => POWER_SPLITTER_FIELDS,
+    'helios' => HELIOS_ALL,
     'service_overrides' => SERVICE_OVERRIDES_FIELDS,
   }.freeze
 

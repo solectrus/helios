@@ -40,3 +40,5 @@ backup:
   aws_region: eu-central-1
   aws_secret_access_key: secret123
 sensors: {}
+helios:
+  image: ghcr.io/solectrus/helios:latest

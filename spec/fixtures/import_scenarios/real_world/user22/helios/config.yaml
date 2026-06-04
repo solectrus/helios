@@ -145,6 +145,8 @@ ingest:
   image: ghcr.io/solectrus/ingest:latest
 power_splitter:
   image: ghcr.io/solectrus/power-splitter:latest
+helios:
+  image: ghcr.io/solectrus/helios:latest
 _unmanaged:
   services:
     senec-charger:

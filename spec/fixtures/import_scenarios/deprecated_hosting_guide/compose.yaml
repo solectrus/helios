@@ -326,7 +326,7 @@ services:
   # +----------------------------------------------------------+
   #
   helios:
-    image: ghcr.io/solectrus/helios:develop
+    image: ghcr.io/solectrus/helios:latest
     environment:
     - TZ
     - ADMIN_PASSWORD
