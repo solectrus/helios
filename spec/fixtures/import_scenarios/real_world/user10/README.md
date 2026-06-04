@@ -123,9 +123,9 @@ the value is simply re-spelled, or the var was already dead at runtime.
   watchtower service on apply — flag this if the donor explicitly
   wanted manual updates.
 - **Power-splitter added.** Donor doesn't run `power-splitter`;
-  HELIOS exports it as a managed service with `POWER_SPLITTER_INTERVAL=3600`
-  (the documented default). Idle until the operator configures derived
-  power values.
+  HELIOS exports it as a managed service with a fixed
+  `POWER_SPLITTER_INTERVAL=300` (5-minute cadence, not configurable).
+  Idle until the operator configures derived power values.
 - **HELIOS service added.** Self-export — HELIOS always emits its own
   managed service.
 - **`links:` (legacy) dropped from dashboard and collectors.** Compose

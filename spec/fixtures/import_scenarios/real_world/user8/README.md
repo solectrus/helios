@@ -172,9 +172,9 @@ or the value is simply re-spelled.
   resolved value (`Forecast`).
 - **`POWER_SPLITTER_INTERVAL` referenced in compose, undefined in
   `.env`.** Donor's running stack therefore had an empty value (no
-  override of the power-splitter image default). HELIOS exports
-  `POWER_SPLITTER_INTERVAL=3600` (the documented default). Same
-  cadence the donor had been running implicitly.
+  override of the power-splitter image default). HELIOS pins the var
+  to a fixed `300` (5-minute cadence) for every stack, faster than the
+  power-splitter's own `3600` fallback the donor was running.
 - **Forecast vars referenced but undefined dropped.** Compose lists
   `FORECAST_HORIZON`, `FORECAST_INVERTER`, `FORECAST_SOLAR_APIKEY`,
   `SOLCAST_APIKEY`, `SOLCAST_SITE`, `SOLCAST_0_SITE`, `SOLCAST_1_SITE`

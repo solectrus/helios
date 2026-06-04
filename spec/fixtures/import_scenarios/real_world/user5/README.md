@@ -55,9 +55,9 @@ Anonymized but otherwise untouched.
 - **Populated custom-power slots** — `_01`=Washer, `_02`=Fridge,
   `_06`=Dishwasher, `_08`=TV, `_09`=IT round-trip with their measurements
   and field names intact.
-- **`POWER_SPLITTER_INTERVAL=300`** — donor's non-default 5-minute
-  cadence preserved under `power_splitter.interval` (same pattern as
-  user3 / user4).
+- **`POWER_SPLITTER_INTERVAL=300`** — HELIOS pins this to a fixed
+  `300` (5-minute cadence), not configurable and not stored in
+  `config.yaml`. Donor value ignored; matches here (same as user3 / user4).
 - **`HONEYBADGER_API_KEY`, `RORVSWILD_API_KEY`, `PLAUSIBLE_URL`,
   `ASSET_HOST`, `DOCKER_IMAGE`** — preserved verbatim in
   `_unmanaged.env_vars`. Not re-wired into any managed service, but the

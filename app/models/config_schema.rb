@@ -275,7 +275,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     image
   ].freeze
 
-  POWER_SPLITTER_FIELDS = %w[image interval].freeze
+  POWER_SPLITTER_FIELDS = %w[image].freeze
 
   REVERSE_PROXY_FIELDS = (STORAGE_FIELDS + %w[
     app_domain

@@ -172,10 +172,11 @@ the value is simply re-spelled, or the var was already dead at runtime.
   power-splitter env.** Donor passes them through (`- INFLUX_SCHEMA`,
   `- INFLUX_PORT`); HELIOS bakes the connection into the in-network
   default `http://influxdb:8086` and drops the env lines.
-- **`POWER_SPLITTER_INTERVAL=3600` emitted (donor had it commented).**
+- **`POWER_SPLITTER_INTERVAL=300` emitted (donor had it commented).**
   Donor's `.env` leaves the var as `# POWER_SPLITTER_INTERVAL=3600`,
-  so at runtime the collector falls back to its built-in default
-  (also `3600`). HELIOS emits the documented default explicitly.
+  so at runtime the collector fell back to its built-in default
+  (`3600`). HELIOS pins the var to a fixed `300` (5-minute cadence) for
+  every stack.
 - **`POSTGRES_DB=solectrus` / `DB_DATABASE=solectrus` added.** Donor
   relied on the postgres image default (also `solectrus`); HELIOS
   sets the name explicitly. Same as user12.

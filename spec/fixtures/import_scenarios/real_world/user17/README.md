@@ -157,8 +157,8 @@ its absence as part of this fixture going in.
   DB name; HELIOS sets it explicitly. Same shape as user12-16.
 - **Power-splitter service added.** Donor compose has no
   `power-splitter` (MQTT-only setup with no native PV collector).
-  HELIOS adds it as a managed service with
-  `POWER_SPLITTER_INTERVAL=3600` (default) and wires it with
+  HELIOS adds it as a managed service with a fixed
+  `POWER_SPLITTER_INTERVAL=300` (5-minute cadence) and wires it with
   `INFLUX_TOKEN_READWRITE=my-influx-admin-token` (synthesized from the
   donor's single-token simplification). Same auto-add as
   user10/12/16.

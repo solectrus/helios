@@ -194,10 +194,10 @@ Anonymized but otherwise untouched.
   Donor passes them through (`- INFLUX_SCHEMA`, `- INFLUX_PORT`);
   HELIOS bakes the connection into the in-network default
   `http://influxdb:8086`. Same as user13.
-- **`POWER_SPLITTER_INTERVAL=3600` emitted (donor had it commented).**
+- **`POWER_SPLITTER_INTERVAL=300` emitted (donor had it commented).**
   Donor's `.env.bak` leaves `# POWER_SPLITTER_INTERVAL=3600` commented;
-  at runtime the collector falls back to its built-in default (also
-  `3600`). HELIOS emits the documented default explicitly.
+  at runtime the collector fell back to its built-in default (`3600`).
+  HELIOS pins the var to a fixed `300` (5-minute cadence) for every stack.
 - **`POSTGRES_DB=solectrus` / `DB_DATABASE=solectrus` added.** Donor
   relied on the postgres image default (also `solectrus`); HELIOS sets
   the name explicitly. Same as user12/13.

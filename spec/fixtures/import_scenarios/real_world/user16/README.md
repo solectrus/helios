@@ -103,8 +103,8 @@ entirely). Anonymized but otherwise untouched.
   belong. First fixture with an **inline sensor literal placed on the
   writer service** rather than the reader.
 - **Power-splitter service added.** Donor compose has no
-  `power-splitter`; HELIOS adds it as a managed service with
-  `POWER_SPLITTER_INTERVAL=3600` (default) and synthesizes
+  `power-splitter`; HELIOS adds it as a managed service with a fixed
+  `POWER_SPLITTER_INTERVAL=300` (5-minute cadence) and synthesizes
   `INFLUX_TOKEN_READWRITE` from the donor's existing admin token.
   Same auto-add as user10/12.
 - **Legacy `# version: '3.7'` header comment dropped.** Donor leaves

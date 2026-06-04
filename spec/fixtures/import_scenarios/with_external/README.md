@@ -22,5 +22,7 @@ HELIOS itself is already part of the stack.
 - **Custom volume paths** `/opt/solectrus/{postgresql,influxdb,redis}` (via
   `DB_VOLUME_PATH`, `INFLUX_VOLUME_PATH`, `REDIS_VOLUME_PATH`).
 - Dashboard uses the `develop` tag (`solectrus:develop`).
-- `POWER_SPLITTER_INTERVAL=300` is present in `.env` but no `power-splitter`
-  service — the variable is preserved as unmanaged.
+- `POWER_SPLITTER_INTERVAL=300` — HELIOS pins this to a fixed `300`
+  (5-minute cadence) for every stack, not configurable and not stored
+  in `config.yaml`. Matches the donor value here, so the `.env` round-trips
+  unchanged.

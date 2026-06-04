@@ -107,11 +107,10 @@ runs at the documented minimum interval. Anonymized but otherwise untouched.
   `WATCHTOWER_SCOPE=solectrus` and `WATCHTOWER_CLEANUP=true`. Donor uses
   the `nickfedor/watchtower` fork (untagged); export pins it to
   `nickfedor/watchtower:latest`.
-- **`POWER_SPLITTER_INTERVAL=300` explicit value preserved.** Donor
-  sets the documented minimum (300s); export keeps it. Differs from
-  user8 where the donor referenced `POWER_SPLITTER_INTERVAL` in compose
-  but never defined it in `.env`, and HELIOS filled in the docs default
-  of 3600.
+- **`POWER_SPLITTER_INTERVAL=300`.** Donor sets the documented minimum
+  (300s); HELIOS pins this var to a fixed `300` (5-minute cadence) for
+  every stack regardless, so it round-trips unchanged here. Same fixed
+  value as user8, where the donor left it undefined.
 - **Forecast measurement spelled lowercase.** `INFLUX_MEASUREMENT_FORECAST=forecast`
   (lowercase) preserved as-is; differs from user8's `Forecast` (capital F)
   to confirm both casings round-trip without normalization.

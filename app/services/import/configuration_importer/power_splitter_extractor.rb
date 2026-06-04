@@ -10,10 +10,8 @@ module Import
       def section_data
         return unless @reader.service('power-splitter')
 
-        ps_env = service_env('power-splitter')
-        image_data_for('power-splitter').merge(
-          'interval' => ps_env['POWER_SPLITTER_INTERVAL'],
-        ).compact
+        # POWER_SPLITTER_INTERVAL is fixed at 300s by HELIOS and not imported.
+        image_data_for('power-splitter').compact
       end
     end
   end

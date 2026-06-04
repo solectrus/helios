@@ -88,13 +88,13 @@ These look like changes in the diff but don't alter what the stack
 actually does — HELIOS's defaults match the donor's explicit values,
 the value is simply re-spelled, or the var was already dead at runtime.
 
-- **`POWER_SPLITTER_INTERVAL` commented out in `.env` → emitted as
-  `3600` on export.** Donor's compose lists `POWER_SPLITTER_INTERVAL`
+- **`POWER_SPLITTER_INTERVAL` commented out in `.env` → emitted as a
+  fixed `300` on export.** Donor's compose lists `POWER_SPLITTER_INTERVAL`
   in `power-splitter.environment:`, but the `.env` line is commented
   (`# POWER_SPLITTER_INTERVAL=3600`), so the variable was empty at
   runtime and the collector fell back to its built-in default
-  (3600s). Re-export emits the explicit default — same calculation
-  cadence, no behavior change.
+  (3600s). HELIOS pins the var to a fixed `300` (5-minute cadence) for
+  every stack, faster than the donor's implicit fallback.
 - **`INFLUX_HOST=influxdb` / `INFLUX_PORT=8086` / `INFLUX_SCHEMA=http` /
   `INFLUX_USERNAME=admin`** dropped — HELIOS bakes these into compose
   service-network addressing and hardcodes the InfluxDB admin

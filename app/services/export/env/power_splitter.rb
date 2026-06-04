@@ -4,9 +4,9 @@ module Export
       def call
         env.add_section('Power Splitter')
 
-        interval = configuration.power_splitter.interval.presence || 3600
-        entry('POWER_SPLITTER_INTERVAL', interval,
-              'Recalculation interval in seconds (min 300)')
+        # Fixed 5-minute recalculation cadence, not user-configurable.
+        entry('POWER_SPLITTER_INTERVAL', 300,
+              'Recalculation interval in seconds')
       end
     end
   end

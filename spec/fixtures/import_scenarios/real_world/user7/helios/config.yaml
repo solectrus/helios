@@ -302,6 +302,5 @@ sensors:
     source: mqtt
 power_splitter:
   image: ghcr.io/solectrus/power-splitter:develop
-  interval: '300'
 helios:
   image: ghcr.io/solectrus/helios:latest

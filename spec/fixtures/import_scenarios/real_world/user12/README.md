@@ -155,8 +155,8 @@ the value is simply re-spelled, or the var was already dead at runtime.
   `INFLUX_TOKEN_READWRITE=my-influx-admin-token` for the new
   power-splitter; aliases resolve consistently across services.
 - **Power-splitter service added.** Donor compose has no
-  `power-splitter`; HELIOS adds it as a managed service with
-  `POWER_SPLITTER_INTERVAL=3600` (default). Same as user10.
+  `power-splitter`; HELIOS adds it as a managed service with a fixed
+  `POWER_SPLITTER_INTERVAL=300` (5-minute cadence). Same as user10.
 - **`POSTGRES_DB=solectrus` / `DB_DATABASE=solectrus` added.** Donor
   relied on the postgres image default (also `solectrus`); HELIOS
   sets the name explicitly.

@@ -92,8 +92,8 @@ an explicit user opt-out (no wallbox). Anonymized but otherwise untouched.
   HELIOS canonicalizes to `dashboard` / `postgresql` and rewrites
   `DB_HOST=db` → `DB_HOST=postgresql`.
 - **Power-splitter service added.** Donor compose has no
-  `power-splitter`; HELIOS adds it as a managed service with
-  `POWER_SPLITTER_INTERVAL=3600` (default) and synthesizes
+  `power-splitter`; HELIOS adds it as a managed service with a fixed
+  `POWER_SPLITTER_INTERVAL=300` (5-minute cadence) and synthesizes
   `INFLUX_TOKEN_READWRITE` from the donor's admin token. Same auto-add
   as user10/12/16.
 - **`INFLUX_USERNAME=my-influx-username` replaced with `admin`.** Donor
