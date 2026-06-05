@@ -21,8 +21,8 @@ RSpec.describe 'Sensors', :with_admin_password do
 
       aggregate_failures do
         expect(response.body).to include('id="configuration-content"')
-        expect(response.body).to match(/loading="lazy"/)
-        expect(response.body).to match(/src="#{Regexp.escape(sensors_path)}"/)
+        expect(response.body).to include('loading="lazy"')
+        expect(response.body).to include("src=\"#{sensors_path}\"")
         expect(response.body).not_to include('inverter_power')
       end
     end
@@ -50,8 +50,8 @@ RSpec.describe 'Sensors', :with_admin_password do
     it 'shows the services nav tab but no start button when no sensors are configured' do
       get sensors_path
 
-      expect(response.body).to match(/href="#{services_path}"/)
-      expect(response.body).not_to match(/fa-solid fa-play/)
+      expect(response.body).to include("href=\"#{services_path}\"")
+      expect(response.body).not_to include('fa-solid fa-play')
     end
 
     it 'shows the services nav tab and start button once the configuration is complete' do
@@ -61,8 +61,8 @@ RSpec.describe 'Sensors', :with_admin_password do
 
       get sensors_path
 
-      expect(response.body).to match(/href="#{services_path}"/)
-      expect(response.body).to match(/fa-solid fa-play/)
+      expect(response.body).to include("href=\"#{services_path}\"")
+      expect(response.body).to include('fa-solid fa-play')
     end
 
     it 'hides the compose.yaml/.env file links when no sensors are configured' do

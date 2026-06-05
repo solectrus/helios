@@ -28,7 +28,7 @@ RSpec.describe 'Datasources', :with_admin_password do
 
       expect(response.body).to include(I18n.t('configurations.show.incomplete'))
       expect(response.body).to include(I18n.t('configurations.settings.forecast.title'))
-      expect(response.body).to match(/fa-triangle-exclamation/)
+      expect(response.body).to include('fa-triangle-exclamation')
     end
 
     it 'still flags incomplete when only auxiliary forecast fields are set' do
@@ -46,7 +46,7 @@ RSpec.describe 'Datasources', :with_admin_password do
     it 'shows the Sensors nav tab in full mode' do
       get datasources_path
 
-      expect(response.body).to match(/href="#{sensors_path}"/)
+      expect(response.body).to include("href=\"#{sensors_path}\"")
     end
 
     it 'hides the Sensors nav tab in collectors_only mode' do
@@ -54,7 +54,7 @@ RSpec.describe 'Datasources', :with_admin_password do
 
       get datasources_path
 
-      expect(response.body).not_to match(/href="#{sensors_path}"/)
+      expect(response.body).not_to include("href=\"#{sensors_path}\"")
     end
 
     context 'when in collectors_only mode' do
@@ -74,14 +74,14 @@ RSpec.describe 'Datasources', :with_admin_password do
       it 'links to the Shelly devices CRUD inside the Shelly card' do
         get datasources_path
 
-        expect(response.body).to match(/href="#{datasources_shelly_devices_path}"/)
+        expect(response.body).to include("href=\"#{datasources_shelly_devices_path}\"")
       end
     end
 
     it 'does not link to the Shelly devices CRUD in full mode without devices' do
       get datasources_path
 
-      expect(response.body).not_to match(/href="#{datasources_shelly_devices_path}"/)
+      expect(response.body).not_to include("href=\"#{datasources_shelly_devices_path}\"")
     end
 
     it 'shows the Shelly card and device CRUD in full mode with standalone devices' do
@@ -95,7 +95,7 @@ RSpec.describe 'Datasources', :with_admin_password do
       get datasources_path
 
       expect(response.body).to include(I18n.t('configurations.settings.shelly.title'))
-      expect(response.body).to match(/href="#{datasources_shelly_devices_path}"/)
+      expect(response.body).to include("href=\"#{datasources_shelly_devices_path}\"")
     end
   end
 end

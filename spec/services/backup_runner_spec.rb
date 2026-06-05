@@ -400,7 +400,7 @@ RSpec.describe BackupRunner do
     it 'returns the reason when .env is missing' do
       FileUtils.rm_f(File.join(data_path, '.env'))
 
-      expect(described_class.unavailable_reason).to match(/\.env file is missing/)
+      expect(described_class.unavailable_reason).to include('.env file is missing')
     end
   end
 
