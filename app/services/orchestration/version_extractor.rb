@@ -1,7 +1,12 @@
 module Orchestration
   module VersionExtractor
     OCI_LABEL = 'org.opencontainers.image.version'.freeze
-    ENV_VERSION_PATTERN = /^[A-Z][A-Z0-9_]*_VERSION=(.+)$/
+    ENV_VERSION_PATTERN = /^([A-Z][A-Z0-9_]*)_VERSION=(.+)$/
+    # A real version starts with an optional "v" followed by a digit. Branch or
+    # floating tags (develop, latest, main, ...) don't, so we can tell them apart.
+    VERSION_LIKE = /\Av?\d/
+    # Language-runtime versions baked into base images — not the app's version.
+    ENV_VERSION_DENYLIST = %w[RUBY NODE PYTHON GOLANG GO].freeze
 
     # Load all extractors when module is loaded
     Dir[File.join(__dir__, 'version_extractor', '*.rb')].each { |f| require f }
@@ -28,14 +33,18 @@ module Orchestration
 
     def self.from_oci_label(container)
       labels = container.json.dig('Config', 'Labels') || {}
-      labels[OCI_LABEL].presence
+      label = labels[OCI_LABEL].presence
+      label if label&.match?(VERSION_LIKE)
     end
 
     def self.from_env(container)
       env = container.json.dig('Config', 'Env') || []
       env.each do |var|
         match = var.match(ENV_VERSION_PATTERN)
-        return match[1] if match
+        next unless match
+        next if ENV_VERSION_DENYLIST.include?(match[1])
+
+        return match[2]
       end
 
       nil

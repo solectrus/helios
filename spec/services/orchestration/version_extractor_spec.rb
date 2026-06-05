@@ -17,6 +17,34 @@ RSpec.describe Orchestration::VersionExtractor do
       expect(described_class.extract(container)).to eq('0.18.2')
     end
 
+    it 'prefers COMMIT_VERSION over a branch-name OCI label' do
+      container = build_container(
+        image: 'ghcr.io/solectrus/helios:develop',
+        labels: { 'org.opencontainers.image.version' => 'develop' },
+        env: %w[RUBY_VERSION=4.0.5 COMMIT_VERSION=v0.4.2-5-gd351698],
+      )
+
+      expect(described_class.extract(container)).to eq('0.4.2-5-gd351698')
+    end
+
+    it 'ignores a branch-name OCI label' do
+      container = build_container(
+        image: 'ghcr.io/solectrus/power-splitter:develop',
+        labels: { 'org.opencontainers.image.version' => 'develop' },
+      )
+
+      expect(described_class.extract(container)).to be_nil
+    end
+
+    it 'ignores RUBY_VERSION as a generic env fallback' do
+      container = build_container(
+        image: 'ghcr.io/solectrus/power-splitter:develop',
+        env: ['RUBY_VERSION=4.0.5'],
+      )
+
+      expect(described_class.extract(container)).to be_nil
+    end
+
     it 'extracts InfluxDB version from env' do
       container = build_container(
         image: 'influxdb:2.7-alpine',
