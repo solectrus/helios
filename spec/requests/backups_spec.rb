@@ -41,8 +41,8 @@ RSpec.describe 'Backups', :with_admin_password do
       aggregate_failures do
         expect(response).to have_http_status(:ok)
         expect(response.body).to include('id="backups-content"')
-        expect(response.body).to match(/loading="lazy"/)
-        expect(response.body).to match(/src="#{Regexp.escape(backups_path)}"/)
+        expect(response.body).to include('loading="lazy"')
+        expect(response.body).to include("src=\"#{backups_path}\"")
         expect(response.body).not_to include(I18n.t('backups.index.download'))
       end
     end
@@ -374,7 +374,7 @@ RSpec.describe 'Backups', :with_admin_password do
       aggregate_failures do
         expect(response.body).to include('2:30 min')
         # Exact archive size depends on tar padding; assert label + a KB figure.
-        expect(response.body).to match(/Size/i)
+        expect(response.body).to include('Size')
         expect(response.body).to match(/\d+ KB/)
       end
     end

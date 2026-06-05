@@ -88,7 +88,7 @@ RSpec.describe BackupRunner, :docker_stack do
       aggregate_failures do
         expect(BackupRepository.error_message).to start_with('PostgreSQL dump failed: ')
         expect(BackupRepository.error_message).to include('solectrus_production')
-        expect(BackupRepository.error_message).to match(/does not exist/i)
+        expect(BackupRepository.error_message).to include('does not exist')
         expect(BackupRepository::S3.all).to be_empty
         expect(s3_object_keys(bucket)).not_to include(a_string_matching(/\.tar$/))
         expect(Dir.children(File.join(data_path, 'helios', 'backups-staging'))).to be_empty
