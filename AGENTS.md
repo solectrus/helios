@@ -23,7 +23,7 @@ Fetch on demand:
 
 ## Verifying in the Browser
 
-For non-trivial UI changes — new flows, complex interactions, anything where rendering or console errors aren't obvious from the diff — verify against the running dev UI at https://helios.localhost using the `mcp__chrome-devtools__*` tools.
+For non-trivial UI changes — new flows, complex interactions, anything where rendering or console errors aren't obvious from the diff — verify against the running dev UI at https://helios.localhost using the Chrome DevTools MCP tools (provided by the `chrome-devtools-mcp` plugin).
 
 Skip browser verification for trivial changes (typos, simple CSS tweaks, obvious copy edits) — it's slower and costs tokens.
 
