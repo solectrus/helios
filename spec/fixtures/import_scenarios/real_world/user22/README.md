@@ -152,22 +152,21 @@ Anonymized but otherwise untouched.
   re-export because the active provider doesn't use it — same policy
   as [user14](../user14/README.md). The forecast geometry survives
   intact under `forecast.forecast_*1` keys.
-- **`senec-charger` and `tibber-collector` preserved as
-  `_unmanaged`** — donor runs both: tibber-collector polls Tibber
-  prices into `INFLUX_MEASUREMENT_PRICES=tibber`, and senec-charger
-  reads those plus the forecast to decide when to force-charge the
-  SENEC battery from grid (`CHARGER_PRICE_MAX=85`,
-  `CHARGER_FORECAST_THRESHOLD=20`, `CHARGER_DRY_RUN=false`,
-  `CHARGER_INTERVAL=3600`). HELIOS has no first-class form for either
-  service (issue #89 Phase 2), so both lift verbatim into
-  `_unmanaged.services` with their full `environment` / `depends_on` /
-  `links` / `logging` blocks preserved, and re-emit at the end of
-  `compose.yaml` under the "Unmanaged service" banner. The associated
-  `.env` vars (`TIBBER_TOKEN`, `TIBBER_INTERVAL`, `INFLUX_MEASUREMENT_PRICES`,
-  `CHARGER_*`) land in their own `tibber-collector — service environment`
-  and `senec-charger — service environment` sections of the exported
-  `.env`. Common preservation path also seen in
-  [user1](../user1/README.md).
+- **`tibber-collector` and `senec-charger` both managed** — donor runs
+  both: tibber-collector polls Tibber prices into
+  `INFLUX_MEASUREMENT_PRICES=tibber`, and senec-charger reads those plus
+  the forecast to decide when to force-charge the SENEC battery from grid
+  (`CHARGER_PRICE_MAX=85`, `CHARGER_FORECAST_THRESHOLD=20`,
+  `CHARGER_DRY_RUN=false`, `CHARGER_INTERVAL=3600`,
+  `CHARGER_PRICE_TIME_RANGE=4`). Both are first-class HELIOS services:
+  tibber-collector imports into the typed
+  `tibber:` section (`token` + `measurement`), drops the non-managed
+  `TIBBER_INTERVAL`, and re-exports emitting `TIBBER_TOKEN` +
+  `INFLUX_MEASUREMENT_PRICES`. senec-charger imports into the typed
+  `senec_charger:` section (the five `CHARGER_*` knobs) and re-exports as a
+  managed compose service with a read-only InfluxDB token, reading the
+  prices and forecast via `${INFLUX_MEASUREMENT_PRICES}` /
+  `${INFLUX_MEASUREMENT_FORECAST}`. Neither lands in `_unmanaged`.
 - **Single InfluxDB token reused across all four roles** — donor sets
   `INFLUX_ADMIN_TOKEN = INFLUX_TOKEN_WRITE = INFLUX_TOKEN_READ =
   my-super-secret-admin-token` (with the candid `.env` comment "*to
@@ -178,9 +177,10 @@ Anonymized but otherwise untouched.
 - **Forecast collector routes around ingest, hits InfluxDB directly** —
   donor's `forecast-collector` env has bare `INFLUX_HOST` (= default
   `influxdb`), while senec-collector / shelly-collector / mqtt-collector
-  all use `INFLUX_HOST=ingest`. Forecast and the unmanaged
-  `tibber-collector` / `senec-charger` write straight to InfluxDB,
-  bypassing Ingest. HELIOS preserves the split routing on re-export.
+  all use `INFLUX_HOST=ingest`. Forecast and the managed `tibber-collector`
+  write straight to InfluxDB, and the managed `senec-charger` reads from it
+  directly — all bypassing Ingest. HELIOS preserves the split routing on
+  re-export.
 - **Watchtower synthesized from defaults** — donor has
   `containrrr/watchtower` (no tag) running with `--scope solectrus
   --cleanup`. HELIOS canonicalizes the image to

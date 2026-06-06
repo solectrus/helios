@@ -5,9 +5,11 @@ module Configurations
     # Settings whose survey uses an `enabled` boolean to toggle the whole
     # section. The flag is stripped on save; on load we re-derive it from the
     # gating field (or from "any data present" when no gating field applies).
-    # reverse_proxy is handled separately via a tri-state `mode` selector.
+    # reverse_proxy and tibber are handled separately — see
+    # #inject_enabled_flag!.
     ENABLED_FLAG_GATING_FIELD = {
       'backup' => nil,
+      'tibber' => 'token',
     }.freeze
 
     before_action :set_configuration
@@ -132,11 +134,53 @@ module Configurations
       strip_theme_sentinel!(data)
 
       return persist_reverse_proxy(data) if setting == 'reverse_proxy'
+      return persist_tibber(data) if setting == 'tibber'
 
       return @configuration.update(setting, {}) if data.key?('enabled') && data.delete('enabled') == false
 
       preserve_software_owned_image!(data)
       @configuration.update(setting, data)
+    end
+
+    # The prices survey drives two services through two UI-only flags. `enabled`
+    # owns the Tibber collector (its own section), `charging` owns the SENEC
+    # charger, whose fields BORROWED_FIELDS routes into `senec_charger`. Neither
+    # flag is stored: whichever is off has its section's fields blanked, and
+    # Configuration#update drops a section once its last field goes.
+    def persist_tibber(data)
+      enabled = data.delete('enabled') == true
+      charging = data.delete('charging') == true
+
+      data = {} unless enabled
+
+      # Whether this survey run actually put the charging question on screen:
+      # where the charger's dependencies don't hold, Surveys::Tibber::Survey
+      # drops the charging pages server-side, so this save must not speak for
+      # the charger in either direction (see #blank_senec_charger! /
+      # #ignore_senec_charger!).
+      if @configuration.senec_charger_configurable?
+        blank_senec_charger!(data) unless enabled && charging
+      else
+        ignore_senec_charger!(data)
+      end
+      preserve_software_owned_image!(data) if enabled
+
+      @configuration.update('tibber', data)
+    end
+
+    # Charging was offered and turned off (or the prices went with it): clear
+    # the tuning. Configuration#update drops the section with its last field.
+    def blank_senec_charger!(data)
+      Configuration::SENEC_CHARGER_SURVEY_FIELDS.each { |field| data[field] = nil }
+    end
+
+    # Charging was never offered, so a missing `charging` flag means "not
+    # asked", not "switched off". Drop the charger fields from the payload
+    # instead: blanking would delete a tuning the user was never shown and
+    # cannot re-enter until the dependency returns, while storing would let a
+    # payload configure what the survey refused to render.
+    def ignore_senec_charger!(data)
+      data.except!(*Configuration::SENEC_CHARGER_SURVEY_FIELDS)
     end
 
     # reverse_proxy uses a tri-state `mode` (none/internal/external) instead of
@@ -199,6 +243,11 @@ module Configurations
         data['mode'] = reverse_proxy_mode(data)
         return
       end
+
+      # The prices survey spans two sections: `enabled` comes from the gating
+      # field below (the Tibber token), but `charging` governs the separate
+      # senec_charger section, which this data doesn't carry.
+      data['charging'] = @configuration.senec_charger_enabled? if setting == 'tibber'
 
       return unless ENABLED_FLAG_GATING_FIELD.key?(setting)
 

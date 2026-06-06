@@ -214,6 +214,7 @@ en:
         installation: 'Installation'
         access: 'Access & Security'
         data: 'Data'
+        energy_management: 'Energy management'
         dashboard: 'Dashboard'
 
   supports:
@@ -404,6 +405,9 @@ en:
       mqtt:
         title: 'MQTT-Collector'
         description: 'Reads measurements from topics on an MQTT broker.'
+      tibber:
+        title: 'Dynamic electricity prices'
+        description: 'Collects the Tibber prices. With a locally-queried SENEC battery, also the price-optimized charging from the grid.'
       shelly:
         title: 'Shelly-Collector'
         description: 'Reads measurements from Shelly energy meters (Plug, Pro 3EM, etc.).'

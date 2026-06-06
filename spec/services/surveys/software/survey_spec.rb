@@ -43,6 +43,41 @@ RSpec.describe Surveys::Software::Survey do
       expect(matrix['rows'].pluck('value')).to include('senec_collector')
     end
 
+    it 'pulls in the tibber-collector once a Tibber token is configured' do
+      with_config_yaml('tibber' => { 'token' => 'secret-token' })
+
+      expect(matrix['rows'].pluck('value')).to include('tibber_collector')
+    end
+
+    it 'omits the tibber-collector without a Tibber token' do
+      expect(matrix['rows'].pluck('value')).not_to include('tibber_collector')
+    end
+
+    it 'keeps the tibber-collector in dashboard_only mode, where it still runs' do
+      with_config_yaml('deployment' => { 'mode' => 'dashboard_only' },
+                       'tibber' => { 'token' => 'secret-token' })
+
+      expect(matrix['rows'].pluck('value')).to include('tibber_collector')
+    end
+
+    it 'pulls in the senec-charger once it is enabled with all preconditions' do
+      with_config_yaml(
+        'senec' => { 'adapter' => 'local' },
+        'tibber' => { 'token' => 'secret-token' },
+        'forecast' => { 'forecast' => 'forecast.solar' },
+        'sensors' => { 'inverter_power_forecast' => { 'source' => 'forecast', 'measurement' => 'Forecast' } },
+        'senec_charger' => { 'interval' => '3600' },
+      )
+
+      expect(matrix['rows'].pluck('value')).to include('senec_charger')
+    end
+
+    it 'omits the senec-charger when its preconditions are unmet' do
+      with_config_yaml('senec_charger' => { 'interval' => '3600' })
+
+      expect(matrix['rows'].pluck('value')).not_to include('senec_charger')
+    end
+
     it 'pulls in ingest when a balcony sensor activates it' do
       with_config_yaml(
         'sensors' => { 'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true } },

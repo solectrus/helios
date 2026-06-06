@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 3
+_schema_version: 4
 system:
   admin_password: AAAAA
   app_host: 192.168.1.91

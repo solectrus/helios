@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 3
+_schema_version: 4
 system:
   admin_password: my-admin-password
   app_host: 192.168.0.19
@@ -61,6 +61,17 @@ mqtt:
   mqtt_port: '1883'
   mqtt_ssl: 'false'
   mqtt_username: ''
+tibber:
+  image: ghcr.io/solectrus/tibber-collector:latest
+  measurement: tibber
+  token: my-tibber-token
+senec_charger:
+  dry_run: false
+  forecast_threshold: '20'
+  image: ghcr.io/solectrus/senec-charger:latest
+  interval: '3600'
+  price_max: '85'
+  price_time_range: '4'
 shelly:
   connection: local
   devices:
@@ -138,67 +149,3 @@ power_splitter:
   image: ghcr.io/solectrus/power-splitter:latest
 helios:
   image: ghcr.io/solectrus/helios:latest
-_unmanaged:
-  services:
-    senec-charger:
-      depends_on:
-        influxdb:
-          condition: service_healthy
-      env_values:
-        CHARGER_DRY_RUN: 'false'
-        CHARGER_FORECAST_THRESHOLD: '20'
-        CHARGER_INTERVAL: '3600'
-        CHARGER_PRICE_MAX: '85'
-        CHARGER_PRICE_TIME_RANGE: '4'
-      environment:
-      - TZ
-      - INFLUX_BUCKET
-      - INFLUX_HOST=influxdb
-      - INFLUX_MEASUREMENT_FORECAST=${INFLUX_MEASUREMENT_FORECAST}
-      - INFLUX_MEASUREMENT_PRICES=${INFLUX_MEASUREMENT_PRICES}
-      - INFLUX_ORG
-      - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
-      - CHARGER_DRY_RUN
-      - CHARGER_FORECAST_THRESHOLD
-      - CHARGER_INTERVAL
-      - CHARGER_PRICE_MAX
-      - CHARGER_PRICE_TIME_RANGE
-      - SENEC_HOST
-      - SENEC_SCHEMA
-      image: ghcr.io/solectrus/senec-charger:latest
-      labels:
-      - com.centurylinklabs.watchtower.scope=solectrus
-      links:
-      - influxdb
-      logging:
-        options:
-          max-file: '3'
-          max-size: 10m
-      restart: unless-stopped
-    tibber-collector:
-      depends_on:
-        influxdb:
-          condition: service_healthy
-      env_values:
-        INFLUX_MEASUREMENT_PRICES: tibber
-        TIBBER_INTERVAL: '3600'
-        TIBBER_TOKEN: my-tibber-token
-      environment:
-      - TZ
-      - INFLUX_BUCKET
-      - INFLUX_HOST=influxdb
-      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_PRICES}
-      - INFLUX_ORG
-      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
-      - TIBBER_INTERVAL
-      - TIBBER_TOKEN
-      image: ghcr.io/solectrus/tibber-collector:latest
-      labels:
-      - com.centurylinklabs.watchtower.scope=solectrus
-      links:
-      - influxdb
-      logging:
-        options:
-          max-file: '3'
-          max-size: 10m
-      restart: unless-stopped

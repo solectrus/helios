@@ -4,14 +4,17 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # Singletons exist at most once per configuration
   SINGLETONS = %w[
     deployment system dashboard postgresql influxdb redis
-    watchtower forecast senec mqtt shelly reverse_proxy backup backup_schedule sensors ingest power_splitter
+    watchtower forecast senec mqtt tibber senec_charger shelly reverse_proxy
+    backup backup_schedule sensors ingest power_splitter
     helios service_overrides
   ].freeze
 
   # Sections hidden from the configuration UI (auto-managed). Ingest is not
   # listed: it has user-facing knobs (image, retention_hours) and is surfaced
   # via #visible_settings whenever a balcony sensor activates it.
-  HIDDEN = %w[postgresql redis watchtower power_splitter helios].freeze
+  # `senec_charger` has no survey of its own: the prices survey configures it
+  # alongside the Tibber collector (see BORROWED_FIELDS).
+  HIDDEN = %w[postgresql redis watchtower power_splitter senec_charger helios].freeze
 
   # Mini-surveys persist into a slice of one singleton section in config.yaml.
   # On save the listed keys overwrite, missing ones are cleared, and any
@@ -27,6 +30,11 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'ingest_settings' => { singleton: 'ingest', keys: %w[retention_hours] },
   }.freeze
 
+  # The charger fields the prices survey collects on behalf of the
+  # `senec_charger` section. `image` is not among them: the Software survey owns
+  # it and it is never part of this survey's payload.
+  SENEC_CHARGER_SURVEY_FIELDS = (ConfigSchema::SENEC_CHARGER_FIELDS - %w[image]).freeze
+
   # Survey fields persisted in a section other than the survey's own.
   # lockup_codeword and trusted_proxy_ranges are Dashboard environment
   # variables and keep living in the `dashboard` section, but surface in the
@@ -35,6 +43,12 @@ class Configuration # rubocop:disable Metrics/ClassLength
   BORROWED_FIELDS = {
     'system_security' => { 'lockup_codeword' => 'dashboard' },
     'reverse_proxy' => { 'trusted_proxy_ranges' => 'dashboard' },
+    # The prices survey configures two services at once: the Tibber collector
+    # (its own section) plus, where the preconditions hold, the SENEC charger
+    # that consumes the prices. The charger's tuning is routed into its own
+    # section, so both stay clean per-service collector configs — and the
+    # charger section disappears once the survey blanks its fields.
+    'tibber' => SENEC_CHARGER_SURVEY_FIELDS.index_with('senec_charger').freeze,
   }.freeze
 
   # Read-only pseudo-settings: they appear in the Advanced UI like real
@@ -53,6 +67,8 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'senec_collector' => { singleton: 'senec', registry: :SENEC_COLLECTOR },
     'shelly_collector' => { singleton: 'shelly', registry: :SHELLY_COLLECTOR },
     'mqtt_collector' => { singleton: 'mqtt', registry: :MQTT_COLLECTOR },
+    'tibber_collector' => { singleton: 'tibber', registry: :TIBBER_COLLECTOR },
+    'senec_charger' => { singleton: 'senec_charger', registry: :SENEC_CHARGER },
     'forecast_collector' => { singleton: 'forecast', registry: :FORECAST_COLLECTOR },
     'ingest' => { singleton: 'ingest', registry: :INGEST },
     'power_splitter' => { singleton: 'power_splitter', registry: :POWER_SPLITTER },
@@ -71,6 +87,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     system_general system_network system_security
     dashboard_co2 dashboard_theme dashboard_network
     influxdb reverse_proxy
+    tibber
     storage
   ].freeze
 
@@ -83,6 +100,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'installation' => %w[deployment software system_general],
     'access' => %w[system_network influxdb dashboard_network reverse_proxy system_security],
     'data' => %w[ingest_settings storage],
+    'energy_management' => %w[tibber],
     'dashboard' => %w[dashboard_co2 dashboard_theme],
   }.freeze
 
@@ -94,17 +112,22 @@ class Configuration # rubocop:disable Metrics/ClassLength
     deployment software
     system_general system_security
     influxdb
+    tibber
   ].freeze
 
   # Settings shown in the configuration UI in dashboard_only mode. The
   # InfluxDB card is hidden because its only user-facing toggle (UI port
   # publication) is forced on anyway — remote collectors need to reach the
-  # database across the LAN.
+  # database across the LAN. `tibber` is listed for the same reason
+  # #enforce_mode_constraints! keeps the section here: the collector only
+  # fetches from a public API, so it runs alongside the dashboard and must
+  # stay editable.
   DASHBOARD_ONLY_SETTINGS = %w[
     deployment software
     system_general system_network system_security
     dashboard_co2 dashboard_theme dashboard_network
     reverse_proxy
+    tibber
     storage
   ].freeze
 
@@ -519,6 +542,62 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   def forecast_required?
     sensors_with_source('forecast').any?
+  end
+
+  # A forecast collector is actually running, so `INFLUX_MEASUREMENT_FORECAST`
+  # is emitted and holds data. Mirrored by
+  # `Export::Services::ForecastCollector.enabled?`. Sensor-driven, hence always
+  # false in collectors_only mode.
+  def forecast_available?
+    forecast_required? && forecast.forecast.present?
+  end
+
+  # Tibber is not sensor-driven (it writes a standalone Prices measurement),
+  # so there is no `sensors_with_source` gate. It runs whenever an API token
+  # has been configured. The prices exist for the SENEC charger, but collecting
+  # them without one is a valid (if exotic) choice: it builds the history a
+  # future consumer could read.
+  def tibber_enabled?
+    tibber.token.present?
+  end
+
+  # The charger steers the battery over the local API, so it needs a battery
+  # that HELIOS queries locally — V2.1/V3 with the local adapter. Cloud access
+  # (Home 4, or a V3 in cloud mode) offers no such control, so charging is not
+  # offered there at all, and a stack that pairs the two is refused outright
+  # (see Import::CompatibilityCheck). `adapter == 'local'` implies V3/V2.1,
+  # since Home 4 forces cloud access.
+  #
+  # Full mode only, asked of `mode` rather than of the sections: a
+  # collectors_only host has no forecast to read (see #forecast_available?),
+  # and a dashboard_only one has no battery — #enforce_mode_constraints! drops
+  # the senec section there, but only for data that went through it. A config
+  # read straight from disk or built via .from_data (the migration does) still
+  # carries the old section, so the mode has to be checked here.
+  def senec_charger_offered?
+    senec.adapter == 'local' && mode == ConfigSchema::MODE_FULL
+  end
+
+  # The charger skips grid charging when enough PV yield is expected, so it also
+  # reads the forecast. Until a forecast collector runs, the survey names the
+  # missing dependency instead of offering the charging questions.
+  def senec_charger_configurable?
+    senec_charger_offered? && forecast_available?
+  end
+
+  # Charging is switched on. The Software survey can leave an `image` behind in
+  # an otherwise blanked section, so the section's mere presence says nothing —
+  # only its actual tuning does.
+  def senec_charger_enabled?
+    senec_charger.except('image').present?
+  end
+
+  # Export gate: everything the charger's compose service references must exist —
+  # a local battery to steer (SENEC_HOST/SENEC_SCHEMA), the Tibber prices
+  # (${INFLUX_MEASUREMENT_PRICES}) and the forecast
+  # (${INFLUX_MEASUREMENT_FORECAST}).
+  def senec_charger_available?
+    senec_charger_configurable? && tibber_enabled?
   end
 
   # Field that must be set for the source's collector to start. Listed per
@@ -1143,7 +1222,11 @@ class Configuration # rubocop:disable Metrics/ClassLength
   def enforce_mode_constraints!
     case @data.dig('deployment', 'mode')
     when ConfigSchema::MODE_DASHBOARD_ONLY
-      %w[shelly senec mqtt].each { |key| @data.delete(key) }
+      # senec_charger goes with senec: it steers the battery over the local
+      # API, so it belongs wherever that hardware is reachable. `tibber` stays,
+      # like `forecast` — both only fetch from a public API and keep running
+      # alongside the dashboard.
+      %w[shelly senec senec_charger mqtt].each { |key| @data.delete(key) }
       rewrite_sensors_to_external!
       strip_influxdb_fields!(ConfigSchema::INFLUXDB_EXTERNAL_FIELDS)
     when ConfigSchema::MODE_COLLECTORS_ONLY

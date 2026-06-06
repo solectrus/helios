@@ -169,6 +169,21 @@
       padding: 0 0.25rem;
     }
 
+    /* Explanatory prose supports the questions rather than competing with
+       them, so it sits a notch below their text size. survey-core sizes
+       .sd-html and each of its p/div/span/td off these article tokens, so
+       retuning the tokens beats overriding every one of those selectors.
+       Scoped away from the connection test, which is an action row of buttons
+       rather than prose and keeps the base size. */
+    & .sd-question--html:not(:has(.connection-test)) {
+      --sjs-article-font-default-fontSize: 0.875rem;
+      --sjs-article-font-default-lineHeight: 1.5;
+    }
+    /* Paragraphs would otherwise run together — the reset drops their margin. */
+    & .sd-question--html p + p {
+      margin-top: 0.625rem;
+    }
+
     /* Navigation buttons */
     & :is(.sd-navigation__next-btn, .sd-navigation__complete-btn) {
       background-color: var(--sjs-primary-backcolor);

@@ -16,11 +16,11 @@ RSpec.describe Import::CompatibilityCheck do
       expect(check_for('real_world/user3').unsupported_services).to be_empty
     end
 
-    it 'accepts senec-charger (SOLECTRUS, pending first-class support)' do
+    it 'accepts senec-charger (SOLECTRUS, fully managed)' do
       expect(check_for('with_senec_charger').unsupported_services).to be_empty
     end
 
-    it 'accepts tibber-collector (SOLECTRUS, pending first-class support)' do
+    it 'accepts tibber-collector (SOLECTRUS, fully managed)' do
       expect(check_for('with_tibber').unsupported_services).to be_empty
     end
 

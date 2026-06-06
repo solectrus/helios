@@ -16,7 +16,10 @@ module Import
         INFLUX_PASSWORD INFLUX_ORG INFLUX_BUCKET INFLUX_TOKEN
         INFLUX_ADMIN_TOKEN INFLUX_TOKEN_READ INFLUX_TOKEN_WRITE INFLUX_TOKEN_READWRITE
         INFLUX_MEASUREMENT INFLUX_MEASUREMENT_SENEC INFLUX_MEASUREMENT_FORECAST
-        INFLUX_MEASUREMENT_SHELLY INFLUX_MEASUREMENT_MQTT
+        INFLUX_MEASUREMENT_SHELLY INFLUX_MEASUREMENT_MQTT INFLUX_MEASUREMENT_PRICES
+        TIBBER_TOKEN
+        CHARGER_INTERVAL CHARGER_PRICE_MAX CHARGER_PRICE_TIME_RANGE
+        CHARGER_FORECAST_THRESHOLD CHARGER_DRY_RUN
         INFLUX_MODE INFLUX_POWER_DATA_TYPE
         APP_DOMAIN LETSENCRYPT_EMAIL
         AWS_ACCESS_KEY_ID AWS_SECRET_ACCESS_KEY AWS_REGION AWS_BUCKET
@@ -56,17 +59,25 @@ module Import
       # via `env_file:` once HELIOS stopped emitting them itself.
       INGEST_MANAGED_ENV_KEYS = %w[INGEST_VOLUME_PATH RETENTION_HOURS].freeze
 
-      # Legacy SOLECTRUS keys that HELIOS absorbs at import time via
-      # LegacySensorAdapter and MqttExtractor::DEPRECATED_TOPIC_VARS — once
-      # translated into sensors/mappings, the originals would only cause noise
-      # if re-emitted. Also includes dashboard env vars superseded by UI-managed
-      # settings (e.g. historical prices) or obsoleted by newer dashboard
-      # releases (INFLUX_POLL_INTERVAL is ignored since dashboard v1.2.0), which
-      # would otherwise leak into _unmanaged.env_vars. The
-      # {FORECAST,SENEC,SHELLY,MQTT}_INFLUX_MEASUREMENT
-      # quartet are non-canonical aliases of INFLUX_MEASUREMENT_* emitted by the
-      # Online Configurator between 2024-03 and 2024-10: their value round-trips
-      # via the canonical var, so the aliases are dead weight.
+      # Keys HELIOS drops on import instead of preserving as orphans. Three
+      # kinds, all of which would otherwise leak into _unmanaged.env_vars:
+      #
+      #   - Absorbed: translated into sensors/mappings by LegacySensorAdapter
+      #     and MqttExtractor::DEPRECATED_TOPIC_VARS, so re-emitting the
+      #     original would only cause noise. Likewise the
+      #     {FORECAST,SENEC,SHELLY,MQTT}_INFLUX_MEASUREMENT quartet —
+      #     non-canonical aliases of INFLUX_MEASUREMENT_* emitted by the Online
+      #     Configurator between 2024-03 and 2024-10, whose value round-trips
+      #     via the canonical var.
+      #   - Obsolete: superseded by UI-managed settings (e.g. historical prices)
+      #     or ignored by newer releases (INFLUX_POLL_INTERVAL since dashboard
+      #     v1.2.0).
+      #   - Deliberately not modelled: TIBBER_INTERVAL. HELIOS leaves the
+      #     tibber-collector at its own default (3600s) — Tibber publishes
+      #     prices many hours ahead, so a tuned cadence buys nothing worth a
+      #     knob. Keeping the donor's value as an orphan would be worse than
+      #     dropping it: the managed collector doesn't list the var, so the
+      #     line would sit in .env reaching nothing.
       LEGACY_CONSUMED_ENV_KEYS = %w[
         INFLUX_MEASUREMENT_PV
         FORECAST_INFLUX_MEASUREMENT SENEC_INFLUX_MEASUREMENT
@@ -78,6 +89,7 @@ module Import
         POSTGRES_ADMIN_PASSWORD
         ELECTRICITY_PRICE FEED_IN_TARIFF
         INFLUX_POLL_INTERVAL
+        TIBBER_INTERVAL
       ].freeze
 
       # HELIOS-core env vars that belong to the helios container only —

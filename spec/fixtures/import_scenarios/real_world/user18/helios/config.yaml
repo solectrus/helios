@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 3
+_schema_version: 4
 system:
   admin_password: CCCCC
   app_host: localhost
@@ -48,6 +48,17 @@ senec:
   interval: '5'
   schema: https
   version: v3
+tibber:
+  image: ghcr.io/solectrus/tibber-collector:develop
+  measurement: Tibber
+  token: my-tibber-token
+senec_charger:
+  dry_run: false
+  forecast_threshold: '10'
+  image: ghcr.io/solectrus/senec-charger:develop
+  interval: '900'
+  price_max: '85'
+  price_time_range: '4'
 shelly:
   connection: local
   devices:
@@ -158,43 +169,3 @@ _unmanaged:
     SHELLY_GEN_TV: '2'
     SHELLY_GEN_WA: '2'
     SHELLY_GEN_WA2: '2'
-  services:
-    senec-charger:
-      depends_on:
-        influxdb:
-          condition: service_healthy
-      environment:
-      - TZ
-      - INFLUX_BUCKET
-      - INFLUX_HOST=influxdb
-      - INFLUX_MEASUREMENT_FORECAST=${INFLUX_MEASUREMENT_FORECAST}
-      - INFLUX_MEASUREMENT_PRICES=${INFLUX_MEASUREMENT_PRICES}
-      - INFLUX_ORG
-      - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
-      - CHARGER_DRY_RUN
-      - CHARGER_FORECAST_THRESHOLD
-      - CHARGER_INTERVAL
-      - CHARGER_PRICE_MAX
-      - CHARGER_PRICE_TIME_RANGE
-      - SENEC_HOST
-      - SENEC_SCHEMA
-      image: ghcr.io/solectrus/senec-charger:develop
-      links:
-      - influxdb
-      restart: always
-    tibber-collector:
-      depends_on:
-        influxdb:
-          condition: service_healthy
-      environment:
-      - INFLUX_BUCKET
-      - INFLUX_HOST=influxdb
-      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_PRICES}
-      - INFLUX_ORG
-      - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
-      - TIBBER_INTERVAL
-      - TIBBER_TOKEN
-      image: ghcr.io/solectrus/tibber-collector:develop
-      links:
-      - influxdb
-      restart: always

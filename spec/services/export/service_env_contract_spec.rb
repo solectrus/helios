@@ -23,7 +23,7 @@ RSpec.describe 'Service env contract' do
 
   # Only HELIOS-generated services. Everything else in a scenario's compose.yaml
   # is an unmanaged service passed through verbatim from the user's stack
-  # (tibber-collector, nginx, …) — not ours to contract-check.
+  # (nginx, …) — not ours to contract-check.
   let(:managed_names) { Export::Compose::SERVICE_ORDER.map(&:service_name) }
 
   def managed_services(compose_path)

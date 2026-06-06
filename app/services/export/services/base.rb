@@ -104,12 +104,39 @@ module Export
         'INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}'
       end
 
+      # Read-only counterpart for services that only query InfluxDB (e.g. the
+      # SENEC charger reading prices and forecast).
+      def influx_token_read_var
+        'INFLUX_TOKEN=${INFLUX_TOKEN_READ}'
+      end
+
+      # InfluxDB env vars every collector passes through unchanged: TZ plus the
+      # org/bucket names, and the external connection vars (host/port/schema) in
+      # collectors_only mode. Services that read more (senec, dashboard, …)
+      # override this.
+      def passthrough_vars
+        vars = %w[TZ INFLUX_ORG INFLUX_BUCKET]
+        vars += ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS if configuration.collectors_only?
+        vars
+      end
+
       def explicit_vars
         if configuration.collectors_only?
           ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS + [influx_token_write_var]
         else
           local_influx_endpoint_vars + [influx_token_write_var]
         end
+      end
+
+      # Write-collector env pointing the generic INFLUX_MEASUREMENT at a
+      # canonical per-service .env key (e.g. INFLUX_MEASUREMENT_PRICES). Shared
+      # by the collectors that write a single measurement under their own name
+      # (forecast, tibber) and target InfluxDB directly rather than via Ingest.
+      def write_measurement_vars(measurement_key)
+        measurement = "INFLUX_MEASUREMENT=${#{measurement_key}}"
+        return [influx_token_write_var, measurement] if configuration.collectors_only?
+
+        ['INFLUX_HOST=influxdb', influx_token_write_var, measurement]
       end
 
       # Where a collector writes to on a local stack: InfluxDB itself, or Ingest
@@ -124,6 +151,12 @@ module Export
 
       def collector_depends_on
         configuration.collectors_only? ? nil : healthy_depends_on([collector_influx_target])
+      end
+
+      # Services that target InfluxDB directly, bypassing Ingest — their data
+      # must not be rewritten by the house_power recalculation.
+      def influxdb_depends_on
+        configuration.collectors_only? ? nil : healthy_depends_on(%i[influxdb])
       end
 
       # Bind mount referencing the service's volume env var; the actual host

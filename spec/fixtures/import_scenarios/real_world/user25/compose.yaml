@@ -337,6 +337,65 @@ services:
         max-file: '3'
 
   # +----------------------------------------------------------+
+  # |  Tibber Collector — Fetches dynamic electricity prices   |
+  # +----------------------------------------------------------+
+  #
+  tibber-collector:
+    image: ghcr.io/solectrus/tibber-collector:latest
+    environment:
+    - TZ
+    - INFLUX_BUCKET
+    - INFLUX_HOST=influxdb
+    - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_PRICES}
+    - INFLUX_ORG
+    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+    - TIBBER_TOKEN
+    labels:
+    - com.centurylinklabs.watchtower.scope=solectrus
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  # +---------------------------------------------------------------------+
+  # |  SENEC Charger — Price-optimized grid charging for SENEC batteries  |
+  # +---------------------------------------------------------------------+
+  #
+  senec-charger:
+    image: ghcr.io/solectrus/senec-charger:latest
+    environment:
+    - TZ
+    - CHARGER_DRY_RUN
+    - CHARGER_FORECAST_THRESHOLD
+    - CHARGER_INTERVAL
+    - CHARGER_PRICE_MAX
+    - CHARGER_PRICE_TIME_RANGE
+    - INFLUX_BUCKET
+    - INFLUX_HOST=influxdb
+    - INFLUX_MEASUREMENT_FORECAST=${INFLUX_MEASUREMENT_FORECAST}
+    - INFLUX_MEASUREMENT_PRICES=${INFLUX_MEASUREMENT_PRICES}
+    - INFLUX_ORG
+    - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
+    - SENEC_HOST
+    - SENEC_SCHEMA
+    labels:
+    - com.centurylinklabs.watchtower.scope=solectrus
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  # +----------------------------------------------------------+
   # |  Power Splitter — Calculates derived power values        |
   # +----------------------------------------------------------+
   #
@@ -449,68 +508,6 @@ services:
       options:
         max-size: 10m
         max-file: '3'
-
-  # +------------------------------------------------------------+
-  # |  Unmanaged service (preserved from existing installation)  |
-  # +------------------------------------------------------------+
-  #
-  tibber-collector:
-    image: ghcr.io/solectrus/tibber-collector:latest
-    environment:
-    - TZ
-    - INFLUX_BUCKET
-    - INFLUX_HOST=influxdb
-    - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_PRICES}
-    - INFLUX_ORG
-    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
-    - TIBBER_INTERVAL
-    - TIBBER_TOKEN
-    labels:
-    - com.centurylinklabs.watchtower.scope=solectrus
-    depends_on:
-      influxdb:
-        condition: service_healthy
-    restart: unless-stopped
-    logging:
-      options:
-        max-size: 10m
-        max-file: '3'
-    links:
-    - influxdb
-
-  # +------------------------------------------------------------+
-  # |  Unmanaged service (preserved from existing installation)  |
-  # +------------------------------------------------------------+
-  #
-  senec-charger:
-    image: ghcr.io/solectrus/senec-charger:latest
-    environment:
-    - TZ
-    - INFLUX_BUCKET
-    - INFLUX_HOST=influxdb
-    - INFLUX_MEASUREMENT_FORECAST=${INFLUX_MEASUREMENT_FORECAST}
-    - INFLUX_MEASUREMENT_PRICES=${INFLUX_MEASUREMENT_PRICES}
-    - INFLUX_ORG
-    - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
-    - CHARGER_DRY_RUN
-    - CHARGER_FORECAST_THRESHOLD
-    - CHARGER_INTERVAL
-    - CHARGER_PRICE_MAX
-    - CHARGER_PRICE_TIME_RANGE
-    - SENEC_HOST
-    - SENEC_SCHEMA
-    labels:
-    - com.centurylinklabs.watchtower.scope=solectrus
-    depends_on:
-      influxdb:
-        condition: service_healthy
-    restart: unless-stopped
-    logging:
-      options:
-        max-size: 10m
-        max-file: '3'
-    links:
-    - influxdb
 
 networks:
   default:

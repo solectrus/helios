@@ -29,6 +29,8 @@ module Import
       'senec-collector' => %w[ghcr.io/solectrus/senec-collector],
       'mqtt-collector' => %w[ghcr.io/solectrus/mqtt-collector],
       'forecast-collector' => %w[ghcr.io/solectrus/forecast-collector],
+      'tibber-collector' => %w[ghcr.io/solectrus/tibber-collector],
+      'senec-charger' => %w[ghcr.io/solectrus/senec-charger],
       'shelly-collector' => %w[ghcr.io/solectrus/shelly-collector],
       'power-splitter' => %w[ghcr.io/solectrus/power-splitter],
       'helios' => %w[ghcr.io/solectrus/helios],

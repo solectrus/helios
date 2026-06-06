@@ -14,22 +14,16 @@ module Export
       end
 
       def self.enabled?(configuration)
-        configuration.forecast_required? && configuration.forecast.forecast.present?
+        configuration.forecast_available?
       end
 
       def to_h
         {
           image: configuration.forecast.image.presence || DockerImages.current(:FORECAST_COLLECTOR),
           environment: forecast_environment,
-          depends_on: forecast_depends_on,
+          depends_on: influxdb_depends_on,
           restart: 'unless-stopped',
         }
-      end
-
-      # Targets InfluxDB directly, bypassing Ingest — forecast data must not be
-      # rewritten by the house_power recalculation.
-      def forecast_depends_on
-        configuration.collectors_only? ? nil : healthy_depends_on(%i[influxdb])
       end
 
       private
@@ -44,17 +38,8 @@ module Export
         ::Forecast::PvnodeRules.v2_env_keys(configuration.forecast.forecast_pvnode_paid)
       end
 
-      def passthrough_vars
-        vars = %w[TZ INFLUX_ORG INFLUX_BUCKET]
-        vars += ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS if configuration.collectors_only?
-        vars
-      end
-
       def explicit_vars
-        measurement = 'INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}'
-        return [influx_token_write_var, measurement] if configuration.collectors_only?
-
-        ['INFLUX_HOST=influxdb', influx_token_write_var, measurement]
+        write_measurement_vars('INFLUX_MEASUREMENT_FORECAST')
       end
 
       def forecast_vars

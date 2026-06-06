@@ -188,6 +188,52 @@ forecast-collector:
     - INFLUX_ORG
     - INFLUX_BUCKET
 
+tibber-collector:
+  upstream: tibber-collector/app/config.rb
+  reads:
+    - TZ
+    - TIBBER_TOKEN
+    - TIBBER_INTERVAL
+    - INFLUX_HOST
+    - INFLUX_PORT
+    - INFLUX_SCHEMA
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+    - INFLUX_MEASUREMENT # NOT INFLUX_MEASUREMENT_PRICES — that is the .env name only
+  requires:
+    - TIBBER_TOKEN
+    - INFLUX_HOST
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+
+senec-charger:
+  upstream: senec-charger/app/config.rb
+  reads:
+    - TZ
+    - SENEC_HOST
+    - SENEC_SCHEMA
+    - CHARGER_INTERVAL
+    - CHARGER_PRICE_MAX
+    - CHARGER_PRICE_TIME_RANGE
+    - CHARGER_FORECAST_THRESHOLD
+    - CHARGER_DRY_RUN
+    - INFLUX_HOST
+    - INFLUX_PORT
+    - INFLUX_SCHEMA
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+    - INFLUX_MEASUREMENT_PRICES # read directly, unlike the collectors' INFLUX_MEASUREMENT
+    - INFLUX_MEASUREMENT_FORECAST
+  requires:
+    - SENEC_HOST
+    - INFLUX_HOST
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+
 shelly-collector:
   upstream: shelly-collector/lib/config.rb
   reads:

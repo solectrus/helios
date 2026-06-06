@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 3
+_schema_version: 4
 system:
   admin_password: test-admin
   installation_date: '2023-06-15'
@@ -30,27 +30,10 @@ redis:
   image: redis:8-alpine
 watchtower:
   image: nickfedor/watchtower:latest
+tibber:
+  image: ghcr.io/solectrus/tibber-collector:latest
+  measurement: Tibber
+  token: tibber-api-token-xyz
 sensors: {}
 helios:
   image: ghcr.io/solectrus/helios:latest
-_unmanaged:
-  services:
-    tibber-collector:
-      depends_on:
-        influxdb:
-          condition: service_healthy
-      env_values:
-        INFLUX_MEASUREMENT_TIBBER: Tibber
-        TIBBER_INTERVAL: '3600'
-        TIBBER_TOKEN: tibber-api-token-xyz
-      environment:
-      - TZ
-      - INFLUX_BUCKET
-      - INFLUX_HOST=influxdb
-      - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_TIBBER}
-      - INFLUX_ORG
-      - INFLUX_TOKEN=${INFLUX_TOKEN}
-      - TIBBER_INTERVAL
-      - TIBBER_TOKEN
-      image: ghcr.io/solectrus/tibber-collector:latest
-      restart: unless-stopped

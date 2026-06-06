@@ -3,11 +3,12 @@
 Real-world `docker-compose.yml.bak` + `.env.bak` from a SOLECTRUS user
 running a **local-adapter SENEC V3** (`SENEC_SCHEMA=https`,
 `SENEC_HOST=192.168.3.100`) with **forecast.solar** forecasts, the
-official **power-splitter** managed service, and two non-canonical
-SOLECTRUS collectors that HELIOS does not manage: **`tibber-collector`**
-(writes spot prices to `INFLUX_MEASUREMENT_PRICES=Tibber`) and
-**`senec-charger`** (reads prices + forecast and conditionally pulses
-the SENEC battery into grid-charge mode). The donor's dashboard image
+official **power-splitter** managed service, the now first-class
+**`tibber-collector`** (writes spot prices to
+`INFLUX_MEASUREMENT_PRICES=Tibber`, imported into the typed `tibber:`
+section) plus the now first-class **`senec-charger`** (reads prices +
+forecast and conditionally pulses the SENEC battery into grid-charge
+mode, imported into the typed `senec_charger:` section). The donor's dashboard image
 is pinned to a **PR build (`ghcr.io/solectrus/solectrus:pr-3747`)**,
 not `:latest` / `:develop`, and the donor uses **compose schema
 `version: "3.7"`** as the top-level literal (legacy, ignored by modern
@@ -29,9 +30,9 @@ the collector containers themselves round-trip cleanly under the
 HELIOS-canonical multi-device shape.
 
 Three smaller first-of-its-kind quirks ride along: **`senec-charger`**
-as the second unmanaged SOLECTRUS service (after user17's MQTT-only
-shape, but this is the first one drawing from `INFLUX_TOKEN_READ`
-rather than the write token), **`tibber-collector`** writing to a
+as the first managed service drawing from `INFLUX_TOKEN_READ`
+rather than the write token (it only reads prices + forecast),
+**`tibber-collector`** writing to a
 non-canonical `INFLUX_MEASUREMENT_PRICES` slot, and a **legacy
 mixed-case env var typo** in the donor's compose (`${SHELLY_HOST_dryer}`
 / `${SHELLY_GEN_dryer}` referencing lowercase, while `.env.bak`
@@ -175,34 +176,40 @@ links)` of compose duplication. The donor-side `restart`/`labels`
   unreferenced. HELIOS's `unreferenced_in_stack?` filter drops it,
   matching donor runtime behavior (the dryer container was already
   inert).
-- **`senec-charger` preserved as `_unmanaged.services` with
-  `INFLUX_TOKEN=${INFLUX_TOKEN_READ}`.** Donor runs
+- **`senec-charger` imported into the managed `senec_charger:` section
+  with `INFLUX_TOKEN=${INFLUX_TOKEN_READ}`.** Donor runs
   `ghcr.io/solectrus/senec-charger:develop` to pulse the SENEC battery
   into grid-charge mode based on Tibber price thresholds
   (`CHARGER_PRICE_TIME_RANGE=4`, `CHARGER_PRICE_MAX=85`,
-  `CHARGER_FORECAST_THRESHOLD=10`, `CHARGER_DRY_RUN=false`) and the
-  forecast.solar yield (`INFLUX_MEASUREMENT_FORECAST=Forecast`). HELIOS
-  emits the service block byte-identical (image, env list, depends_on,
-  restart, links). First fixture with `senec-charger` and first fixture
-  where an unmanaged SOLECTRUS service binds `INFLUX_TOKEN` to
-  `${INFLUX_TOKEN_READ}` rather than `${INFLUX_TOKEN_WRITE}` (it reads
-  prices and forecast — both written by other services).
-- **`tibber-collector` preserved as `_unmanaged.services`.** Donor runs
-  `ghcr.io/solectrus/tibber-collector:develop`, writing
-  `INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_PRICES}` (= `Tibber`, a
-  non-canonical InfluxDB measurement HELIOS does not manage in the
-  sensor registry). `TIBBER_TOKEN` and `TIBBER_INTERVAL` ride through
-  via bare env passthrough — both are in `_unmanaged.env_vars`. First
-  fixture with `tibber-collector` and the `INFLUX_MEASUREMENT_PRICES`
-  slot.
+  `CHARGER_FORECAST_THRESHOLD=10`, `CHARGER_DRY_RUN=false`,
+  `CHARGER_INTERVAL=900`) and the forecast.solar yield
+  (`INFLUX_MEASUREMENT_FORECAST=Forecast`). HELIOS captures the five
+  `CHARGER_*` knobs into `senec_charger:` and re-exports a managed compose
+  service (canonical `restart`/`logging`/watchtower label, `:develop`
+  image channel reset to the registry default). First fixture with a
+  managed `senec-charger`, and the first managed service binding
+  `INFLUX_TOKEN` to `${INFLUX_TOKEN_READ}` rather than
+  `${INFLUX_TOKEN_WRITE}` (it only reads prices and forecast — both
+  written by other services).
+- **`tibber-collector` imported as the managed `tibber:` section.**
+  Donor runs `ghcr.io/solectrus/tibber-collector:develop`, writing
+  `INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_PRICES}` (= `Tibber`). HELIOS
+  reads the resolved measurement into `tibber.measurement` and the token
+  into `tibber.token`, then re-exports a managed compose service emitting
+  `TIBBER_TOKEN` + `INFLUX_MEASUREMENT_PRICES`. The non-managed
+  `TIBBER_INTERVAL` is dropped (collector default applies); the `:develop`
+  image channel resets to the registry default, owned by the Software
+  survey. First fixture combining a managed Tibber section with a managed
+  `senec-charger` consumer of the same prices measurement.
 - **`INFLUX_MEASUREMENT_PRICES = Tibber` value-side preserved despite
   whitespace-padded `=` in donor's `.env.bak`.** Donor's `.env.bak`
   has `INFLUX_MEASUREMENT_PRICES = Tibber` (spaces around `=`, line 70),
   same for `CHARGER_INTERVAL = 900`, `CHARGER_PRICE_TIME_RANGE = 4`,
   `CHARGER_PRICE_MAX = 85`, `CHARGER_FORECAST_THRESHOLD = 10`,
   `CHARGER_DRY_RUN = false`, `TIBBER_TOKEN = my-tibber-token`,
-  `TIBBER_INTERVAL = 3600`, `TZ = Europe/Berlin`. dotenv strips the
-  spaces on read; HELIOS re-emits without surrounding whitespace.
+  `TIBBER_INTERVAL = 3600` (dropped — not managed), `TZ = Europe/Berlin`.
+  dotenv strips the spaces on read; HELIOS re-emits without surrounding
+  whitespace.
   First fixture with whitespace-padded `=`. Confirms HELIOS follows
   POSIX-shell-compatible parsing despite the upstream `.env` example
   using tight `=`.
@@ -254,9 +261,9 @@ links)` of compose duplication. The donor-side `restart`/`labels`
 - **Restart policies normalized to `unless-stopped` on managed
   services.** Donor mixes `always` (most services) and
   `unless-stopped` (shelly-collectors + power-splitter); HELIOS emits
-  `unless-stopped` uniformly across managed services. Unmanaged
-  services (`senec-charger`, `tibber-collector`) keep their
-  donor-declared `restart: always`.
+  `unless-stopped` uniformly across managed services (now including the
+  managed `tibber-collector` and `senec-charger`, whose donor-declared
+  `restart: always` is normalized along with the rest).
 - **`logging.driver: json-file` added uniformly** across every
   managed service (donor sets logging only on the shelly-collectors
   and power-splitter — both already with `10m`/`3` rotation; HELIOS
@@ -290,16 +297,15 @@ links)` of compose duplication. The donor-side `restart`/`labels`
   forecast-collector / senec-charger
   (`- INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}`). HELIOS
   emits the single canonical declaration and re-uses
-  `${INFLUX_MEASUREMENT_FORECAST}` indirection where needed (kept on
-  the unmanaged senec-charger service block).
+  `${INFLUX_MEASUREMENT_FORECAST}` indirection where needed (including
+  the managed senec-charger service block).
 - **`name: solectrus` and `networks.default.name: solectrus_default`
   added.** Donor has neither (no top-level `name:`, no `networks:`).
 - **`links:` blocks dropped on managed services.** Donor uses
   `links: [influxdb]` etc., which compose treats as a legacy
   service-discovery hint. HELIOS uses `depends_on:` exclusively and
-  drops the `links:` block from managed services. Unmanaged services
-  (`senec-charger`, `tibber-collector`) keep their donor-declared
-  `links:` byte-identical.
+  drops the `links:` block from managed services (now including
+  `tibber-collector` and `senec-charger`).
 - **Sensor reordering on export.** Donor's `INFLUX_SENSOR_*` block in
   `.env.bak` lists only the nine `CUSTOM_POWER_*` mappings; HELIOS
   re-emits them under the canonical sensor block order

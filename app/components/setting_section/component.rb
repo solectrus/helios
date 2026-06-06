@@ -13,6 +13,7 @@ module SettingSection
       'reverse_proxy' => 'fa-shield-halved',
       'backup' => 'fa-cloud-arrow-up',
       'senec' => 'fa-bolt',
+      'tibber' => 'fa-euro-sign',
       'mqtt' => 'fa-tower-broadcast',
       'shelly' => 'fa-plug-circle-bolt',
       'influxdb' => 'fa-database',
@@ -65,8 +66,13 @@ module SettingSection
     # Ingest, like deployment, has an effective state even when the section is
     # empty in config.yaml — defaults (image, retention_hours) kick in and the
     # service is running. Treat it as configured so the card stays green.
+    #
+    # The prices data carries the borrowed charger tuning, and a leftover
+    # `image` alone says nothing either — only an API token means prices are
+    # actually being collected.
     def singleton_configured?
       return true if %w[deployment ingest].include?(setting)
+      return configuration.tibber_enabled? if setting == 'tibber'
 
       singleton_data.present?
     end

@@ -1,6 +1,33 @@
 RSpec.describe Configuration do
   before { with_config_yaml }
 
+  describe 'BORROWED_FIELDS' do
+    # A borrowed field is stripped from the survey's payload and written into a
+    # foreign section, keyed by name alone. So a survey must not own a field of
+    # the same name: the value would silently leave for the other section, and
+    # SurveyJS cannot render two questions of one name to begin with. The trap
+    # is real — the prices survey borrows the charger's `interval`, so a future
+    # `tibber.interval` would land in `senec_charger` instead.
+    it 'never borrows a field the survey section owns itself' do
+      described_class::BORROWED_FIELDS.each do |setting, fields|
+        own = ConfigSchema.fields_for(setting)
+        next unless own.is_a?(Array)
+
+        expect(fields.keys & own).to be_empty,
+                                     "#{setting} both owns and borrows #{(fields.keys & own).join(', ')}"
+      end
+    end
+
+    it 'routes every borrowed field into a section that declares it' do
+      described_class::BORROWED_FIELDS.each do |setting, fields|
+        fields.each do |field, section|
+          expect(ConfigSchema.fields_for(section)).to include(field),
+                                                      "#{setting} borrows #{field}, but #{section} has no such field"
+        end
+      end
+    end
+  end
+
   describe '.current' do
     it 'returns a Configuration instance' do
       config = described_class.current
@@ -582,6 +609,8 @@ RSpec.describe Configuration do
           'senec' => { 'version' => '4', 'host' => '10.0.0.10' },
           'mqtt' => { 'mqtt_host' => 'broker', 'mappings' => [{ 'topic' => 't' }] },
           'forecast' => { 'forecast' => 'forecast.solar' },
+          'tibber' => { 'token' => 'tibber-token' },
+          'senec_charger' => { 'interval' => '3600' },
           'sensors' => {
             'inverter_power' => { 'source' => 'senec' },
             'custom_power_01' => { 'source' => 'shelly', 'shelly_host' => 'shelly.local',
@@ -600,8 +629,24 @@ RSpec.describe Configuration do
         expect(reloaded.mqtt).to be_empty
       end
 
+      # The charger steers the battery over the local API, so it goes wherever
+      # the senec section goes.
+      it 'drops the senec_charger section along with the senec device it steers' do
+        expect(described_class.current.senec_charger).to be_empty
+      end
+
       it 'preserves the forecast section' do
         expect(described_class.current.forecast.forecast).to eq('forecast.solar')
+      end
+
+      # Tibber only fetches a public API, so it keeps running next to the
+      # dashboard — same reasoning as forecast.
+      it 'preserves the tibber section, which still runs here' do
+        expect(described_class.current.tibber.token).to eq('tibber-token')
+      end
+
+      it 'still exports the tibber-collector' do
+        expect(Export::Services::TibberCollector.enabled?(described_class.current)).to be(true)
       end
 
       it 'rewrites device-source sensors to external, keeping mapping' do
@@ -1085,6 +1130,90 @@ RSpec.describe Configuration do
     end
   end
 
+  describe '#senec_charger_available?' do
+    def config_for(**overrides)
+      with_config_yaml({
+        'senec' => { 'adapter' => 'local' },
+        'tibber' => { 'token' => 'abc' },
+        'forecast' => { 'forecast' => 'forecast.solar' },
+        'sensors' => { 'inverter_power_forecast' => { 'source' => 'forecast', 'measurement' => 'Forecast' } },
+      }.merge(overrides))
+      described_class.current
+    end
+
+    it 'is true with a local battery, dynamic prices and a forecast' do
+      expect(config_for.senec_charger_available?).to be(true)
+    end
+
+    it 'is false with a cloud SENEC battery' do
+      expect(config_for('senec' => { 'adapter' => 'cloud' }).senec_charger_available?).to be(false)
+    end
+
+    it 'is false without dynamic Tibber prices' do
+      expect(config_for('tibber' => {}).senec_charger_available?).to be(false)
+    end
+
+    it 'is false without a forecast sensor' do
+      expect(config_for('sensors' => {}).senec_charger_available?).to be(false)
+    end
+  end
+
+  describe '#senec_charger_offered?' do
+    it 'is true for a locally-queried SENEC battery' do
+      with_config_yaml('senec' => { 'adapter' => 'local' })
+      expect(described_class.current.senec_charger_offered?).to be(true)
+    end
+
+    it 'is false for a cloud SENEC battery' do
+      with_config_yaml('senec' => { 'adapter' => 'cloud' })
+      expect(described_class.current.senec_charger_offered?).to be(false)
+    end
+
+    it 'is false without any SENEC battery' do
+      with_config_yaml
+      expect(described_class.current.senec_charger_offered?).to be(false)
+    end
+
+    it 'is false in collectors_only mode, where there is no forecast to read' do
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+                       'senec' => { 'adapter' => 'local' })
+      expect(described_class.current.senec_charger_offered?).to be(false)
+    end
+  end
+
+  describe '#senec_charger_configurable?' do
+    it 'is true with a local battery and a running forecast collector' do
+      with_config_yaml(
+        'senec' => { 'adapter' => 'local' },
+        'forecast' => { 'forecast' => 'forecast.solar' },
+        'sensors' => { 'inverter_power_forecast' => { 'source' => 'forecast', 'measurement' => 'Forecast' } },
+      )
+      expect(described_class.current.senec_charger_configurable?).to be(true)
+    end
+
+    it 'is false while the forecast collector is missing' do
+      with_config_yaml('senec' => { 'adapter' => 'local' })
+      expect(described_class.current.senec_charger_configurable?).to be(false)
+    end
+  end
+
+  describe '#senec_charger_enabled?' do
+    it 'is true once the section carries tuning' do
+      with_config_yaml('senec_charger' => { 'price_max' => '70' })
+      expect(described_class.current.senec_charger_enabled?).to be(true)
+    end
+
+    it 'is false for a section holding nothing but a Software-survey image' do
+      with_config_yaml('senec_charger' => { 'image' => 'ghcr.io/solectrus/senec-charger:develop' })
+      expect(described_class.current.senec_charger_enabled?).to be(false)
+    end
+
+    it 'is false without the section' do
+      with_config_yaml
+      expect(described_class.current.senec_charger_enabled?).to be(false)
+    end
+  end
+
   describe '#visible_settings' do
     it 'omits ingest_settings by default in full mode' do
       with_config_yaml
@@ -1120,11 +1249,12 @@ RSpec.describe Configuration do
 
   describe '#advanced_groups' do
     it 'returns every group with at least one visible setting in full mode' do
-      with_config_yaml
+      with_config_yaml('senec' => { 'adapter' => 'local' })
       expect(described_class.current.advanced_groups).to eq(
         'installation' => %w[deployment software system_general],
         'access' => %w[system_network influxdb dashboard_network reverse_proxy system_security],
         'data' => %w[storage],
+        'energy_management' => %w[tibber],
         'dashboard' => %w[dashboard_co2 dashboard_theme],
       )
     end
@@ -1145,11 +1275,17 @@ RSpec.describe Configuration do
       )
     end
 
-    it 'keeps only the installation and access groups in collectors_only mode' do
+    it 'offers the prices chip without any SENEC battery — they are collected for their own sake' do
+      with_config_yaml
+      expect(described_class.current.advanced_groups.fetch('energy_management')).to eq(%w[tibber])
+    end
+
+    it 'keeps the installation, access and energy_management groups in collectors_only mode' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
       expect(described_class.current.advanced_groups.keys).to contain_exactly(
         'installation',
         'access',
+        'energy_management',
       )
     end
 

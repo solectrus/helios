@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 3
+_schema_version: 4
 system:
   admin_password: test-admin
   installation_date: '2023-06-15'
@@ -47,6 +47,17 @@ senec:
   language: de
   schema: https
   version: v3
+tibber:
+  image: ghcr.io/solectrus/tibber-collector:latest
+  measurement: Tibber
+  token: test-tibber-token
+senec_charger:
+  dry_run: false
+  forecast_threshold: '20'
+  image: ghcr.io/solectrus/senec-charger:latest
+  interval: '3600'
+  price_max: '70'
+  price_time_range: '4'
 sensors:
   battery_charging_power:
     source: senec
@@ -68,32 +79,3 @@ sensors:
     source: forecast
 helios:
   image: ghcr.io/solectrus/helios:latest
-_unmanaged:
-  services:
-    senec-charger:
-      depends_on:
-        influxdb:
-          condition: service_healthy
-      env_values:
-        CHARGER_DRY_RUN: 'false'
-        CHARGER_FORECAST_THRESHOLD: '20'
-        CHARGER_INTERVAL: '3600'
-        CHARGER_PRICE_MAX: '70'
-        CHARGER_PRICE_TIME_RANGE: '4'
-      environment:
-      - TZ
-      - INFLUX_BUCKET
-      - INFLUX_HOST=influxdb
-      - INFLUX_MEASUREMENT_FORECAST=${INFLUX_MEASUREMENT_FORECAST}
-      - INFLUX_MEASUREMENT_PRICES=Tibber
-      - INFLUX_ORG
-      - INFLUX_TOKEN=${INFLUX_TOKEN}
-      - CHARGER_DRY_RUN
-      - CHARGER_FORECAST_THRESHOLD
-      - CHARGER_INTERVAL
-      - CHARGER_PRICE_MAX
-      - CHARGER_PRICE_TIME_RANGE
-      - SENEC_HOST
-      - SENEC_SCHEMA
-      image: ghcr.io/solectrus/senec-charger:latest
-      restart: unless-stopped

@@ -211,6 +211,24 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     mappings
   ].freeze
 
+  # Tibber collector — only `token` and `measurement` are user-configurable; the
+  # poll interval is left at the collector's own default (HELIOS neither emits
+  # nor stores TIBBER_INTERVAL, see
+  # Import::ConfigurationImporter::UnmanagedDetector::LEGACY_CONSUMED_ENV_KEYS).
+  # The only consumer of the prices today is the SENEC charger, whose own
+  # section the same survey fills via Configuration::BORROWED_FIELDS.
+  # Collecting them without a charger stays valid: it builds the price history a
+  # future consumer could read.
+  TIBBER_FIELDS = %w[token measurement image].freeze
+
+  # SENEC charger — price-optimized grid charging for a locally-queried SENEC
+  # battery. The tuning knobs map to the collector's CHARGER_* env vars; SENEC
+  # host/schema and the prices/forecast measurements are borrowed from the
+  # `senec`/`tibber`/`forecast` sections, not stored here. The section has no
+  # survey of its own: the prices survey fills it (Configuration::BORROWED_FIELDS)
+  # and blanks it when charging is switched off.
+  SENEC_CHARGER_FIELDS = %w[interval price_max price_time_range forecast_threshold dry_run image].freeze
+
   SHELLY_FIELDS = %w[
     connection
     interval
@@ -352,6 +370,8 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     'ingest' => INGEST_ALL,
     'senec' => SENEC_FIELDS,
     'mqtt' => MQTT_FIELDS,
+    'tibber' => TIBBER_FIELDS,
+    'senec_charger' => SENEC_CHARGER_FIELDS,
     'shelly' => SHELLY_FIELDS,
     'forecast' => FORECAST_FIELDS,
     'reverse_proxy' => REVERSE_PROXY_FIELDS,

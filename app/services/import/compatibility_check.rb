@@ -10,17 +10,12 @@ module Import
   # whole import is refused, with an actionable error naming the offenders.
   # Further compatibility criteria can be added here later.
   class CompatibilityCheck
-    # SOLECTRUS-universe images HELIOS round-trips today. Beyond the
-    # fully-modeled services (StackReader::ALL_IMAGE_PREFIXES) this adds
-    # senec-charger and tibber-collector: both currently survive verbatim as
-    # `_unmanaged.services` and are slated for first-class support (Phase 2),
-    # at which point their prefixes move into StackReader::SERVICE_IMAGE_PREFIXES.
-    SOLECTRUS_IMAGE_PREFIXES = (
-      StackReader::ALL_IMAGE_PREFIXES + %w[
-        ghcr.io/solectrus/senec-charger
-        ghcr.io/solectrus/tibber-collector
-      ]
-    ).freeze
+    # SOLECTRUS-universe images HELIOS round-trips today. All fully-modeled
+    # services live in StackReader::ALL_IMAGE_PREFIXES — including
+    # tibber-collector (Phase 2a) and senec-charger (Phase 2b), both promoted to
+    # first-class managed services that match via their StackReader prefixes and
+    # are never treated as `_unmanaged`.
+    SOLECTRUS_IMAGE_PREFIXES = StackReader::ALL_IMAGE_PREFIXES
 
     # Curated third-party companion images HELIOS tolerates but never
     # configures. dozzle was recommended in earlier SOLECTRUS hosting guides,

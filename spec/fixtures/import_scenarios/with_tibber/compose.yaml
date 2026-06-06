@@ -173,6 +173,32 @@ services:
         max-file: '3'
 
   # +----------------------------------------------------------+
+  # |  Tibber Collector — Fetches dynamic electricity prices   |
+  # +----------------------------------------------------------+
+  #
+  tibber-collector:
+    image: ghcr.io/solectrus/tibber-collector:latest
+    environment:
+    - TZ
+    - INFLUX_BUCKET
+    - INFLUX_HOST=influxdb
+    - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_PRICES}
+    - INFLUX_ORG
+    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+    - TIBBER_TOKEN
+    labels:
+    - com.centurylinklabs.watchtower.scope=solectrus
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  # +----------------------------------------------------------+
   # |  Watchtower — Automatic Docker image updates             |
   # +----------------------------------------------------------+
   #
@@ -228,26 +254,6 @@ services:
       options:
         max-size: 10m
         max-file: '3'
-
-  # +------------------------------------------------------------+
-  # |  Unmanaged service (preserved from existing installation)  |
-  # +------------------------------------------------------------+
-  #
-  tibber-collector:
-    image: ghcr.io/solectrus/tibber-collector:latest
-    environment:
-    - TZ
-    - INFLUX_BUCKET
-    - INFLUX_HOST=influxdb
-    - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_TIBBER}
-    - INFLUX_ORG
-    - INFLUX_TOKEN=${INFLUX_TOKEN}
-    - TIBBER_INTERVAL
-    - TIBBER_TOKEN
-    depends_on:
-      influxdb:
-        condition: service_healthy
-    restart: unless-stopped
 
 networks:
   default:

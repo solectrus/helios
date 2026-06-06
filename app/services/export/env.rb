@@ -34,6 +34,8 @@ module Export
       [PowerSplitter, ->(c) { Services::PowerSplitter.enabled?(c) }],
       [Senec,        ->(c) { Services::SenecCollector.enabled?(c) }],
       [Forecast,     ->(c) { Services::ForecastCollector.enabled?(c) }],
+      [Tibber,       ->(c) { Services::TibberCollector.enabled?(c) }],
+      [SenecCharger, ->(c) { Services::SenecCharger.enabled?(c) }],
       [Mqtt,         ->(c) { Services::MqttCollector.enabled?(c) }],
       [Shelly,       ->(c) { Services::ShellyCollector.enabled?(c) }],
       [Ingest,       ->(c) { c.ingest_required? }],

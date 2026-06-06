@@ -2,45 +2,31 @@
 
 Real-world `compose.yaml` + `.env` from a SOLECTRUS user driving a
 **three-MPPT SENEC** system through the **cloud adapter** (TOTP MFA), with a
-**Daikin heat pump monitored via Shelly**, a **pvnode forecast**, and two
-extra SOLECTRUS services HELIOS does not natively manage —
-`senec-charger` and `tibber-collector`. Six `custom_power_*` slots are wired
-to plain external measurements (no per-Shelly mapping), and `power-splitter`
-runs at the documented minimum interval. Anonymized but otherwise untouched.
+**Daikin heat pump monitored via Shelly**, a **pvnode forecast**, and two more
+SOLECTRUS services: `tibber-collector` and `senec-charger`. Six
+`custom_power_*` slots are wired to plain external measurements (no per-Shelly
+mapping), and `power-splitter` runs at the documented minimum interval.
+Anonymized but otherwise untouched.
+
+The donor pairs the charger with a **cloud-polled** battery, which HELIOS does
+not model — so this fixture is also the one that pins down what happens then
+(see "Lost or degraded" below).
 
 ## Imported correctly (round-trip preserves the value)
 
-- **Two unmanaged SOLECTRUS services preserved.** First fixture exercising
-  `senec-charger` and `tibber-collector` — both are real SOLECTRUS images
-  (`ghcr.io/solectrus/senec-charger:develop`,
-  `ghcr.io/solectrus/tibber-collector:develop`) for which HELIOS has no
-  managed exporter. They land under `_unmanaged.services.*` with their
-  `depends_on`, `links`, `logging`, and `restart` blocks intact, and their
-  `INFLUX_TOKEN=${INFLUX_TOKEN_READ}` / `${INFLUX_TOKEN_WRITE}` indirections
-  re-emitted verbatim — donor's choice of which token feeds which collector
-  is preserved.
-- **Per-service env_file vars captured as `env_values`.** `senec-charger`
-  and `tibber-collector` use `env_file: .env`, so their effective env is the
-  full union of the donor's `.env`. HELIOS dry-runs the canonical export
-  during import to find out which vars it will emit itself, then records
-  only the rest under each service's `env_values` — unrecognized donor vars
-  (`CHARGER_DRY_RUN`, `CHARGER_INTERVAL`, `INFLUX_MEASUREMENT_PRICES`,
-  `INFLUX_MEASUREMENT_SHELLY_HEATPUMP`, `TIBBER_TOKEN`) and managed vars
-  HELIOS won't re-emit in the donor's
-  configuration (`SENEC_HOST` / `SCHEMA` / `LANGUAGE` because adapter is
-  cloud, `FORECAST_CONFIGURATIONS=1` because single-roof drops the suffix,
-  `PVNODE_PAID=false` because it matches the image default). Vars HELIOS
-  already emits canonically (`INFLUX_BUCKET`, `SENEC_USERNAME`, …) stay
-  out, so `config.yaml` doesn't duplicate them.
+- **`tibber-collector` managed.** Real SOLECTRUS image
+  (`ghcr.io/solectrus/tibber-collector:develop`). It imports into the typed
+  `tibber:` section (`token`, `measurement: prices`) and re-exports as a managed
+  compose service, its `:develop` pin captured in `config.yaml` and preserved.
+  Only Dozzle is left under `_unmanaged.services`.
 - **SENEC cloud adapter with TOTP MFA.** `SENEC_ADAPTER=cloud` plus
   `SENEC_USERNAME` / `SENEC_PASSWORD` / `SENEC_TOTP_URI` / `SENEC_SYSTEM_ID`
-  round-trip as `senec.adapter: cloud` with the four cloud credentials.
-  Local-adapter siblings (`SENEC_HOST=senec.fritz.box`, `SENEC_SCHEMA=https`,
-  `SENEC_LANGUAGE=de`) are *not* dead vars here — `senec-charger` lists
-  them as bare references in its `environment:` block and would crash at
-  startup without them. They survive under `senec-charger.env_values` and
-  reappear in `.env` even though the canonical SENEC section (cloud mode)
-  no longer emits them.
+  round-trip as `senec.adapter: cloud` with the four cloud credentials. The
+  local-adapter siblings the donor left in `.env` (`SENEC_HOST=senec.fritz.box`,
+  `SENEC_SCHEMA=https`, `SENEC_LANGUAGE=de`) are *not* idle here — the donor's
+  `senec-charger` reads them. They fall away only because that charger is
+  dropped (see "Lost or degraded"); with it gone, nothing consumes them and the
+  canonical SENEC section emits the cloud credentials alone.
 - **Three-MPPT SENEC inverter.**
   `INFLUX_SENSOR_INVERTER_POWER_1/2/3=SENEC:mpp1_power/mpp2_power/mpp3_power`
   round-trip as `inverter_power_1/2/3` with `source: senec` — same
@@ -60,16 +46,14 @@ runs at the documented minimum interval. Anonymized but otherwise untouched.
   Round-trip emits canonical `INFLUX_MEASUREMENT_SENEC=SENEC` and the
   collector picks it up directly. The legacy var name is a known
   Online-Configurator alias (2024-03..10) of `INFLUX_MEASUREMENT_SENEC`, so
-  it is dropped rather than carried forward in the unmanaged `senec-charger`
-  env_values block.
+  it is dropped rather than carried forward.
 - **Three distinct InfluxDB tokens preserved.** `INFLUX_TOKEN_READ`
-  (dashboard, senec-charger), `INFLUX_TOKEN_WRITE` (collectors,
-  tibber-collector) and `INFLUX_ADMIN_TOKEN` (InfluxDB init,
-  power-splitter) all carry **different** values; round-trip preserves all
-  three plus a new `INFLUX_TOKEN_READWRITE=${INFLUX_ADMIN_TOKEN}` alias
-  that `power-splitter` now references. No privilege escalation — the
-  dashboard keeps its read-only token, unlike user5/user8 where distinct
-  tokens collapsed into one.
+  (dashboard), `INFLUX_TOKEN_WRITE` (collectors, tibber-collector) and
+  `INFLUX_ADMIN_TOKEN` (InfluxDB init, power-splitter) all carry
+  **different** values; round-trip preserves all three plus a new
+  `INFLUX_TOKEN_READWRITE=${INFLUX_ADMIN_TOKEN}` alias that `power-splitter`
+  now references. No privilege escalation — the dashboard keeps its read-only
+  token, unlike user5/user8 where distinct tokens collapsed into one.
 - **`INFLUX_EXCLUDE_FROM_HOUSE_POWER=HEATPUMP_POWER` preserved.** Same
   shape user1/user8 exercise — heat-pump consumption stays out of the
   house-power calculation, applied as `exclude_from_house_power: true` on
@@ -120,6 +104,21 @@ runs at the documented minimum interval. Anonymized but otherwise untouched.
 
 ## Lost or degraded on re-export (data loss)
 
+- **`senec-charger` dropped — battery is cloud-polled.** The donor really does
+  run `ghcr.io/solectrus/senec-charger:develop`, feeding it `SENEC_HOST=senec.fritz.box`
+  / `SENEC_SCHEMA=https` via `env_file: .env` next to the cloud credentials. The
+  charger steers the battery over its local API and knows no adapter of its own,
+  but HELIOS ties the charger to `senec.adapter == 'local'`
+  (`Configuration#senec_charger_offered?`) and stores no host in cloud mode — so
+  there is no address to configure it with, `SenecChargerExtractor` refuses it,
+  and no `senec_charger:` section is written. The service is gone from the
+  exported compose and its `CHARGER_DRY_RUN` / `CHARGER_INTERVAL` disappear from
+  `.env`; the donor's container stops at the next `docker compose up`. The drop
+  is logged ("dropping senec-charger, cannot reproduce it: …") rather than left
+  to be noticed by absence. This is the only fixture covering that path — see
+  `spec/services/import/configuration_importer/senec_charger_extractor_spec.rb`.
+  Note it costs coverage: while the charger was verbatim `_unmanaged` passthrough
+  it round-tripped intact, so this is a deliberate trade, not an oversight.
 - **Collector images forced to `:latest`.** Donor pinned
   `senec-collector`, `shelly-collector`, and `forecast-collector` to
   `:develop`; export rewrites them to `:latest`. HELIOS's collector
@@ -169,13 +168,12 @@ or the value is simply re-spelled.
 - **`INGEST_HOST=ingest` / `INGEST_PORT=4567`** dropped — HELIOS bakes
   these into compose service-network addressing for collectors that
   write through Ingest.
-- **`SENEC_HOST` / `SENEC_SCHEMA` / `SENEC_LANGUAGE` relocated.** Donor
-  defines them at the top of `.env` (consumed by `senec-collector` in a
-  hypothetical local-adapter setup). Donor actually runs the cloud
-  adapter, so HELIOS's canonical SENEC section drops them — but
-  `senec-charger` lists them as bare environment references and would
-  crash on startup without them, so they reappear under the
-  `senec-charger` section. Same value reaches every consumer either way.
+- **Cloud-mode SENEC leftovers dropped.** Donor defines
+  `SENEC_HOST=senec.fritz.box` / `SENEC_SCHEMA=https` / `SENEC_LANGUAGE=de`
+  at the top of `.env`, but the stack runs the cloud adapter, so the canonical
+  SENEC section emits only the cloud credentials and these local-adapter vars
+  fall away. Equivalent only as a consequence of the `senec-charger` drop above
+  — it was their one consumer.
 - **`APP_HOST` filled in.** Donor commented `# APP_HOST=...` out, so the
   dashboard ran without an explicit host (relying on Rails default
   behavior). Export adds `APP_HOST=localhost`, the documented HELIOS
@@ -197,9 +195,8 @@ or the value is simply re-spelled.
   `start_interval: 2s`). Same probes, faster startup feedback.
 - **`links: - influxdb` (legacy) dropped** from collectors and
   power-splitter. Compose v2 ignores `links` for service-network
-  resolution; HELIOS doesn't re-emit it on managed services. The
-  unmanaged `senec-charger` and `tibber-collector` keep their `links:`
-  blocks because HELIOS preserves unmanaged services verbatim.
+  resolution; HELIOS doesn't re-emit it on managed services (now
+  including `tibber-collector`).
 - **`env_file: .env` dropped from managed services.** Donor used
   `env_file: .env` for every collector and the dashboard; export emits an
   explicit `environment:` list with only the vars each service actually

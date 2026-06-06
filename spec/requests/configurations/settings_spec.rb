@@ -211,6 +211,136 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
   end
 
+  describe 'POST /configuration/settings for the dynamic electricity prices' do
+    # The survey drives two services: the Tibber collector (its own section) and,
+    # where a local battery and a forecast collector exist, the SENEC charger
+    # (borrowed fields).
+    def with_charging_preconditions
+      with_config_yaml(
+        'senec' => { 'adapter' => 'local' },
+        'forecast' => { 'forecast' => 'forecast.solar' },
+        'sensors' => { 'inverter_power_forecast' => { 'source' => 'forecast', 'measurement' => 'Forecast' } },
+      )
+    end
+
+    def survey_params(**overrides)
+      { enabled: true, charging: true, token: 'abc', measurement: 'Prices', interval: '900',
+        price_max: '80', price_time_range: '4', forecast_threshold: '15', dry_run: false }.merge(overrides)
+    end
+
+    def post_survey(**overrides)
+      post configuration_settings_path, params: { setting: 'tibber', data: survey_params(**overrides).to_json }
+    end
+
+    it 'splits the survey into the tibber credentials and the charger tuning' do
+      with_charging_preconditions
+
+      post_survey
+
+      config = Configuration.current
+      expect(config.tibber.to_h).to eq('token' => 'abc', 'measurement' => 'Prices')
+      # dry_run is left out: a blank value clears its key, and the export falls
+      # back to the same `false` default.
+      expect(config.senec_charger.to_h).to eq(
+        'interval' => '900', 'price_max' => '80', 'price_time_range' => '4',
+        'forecast_threshold' => '15'
+      )
+      expect(config.senec_charger_available?).to be(true)
+      expect(response).to redirect_to(advanced_path)
+    end
+
+    it 'stores the test mode when it is switched on' do
+      with_charging_preconditions
+
+      post_survey(dry_run: true)
+
+      expect(Configuration.current.senec_charger.dry_run).to be(true)
+    end
+
+    it 'collects the prices alone when charging stays off' do
+      with_charging_preconditions
+
+      post_survey(charging: false)
+
+      config = Configuration.current
+      expect(config.tibber_enabled?).to be(true)
+      expect(config.senec_charger_enabled?).to be(false)
+    end
+
+    it 'drops the charger tuning when charging is switched back off' do
+      with_charging_preconditions
+      post_survey
+
+      post_survey(charging: false)
+
+      expect(Configuration.current.senec_charger_enabled?).to be(false)
+    end
+
+    it 'supports a stack with no SENEC battery at all, collecting prices for later use' do
+      with_config_yaml
+
+      post_survey(charging: false)
+
+      config = Configuration.current
+      expect(config.tibber_enabled?).to be(true)
+      expect(config.senec_charger_enabled?).to be(false)
+    end
+
+    # The charging pages are dropped server-side once a dependency goes, so the
+    # payload arrives without a `charging` flag. That is the question never
+    # having been asked — reading it as "switched off" would wipe a tuning the
+    # user can neither see nor re-enter until the dependency returns.
+    it 'keeps the charger tuning when a dependency disappears and the prices are edited' do
+      # A configured charger whose forecast collector has since gone: the survey
+      # renders the prices half only, so this save carries neither `charging`
+      # nor the tuning.
+      with_config_yaml(
+        'senec' => { 'adapter' => 'local' },
+        'tibber' => { 'token' => 'abc', 'measurement' => 'Prices' },
+        'senec_charger' => { 'interval' => '900', 'price_max' => '80' },
+      )
+
+      post configuration_settings_path,
+           params: { setting: 'tibber', data: { enabled: true, token: 'xyz', measurement: 'Prices' }.to_json }
+
+      config = Configuration.current
+      expect(config.tibber.token).to eq('xyz')
+      expect(config.senec_charger.to_h).to eq('interval' => '900', 'price_max' => '80')
+    end
+
+    it 'drops both services when the prices are switched off' do
+      with_charging_preconditions
+      post_survey
+
+      post configuration_settings_path, params: { setting: 'tibber', data: { enabled: false }.to_json }
+
+      config = Configuration.current
+      expect(config.tibber_enabled?).to be(false)
+      expect(config.senec_charger_enabled?).to be(false)
+    end
+
+    it 'derives both flags from the two sections when editing' do
+      with_charging_preconditions
+      post_survey
+
+      get edit_configuration_setting_path(setting: 'tibber', name: 'tibber'), headers: turbo_frame_headers
+
+      expect(response.body).to include('&quot;enabled&quot;:true')
+      expect(response.body).to include('&quot;charging&quot;:true')
+      expect(response.body).to include('&quot;token&quot;:&quot;abc&quot;')
+    end
+
+    it 'reports a tibber-only stack as not charging' do
+      with_charging_preconditions
+      Configuration.current.update('tibber', { 'token' => 'abc' })
+
+      get edit_configuration_setting_path(setting: 'tibber', name: 'tibber'), headers: turbo_frame_headers
+
+      expect(response.body).to include('&quot;enabled&quot;:true')
+      expect(response.body).to include('&quot;charging&quot;:false')
+    end
+  end
+
   describe 'GET /configuration/:setting/:name/edit' do
     it 'renders the survey form for an existing sensor' do
       config = Configuration.current

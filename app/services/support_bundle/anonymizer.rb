@@ -88,6 +88,7 @@ module SupportBundle
       'postgresql' => %w[password],
       'influxdb' => %w[password token token_admin token_readwrite token_write token_read],
       'mqtt' => %w[mqtt_username mqtt_password],
+      'tibber' => %w[token],
       'senec' => %w[username password totp_uri system_id],
       'shelly' => %w[password auth_key],
       'backup' => %w[aws_access_key_id aws_secret_access_key],

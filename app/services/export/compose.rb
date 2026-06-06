@@ -26,6 +26,8 @@ module Export
       Services::ShellyCollector,
       Services::MqttCollector,
       Services::ForecastCollector,
+      Services::TibberCollector,
+      Services::SenecCharger,
       Services::PowerSplitter,
       Services::Traefik,
       Services::Watchtower,
@@ -34,6 +36,14 @@ module Export
 
     def self.find_service(name)
       SERVICE_ORDER.find { |klass| klass.service_name == name.to_s }
+    end
+
+    # Service classes this configuration actually renders. Single source of
+    # truth for "which services does HELIOS manage here?" — shared with
+    # Export::Env::Unmanaged, which has to skip the very same names so compose
+    # and .env agree on who owns a service.
+    def self.active_service_classes(configuration)
+      SERVICE_ORDER.select { |klass| klass.enabled?(configuration) }
     end
 
     # Service classes that persist data to a host volume. Single source of
@@ -134,17 +144,27 @@ module Export
     end
 
     def active_service_classes
-      @active_service_classes ||= SERVICE_ORDER.select do |service_class|
-        service_class.enabled?(configuration)
-      end
+      @active_service_classes ||= self.class.active_service_classes(configuration)
     end
 
     def add_unmanaged_services(compose)
       unmanaged = configuration.unmanaged
       return if unmanaged.services.blank?
 
+      managed = active_service_classes.to_set(&:service_name)
+
       unmanaged.services.each do |name, config|
         next if config.blank?
+        # A managed service of the same name always wins: compose has one entry
+        # per name, so emitting both would let whichever is written last decide.
+        # This happens when a service HELIOS once passed through verbatim became
+        # managed (tibber-collector, senec-charger) and the stale passthrough
+        # survived — configuring it would otherwise report success while the
+        # container kept running the old inline environment.
+        # ConfigurationMigrations::PromoteTibberAndSenecCharger clears what it
+        # can; this covers what it deliberately leaves behind.
+        # Export::Env::Unmanaged skips the same names, so .env agrees.
+        next if managed.include?(name)
 
         # env_values is HELIOS-internal state (values for the environment list,
         # rendered into .env on export) — not a compose key.

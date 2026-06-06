@@ -1,24 +1,32 @@
 # with_senec_charger
 
-Stack that includes the optional `senec-charger` service — which HELIOS does
-**not** manage natively. Verifies the "unmanaged preservation" path for
-SOLECTRUS-adjacent services.
+Stack with the **managed** `senec-charger` service (Phase 2b): price-optimized
+grid charging of a local SENEC battery. Verifies that HELIOS adopts the charger
+as a first-class service when all its dependencies are present.
 
 ## Highlights
 
-- **`senec-charger` is not a known HELIOS service** → imported under
-  `_unmanaged.services.senec-charger` as a full Compose definition (image,
-  environment, env_values, depends_on, restart).
-- The charger's scalar values (`CHARGER_DRY_RUN`, `CHARGER_FORECAST_THRESHOLD`,
-  `CHARGER_INTERVAL`, `CHARGER_PRICE_MAX`, `CHARGER_PRICE_TIME_RANGE`) are
-  captured in `env_values`, while variable-only references (`TZ`,
-  `INFLUX_BUCKET`, …) stay in the `environment` list.
-- **Mixed env syntax preserved**: lines without `=` are captured as
-  variable references; lines with `=${…}` and literal values
-  (`INFLUX_MEASUREMENT_PRICES=Tibber`) are preserved verbatim.
+- **`senec-charger` is a managed HELIOS service** → imported into a typed
+  `senec_charger:` config section (the `CHARGER_*` tuning knobs), not
+  `_unmanaged.services`. Re-exported with the canonical managed shape
+  (watchtower scope label, json-file logging, read-only InfluxDB token).
+- **Adoption preconditions met**: a `tibber-collector` (writes the prices the
+  charger reads), a `forecast-collector` (writes the forecast it reads) and a
+  locally-queried SENEC battery (the device it steers). The charger is always a
+  managed service, never `_unmanaged`; without all three preconditions it is an
+  invalid combination and is dropped rather than reproduced.
+- **Read-only InfluxDB access**: the charger only queries prices and forecast,
+  so it binds `INFLUX_TOKEN=${INFLUX_TOKEN_READ}`. The prices/forecast
+  measurements are referenced via `${INFLUX_MEASUREMENT_PRICES}` /
+  `${INFLUX_MEASUREMENT_FORECAST}`, emitted by the tibber/forecast sections.
+- **`CHARGER_*` round-trip**: `CHARGER_INTERVAL`, `CHARGER_PRICE_MAX`,
+  `CHARGER_PRICE_TIME_RANGE`, `CHARGER_FORECAST_THRESHOLD`, `CHARGER_DRY_RUN`
+  are extracted into `senec_charger:` and re-emitted in the `.env`.
+- **Dynamic Tibber prices** written to the `Tibber` measurement. Charger and
+  collector are configured by a single survey, which routes the credentials
+  into the `tibber:` section (`Configuration::BORROWED_FIELDS`).
 - **Deprecated `INFLUX_SENSOR_*` values on the dashboard** — the legacy
   inline-mapping style is still mapped correctly to `source: senec` /
   `source: forecast` sensors.
 - **Forecast collector with forecast.solar**, minimal config (no horizon,
   damping or API key).
-- No Shelly, MQTT or watchtower scope labels.

@@ -395,6 +395,14 @@ RSpec.describe SupportBundle::Anonymizer do
       expect(parsed['sensors']['grid_power']).to eq('source' => 'senec')
     end
 
+    it 'masks the managed tibber token' do
+      yaml = "tibber:\n  token: s3cr3t-t0k3n\n  measurement: Prices\n"
+
+      parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
+
+      expect(parsed['tibber']).to eq('token' => 'AAAAA', 'measurement' => 'Prices')
+    end
+
     it 'returns unchanged content when the YAML has no matching sections' do
       yaml = "system:\n  timezone: Europe/Berlin\n"
 
@@ -416,17 +424,17 @@ RSpec.describe SupportBundle::Anonymizer do
       yaml = <<~YAML
         _unmanaged:
           services:
-            tibber-collector:
+            home-assistant:
               env_values:
-                TIBBER_TOKEN: s3cr3t-t0k3n
-                INFLUX_MEASUREMENT_PRICES: prices
+                INFLUX_TOKEN: s3cr3t-t0k3n
+                HA_LOG_LEVEL: info
       YAML
 
       parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
 
-      expect(parsed['_unmanaged']['services']['tibber-collector']['env_values']).to eq(
-        'TIBBER_TOKEN' => 'AAAAA',
-        'INFLUX_MEASUREMENT_PRICES' => 'prices',
+      expect(parsed['_unmanaged']['services']['home-assistant']['env_values']).to eq(
+        'INFLUX_TOKEN' => 'AAAAA',
+        'HA_LOG_LEVEL' => 'info',
       )
     end
 
@@ -452,15 +460,15 @@ RSpec.describe SupportBundle::Anonymizer do
       yaml = <<~YAML
         _unmanaged:
           services:
-            tibber-collector:
+            home-assistant:
               env_values:
-                TIBBER_TOKEN: "${TIBBER_TOKEN}"
+                INFLUX_TOKEN: "${INFLUX_TOKEN}"
       YAML
 
       parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
 
-      expect(parsed['_unmanaged']['services']['tibber-collector']['env_values']).to eq(
-        'TIBBER_TOKEN' => '${TIBBER_TOKEN}',
+      expect(parsed['_unmanaged']['services']['home-assistant']['env_values']).to eq(
+        'INFLUX_TOKEN' => '${INFLUX_TOKEN}',
       )
     end
   end

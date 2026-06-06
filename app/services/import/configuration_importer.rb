@@ -8,10 +8,10 @@ module Import
     # sources, so they're merged in inside `full_result` / `collectors_only_result`.
     UNIFORM_FULL_EXTRACTORS = %i[
       deployment system dashboard postgresql influxdb redis watchtower ingest power_splitter
-      forecast reverse_proxy backup helios
+      forecast tibber senec_charger reverse_proxy backup helios
     ].freeze
     UNIFORM_COLLECTORS_ONLY_EXTRACTORS = %i[
-      deployment system influxdb watchtower forecast helios
+      deployment system influxdb watchtower forecast tibber helios
     ].freeze
 
     def initialize(stack_reader)
@@ -133,6 +133,14 @@ module Import
 
     def forecast_extractor
       @forecast_extractor ||= ForecastExtractor.new(@reader)
+    end
+
+    def tibber_extractor
+      @tibber_extractor ||= TibberExtractor.new(@reader)
+    end
+
+    def senec_charger_extractor
+      @senec_charger_extractor ||= SenecChargerExtractor.new(@reader)
     end
 
     def watchtower_extractor
@@ -395,7 +403,8 @@ module Import
 
     def persist_singletons!(config)
       %i[deployment system dashboard postgresql influxdb redis watchtower ingest power_splitter sensors
-         forecast senec mqtt shelly reverse_proxy backup helios service_overrides].each do |key|
+         forecast senec mqtt tibber senec_charger shelly reverse_proxy backup helios
+         service_overrides].each do |key|
         config.update(key.to_s, partial_result[key]) if partial_result[key]
       end
     end

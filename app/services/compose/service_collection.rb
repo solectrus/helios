@@ -14,6 +14,8 @@ module Compose
       shelly-collector
       mqtt-collector
       forecast-collector
+      tibber-collector
+      senec-charger
       power-splitter
       traefik
       watchtower

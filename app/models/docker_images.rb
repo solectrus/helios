@@ -150,6 +150,19 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
       ghcr.io/solectrus/mqtt-collector:develop
     ],
   }.freeze
+  TIBBER_COLLECTOR = {
+    current: %w[
+      ghcr.io/solectrus/tibber-collector:latest
+      ghcr.io/solectrus/tibber-collector:develop
+    ],
+  }.freeze
+
+  SENEC_CHARGER = {
+    current: %w[
+      ghcr.io/solectrus/senec-charger:latest
+      ghcr.io/solectrus/senec-charger:develop
+    ],
+  }.freeze
   SHELLY_COLLECTOR = {
     current: %w[
       ghcr.io/solectrus/shelly-collector:latest

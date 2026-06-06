@@ -26,6 +26,28 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
       expect(response).to have_http_status(:not_found)
     end
 
+    describe 'the dynamic-prices survey' do
+      it 'asks for the prices alone without a locally-queried SENEC battery' do
+        get configuration_survey_path(id: 'tibber')
+
+        expect(response).to have_http_status(:ok)
+        expect(response.parsed_body['pages'].pluck('name')).to eq(%w[p_enable p_token])
+      end
+
+      it 'adds the charging questions once a local battery and a forecast exist' do
+        with_config_yaml(
+          'senec' => { 'adapter' => 'local' },
+          'forecast' => { 'forecast' => 'forecast.solar' },
+          'sensors' => { 'inverter_power_forecast' => { 'source' => 'forecast', 'measurement' => 'Forecast' } },
+        )
+
+        get configuration_survey_path(id: 'tibber')
+
+        expect(response.parsed_body['pages'].pluck('name'))
+          .to eq(%w[p_enable p_token p_charging p_price p_forecast p_options])
+      end
+    end
+
     it 'returns sensor survey with dynamic source choices' do
       get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power' })
 

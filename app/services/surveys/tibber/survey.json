@@ -1,0 +1,269 @@
+{
+  "locale": "de",
+  "clearInvisibleValues": "onHidden",
+  "title": {
+    "de": "Dynamische Strompreise",
+    "default": "Dynamic electricity prices"
+  },
+  "description": {
+    "de": "Holt die individuellen Strompreise von Tibber.",
+    "default": "Fetches the individual electricity prices from Tibber."
+  },
+  "pages": [
+    {
+      "name": "p_enable",
+      "title": {
+        "de": "Aktivierung",
+        "default": "Activation"
+      },
+      "elements": [
+        {
+          "type": "boolean",
+          "name": "enabled",
+          "title": {
+            "de": "Dynamische Strompreise erfassen",
+            "default": "Collect dynamic electricity prices"
+          },
+          "description": {
+            "de": "Voraussetzung ist ein Tibber-Vertrag mit dynamischem Tarif.",
+            "default": "Requires a Tibber contract with a dynamic tariff."
+          },
+          "defaultValue": false
+        },
+        {
+          "type": "html",
+          "name": "dashboard_info",
+          "html": {
+            "de": "<p><strong>Das Dashboard rechnet damit noch nicht.</strong> Die Kostenberechnung dort verwendet weiterhin den fest eingestellten Strompreis, die dynamischen Preise fließen bislang nicht ein. Geplant ist das für die Zukunft, und dann zahlt sich aus, jetzt schon zu sammeln: Ausgewertet werden kann später nur, was zu diesem Zeitpunkt bereits in InfluxDB steht.</p>",
+            "default": "<p><strong>The dashboard does not use these prices yet.</strong> Its cost calculation still works off the fixed electricity price; the dynamic prices do not feed into it so far. That is planned for the future, which is what makes collecting them now worthwhile: only what is already in InfluxDB by then can be evaluated later.</p>"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_token",
+      "visibleIf": "{enabled} = true",
+      "title": {
+        "de": "Tibber-Zugang",
+        "default": "Tibber access"
+      },
+      "description": {
+        "de": "Zugangsdaten für die Tibber-API, die die Preise der nächsten 12 bis 36 Stunden im 15-Minuten-Takt liefert.",
+        "default": "Credentials for the Tibber API, which supplies the prices for the next 12 to 36 hours in 15-minute intervals."
+      },
+      "elements": [
+        {
+          "type": "html",
+          "name": "token_link",
+          "html": {
+            "de": "<p>Das Access-Token gibt es im Tibber-Entwicklerkonto unter <a href=\"https://developer.tibber.com/settings/access-token\" target=\"_blank\" rel=\"noopener\">developer.tibber.com</a>.</p>",
+            "default": "<p>The access token is available in the Tibber developer account at <a href=\"https://developer.tibber.com/settings/access-token\" target=\"_blank\" rel=\"noopener\">developer.tibber.com</a>.</p>"
+          }
+        },
+        {
+          "type": "text",
+          "name": "token",
+          "title": {
+            "de": "Access Token",
+            "default": "Access token"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "measurement",
+          "title": {
+            "de": "InfluxDB-Measurement",
+            "default": "InfluxDB measurement"
+          },
+          "description": {
+            "de": "Measurement, in das die Preise geschrieben werden. Eine nachträgliche Änderung ist kaum möglich, da bereits geschriebene Daten dauerhaft an diesen Namen gebunden sind.",
+            "default": "Measurement the prices are written to. Changing this later is very difficult, as previously written data remains permanently tied to this name."
+          },
+          "defaultValue": "Prices",
+          "isRequired": true
+        }
+      ]
+    },
+    {
+      "name": "p_charging_unavailable",
+      "visibleIf": "{enabled} = true",
+      "title": {
+        "de": "Preisoptimierte Speicherbeladung",
+        "default": "Price-optimized battery charging"
+      },
+      "elements": [
+        {
+          "type": "html",
+          "name": "charging_unavailable_info",
+          "html": {
+            "de": "<p>Mit den dynamischen Preisen kann der SENEC-Speicher in den günstigsten Zeiten aus dem Netz beladen werden. Dazu fehlt noch die Solarprognose: Aus dem Netz beladen wird nur dann, wenn in den nächsten 24 Stunden ohnehin zu wenig PV-Ertrag zu erwarten ist.</p><p>Sobald der Forecast-Collector eingerichtet ist, also ein Sensor mit der Quelle „Prognose“ und ein ausgewählter Prognose-Anbieter, erscheinen die Einstellungen dafür an dieser Stelle.</p>",
+            "default": "<p>The dynamic prices allow the SENEC battery to be charged from the grid during the cheapest periods. The solar forecast is still missing for that: the grid is only used when too little PV yield is expected over the next 24 hours anyway.</p><p>As soon as the forecast collector is set up, meaning a sensor with the source “Forecast” and a selected forecast provider, the settings for this appear here.</p>"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_charging",
+      "visibleIf": "{enabled} = true",
+      "title": {
+        "de": "Preisoptimierte Speicherbeladung",
+        "default": "Price-optimized battery charging"
+      },
+      "elements": [
+        {
+          "type": "boolean",
+          "name": "charging",
+          "title": {
+            "de": "SENEC-Speicher in günstigen Zeiten aus dem Netz beladen",
+            "default": "Charge the SENEC battery from the grid during cheap periods"
+          },
+          "description": {
+            "de": "Beladen wird nur bei leerem Speicher, wenn zu wenig Solarstrom in Sicht ist und der Netzstrom deutlich unter dem Durchschnittspreis liegt.",
+            "default": "Charging only happens with an empty battery, when too little solar power is in sight and grid power is clearly below the average price."
+          },
+          "defaultValue": false
+        },
+        {
+          "type": "html",
+          "name": "risk_info",
+          "visibleIf": "{charging} = true",
+          "html": {
+            "de": "<p><strong>Vorher abwägen:</strong> Netzstrom im Speicher kann die EEG-Förderung der Anlage berühren. Ob und in welchem Umfang, hängt von der Anlage und der Vermarktungsform ab und hat sich zuletzt mehrfach geändert. Das gehört vorab geklärt.</p><p>Hinzu kommen Ladeverluste und zusätzliche Ladezyklen, die den Speicher altern lassen. Ob am Ende ein Gewinn steht, hängt vom Tarif und vom eigenen Verbrauch ab. Auswirkungen auf die SENEC-Garantie sind nicht auszuschließen.</p><p>Für einen gefahrlosen Test gibt es weiter unten den Testmodus: Er protokolliert jede Entscheidung, ohne den Speicher anzusteuern.</p>",
+            "default": "<p><strong>Consider first:</strong> grid power in the battery can affect the system's EEG support. Whether and to what extent depends on the system and on how its power is marketed, and the rules have changed repeatedly of late. This should be clarified beforehand.</p><p>On top of that come charging losses and extra charge cycles, which age the battery. Whether this pays off in the end depends on the tariff and on personal consumption. Effects on the SENEC warranty cannot be ruled out.</p><p>The test mode further below allows a risk-free trial: it logs every decision without controlling the battery.</p>"
+          }
+        }
+      ]
+    },
+    {
+      "name": "p_price",
+      "visibleIf": "{enabled} = true and {charging} = true",
+      "title": {
+        "de": "Preisgrenze",
+        "default": "Price limit"
+      },
+      "description": {
+        "de": "Gesucht wird das günstigste zusammenhängende Zeitfenster in den nächsten 24 Stunden. Beladen wird nur, wenn es deutlich unter dem Durchschnittspreis dieser 24 Stunden liegt.",
+        "default": "The cheapest contiguous window within the next 24 hours is selected. Charging only happens when that window is clearly below the average price of those 24 hours."
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "price_max",
+          "title": {
+            "de": "Maximaler Preis (Prozent)",
+            "default": "Maximum price (percent)"
+          },
+          "description": {
+            "de": "Anteil am Durchschnittspreis, den das günstigste Zeitfenster höchstens kosten darf. Bei 70 % wird also nur beladen, wenn Netzstrom mindestens ein Drittel günstiger ist als im Mittel.",
+            "default": "Share of the average price the cheapest window may cost at most. At 70 %, charging only happens when grid power is at least a third cheaper than average."
+          },
+          "defaultValue": "70",
+          "inputType": "number",
+          "min": 1,
+          "max": 99
+        },
+        {
+          "type": "text",
+          "name": "price_time_range",
+          "title": {
+            "de": "Ladedauer (Stunden)",
+            "default": "Charge duration (hours)"
+          },
+          "description": {
+            "de": "Wie lange der Speicher für eine vollständige Ladung braucht. Genau so lang ist das Zeitfenster, das gesucht wird.",
+            "default": "How long the battery needs for a full charge. The window searched for is exactly this long."
+          },
+          "defaultValue": "4",
+          "inputType": "number",
+          "min": 1
+        }
+      ]
+    },
+    {
+      "name": "p_forecast",
+      "visibleIf": "{enabled} = true and {charging} = true",
+      "title": {
+        "de": "Solarprognose",
+        "default": "Solar forecast"
+      },
+      "description": {
+        "de": "Damit die Netzbeladung der eigenen PV-Anlage nicht zuvorkommt, muss zu wenig Solarstrom in Sicht sein.",
+        "default": "So that grid charging does not get in the way of the PV system itself, too little solar power must be in sight."
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "forecast_threshold",
+          "title": {
+            "de": "Prognose-Schwelle (kWh/24h)",
+            "default": "Forecast threshold (kWh/24h)"
+          },
+          "description": {
+            "de": "Erwarteter PV-Ertrag der nächsten 24 Stunden, ab dem keine Netzbeladung mehr erfolgt.",
+            "default": "Expected PV yield over the next 24 hours above which grid charging is skipped."
+          },
+          "defaultValue": "20",
+          "inputType": "number",
+          "min": 1
+        }
+      ]
+    },
+    {
+      "name": "p_options",
+      "visibleIf": "{enabled} = true and {charging} = true",
+      "title": {
+        "de": "Optionen",
+        "default": "Options"
+      },
+      "description": {
+        "de": "Technische und optionale Einstellungen. Die Voreinstellungen passen für die meisten Setups.",
+        "default": "Technical and optional settings. The defaults fit most setups."
+      },
+      "elements": [
+        {
+          "type": "text",
+          "name": "interval",
+          "title": {
+            "de": "Prüfintervall (Sekunden)",
+            "default": "Check interval (seconds)"
+          },
+          "description": {
+            "de": "Abstand zwischen zwei Ladeentscheidungen.",
+            "default": "Time between two charging decisions."
+          },
+          "defaultValue": "3600",
+          "inputType": "number",
+          "min": 60
+        },
+        {
+          "type": "boolean",
+          "name": "dry_run",
+          "title": {
+            "de": "Testmodus (kein echtes Laden)",
+            "default": "Test mode (no actual charging)"
+          },
+          "description": {
+            "de": "Im Testmodus werden die Entscheidungen nur protokolliert, der Speicher wird nicht angesteuert.",
+            "default": "In test mode the decisions are only logged; the battery is not actually controlled."
+          },
+          "defaultValue": false
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "pageNextText": {
+    "de": "Weiter",
+    "default": "Next"
+  },
+  "pagePrevText": {
+    "de": "Zurück",
+    "default": "Back"
+  },
+  "showCompletePage": false
+}

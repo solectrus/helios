@@ -55,4 +55,20 @@ RSpec.describe Export::Compose do
       expect(yaml).not_to include('- INFLUX_HOST=influxdb')
     end
   end
+
+  # A stale passthrough of a service that has since become managed. compose has
+  # one entry per service name, so without the guard whichever is written last
+  # would decide — and unmanaged services are written last in full mode.
+  context 'when a managed service of the same name is configured' do
+    before { with_config_yaml(unmanaged.merge('tibber' => { 'token' => 'from-the-survey' })) }
+
+    it 'emits the service exactly once' do
+      expect(yaml.scan(/^ {2}tibber-collector:/).size).to eq(1)
+    end
+
+    it 'lets the managed service win over the stale passthrough' do
+      expect(yaml).to match(/^\s*- INFLUX_MEASUREMENT=\$\{INFLUX_MEASUREMENT_PRICES\}$/)
+      expect(yaml).not_to include('Unmanaged service (preserved from existing installation)')
+    end
+  end
 end
