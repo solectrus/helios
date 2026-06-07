@@ -7,7 +7,27 @@
 >
   <div class="bg-base-100 border-base-content/10 border-y md:rounded-2xl md:border">
     <div class="p-0">
-      <table class="table-sm table" data-preference-toggle-target="container" data-hide-unused="<%= hide_unused? %>">
+      <table
+        class="table-sm table md:table-fixed"
+        data-preference-toggle-target="container"
+        data-hide-unused="<%= hide_unused? %>"
+      >
+        <%#
+          Fixed column widths keep the layout stable: with the default
+          auto-layout the value column resizes once live values morph in
+          (short unit hint → full reading), shifting the whole row. Only from
+          md upward, where the real table layout applies — below md the rows
+          collapse into a stacked grid (see component.css) that must not be
+          constrained by these column widths.
+        %>
+
+        <colgroup>
+          <col class="md:w-5/12"><%# Sensor name %>
+          <col class="md:w-1/6"><%# Source badge %>
+          <col class="md:w-1/4"><%# Live value %>
+          <col class="md:w-1/6"><%# Actions %>
+        </colgroup>
+
         <% all_groups.each do |group, sensor_names| %>
           <tbody>
             <tr>
