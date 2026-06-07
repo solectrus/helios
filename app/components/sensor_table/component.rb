@@ -5,14 +5,15 @@ module SensorTable
     delegate :preferences, to: :helpers
     delegate :hide_unused?, to: :preferences
 
-    def initialize(configuration:, readings: {})
+    def initialize(configuration:, polling_enabled: false, readings: {})
       super()
       @configuration = configuration
+      @polling_enabled = polling_enabled
       @readings = readings
     end
 
     def polling_enabled?
-      readings.present?
+      @polling_enabled
     end
 
     def all_groups

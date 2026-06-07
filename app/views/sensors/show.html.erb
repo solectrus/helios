@@ -14,7 +14,7 @@
     <%= turbo_frame_tag "configuration-content" do %>
       <%= render SensorTable::Component.new(
             configuration: @configuration,
-            readings: @readings,
+            polling_enabled: @polling_enabled,
           ) %>
     <% end %>
   <% else %>
