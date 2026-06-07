@@ -8,6 +8,18 @@
 
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="application-name" content="HELIOS">
+    <meta name="robots" content="noindex, nofollow, noarchive">
+
+    <%# Don't auto-link numeric strings (IPs, ports, versions) as phone numbers on iOS %>
+    <meta name="format-detection" content="telephone=no">
+
+    <%# Run standalone (no browser URL bar) when added to the iOS/Android home screen %>
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="HELIOS">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="theme-color" content="#201c55">
+
     <meta name="git-commit-version" content="<%= Rails.configuration.x.git.commit_version %>">
     <meta name="git-commit-time" content="<%= Rails.configuration.x.git.commit_time %>">
 
@@ -17,6 +29,8 @@
     <%= yield :head %>
 
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+    <link rel="manifest" href="/manifest.json">
 
     <%= vite_typescript_tag 'application', data: { turbo_track: 'reload' } %>
     <%= vite_stylesheet_tag 'application.css', data: { turbo_track: 'reload' } %>
