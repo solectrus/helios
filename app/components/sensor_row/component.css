@@ -1,13 +1,17 @@
-/* Mobile: collapse sensor-row cells into a 2-column card. The two-line name
-   (label + SOLECTRUS sensor name) sits top-left with the live value top-right,
-   the source badge and action buttons share the row below. */
+/* Mobile: collapse the sensor row into a compact two-line card laid out as a
+   2x2 grid. Row 1 pairs the label with the live value; row 2 pairs the internal
+   sensor name with the source badge and action buttons, vertically centred so
+   the name sits on the same line as the badge and buttons. The name cell is
+   display:contents here so its label and internal-name children land directly in
+   the grid as separate rows. The dedicated source-badge column is hidden
+   (.max-md:hidden in the markup), so it never participates in this grid. */
 @media (width < 768px) {
   .sensor-row {
     display: grid;
     grid-template-columns: 1fr auto;
     grid-template-areas:
-      'name value'
-      'badge actions';
+      'label value'
+      'internal actions';
     column-gap: 0.5rem;
     row-gap: 0.25rem;
     align-items: center;
@@ -15,22 +19,25 @@
     border-bottom: 1px solid
       color-mix(in oklab, var(--color-base-content) 5%, transparent);
   }
+  /* Drop daisyUI's per-cell bottom border; only the card divider above remains,
+     otherwise a stray line cuts across each card under the name. */
   .sensor-row > td {
     padding: 0;
+    border-bottom: 0;
   }
-  .sensor-row > td:nth-child(1) {
-    grid-area: name;
-    align-self: start;
+  /* Lift the label and internal name out of the name cell so each occupies its
+     own grid row. */
+  .sensor-row > td.sensor-name-cell {
+    display: contents;
   }
-  .sensor-row > td:nth-child(2) {
-    grid-area: badge;
-    /* Indent so the badge lines up with the label text, not the leading icon
-       (icon w-4 = 1rem + flex gap-2 = 0.5rem). */
-    padding-left: 1.5rem;
+  .sensor-name-label {
+    grid-area: label;
+  }
+  .sensor-name-internal {
+    grid-area: internal;
   }
   .sensor-row > td:nth-child(3) {
     grid-area: value;
-    align-self: start;
     text-align: right;
     /* Align the value's right edge with the action icons, which sit inset
        inside their square buttons rather than at the button's edge. */

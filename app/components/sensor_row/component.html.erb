@@ -1,33 +1,42 @@
 <tr class="sensor-row" data-sensor-enabled="<%= enabled? %>">
-  <%# Sensor name %>
-  <td class="pl-4 text-sm <%= 'opacity-60' unless enabled? %>">
-    <div class="flex items-start gap-2">
+  <%#
+    Sensor name. The label and the internal name are direct children of the cell
+    so that on mobile (where the cell becomes display:contents, see component.css)
+    each lands in its own grid row: the label on the value row, the internal name
+    on the badge/actions row.
+  %>
+
+  <td class="sensor-name-cell pl-4 text-sm">
+    <div class="sensor-name-label flex items-start gap-2 font-semibold <%= 'opacity-60' unless enabled? %>">
       <i class="fa-solid fa-microchip text-base-content/70 mt-1 w-4 text-center text-xs leading-5"></i>
 
-      <div>
-        <div class="font-semibold">
-          <%= display_label %>
+      <span>
+        <%= display_label %>
 
-          <% if house_power_exclusions? %>
-            <span
-              class="tooltip tooltip-right before:text-xs before:normal-case"
-              data-tip="<%= house_power_exclusion_tooltip %>"
-            >
-              <i class="fa-solid fa-calculator text-info text-xs"></i>
-            </span>
-          <% end %>
-        </div>
+        <% if house_power_exclusions? %>
+          <span
+            class="tooltip tooltip-right before:text-xs before:normal-case"
+            data-tip="<%= house_power_exclusion_tooltip %>"
+          >
+            <i class="fa-solid fa-calculator text-info text-xs"></i>
+          </span>
+        <% end %>
+      </span>
+    </div>
 
-        <div class="text-base-content/50 font-mono text-xs uppercase"><%= sensor_name %></div>
-      </div>
+    <%#
+      ps-6 (1.5rem = icon w-4 + gap-2) keeps the internal name aligned under
+      the label text, past the leading icon, on both breakpoints.
+    %>
+
+    <div class="sensor-name-internal text-base-content/50 ps-6 font-mono text-xs uppercase <%= 'opacity-60' unless enabled? %>">
+      <%= sensor_name %>
     </div>
   </td>
 
-  <%# Source badge %>
-  <td>
-    <% if enabled? && source_badge_css %>
-      <span class="badge badge-sm uppercase <%= source_badge_css %>"><%= source_badge_label %></span>
-    <% end %>
+  <%# Source badge (desktop column; on mobile it moves next to the actions) %>
+  <td class="max-md:hidden">
+    <%= source_badge %>
   </td>
 
   <%# Live value %>
@@ -37,6 +46,12 @@
   <td class="text-right">
     <% if enabled? %>
       <div class="flex items-center justify-end gap-1">
+        <%#
+          On mobile the source badge belongs with the user-chosen controls, so
+          it sits here before the action buttons; desktop uses its own column.
+        %>
+        <span class="me-1.5 md:hidden"><%= source_badge %></span>
+
         <%= link_to edit_path,
                     class: "btn btn-ghost btn-sm btn-square",
                     data: { turbo_frame: "setting-modal-content" } do %>
@@ -48,8 +63,9 @@
         <% end %>
       </div>
     <% else %>
+      <%# As wide as edit + delete combined. %>
       <%= link_to new_path,
-                  class: "btn btn-soft btn-primary btn-sm btn-square",
+                  class: "btn btn-soft btn-primary btn-sm w-17 px-0",
                   data: { turbo_frame: "setting-modal-content" } do %>
         <i class="fa-solid fa-plus"></i>
       <% end %>

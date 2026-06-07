@@ -35,6 +35,15 @@ module SensorRow
       t(".sources.#{source}")
     end
 
+    # Rendered in two places: a dedicated column on desktop and inline next to
+    # the sensor name on mobile. Returns nil for disabled or sourceless sensors.
+    def source_badge
+      return unless enabled? && source_badge_css
+
+      tag.span(source_badge_label,
+               class: "badge badge-sm uppercase #{source_badge_css}")
+    end
+
     def unit
       SensorRegistry.unit_for(sensor_name)
     end
