@@ -320,6 +320,45 @@ ensure_docker() {
   success "Docker installed."
 }
 
+# Verify the Docker daemon is reachable with the current user's permissions.
+# `docker` being on PATH (checked by ensure_docker) doesn't mean we can talk to
+# the daemon: the user may not be in the 'docker' group, or the daemon may be
+# down. Catch that here — before we write compose.yaml/.env — instead of failing
+# later at `docker compose pull` with a raw "permission denied" on the socket.
+ensure_docker_access() {
+  if docker info >/dev/null 2>&1; then
+    success "  ✓ Docker daemon reachable"
+    return
+  fi
+
+  error "  ✗ Docker is installed but not reachable as user '$(id -un)'."
+
+  # Most likely cause for a non-root user: not in the 'docker' group yet (the
+  # default right after a fresh Docker install — group changes only apply on
+  # next login). Otherwise the daemon simply isn't running.
+  local in_docker_group=false
+  case " $(id -Gn 2>/dev/null) " in *" docker "*) in_docker_group=true ;; esac
+
+  if [ "$(id -u)" -ne 0 ] && [ "$in_docker_group" = false ]; then
+    cat >&2 <<MSG
+
+  Add the current user to the 'docker' group, then start a new login session
+  (log out and back in, or reboot) and re-run this installer:
+
+      sudo usermod -aG docker $(id -un)
+MSG
+  else
+    cat >&2 <<MSG
+
+  Is the Docker daemon running? Start it and re-run this installer:
+
+      sudo systemctl start docker
+MSG
+  fi
+  printf '\n' >&2
+  die "Docker daemon not reachable."
+}
+
 generate_secret() { openssl rand -hex 64; }
 generate_password() {
   # Avoid `head -c 32` here: it closes the pipe early and can make `tr` exit
@@ -532,6 +571,7 @@ main() {
 
   welcome
   ensure_docker
+  ensure_docker_access
 
   if [ -n "$COMPOSE_FILE" ] || [ -e "$ENV_FILE" ]; then
     bold "Existing stack detected — adding HELIOS"
