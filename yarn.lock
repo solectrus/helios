@@ -1118,10 +1118,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"daisyui@npm:^5.5.20":
-  version: 5.5.20
-  resolution: "daisyui@npm:5.5.20"
-  checksum: 10c0/7af259c11bc1cadc58cda4d6fa469b967d45879f4fd446095e310cc0f877ab28b75ebb641bf204abc1bada43bf11a67a941134acdc65c87b2c16118eef85a528
+"daisyui@npm:^5.5.23":
+  version: 5.5.23
+  resolution: "daisyui@npm:5.5.23"
+  checksum: 10c0/df8faf9a9fd676a0facbc4f0255d66c5659c8559cdafd68da6bf29814528ccb19f7ccaf99400484ba5676ccfe026c4dff5716027ac9fda8416c32381a9351e1d
   languageName: node
   linkType: hard
 
@@ -1554,7 +1554,7 @@ __metadata:
     "@rails/actioncable": "npm:^8.1.300"
     "@size-limit/file": "npm:^12.1.0"
     "@tailwindcss/vite": "npm:^4.3.0"
-    daisyui: "npm:^5.5.20"
+    daisyui: "npm:^5.5.23"
     eslint: "npm:^10.4.1"
     eslint-config-prettier: "npm:^10.1.8"
     eslint-plugin-prettier: "npm:^5.5.6"
