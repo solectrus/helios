@@ -30,6 +30,17 @@
   .sensor-row > td.sensor-name-cell {
     display: contents;
   }
+  /* A long, break-less custom sensor name (or the unbreakable mono internal
+     name) would otherwise set a min-content floor on the 1fr column that makes
+     a single row wider than the viewport. That widens the whole page; on iOS
+     standalone (PWA) the surplus width is clipped rather than scrolled, hiding
+     every row's right-aligned live value (issue #192). min-width:0 lets the
+     column shrink and overflow-wrap lets the name break instead. */
+  .sensor-name-label,
+  .sensor-name-internal {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
   .sensor-name-label {
     grid-area: label;
   }
