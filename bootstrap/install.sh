@@ -163,9 +163,6 @@ welcome() {
   banner
   bold "  Installing HELIOS — your SOLECTRUS configuration manager"
   printf '\n'
-  warn "  ⚠  Developer preview — work in progress, for experienced users only."
-  warn "     Not recommended for production use yet."
-  printf '\n'
   # Synchronous GitHub fetch (up to 3s). Placed here so the timestamp sits
   # next to the description of what the script does, rather than dangling
   # under "Working directory".
