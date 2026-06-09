@@ -200,17 +200,31 @@ TEXT
   printf '\n'
 }
 
-# Free space in whole gigabytes for the filesystem holding `path`. Uses
+# Free space in whole megabytes for the filesystem holding `path`. Uses
 # `df -kP` (1024-byte blocks, POSIX format) so it parses identically on
 # BSD and GNU userlands. Returns 0 on any failure so callers err on the
-# safe side and treat unreadable paths as "out of space".
-free_gb() {
+# safe side and treat unreadable paths as "out of space". Megabytes (not
+# gigabytes) so a sub-GB disk reports a real "492 MB" instead of a
+# misleading floored-to-"0 GB".
+free_mb() {
   local path="$1" kb
   kb="$(df -kP "$path" 2>/dev/null | awk 'END {print $4}')"
   if [[ "$kb" =~ ^[0-9]+$ ]]; then
-    printf '%d\n' $((kb / 1024 / 1024))
+    printf '%d\n' $((kb / 1024))
   else
     printf '0\n'
+  fi
+}
+
+# Human-friendly space label from whole megabytes: stays in MB below 1 GB
+# (so a tiny disk reads "492 MB free", not "0 GB free"), switches to whole
+# GB at or above 1 GB.
+format_space() {
+  local mb="$1"
+  if [ "$mb" -lt 1024 ]; then
+    printf '%d MB\n' "$mb"
+  else
+    printf '%d GB\n' $((mb / 1024))
   fi
 }
 
@@ -226,32 +240,32 @@ free_gb() {
 # image won't fit otherwise.
 ensure_disk_space() {
   local mode="${1:-fresh}"
-  local cwd_gb docker_gb available path
-  cwd_gb="$(free_gb "$(pwd)")"
-  available="$cwd_gb"
+  local cwd_mb docker_mb available path
+  cwd_mb="$(free_mb "$(pwd)")"
+  available="$cwd_mb"
   path="$(pwd)"
 
   # /var/lib/docker may sit on a different filesystem than $(pwd); when
   # it does and is tighter, use those numbers instead.
   if [ -d /var/lib/docker ]; then
-    docker_gb="$(free_gb /var/lib/docker)"
-    if [ "$docker_gb" -lt "$available" ]; then
-      available="$docker_gb"
+    docker_mb="$(free_mb /var/lib/docker)"
+    if [ "$docker_mb" -lt "$available" ]; then
+      available="$docker_mb"
       path="/var/lib/docker"
     fi
   fi
 
-  if [ "$available" -lt "$MIN_DISK_GB" ]; then
-    error "  ✗ Disk: ${available} GB free at ${path} (need ≥ ${MIN_DISK_GB} GB)"
+  if [ "$available" -lt "$((MIN_DISK_GB * 1024))" ]; then
+    error "  ✗ Disk: $(format_space "$available") free at ${path} (need ≥ ${MIN_DISK_GB} GB)"
     die "Free up disk space and retry."
   fi
 
-  if [ "$mode" = "fresh" ] && [ "$available" -lt "$RECOMMENDED_DISK_GB" ]; then
-    warn_or_abort "  ⚠ Disk: ${available} GB free at ${path} (recommended ≥ ${RECOMMENDED_DISK_GB} GB)"
+  if [ "$mode" = "fresh" ] && [ "$available" -lt "$((RECOMMENDED_DISK_GB * 1024))" ]; then
+    warn_or_abort "  ⚠ Disk: $(format_space "$available") free at ${path} (recommended ≥ ${RECOMMENDED_DISK_GB} GB)"
     return
   fi
 
-  success "  ✓ Disk: ${available} GB free at ${path}"
+  success "  ✓ Disk: $(format_space "$available") free at ${path}"
 }
 
 # Total RAM in whole megabytes. /proc/meminfo's MemTotal is reported
