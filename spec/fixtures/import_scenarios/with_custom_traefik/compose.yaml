@@ -48,7 +48,7 @@ services:
     - traefik.enable=true
     - traefik.http.routers.dashboard.rule=Host(`solectrus.example.com`)
     - traefik.http.routers.dashboard.entrypoints=websecure
-    - traefik.http.routers.dashboard.tls.certresolver=letsencrypt
+    - traefik.http.routers.dashboard.tls.certresolver=myresolver
     - traefik.http.services.dashboard.loadbalancer.server.port=3000
     - traefik.http.middlewares.test-ratelimit.ratelimit.average=100
     - traefik.http.middlewares.test-ratelimit.ratelimit.burst=200
@@ -193,6 +193,7 @@ services:
     - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
     - "--certificatesresolvers.myresolver.acme.email=postmaster@example.com"
     - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    - "--entrypoints.helios.address=:3999"
     environment:
     - TZ
     volumes:
@@ -202,6 +203,7 @@ services:
     - 80:80
     - 443:443
     - 8086:8086
+    - 3999:3999
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     restart: always
@@ -252,14 +254,18 @@ services:
     environment:
     - TZ
     - ADMIN_PASSWORD
+    - FORCE_SSL=true
     - SECRET_KEY_BASE
     volumes:
     - ".:/data"
     - "/var/run/docker.sock:/var/run/docker.sock"
     - "/sys/fs/cgroup:/host/sys/fs/cgroup:ro"
-    ports:
-    - 3999:3000
     labels:
+    - traefik.enable=true
+    - traefik.http.routers.helios.rule=Host(`solectrus.example.com`)
+    - traefik.http.routers.helios.entrypoints=helios
+    - traefik.http.routers.helios.tls.certresolver=myresolver
+    - traefik.http.services.helios.loadbalancer.server.port=3000
     - com.centurylinklabs.watchtower.scope=solectrus
     restart: unless-stopped
     logging:

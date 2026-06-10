@@ -94,7 +94,7 @@ module Export
           'traefik.enable=true',
           "traefik.http.routers.dashboard.rule=Host(`#{domain}`)",
           'traefik.http.routers.dashboard.entrypoints=websecure',
-          'traefik.http.routers.dashboard.tls.certresolver=letsencrypt',
+          "traefik.http.routers.dashboard.tls.certresolver=#{Traefik.certresolver(configuration)}",
           'traefik.http.services.dashboard.loadbalancer.server.port=3000',
         ]
       end

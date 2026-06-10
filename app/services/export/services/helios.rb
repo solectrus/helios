@@ -32,13 +32,15 @@ module Export
         !Rails.env.development?
       end
 
-      # True when HELIOS routes its own UI through a HELIOS-owned Traefik
-      # (HTTPS, same domain, dedicated entrypoint) instead of publishing a
-      # direct host port. An imported custom Traefik (captured `command`) is
-      # left alone — we cannot assume it declares a `helios` entrypoint, so the
-      # UI keeps its plain host port there.
+      # True when HELIOS routes its own UI through Traefik (HTTPS, same domain,
+      # dedicated :3999 entrypoint) instead of publishing a plain host port.
+      # Holds whenever Traefik is active — including an imported custom Traefik:
+      # HELIOS owns its own UI, so it injects the `helios` entrypoint into that
+      # command (see Traefik#traefik_command_with_helios) and derives the
+      # certresolver from it (Traefik.certresolver) rather than leaving the UI
+      # on plain HTTP.
       def self.traefik_managed_routing?(configuration)
-        Traefik.enabled?(configuration) && configuration.reverse_proxy.command.blank?
+        Traefik.enabled?(configuration)
       end
 
       def to_h
@@ -50,16 +52,14 @@ module Export
         }
 
         if traefik_managed_routing?
-          # Behind a HELIOS-owned Traefik: route the UI through it (HTTPS, same
-          # domain, dedicated :3999 entrypoint) instead of a plain-HTTP host port.
+          # Behind Traefik: route the UI through it (HTTPS, same domain,
+          # dedicated :3999 entrypoint) instead of a plain-HTTP host port. Any
+          # `helios` router labels carried in via service_overrides (a re-import
+          # of HELIOS's own output) dedupe against these generated ones.
           config[:labels] = traefik_labels
-        elsif !traefik_routes_helios?
+        else
           config[:ports] = ["#{HOST_PORT}:#{CONTAINER_PORT}"]
         end
-        # Remaining case: an imported Traefik already declares a `helios`
-        # entrypoint (typically a re-import of HELIOS's own output) — its labels
-        # come in via service_overrides, and no direct port is published so 3999
-        # isn't bound twice.
 
         config
       end
@@ -68,16 +68,6 @@ module Export
 
       def traefik_managed_routing?
         self.class.traefik_managed_routing?(configuration)
-      end
-
-      # Whether an imported custom Traefik (captured `command`) declares a
-      # dedicated `helios` entrypoint and therefore owns host port 3999. The
-      # managed (blank-command) case is handled by traefik_managed_routing?.
-      def traefik_routes_helios?
-        return false unless Traefik.enabled?(configuration)
-
-        Array(configuration.reverse_proxy.command)
-          .any? { |arg| arg.to_s.start_with?('--entrypoints.helios.') }
       end
 
       # FORCE_SSL makes HELIOS set secure cookies and emit https URLs when it
@@ -95,7 +85,7 @@ module Export
           'traefik.enable=true',
           "traefik.http.routers.helios.rule=Host(`#{domain}`)",
           'traefik.http.routers.helios.entrypoints=helios',
-          'traefik.http.routers.helios.tls.certresolver=letsencrypt',
+          "traefik.http.routers.helios.tls.certresolver=#{Traefik.certresolver(configuration)}",
           "traefik.http.services.helios.loadbalancer.server.port=#{CONTAINER_PORT}",
         ]
       end

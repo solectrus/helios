@@ -759,11 +759,22 @@ RSpec.describe Export::Builder do
         expect(influxdb.ports).to be_blank
       end
 
-      # An imported Traefik can't be assumed to declare a `helios` entrypoint,
-      # so the management UI keeps its plain host port there.
-      it 'keeps the direct host port for HELIOS' do
+      # An imported Traefik has no `helios` entrypoint yet — HELIOS injects one
+      # and routes its UI through Traefik (HTTPS) instead of a plain host port.
+      it 'routes HELIOS through Traefik and binds no direct host port' do
         helios = Compose.load.services.find('helios')
-        expect(helios.ports).to include('3999:3000')
+        expect(helios.ports).to be_blank
+        expect(helios.config['labels']).to include(
+          'traefik.http.routers.helios.entrypoints=helios',
+          # No certresolver in the imported command → falls back to letsencrypt.
+          'traefik.http.routers.helios.tls.certresolver=letsencrypt',
+        )
+      end
+
+      it 'injects the helios entrypoint and port into Traefik' do
+        traefik = Compose.load.services.find('traefik')
+        expect(traefik.config['command']).to include('--entrypoints.helios.address=:3999')
+        expect(traefik.ports).to include('3999:3999')
       end
     end
 
@@ -813,6 +824,42 @@ RSpec.describe Export::Builder do
         compose = Compose.load
         influxdb = compose.services.find('influxdb')
         expect(influxdb.ports).to include('8086:8086')
+      end
+    end
+
+    # An imported Traefik names its ACME resolver `myresolver`. HELIOS's
+    # generated router labels must reference that name (read from the command),
+    # not the hardcoded `letsencrypt`, or Traefik can't issue certificates.
+    context 'with an imported Traefik using a custom certresolver name' do
+      before do
+        configuration.update('reverse_proxy', {
+                               'app_domain' => 'solar.example.com',
+                               'command' => [
+                                 '--providers.docker=true',
+                                 '--entrypoints.web.address=:80',
+                                 '--entrypoints.websecure.address=:443',
+                                 '--entrypoints.influxdb.address=:8086',
+                                 '--certificatesresolvers.myresolver.acme.tlschallenge=true',
+                                 '--certificatesresolvers.myresolver.acme.email=me@example.com',
+                                 '--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json',
+                               ],
+                               'ports' => %w[80:80 443:443 8086:8086],
+                             })
+        described_class.new(configuration).write!
+      end
+
+      it 'derives the certresolver for the dashboard router' do
+        dashboard = Compose.load.services.find('dashboard')
+        expect(dashboard.config['labels']).to include(
+          'traefik.http.routers.dashboard.tls.certresolver=myresolver',
+        )
+      end
+
+      it 'derives the certresolver for the HELIOS router' do
+        helios = Compose.load.services.find('helios')
+        expect(helios.config['labels']).to include(
+          'traefik.http.routers.helios.tls.certresolver=myresolver',
+        )
       end
     end
   end

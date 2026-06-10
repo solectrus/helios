@@ -113,7 +113,7 @@ module Export
           'traefik.enable=true',
           "traefik.http.routers.influxdb.rule=Host(`#{domain}`)",
           'traefik.http.routers.influxdb.entrypoints=influxdb',
-          'traefik.http.routers.influxdb.tls.certresolver=letsencrypt',
+          "traefik.http.routers.influxdb.tls.certresolver=#{Traefik.certresolver(configuration)}",
           "traefik.http.services.influxdb.loadbalancer.server.port=#{CONTAINER_PORT}",
         ]
       end

@@ -1,6 +1,10 @@
 module Export
   module Services
     class Traefik < Base
+      # ACME resolver name HELIOS uses for its own managed Traefik. Imported
+      # custom Traefik configs may name it differently (see .certresolver).
+      DEFAULT_CERTRESOLVER = 'letsencrypt'.freeze
+
       def self.service_name
         'traefik'
       end
@@ -26,6 +30,22 @@ module Export
           "webmaster@#{configuration.reverse_proxy.app_domain}"
       end
 
+      # ACME resolver name the HELIOS-generated service routers
+      # (dashboard/influxdb/helios) should reference in their `tls.certresolver`
+      # labels. For HELIOS's own managed Traefik this is DEFAULT_CERTRESOLVER;
+      # for an imported custom Traefik (captured `command`) it is read from the
+      # command's `--certificatesresolvers.<name>.acme*` flag so the generated
+      # labels reference a resolver that actually exists. Falls back to the
+      # default when the command declares none.
+      def self.certresolver(configuration)
+        command = Array(configuration.reverse_proxy.command)
+        return DEFAULT_CERTRESOLVER if command.blank?
+
+        command
+          .filter_map { |arg| arg.to_s[/\A--certificatesresolvers\.([^.]+)\.acme/, 1] }
+          .first || DEFAULT_CERTRESOLVER
+      end
+
       def data_directories
         managed_data_directory
       end
@@ -33,9 +53,9 @@ module Export
       def to_h
         {
           image: configuration.reverse_proxy.image.presence || DockerImages.current(:TRAEFIK),
-          command: override_or(:command, traefik_command),
+          command: traefik_command_with_helios,
           environment: override_or(:environment, nil),
-          ports: override_or(:ports, default_ports),
+          ports: traefik_ports_with_helios,
           volumes: override_or(:volumes, [
                                  '/var/run/docker.sock:/var/run/docker.sock:ro',
                                  bind_mount('/letsencrypt'),
@@ -55,6 +75,32 @@ module Export
         configuration.reverse_proxy[key.to_s].presence || default
       end
 
+      # The Traefik `command`, additively ensuring a `helios` entrypoint exists
+      # when HELIOS routes its UI through Traefik. For the managed (blank)
+      # command this is already part of `traefik_command`; for an imported
+      # custom command we keep every imported arg verbatim and only append the
+      # one entrypoint HELIOS needs to reach its own UI. Idempotent — never
+      # appends a second time when the entrypoint is already declared (e.g. a
+      # re-import of HELIOS's own output).
+      def traefik_command_with_helios
+        base = override_or(:command, traefik_command)
+        return base unless helios_routed?
+        return base if base.any? { |arg| arg.to_s.start_with?('--entrypoints.helios.') }
+
+        base + ["--entrypoints.helios.address=:#{Helios::HOST_PORT}"]
+      end
+
+      # Published ports, additively ensuring the HELIOS entrypoint port is bound
+      # when routed through Traefik. Same additive/idempotent contract as
+      # traefik_command_with_helios.
+      def traefik_ports_with_helios
+        base = override_or(:ports, default_ports)
+        return base unless helios_routed?
+
+        port = "#{Helios::HOST_PORT}:#{Helios::HOST_PORT}"
+        base.map(&:to_s).include?(port) ? base : base + [port]
+      end
+
       # Traefik lives under the reverse_proxy config section — override the
       # default `configuration.<service_name>` lookup used by bind_mount.
       def volume_section
@@ -70,9 +116,9 @@ module Export
           '--entrypoints.websecure.address=:443',
           *influxdb_entrypoint,
           *helios_entrypoint,
-          '--certificatesresolvers.letsencrypt.acme.tlschallenge=true',
-          "--certificatesresolvers.letsencrypt.acme.email=#{self.class.letsencrypt_email(configuration)}",
-          '--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json',
+          "--certificatesresolvers.#{DEFAULT_CERTRESOLVER}.acme.tlschallenge=true",
+          "--certificatesresolvers.#{DEFAULT_CERTRESOLVER}.acme.email=#{self.class.letsencrypt_email(configuration)}",
+          "--certificatesresolvers.#{DEFAULT_CERTRESOLVER}.acme.storage=/letsencrypt/acme.json",
         ]
       end
 
