@@ -54,6 +54,15 @@ export default class extends PollingController {
 
   open(event: Event) {
     const target = event.currentTarget as HTMLElement;
+
+    // Absolute URL (e.g. dashboard behind a managed Traefik) takes precedence;
+    // otherwise build a host-port URL at the hostname HELIOS is accessed from.
+    const url = target.dataset.url;
+    if (url) {
+      window.open(url, '_blank');
+      return;
+    }
+
     const port = target.dataset.port;
     if (port) {
       window.open(`http://${window.location.hostname}:${port}`, '_blank');

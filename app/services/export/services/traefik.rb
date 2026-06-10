@@ -18,7 +18,7 @@ module Export
       end
 
       def self.enabled?(configuration)
-        !configuration.collectors_only? && configuration.reverse_proxy.app_domain.present?
+        configuration.reverse_proxy_managed?
       end
 
       def self.letsencrypt_email(configuration)

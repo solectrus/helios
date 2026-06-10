@@ -1,5 +1,7 @@
 module ServiceRow
   class Component < ViewComponent::Base
+    include Openable
+
     attr_reader :compose_service, :container, :error_message, :lazy
 
     def initialize(
@@ -63,10 +65,6 @@ module ServiceRow
 
     def version
       container&.version
-    end
-
-    def public_port
-      container&.public_port || compose_service.public_port
     end
 
     def status_value

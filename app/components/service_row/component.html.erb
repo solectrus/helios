@@ -118,11 +118,16 @@
             <% end %>
           </div>
         <% end %>
-        <% if public_port %>
+        <% if (endpoint = open_endpoint) %>
           <button
             type="button"
             data-action="click->service-row--component#open"
-            data-port="<%= public_port %>"
+            <% if endpoint[:url] %>
+              data-url="<%= endpoint[:url] %>"
+            <% end %>
+            <% if endpoint[:port] %>
+              data-port="<%= endpoint[:port] %>"
+            <% end %>
             aria-label="<%= t('.open') %>"
             class="btn btn-sm max-sm:btn-square"
             <% unless open_button_enabled? %>

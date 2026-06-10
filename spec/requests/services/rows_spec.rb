@@ -4,13 +4,13 @@ RSpec.describe 'Services::Rows', :with_admin_password do
     with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
   end
 
-  def mock_compose_service(name)
+  def mock_compose_service(name, public_port: nil)
     service = instance_double(
       Compose::Service,
       name: name,
       display_name: name.capitalize,
       image: "#{name}:latest",
-      public_port: nil,
+      public_port:,
       helios?: name == 'helios',
     )
     collection = mock_service_collection([service])
@@ -21,7 +21,7 @@ RSpec.describe 'Services::Rows', :with_admin_password do
     service
   end
 
-  def mock_container(service_name, running: true, status: nil)
+  def mock_container(service_name, running: true, status: nil, public_port: nil)
     effective_status = status || (running ? 'running' : 'exited')
     instance_double(
       Orchestration::Container,
@@ -30,7 +30,7 @@ RSpec.describe 'Services::Rows', :with_admin_password do
       status: effective_status,
       health_status: nil,
       version: '1.0.0',
-      public_port: nil,
+      public_port:,
       stoppable?: running,
       image: "#{service_name}:latest",
     )
@@ -93,6 +93,108 @@ RSpec.describe 'Services::Rows', :with_admin_password do
       get service_row_path(service_id: 'influxdb'), headers: turbo_frame_headers
 
       expect(response.body).to include(service_log_path('influxdb'))
+    end
+
+    describe 'the "Open" button' do
+      it 'opens a host port for a service that publishes one' do
+        mock_compose_service('dashboard', public_port: 3000)
+        container = mock_container('dashboard', running: true, public_port: 3000)
+        allow(Orchestration::Container).to receive(:find).with('dashboard').and_return(container)
+
+        get service_row_path(service_id: 'dashboard'), headers: turbo_frame_headers
+
+        expect(response.body).to include('data-port="3000"')
+        expect(response.body).not_to include('data-url')
+      end
+
+      it 'opens the public HTTPS domain for the dashboard behind a managed Traefik' do
+        with_config_yaml(
+          'system' => { 'timezone' => 'Europe/Berlin' },
+          'reverse_proxy' => { 'app_domain' => 'solectrus.example.com' },
+        )
+        # Behind a managed Traefik the dashboard publishes no host port.
+        mock_compose_service('dashboard')
+        container = mock_container('dashboard', running: true)
+        allow(Orchestration::Container).to receive(:find).with('dashboard').and_return(container)
+
+        get service_row_path(service_id: 'dashboard'), headers: turbo_frame_headers
+
+        expect(response.body).to include('data-url="https://solectrus.example.com"')
+        expect(response.body).not_to include('data-port')
+      end
+
+      it 'opens the public HTTPS domain with the InfluxDB port when exposed behind a managed Traefik' do
+        with_config_yaml(
+          'system' => { 'timezone' => 'Europe/Berlin' },
+          'reverse_proxy' => { 'app_domain' => 'solectrus.example.com' },
+          'influxdb' => { 'publish_port' => true, 'host_port' => '18086' },
+        )
+        # Routed via Traefik's influxdb entrypoint, so influxdb publishes no
+        # host port of its own.
+        mock_compose_service('influxdb')
+        container = mock_container('influxdb', running: true)
+        allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(container)
+
+        get service_row_path(service_id: 'influxdb'), headers: turbo_frame_headers
+
+        expect(response.body).to include('data-url="https://solectrus.example.com:18086"')
+      end
+
+      it 'shows no button for InfluxDB behind a managed Traefik when it is not exposed' do
+        with_config_yaml(
+          'system' => { 'timezone' => 'Europe/Berlin' },
+          'reverse_proxy' => { 'app_domain' => 'solectrus.example.com' },
+        )
+        mock_compose_service('influxdb')
+        container = mock_container('influxdb', running: true)
+        allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(container)
+
+        get service_row_path(service_id: 'influxdb'), headers: turbo_frame_headers
+
+        expect(response.body).not_to include('service-row--component#open')
+      end
+
+      it 'never shows the button for Traefik itself, even when it publishes ports' do
+        mock_compose_service('traefik', public_port: 443)
+        container = mock_container('traefik', running: true, public_port: 443)
+        allow(Orchestration::Container).to receive(:find).with('traefik').and_return(container)
+
+        get service_row_path(service_id: 'traefik'), headers: turbo_frame_headers
+
+        expect(response.body).not_to include('service-row--component#open')
+      end
+
+      it 'opens the proxy domain instead of the host port behind an external Traefik' do
+        with_config_yaml(
+          'system' => { 'timezone' => 'Europe/Berlin', 'app_host' => 'solectrus.example.com' },
+          'reverse_proxy' => { 'bind_ip' => '10.0.0.5' },
+        )
+        # External mode still publishes a host port; the button should prefer
+        # the proxy URL over the raw http://host:port.
+        mock_compose_service('dashboard', public_port: 3000)
+        container = mock_container('dashboard', running: true, public_port: 3000)
+        allow(Orchestration::Container).to receive(:find).with('dashboard').and_return(container)
+
+        get service_row_path(service_id: 'dashboard'), headers: turbo_frame_headers
+
+        expect(response.body).to include('data-url="https://solectrus.example.com"')
+        expect(response.body).not_to include('data-port')
+      end
+
+      it 'falls back to the host port behind an external Traefik without app_host' do
+        with_config_yaml(
+          'system' => { 'timezone' => 'Europe/Berlin' },
+          'reverse_proxy' => { 'bind_ip' => '10.0.0.5' },
+        )
+        mock_compose_service('dashboard', public_port: 3000)
+        container = mock_container('dashboard', running: true, public_port: 3000)
+        allow(Orchestration::Container).to receive(:find).with('dashboard').and_return(container)
+
+        get service_row_path(service_id: 'dashboard'), headers: turbo_frame_headers
+
+        expect(response.body).to include('data-port="3000"')
+        expect(response.body).not_to include('data-url')
+      end
     end
 
     it 'disables the start button and shows a warning link when the collector source is incompletely configured' do

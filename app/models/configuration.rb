@@ -584,6 +584,14 @@ class Configuration # rubocop:disable Metrics/ClassLength
     reverse_proxy.app_domain.blank? && reverse_proxy.bind_ip.present?
   end
 
+  # Reverse-proxy "managed Traefik" mode: HELIOS runs its own Traefik for the
+  # configured app_domain and routes the dashboard/influxdb through it via
+  # labels (no published host ports). The internal counterpart to
+  # reverse_proxy_external?.
+  def reverse_proxy_managed?
+    !collectors_only? && reverse_proxy.app_domain.present?
+  end
+
   # Settings visible in the configuration UI for the current mode. Ingest is
   # inserted right after influxdb whenever it is activated by a balcony sensor
   # — the two services sit next to each other in the data path and read more
