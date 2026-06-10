@@ -181,6 +181,7 @@ services:
     - "--entrypoints.web.address=:80"
     - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
     - "--entrypoints.websecure.address=:443"
+    - "--entrypoints.helios.address=:3999"
     - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
     - "--certificatesresolvers.letsencrypt.acme.email=webmaster@solar.example.com"
     - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
@@ -190,6 +191,7 @@ services:
     ports:
     - 80:80
     - 443:443
+    - 3999:3999
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     restart: unless-stopped
@@ -240,14 +242,18 @@ services:
     environment:
     - TZ
     - ADMIN_PASSWORD
+    - FORCE_SSL=true
     - SECRET_KEY_BASE
     volumes:
     - ".:/data"
     - "/var/run/docker.sock:/var/run/docker.sock"
     - "/sys/fs/cgroup:/host/sys/fs/cgroup:ro"
-    ports:
-    - 3999:3000
     labels:
+    - traefik.enable=true
+    - traefik.http.routers.helios.rule=Host(`solar.example.com`)
+    - traefik.http.routers.helios.entrypoints=helios
+    - traefik.http.routers.helios.tls.certresolver=letsencrypt
+    - traefik.http.services.helios.loadbalancer.server.port=3000
     - com.centurylinklabs.watchtower.scope=solectrus
     restart: unless-stopped
     logging:

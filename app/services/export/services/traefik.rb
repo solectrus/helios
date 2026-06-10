@@ -69,17 +69,20 @@ module Export
           '--entrypoints.web.http.redirections.entrypoint.to=websecure',
           '--entrypoints.websecure.address=:443',
           *influxdb_entrypoint,
+          *helios_entrypoint,
           '--certificatesresolvers.letsencrypt.acme.tlschallenge=true',
           "--certificatesresolvers.letsencrypt.acme.email=#{self.class.letsencrypt_email(configuration)}",
           '--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json',
         ]
       end
 
-      # Default published ports — adds the InfluxDB entrypoint port when an
-      # exposed InfluxDB is routed through Traefik (see Services::Influxdb).
+      # Default published ports — adds the InfluxDB and HELIOS entrypoint ports
+      # when those services are routed through Traefik (see Services::Influxdb /
+      # Services::Helios).
       def default_ports
         ports = %w[80:80 443:443]
         ports << "#{influxdb_host_port}:#{influxdb_host_port}" if influxdb_routed?
+        ports << "#{Helios::HOST_PORT}:#{Helios::HOST_PORT}" if helios_routed?
         ports
       end
 
@@ -97,6 +100,18 @@ module Export
 
       def influxdb_host_port
         Influxdb.host_port(configuration)
+      end
+
+      # Dedicated entrypoint for the HELIOS management UI, terminating TLS so it
+      # is reached over HTTPS on the same domain (https://<app_domain>:3999).
+      def helios_entrypoint
+        return [] unless helios_routed?
+
+        ["--entrypoints.helios.address=:#{Helios::HOST_PORT}"]
+      end
+
+      def helios_routed?
+        Helios.traefik_managed_routing?(configuration)
       end
     end
   end

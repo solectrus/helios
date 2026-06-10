@@ -23,14 +23,15 @@ Rails.application.configure do
   # Enable serving of images, stylesheets, and JavaScripts from an asset server.
   # config.asset_host = "http://assets.example.com"
 
-  # Assume all access to the app is happening through a SSL-terminating reverse proxy.
-  # config.assume_ssl = true
-
-  # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  # config.force_ssl = true
-
-  # Skip http-to-https redirect for the default health check endpoint.
-  # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }
+  # Behind a HELIOS-managed Traefik the UI is served over HTTPS with TLS
+  # terminated by the proxy; the exported compose.yaml then sets FORCE_SSL=true
+  # (see Export::Services::Helios). Turns on secure cookies, HSTS and the
+  # http→https redirect. Direct host-port deployments are plain HTTP and leave
+  # the variable unset.
+  if ActiveModel::Type::Boolean.new.cast(ENV.fetch('FORCE_SSL', false))
+    config.assume_ssl = true
+    config.force_ssl = true
+  end
 
   # Log to STDOUT with the current request id as a default log tag.
   config.log_tags = [:request_id]

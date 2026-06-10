@@ -487,6 +487,32 @@ RSpec.describe Export::Builder do
       expect(dashboard.environment).to include('FORCE_SSL')
     end
 
+    it 'routes HELIOS through Traefik instead of publishing a host port' do
+      compose = Compose.load
+      helios = compose.services.find('helios')
+      expect(helios.ports).to be_blank
+      expect(helios.config['labels']).to include(
+        'traefik.enable=true',
+        'traefik.http.routers.helios.rule=Host(`solar.example.com`)',
+        'traefik.http.routers.helios.entrypoints=helios',
+        'traefik.http.routers.helios.tls.certresolver=letsencrypt',
+        'traefik.http.services.helios.loadbalancer.server.port=3000',
+      )
+    end
+
+    it 'adds the helios entrypoint and published port to Traefik' do
+      compose = Compose.load
+      traefik = compose.services.find('traefik')
+      expect(traefik.config['command']).to include('--entrypoints.helios.address=:3999')
+      expect(traefik.ports).to include('3999:3999')
+    end
+
+    it 'sets FORCE_SSL in the helios environment' do
+      compose = Compose.load
+      helios = compose.services.find('helios')
+      expect(helios.environment).to include('FORCE_SSL=true')
+    end
+
     it 'includes APP_DOMAIN in .env' do
       env = Env.load
       expect(env['APP_DOMAIN']).to eq('solar.example.com')
@@ -546,6 +572,13 @@ RSpec.describe Export::Builder do
       compose = Compose.load
       dashboard = compose.services.find('dashboard')
       expect(dashboard.ports).to include('3000:3000')
+    end
+
+    it 'publishes the direct helios host port without FORCE_SSL' do
+      compose = Compose.load
+      helios = compose.services.find('helios')
+      expect(helios.ports).to include('3999:3000')
+      expect(helios.environment).not_to include('FORCE_SSL=true')
     end
 
     it 'does not include APP_DOMAIN in .env' do
@@ -725,6 +758,38 @@ RSpec.describe Export::Builder do
         influxdb = compose.services.find('influxdb')
         expect(influxdb.ports).to be_blank
       end
+
+      # An imported Traefik can't be assumed to declare a `helios` entrypoint,
+      # so the management UI keeps its plain host port there.
+      it 'keeps the direct host port for HELIOS' do
+        helios = Compose.load.services.find('helios')
+        expect(helios.ports).to include('3999:3000')
+      end
+    end
+
+    # Re-import of HELIOS's own managed output: the captured Traefik command
+    # declares the `helios` entrypoint and publishes 3999, so helios must not
+    # bind the port a second time. Its routing labels come in via
+    # service_overrides.
+    context 'with an imported Traefik that routes helios itself' do
+      before do
+        configuration.update('reverse_proxy', {
+                               'app_domain' => 'solar.example.com',
+                               'command' => [
+                                 '--providers.docker=true',
+                                 '--entrypoints.web.address=:80',
+                                 '--entrypoints.websecure.address=:443',
+                                 '--entrypoints.helios.address=:3999',
+                               ],
+                               'ports' => %w[80:80 443:443 3999:3999],
+                             })
+        described_class.new(configuration).write!
+      end
+
+      it 'publishes no direct host port for HELIOS' do
+        helios = Compose.load.services.find('helios')
+        expect(helios.ports).to be_blank
+      end
     end
 
     # Imported custom Traefik without an `influxdb` entrypoint — HELIOS can't
@@ -762,7 +827,7 @@ RSpec.describe Export::Builder do
       compose = Compose.load
       traefik = compose.services.find('traefik')
       expect(traefik.config['command']).not_to include('--entrypoints.influxdb.address=:8086')
-      expect(traefik.ports).to contain_exactly('80:80', '443:443')
+      expect(traefik.ports).to contain_exactly('80:80', '443:443', '3999:3999')
     end
 
     it 'adds no Traefik labels to influxdb' do
