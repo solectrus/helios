@@ -64,22 +64,6 @@ mqtt:
   mqtt_ssl: 'false'
 shelly:
   connection: local
-  devices:
-  - host: 192.168.11.109
-    measurement: Backofen
-    name: device1
-  - host: 192.168.11.110
-    measurement: Fahrrad
-    name: device2
-  - host: 192.168.11.108
-    measurement: Kuehlschrank
-    name: device3
-  - host: 192.168.11.105
-    measurement: Spuelmaschine
-    name: device4
-  - host: 192.168.11.104
-    measurement: Waschmaschine
-    name: device5
   interval: '5'
 sensors:
   battery_charging_power:
@@ -100,26 +84,31 @@ sensors:
     field: power
     measurement: Fahrrad
     name: Fahrrad
+    shelly_host: 192.168.11.110
     source: shelly
   custom_power_02:
     field: power
     measurement: Waschmaschine
     name: Waschmaschine
+    shelly_host: 192.168.11.104
     source: shelly
   custom_power_03:
     field: power
     measurement: Backofen
     name: Backofen
+    shelly_host: 192.168.11.109
     source: shelly
   custom_power_04:
     field: power
     measurement: Spuelmaschine
     name: Spuelmaschine
+    shelly_host: 192.168.11.105
     source: shelly
   custom_power_05:
     field: power
     measurement: Kuehlschrank
     name: Kuehlschrank
+    shelly_host: 192.168.11.108
     source: shelly
   grid_export_limit:
     source: senec

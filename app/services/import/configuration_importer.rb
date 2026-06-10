@@ -251,7 +251,6 @@ module Import
         mqtt_mappings: mqtt_extractor.enabled? ? mqtt_extractor.mappings : [],
         excluded_sensors: sensors_extractor.excluded_sensor_names,
         senec_measurement: senec_extractor.measurement,
-        shelly_multi_device: shelly_extractor.multi_device?,
       )
     end
 
@@ -321,23 +320,50 @@ module Import
       shelly_section_data(include_image: true)
     end
 
-    # Full-mode shelly section: connection/interval plus the per-device list
-    # for multi-device stacks (CSV-valued single service, or several
-    # shelly-collector-<suffix> services). Single-instance, single-device
-    # setups continue to ride through the per-sensor shelly_host pathway in
-    # SensorPersister — devices: stays nil there to avoid duplicating
-    # information that already lives on each `source: shelly` sensor.
+    # Shelly section: connection/interval plus, only for standalone devices,
+    # the per-device list. A device that feeds a `source: shelly` sensor lives
+    # on that sensor (with its own device_id/host) via SensorPersister, so it
+    # appears exactly once in config.yaml. shelly.devices therefore holds only
+    # devices no sensor consumes — see #standalone_shelly_devices.
     def shelly_section_data(include_image: false)
       section = shelly_extractor.section_data
       return nil unless section
 
-      devices = shelly_extractor.multi_device? ? shelly_extractor.raw_devices : nil
       extras = {
         'password' => shelly_extractor.shared_password,
-        'devices' => devices&.presence,
+        'devices' => standalone_shelly_devices.presence,
       }
-      extras.merge!(image_data_for('shelly-collector')) if include_image || devices
+      # Only collectors-only stacks pin the donor image; full mode manages the
+      # collector image centrally (same as senec/mqtt), so it stays unset and
+      # the export falls back to the HELIOS baseline.
+      extras.merge!(image_data_for('shelly-collector')) if include_image
       section.merge(extras).compact.presence
+    end
+
+    # Shelly devices that no imported sensor consumes. In collectors_only mode
+    # HELIOS imports no logical sensors (canonicalization happens on the remote
+    # dashboard host), so the full device list survives here as the round-trip
+    # source of truth. In full mode a device feeding a `source: shelly` sensor
+    # is represented on that sensor instead, leaving only true standalone
+    # devices in shelly.devices.
+    def standalone_shelly_devices
+      devices = shelly_extractor.raw_devices
+      return devices if collectors_only?
+
+      devices.reject { |device| shelly_sensor_claims_measurement?(device['measurement']) }
+    end
+
+    # True when a `source: shelly` sensor will claim this measurement — i.e. a
+    # sensor maps it to a Shelly power field. That mirrors the importer's source
+    # inference (SensorPersister#shelly_device_provides_sensor?): exactly those
+    # devices get folded onto their sensor, so they must not also linger in
+    # shelly.devices. A measurement consumed only by a non-power (external/mqtt)
+    # sensor — or by no sensor at all — stays a standalone device.
+    def shelly_sensor_claims_measurement?(measurement)
+      return false if measurement.blank?
+
+      claims = SHELLY_POWER_FIELDS.map { |field| "#{measurement}:#{field}" }
+      sensors_data.values.any? { |mapping| claims.include?(mapping.to_s) }
     end
 
     def build_devices

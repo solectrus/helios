@@ -276,8 +276,9 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # Sources currently in use by at least one sensor — plus `mqtt` whenever
   # standalone mappings exist and `shelly` whenever standalone devices exist,
   # so the broker / Shelly section stays editable in the UI even when no
-  # HELIOS sensor consumes them (multi-device Shelly setups feed `external`
-  # sensors, never `source: shelly`). In collectors_only mode the import
+  # HELIOS sensor consumes them. A Shelly device that does feed a sensor lives
+  # on that `source: shelly` sensor (with its own device_id/host), so it never
+  # needs shelly.devices to stay visible. In collectors_only mode the import
   # deliberately skips logical sensors (canonicalization happens on the
   # remote dashboard host), so we fall back to "section is configured" —
   # otherwise senec/shelly stay invisible despite running collectors.
@@ -362,6 +363,38 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   def shelly_devices
     Array(@data.dig('shelly', 'devices'))
+  end
+
+  # Every physical device the Shelly collector polls, in a uniform
+  # device-shaped form (host/device_id/measurement/password/invert_power) —
+  # regardless of whether it is represented on a `source: shelly` sensor
+  # (device feeds a dashboard sensor) or as a standalone shelly.devices entry
+  # (no consuming sensor). The export rolls both into a single CSV collector,
+  # so a stack mixing the two stays intact. Sensors come first (config order),
+  # then standalone devices.
+  #
+  # Deduplicated by physical identity: a 3-phase Shelly (3EM) feeds several
+  # sensors (power_a/power_b/power_c) off one host+measurement, but the
+  # collector must poll that device only once.
+  def shelly_collector_devices
+    from_sensors = sensors_with_source('shelly').map do |_name, config|
+      {
+        'host' => config['shelly_host'],
+        'device_id' => config['shelly_device_id'],
+        'measurement' => config['measurement'],
+        'password' => config['shelly_password'],
+        'invert_power' => config['shelly_invert_power'],
+      }.compact
+    end
+
+    # Sensor-derived devices are sorted by measurement (case-insensitive) so the
+    # exported CSV order is stable and matches the historical alphabetized order
+    # of the former shelly.devices list. Standalone entries keep their stored
+    # order, appended afterwards — pure-standalone stacks (collectors-only,
+    # ghost devices) thus export byte-for-byte as before.
+    from_sensors
+      .uniq { |d| d.values_at('host', 'device_id', 'measurement') }
+      .sort_by { |d| d['measurement'].to_s.downcase } + shelly_devices
   end
 
   def shelly_cloud?

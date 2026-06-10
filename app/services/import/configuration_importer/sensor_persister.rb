@@ -21,14 +21,13 @@ module Import
       }.freeze
 
       def initialize(sensors_data:, devices:, enabled_collectors:, mqtt_mappings:, # rubocop:disable Metrics/ParameterLists
-                     excluded_sensors: [], senec_measurement: nil, shelly_multi_device: false)
+                     excluded_sensors: [], senec_measurement: nil)
         @sensors_data = sensors_data
         @devices = devices
         @enabled_collectors = enabled_collectors
         @mqtt_mappings = mqtt_mappings
         @excluded_sensors = excluded_sensors
         @senec_measurement = senec_measurement
-        @shelly_multi_device = shelly_multi_device
       end
 
       def persist!(config)
@@ -147,10 +146,12 @@ module Import
         return unless device
 
         merge_shelly_mapping!(data, sensor_name)
-        # Multi-device stacks store host/interval/connection once on
-        # shelly.devices — duplicating them per-sensor would mean two sources
-        # of truth that can drift apart on UI edits.
-        merge_shelly_device_fields!(data, device) unless @shelly_multi_device
+        # Every Shelly sensor carries its own device identity (device_id/host)
+        # plus optional per-device credentials — so a device that feeds a sensor
+        # appears exactly once in config.yaml, on that sensor. shelly.devices is
+        # left for standalone devices that no sensor consumes (see
+        # ConfigurationImporter#shelly_section_data).
+        merge_shelly_device_fields!(data, device)
       end
 
       def merge_shelly_mapping!(data, sensor_name)
@@ -162,13 +163,17 @@ module Import
         data['field'] = field
       end
 
+      # Only the genuinely per-device fields land on the sensor: the identity
+      # (device_id for cloud, host for local) plus optional per-device password
+      # and invert_power. Connection mode and polling interval are stack-wide
+      # and stay on the shelly section — the .env export and the sensor survey
+      # read them from there, never per sensor.
       def merge_shelly_device_fields!(data, device)
         device_data = device[:data]
-        data['shelly_connection'] = device_data['shelly_device_id'].present? ? 'cloud' : 'local'
         data['shelly_host'] = device_data['shelly_host']
-        data['shelly_interval'] = device_data['shelly_interval']
         data['shelly_password'] = device_data['shelly_password']
         data['shelly_device_id'] = device_data['shelly_device_id']
+        data['shelly_invert_power'] = device_data['shelly_invert_power']
       end
 
       def find_shelly_device_for_sensor(sensor_name)

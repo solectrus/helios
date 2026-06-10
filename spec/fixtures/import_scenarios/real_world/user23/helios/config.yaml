@@ -64,58 +64,6 @@ shelly:
   auth_key: my-shelly-auth-key
   cloud_server: https://shelly-158-eu.shelly.cloud
   connection: cloud
-  devices:
-  - device_id: my-dishwasher-device-id
-    measurement: Dishwasher
-    name: dishwasher
-  - device_id: my-dryer-device-id
-    measurement: Dryer
-    name: dryer
-  - device_id: my-fridge-device-id
-    measurement: Fridge
-    name: fridge
-  - device_id: my-froster-device-id
-    measurement: Froster
-    name: froster
-  - device_id: my-heating-wc-device-id
-    measurement: HeatingWC
-    name: heating_wc
-  - device_id: my-hob-device-id
-    measurement: Hob
-    name: hob
-  - device_id: my-lighting-device-id
-    measurement: Lighting
-    name: lighting
-  - device_id: my-office-device-id
-    measurement: Office
-    name: office
-  - device_id: my-outdoor-device-id
-    measurement: Outdoor
-    name: outdoor
-  - device_id: my-oven-device-id
-    measurement: Oven
-    name: oven
-  - device_id: my-pump17-device-id
-    measurement: Pump17
-    name: pump17
-  - device_id: my-pump22-device-id
-    measurement: Pump22
-    name: pump22
-  - device_id: my-sauna-device-id
-    measurement: Sauna
-    name: sauna
-  - device_id: my-trotec-device-id
-    measurement: TroTec
-    name: trotec
-  - device_id: my-tv-bose-device-id
-    measurement: TvBose
-    name: tv_bose
-  - device_id: my-utility-device-id
-    measurement: Utility
-    name: utility
-  - device_id: my-washer-device-id
-    measurement: Washer
-    name: washer
   interval: '20'
   mode: essential
 reverse_proxy:
@@ -156,86 +104,103 @@ sensors:
     field: power
     measurement: Fridge
     name: Fridge
+    shelly_device_id: my-fridge-device-id
     source: shelly
   custom_power_02:
     field: power
     measurement: Dishwasher
     name: Dishwasher
+    shelly_device_id: my-dishwasher-device-id
     source: shelly
   custom_power_03:
     field: power
     measurement: Washer
     name: Washer
+    shelly_device_id: my-washer-device-id
     source: shelly
   custom_power_04:
     field: power
     measurement: Oven
     name: Oven
+    shelly_device_id: my-oven-device-id
     source: shelly
   custom_power_05:
     field: power
     measurement: Dryer
     name: Dryer
+    shelly_device_id: my-dryer-device-id
     source: shelly
   custom_power_06:
     field: power
     measurement: Hob
     name: Hob
+    shelly_device_id: my-hob-device-id
     source: shelly
   custom_power_07:
     field: power
     measurement: Sauna
     name: Sauna
+    shelly_device_id: my-sauna-device-id
     source: shelly
   custom_power_08:
     field: power
     measurement: Pump22
     name: Pump22
+    shelly_device_id: my-pump22-device-id
     source: shelly
   custom_power_09:
     field: power
     measurement: Pump17
     name: Pump17
+    shelly_device_id: my-pump17-device-id
     source: shelly
   custom_power_10:
     field: power
     measurement: HeatingWC
     name: HeatingWC
+    shelly_device_id: my-heating-wc-device-id
     source: shelly
   custom_power_11:
     field: power
     measurement: Outdoor
     name: Outdoor
+    shelly_device_id: my-outdoor-device-id
     source: shelly
   custom_power_12:
     field: power
     measurement: Froster
     name: Froster
+    shelly_device_id: my-froster-device-id
     source: shelly
   custom_power_13:
     field: power
     measurement: TvBose
     name: TvBose
+    shelly_device_id: my-tv-bose-device-id
     source: shelly
   custom_power_14:
     field: power
     measurement: TroTec
     name: TroTec
+    shelly_device_id: my-trotec-device-id
     source: shelly
   custom_power_15:
     field: power
     measurement: Office
     name: Office
+    shelly_device_id: my-office-device-id
     source: shelly
   custom_power_16:
     field: power
     measurement: Lighting
     name: Lighting
+    shelly_device_id: my-lighting-device-id
     source: shelly
   custom_power_17:
     field: power
     measurement: Utility
     name: Utility
+    shelly_device_id: my-utility-device-id
     source: shelly
   grid_export_limit:
     source: senec

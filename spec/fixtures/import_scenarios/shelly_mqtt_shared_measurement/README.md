@@ -8,8 +8,8 @@ A Shelly device and an MQTT mapping write **different fields into the same
 - `custom_power_01` → `fridge:power` (second Shelly device)
 
 SOLECTRUS allows multiple collectors to share a measurement. This is a
-regression guard: the importer must keep the Shelly `heatpump` device in
-`shelly.devices` even though the MQTT sensor also writes `heatpump`. A naive
-"another collector writes this measurement → prune the Shelly device" rule
-dropped the device, stripped `heatpump_power`'s host, and (on re-import)
+regression guard: `heatpump_power` must stay `source: shelly` and keep its
+`shelly_host`, even though the MQTT sensor `heatpump_heating_power` also writes
+the `heatpump` measurement. A naive "another collector writes this measurement
+→ drop the Shelly" rule stripped `heatpump_power`'s host and (on re-import)
 flipped the sensor to `source: external`.

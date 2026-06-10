@@ -241,7 +241,7 @@ services:
   # +-----------------------------------------------------------+
   #
   shelly-collector:
-    image: ghcr.io/solectrus/shelly-collector:develop
+    image: ghcr.io/solectrus/shelly-collector:latest
     environment:
     - TZ
     - INFLUX_BUCKET

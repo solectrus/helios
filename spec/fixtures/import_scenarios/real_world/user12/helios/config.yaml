@@ -56,25 +56,6 @@ senec:
   version: v3
 shelly:
   connection: local
-  devices:
-  - host: 192.168.178.65
-    measurement: beamer
-    name: beamer
-  - host: 192.168.178.80
-    measurement: dishwasher
-    name: dishwasher
-  - host: 192.168.178.118
-    measurement: dryer
-    name: dryer
-  - host: 192.168.178.134
-    measurement: heatpump
-    name: heatpump
-  - host: 192.168.178.123
-    measurement: microwave
-    name: microwave
-  - host: 192.168.178.83
-    measurement: washingmashine
-    name: washingmashine
   interval: '10'
 sensors:
   battery_charging_power:
@@ -89,31 +70,37 @@ sensors:
     field: power
     measurement: heatpump
     name: heatpump
+    shelly_host: 192.168.178.134
     source: shelly
   custom_power_02:
     field: power
     measurement: beamer
     name: beamer
+    shelly_host: 192.168.178.65
     source: shelly
   custom_power_03:
     field: power
     measurement: washingmashine
     name: washingmashine
+    shelly_host: 192.168.178.83
     source: shelly
   custom_power_04:
     field: power
     measurement: dryer
     name: dryer
+    shelly_host: 192.168.178.118
     source: shelly
   custom_power_05:
     field: power
     measurement: microwave
     name: microwave
+    shelly_host: 192.168.178.123
     source: shelly
   custom_power_06:
     field: power
     measurement: dishwasher
     name: dishwasher
+    shelly_host: 192.168.178.80
     source: shelly
   grid_export_limit:
     source: senec

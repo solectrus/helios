@@ -107,9 +107,7 @@ sensors:
     exclude_from_house_power: true
     field: power
     measurement: Consumer
-    shelly_connection: local
     shelly_host: shelly-heatpump.fritz.box
-    shelly_interval: '30'
     source: shelly
   house_power:
     source: senec

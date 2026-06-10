@@ -24,11 +24,14 @@ wrinkles are called out under "Differences from `multi_shelly`" below.
   `-washer`, `-oven`, `-dryer`, `-hob`, `-sauna`, `-pump22`, `-pump17`,
   `-heating_wc`, `-outdoor`, `-tv-bose`, `-froster`, `-trotec`, `-office`,
   `-lighting`, `-utility`), each with a single
-  `SHELLY_DEVICE_ID=${SHELLY_DEVICE_ID_<NAME>}`. `ShellyExtractor#multi_device?`
-  flattens all seventeen into one canonical `shelly-collector` with
-  comma-separated `SHELLY_DEVICE_ID` / `INFLUX_MEASUREMENT`, and surfaces the
-  device list as `shelly.devices` (alphabetized by `name`). `SHELLY_CLOUD_SERVER`
-  + `SHELLY_AUTH_KEY` flip `raw_devices_context` onto the `device_id` field, and
+  `SHELLY_DEVICE_ID=${SHELLY_DEVICE_ID_<NAME>}`. Because every device feeds a
+  `custom_power_*` dashboard sensor, its `device_id` lives on that
+  `source: shelly` sensor (as `shelly_device_id`) — `shelly.devices` stays empty
+  (it is reserved for standalone devices no sensor consumes). On export,
+  `Configuration#shelly_collector_devices` rolls all seventeen back into one
+  canonical `shelly-collector` with comma-separated `SHELLY_DEVICE_ID` /
+  `INFLUX_MEASUREMENT` (sorted by measurement). `SHELLY_CLOUD_SERVER` +
+  `SHELLY_AUTH_KEY` flip `raw_devices_context` onto the `device_id` field, and
   the per-device `name:` is recovered from the `${SHELLY_DEVICE_ID_<NAME>}`
   interpolation reference (via `shelly_interpolated_names`), not the sequential
   `deviceN` fallback. Same path as `multi_shelly`; the local-mode `SHELLY_HOST`
@@ -62,12 +65,13 @@ wrinkles are called out under "Differences from `multi_shelly`" below.
 
 ## Differences from `multi_shelly` (real-world only)
 
-- **Seventeen `custom_power` sensors, every one Shelly-sourced.**
-  `INFLUX_SENSOR_CUSTOM_POWER_01..17` map to the Shelly measurements
-  (`Fridge`, `Dishwasher`, `Washer`, …) and are preserved in their original
-  `01..17` slot order even though `shelly.devices` is alphabetized — the
-  round-trip aligns sensors to devices by **measurement name**, not slot or
-  device order, so the two orderings coexist at this scale without drift.
+- **Seventeen `custom_power` sensors, every one Shelly-sourced and carrying
+  its own `device_id`.** `INFLUX_SENSOR_CUSTOM_POWER_01..17` map to the Shelly
+  measurements (`Fridge`, `Dishwasher`, `Washer`, …); each becomes a
+  `source: shelly` sensor with its own `shelly_device_id`, kept in `01..17`
+  slot order. The export pairs them by **measurement name** and re-sorts the
+  collector CSV alphabetically, so the slot order on the sensors and the
+  alphabetical order on the wire coexist at this scale without drift.
 
 - **`CUSTOM_POWER_18/19/20` referenced-but-unset.** The `dashboard` and
   `power-splitter` `environment:` lists name

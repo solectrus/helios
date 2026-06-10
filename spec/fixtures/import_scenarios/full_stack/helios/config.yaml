@@ -59,42 +59,6 @@ mqtt:
   mqtt_username: admin
 shelly:
   connection: local
-  devices:
-  - host: shelly-heatpump.fritz.box
-    measurement: Consumer
-    name: device1
-  - host: shelly-fridge.fritz.box
-    measurement: Fridge
-    name: device2
-  - host: shelly-dishwasher.fritz.box
-    measurement: Dishwasher
-    name: device3
-  - host: shelly-washer.fritz.box
-    measurement: Washer
-    name: device4
-  - host: shelly-kabelfritz.fritz.box
-    measurement: KabelFritz
-    name: device5
-  - host: shelly-imac.fritz.box
-    measurement: iMac
-    name: device6
-  - host: shelly-tv.fritz.box
-    measurement: TV
-    name: device7
-    password: secret
-  - host: shelly-synology.fritz.box
-    measurement: Synology
-    name: device8
-  - host: shelly-mini-pc-1.fritz.box
-    measurement: Mini-PC-1
-    name: device9
-  - host: shelly-macstudio.fritz.box
-    measurement: Mac-Studio
-    name: device10
-  - host: shelly-studiodisplay.fritz.box
-    measurement: Studio-Display
-    name: device11
-  image: ghcr.io/solectrus/shelly-collector:develop
   interval: '5'
 sensors:
   battery_charging_power:
@@ -115,51 +79,62 @@ sensors:
     field: power
     measurement: Fridge
     name: Fridge
+    shelly_host: shelly-fridge.fritz.box
     source: shelly
   custom_power_02:
     field: power
     measurement: Dishwasher
     name: Dishwasher
+    shelly_host: shelly-dishwasher.fritz.box
     source: shelly
   custom_power_03:
     field: power
     measurement: Washer
     name: Washer
+    shelly_host: shelly-washer.fritz.box
     source: shelly
   custom_power_04:
     field: power
     measurement: KabelFritz
     name: KabelFritz
+    shelly_host: shelly-kabelfritz.fritz.box
     source: shelly
   custom_power_05:
     field: power
     measurement: iMac
     name: iMac
+    shelly_host: shelly-imac.fritz.box
     source: shelly
   custom_power_06:
     field: power
     measurement: TV
     name: TV
+    shelly_host: shelly-tv.fritz.box
+    shelly_password: secret
     source: shelly
   custom_power_07:
     field: power
     measurement: Synology
     name: Synology
+    shelly_host: shelly-synology.fritz.box
     source: shelly
   custom_power_08:
     field: power
     measurement: Mini-PC-1
     name: Mini-PC-1
+    shelly_host: shelly-mini-pc-1.fritz.box
     source: shelly
   custom_power_09:
     field: power
     measurement: Mac-Studio
     name: Mac-Studio
+    shelly_host: shelly-macstudio.fritz.box
     source: shelly
   custom_power_10:
     field: power
     measurement: Studio-Display
     name: Studio-Display
+    shelly_host: shelly-studiodisplay.fritz.box
     source: shelly
   grid_export_limit:
     source: senec
@@ -181,6 +156,7 @@ sensors:
     exclude_from_house_power: true
     field: power
     measurement: Consumer
+    shelly_host: shelly-heatpump.fritz.box
     source: shelly
   heatpump_status:
     field: current_state

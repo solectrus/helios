@@ -54,22 +54,6 @@ senec:
   version: v3
 shelly:
   connection: local
-  devices:
-  - host: 192.168.108.71
-    measurement: Gefrierschrank
-    name: '001'
-  - host: 192.168.108.72
-    measurement: Waschmaschine
-    name: '002'
-  - host: 192.168.108.73
-    measurement: Trockner
-    name: '003'
-  - host: 192.168.108.74
-    measurement: Buero
-    name: '004'
-  - host: 192.168.108.75
-    measurement: Spare
-    name: '005'
   interval: '5'
 sensors:
   battery_charging_power:
@@ -84,26 +68,31 @@ sensors:
     field: power
     measurement: Gefrierschrank
     name: Gefrierschrank
+    shelly_host: 192.168.108.71
     source: shelly
   custom_power_02:
     field: power
     measurement: Waschmaschine
     name: Waschmaschine
+    shelly_host: 192.168.108.72
     source: shelly
   custom_power_03:
     field: power
     measurement: Trockner
     name: Trockner
+    shelly_host: 192.168.108.73
     source: shelly
   custom_power_04:
     field: power
     measurement: Buero
     name: Buero
+    shelly_host: 192.168.108.74
     source: shelly
   custom_power_05:
     field: power
     measurement: Spare
     name: Spare
+    shelly_host: 192.168.108.75
     source: shelly
   grid_export_limit:
     source: senec

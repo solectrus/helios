@@ -24,19 +24,6 @@ module Import
         shelly_service_names.any?
       end
 
-      # True when the donor stack carries more than one Shelly device — either
-      # via a single CSV-valued shelly-collector (`SHELLY_HOST=h1,h2,...`) or
-      # via several shelly-collector-<suffix> services, each with its own
-      # device. Drives the CSV-mode export path: HELIOS rolls them up into a
-      # single canonical shelly-collector container with comma-separated
-      # SHELLY_HOST / INFLUX_MEASUREMENT, and surfaces the device list as
-      # `shelly.devices` in `config.yaml` as the round-trip source of truth.
-      def multi_device?
-        return false unless enabled?
-
-        raw_devices.size > 1
-      end
-
       # Names of all services that use the shelly-collector image.
       # A stack may carry either a single service (typically "shelly-collector",
       # multi-device via CSV-valued env vars) or several single-device services

@@ -63,24 +63,9 @@ mqtt:
 shelly:
   connection: local
   devices:
-  - host: 192.168.2.50
-    measurement: airfry
-    name: airfry
-  - host: 192.168.2.55
-    measurement: Fence
-    name: fence
   - host: 192.168.2.51
     measurement: gas
     name: gsa
-  - host: 192.168.3.53
-    measurement: it
-    name: it
-  - host: 192.168.2.52
-    measurement: mw
-    name: mw
-  - host: 192.168.2.54
-    measurement: server
-    name: server
   interval: '5'
 sensors:
   battery_charging_power:
@@ -95,11 +80,13 @@ sensors:
     field: power
     measurement: airfry
     name: airfry
+    shelly_host: 192.168.2.50
     source: shelly
   custom_power_02:
     field: power
     measurement: mw
     name: mw
+    shelly_host: 192.168.2.52
     source: shelly
   custom_power_03:
     field: power
@@ -110,11 +97,13 @@ sensors:
     field: power
     measurement: it
     name: it
+    shelly_host: 192.168.3.53
     source: shelly
   custom_power_05:
     field: power
     measurement: server
     name: server
+    shelly_host: 192.168.2.54
     source: shelly
   grid_export_limit:
     source: senec
@@ -132,6 +121,7 @@ sensors:
     field: power
     is_balcony: true
     measurement: Fence
+    shelly_host: 192.168.2.55
     source: shelly
   inverter_power_forecast:
     source: forecast

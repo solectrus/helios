@@ -39,20 +39,13 @@ mqtt:
   mqtt_username: my-mqtt-username
 shelly:
   connection: local
-  devices:
-  - host: shelly-heatpump.fritz.box
-    measurement: heatpump
-    name: device1
-  - host: shelly-fridge.fritz.box
-    measurement: fridge
-    name: device2
-  image: ghcr.io/solectrus/shelly-collector:latest
   interval: '5'
 sensors:
   custom_power_01:
     field: power
     measurement: fridge
     name: fridge
+    shelly_host: shelly-fridge.fritz.box
     source: shelly
   heatpump_heating_power:
     field: heating_power
@@ -64,6 +57,7 @@ sensors:
     exclude_from_house_power: true
     field: power
     measurement: heatpump
+    shelly_host: shelly-heatpump.fritz.box
     source: shelly
 helios:
   image: ghcr.io/solectrus/helios:develop

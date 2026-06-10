@@ -85,9 +85,10 @@ Anonymized but otherwise untouched.
   balcony PV string) alongside the SENEC main string at
   `INFLUX_SENSOR_INVERTER_POWER_1=SENEC:inverter_power`. The Shelly is
   also declared in `SHELLY_HOST_FENCE=192.168.2.55` /
-  `INFLUX_MEASUREMENT_SHELLY_FENCE=Fence`, so the same physical device
-  appears both in `shelly.devices` (as a regular metering target) and
-  as the source of `inverter_power_2`. The measurement-divergence
+  `INFLUX_MEASUREMENT_SHELLY_FENCE=Fence`. Because `inverter_power_2`
+  consumes it, the device folds onto that `source: shelly` sensor (with
+  `shelly_host: 192.168.2.55`) rather than into `shelly.devices`. The
+  measurement-divergence
   heuristic flips `is_balcony: true` on `inverter_power_2` because its
   `Fence` measurement differs from `inverter_power_1`'s `SENEC` — same
   auto-detection as user3's `TERRASSE:power_c`. Note the capitalized
@@ -99,15 +100,17 @@ Anonymized but otherwise untouched.
   `-server`, `-fence`, each pulling
   `image: ghcr.io/solectrus/shelly-collector:latest` and templating
   `SHELLY_HOST=${SHELLY_HOST_<NAME>}` /
-  `INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_SHELLY_<NAME>}`. HELIOS'
-  `ShellyExtractor` aggregates them into a single `shelly.devices`
-  list (six entries, alphabetized by name) and exports one canonical
-  `shelly-collector` reading CSV-valued `SHELLY_HOST` and
-  `INFLUX_MEASUREMENT` (six comma-separated values each). Same
-  collapse path as [user12](../user12/README.md) /
-  [user18](../user18/README.md) — neither the device count nor the
-  per-device name extraction is new — but this fixture is the first
-  to combine the multi-device topology with a name↔measurement
+  `INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_SHELLY_<NAME>}`. Five of the
+  six feed a `source: shelly` sensor and carry their `shelly_host` on
+  that sensor; only the GSA device — whose `gas` measurement no sensor
+  consumes (the typo above) — stays in `shelly.devices` as a standalone
+  entry. On export, `Configuration#shelly_collector_devices` rolls all
+  six back into one canonical `shelly-collector` reading CSV-valued
+  `SHELLY_HOST` and `INFLUX_MEASUREMENT` (six comma-separated values
+  each, sorted by measurement with the standalone `gas` appended last).
+  Same single-collector consolidation as
+  [user12](../user12/README.md) / [user18](../user18/README.md) — but
+  this fixture is the first to combine it with a name↔measurement
   mismatch on one of the devices (the GSA case above), confirming
   the collapse doesn't silently align names with measurements when
   the donor's pairing diverges.

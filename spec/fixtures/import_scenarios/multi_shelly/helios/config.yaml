@@ -64,16 +64,6 @@ shelly:
   auth_key: example-shelly-auth-key
   cloud_server: https://shelly-123-eu.shelly.cloud
   connection: cloud
-  devices:
-  - device_id: device-id-dishwasher
-    measurement: Dishwasher
-    name: dishwasher
-  - device_id: device-id-fridge
-    measurement: Fridge
-    name: fridge
-  - device_id: device-id-washer
-    measurement: Washer
-    name: washer
   interval: '20'
   mode: essential
 reverse_proxy:
@@ -114,16 +104,19 @@ sensors:
     field: power
     measurement: Fridge
     name: Fridge
+    shelly_device_id: device-id-fridge
     source: shelly
   custom_power_02:
     field: power
     measurement: Dishwasher
     name: Dishwasher
+    shelly_device_id: device-id-dishwasher
     source: shelly
   custom_power_03:
     field: power
     measurement: Washer
     name: Washer
+    shelly_device_id: device-id-washer
     source: shelly
   grid_export_limit:
     source: senec
