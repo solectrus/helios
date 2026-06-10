@@ -28,6 +28,47 @@ RSpec.describe Surveys::Influxdb::Survey do
       end
     end
 
+    context 'with a managed Traefik (app_domain configured)' do
+      before do
+        Configuration.current.update('reverse_proxy', { 'app_domain' => 'solar.example.com' })
+      end
+
+      it 'replaces the LAN copy with the Traefik routing copy' do
+        element = find_survey_element(result, 'publish_port')
+        expect(element['title']['de']).to include('Traefik')
+        expect(element['title']['default']).to include('Traefik')
+      end
+
+      it 'names the resulting public HTTPS URL' do
+        description = find_survey_element(result, 'publish_port')['description']
+        expect(description['de']).to include('https://solar.example.com:8086')
+        expect(description['default']).to include('https://solar.example.com:8086')
+      end
+
+      it 'uses the configured host port in the URL' do
+        Configuration.current.update('influxdb', { 'host_port' => '18086' })
+
+        description = find_survey_element(result, 'publish_port')['description']
+        expect(description['de']).to include('https://solar.example.com:18086')
+      end
+    end
+
+    # An imported custom Traefik (captured command) keeps the direct host
+    # port, so the default LAN copy stays accurate.
+    context 'with an imported custom Traefik' do
+      before do
+        Configuration.current.update('reverse_proxy', {
+                                       'app_domain' => 'solar.example.com',
+                                       'command' => ['--providers.docker=true'],
+                                     })
+      end
+
+      it 'keeps the default LAN copy' do
+        element = find_survey_element(result, 'publish_port')
+        expect(element['title']['de']).to include('lokalen Netzwerk')
+      end
+    end
+
     context 'when running in collectors_only mode (external InfluxDB)' do
       before { Configuration.current.update('deployment', { 'mode' => 'collectors_only' }) }
 
