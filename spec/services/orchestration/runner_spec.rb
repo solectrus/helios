@@ -105,6 +105,76 @@ RSpec.describe Orchestration::Runner do
     end
   end
 
+  describe 'container name conflict recovery' do
+    # A stale "<id>_<service>" leftover from an interrupted recreate blocks
+    # `compose up` (issue #203). The runner should remove it and retry once.
+    let(:stale_name) { '479446f60e32_solectrus-db-1' }
+    let(:conflict_output) do
+      'Error response from daemon: Conflict. The container name ' \
+        "\"/#{stale_name}\" is already in use by container \"abc123\""
+    end
+    let(:conflict_error) do
+      Orchestration::Runner::CommandError.new(
+        'docker compose up failed', stdout: conflict_output, exit_status: 1
+      )
+    end
+    let(:success) { Orchestration::CommandResult.new(output: 'done', exit_status: 0) }
+
+    def recover = described_class.send(:run_compose_with_conflict_recovery, 'up', '-d')
+
+    context 'when a stale container of this project blocks the command' do
+      before do
+        call = 0
+        allow(described_class).to receive(:run_compose) do
+          call += 1
+          raise conflict_error if call == 1
+
+          success
+        end
+        allow(Orchestration::DockerCli).to receive(:inspect_container).with(stale_name).and_return(
+          'Config' => { 'Labels' => { 'com.docker.compose.project' => 'solectrus' } },
+        )
+        allow(Orchestration::DockerCli).to receive(:force_remove_container).and_return([true, ''])
+      end
+
+      it 'force-removes the stale container and retries successfully' do
+        expect(recover).to eq(success)
+        expect(Orchestration::DockerCli).to have_received(:force_remove_container).with(stale_name)
+        expect(described_class).to have_received(:run_compose).twice
+      end
+    end
+
+    context 'when the conflicting container does not belong to this project' do
+      before do
+        allow(described_class).to receive(:run_compose).and_raise(conflict_error)
+        allow(Orchestration::DockerCli).to receive(:inspect_container).and_return(nil)
+        allow(Orchestration::DockerCli).to receive(:force_remove_container)
+      end
+
+      it 'leaves it untouched and re-raises the original error' do
+        expect { recover }.to raise_error(conflict_error)
+        expect(Orchestration::DockerCli).not_to have_received(:force_remove_container)
+        expect(described_class).to have_received(:run_compose).once
+      end
+    end
+
+    context 'when the failure is unrelated to a name conflict' do
+      before do
+        allow(described_class).to receive(:run_compose).and_raise(
+          Orchestration::Runner::CommandError.new(
+            'boom', stdout: 'pull access denied for some/image', exit_status: 1
+          ),
+        )
+        allow(Orchestration::DockerCli).to receive(:force_remove_container)
+      end
+
+      it 're-raises without removing any container' do
+        expect { recover }.to raise_error(Orchestration::Runner::CommandError, 'boom')
+        expect(Orchestration::DockerCli).not_to have_received(:force_remove_container)
+      end
+    end
+  end
+
   describe '.up' do
     before { skip_without_docker }
 

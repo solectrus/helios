@@ -47,5 +47,14 @@ module Orchestration
       output, status = Open3.capture2e('docker', 'pull', image)
       [status.success?, output]
     end
+
+    # Force-removes a single container by name or id (`docker rm -f`). Used to
+    # clear a stale container that blocks `compose up` with a name conflict.
+    # Data is unaffected: SOLECTRUS stores it in bind mounts, not the container.
+    # Returns [success, output].
+    def force_remove_container(name)
+      output, status = Open3.capture2e('docker', 'rm', '--force', name)
+      [status.success?, output]
+    end
   end
 end

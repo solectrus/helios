@@ -3,6 +3,8 @@ require 'tempfile'
 
 module Orchestration
   class Runner
+    extend Loggable
+
     class CommandError < StandardError
       attr_reader :stdout, :stderr, :exit_status
 
@@ -27,7 +29,7 @@ module Orchestration
         args = %w[up --no-build --remove-orphans]
         args << '-d' if detach
         args.concat(services_except_self)
-        result = run_compose(*args)
+        result = run_compose_with_conflict_recovery(*args)
         ImageCleanup.run
         result
       end
@@ -49,7 +51,7 @@ module Orchestration
         previous_image = Orchestration::Container.find(service)&.image
         pull(service:)
         run_compose('down', service.to_s)
-        result = run_compose('up', '--no-build', '-d', service.to_s)
+        result = run_compose_with_conflict_recovery('up', '--no-build', '-d', service.to_s)
         ImageCleanup.run(previous_image:)
         result
       end
@@ -57,7 +59,7 @@ module Orchestration
       def start(*services)
         args = %w[up --no-build -d]
         args.concat(services.flatten.compact)
-        run_compose(*args)
+        run_compose_with_conflict_recovery(*args)
       end
 
       def stop(service)
@@ -181,6 +183,46 @@ module Orchestration
       end
 
       private
+
+      # Runs a compose command and, if it fails because a container name is
+      # already in use, force-removes the offending stale container(s) and
+      # retries once. This recovers from a previously interrupted recreate
+      # that left Docker's `<id>_<name>` leftover behind (issue #203). Only
+      # containers belonging to this compose project are touched, and only
+      # their (data-less) container layer — SOLECTRUS data lives in bind
+      # mounts, so removing the container preserves it.
+      def run_compose_with_conflict_recovery(*args)
+        run_compose(*args)
+      rescue CommandError => e
+        names = removable_conflicting_containers(e.stdout)
+        raise e if names.empty?
+
+        names.each do |name|
+          logger.warn(
+            "Removing stale container #{name} blocking '#{args.first}', then retrying",
+          )
+          DockerCli.force_remove_container(name)
+        end
+        run_compose(*args)
+      end
+
+      # Container names from `… The container name "/<name>" is already in
+      # use …` errors, limited to containers that actually carry this
+      # compose project's label (guards against removing an unrelated
+      # container that happens to share the name).
+      def removable_conflicting_containers(output)
+        conflicting_container_names(output).select { |name| belongs_to_project?(name) }
+      end
+
+      def conflicting_container_names(output)
+        output.to_s.scan(%r{container name "/?([^"]+)" is already in use}i).flatten.uniq
+      end
+
+      def belongs_to_project?(name)
+        info = DockerCli.inspect_container(name)
+        labels = info&.dig('Config', 'Labels') || {}
+        labels[Orchestration::COMPOSE_PROJECT_LABEL] == Orchestration::PROJECT_NAME
+      end
 
       def run_compose(*args)
         validate_data_path!
