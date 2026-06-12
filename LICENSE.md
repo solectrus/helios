@@ -2,7 +2,7 @@
 
 Copyright (c) 2026 Georg Ledermann. All rights reserved.
 
-HELIOS is proprietary source-available software. It is not open source software.
+HELIOS is a tool for setting up and configuring SOLECTRUS. These terms apply to HELIOS only: HELIOS is proprietary source-available software and not open source software. SOLECTRUS itself remains unaffected and is free open source software under the AGPL‑3.0 (see the "Relation to SOLECTRUS" section).
 
 ## Source code
 
