@@ -38,65 +38,35 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
       expect(source_element['choices'].pluck('value')).to include('senec')
     end
 
-    it 'shows fixed-source hint for senec sensors' do
+    it 'hides mapping page when source is senec' do
       get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power' })
 
       survey = response.parsed_body
       mapping_page = survey['pages'].find { |p| p['name'] == 'p_mapping' }
-      fixed_hint = mapping_page['elements'].find { |e| e['name'] == 'mapping_hint_fixed' }
 
-      expect(mapping_page).not_to have_key('description')
-      expect(fixed_hint['visibleIf']).to eq("{source} = 'senec'")
-      expect(fixed_hint['html']['de']).to include('SENEC-Collector')
+      expect(mapping_page['visibleIf']).to eq("{source} != 'senec'")
     end
 
-    it 'shows editable hint for non-fixed sources' do
-      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power' })
+    it 'hides mapping page when source is forecast' do
+      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power_forecast' })
 
       survey = response.parsed_body
       mapping_page = survey['pages'].find { |p| p['name'] == 'p_mapping' }
-      editable_hint = mapping_page['elements'].find { |e| e['name'] == 'mapping_hint_editable' }
 
-      expect(editable_hint['visibleIf']).to eq("{source} != 'senec'")
-      expect(editable_hint['html']['de']).to include('Measurement und Field')
+      expect(mapping_page['visibleIf']).to eq("{source} != 'forecast'")
     end
 
-    it 'keeps static description for sensors without fixed sources' do
+    it 'always shows mapping page for sensors without fixed sources' do
       get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'heatpump_power' })
 
       survey = response.parsed_body
       mapping_page = survey['pages'].find { |p| p['name'] == 'p_mapping' }
 
+      expect(mapping_page).not_to have_key('visibleIf')
       expect(mapping_page['description']).to be_present
-      expect(mapping_page['elements'].none? { |e| e['name'] == 'mapping_hint_fixed' }).to be true
     end
 
-    it 'locks measurement and field for senec sensors' do
-      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power' })
-
-      survey = response.parsed_body
-      mapping_page = survey['pages'].find { |p| p['name'] == 'p_mapping' }
-      measurement_element = mapping_page['elements'].find { |e| e['name'] == 'measurement' }
-      field_element = mapping_page['elements'].find { |e| e['name'] == 'field' }
-
-      # Both measurement and field are locked for senec
-      expect(measurement_element['enableIf']).to eq("{source} != 'senec'")
-      expect(measurement_element['setValueIf']).to eq("{source} = 'senec'")
-      expect(field_element['enableIf']).to eq("{source} != 'senec'")
-      expect(field_element['setValueIf']).to eq("{source} = 'senec'")
-    end
-
-    it 'uses default SENEC measurement when no collector config exists' do
-      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power' })
-
-      survey = response.parsed_body
-      mapping_page = survey['pages'].find { |p| p['name'] == 'p_mapping' }
-      measurement_element = mapping_page['elements'].find { |e| e['name'] == 'measurement' }
-
-      expect(measurement_element['setValueExpression']).to include("'SENEC'")
-    end
-
-    it 'does not lock mapping for sensors without fixed-field sources' do
+    it 'injects default measurement expression for non-fixed sources' do
       get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'heatpump_power' })
 
       survey = response.parsed_body
@@ -104,32 +74,8 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
       measurement_element = mapping_page['elements'].find { |e| e['name'] == 'measurement' }
       field_element = mapping_page['elements'].find { |e| e['name'] == 'field' }
 
-      expect(measurement_element).not_to have_key('enableIf')
-      expect(field_element).not_to have_key('enableIf')
-    end
-
-    it 'locks measurement and field for forecast sensors' do
-      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power_forecast' })
-
-      survey = response.parsed_body
-      mapping_page = survey['pages'].find { |p| p['name'] == 'p_mapping' }
-      measurement_element = mapping_page['elements'].find { |e| e['name'] == 'measurement' }
-      field_element = mapping_page['elements'].find { |e| e['name'] == 'field' }
-
-      expect(measurement_element['enableIf']).to eq("{source} != 'forecast'")
-      expect(measurement_element['setValueExpression']).to include("'forecast'")
-      expect(field_element['enableIf']).to eq("{source} != 'forecast'")
-    end
-
-    it 'shows Forecast-Collector in hint for forecast sensors' do
-      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power_forecast' })
-
-      survey = response.parsed_body
-      mapping_page = survey['pages'].find { |p| p['name'] == 'p_mapping' }
-      fixed_hint = mapping_page['elements'].find { |e| e['name'] == 'mapping_hint_fixed' }
-
-      expect(fixed_hint['html']['de']).to include('Forecast-Collector')
-      expect(fixed_hint['html']['de']).not_to include('SENEC')
+      expect(measurement_element['defaultValueExpression']).to be_present
+      expect(field_element['defaultValueExpression']).to be_present
     end
 
     it 'injects balcony page before the mapping page for balcony-capable sensors' do

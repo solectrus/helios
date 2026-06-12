@@ -162,17 +162,11 @@
       cursor: pointer;
     }
 
-    /* HTML "questions" (mapping_injector hints) render as prose, not cards */
+    /* HTML "questions" (e.g. connection tests) render as prose, not cards */
     & .sd-question--html {
       border: none;
       background: transparent;
       padding: 0 0.25rem;
-    }
-    & .sd-mapping-hint {
-      margin: 0;
-      font-size: 0.9rem;
-      line-height: 1.55;
-      color: color-mix(in oklab, var(--color-base-content) 78%, transparent);
     }
 
     /* Navigation buttons */
