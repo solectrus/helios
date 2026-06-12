@@ -28,6 +28,12 @@ Regenerate with `bin/rake licenses:generate`.
 | `activerecord`         | MIT                |
 | `activestorage`        | MIT                |
 | `activesupport`        | MIT                |
+| `aws-eventstream`      | Apache-2.0         |
+| `aws-partitions`       | Apache-2.0         |
+| `aws-sdk-core`         | Apache-2.0         |
+| `aws-sdk-kms`          | Apache-2.0         |
+| `aws-sdk-s3`           | Apache-2.0         |
+| `aws-sigv4`            | Apache-2.0         |
 | `base64`               | Ruby, BSD-2-Clause |
 | `bigdecimal`           | Ruby, BSD-2-Clause |
 | `bootsnap`             | MIT                |
@@ -48,6 +54,7 @@ Regenerate with `bin/rake licenses:generate`.
 | `i18n`                 | MIT                |
 | `io-console`           | Ruby, BSD-2-Clause |
 | `irb`                  | Ruby, BSD-2-Clause |
+| `jmespath`             | Apache-2.0         |
 | `json`                 | Ruby               |
 | `logger`               | Ruby, BSD-2-Clause |
 | `loofah`               | MIT                |
@@ -55,7 +62,7 @@ Regenerate with `bin/rake licenses:generate`.
 | `marcel`               | MIT, Apache-2.0    |
 | `mini_mime`            | MIT                |
 | `minitest`             | MIT                |
-| `msgpack`              | Apache 2.0         |
+| `msgpack`              | Apache-2.0         |
 | `multi_json`           | MIT                |
 | `net-imap`             | Ruby, BSD-2-Clause |
 | `net-pop`              | Ruby, BSD-2-Clause |
