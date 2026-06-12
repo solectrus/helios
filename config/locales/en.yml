@@ -43,7 +43,6 @@ en:
   about:
     show:
       title: 'About'
-      hero_title_prefix: 'Configuration of'
       copyright_notice: 'All rights reserved.'
       version_label: 'Version'
       version_unknown: 'unknown'

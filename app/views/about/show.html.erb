@@ -3,15 +3,11 @@
 <div class="mx-auto max-w-6xl px-4 py-6 md:p-8">
   <section class="animate-about-rise relative mb-12 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_auto] lg:items-start">
     <div>
-      <p class="text-base-content/50 font-mono text-xs tracking-[0.25em] uppercase">HELIOS</p>
-
-      <h1 class="text-base-content mt-3 text-3xl font-semibold tracking-tight md:text-4xl">
-        <span class="block"><%= t('.hero_title_prefix') %></span>
-
-        <%= render 'shared/solectrus_logo' %>
+      <h1 class="text-base-content">
+        <%= render HeliosSolectrusLogo::Component.new(css_class: 'block w-full') %>
       </h1>
 
-      <p class="text-base-content/55">
+      <p class="text-base-content/55 mt-6">
         © 2026 Georg Ledermann · <%= t('.copyright_notice') %>
       </p>
     </div>

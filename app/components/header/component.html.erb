@@ -13,14 +13,7 @@
       </label>
 
       <h1 class="hidden shrink-0 sm:block">
-        <img
-          src="/logo.svg"
-          alt="HELIOS Logo"
-          class="h-8"
-          aria-hidden="true"
-        >
-
-        <span class="sr-only">HELIOS</span>
+        <%= render SolectrusLogo::Component.new(css_class: "block h-6 w-auto") %>
       </h1>
 
       <div class="hidden items-center gap-1 lg:flex">
@@ -119,12 +112,7 @@
     "
   >
     <div class="border-base-content/10 flex items-center justify-between border-b p-4">
-      <img
-        src="/logo.svg"
-        alt="HELIOS"
-        class="h-7"
-        aria-hidden="true"
-      >
+      <%= render SolectrusLogo::Component.new(css_class: "block h-5 w-auto") %>
 
       <label for="main-drawer-toggle" class="btn btn-ghost btn-sm btn-square" aria-label="<%= t('.close_menu') %>">
         <i class="fa-solid fa-xmark text-lg"></i>

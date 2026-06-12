@@ -53,13 +53,13 @@ module Header
     # right-side dropdown (HostStats, locale switcher, CSRF logout) stays
     # uncached.
     #
-    # NOTE: Rails' template digest only fingerprints this template, not the
-    # ConfigNav::Component rendered inside the drawer cache. With
-    # :memory_store this self-clears on every process restart, so a stale
-    # drawer can never outlive a deploy. If the cache store ever moves to a
-    # persistent backend (Redis, Memcached, file store), add a version
-    # element to the keys and bump it whenever ConfigNav's template or
-    # render-affecting logic changes.
+    # NOTE: Rails' template digest does not fingerprint ViewComponent
+    # templates (the Digestor can't resolve their virtual path), so neither
+    # this template nor the components rendered inside the cached blocks
+    # bust the fragments on change. That's acceptable: :memory_store
+    # self-clears on every process restart, so a stale fragment can never
+    # outlive a deploy. In development with caching enabled, restart the
+    # server (or switch locale) after editing the cached templates.
     def tabs_cache_key
       [:header_tabs, active_tab, I18n.locale, Configuration.current.collectors_only?]
     end

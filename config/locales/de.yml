@@ -19,7 +19,6 @@ de:
   about:
     show:
       title: 'Über'
-      hero_title_prefix: 'Konfiguration von'
       copyright_notice: 'Alle Rechte vorbehalten.'
       version_label: 'Version'
       version_unknown: 'unbekannt'
