@@ -35,6 +35,13 @@ module ServiceRow
       @pending_operation = Orchestration::PendingOperations.get(service_name)
     end
 
+    # Operations that bring a container up (start/recreate/upgrade) get a green
+    # spinner; stop gets the same muted gray as the "not started" indicator.
+    # Prevents the amber primary spinner from looking like a warning.
+    def start_pending?
+      Orchestration::PendingOperations::START_OPERATIONS.include?(pending_operation)
+    end
+
     def dom_id
       "service-#{service_name}"
     end
@@ -76,16 +83,16 @@ module ServiceRow
     end
 
     def status_indicator_class
-      return 'loading loading-spinner loading-xs text-primary' if pending
+      if pending
+        color = start_pending? ? 'text-success' : 'text-base-content/30'
+        return "loading loading-spinner loading-sm #{color}"
+      end
       if status_starting?
-        return 'loading loading-spinner loading-xs text-warning'
+        return 'loading loading-spinner loading-sm text-success'
       end
 
-      dot = 'inline-block size-4 rounded-full'
+      dot = 'inline-block size-5 rounded-full'
       return "#{dot} bg-error" if error?
-      if healthcheck_starting?
-        return 'loading loading-spinner loading-xs text-success'
-      end
 
       "#{dot} #{indicator_class}"
     end
@@ -112,6 +119,14 @@ module ServiceRow
 
     def healthcheck_starting?
       running? && health == 'starting'
+    end
+
+    # Container is up but its healthcheck has not passed yet: shown as a solid
+    # green circle with a dark animated ball inside, bridging the gap between the
+    # start spinner and the green check mark. Pending/error states take
+    # precedence (spinner/red dot).
+    def healthcheck_waiting?
+      healthcheck_starting? && !pending && !error?
     end
 
     def healthcheck_passing?
