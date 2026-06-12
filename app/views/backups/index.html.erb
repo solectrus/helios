@@ -110,25 +110,26 @@
                   value: @backup_schedule_time ? t('.schedule_value_on', time: @backup_schedule_time) : t('.schedule_off'),
                 ) %>
             </section>
-            <section
-              class="
-                bg-base-100 border-base-content/10 relative overflow-hidden border-y shadow-sm md:rounded-2xl
-                md:border
-              "
-            >
-              <div
-                class="
-                  from-primary/15 pointer-events-none absolute -top-32 -right-32 h-72 w-72 rounded-full
-                  bg-linear-to-br to-transparent blur-3xl
-                "
-                aria-hidden="true"
-              ></div>
+            <section class="bg-base-100 border-base-content/10 relative border-y shadow-sm md:rounded-2xl md:border">
+              <%# Clip only the decorative blob, not the section — tooltips must overflow the card. %>
+              <div class="pointer-events-none absolute inset-0 overflow-hidden md:rounded-2xl" aria-hidden="true">
+                <div
+                  class="
+                    from-primary/15 absolute -top-32 -right-32 h-72 w-72 rounded-full bg-linear-to-br to-transparent
+                    blur-3xl
+                  "
+                ></div>
+              </div>
 
               <div class="relative grid gap-8 p-6 md:grid-cols-[1fr_auto] md:items-center md:gap-10 md:p-10">
                 <header class="space-y-3">
-                  <h2 class="text-2xl font-semibold tracking-tight md:text-3xl">
-                    <%= t('.create_title') %>
-                  </h2>
+                  <div class="flex items-center gap-2.5">
+                    <h2 class="text-2xl font-semibold tracking-tight md:text-3xl">
+                      <%= t('.create_title') %>
+                    </h2>
+
+                    <%= render InfoTooltip::Component.new(text: t('.duration_hint')) %>
+                  </div>
 
                   <p class="text-base-content/70 max-w-prose text-base leading-relaxed"><%= t('.note') %></p>
                 </header>
@@ -162,18 +163,18 @@
                 <% end %>
               </div>
 
-              <div class="border-base-content/10 relative border-t px-6 py-4 md:px-10 md:py-5">
-                <% if @csv_import_running %>
+              <% if @csv_import_running || @backup_unavailable_reason %>
+                <div class="border-base-content/10 relative border-t px-6 py-4 md:px-10 md:py-5">
                   <p class="text-warning text-sm">
-                    <%= t('.unavailable_csv_import_html',
-                        link: link_to(t('.csv_import_link_text'), csv_imports_path, class: 'underline')) %>
+                    <% if @csv_import_running %>
+                      <%= t('.unavailable_csv_import_html',
+                          link: link_to(t('.csv_import_link_text'), csv_imports_path, class: 'underline')) %>
+                    <% else %>
+                      <%= t('.unavailable', message: @backup_unavailable_reason) %>
+                    <% end %>
                   </p>
-                <% elsif @backup_unavailable_reason %>
-                  <p class="text-warning text-sm"><%= t('.unavailable', message: @backup_unavailable_reason) %></p>
-                <% else %>
-                  <p class="text-base-content/60 text-sm leading-relaxed"><%= t('.duration_hint') %></p>
-                <% end %>
-              </div>
+                </div>
+              <% end %>
             </section>
           <% else %>
             <%= render EmptyState::Component.new(
@@ -185,7 +186,13 @@
 
           <section class="bg-base-100 border-base-content/10 space-y-4 border-y p-6 shadow-sm md:rounded-2xl md:border md:p-8">
             <div class="flex flex-wrap items-center justify-between gap-3">
-              <h2 class="text-2xl font-semibold tracking-tight"><%= t(".existing_titles.#{@backup_destination}") %></h2>
+              <div class="flex items-center gap-2.5">
+                <h2 class="text-2xl font-semibold tracking-tight">
+                  <%= t(".existing_titles.#{@backup_destination}") %>
+                </h2>
+
+                <%= render InfoTooltip::Component.new(text: t('.retention_hint', limit: BackupRepository::MAX_BACKUPS)) %>
+              </div>
 
               <% upload_disabled = @backup_in_progress || @restore_in_progress || @backup_destination_remote %>
 
