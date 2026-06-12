@@ -1,7 +1,7 @@
 de:
   sensors: 'Sensoren'
   datasources: 'Datenquellen'
-  advanced: 'Erweitert'
+  advanced: 'Grundeinstellungen'
   files_label: 'Generiert für Docker'
   traefik_files_label: 'Generiert für Traefik'
   reset_label: 'Alte Konfiguration'

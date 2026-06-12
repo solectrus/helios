@@ -184,7 +184,7 @@ de:
 
   advanced:
     show:
-      title: 'Erweitert'
+      title: 'Grundeinstellungen'
       groups:
         installation: 'Installation'
         access: 'Zugriff & Sicherheit'

@@ -208,7 +208,7 @@ en:
 
   advanced:
     show:
-      title: 'Advanced'
+      title: 'Basic Settings'
       groups:
         installation: 'Installation'
         access: 'Access & Security'
