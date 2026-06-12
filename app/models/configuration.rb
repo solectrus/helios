@@ -273,6 +273,40 @@ class Configuration # rubocop:disable Metrics/ClassLength
     (@data['sensors'] || {}).select { |_name, config| config['source'] == source.to_s }
   end
 
+  # SENEC native fields to exclude from InfluxDB (SENEC_IGNORE), derived from
+  # the sensor configuration. A field is ignored only on a genuine collision:
+  # the sensor is fed by another source (Shelly, MQTT, external, ...) AND that
+  # source writes into the *same* measurement:field the SENEC collector would
+  # use. This is the "switched vendor, kept the measurement" case — e.g. a new
+  # wallbox feeding SENEC:wallbox_charge_power so history and live data line up;
+  # the SENEC collector must then stop writing that field. A foreign source
+  # writing into a different measurement does not overlap, so nothing is
+  # ignored. Disabled sensors are left untouched — only an active source counts.
+  def senec_ignore_fields
+    senec_measurement = senec.measurement.presence || SensorMappings::DEFAULT_MEASUREMENTS['senec']
+
+    SensorMappings::SENEC_DEFAULTS.filter_map do |sensor_name, (_measurement, senec_field)|
+      senec_field if foreign_sensor_collides?(sensor_name, senec_measurement, senec_field)
+    end
+  end
+
+  # True when sensor_name is fed by a non-SENEC source that writes into the
+  # exact measurement:field the SENEC collector would use itself.
+  def foreign_sensor_collides?(sensor_name, senec_measurement, senec_field)
+    config = sensor_config(sensor_name)
+    source = config.source.to_s
+    return false if source.blank? || source == 'senec'
+
+    measurement = config.measurement.presence || SensorMappings.default_measurement(sensor_name, source)
+    field = config.field.presence || SensorMappings.default_field(sensor_name, source)
+    measurement == senec_measurement && field == senec_field
+  end
+
+  # Comma-separated form for the SENEC_IGNORE env var.
+  def senec_ignore
+    senec_ignore_fields.join(',')
+  end
+
   # Sources currently in use by at least one sensor — plus `mqtt` whenever
   # standalone mappings exist and `shelly` whenever standalone devices exist,
   # so the broker / Shelly section stays editable in the UI even when no

@@ -90,16 +90,17 @@ the value is simply re-spelled, or the var was already dead at runtime.
   If the donor intended these topics to flow, the fix is to add both
   sensors as MQTT-sourced via the HELIOS UI; export will then re-emit
   `MAPPING_1_*` / `MAPPING_2_*` and wire them through compose.
-- **`SENEC_IGNORE=wallbox_charge_power` dropped — already dead in donor
-  compose.** Same shape: donor defines it in `.env` but
-  `senec-collector.environment:` doesn't reference `SENEC_IGNORE`, so
-  the senec-collector never received it and was writing
-  `wallbox_charge_power` to InfluxDB anyway. Import drops it (absent
-  from the senec-collector's resolved env), re-export omits it — the
-  collector keeps writing the field, exactly as before. If the user
-  actually wants the field filtered, they need to set `senec.ignore`
-  via the HELIOS UI; export will then both emit `SENEC_IGNORE` in
-  `.env` and add the reference to compose.
+- **`SENEC_IGNORE` not imported — auto-derived, and empty here.** HELIOS
+  no longer stores the donor's `SENEC_IGNORE`; it recomputes the list on
+  export, ignoring a SENEC field only when a foreign-sourced sensor
+  reuses SENEC's *own* `measurement:field`. Here `system_status`,
+  `wallbox_power`, and `wallbox_car_connected` come from external, but
+  they write into measurement `pv` (not `SENEC`), so there is no
+  overlap and nothing is ignored — the senec-collector keeps writing
+  `current_state` / `wallbox_charge_power` / `ev_connected` into `SENEC`,
+  harmlessly, since the dashboard reads those sensors from `pv`. The
+  donor's dead `.env` `SENEC_IGNORE=wallbox_charge_power` (never
+  referenced in compose) is simply gone.
 - **`INFLUX_HOST=influxdb` / `INFLUX_PORT=8086` / `INFLUX_SCHEMA=http` /
   `INFLUX_USERNAME=admin`** dropped — HELIOS bakes these into compose
   service-network addressing and hardcodes the InfluxDB admin

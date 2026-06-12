@@ -649,6 +649,73 @@ RSpec.describe Configuration do
       end
     end
 
+    describe '#senec_ignore' do
+      it 'is empty when every SENEC-default sensor stays on senec' do
+        config = described_class.current
+        config.update_sensor('wallbox_power', { 'source' => 'senec' })
+        config.update_sensor('inverter_power', { 'source' => 'senec' })
+
+        expect(config.senec_ignore_fields).to eq([])
+        expect(config.senec_ignore).to eq('')
+      end
+
+      it 'ignores the SENEC field when a foreign source reuses SENEC measurement:field' do
+        config = described_class.current
+        # Switched-vendor case: new wallbox keeps writing into SENEC:wallbox_charge_power
+        config.update_sensor('wallbox_power',
+                             { 'source' => 'external', 'measurement' => 'SENEC', 'field' => 'wallbox_charge_power' })
+
+        expect(config.senec_ignore_fields).to eq(['wallbox_charge_power'])
+        expect(config.senec_ignore).to eq('wallbox_charge_power')
+      end
+
+      it 'does not ignore when the foreign source writes a different measurement' do
+        config = described_class.current
+        config.update_sensor('wallbox_power',
+                             { 'source' => 'mqtt', 'measurement' => 'pv', 'field' => 'wallbox_power',
+                               'mqtt_topic' => 'wb/p' })
+
+        expect(config.senec_ignore_fields).to eq([])
+      end
+
+      it 'does not ignore when a foreign source uses its generic default measurement' do
+        config = described_class.current
+        # No explicit measurement/field → external default is wallbox:power, no overlap
+        config.update_sensor('wallbox_power', { 'source' => 'external' })
+
+        expect(config.senec_ignore_fields).to eq([])
+      end
+
+      it 'derives colliding fields in SENEC_DEFAULTS order' do
+        config = described_class.current
+        config.update_sensor('battery_soc',
+                             { 'source' => 'mqtt', 'measurement' => 'SENEC', 'field' => 'bat_fuel_charge',
+                               'mqtt_topic' => 'bat/soc' })
+        config.update_sensor('inverter_power_1',
+                             { 'source' => 'mqtt', 'measurement' => 'SENEC', 'field' => 'mpp1_power',
+                               'mqtt_topic' => 'mpp1' })
+
+        # SENEC_DEFAULTS order: inverter_power_1 (mpp1_power) before battery_soc (bat_fuel_charge)
+        expect(config.senec_ignore).to eq('mpp1_power,bat_fuel_charge')
+      end
+
+      it 'honors a renamed SENEC measurement' do
+        config = described_class.current
+        config.update('senec', { 'measurement' => 'MySenec' })
+        config.update_sensor('wallbox_power',
+                             { 'source' => 'external', 'measurement' => 'MySenec', 'field' => 'wallbox_charge_power' })
+
+        expect(config.senec_ignore_fields).to eq(['wallbox_charge_power'])
+      end
+
+      it 'ignores disabled sensors — only an active source counts' do
+        config = described_class.current
+        config.update_sensor('wallbox_power', { 'source' => 'senec' })
+
+        expect(config.senec_ignore_fields).to eq([])
+      end
+    end
+
     describe '#auto_enable_senec_sensors!' do
       it 'activates every SENEC-capable sensor that is not yet configured' do
         config = described_class.current

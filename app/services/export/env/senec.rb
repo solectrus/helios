@@ -13,14 +13,19 @@ module Export
           local_entries(senec)
         end
         entry('SENEC_INTERVAL', senec.interval || '5', 'Polling interval in seconds')
-        if senec.ignore.present?
-          entry('SENEC_IGNORE', senec.ignore,
-                'Comma-separated fields to exclude from InfluxDB')
-        end
+        ignore_entry
         entry('INFLUX_MEASUREMENT_SENEC', 'SENEC', 'InfluxDB measurement name for SENEC')
       end
 
       private
+
+      def ignore_entry
+        ignore = configuration.senec_ignore
+        return if ignore.blank?
+
+        entry('SENEC_IGNORE', ignore,
+              'Fields excluded from InfluxDB because another source feeds them (auto-derived)')
+      end
 
       def cloud_entries(senec)
         entry('SENEC_USERNAME', senec.username, 'SENEC cloud username')

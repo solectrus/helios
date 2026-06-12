@@ -57,13 +57,15 @@ untouched.
   fields round-trip as strings; `config.yaml.forecast.forecast_pvnode_paid: 'true'`
   preserves the lowercase casing verbatim (forecast-collector accepts
   either form). First pvnode-paid fixture in the real_world set.
-- **`SENEC_IGNORE=wallbox_charge_power` active.** Donor reads the
-  wallbox via openWB MQTT, so SENEC's own `wallbox_charge_power` field
-  would be a redundant (and lossier) source. Donor's `.env` sets the
-  ignore list to suppress it; re-export keeps the value. Differs from
-  user14's `SENEC_IGNORE=case_temp` and from user13's commented-out
-  block — confirms the ignore-list survives with a non-default field
-  name.
+- **`SENEC_IGNORE` not imported — auto-derived, and empty here.** Donor
+  reads the wallbox via openWB MQTT and hand-set
+  `SENEC_IGNORE=wallbox_charge_power`. HELIOS no longer stores that
+  value; it recomputes the list on export and ignores a SENEC field
+  only on a genuine collision — a foreign sensor reusing SENEC's own
+  `measurement:field`. This wallbox writes into measurement `pv` (not
+  `SENEC`), so there is no overlap: SENEC's `wallbox_charge_power` and
+  the MQTT `pv:wallbox_power` coexist in different measurements, and
+  nothing is ignored.
 - **`INFLUX_SENSOR_INVERTER_POWER_FORECAST=forecast:watt` lowercase
   measurement.** Donor uses lowercase `forecast` for the measurement
   name (matches `INFLUX_MEASUREMENT_FORECAST=forecast`). Round-trip

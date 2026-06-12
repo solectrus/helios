@@ -63,7 +63,7 @@ module Export
       end
 
       def optional_vars
-        senec_config.ignore.present? ? %w[SENEC_IGNORE] : []
+        configuration.senec_ignore.present? ? %w[SENEC_IGNORE] : []
       end
     end
   end

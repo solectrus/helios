@@ -19,7 +19,6 @@ module Import
           'adapter' => senec_env['SENEC_ADAPTER'] || 'local',
           'version' => infer_version(senec_env),
           'interval' => senec_env['SENEC_INTERVAL'],
-          'ignore' => senec_env['SENEC_IGNORE'],
         }.merge(adapter_section_data(senec_env))
 
         data.compact.presence
@@ -60,7 +59,6 @@ module Import
             senec_env['SENEC_ADAPTER'] == 'cloud' ? senec_cloud_settings(senec_env) : senec_local_settings(senec_env),
           )
           .merge('senec_interval' => senec_env['SENEC_INTERVAL'])
-          .merge('senec_ignore' => senec_env['SENEC_IGNORE'])
           .compact
 
         { type: 'inverter', name: 'SENEC', data: }

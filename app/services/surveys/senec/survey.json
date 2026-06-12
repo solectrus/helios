@@ -295,18 +295,6 @@
           },
           "defaultValue": "SENEC",
           "isRequired": true
-        },
-        {
-          "type": "text",
-          "name": "ignore",
-          "title": {
-            "de": "Felder ignorieren (optional)",
-            "default": "Ignore fields (optional)"
-          },
-          "description": {
-            "de": "Kommaseparierte Liste von Messfeldern, die nicht an InfluxDB gesendet werden sollen",
-            "default": "Comma-separated list of measurement fields to exclude from InfluxDB"
-          }
         }
       ]
     }

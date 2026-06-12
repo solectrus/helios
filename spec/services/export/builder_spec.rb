@@ -931,9 +931,13 @@ RSpec.describe Export::Builder do
                              'password' => 'secret',
                              'totp_uri' => 'otpauth://totp/SENEC',
                              'system_id' => '12345',
-                             'ignore' => 'wallbox',
                            })
       configuration.update_sensor('inverter_power', { 'source' => 'senec' })
+      # wallbox switched to another vendor but keeps writing into SENEC's own
+      # measurement:field, so the SENEC collector must stop writing it
+      configuration.update_sensor('wallbox_power',
+                                  { 'source' => 'external', 'measurement' => 'SENEC',
+                                    'field' => 'wallbox_charge_power' })
       described_class.new(Configuration.current).write!
     end
 
@@ -950,7 +954,7 @@ RSpec.describe Export::Builder do
       env = Env.load
       expect(env['SENEC_TOTP_URI']).to eq('otpauth://totp/SENEC')
       expect(env['SENEC_SYSTEM_ID']).to eq('12345')
-      expect(env['SENEC_IGNORE']).to eq('wallbox')
+      expect(env['SENEC_IGNORE']).to eq('wallbox_charge_power')
     end
 
     it 'includes cloud vars in senec-collector environment' do

@@ -53,7 +53,6 @@ forecast:
 senec:
   adapter: local
   host: 192.168.2.45
-  ignore: wallbox_charge_power
   interval: '5'
   language: de
   schema: https

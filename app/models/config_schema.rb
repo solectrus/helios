@@ -189,7 +189,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
 
   SENEC_FIELDS = %w[
     host schema interval language
-    username password totp_uri system_id ignore request_mode
+    username password totp_uri system_id request_mode
     adapter version measurement
     image
   ].freeze
