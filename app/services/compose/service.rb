@@ -1,7 +1,7 @@
 module Compose
   class Service
     DISPLAY_NAMES = {
-      'dashboard' => 'SOLECTRUS',
+      'dashboard' => 'Dashboard',
       'forecast-collector' => 'Forecast-Collector',
       'helios' => 'HELIOS',
       'influxdb' => 'InfluxDB',

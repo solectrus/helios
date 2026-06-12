@@ -36,13 +36,13 @@ RSpec.describe Compose::Service do
   end
 
   describe '#display_name' do
-    it 'returns SOLECTRUS for dashboard service' do
+    it 'returns Dashboard for dashboard service' do
       service =
         described_class.new(
           'dashboard',
           { 'image' => 'ghcr.io/solectrus/solectrus:develop' },
         )
-      expect(service.display_name).to eq('SOLECTRUS')
+      expect(service.display_name).to eq('Dashboard')
     end
 
     it 'returns PostgreSQL for postgresql service' do
