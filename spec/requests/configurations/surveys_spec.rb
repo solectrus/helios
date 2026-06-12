@@ -38,6 +38,31 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
       expect(source_element['choices'].pluck('value')).to include('senec')
     end
 
+    it 'adds inline explanations to dynamic sensor source choices' do
+      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power_2' })
+
+      survey = response.parsed_body
+      source_element = survey['pages'].first['elements'].find { |e| e['name'] == 'source' }
+      choices = source_element['choices'].index_by { |choice| choice['value'] }
+
+      expect(choices['senec']['text']).to include(
+        'default' => include("SENEC Collector\n\nRuns as its own service"),
+        'de' => include("SENEC-Collector\n\nLäuft als eigener Dienst"),
+      )
+      expect(choices['shelly']['text']).to include(
+        'default' => include("Shelly Collector\n\nRuns as its own service"),
+        'de' => include("Shelly-Collector\n\nLäuft als eigener Dienst"),
+      )
+      expect(choices['mqtt']['text']).to include(
+        'default' => include("MQTT Collector\n\nRuns as its own service"),
+        'de' => include("MQTT-Collector\n\nLäuft als eigener Dienst"),
+      )
+      expect(choices['external']['text']).to include(
+        'default' => include("External\n\nAnother software"),
+        'de' => include("Extern\n\nEine andere Software"),
+      )
+    end
+
     it 'hides mapping page when source is senec' do
       get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power' })
 

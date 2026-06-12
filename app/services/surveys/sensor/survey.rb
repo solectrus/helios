@@ -1,17 +1,36 @@
 module Surveys
   module Sensor
+    # Source choice texts, each a localized "label\n\ndescription" string. The
+    # survey frontend renders the part after the blank line as a muted hint.
+    SOURCE_TEXTS = {
+      'senec' => Base.localized(
+        en: "SENEC Collector\n\nRuns as its own service and reads the measurement directly from the SENEC system.",
+        de: "SENEC-Collector\n\nLäuft als eigener Dienst und liest den Messwert direkt aus dem SENEC-System.",
+      ),
+      'shelly' => Base.localized(
+        en: "Shelly Collector\n\nRuns as its own service and reads the measurement directly from the Shelly meter.",
+        de: "Shelly-Collector\n\nLäuft als eigener Dienst und liest den Messwert direkt vom Shelly-Stromzähler.",
+      ),
+      'mqtt' => Base.localized(
+        en: "MQTT Collector\n\nRuns as its own service and subscribes to a topic on an MQTT broker.",
+        de: "MQTT-Collector\n\nLäuft als eigener Dienst und abonniert ein Topic von einem MQTT-Broker.",
+      ),
+      'forecast' => Base.localized(
+        en: "Forecast Collector\n\nRuns as its own service and queries PVNode, forecast.solar, or Solcast directly.",
+        de: "Forecast-Collector\n\nLäuft als eigener Dienst und fragt pvnode, forecast.solar oder Solcast direkt ab.",
+      ),
+      'external' => Base.localized(
+        en: "External\n\nAnother software, such as Home Assistant or ioBroker, " \
+            'writes the measurement into InfluxDB externally.',
+        de: "Extern\n\nEine andere Software (z.B. Home Assistant oder ioBroker) " \
+            'schreibt den Messwert von außen in die InfluxDB.',
+      ),
+    }.freeze
+
     # Tailors the generic sensor survey to a specific sensor: filters the
     # source choices, locks measurement/field for fixed-source collectors,
     # and injects optional pages based on what the sensor supports.
     class Survey < Base
-      SOURCE_LABELS = {
-        'senec' => localized(en: 'SENEC Collector', de: 'SENEC-Collector'),
-        'shelly' => localized(en: 'Shelly Collector', de: 'Shelly-Collector'),
-        'mqtt' => localized(en: 'MQTT Collector', de: 'MQTT-Collector'),
-        'forecast' => localized(en: 'Forecast Collector', de: 'Forecast-Collector'),
-        'external' => localized(en: 'External', de: 'Extern'),
-      }.freeze
-
       private
 
       def valid?
@@ -94,7 +113,11 @@ module Surveys
       end
 
       def source_choice(source)
-        { 'value' => source, 'text' => SOURCE_LABELS[source] || source }
+        { 'value' => source, 'text' => source_text(source) }
+      end
+
+      def source_text(source)
+        SOURCE_TEXTS[source] || source
       end
 
       def inject_label_page!(data)
