@@ -118,6 +118,22 @@ describe('RelativeTimeController', () => {
     expect(el.textContent).toMatch(/1 hour ago/);
   });
 
+  it('updates every second while showing seconds', async () => {
+    vi.setSystemTime(new Date('2026-04-21T12:00:00Z'));
+    start(
+      `<span data-controller="relative-time"
+             data-relative-time-datetime-value="2026-04-21T11:59:30Z"
+             data-relative-time-target-value="text"></span>`,
+    );
+    await tick();
+
+    const el = document.querySelector<HTMLElement>('[data-controller]')!;
+    expect(el.textContent).toMatch(/30 seconds ago/);
+
+    vi.advanceTimersByTime(1_000);
+    expect(el.textContent).toMatch(/31 seconds ago/);
+  });
+
   it('does nothing when datetime value is empty', async () => {
     start(
       `<span data-controller="relative-time"
@@ -129,7 +145,7 @@ describe('RelativeTimeController', () => {
     expect(el.textContent).toBe('initial');
   });
 
-  it('clears the interval on disconnect', async () => {
+  it('clears the timer on disconnect', async () => {
     vi.setSystemTime(new Date('2026-04-21T12:00:00Z'));
     start(
       `<span data-controller="relative-time"
