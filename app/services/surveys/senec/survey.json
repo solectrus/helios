@@ -12,8 +12,8 @@
     {
       "name": "p_version",
       "title": {
-        "de": "SENEC-Typ",
-        "default": "SENEC type"
+        "de": "SENEC-Modellreihe",
+        "default": "SENEC model series"
       },
       "description": {
         "de": "Die Modellreihe bestimmt, welche Zugriffsarten und Optionen anschließend zur Verfügung stehen.",
@@ -55,16 +55,16 @@
         "default": "Access type"
       },
       "description": {
-        "de": "Lokaler Zugriff liest direkt im Heimnetz, Cloud-Zugriff läuft über mein-senec.de.",
-        "default": "Local access reads directly on your home network, cloud access goes via mein-senec.de."
+        "de": "Entscheide, ob der Speicher direkt oder über die Cloud abgefragt wird.",
+        "default": "Choose whether to query the battery directly or via the cloud."
       },
       "elements": [
         {
           "type": "radiogroup",
           "name": "adapter",
           "title": {
-            "de": "Wie möchtest du auf dein SENEC-System zugreifen?",
-            "default": "How would you like to access your SENEC system?"
+            "de": "Auf welche Weise soll der Collector Messwerte abfragen?",
+            "default": "How should the collector query measurements?"
           },
           "isRequired": true,
           "defaultValue": "local",
@@ -74,15 +74,15 @@
             {
               "value": "local",
               "text": {
-                "de": "Lokaler Zugriff (im Heimnetz)",
-                "default": "Local access (home network)"
+                "de": "Lokaler Zugriff\n\nDirekte Abfrage im Heimnetz, alle 5s möglich",
+                "default": "Local access\n\nDirect polling, every 5s possible"
               }
             },
             {
               "value": "cloud",
               "text": {
-                "de": "Cloud-Zugriff (mein-senec.de)",
-                "default": "Cloud access (mein-senec.de)"
+                "de": "Cloud\n\nFunktioniert auch von außerhalb, aber nur alle 5m",
+                "default": "Cloud\n\nWorks from outside, but only every 5m"
               }
             }
           ]
@@ -276,7 +276,11 @@
           "defaultValue": 5,
           "isRequired": true,
           "inputType": "number",
-          "min": 5
+          "min": 5,
+          "minErrorText": {
+            "de": "Eine Abfrage häufiger als alle 5 Sekunden ist nicht empfehlenswert.",
+            "default": "Polling more often than every 5 seconds is not recommended."
+          }
         },
         {
           "type": "text",
