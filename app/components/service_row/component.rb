@@ -162,8 +162,11 @@ module ServiceRow
       end
     end
 
+    # Stays disabled until the container is actually reachable: a still-running
+    # healthcheck ('starting') means the service is up but not ready, so opening
+    # it would likely hit a connection error or half-booted UI.
     def open_button_enabled?
-      !pending && running? && health != 'unhealthy'
+      !pending && running? && (health.nil? || health == 'healthy')
     end
 
     def legacy_image?
