@@ -7,6 +7,7 @@ en:
     up: 'Starting...'
     down: 'Stopping...'
     upgrade: 'Updating PostgreSQL...'
+    remove: 'Removing...'
   not_created: 'Not created'
   unknown: 'Unknown'
   waiting_for_healthcheck: 'Waiting for healthcheck...'
@@ -39,3 +40,8 @@ en:
     title: 'Upgrade PostgreSQL to version %{major}?'
     body: 'Unlike an ordinary update, this converts the entire database to the format of the new version.<br><br>Create a data backup beforehand in case something goes wrong!'
     button: 'Yes, upgrade PostgreSQL'
+  remove: 'Remove'
+  remove_confirm:
+    title: 'Remove %{service}?'
+    body: 'This service was preserved from an existing installation and is not managed by HELIOS.<br><br>Removing it is permanent: it is deleted from the configuration and cannot be added back through the interface.'
+    button: 'Yes, remove permanently'

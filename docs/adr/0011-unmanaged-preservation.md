@@ -31,6 +31,6 @@ This pairs with ADR-0008 (file handling rules) — together they guarantee round
 
 **Negative:**
 
-- Adding a new managed service/env var requires updating the lists, otherwise content that *was* unmanaged suddenly becomes managed (and may conflict with manual edits)
+- Adding a new managed service/env var requires updating the lists, otherwise content that _was_ unmanaged suddenly becomes managed (and may conflict with manual edits)
 - Unmanaged content is not validated by HELIOS — a broken custom service stays broken
-- `_unmanaged` content is opaque to the UI; editing it requires shell access to `config.yaml` (an "Unmanaged editor" is listed in [docs/todos.md](../todos.md))
+- `_unmanaged` content is mostly opaque to the UI: unmanaged services can be permanently removed from the Services screen (`ServicesController#destroy` → `ServiceRemovalJob`), but editing or re-adding them still requires shell access to `config.yaml` (an "Unmanaged editor" is listed in [docs/todos.md](../todos.md))

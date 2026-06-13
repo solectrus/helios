@@ -7,6 +7,7 @@ de:
     up: 'Wird gestartet…'
     down: 'Wird gestoppt…'
     upgrade: 'PostgreSQL wird aktualisiert…'
+    remove: 'Wird entfernt…'
   not_created: 'Nicht erstellt'
   unknown: 'Unbekannt'
   waiting_for_healthcheck: 'Wird geprüft…'
@@ -39,3 +40,8 @@ de:
     title: 'PostgreSQL auf Version %{major} aktualisieren?'
     body: 'Anders als bei einem gewöhnlichen Update wird dabei die gesamte Datenbank in das Format der neuen Version konvertiert.<br><br>Erstelle vorher eine Datensicherung!'
     button: 'Ja, PostgreSQL aktualisieren'
+  remove: 'Entfernen'
+  remove_confirm:
+    title: '%{service} entfernen?'
+    body: 'Dieser Dienst wurde aus einer bestehenden Installation übernommen und wird nicht von HELIOS verwaltet.<br><br>Das Entfernen ist endgültig: Der Dienst wird aus der Konfiguration gelöscht und kann über die Oberfläche nicht wieder hinzugefügt werden.'
+    button: 'Ja, dauerhaft entfernen'

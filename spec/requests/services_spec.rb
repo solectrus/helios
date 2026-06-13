@@ -122,15 +122,38 @@ RSpec.describe 'Services', :with_admin_password do
       )
     end
 
+    context 'with an unmanaged service' do
+      before do
+        with_config_yaml(
+          'system' => { 'timezone' => 'Europe/Berlin' },
+          '_unmanaged' => { 'services' => { 'dozzle' => { 'image' => 'amir20/dozzle:latest' } } },
+        )
+        stub_compose('dozzle' => { 'image' => 'amir20/dozzle:latest' })
+        allow(Orchestration::Container).to receive(:find).with('dozzle').and_return(nil)
+        allow(ServiceRemovalJob).to receive(:perform_later)
+      end
+
+      it 'enqueues a removal job and renders a pending row' do
+        delete service_path('dozzle'), as: :turbo_stream
+
+        expect(ServiceRemovalJob).to have_received(:perform_later).with('dozzle')
+        expect(Orchestration::PendingOperations.get('dozzle')).to eq(:remove)
+        expect(response).to have_http_status(:ok)
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+      end
+    end
+
     context 'with a managed service' do
       before do
         stub_compose('postgresql' => { 'image' => 'postgres:18-alpine' })
+        allow(ServiceRemovalJob).to receive(:perform_later)
         allow(OrphanedStopJob).to receive(:perform_later)
       end
 
       it 'is forbidden' do
         delete service_path('postgresql'), as: :turbo_stream
 
+        expect(ServiceRemovalJob).not_to have_received(:perform_later)
         expect(OrphanedStopJob).not_to have_received(:perform_later)
         expect(response).to have_http_status(:forbidden)
       end

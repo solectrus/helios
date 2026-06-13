@@ -750,10 +750,40 @@ class Configuration # rubocop:disable Metrics/ClassLength
     Data.wrap(@data[UNMANAGED_KEY] || {})
   end
 
-  # Store unmanaged services and env vars
+  # Store unmanaged services and env vars. Drop the key entirely when empty so
+  # removing the last unmanaged service leaves no dangling `_unmanaged:` line.
   def update_unmanaged(data)
-    @data[UNMANAGED_KEY] = data.presence
+    if data.presence
+      @data[UNMANAGED_KEY] = data
+    else
+      @data.delete(UNMANAGED_KEY)
+    end
     save!
+  end
+
+  # True when `name` is a service preserved verbatim from an existing
+  # installation (under `_unmanaged.services`) — HELIOS exports it but does
+  # not manage its definition, so it can only be removed, never re-added.
+  def unmanaged_service?(name)
+    services = unmanaged.services
+    services.is_a?(Hash) && services.key?(name.to_s)
+  end
+
+  # Permanently drop an unmanaged service from the configuration. Its
+  # env_values live inside the service entry and are removed with it; the
+  # top-level `_unmanaged.env_vars` (orphan .env lines) are left untouched.
+  # Returns false when no such unmanaged service exists.
+  def remove_unmanaged_service(name) # rubocop:disable Naming/PredicateMethod
+    # Operate on the raw (plain-Hash) data, not the Data-wrapped reader, so the
+    # value written back stays free of Configuration::Data objects in the YAML.
+    data = @data[UNMANAGED_KEY]
+    services = data && data['services']
+    return false unless services.is_a?(Hash) && services.key?(name.to_s)
+
+    services.delete(name.to_s)
+    data.delete('services') if services.blank?
+    update_unmanaged(data)
+    true
   end
 
   def save!

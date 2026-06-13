@@ -103,6 +103,26 @@
     <div class="flex shrink-0 items-center gap-1 sm:gap-4">
       <% unless helios? %>
         <%#
+          Unmanaged-only: kept at the left of the cluster so the
+          open/logs/start/stop/recreate group stays aligned with the other rows.
+        %>
+        <% if unmanaged? %>
+          <div id="<%= dom_id %>-remove" class="tooltip tooltip-info" data-tip="<%= t('.remove') %>">
+            <%= button_to service_path(service_name),
+                          method: :delete,
+                          disabled: lazy || pending,
+                          class: "btn btn-ghost btn-sm btn-square",
+                          data: {
+                            turbo_confirm: t('.remove_confirm.body', service: compose_service.display_name),
+                            turbo_confirm_title: t('.remove_confirm.title', service: compose_service.display_name),
+                            turbo_confirm_button: t('.remove_confirm.button'),
+                            turbo_frame: "_top",
+                          } do %>
+              <i class="fa-solid fa-trash-can"></i>
+            <% end %>
+          </div>
+        <% end %>
+        <%#
           Redis-only: kept at the left of the cluster so the start/stop/recreate
           group stays aligned with the other service rows.
         %>
@@ -118,7 +138,7 @@
                             turbo_confirm_button: t('.clear_cache_confirm.button'),
                             turbo_frame: "_top",
                           } do %>
-              <i class="fa-solid fa-trash-can"></i>
+              <i class="fa-solid fa-broom"></i>
             <% end %>
           </div>
         <% end %>

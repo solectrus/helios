@@ -106,6 +106,88 @@ RSpec.describe Configuration do
     end
   end
 
+  describe 'unmanaged services' do
+    describe '#unmanaged_service?' do
+      before do
+        with_config_yaml(
+          '_unmanaged' => {
+            'services' => { 'dozzle' => { 'image' => 'amir20/dozzle:latest' } },
+          },
+        )
+      end
+
+      it 'is true for a preserved service' do
+        expect(described_class.current.unmanaged_service?('dozzle')).to be true
+      end
+
+      it 'is false for a service that is not preserved' do
+        expect(described_class.current.unmanaged_service?('nginx')).to be false
+      end
+
+      it 'is false when no unmanaged services exist' do
+        with_config_yaml
+        expect(described_class.current.unmanaged_service?('dozzle')).to be false
+      end
+    end
+
+    describe '#remove_unmanaged_service' do
+      before do
+        with_config_yaml(
+          '_unmanaged' => {
+            'services' => {
+              'dozzle' => { 'image' => 'amir20/dozzle:latest' },
+              'nginx' => { 'image' => 'nginx:latest' },
+            },
+            'env_vars' => { 'SOME_VAR' => 'value' },
+          },
+        )
+      end
+
+      it 'removes the named service and leaves the others' do
+        expect(described_class.current.remove_unmanaged_service('dozzle')).to be true
+
+        reloaded = described_class.current
+        expect(reloaded.unmanaged_service?('dozzle')).to be false
+        expect(reloaded.unmanaged_service?('nginx')).to be true
+      end
+
+      it 'keeps the orphan env_vars untouched' do
+        described_class.current.remove_unmanaged_service('dozzle')
+
+        expect(described_class.current.unmanaged.env_vars.to_h)
+          .to eq('SOME_VAR' => 'value')
+      end
+
+      it 'drops the services key once the last service is removed' do
+        described_class.current.remove_unmanaged_service('dozzle')
+        described_class.current.remove_unmanaged_service('nginx')
+
+        expect(described_class.current.unmanaged.to_h).not_to have_key('services')
+      end
+
+      it 'drops the whole _unmanaged key when nothing is left' do
+        with_config_yaml(
+          '_unmanaged' => { 'services' => { 'dozzle' => { 'image' => 'amir20/dozzle:latest' } } },
+        )
+        described_class.current.remove_unmanaged_service('dozzle')
+
+        raw = YAML.safe_load_file(described_class.path)
+        expect(raw).not_to have_key('_unmanaged')
+      end
+
+      it 'returns false for a service that is not unmanaged' do
+        expect(described_class.current.remove_unmanaged_service('postgresql')).to be false
+      end
+
+      it 'persists plain hashes (no Data objects) to YAML' do
+        described_class.current.remove_unmanaged_service('dozzle')
+
+        raw = YAML.safe_load_file(described_class.path)
+        expect(raw.dig('_unmanaged', 'services', 'nginx')).to eq('image' => 'nginx:latest')
+      end
+    end
+  end
+
   describe 'mqtt_topics CRUD' do
     let(:basic_topic) do
       { 'topic' => 'sensors/power', 'measurement' => 'house', 'field' => 'power', 'type' => 'integer' }

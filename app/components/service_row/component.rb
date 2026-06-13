@@ -1,5 +1,5 @@
 module ServiceRow
-  class Component < ViewComponent::Base
+  class Component < ViewComponent::Base # rubocop:disable Metrics/ClassLength
     include Openable
 
     attr_reader :compose_service, :container, :error_message, :lazy
@@ -143,6 +143,12 @@ module ServiceRow
     end
 
     delegate :helios?, to: :compose_service
+
+    # Preserved (unmanaged) services like dozzle: HELIOS exports but never
+    # manages them, so removal is the only configuration action offered.
+    def unmanaged?
+      Configuration.current.unmanaged_service?(service_name)
+    end
 
     def restart_pending?
       return @restart_pending if defined?(@restart_pending)
