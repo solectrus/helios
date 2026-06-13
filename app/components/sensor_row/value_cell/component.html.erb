@@ -1,7 +1,12 @@
-<td id="sensor-value-<%= sensor_name.parameterize %>" class="text-right font-mono text-sm <%= freshness_class %>">
+<td
+  id="sensor-value-<%= sensor_name.parameterize %>"
+  class="text-right font-mono text-sm <%= freshness_class %>"
+  data-controller="value-flash"
+  data-value-flash-timestamp-value="<%= timestamp_iso %>"
+>
   <% if value? %>
     <span
-      class="tooltip tooltip-left cursor-default"
+      class="tooltip tooltip-left inline-block cursor-default"
       data-controller="relative-time"
       data-relative-time-datetime-value="<%= timestamp_iso %>"
     >
