@@ -23,4 +23,47 @@ class ServicesController < ApplicationController
     @containers = nil
     @orphaned_containers = nil
   end
+
+  # DELETE /services/:id
+  # Removes a service row. The kind of removal depends on the service:
+  #   - orphaned container → stopped and removed
+  #   - managed service    → rejected (owned by HELIOS)
+  def destroy
+    if compose_file.services.exists?(service_id)
+      head :forbidden # managed service — owned by HELIOS, not removable
+    elsif container&.stoppable?
+      destroy_orphaned_container
+    else
+      redirect_to services_path
+    end
+  end
+
+  private
+
+  def service_id
+    params[:id]
+  end
+
+  def container
+    @container ||= Orchestration::Container.find(service_id)
+  end
+
+  def compose_file
+    @compose_file ||= Compose.load
+  end
+
+  def destroy_orphaned_container
+    OrphanedStopJob.perform_later(service_id)
+    render_pending_row OrphanedServiceRow::Component.new(container:, pending: true)
+  end
+
+  def render_pending_row(component)
+    respond_to do |format|
+      format.turbo_stream do
+        render turbo_stream:
+          turbo_stream.replace("service-#{service_id}", component, method: :morph)
+      end
+      format.html { redirect_to services_path }
+    end
+  end
 end

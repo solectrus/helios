@@ -101,4 +101,67 @@ RSpec.describe 'Services', :with_admin_password do
       end
     end
   end
+
+  describe 'DELETE /services/:id' do
+    # Real ServiceCollection so #exists?/#find behave; #find returns a real
+    # Compose::Service, which is what the pending ServiceRow renders.
+    def stub_compose(services = {})
+      allow(Compose).to receive(:load).and_return(
+        instance_double(Compose::File, services: Compose::ServiceCollection.new(services)),
+      )
+    end
+
+    def mock_container(name, stoppable: true)
+      instance_double(
+        Orchestration::Container,
+        service_name: name,
+        running?: stoppable,
+        status: stoppable ? 'running' : 'exited',
+        stoppable?: stoppable,
+        image: "#{name}:latest",
+      )
+    end
+
+    context 'with a managed service' do
+      before do
+        stub_compose('postgresql' => { 'image' => 'postgres:18-alpine' })
+        allow(OrphanedStopJob).to receive(:perform_later)
+      end
+
+      it 'is forbidden' do
+        delete service_path('postgresql'), as: :turbo_stream
+
+        expect(OrphanedStopJob).not_to have_received(:perform_later)
+        expect(response).to have_http_status(:forbidden)
+      end
+    end
+
+    context 'with an orphaned container' do
+      before do
+        stub_compose # no matching compose service
+        allow(OrphanedStopJob).to receive(:perform_later)
+      end
+
+      it 'stops and removes the orphaned container' do
+        allow(Orchestration::Container).to receive(:find)
+          .with('old-service').and_return(mock_container('old-service'))
+
+        delete service_path('old-service'), as: :turbo_stream
+
+        expect(OrphanedStopJob).to have_received(:perform_later).with('old-service')
+        expect(response).to have_http_status(:ok)
+        expect(response.media_type).to eq('text/vnd.turbo-stream.html')
+      end
+
+      it 'redirects when the orphaned container is not stoppable' do
+        allow(Orchestration::Container).to receive(:find)
+          .with('old-service').and_return(mock_container('old-service', stoppable: false))
+
+        delete service_path('old-service')
+
+        expect(OrphanedStopJob).not_to have_received(:perform_later)
+        expect(response).to redirect_to(services_path)
+      end
+    end
+  end
 end

@@ -39,6 +39,8 @@
 #                                   DELETE /backups/:id(.:format)                         backups/backups#destroy
 #                       new_support GET    /support/new(.:format)                         supports#new
 #                           support POST   /support(.:format)                             supports#create
+#                   about_component GET    /about/component(.:format)                     about/components#show
+#                             about GET    /about(.:format)                               about#show
 #            configuration_settings POST   /configuration/settings(.:format)              configurations/settings#create
 #         new_configuration_setting GET    /configuration/settings/new(.:format)          configurations/settings#new
 #              configuration_survey GET    /configuration/surveys/:id(.:format)           configurations/surveys#show
@@ -58,11 +60,14 @@
 #                   service_upgrade POST   /services/:service_id/upgrade(.:format)        services/upgrades#create
 #                     service_image PATCH  /services/:service_id/image(.:format)          services/images#update
 #                                   PUT    /services/:service_id/image(.:format)          services/images#update
-#             service_orphaned_task DELETE /services/:service_id/orphaned_task(.:format)  services/orphaned_tasks#destroy
 #                             batch DELETE /services/batch(.:format)                      services/batches#destroy
 #                                   POST   /services/batch(.:format)                      services/batches#create
 #                              file GET    /services/files/:id(.:format)                  services/files#show
 #                          services GET    /services(.:format)                            services#index
+#                           service DELETE /services/:id(.:format)                        services#destroy
+#                       csv_imports GET    /csv-imports(.:format)                         csv_imports#show
+#                                   DELETE /csv-imports(.:format)                         csv_imports#destroy
+#                                   POST   /csv-imports(.:format)                         csv_imports#create
 #                              root GET    /                                              redirect(301, /services)
 #  turbo_recede_historical_location GET    /recede_historical_location(.:format)          turbo/native/navigation#recede
 #  turbo_resume_historical_location GET    /resume_historical_location(.:format)          turbo/native/navigation#resume
@@ -133,14 +138,16 @@ Rails.application.routes.draw do
   end
 
   # Service management
-  resources :services, only: :index do
+  # destroy removes a service row: an unmanaged service is deleted from the
+  # configuration, an orphaned container is stopped and removed (managed
+  # services are owned by HELIOS and rejected). See ServicesController#destroy.
+  resources :services, only: %i[index destroy] do
     resource :row, only: :show, module: :services
     resource :log, only: :show, module: :services
     resource :task, only: %i[create update destroy], module: :services
     resource :cache, only: :destroy, module: :services
     resource :upgrade, only: :create, module: :services
     resource :image, only: :update, module: :services
-    resource :orphaned_task, only: :destroy, module: :services
 
     collection do
       resource :batch, only: %i[create destroy], module: :services
