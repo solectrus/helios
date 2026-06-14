@@ -2,6 +2,27 @@ module ServiceRow
   class Component < ViewComponent::Base # rubocop:disable Metrics/ClassLength
     include Openable
 
+    # Literal class names so the Tailwind v4 content scanner emits every
+    # variant; `bg-#{status_color}` interpolation would drop them from the
+    # build. Both maps are keyed by #status_color, the single source of truth
+    # for the status color — so the dot and its tooltip always agree.
+    DOT_FILL_CLASSES = {
+      success: 'bg-success',
+      warning: 'bg-warning',
+      info: 'bg-info',
+      neutral: 'bg-neutral',
+      error: 'bg-error',
+    }.freeze
+
+    TOOLTIP_COLORS = {
+      success: 'tooltip-success',
+      warning: 'tooltip-warning',
+      info: 'tooltip-info',
+      neutral: 'tooltip-neutral',
+      muted: 'tooltip-neutral',
+      error: 'tooltip-error',
+    }.freeze
+
     attr_reader :compose_service, :container, :error_message, :lazy
 
     def initialize(
@@ -134,11 +155,31 @@ module ServiceRow
     end
 
     def tooltip_class
-      base = 'tooltip tooltip-right before:text-left before:text-xs'
-      if error?
-        "#{base} tooltip-error before:max-w-2xs before:break-words"
-      else
-        "#{base} tooltip-info"
+      base = 'tooltip tooltip-right xl:tooltip-left'
+      # Long error messages need to wrap and stay readable; short status
+      # labels keep the default tooltip size to match the other tooltips.
+      base += ' before:max-w-2xs before:text-left before:text-xs before:break-words' if error?
+      "#{base} #{TOOLTIP_COLORS.fetch(status_color)}"
+    end
+
+    # Single source of truth for the status color, shared by the dot and its
+    # tooltip. Precedence mirrors how the dot is rendered in the template.
+    def status_color
+      return :success if healthcheck_passing? || healthcheck_waiting?
+      return start_pending? ? :success : :muted if pending
+      return :success if status_starting?
+      return :error if error?
+
+      container_color
+    end
+
+    def container_color
+      case status
+      when nil, 'created', 'removing' then :muted
+      when 'running' then health.in?([nil, 'healthy']) ? :success : :warning
+      when 'paused' then :info
+      when 'exited' then :neutral
+      else :error
       end
     end
 
@@ -269,26 +310,14 @@ module ServiceRow
     end
 
     def indicator_class
-      return 'border-2 border-dashed border-base-content/30' if status.nil?
-
       case status
-      when 'running'
-        indicator_running_class
+      when nil
+        'border-2 border-dashed border-base-content/30'
       when 'created', 'removing'
         'border-2 border-base-content/30'
-      when 'paused'
-        'bg-info'
-      when 'exited'
-        'bg-neutral'
       else
-        'bg-error'
+        DOT_FILL_CLASSES.fetch(status_color, 'bg-error')
       end
-    end
-
-    def indicator_running_class
-      return 'bg-success' if health == 'healthy' || health.nil?
-
-      'bg-warning'
     end
 
     def running_status_label
