@@ -460,6 +460,12 @@ RSpec.describe Export::Builder do
       expect(traefik.image).to eq(DockerImages.current(:TRAEFIK))
     end
 
+    it 'sets the traefik log level to INFO so logs are not empty' do
+      compose = Compose.load
+      traefik = compose.services.find('traefik')
+      expect(traefik.config['command']).to include('--log.level=INFO')
+    end
+
     it 'removes dashboard ports' do
       compose = Compose.load
       dashboard = compose.services.find('dashboard')
@@ -824,6 +830,53 @@ RSpec.describe Export::Builder do
         compose = Compose.load
         influxdb = compose.services.find('influxdb')
         expect(influxdb.ports).to include('8086:8086')
+      end
+    end
+
+    # An imported Traefik command without a log level: Traefik's own default is
+    # ERROR, leaving the log empty. HELIOS appends --log.level=INFO so the
+    # imported reverse proxy still produces useful logs.
+    context 'with an imported Traefik that declares no log level' do
+      before do
+        configuration.update('reverse_proxy', {
+                               'app_domain' => 'solar.example.com',
+                               'command' => [
+                                 '--providers.docker=true',
+                                 '--entrypoints.web.address=:80',
+                                 '--entrypoints.websecure.address=:443',
+                               ],
+                               'ports' => %w[80:80 443:443],
+                             })
+        described_class.new(configuration).write!
+      end
+
+      it 'appends the INFO log level' do
+        traefik = Compose.load.services.find('traefik')
+        expect(traefik.config['command']).to include('--log.level=INFO')
+      end
+    end
+
+    # An imported Traefik with an explicit log level must be preserved verbatim
+    # — HELIOS never overrides a level the user deliberately set.
+    context 'with an imported Traefik that declares its own log level' do
+      before do
+        configuration.update('reverse_proxy', {
+                               'app_domain' => 'solar.example.com',
+                               'command' => [
+                                 '--log.level=DEBUG',
+                                 '--providers.docker=true',
+                                 '--entrypoints.web.address=:80',
+                                 '--entrypoints.websecure.address=:443',
+                               ],
+                               'ports' => %w[80:80 443:443],
+                             })
+        described_class.new(configuration).write!
+      end
+
+      it 'preserves the imported log level and adds no second one' do
+        command = Compose.load.services.find('traefik').config['command']
+        expect(command).to include('--log.level=DEBUG')
+        expect(command).not_to include('--log.level=INFO')
       end
     end
 

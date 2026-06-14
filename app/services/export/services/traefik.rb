@@ -75,15 +75,15 @@ module Export
         configuration.reverse_proxy[key.to_s].presence || default
       end
 
-      # The Traefik `command`, additively ensuring a `helios` entrypoint exists
-      # when HELIOS routes its UI through Traefik. For the managed (blank)
-      # command this is already part of `traefik_command`; for an imported
-      # custom command we keep every imported arg verbatim and only append the
-      # one entrypoint HELIOS needs to reach its own UI. Idempotent — never
-      # appends a second time when the entrypoint is already declared (e.g. a
-      # re-import of HELIOS's own output).
+      # The Traefik `command`, additively ensuring the bits HELIOS needs exist
+      # while keeping every imported arg verbatim (idempotent, never appends a
+      # second time):
+      #   - a log level — Traefik's own default is ERROR, leaving the log empty;
+      #     INFO only when no level is declared (an explicit imported level wins)
+      #   - a `helios` entrypoint when HELIOS routes its UI through Traefik
       def traefik_command_with_helios
         base = override_or(:command, traefik_command)
+        base += ['--log.level=INFO'] if base.none? { |arg| arg.to_s.start_with?('--log.level') }
         return base unless helios_routed?
         return base if base.any? { |arg| arg.to_s.start_with?('--entrypoints.helios.') }
 
@@ -109,6 +109,11 @@ module Export
 
       def traefik_command
         [
+          # Traefik's own default log level is ERROR, which leaves
+          # `docker compose logs traefik` empty during normal operation and
+          # hides the startup banner. INFO surfaces startup/provider events
+          # without the noise of DEBUG.
+          '--log.level=INFO',
           '--providers.docker=true',
           '--providers.docker.exposedbydefault=false',
           '--entrypoints.web.address=:80',

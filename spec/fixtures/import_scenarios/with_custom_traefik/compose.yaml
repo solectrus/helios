@@ -193,6 +193,7 @@ services:
     - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
     - "--certificatesresolvers.myresolver.acme.email=postmaster@example.com"
     - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    - "--log.level=INFO"
     - "--entrypoints.helios.address=:3999"
     environment:
     - TZ
