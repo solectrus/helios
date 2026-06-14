@@ -16,12 +16,40 @@ RSpec.describe ComposeJob do
         allow(Orchestration::Runner).to receive(:start).and_return(
           Orchestration::CommandResult.new(output: 'OK', exit_status: 0),
         )
+        allow(Orchestration::Runner).to receive(:stop)
       end
 
       it 'executes start command' do
         described_class.perform_now(:start, 'redis')
 
         expect(Orchestration::Runner).to have_received(:start).with('redis')
+      end
+
+      it 'removes a previously errored container before restarting it' do
+        Orchestration::ErrorStore.set('redis', 'port is already allocated')
+
+        described_class.perform_now(:start, 'redis')
+
+        expect(Orchestration::Runner).to have_received(:stop).with('redis')
+        expect(Orchestration::Runner).to have_received(:start).with('redis')
+      end
+
+      it 'does not tear down a healthy service that has no stored error' do
+        described_class.perform_now(:start, 'redis')
+
+        expect(Orchestration::Runner).not_to have_received(:stop)
+      end
+
+      # Starting a service brings its dependencies up too, so a previously
+      # port-blocked dependency (e.g. influxdb when starting dashboard) must be
+      # torn down first instead of being silently revived without its host port.
+      it 'removes an errored dependency that the start will bring up' do
+        Orchestration::ErrorStore.set('influxdb', 'port is already allocated')
+
+        described_class.perform_now(:start, 'dashboard')
+
+        expect(Orchestration::Runner).to have_received(:stop).with('influxdb')
+        expect(Orchestration::Runner).to have_received(:start).with('dashboard')
       end
 
       it 'clears stored error for the started service only' do

@@ -4,7 +4,7 @@ class ComposeJob < ApplicationJob
   def perform(action, service_name = nil)
     action = action.to_sym
     rebuild_stack if applies_config?(action)
-    remove_errored_containers if action == :up
+    remove_errored_containers(action)
     clear_errors(action, service_name)
     execute_action(action, service_name)
     @deploy_succeeded = true
@@ -138,13 +138,34 @@ class ComposeJob < ApplicationJob
     %i[up start recreate self_recreate].include?(action)
   end
 
-  # Remove containers that previously failed, so Docker Compose creates fresh ones.
-  def remove_errored_containers
-    Orchestration::ErrorStore.each_key do |service_name|
-      Orchestration::Runner.stop(service_name)
+  # Remove containers that previously failed, so Docker Compose creates fresh
+  # ones. A failed `up` leaves the container in "Created" state; restarting it
+  # via `docker compose up` becomes a `docker start`, which — unlike a fresh
+  # create+start — silently comes up WITHOUT the published host port when that
+  # port is still taken, making a blocked service look healthy. Tearing the
+  # failed container down first forces a clean recreate so a real port conflict
+  # re-surfaces as an error.
+  #
+  # Every errored service is cleaned, not just the one named: `up <service>`
+  # (re)starts the service AND its dependencies, so a port-blocked `influxdb`
+  # would otherwise be silently revived when `dashboard` is started. A service
+  # carrying a stored error is never cleanly running (a successful operation
+  # clears its error), so removing its container is always safe.
+  def remove_errored_containers(action)
+    return unless cleanup_action?(action)
+
+    Orchestration::ErrorStore.each_key do |name|
+      Orchestration::Runner.stop(name)
     rescue Orchestration::Runner::CommandError
       nil
     end
+  end
+
+  # Actions that bring containers up and therefore must start from a clean,
+  # non-errored state. `:recreate` shares the same dependency hazard as `:up`
+  # and `:start`, since its internal `up` revives dependency containers too.
+  def cleanup_action?(action)
+    %i[up start recreate].include?(action)
   end
 
   def compose_file
