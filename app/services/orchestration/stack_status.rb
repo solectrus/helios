@@ -16,6 +16,7 @@ module Orchestration
                :service_counts,
                :pending_restart_services,
                :refresh!,
+               :status_for,
                :update,
                :mark_config_changed!,
                :mark_starting!,
@@ -40,6 +41,14 @@ module Orchestration
 
     def pending_restart_services
       AffectedServices.compute
+    end
+
+    # Cached effective_status of a single service (:ok / :starting / :error /
+    # :stopped), or nil when the service is unknown. Reads the same map that
+    # backs the service counts, so callers avoid a fresh Docker lookup.
+    def status_for(service_name)
+      refresh! unless @initialized.true?
+      @service_statuses[service_name.to_s]
     end
 
     def update(service_name, status)

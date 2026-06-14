@@ -21,6 +21,10 @@ class StatusBarsController < ApplicationController
       Orchestration::StackStatus.overall,
       Orchestration::StackStatus.service_counts,
       Orchestration::StackStatus.pending_restart_services,
+      # The "Open dashboard" shortcut toggles on the dashboard's health, which
+      # can change without overall/counts changing (e.g. while another service
+      # is in error). Keying the etag on it keeps the button in sync.
+      Orchestration::StackStatus.status_for('dashboard'),
       RestoreRunner.in_progress&.started_at,
       BackupRunner.in_progress&.started_at,
     ]

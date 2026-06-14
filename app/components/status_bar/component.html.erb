@@ -54,22 +54,37 @@
           <% end %>
         <% end %>
 
-        <% if show_start? %>
-          <%= button_to batch_path, method: :post, class: "btn btn-outline btn-sm" do %>
-            <i class="fa-solid fa-play"></i>
-            <span class="hidden sm:inline"><%= t(".start") %></span>
-          <% end %>
-        <% end %>
+        <% if primary_action %>
+          <% if dropdown_actions.any? %>
+            <%# Split button: primary action plus a dropdown holding the rest. %>
+            <div class="flex">
+              <%= action_button(primary_action, "btn btn-outline btn-sm gap-1.5 rounded-e-none", icon_only_mobile: true) %>
 
-        <% if show_restart? %>
-          <%= button_to batch_path, method: :post, class: "btn btn-outline btn-sm" do %>
-            <i class="fa-solid fa-arrows-rotate"></i>
-            <span class="hidden sm:inline"><%= t(".restart") %></span>
-          <% end %>
-        <% elsif show_stop? %>
-          <%= button_to batch_path, method: :delete, class: "btn btn-outline btn-sm" do %>
-            <i class="fa-solid fa-stop"></i>
-            <span class="hidden sm:inline"><%= t(".stop") %></span>
+              <div class="dropdown dropdown-end">
+                <div
+                  tabindex="0"
+                  role="button"
+                  aria-label="<%= t('.more_actions') %>"
+                  class="btn btn-outline btn-sm -ms-px rounded-s-none px-2"
+                >
+                  <i class="fa-solid fa-chevron-down"></i>
+                </div>
+
+                <ul
+                  tabindex="0"
+                  class="
+                    dropdown-content menu bg-base-100 text-base-content rounded-box top-full z-10 mt-1 w-56 gap-1
+                    p-2 shadow-2xl lg:top-auto lg:bottom-full lg:mt-0 lg:mb-1
+                  "
+                >
+                  <% dropdown_actions.each do |key| %>
+                    <li><%= action_button(key, "btn btn-ghost btn-sm w-full justify-start gap-3", long: true) %></li>
+                  <% end %>
+                </ul>
+              </div>
+            </div>
+          <% else %>
+            <%= action_button(primary_action, "btn btn-outline btn-sm gap-1.5", long: true, icon_only_mobile: true) %>
           <% end %>
         <% end %>
       </div>

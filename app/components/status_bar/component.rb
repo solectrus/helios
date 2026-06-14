@@ -37,6 +37,19 @@ module StatusBar
 
     DEFAULT_CONFIG = STATE_CONFIG[:stopped]
 
+    # Action buttons shown on the right of the bar. The first available one
+    # becomes the prominent primary button, the rest collapse into a dropdown,
+    # so the bar never grows a row of competing buttons.
+    # `long_label` is the spelled-out variant ("Stop all services"), used in the
+    # dropdown and for a lone button; `label` is the compact one used only when
+    # the action sits next to a dropdown caret in a split button.
+    ACTIONS = {
+      open: { icon: 'fa-up-right-from-square', label: 'open_dashboard' },
+      start: { icon: 'fa-play', label: 'start', long_label: 'start_all', partial_label: 'start_missing' },
+      restart: { icon: 'fa-arrows-rotate', label: 'restart', long_label: 'restart_all' },
+      stop: { icon: 'fa-stop', label: 'stop', long_label: 'stop_all' },
+    }.freeze
+
     def initialize(status: nil)
       super()
       @restore_in_progress = RestoreRunner.in_progress.present?
@@ -100,11 +113,110 @@ module StatusBar
       @status == :restart_required
     end
 
+    # Prominent shortcut to the SOLECTRUS dashboard, shown whenever the
+    # dashboard container is up and healthy and has a browsable endpoint —
+    # the small per-row "Open" button is easy to miss for new users.
+    def dashboard_endpoint
+      return @dashboard_endpoint if defined?(@dashboard_endpoint)
+
+      @dashboard_endpoint =
+        if dashboard_reachable?
+          Export::OpenEndpoint.resolve(
+            service_name: 'dashboard',
+            public_port: dashboard_public_port,
+          )
+        end
+    end
+
+    def show_dashboard?
+      dashboard_endpoint.present?
+    end
+
+    # Available actions in priority order. The dashboard shortcut leads (the
+    # main thing a regular user wants), stack lifecycle controls follow.
+    def actions
+      acts = []
+      acts << :open if show_dashboard?
+      acts << :start if show_start?
+      acts << :restart if show_restart?
+      acts << :stop if show_stop?
+      acts
+    end
+
+    def primary_action
+      actions.first
+    end
+
+    def dropdown_actions
+      actions.drop(1)
+    end
+
+    # Renders one action as either the prominent JS "open" button or a stack
+    # lifecycle form button, with the given CSS classes — used for both the
+    # primary button and the dropdown menu items.
+    def action_button(key, css, long: false, icon_only_mobile: false)
+      if key == :open
+        open_button(css, icon_only_mobile:)
+      else
+        button_to(batch_path, method: action_method(key), class: css, form_class: 'contents') do
+          action_inner(key, long:, icon_only_mobile:)
+        end
+      end
+    end
+
     def batch_path
       '/services/batch'
     end
 
     private
+
+    def open_button(css, icon_only_mobile: false)
+      tag.button(
+        action_inner(:open, icon_only_mobile:),
+        type: 'button',
+        class: css,
+        data: {
+          controller: 'open-external',
+          action: 'click->open-external#open',
+          url: dashboard_endpoint[:url],
+          port: dashboard_endpoint[:port],
+        },
+      )
+    end
+
+    # Icon plus both-locale labels (the bar's turbo frame is cached across
+    # locales and switched via CSS, so every label ships in all locales).
+    #
+    # `icon_only_mobile` wraps the labels so they collapse to sr-only below the
+    # `sm` breakpoint — the primary button shrinks to its icon where space is
+    # tight, while keeping an accessible name. The wrapper is needed because the
+    # per-locale CSS rule outranks a plain `max-sm:hidden` on the spans.
+    def action_inner(key, long: false, icon_only_mobile: false)
+      labels =
+        action_labels(key, long:).map do |locale, text|
+          tag.span(text, data: { locale: }, class: 'status-bar-label whitespace-nowrap')
+        end
+      labels = [tag.span(safe_join(labels), class: 'max-sm:sr-only')] if icon_only_mobile
+
+      safe_join([tag.i(class: "fa-solid #{ACTIONS.fetch(key)[:icon]}"), *labels])
+    end
+
+    def action_labels(key, long: false)
+      spec = ACTIONS.fetch(key)
+      label = start_label(spec) || (long && spec[:long_label]) || spec[:label]
+      I18n.available_locales.index_with { |locale| t(".#{label}", locale:) }
+    end
+
+    # In the :partial state some services already run, so the start action only
+    # fills the gaps — spell that out ("Start missing services") instead of the
+    # generic "Start" / "Start all services".
+    def start_label(spec)
+      spec[:partial_label] if @status == :partial
+    end
+
+    def action_method(key)
+      key == :stop ? :delete : :post
+    end
 
     def derive_status(provided)
       return :restore_in_progress if @restore_in_progress
@@ -114,6 +226,22 @@ module StatusBar
 
     def operation_in_progress?
       @restore_in_progress || @backup_in_progress
+    end
+
+    # Reachable means running and past its healthcheck (effective_status :ok) —
+    # opening a still-booting dashboard would likely hit a half-rendered UI.
+    # Reads the cached StackStatus (same source as the service counts) instead
+    # of a fresh Docker lookup, so this stays cheap in the broadcast-heavy
+    # status bar render path.
+    def dashboard_reachable?
+      Orchestration::StackStatus.status_for('dashboard') == :ok
+    end
+
+    # Direct host port the dashboard publishes (nil when routed through a
+    # reverse proxy). Taken from the compose config rather than the running
+    # container — reachability is already confirmed via StackStatus.
+    def dashboard_public_port
+      ::Compose.load.services.find('dashboard')&.public_port
     end
 
     def restore_labels
