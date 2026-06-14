@@ -151,7 +151,7 @@ RSpec.describe 'Services::Rows', :with_admin_password do
 
         get service_row_path(service_id: 'influxdb'), headers: turbo_frame_headers
 
-        expect(response.body).not_to include('service-row--component#open')
+        expect(response.body).not_to include('open-external#open')
       end
 
       it 'never shows the button for Traefik itself, even when it publishes ports' do
@@ -161,7 +161,7 @@ RSpec.describe 'Services::Rows', :with_admin_password do
 
         get service_row_path(service_id: 'traefik'), headers: turbo_frame_headers
 
-        expect(response.body).not_to include('service-row--component#open')
+        expect(response.body).not_to include('open-external#open')
       end
 
       it 'opens the proxy domain instead of the host port behind an external Traefik' do

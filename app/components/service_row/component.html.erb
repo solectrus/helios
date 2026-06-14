@@ -145,7 +145,8 @@
         <% if (endpoint = open_endpoint) %>
           <button
             type="button"
-            data-action="click->service-row--component#open"
+            data-controller="open-external"
+            data-action="click->open-external#open"
             <% if endpoint[:url] %>
               data-url="<%= endpoint[:url] %>"
             <% end %>
