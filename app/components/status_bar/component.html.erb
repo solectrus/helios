@@ -10,16 +10,13 @@
         sm:grid-cols-3 md:px-8
       "
     >
-      <div class="hidden cursor-default font-mono text-[11px] tracking-tight whitespace-nowrap sm:block">
-        <%= Rails.configuration.x.git.commit_version %>
-
-        <span class="hidden opacity-60 lg:inline">
-          /
-          <span
-            data-controller="relative-time"
-            data-relative-time-datetime-value="<%= Rails.configuration.x.git.commit_time %>"
-            data-relative-time-target-value="text"
-          ></span>
+      <div class="hidden font-mono text-[11px] tracking-tight whitespace-nowrap sm:block">
+        <span
+          class="tooltip tooltip-top cursor-default before:font-sans"
+          data-controller="relative-time"
+          data-relative-time-datetime-value="<%= Rails.configuration.x.git.commit_time %>"
+        >
+          <%= Rails.configuration.x.git.commit_version %>
         </span>
       </div>
 
