@@ -149,6 +149,32 @@ RSpec.describe ComposeJob do
       expect(ApplicationController).to have_received(:render)
         .with(an_object_having_attributes(error_message: 'Unknown error'), { layout: false })
     end
+
+    it 'condenses a networking error to the part after the container id' do
+      perform_with_error(
+        'Error response from daemon: failed to set up container networking: ' \
+        'driver failed programming external connectivity on endpoint ' \
+        'solectrus-influxdb-1 (bdea3c3168c4f5c2fd5eea79d2adcefb7c591976dd7ae4f2c5a902f321b644c5): ' \
+        'Bind for 0.0.0.0:8086 failed: port is already allocated',
+      )
+
+      expect(ApplicationController).to have_received(:render)
+        .with(an_object_having_attributes(
+                error_message: 'Bind for 0.0.0.0:8086 failed: port is already allocated',
+              ), { layout: false })
+    end
+
+    it 'strips the generic daemon prefix from shorter messages' do
+      perform_with_error(
+        'Error response from daemon: Conflict. The container name ' \
+        '"/solectrus-influxdb-1" is already in use',
+      )
+
+      expect(ApplicationController).to have_received(:render)
+        .with(an_object_having_attributes(
+                error_message: 'Conflict. The container name "/solectrus-influxdb-1" is already in use',
+              ), { layout: false })
+    end
   end
 
   describe 'affected service extraction' do

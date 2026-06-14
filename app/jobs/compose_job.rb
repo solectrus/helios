@@ -165,7 +165,25 @@ class ComposeJob < ApplicationJob
   end
 
   def extract_error_details(error)
-    error.stdout.to_s.lines.last&.strip.presence || 'Unknown error'
+    last_line = error.stdout.to_s.lines.last&.strip.presence
+    return 'Unknown error' unless last_line
+
+    condense_docker_error(last_line)
+  end
+
+  # Docker wraps the real cause in boilerplate that overflows the status
+  # tooltip, e.g.
+  #   "Error response from daemon: failed to set up container networking:
+  #    driver failed ... on endpoint foo (bdea3c...): Bind for 0.0.0.0:8086
+  #    failed: port is already allocated"
+  # Keep just the part after the container id, and otherwise drop the generic
+  # daemon prefix, so only the essential message reaches the UI.
+  def condense_docker_error(message)
+    if (match = message.match(/.*\([0-9a-f]{12,}\)\s*:\s*(.+)\z/))
+      return match[1].strip
+    end
+
+    message.sub(/\AError response from daemon:\s*/, '')
   end
 
   def dependency_error_message(dependency_name)
