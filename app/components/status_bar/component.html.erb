@@ -23,9 +23,7 @@
       <div class="flex min-w-0 items-center justify-start gap-3 sm:justify-center">
         <i class="<%= icon_class %>"></i>
 
-        <% labels.each do |locale, text| %>
-          <span data-locale="<%= locale %>" class="status-bar-label truncate"><%= text %></span>
-        <% end %>
+        <%= locale_label_tags(labels, "truncate") %>
       </div>
 
       <div class="flex items-center justify-end gap-2">
@@ -33,9 +31,7 @@
           <span class="badge badge-sm badge-soft gap-1.5 tabular-nums">
             <span class="loading loading-spinner loading-xs"></span>
 
-            <% backup_hint_labels.each do |locale, text| %>
-              <span data-locale="<%= locale %>" class="status-bar-label"><%= text %></span>
-            <% end %>
+            <%= locale_label_tags(backup_hint_labels) %>
           </span>
         <% end %>
 
@@ -45,9 +41,7 @@
                       class: "badge badge-sm badge-warning gap-1.5 font-medium" do %>
             <i class="fa-solid fa-triangle-exclamation"></i>
 
-            <% incomplete_labels.each do |locale, text| %>
-              <span data-locale="<%= locale %>" class="status-bar-label"><%= text %></span>
-            <% end %>
+            <%= locale_label_tags(incomplete_labels) %>
           <% end %>
         <% end %>
 

@@ -50,12 +50,19 @@ module StatusBar
       stop: { icon: 'fa-stop', label: 'stop', long_label: 'stop_all' },
     }.freeze
 
-    def initialize(status: nil)
+    # `mark_active_locale` emits the native `hidden` attribute on the
+    # non-active locale for a flash-free first paint (see #locale_label_tags).
+    # It is only correct when the render locale matches the recipient's locale,
+    # i.e. for request-scoped renders. Locale-agnostic broadcasts (rendered
+    # with the default locale but delivered to clients of either language) must
+    # disable it and rely purely on the per-client CSS instead.
+    def initialize(status: nil, mark_active_locale: true)
       super()
       @restore_in_progress = RestoreRunner.in_progress.present?
       @backup_in_progress = !@restore_in_progress && BackupRunner.in_progress.present?
       @status = derive_status(status)
       @config = STATE_CONFIG.fetch(@status, DEFAULT_CONFIG)
+      @mark_active_locale = mark_active_locale
     end
 
     def icon_class
@@ -168,6 +175,32 @@ module StatusBar
       '/services/batch'
     end
 
+    # Renders the same text in every locale as sibling spans; the component
+    # stylesheet shows only the one matching the client's <html lang>.
+    #
+    # For request-scoped renders the non-active locales also carry the native
+    # `hidden` attribute so the right language already shows at first paint,
+    # before the (Vite-injected) component CSS loads — otherwise both languages
+    # flash and shift the layout on a hard reload.
+    #
+    # Broadcasts render with the default locale but are delivered to clients of
+    # either language, so they must NOT bake in `hidden` (that would hide the
+    # text for every client whose locale differs from the default until the CSS
+    # corrects it). They set `mark_active_locale: false` and rely on the CSS,
+    # which the page already has loaded by the time a broadcast arrives.
+    def locale_label_tags(labels, extra_class = nil)
+      safe_join(
+        labels.map do |locale, text|
+          tag.span(
+            text,
+            data: { locale: },
+            hidden: @mark_active_locale && locale != I18n.locale,
+            class: ['status-bar-label', extra_class].compact.join(' '),
+          )
+        end,
+      )
+    end
+
     private
 
     def open_button(css, icon_only_mobile: false)
@@ -184,21 +217,17 @@ module StatusBar
       )
     end
 
-    # Icon plus both-locale labels (the bar's turbo frame is cached across
-    # locales and switched via CSS, so every label ships in all locales).
+    # Icon plus the per-locale labels (see #locale_label_tags).
     #
     # `icon_only_mobile` wraps the labels so they collapse to sr-only below the
     # `sm` breakpoint — the primary button shrinks to its icon where space is
     # tight, while keeping an accessible name. The wrapper is needed because the
     # per-locale CSS rule outranks a plain `max-sm:hidden` on the spans.
     def action_inner(key, long: false, icon_only_mobile: false)
-      labels =
-        action_labels(key, long:).map do |locale, text|
-          tag.span(text, data: { locale: }, class: 'status-bar-label whitespace-nowrap')
-        end
-      labels = [tag.span(safe_join(labels), class: 'max-sm:sr-only')] if icon_only_mobile
+      labels = locale_label_tags(action_labels(key, long:), 'whitespace-nowrap')
+      labels = tag.span(labels, class: 'max-sm:sr-only') if icon_only_mobile
 
-      safe_join([tag.i(class: "fa-solid #{ACTIONS.fetch(key)[:icon]}"), *labels])
+      safe_join([tag.i(class: "fa-solid #{ACTIONS.fetch(key)[:icon]}"), labels])
     end
 
     def action_labels(key, long: false)

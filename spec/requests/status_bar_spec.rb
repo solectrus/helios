@@ -10,6 +10,18 @@ RSpec.describe 'StatusBar', :with_admin_password do
       expect(response.body).to include('data-locale="de"')
     end
 
+    # Both locales are rendered (the frame is broadcast to clients of either
+    # language), but the non-active one carries `hidden` so the correct
+    # language already shows at first paint, before the locale-switching CSS
+    # loads. Specs run in :en, so the German spans must be hidden.
+    it 'marks the non-active locale hidden to avoid a language flash' do
+      login
+      get status_bar_path, headers: { 'Turbo-Frame' => 'status-bar' }
+
+      expect(response.body).to include('data-locale="de" hidden')
+      expect(response.body).not_to include('data-locale="en" hidden')
+    end
+
     it 'redirects direct browser visits to the services page' do
       login
       get status_bar_path
