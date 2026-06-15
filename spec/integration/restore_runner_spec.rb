@@ -35,12 +35,7 @@ RSpec.describe RestoreRunner, :docker_stack do
       create_production_database!
       seed_marker_row!
 
-      BackupRunner.start
-      wait_for_container_exit!(BackupRunner::CONTAINER_NAME)
-      BackupRepository.detect_completion!
-      expect(BackupRepository.error_message).to be_nil,
-                                                "backup failed: #{BackupRepository.error_message}"
-      filename = produced_backup_filename
+      filename = produce_backup_tar!
       expect(filename).not_to be_nil, 'no backup tar was produced'
 
       described_class.start(filename)
@@ -141,6 +136,30 @@ RSpec.describe RestoreRunner, :docker_stack do
       'postgresql', 'pg_isready', '-h', '127.0.0.1', '-U', 'postgres', '-q'
     )
     code&.zero?
+  end
+
+  # Runs a real backup to completion (handling the async pull + launch) and
+  # returns the produced tar filename, so the restore has something to chew on.
+  def produce_backup_tar!
+    BackupRunner.start
+    wait_for_backup_launch!
+    wait_for_container_exit!(BackupRunner::CONTAINER_NAME)
+    BackupRepository.detect_completion!
+    expect(BackupRepository.error_message).to be_nil, "backup failed: #{BackupRepository.error_message}"
+    produced_backup_filename
+  end
+
+  # BackupRunner pulls the image + launches its container on a background
+  # thread; wait for that thread to finish so the container exists before we
+  # poll for its exit.
+  def wait_for_backup_launch!(timeout: 240)
+    deadline = Time.current + timeout
+    until Time.current > deadline
+      return true unless BackupRunner.preparing?
+
+      sleep 0.5
+    end
+    raise "backup preparing thread did not finish within #{timeout}s"
   end
 
   # The detached runner uses `--rm`, so its disappearance from `docker ps`

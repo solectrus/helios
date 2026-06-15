@@ -28,6 +28,7 @@ de:
     current: 'Läuft gerade'
     pending: 'Ausstehend'
   phases:
+    preparing: 'Vorbereitung'
     downloading: 'Sicherung aus S3 herunterladen'
     dumping_postgres: 'PostgreSQL sichern'
     dumping_influx: 'InfluxDB sichern'

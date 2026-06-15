@@ -215,6 +215,27 @@ RSpec.describe 'Backups', :with_admin_password do
       end
     end
 
+    it 'shows the preparation step on the progress page while the image is pulling' do
+      allow(BackupRunner).to receive(:in_progress).and_return(
+        BackupRepository::InProgress.new(
+          started_at: Time.zone.local(2026, 5, 8, 14, 30, 0),
+          filename: 'solectrus-backup-20260508-143000.tar',
+          phase: :preparing,
+        ),
+      )
+
+      get backups_path, headers: turbo_frame_headers('backups-content')
+
+      aggregate_failures do
+        expect(response.body).to include('Creating backup')
+        # Preparation is the current step (spinner); later steps are still pending.
+        expect(response.body).to include('Preparation')
+        expect(response.body).to include('loading-spinner')
+        # No earlier step yet, so nothing is marked done.
+        expect(response.body).not_to include('fa-circle-check')
+      end
+    end
+
     it 'shows the backup hint in the status bar while a backup is running' do
       write_status_bar_config!
       allow(BackupRunner).to receive(:in_progress).and_return(

@@ -31,6 +31,14 @@ RSpec.describe BackupRunner do
     allow(RestoreRunner).to receive(:running?).and_return(false)
     allow(CsvImportRunner).to receive_messages(running?: false, in_progress?: false)
 
+    # The pull + launch now run in a background thread so the click can
+    # redirect to the progress page immediately. Run it inline in specs so
+    # the docker calls are observable synchronously after `.start`.
+    allow(described_class).to receive_messages(preparing?: false, running?: false)
+    allow(described_class).to receive(:spawn_preparing_thread!) do |instance|
+      instance.send(:run_preparing!)
+    end
+
     # Freeze the instant to 14:30 in the app timezone (Europe/Berlin, set as
     # config.time_zone for tests). The filename/date are built from Time.current,
     # so they stay deterministic and encode 14:30 Berlin wall-clock.
@@ -50,6 +58,30 @@ RSpec.describe BackupRunner do
   after { FileUtils.remove_entry(data_path) }
 
   describe '.start' do
+    it 'hands the slow pull + launch to the preparing thread (does not block the click)' do
+      described_class.start
+
+      expect(described_class).to have_received(:spawn_preparing_thread!)
+    end
+
+    it 'records a fresh runner-log entry before the preparing thread starts' do
+      described_class.start
+
+      expect(RunnerLog.find_by(kind: :backup)).to have_attributes(last_error_message: nil, last_finished_at: nil)
+    end
+
+    it 'raises immediately when a backup is already running' do
+      allow(described_class).to receive(:running?).and_return(true)
+
+      expect { described_class.start }.to raise_error(described_class::Error, /already in progress/)
+    end
+
+    it 'raises immediately when a backup is already preparing' do
+      allow(described_class).to receive(:preparing?).and_return(true)
+
+      expect { described_class.start }.to raise_error(described_class::Error, /already in progress/)
+    end
+
     it 'launches docker:cli with the backup script and required mounts' do
       described_class.start
 
@@ -152,25 +184,31 @@ RSpec.describe BackupRunner do
       expect { described_class.start }.to raise_error(described_class::Error, /restore is already/)
     end
 
-    it 'translates a docker name conflict into a friendly error' do
+    it 'translates a docker name conflict into a friendly error file' do
       state[:docker_run_output] = 'docker: container name "/helios-backup-runner" is already in use'
       state[:docker_run_success] = false
 
-      expect { described_class.start }.to raise_error(described_class::Error, /already in progress/)
+      expect { described_class.start }.not_to raise_error
+      expect(runtime_error_file).to include('already in progress')
     end
 
-    it 'surfaces other docker run failures verbatim' do
+    it 'surfaces other docker run failures verbatim in the error file' do
       state[:docker_run_output] = 'Cannot connect to the Docker daemon'
       state[:docker_run_success] = false
 
-      expect { described_class.start }.to raise_error(described_class::Error, /Cannot connect to the Docker daemon/)
+      expect { described_class.start }.not_to raise_error
+      expect(runtime_error_file).to include('Cannot connect to the Docker daemon')
     end
 
-    it 'fails fast when the docker:cli pull fails' do
+    it 'records an error file when the docker:cli pull fails' do
       state[:docker_pull_output] = 'network unreachable'
       state[:docker_pull_success] = false
 
-      expect { described_class.start }.to raise_error(described_class::Error, /network unreachable/)
+      expect { described_class.start }.not_to raise_error
+      aggregate_failures do
+        expect(runtime_error_file).to include('network unreachable')
+        expect(find_backup_runner_call).to be_nil
+      end
     end
 
     it 'marks every backup phase via set_phase so the UI can show progress' do
@@ -206,7 +244,7 @@ RSpec.describe BackupRunner do
         )
       end
 
-      it 'aborts with destination_unreachable and never launches the runner when the probe fails' do
+      it 'records destination_unreachable and never launches the runner when the probe fails' do
         allow_any_instance_of(Backups::ConnectionTest).to receive(:call).and_return( # rubocop:disable RSpec/AnyInstance
           ConnectionTesting::Result.new(ok: false, reason: :backup_path_missing),
         )
@@ -215,8 +253,11 @@ RSpec.describe BackupRunner do
           reason: I18n.t('configurations.connection_test.backup_path_missing'),
         )
 
-        expect { described_class.start }.to raise_error(described_class::Error, expected)
-        expect(find_backup_runner_call).to be_nil
+        expect { described_class.start }.not_to raise_error
+        aggregate_failures do
+          expect(runtime_error_file).to eq(expected)
+          expect(find_backup_runner_call).to be_nil
+        end
       end
     end
 
@@ -282,6 +323,37 @@ RSpec.describe BackupRunner do
   end
 
   describe '.in_progress' do
+    context 'when the preparing thread is alive' do
+      let(:gate) { Queue.new }
+
+      before do
+        # Exercise the real thread machinery the outer before stubs away.
+        allow(described_class).to receive(:spawn_preparing_thread!).and_call_original
+        allow(described_class).to receive(:preparing?).and_call_original
+
+        instance = described_class.new
+        allow(instance).to receive(:run_preparing!) { gate.pop }
+        allow(described_class).to receive(:new).and_return(instance)
+      end
+
+      after do
+        gate << :go
+        Timeout.timeout(2) { Thread.pass while described_class.preparing? }
+      end
+
+      it 'reports a :preparing snapshot with the planned filename' do
+        described_class.start
+        Timeout.timeout(2) { Thread.pass until described_class.preparing? }
+
+        snapshot = described_class.in_progress
+        aggregate_failures do
+          expect(snapshot.phase).to eq(:preparing)
+          expect(snapshot.filename).to eq('solectrus-backup-20260508-143000.tar')
+          expect(snapshot.started_at).to eq(Time.current)
+        end
+      end
+    end
+
     it 'returns nil when no container exists' do
       state[:docker_inspect_success] = false
 
@@ -429,6 +501,15 @@ RSpec.describe BackupRunner do
 
   def find_backup_runner_call
     state[:open3_calls].find { |args| args[0..1] == %w[docker run] && args.include?('helios-backup-runner') }
+  end
+
+  # Content of the runtime error file the preparing thread writes on failure
+  # (the same /runtime/error.txt the backup.sh sidecar uses), read from the
+  # currently-configured data path so external/S3 contexts resolve correctly.
+  def runtime_error_file
+    File.read(File.join(Rails.configuration.data_path, 'helios', 'runners', 'error.txt')).strip
+  rescue Errno::ENOENT
+    nil
   end
 
   def stub_open3_response(args)

@@ -113,6 +113,10 @@ module BackupProgress
 
     def build_phases
       list = []
+      # HELIOS-side image pull + container launch (BackupRunner's preparing
+      # thread). First step the user sees so a fresh-host docker:cli pull
+      # reads as a phase, not a stuck button.
+      list << :preparing if @kind == :backup
       list << :downloading if @kind == :restore && @include_s3
       list.concat(script_phases)
       list.push(:uploading, :pruning) if @kind == :backup && @include_s3

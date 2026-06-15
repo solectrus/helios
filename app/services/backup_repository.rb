@@ -57,7 +57,7 @@ class BackupRepository
   class << self
     delegate :all, :latest, :directory, :host_directory, :destroy!, :prune!, :download,
              :direct_download_url, :mark_pending!, :detect_completion!,
-             :record_backup!, :clear_error!, :read_archive_for, to: :storage
+             :record_backup!, :clear_error!, :write_error_file!, :read_archive_for, to: :storage
 
     def find!(filename)
       raise NotFound unless valid_filename?(filename)

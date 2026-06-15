@@ -28,6 +28,7 @@ en:
     current: 'In progress'
     pending: 'Pending'
   phases:
+    preparing: 'Preparation'
     downloading: 'Download backup from S3'
     dumping_postgres: 'Back up PostgreSQL'
     dumping_influx: 'Back up InfluxDB'

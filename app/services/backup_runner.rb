@@ -61,6 +61,10 @@ class BackupRunner < DetachedRunner
 
   # Phase names the backup script writes into PHASE_FILENAME. Anything
   # outside this allowlist falls back to the generic "In progress…" label.
+  # :preparing is *not* a script phase — it is the HELIOS-side image pull +
+  # container launch tracked via the preparing thread (see below), so it
+  # lives only in the progress component's phase list, never in this marker
+  # allowlist.
   KNOWN_PHASES = %i[dumping_postgres dumping_influx bundling].freeze
 
   SCRIPT_PATH = ::File.join(__dir__, 'backup_runner', 'backup.sh').freeze
@@ -91,11 +95,41 @@ class BackupRunner < DetachedRunner
     # the create form stays visible with a disabled button.
     delegate :databases_configured?, to: :new
 
-    # Extends the inherited in_progress with the S3 upload phase, and
-    # re-spawns the uploader if a HELIOS restart killed the thread while
-    # the staged tar is still on disk.
+    # Extends the inherited in_progress with two HELIOS-side phases the base
+    # runner doesn't know about: the :preparing phase (image pull + container
+    # launch, run in a background thread so the click redirects to the
+    # progress page immediately — mirrors CsvImportRunner) and the S3 upload
+    # phase (re-spawning the uploader if a HELIOS restart killed the thread
+    # while the staged tar is still on disk).
     def in_progress
-      super || s3_upload_in_progress_or_resume
+      preparing_in_progress ||           # HELIOS prep thread, no container yet
+        super ||                         # the running docker:cli sidecar (base)
+        s3_upload_in_progress_or_resume  # post-exit S3 upload tail
+    end
+
+    # True while the background thread is pulling docker:cli + launching the
+    # container. Process-local; a HELIOS restart kills it — the next /backups
+    # poll then falls through to the (now-running) container, or to the
+    # failure card if preparing left an error file behind.
+    def preparing?
+      mutex.synchronize { @preparing_thread&.alive? || false }
+    end
+
+    # Hands the slow pull + launch off to a thread so the controller can
+    # redirect to the progress page immediately. Single-flight; mirrors
+    # CsvImportRunner.spawn_preparing_thread!. started_at/filename are
+    # captured here so the progress page can label the run before any
+    # container exists.
+    def spawn_preparing_thread!(instance)
+      mutex.synchronize do
+        return if @preparing_thread&.alive?
+
+        @preparing_started_at = instance.send(:timestamp)
+        @preparing_filename = instance.send(:backup_filename)
+        @preparing_thread = Thread.new do # rubocop:disable ThreadSafety/NewThread
+          Rails.application.executor.wrap { instance.send(:run_preparing!) }
+        end
+      end
     end
 
     def s3_upload_in_progress_or_resume
@@ -111,18 +145,39 @@ class BackupRunner < DetachedRunner
       BackupRepository::S3::Uploader.start_async(filename)
       BackupRepository::S3::Uploader.current
     end
+
+    private
+
+    # An InProgress snapshot for the :preparing phase, or nil when no prep
+    # thread is alive.
+    def preparing_in_progress
+      mutex.synchronize do
+        return nil unless @preparing_thread&.alive?
+
+        BackupRepository::InProgress.new(
+          started_at: @preparing_started_at,
+          filename: @preparing_filename,
+          phase: :preparing,
+        )
+      end
+    end
+
+    def mutex
+      @mutex ||= Mutex.new # rubocop:disable ThreadSafety/ClassInstanceVariable
+    end
   end
 
+  # validate! runs synchronously so its cheap, immediately-fixable failures
+  # (env/config/tokens missing, a database service down, a concurrent run)
+  # still surface as a red banner on click. Everything that can take a while
+  # — notably the docker:cli pull on a fresh host — moves into the preparing
+  # thread so the click redirects straight to the progress page (mirrors
+  # CsvImportRunner).
   def start(automatic: false)
     validate!
-    pull_image_if_needed!
-    preflight_destination!
     BackupRepository.clear_error!
     RunnerLog.record_started!(:backup, automatic:)
-    run_container!
-    BackupRepository.mark_pending!(backup_filename)
-    BackupRepository::S3::Uploader.start_async(backup_filename) if BackupRepository.s3?
-    self.class.invalidate_in_progress_cache!
+    self.class.spawn_preparing_thread!(self)
   end
 
   def unavailable_reason
@@ -152,11 +207,39 @@ class BackupRunner < DetachedRunner
 
   private
 
+  # Body of the preparing thread: the slow pull + the container launch the
+  # click no longer waits for. Failures here are surfaced exactly the way
+  # the backup.sh sidecar surfaces its own — an error file in the runtime
+  # dir that detect_completion! turns into a red completion card — so the
+  # user gets the message on the progress page instead of a button spinner.
+  def run_preparing!
+    pull_image_if_needed!
+    preflight_destination!
+    run_container!
+    BackupRepository.mark_pending!(backup_filename)
+    BackupRepository::S3::Uploader.start_async(backup_filename) if BackupRepository.s3?
+    self.class.invalidate_in_progress_cache!
+  rescue StandardError => e
+    logger.warn("backup preparing failed: #{e.class}: #{e.message}")
+    capture_preparing_failure!(e)
+  end
+
+  # Mirror backup.sh's failure contract from the Ruby side: write the message
+  # into /runtime/error.txt and drop a pending marker so detect_completion!
+  # fires even if no /backups poll observed the (possibly very short)
+  # preparing window, then refresh the cache for the next poll.
+  def capture_preparing_failure!(error)
+    BackupRepository.write_error_file!(error.message.presence || "#{error.class}: (no message)")
+    BackupRepository.mark_pending!(backup_filename)
+    self.class.invalidate_in_progress_cache!
+  end
+
   def reason(key)
     I18n.t("backups.runner.unavailable_reasons.#{key}")
   end
 
   def validate!
+    raise Error, error(:already_in_progress) if self.class.preparing? || self.class.running?
     raise Error, error(:restore_in_progress) if RestoreRunner.running?
     raise Error, error(:csv_import_in_progress) if CsvImportRunner.in_progress?
 

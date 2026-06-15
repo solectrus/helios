@@ -60,6 +60,16 @@ class BackupRepository
       FileUtils.rm_f(runtime_error_path(filename))
     end
 
+    # Mirrors backup.sh's failure contract from the Ruby side (e.g. when the
+    # BackupRunner preparing thread fails before the sidecar exists): write
+    # the message into the same runtime error.txt that detect_completion!
+    # later turns into a red completion card.
+    def write_error_file!(message, filename = BackupRepository::ERROR_FILENAME)
+      path = runtime_error_path(filename)
+      FileUtils.mkdir_p(::File.dirname(path))
+      ::File.write(path, message)
+    end
+
     def runtime_error_path(filename)
       ::File.join(DetachedRunner.runtime_directory, filename)
     end

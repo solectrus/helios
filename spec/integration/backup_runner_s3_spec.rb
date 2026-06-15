@@ -194,6 +194,14 @@ RSpec.describe BackupRunner, :docker_stack do
   # race past the uploader and observe an empty Backup table.
   def wait_for_backup_completion!(timeout: 240)
     deadline = Time.current + timeout
+
+    # The image pull + container launch now run on a background thread, so the
+    # container only appears once that thread finishes. Wait for it before
+    # watching for the container to exit, otherwise an empty `docker ps`
+    # (container not started yet) would be mistaken for "already done".
+    wait_until(deadline) { !described_class.preparing? } ||
+      raise("backup preparing thread did not finish within #{timeout}s")
+
     wait_until(deadline) do
       running, = Open3.capture2('docker', 'ps', '-aq', '--filter', "name=#{described_class::CONTAINER_NAME}")
       running.strip.empty?
