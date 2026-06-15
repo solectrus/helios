@@ -64,12 +64,14 @@
                 <ul
                   tabindex="0"
                   class="
-                    dropdown-content menu bg-base-100 text-base-content rounded-box top-full z-10 mt-1 w-56 gap-1
-                    p-2 shadow-2xl lg:top-auto lg:bottom-full lg:mt-0 lg:mb-1
+                    dropdown-content menu bg-base-300 text-base-content ring-base-content/15 rounded-box top-full
+                    z-10 mt-1 w-56 gap-1 p-2 shadow-2xl ring-1 lg:top-auto lg:bottom-full lg:mt-0 lg:mb-1
                   "
                 >
                   <% dropdown_actions.each do |key| %>
-                    <li><%= action_button(key, "btn btn-ghost btn-sm w-full justify-start gap-3", long: true) %></li>
+                    <li>
+                      <%= action_button(key, "btn btn-ghost btn-sm w-full justify-start gap-3 hover:bg-base-100", long: true) %>
+                    </li>
                   <% end %>
                 </ul>
               </div>
