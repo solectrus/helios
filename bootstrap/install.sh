@@ -5,6 +5,16 @@
 # Usage:
 #   curl -fsSL https://raw.githubusercontent.com/solectrus/helios/main/bootstrap/install.sh | bash
 #
+# Unattended (no TTY, e.g. Proxmox LXC helper or CI) — opt in via env vars:
+#   HELIOS_ASSUME_YES=1      auto-confirm operational prompts (install Docker,
+#                            continue below recommended specs)
+#   HELIOS_ACCEPT_LICENSE=1  accept the license without prompting (kept
+#                            separate from HELIOS_ASSUME_YES on purpose)
+#   HELIOS_QUIET=1           silence docker compose pull/up output
+#
+#   HELIOS_ASSUME_YES=1 HELIOS_ACCEPT_LICENSE=1 \
+#     bash <(curl -fsSL https://raw.githubusercontent.com/solectrus/helios/main/bootstrap/install.sh)
+#
 # Detects whether the current directory already contains a SOLECTRUS stack
 # (compose.yaml + .env) and either:
 #   - performs a FRESH install (creates compose.yaml + .env from scratch), or
@@ -23,6 +33,25 @@ PROJECT_NAME="solectrus"
 # script's last-update timestamp from the GitHub API on welcome.
 HELIOS_REPO="${HELIOS_REPO:-solectrus/helios}"
 HELIOS_REF="${HELIOS_REF:-main}"
+
+# Non-interactive opt-ins for unattended runs (Proxmox LXC helper, CI, …).
+# HELIOS_ASSUME_YES auto-confirms the operational prompts (install Docker,
+# continue below recommended specs). HELIOS_ACCEPT_LICENSE accepts the
+# license — kept deliberately separate from HELIOS_ASSUME_YES so the legal
+# consent is never granted implicitly. HELIOS_QUIET silences the docker
+# compose pull/up output.
+HELIOS_ASSUME_YES="${HELIOS_ASSUME_YES:-0}"
+HELIOS_ACCEPT_LICENSE="${HELIOS_ACCEPT_LICENSE:-0}"
+HELIOS_QUIET="${HELIOS_QUIET:-0}"
+
+# Truthy test for the opt-in env vars above. Accepts the usual on/yes/true
+# spellings; anything else (including the 0 default) is treated as false.
+is_true() {
+  case "$1" in
+    1|y|Y|yes|Yes|YES|true|TRUE) return 0 ;;
+    *) return 1 ;;
+  esac
+}
 
 # Preflight thresholds. ABORT = the install will fail without this.
 # RECOMMENDED = it will work but the user runs out of headroom soon.
@@ -86,15 +115,20 @@ die() { error "Error: $*"; exit 1; }
 need() { command -v "$1" >/dev/null 2>&1 || die "'$1' is required but not installed."; }
 
 # stdin is the piped script, so read from the controlling terminal instead.
+# With HELIOS_ASSUME_YES set we skip the terminal entirely and auto-confirm,
+# which is what makes the operational prompts (Docker install, warn_or_abort)
+# usable on a TTY-less host.
 prompt_yn() {
-  [ -r /dev/tty ] || die "No TTY available for confirmation."
+  if is_true "$HELIOS_ASSUME_YES"; then
+    printf '%syes (non-interactive)\n' "$1"
+    return 0
+  fi
+  [ -r /dev/tty ] \
+    || die "No TTY available for confirmation. Set HELIOS_ASSUME_YES=1 for an unattended run."
   local reply
   printf '%s' "$1" > /dev/tty
   read -r reply < /dev/tty
-  case "$reply" in
-    y|Y|yes|Yes|YES) return 0 ;;
-    *) return 1 ;;
-  esac
+  is_true "$reply"
 }
 
 # Soft-fail preflight: print a warning, ask for confirmation, abort cleanly
@@ -195,8 +229,22 @@ TEXT
 TEXT
   highlight "    https://github.com/${HELIOS_REPO}/blob/${HELIOS_REF}/LICENSE.md"
   printf '\n'
-  prompt_yn "  Accept license terms and continue? [y/N] " \
-    || { warn "  Aborted."; exit 0; }
+
+  # License consent is deliberately NOT covered by HELIOS_ASSUME_YES — granting
+  # legal consent implicitly would be wrong. It needs its own explicit opt-in.
+  if is_true "$HELIOS_ACCEPT_LICENSE"; then
+    success "  License accepted via HELIOS_ACCEPT_LICENSE."
+  elif is_true "$HELIOS_ASSUME_YES" || [ ! -r /dev/tty ]; then
+    # Unattended run, but no explicit license opt-in — refuse rather than
+    # accept on the user's behalf.
+    error "  License not accepted. Re-run with HELIOS_ACCEPT_LICENSE=1 to accept"
+    error "  the license for an unattended install:"
+    error "    https://github.com/${HELIOS_REPO}/blob/${HELIOS_REF}/LICENSE.md"
+    die "License acceptance required."
+  else
+    prompt_yn "  Accept license terms and continue? [y/N] " \
+      || { warn "  Aborted."; exit 0; }
+  fi
   printf '\n'
 }
 
@@ -516,12 +564,24 @@ append_helios_service() {
   mv "$tmp" "$COMPOSE_FILE"
 }
 
+# Run a command, silencing its output when HELIOS_QUIET is set. Used for the
+# verbose docker compose pull/up steps on unattended runs.
+run_quiet() {
+  if is_true "$HELIOS_QUIET"; then
+    "$@" >/dev/null 2>&1
+  else
+    "$@"
+  fi
+}
+
 start_stack() {
+  # The staged "Pulling…/Starting…" headers stay either way; only the verbose
+  # docker compose progress is suppressed under HELIOS_QUIET (via run_quiet).
   bold "Pulling images..."
-  docker compose -f "$COMPOSE_FILE" pull
+  run_quiet docker compose -f "$COMPOSE_FILE" pull
 
   bold "Starting stack..."
-  docker compose -f "$COMPOSE_FILE" up -d
+  run_quiet docker compose -f "$COMPOSE_FILE" up -d
 }
 
 # Best-effort URL the user will open. Prefers the primary outbound IPv4

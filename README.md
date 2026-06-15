@@ -79,6 +79,17 @@ When it finishes, HELIOS is available at `http://<your-host>:3999`.
 
 > Prefer not to pipe `curl | bash`? Download `bootstrap/install.sh`, review it, and run it locally.
 
+**Unattended install** — for a Proxmox LXC helper, CI, or any host without a terminal, opt in via environment variables so the script never prompts:
+
+```bash
+HELIOS_ASSUME_YES=1 HELIOS_ACCEPT_LICENSE=1 \
+  bash <(curl -fsSL https://raw.githubusercontent.com/solectrus/helios/main/bootstrap/install.sh)
+```
+
+- **`HELIOS_ASSUME_YES`** (default `0`) — auto-confirms operational prompts (install Docker, continue below recommended specs).
+- **`HELIOS_ACCEPT_LICENSE`** (default `0`) — accepts the [license](LICENSE.md) without prompting. Kept separate from `HELIOS_ASSUME_YES` on purpose, so license consent is never granted implicitly.
+- **`HELIOS_QUIET`** (default `0`) — silences `docker compose pull` / `up` output.
+
 ## First run
 
 On the first visit to `http://<your-host>:3999`:
