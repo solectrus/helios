@@ -47,6 +47,28 @@ RSpec.describe 'Backups', :with_admin_password do
       end
     end
 
+    # While an operation is active the shell renders its panel inline instead
+    # of behind the lazy frame, so a Turbo morph refresh (pushed on every
+    # backup container event) updates it in place rather than collapsing the
+    # frame to its empty placeholder and re-fetching — the progress flicker.
+    it 'renders the progress panel inline (no lazy frame) on the shell request while a backup runs' do
+      allow(BackupRunner).to receive(:in_progress).and_return(
+        BackupRepository::InProgress.new(
+          started_at: Time.zone.local(2026, 5, 8, 14, 30, 0),
+          filename: 'solectrus-backup-20260508-143000.tar',
+          phase: :preparing,
+        ),
+      )
+
+      get backups_path
+
+      aggregate_failures do
+        expect(response.body).to include('id="backups-content"')
+        expect(response.body).to include('Creating backup')
+        expect(response.body).not_to include('loading="lazy"')
+      end
+    end
+
     it 'renders the page synchronously for a remote destination — the DB-backed listing needs no sidecar' do
       with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/nas' })
 

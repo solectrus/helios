@@ -3,13 +3,12 @@ module Backups
     before_action :set_backup, only: :show
 
     def index
-      # Paint the shell instantly; defer the expensive state load (notably the
-      # BackupRepository.all filesystem/S3 listing) to the lazy content frame.
+      BackupRepository.detect_completion!
+
       if rendering_content_frame?('backups-content')
-        BackupRepository.detect_completion!
         load_state
       else
-        @lazy_content = true
+        load_shell_state
       end
       render 'backups/index'
     end
@@ -46,6 +45,25 @@ module Backups
     end
 
     private
+
+    # Full-page render: the initial load after the create click, or a Turbo
+    # morph refresh pushed on every backup/restore container event. Cheap
+    # runner state (no BackupRepository.all listing) decides the layout:
+    #
+    #   - operation active → render the progress/completion panel inline, so a
+    #     morph refresh updates it in place. Behind the lazy frame each refresh
+    #     would instead collapse the frame to its empty placeholder and
+    #     re-fetch it, blinking the panel out and back in on every event.
+    #   - idle → keep deferring the expensive BackupRepository.all listing to
+    #     the lazy content frame so the shell still paints fast.
+    def load_shell_state
+      load_runner_state!
+      if @in_progress || @completion
+        load_destination_state!
+      else
+        @lazy_content = true
+      end
+    end
 
     def prepare_download_response(backup)
       response.headers['Content-Type'] = 'application/x-tar'
