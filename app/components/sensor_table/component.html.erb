@@ -5,7 +5,14 @@
   data-sensors-polling-enabled-value="<%= polling_enabled? %>"
   data-preference-toggle-key-value="hide_unused"
 >
-  <div class="bg-base-100 border-base-content/10 border-y md:rounded-2xl md:border">
+  <%#
+    overflow-clip (not overflow-hidden) clips the square corners of the sticky
+    group-header cells so they don't poke out over the rounded container
+    corners, while still allowing the headers to stick to the viewport —
+    overflow-hidden would turn the card into a scroll container and break that.
+  %>
+
+  <div class="bg-base-100 border-base-content/10 border-y md:overflow-clip md:rounded-2xl md:border">
     <div class="p-0">
       <table
         class="table-sm table md:table-fixed"
