@@ -15,11 +15,11 @@
     <aside
       class="
         bg-base-100 border-base-content/10 -mx-4 flex flex-col gap-3 self-start border-y p-5 md:mx-0 md:rounded-2xl
-        md:border lg:min-w-[18rem]
+        md:border lg:min-w-72
       "
     >
       <div>
-        <p class="text-base-content/50 text-[0.65rem] font-medium tracking-[0.2em] uppercase">
+        <p class="text-base-content/50 text-xs font-medium tracking-widest uppercase">
           <%= t('.version_label') %>
         </p>
 
@@ -30,7 +30,7 @@
 
       <% if @git.commit_branch.present? %>
         <div class="border-base-content/10 border-t pt-3">
-          <p class="text-base-content/50 text-[0.65rem] font-medium tracking-[0.2em] uppercase">
+          <p class="text-base-content/50 text-xs font-medium tracking-widest uppercase">
             <%= t('.branch_label') %>
           </p>
 
@@ -40,7 +40,7 @@
 
       <% if @commit_time %>
         <div class="border-base-content/10 border-t pt-3">
-          <p class="text-base-content/50 text-[0.65rem] font-medium tracking-[0.2em] uppercase">
+          <p class="text-base-content/50 text-xs font-medium tracking-widest uppercase">
             <%= t('.built_label') %>
           </p>
 
@@ -157,7 +157,7 @@
 
               <span class="text-base-content/55 shrink-0 text-xs"><%= component[:license] %></span>
 
-              <i class="fa-solid fa-chevron-right text-base-content/30 shrink-0 text-[0.6rem]"></i>
+              <i class="fa-solid fa-chevron-right text-base-content/30 shrink-0 text-xs"></i>
             </a>
           </li>
         <% end %>

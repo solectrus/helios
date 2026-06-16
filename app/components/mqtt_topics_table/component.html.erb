@@ -59,7 +59,7 @@
 
           <% if extraction[:value] %>
             <div class="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-sm">
-              <span class="text-base-content/40 text-[10px] tracking-wider uppercase"><%= extraction[:label] %></span>
+              <span class="text-base-content/40 text-xs tracking-wider uppercase"><%= extraction[:label] %></span>
 
               <span class="text-base-content/90 font-mono break-all"><%= extraction[:value] %></span>
             </div>
@@ -67,7 +67,7 @@
 
           <% if filters.any? %>
             <div class="flex flex-wrap items-baseline gap-x-1.5 gap-y-1 text-sm">
-              <span class="text-base-content/40 text-[10px] tracking-wider uppercase">
+              <span class="text-base-content/40 text-xs tracking-wider uppercase">
                 <%= t('datasources.mqtt_topics.filters.label') %>
               </span>
 
@@ -83,7 +83,7 @@
             <i aria-hidden="true" class="fa-solid fa-arrow-right text-primary text-lg"></i>
 
             <span class="inline-flex items-baseline gap-1.5">
-              <span class="text-base-content/40 text-[10px] tracking-wider uppercase">
+              <span class="text-base-content/40 text-xs tracking-wider uppercase">
                 <%= t('datasources.mqtt_topics.target.measurement') %>
               </span>
 
@@ -91,7 +91,7 @@
             </span>
 
             <span class="inline-flex items-baseline gap-1.5">
-              <span class="text-base-content/40 text-[10px] tracking-wider uppercase">
+              <span class="text-base-content/40 text-xs tracking-wider uppercase">
                 <%= t('datasources.mqtt_topics.target.field') %>
               </span>
 
@@ -100,7 +100,7 @@
 
             <% if topic['type'].present? %>
               <span class="inline-flex items-baseline gap-1.5">
-                <span class="text-base-content/40 text-[10px] tracking-wider uppercase">
+                <span class="text-base-content/40 text-xs tracking-wider uppercase">
                   <%= t('datasources.mqtt_topics.target.type') %>
                 </span>
 

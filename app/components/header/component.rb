@@ -13,7 +13,7 @@ module Header
     ].freeze
 
     TAB_BASE_CLASSES = 'flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold ' \
-                       'tracking-[0.1em] uppercase transition-colors'.freeze
+                       'tracking-widest uppercase transition-colors'.freeze
 
     def initialize(active_tab:)
       super()

@@ -112,7 +112,7 @@ module ConfigNav
         'flex items-center gap-3 rounded-lg px-3 py-2 hover:bg-base-content/5 ' \
           'text-base-content/70 transition-colors'
       else
-        'flex items-center gap-3 rounded-lg px-3 py-2 font-mono text-[0.95rem] ' \
+        'flex items-center gap-3 rounded-lg px-3 py-2 font-mono text-sm ' \
           'text-base-content/70 hover:bg-base-content/5 hover:text-base-content transition-colors'
       end
     end
