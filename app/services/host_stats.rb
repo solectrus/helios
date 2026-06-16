@@ -60,7 +60,7 @@ module HostStats # rubocop:disable Metrics/ModuleLength
     # compute the delta. nil on the first call → :percent is nil.
     def read_cpu_metrics(prev:, now:, limits:)
       cpu_from_host_cgroup(prev, now, limits) || cpu_from_proc_stat(prev) ||
-        cpu_from_sysctl || { percent: nil, cores: nil, sample: nil }
+        cpu_from_top || { percent: nil, cores: nil, sample: nil }
     end
 
     # CPU usage of the Docker host from its cgroup's cpu.stat. `usage_usec` is
@@ -121,17 +121,21 @@ module HostStats # rubocop:disable Metrics/ModuleLength
       { total: parsed.sum, idle: parsed[3].to_i + parsed[4].to_i }
     end
 
-    # macOS dev fallback (no /proc/stat). Approximates with load/cores —
-    # semantically looser than the Linux path, only used in dev.
-    def cpu_from_sysctl
-      raw, status = Open3.capture2e('sysctl', '-n', 'vm.loadavg')
+    # macOS dev fallback (no /proc/stat). `top -l 2` samples cumulative CPU
+    # ticks twice and prints the busy/idle split of the second sample as a
+    # percentage already normalised across all cores — matching the Linux
+    # path's semantics. Replaces the old load-average proxy, which badly
+    # overstated usage on many-core Macs (load 16 on 20 cores ≠ 80 % busy).
+    # Blocks ~1 s on the shell-out, but only ever runs in dev.
+    def cpu_from_top
+      raw, status = Open3.capture2e('top', '-l', '2', '-n', '0', '-s', '0')
       return nil unless status.success?
 
-      load = raw.match(/[\d.]+/)&.then { |m| m[0].to_f }
+      idle = raw.scan(/([\d.]+)%\s+idle/i).last&.first&.to_f
       cores = Etc.nprocessors
-      return nil if load.nil? || cores.zero?
+      return nil if idle.nil? || cores.zero?
 
-      { percent: (load / cores * 100).round.clamp(0, 100), cores: cores, sample: nil }
+      { percent: (100 - idle).round.clamp(0, 100), cores: cores, sample: nil }
     rescue SystemCallError
       nil
     end
