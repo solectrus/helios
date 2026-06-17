@@ -26,7 +26,7 @@ require 'timeout'
 # outcome: the success file is only written if both succeed.
 class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
   CONTAINER_NAME = 'helios-csv-import-runner'.freeze
-  IMAGE = 'ghcr.io/solectrus/csv-importer:develop'.freeze
+  IMAGE = 'ghcr.io/solectrus/csv-importer:latest'.freeze
   INFLUXDB_SERVICE = 'influxdb'.freeze
   REDIS_SERVICE = 'redis'.freeze
   IMPORT_MOUNT = '/data'.freeze
