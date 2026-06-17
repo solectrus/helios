@@ -61,6 +61,7 @@ module Compose
       labels
       depends_on
       healthcheck
+      ulimits
       restart
       logging
     ].freeze

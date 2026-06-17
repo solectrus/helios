@@ -112,6 +112,10 @@ services:
       - CMD
       - influx
       - ping
+    ulimits:
+      nofile:
+        soft: 65536
+        hard: 65536
     restart: unless-stopped
     logging:
       driver: json-file

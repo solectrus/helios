@@ -4,6 +4,12 @@ module Export
       # Container port the InfluxDB HTTP API/UI always listens on.
       CONTAINER_PORT = 8086
 
+      # Max open files for the InfluxDB container. Each shard keeps several
+      # index/TSM files open, so a long history (hundreds of shards) blows
+      # past Docker's default soft limit (often 1024) with "too many open
+      # files" on shard open. 65536 is InfluxData's recommended minimum.
+      NOFILE_LIMIT = 65_536
+
       def self.service_name
         'influxdb'
       end
@@ -57,6 +63,7 @@ module Export
           image: configuration.influxdb.image,
           environment: influxdb_environment,
           volumes: influxdb_volumes,
+          ulimits: influxdb_ulimits,
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD', 'influx', 'ping'),
         }
@@ -129,6 +136,10 @@ module Export
           bind_mount('/var/lib/influxdb2'),
           "./#{DetachedRunner::INFLUX_STAGING_DIRNAME}:#{DetachedRunner::INFLUX_STAGING_MOUNT}",
         ]
+      end
+
+      def influxdb_ulimits
+        { nofile: { soft: NOFILE_LIMIT, hard: NOFILE_LIMIT } }
       end
 
       def influxdb_environment
