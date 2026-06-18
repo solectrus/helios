@@ -5,6 +5,23 @@ RSpec.describe StackReset do
   let(:original_compose) { "services:\n  dashboard:\n    image: original:latest\n" }
   let(:original_env) { "TZ=Europe/Berlin\n" }
 
+  # Helper methods (not `let`) so the memoized-helper count stays in budget.
+  def regenerated_compose = "services:\n  dashboard:\n    image: regenerated:latest\n"
+  def regenerated_env = "TZ=Europe/Berlin\nREGENERATED=true\n"
+
+  # The real export regenerates compose.yaml / .env from the imported config,
+  # overwriting the just-restored originals. Mirror that here so the specs can
+  # tell the original (in the backup) apart from the regenerated output (in the
+  # live files).
+  def stub_regenerating_export
+    builder = instance_double(Export::Builder)
+    allow(builder).to receive(:write!) do
+      File.write(compose_path, regenerated_compose)
+      File.write(env_path, regenerated_env)
+    end
+    allow(Export::Builder).to receive(:new).and_return(builder)
+  end
+
   before do
     File.write(compose_path, "services:\n  dashboard:\n    image: edited:latest\n")
     File.write(env_path, "TZ=UTC\n")
@@ -22,23 +39,40 @@ RSpec.describe StackReset do
       allow(Import::StackReader).to receive(:new).and_return(instance_double(Import::StackReader))
       allow(Import::ConfigurationImporter).to receive(:new)
         .and_return(instance_double(Import::ConfigurationImporter, import!: nil))
-      allow(Export::Builder).to receive(:new).and_return(instance_double(Export::Builder, write!: nil))
+
+      stub_regenerating_export
     end
 
-    it 'restores compose.yaml from the backup' do
+    it 'restores the original backup before re-importing' do
+      reader = instance_double(Import::StackReader)
+      allow(Import::StackReader).to receive(:new).and_return(reader)
+      importer = instance_double(Import::ConfigurationImporter)
+      allow(Import::ConfigurationImporter).to receive(:new).with(reader).and_return(importer)
+      allow(importer).to receive(:import!) do
+        # At import time the original config must be in place, not the edited one.
+        expect(File.read(compose_path)).to eq(original_compose)
+        expect(File.read(env_path)).to eq(original_env)
+      end
+
       described_class.perform!
-      expect(File.read(compose_path)).to eq(original_compose)
+      expect(importer).to have_received(:import!)
     end
 
-    it 'restores .env from the backup' do
+    it 'leaves the regenerated compose.yaml / .env in place after re-import' do
       described_class.perform!
-      expect(File.read(env_path)).to eq(original_env)
+      expect(File.read(compose_path)).to eq(regenerated_compose)
+      expect(File.read(env_path)).to eq(regenerated_env)
     end
 
-    it 'creates fresh backups from the restored files' do
+    it 'preserves the original backup (does not clobber it with regenerated output)' do
       described_class.perform!
       expect(File.read(StackBackup.backup_path(compose_path))).to eq(original_compose)
       expect(File.read(StackBackup.backup_path(env_path))).to eq(original_env)
+    end
+
+    it 'keeps the backup available for a repeated reset' do
+      described_class.perform!
+      expect(StackBackup.exist?).to be true
     end
 
     it 'deletes the existing config.yaml' do

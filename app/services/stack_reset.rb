@@ -15,11 +15,16 @@ class StackReset
     FileUtils.rm_f(compose_path)
     FileUtils.rm_f(env_path)
 
-    FileUtils.mv(StackBackup.backup_path(compose_path), compose_path)
-    FileUtils.mv(StackBackup.backup_path(env_path), env_path)
+    # Restore the user's original pre-HELIOS config from the backup. `reimport`
+    # re-exports and overwrites compose.yaml / .env below, so this restored copy
+    # is transient — only the backup preserves the original. For the same reason
+    # we must NOT re-create the backup afterwards: that would clobber the
+    # original with the regenerated output (and turn every further reset into a
+    # no-op).
+    StackBackup.restore(compose_path)
+    StackBackup.restore(env_path)
 
     reimport
-    StackBackup.create!
     Orchestration::StackStatus.refresh!
   end
 
