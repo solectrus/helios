@@ -1,0 +1,262 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 3
+system:
+  admin_password: KKKKK
+  app_host: 10.31.22.46
+  installation_date: '2023-08-02'
+  secret_key_base: BBBBB
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:develop
+postgresql:
+  image: postgres:15-alpine
+  password: CCCCC
+  volume_path: "/home/pi/solectrus/postgresql"
+influxdb:
+  bucket: EEEEE
+  image: influxdb:2.7-alpine
+  org: AAAAA
+  password: DDDDD
+  token_admin: FFFFF
+  token_read: FFFFF
+  token_readwrite: FFFFF
+  token_write: FFFFF
+  volume_path: "/home/pi/solectrus/influxdb"
+redis:
+  image: redis:7-alpine
+  volume_path: "/home/pi/solectrus/redis"
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: pvnode
+  forecast_declination1: '44'
+  forecast_kwp1: '13.4'
+  forecast_latitude: '51.00000'
+  forecast_longitude: '6.00000'
+  forecast_pvnode_apikey: GGGGG
+  forecast_pvnode_azimuth1: '208'
+  forecast_roofs: '1'
+  measurement: Forecast
+mqtt:
+  mqtt_host: 10.31.22.46
+  mqtt_password: JJJJJ
+  mqtt_port: '1883'
+  mqtt_ssl: 'false'
+  mqtt_username: HHHHH
+shelly:
+  connection: local
+  interval: '5'
+  mode: essential
+sensors:
+  battery_charging_power:
+    field: bat_power_plus
+    measurement: my-pv-measurement
+    mqtt_formula: IF({value} < 0, -{value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/battery/devices/1/power
+    source: mqtt
+  battery_discharging_power:
+    field: bat_power_minus
+    measurement: my-pv-measurement
+    mqtt_formula: IF({value} > 0, {value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/battery/devices/1/power
+    source: mqtt
+  battery_soc:
+    field: bat_fuel_charge
+    measurement: my-pv-measurement
+    mqtt_payload_type: float
+    mqtt_topic: evcc/site/battery/devices/1/soc
+    source: mqtt
+  car_battery_soc:
+    field: evoque_soc
+    measurement: my-pv-measurement
+    mqtt_payload_type: float
+    mqtt_topic: evcc/loadpoints/1/vehicleSoc
+    source: mqtt
+  case_temp:
+    field: case_temp
+    measurement: my-pv-measurement
+    mqtt_json_path: "$.curflowtemp"
+    mqtt_payload_type: float
+    mqtt_topic: ems-esp/boiler_data
+    source: mqtt
+  custom_power_01:
+    field: power
+    measurement: wash
+    name: wash
+    shelly_host: 10.31.22.35
+    source: shelly
+  custom_power_02:
+    field: power
+    measurement: dryer
+    name: dryer
+    shelly_host: 10.31.22.36
+    source: shelly
+  custom_power_03:
+    field: allgemeinstrom
+    measurement: strom
+    mqtt_payload_type: float
+    mqtt_topic: Buderus/Allgemeinstrom
+    name: strom
+    source: mqtt
+  custom_power_04:
+    field: power
+    measurement: dish
+    name: dish
+    shelly_host: 10.31.22.62
+    source: shelly
+  custom_power_05:
+    field: power
+    measurement: cooler
+    name: cooler
+    shelly_host: 10.31.22.95
+    source: shelly
+  custom_power_06:
+    field: power
+    measurement: wztechnik
+    name: wztechnik
+    shelly_host: 10.31.22.55
+    source: shelly
+  custom_power_07:
+    field: power
+    measurement: pctechnik
+    name: pctechnik
+    shelly_host: 10.31.22.67
+    source: shelly
+  custom_power_08:
+    field: power
+    measurement: freezer
+    name: freezer
+    shelly_host: 10.31.22.42
+    source: shelly
+  custom_power_09:
+    field: power
+    measurement: wine
+    name: wine
+    shelly_host: 10.31.22.90
+    source: shelly
+  grid_export_limit:
+    field: power_ratio
+    measurement: my-pv-measurement
+    source: external
+  grid_export_power:
+    field: grid_power_minus
+    measurement: my-pv-measurement
+    mqtt_formula: IF({value} < 0, -{value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/grid/power
+    source: mqtt
+  grid_import_power:
+    field: grid_power_plus
+    measurement: my-pv-measurement
+    mqtt_formula: IF({value} > 0, {value}, 0)
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/grid/power
+    source: mqtt
+  heatpump_heating_power:
+    field: Buderus_Kompressor_power
+    measurement: my-pv-measurement
+    mqtt_payload_type: float
+    mqtt_topic: Buderus/Kompressor_power
+    source: mqtt
+  heatpump_power:
+    field: heatpump_power
+    measurement: my-pv-measurement
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/loadpoints/2/chargePower
+    source: mqtt
+  heatpump_status:
+    field: kompressor_status
+    measurement: my-pv-measurement
+    mqtt_payload_type: string
+    mqtt_topic: Buderus/Kompressor_Status
+    source: mqtt
+  heatpump_tank_temp:
+    field: Buderus_warmwasser
+    measurement: my-pv-measurement
+    mqtt_payload_type: float
+    mqtt_topic: Buderus/curtemp
+    source: mqtt
+  house_power:
+    field: house_power
+    measurement: my-pv-measurement
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/homePower
+    source: mqtt
+  inverter_power:
+    field: inverter_power
+    measurement: my-pv-measurement
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/site/pvPower
+    source: mqtt
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  inverter_power_forecast_clearsky:
+    field: watt_clearsky
+    measurement: Forecast
+    source: forecast
+  outdoor_temp:
+    field: Buderus_outdoortemp
+    measurement: my-pv-measurement
+    mqtt_payload_type: float
+    mqtt_topic: Buderus/outdoortemp
+    source: mqtt
+  outdoor_temp_forecast:
+    field: temp
+    measurement: Forecast
+    source: forecast
+  system_status:
+    field: kompressor_status
+    measurement: my-pv-measurement
+    source: external
+  system_status_ok:
+    field: current_state_ok
+    measurement: my-pv-measurement
+    source: external
+  wallbox_car_connected:
+    field: evoque_connect
+    measurement: my-pv-measurement
+    mqtt_payload_type: boolean
+    mqtt_topic: evcc/loadpoints/1/connected
+    source: mqtt
+  wallbox_power:
+    field: wallbox_charge_power
+    measurement: my-pv-measurement
+    mqtt_payload_type: integer
+    mqtt_topic: evcc/loadpoints/1/chargePower
+    source: mqtt
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:develop
+helios:
+  image: ghcr.io/solectrus/helios:latest
+_unmanaged:
+  env_vars:
+    SHELLY_GEN_COOLER: '2'
+    SHELLY_GEN_DISH: '2'
+    SHELLY_GEN_DRYER: '1'
+    SHELLY_GEN_FREEZER: '3'
+    SHELLY_GEN_PCTECHNIK: '3'
+    SHELLY_GEN_WASH: '1'
+    SHELLY_GEN_WINE: '3'
+    SHELLY_GEN_WZTECHNIK: '2'
+  services:
+    dozzle:
+      environment: []
+      image: amir20/dozzle:latest
+      labels:
+      - com.centurylinklabs.watchtower.scope=solectrus
+      ports:
+      - 7000:8080
+      restart: unless-stopped
+      volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
