@@ -219,6 +219,7 @@ export default class extends Controller<HTMLElement> {
     // --survey-progress (see updateProgress).
     this.survey.locale = readLocale();
     this.survey.showProgressBar = 'off';
+    this.suppressNavTooltips();
     this.updateProgress();
     this.survey.onCurrentPageChanged.add(() => this.updateProgress());
     this.survey.onPageVisibleChanged.add(() => this.updateProgress());
@@ -296,6 +297,20 @@ export default class extends Controller<HTMLElement> {
     // onValueChanged fires only on blur; clear a stale connection-test result
     // already while the user is still typing in a field.
     this.containerTarget.addEventListener('input', this.resetTestsOnInput);
+  }
+
+  // SurveyJS renders each navigation button (Weiter/Speichern/Zurück) as
+  // <input type="button" value={title} title={getTooltip()}>, and getTooltip()
+  // defaults to the label when no tooltip is set — so hovering the button
+  // shows a native tooltip that just repeats it. The visible label comes from
+  // `value`, so returning an empty tooltip drops the redundant title="" (which
+  // browsers don't show) without touching the label. The action's `tooltip`
+  // property can't do this: getTooltip() is `tooltip || title`, so an empty
+  // string falls back to the label.
+  private suppressNavTooltips() {
+    this.survey?.navigationBar.actions.forEach((action) => {
+      action.getTooltip = () => '';
+    });
   }
 
   private handleValueChanged(options: { name: string; value: unknown }) {
