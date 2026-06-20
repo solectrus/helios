@@ -267,7 +267,7 @@ namespace :licenses do
     # Prettier aligns the Markdown table columns; the raw `| --- |` output is
     # valid but visually unpleasant. Run it inline so the generator output is
     # immediately review-ready and nobody has to remember a follow-up step.
-    sh project_root.join('bin/yarn').to_s, 'prettier', '--write',
+    sh 'bunx', 'prettier', '--write',
        '--log-level=warn', summary_path.to_s, notices_path.to_s
 
     puts "Wrote docs/legal/THIRD_PARTY_LICENSES.md (#{ruby_specs.size} gems, #{js_deps.size} JS pkgs)"

@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - Ruby (see [`.ruby-version`](../../.ruby-version))
-- Node.js with Yarn (pinned via `packageManager` in [`package.json`](../../package.json); installed by Corepack)
+- [Bun](https://bun.com/) (version pinned via `engines.bun` in [`package.json`](../../package.json))
 - Docker Desktop or Docker Engine
 - Docker Compose CLI
 - [Caddy](https://caddyserver.com/) — terminates TLS for `https://helios.localhost` in development
@@ -63,7 +63,7 @@ bin/rspec spec/services/compose/file_spec.rb   # single file
 bin/rspec --tag integration                    # integration specs only (real Docker, slow)
 bin/turbo_tests                                # full suite, sharded across cores
 bin/coverage                                   # merged coverage report (after bin/turbo_tests)
-bin/yarn test                                  # Vitest (frontend specs)
+bun run test                                   # Vitest (frontend specs)
 bats --recursive spec/bats/                    # shell scripts
 ```
 

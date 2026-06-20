@@ -48,7 +48,7 @@ updates:
         patterns:
           - 'aws-*'
 
-  - package-ecosystem: npm
+  - package-ecosystem: bun
     directory: '/'
     schedule:
       interval: cron
@@ -56,6 +56,8 @@ updates:
       timezone: Europe/Berlin
     open-pull-requests-limit: 10
     versioning-strategy: auto
+    cooldown:
+      default-days: 1
     labels:
       - 'dependencies'
     groups:

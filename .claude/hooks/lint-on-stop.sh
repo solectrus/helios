@@ -48,13 +48,13 @@ run_check() {
   fi
 }
 
-[[ ${#erb_files[@]} -gt 0 ]] && run_check "erb-format" bin/yarn erb:format "${erb_files[@]}"
+[[ ${#erb_files[@]} -gt 0 ]] && run_check "erb-format" bun run erb:format "${erb_files[@]}"
 [[ ${#ruby_files[@]} -gt 0 ]] && run_check "rubocop" bin/rubocop --autocorrect --force-exclusion "${ruby_files[@]}"
-[[ ${#ts_files[@]} -gt 0 ]] && run_check "eslint" bin/yarn eslint --fix --no-warn-ignored "${ts_files[@]}"
-[[ ${#pretty_files[@]} -gt 0 ]] && run_check "prettier" bin/yarn prettier --write --ignore-unknown "${pretty_files[@]}"
+[[ ${#ts_files[@]} -gt 0 ]] && run_check "eslint" bunx eslint --fix --no-warn-ignored "${ts_files[@]}"
+[[ ${#pretty_files[@]} -gt 0 ]] && run_check "prettier" bunx prettier --write --ignore-unknown "${pretty_files[@]}"
 
 # Project-wide typecheck only if a .ts file actually changed
-[[ ${#ts_files[@]} -gt 0 ]] && run_check "tsc" bin/yarn tsc
+[[ ${#ts_files[@]} -gt 0 ]] && run_check "tsc" bun run tsc
 
 if [[ -n "$failures" ]]; then
   printf 'Linter/typecheck issues during stop hook:\n\n%s' "$failures" >&2

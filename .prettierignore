@@ -1,7 +1,6 @@
 public/*
 coverage/*
 tmp/*
-.yarn/*
 .ruby-lsp
 
 # Import-scenario fixtures: generated config.yaml/compose.yaml/.env must stay

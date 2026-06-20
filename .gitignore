@@ -31,16 +31,6 @@
 # Vite
 /public/vite*
 
-# https://yarnpkg.com/getting-started/qa#which-files-should-be-gitignored
-.pnp.*
-.yarn/*
-!.yarn/.gitkeep
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/sdks
-!.yarn/versions
-
 # Ignore SQLite database files
 *.sqlite3
 *.sqlite3-shm

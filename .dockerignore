@@ -16,7 +16,6 @@
 .ruby-lsp
 .simplecov
 .vscode
-.yarnclean
 **/*.DS_Store
 AGENTS.md
 bin/brakeman
@@ -28,7 +27,6 @@ bin/open
 bin/rspec
 bin/rubocop
 bin/setup
-bin/yarn
 bootstrap
 Brewfile
 Caddyfile
@@ -54,7 +52,6 @@ stack
 storage/development*
 storage/test*
 vitest.config.mts
-yarn-error.log
 
 tmp/*
 !/tmp/pids/

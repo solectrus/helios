@@ -34,9 +34,9 @@ Assume the dev server is already running (started by the user via `bin/dev`) —
 After modifying code, **always** run the matching linter(s) and fix issues:
 
 - Ruby (`.rb`): `bin/rubocop` (use `--autocorrect`)
-- ERB (`.html.erb`): `bin/herb lint` + `bin/yarn erb:format` (or `erb:check`)
-- TypeScript (`.ts`): `bin/yarn tsc` + `bin/yarn lint`
-- JSON/YAML/Markdown/CSS: `bin/yarn prettier --write`
+- ERB (`.html.erb`): `bin/herb lint` + `bun run erb:format` (or `erb:check`)
+- TypeScript (`.ts`): `bun run tsc` + `bun run lint`
+- JSON/YAML/Markdown/CSS: `bunx prettier --write`
 
 Run `bin/brakeman` occasionally for security scans (not per-change).
 
@@ -74,7 +74,7 @@ HELIOS ships in German and English — every user-facing string must exist in bo
 ## Testing
 
 - Ruby/request specs: `bin/rspec spec/<models|requests>/<file>_spec.rb`
-- Frontend specs (Stimulus controllers, TS utils): `bin/yarn test` (Vitest, in `spec/frontend/`)
+- Frontend specs (Stimulus controllers, TS utils): `bun run test` (Vitest, in `spec/frontend/`)
 - Shell scripts: `bats --recursive spec/bats/`
 - Integration specs (`spec/integration/`): slow, drive a real stack via Docker. Auto-tagged `:integration`; run by `bin/ci` (which sets `CI`) and on GitHub CI. A bare `bin/rspec` skips them — run them alone with `bin/rspec --tag integration`.
 - Use real Docker, no mocking

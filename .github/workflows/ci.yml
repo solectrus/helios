@@ -22,17 +22,11 @@ jobs:
         with:
           bundler-cache: true
 
-      - name: Enable Corepack
-        run: corepack enable
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          cache: yarn
-          node-version-file: 'package.json'
-
-      - name: Install Yarn packages
-        run: bin/yarn install --immutable
+      - name: Install Bun packages
+        run: bun install --frozen-lockfile
 
       - name: Lint with RuboCop
         run: bin/rubocop --parallel
@@ -44,24 +38,24 @@ jobs:
         run: bin/herb lint
 
       - name: Check ERB formatting
-        run: bin/yarn erb:check
+        run: bun run erb:check
 
       - name: Brakeman security scan
         run: bin/brakeman
 
       - name: Run ESLint
-        run: bin/yarn lint
+        run: bun run lint
 
       - name: Check for TypeScript errors
-        run: bin/yarn tsc
+        run: bun run tsc
 
       - name: Run JavaScript Tests
-        run: bin/yarn test
+        run: bun run test
 
       - name: Check JS size limit
         run: |
-          yarn vite build
-          yarn size-limit
+          bunx vite build
+          bunx size-limit
 
       - name: Shellcheck shell scripts
         run: shellcheck $(git ls-files '*.sh')
@@ -100,21 +94,15 @@ jobs:
         with:
           bundler-cache: true
 
-      - name: Enable Corepack
-        run: corepack enable
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          cache: yarn
-          node-version-file: 'package.json'
-
-      - name: Install Yarn packages
-        run: bin/yarn install --immutable
+      - name: Install Bun packages
+        run: bun install --frozen-lockfile
 
       - name: Get Playwright version
         id: playwright-version
-        run: echo "version=$(node -p "require('./node_modules/playwright/package.json').version")" >> $GITHUB_OUTPUT
+        run: echo "version=$(bun -e "console.log(require('./node_modules/playwright/package.json').version)")" >> $GITHUB_OUTPUT
 
       - name: Cache Playwright browsers
         id: playwright-cache
@@ -125,18 +113,18 @@ jobs:
 
       - name: Install Playwright browsers
         if: steps.playwright-cache.outputs.cache-hit != 'true'
-        run: yarn playwright install --with-deps --only-shell chromium
+        run: bunx playwright install --with-deps --only-shell chromium
 
       - name: Cache Vite build
         id: vite-cache
         uses: actions/cache@v5
         with:
           path: public/vite-test
-          key: vite-test-${{ hashFiles('app/frontend/**', 'vite.config.mts', 'yarn.lock') }}
+          key: vite-test-${{ hashFiles('app/frontend/**', 'vite.config.mts', 'bun.lock') }}
 
       - name: Build Vite assets for test
         if: steps.vite-cache.outputs.cache-hit != 'true'
-        run: yarn vite build --mode test
+        run: bunx vite build --mode test
 
       # Restore the per-file runtime log from a previous run so turbo_tests
       # can balance shards by execution time instead of file size. The key is
