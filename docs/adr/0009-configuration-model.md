@@ -34,22 +34,27 @@ config.update('system', { 'installation_date' => '2024-01-15', 'timezone' => 'Eu
 
 Defined in `Configuration::SINGLETONS` (see [configuration.rb](../../app/models/configuration.rb)):
 
-| Singleton       | Purpose                                              | Visibility |
-| --------------- | ---------------------------------------------------- | ---------- |
-| `system`        | Installation date, timezone, admin password, locale  | Settings   |
-| `reverse_proxy` | Traefik / HTTPS configuration                        | Settings   |
-| `backup`        | Backup schedule and destination                      | Settings   |
-| `sensors`       | Sensor → measurement:field mappings                  | Sensors UI |
-| `senec`         | SENEC collector connection settings                  | Source     |
-| `mqtt`          | MQTT broker settings                                 | Source     |
-| `shelly`        | Shelly collector settings (one or more instances)    | Source     |
-| `forecast`      | forecast.solar / Solcast / pvnode settings           | Source     |
-| `dashboard`     | Auto-managed dashboard settings (ports, secrets)     | Hidden     |
-| `postgresql`    | Auto-managed Postgres credentials                    | Hidden     |
-| `influxdb`      | Auto-managed InfluxDB token/org/bucket               | Hidden     |
-| `redis`         | Auto-managed Redis settings                          | Hidden     |
-| `watchtower`    | Auto-managed update service settings                 | Hidden     |
-| `ingest`        | Auto-managed ingest endpoint (external data sources) | Hidden     |
+| Singleton           | Purpose                                              | Visibility |
+| ------------------- | ---------------------------------------------------- | ---------- |
+| `deployment`        | Installation mode (full / distributed)               | Settings   |
+| `system`            | Installation date, timezone, admin password, locale  | Settings   |
+| `reverse_proxy`     | Traefik / HTTPS configuration                        | Settings   |
+| `backup`            | Backup destination and credentials                   | Settings   |
+| `backup_schedule`   | Automated backup schedule (enabled, time)            | Settings   |
+| `service_overrides` | Per-service compose-key overrides (ADR-0015)         | Settings   |
+| `sensors`           | Sensor → measurement:field mappings                  | Sensors UI |
+| `senec`             | SENEC collector connection settings                  | Source     |
+| `mqtt`              | MQTT broker settings                                 | Source     |
+| `shelly`            | Shelly collector settings (one or more instances)    | Source     |
+| `forecast`          | forecast.solar / Solcast / pvnode settings           | Source     |
+| `dashboard`         | Auto-managed dashboard settings (ports, secrets)     | Hidden     |
+| `postgresql`        | Auto-managed Postgres credentials                    | Hidden     |
+| `influxdb`          | Auto-managed InfluxDB token/org/bucket               | Hidden     |
+| `redis`             | Auto-managed Redis settings                          | Hidden     |
+| `watchtower`        | Auto-managed update service settings                 | Hidden     |
+| `power_splitter`    | Auto-managed power-splitter settings                 | Hidden     |
+| `helios`            | Auto-managed HELIOS service settings                 | Hidden     |
+| `ingest`            | Auto-managed ingest endpoint (external data sources) | Hidden     |
 
 Hidden singletons are maintained internally and not shown in the configuration UI. A `_unmanaged` key preserves services and env vars imported from existing installations that HELIOS does not manage itself.
 

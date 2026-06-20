@@ -17,7 +17,7 @@ Web-based control panel for [SOLECTRUS](https://solectrus.de). HELIOS installs t
 
 - **Service dashboard** — live status, versions, health for every container; start / stop / restart / recreate per service or in batch.
 - **Survey-based configuration** — guided forms cover every documented SOLECTRUS environment variable (devices, data sources, forecasts, reverse proxy, backup).
-- **Sensor mapping** — registry of ~40 SOLECTRUS sensors with live readings from InfluxDB.
+- **Sensor mapping** — registry of ~50 SOLECTRUS sensors with live readings from InfluxDB.
 - **Live logs** — tail and search container logs with ANSI colors directly in the UI.
 - **Auto-import** — detects existing SOLECTRUS installations, reverse-maps the configuration, and preserves anything it does not understand.
 - **Auto-updates** — Watchtower keeps all images (including HELIOS itself) current.

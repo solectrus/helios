@@ -6,15 +6,10 @@ Remaining work, grouped by area.
 
 - **Summary / review view after auto-import (scenario C).** Show the user what HELIOS detected, which services / variables it preserved as unmanaged, and which fields still need attention before the first edit.
 
+## Service support
+
+- **First-class support for `tibber-collector` and `senec-charger`.** Both are currently only preserved as unmanaged services. Make them first-class managed services with proper survey-driven configuration, instead of passing them through untouched.
+
 ## Sensor mapping
 
-- **InfluxDB discovery during import.** When reverse-mapping an existing installation, query the running InfluxDB for actual measurements and fields and offer them as selectable values — instead of relying on literal `.env` contents.
-
-## Update management
-
-- **"Update now" button** to trigger an immediate Watchtower check via its HTTP API instead of waiting for the next interval.
-
-## User experience
-
-- **Link from Dashboard back to HELIOS.** Expose HELIOS' URL to the Dashboard service (e.g. as an env var) so Dashboard can show a "configure" link — users who start in Dashboard should be able to jump straight to the settings UI without knowing the HELIOS URL by heart.
-- **Surface imported `volume_path` in the service management UI.** Read-only display of the resolved storage location (named volume name or absolute bind-mount path) for postgresql / influxdb / redis / ingest / reverse_proxy. Today the value is preserved through import/export but invisible to the user — only `config.yaml` reveals it. Editing stays out of scope; ADR-0003 keeps bind mounts as the default, and changing storage on a live stack is a destructive operation that warrants a separate flow.
+- **InfluxDB discovery in the sensor mapping UI.** When configuring a sensor's measurement / field, let the user pick from the values that actually exist in the running InfluxDB instead of typing them freehand. Query the live DB (an `InfluxDb::Client` already exists for latest-value reads) for available measurements and their fields and offer them as selectable choices.
