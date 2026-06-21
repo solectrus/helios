@@ -4,7 +4,6 @@ class BackupRepository
   # that mounts the configured `external_path` as `/data`.
   module External
     IMAGE = BackupRunner::IMAGE
-    LIST_GLOB = 'solectrus-backup-*.tar'.freeze
 
     class << self
       include BackupRepository::Tracking

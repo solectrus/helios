@@ -15,6 +15,12 @@ class BackupRepository
   module Tracking # rubocop:disable Metrics/ModuleLength
     include Loggable
 
+    # How often reading a freshly written tar is retried before HELIOS gives
+    # up and marks the run incomplete. Guards against a backup that genuinely
+    # produced no tar (host crash, no error file) being probed on every tick
+    # forever, while still surviving a transient NAS/docker hiccup.
+    RECORDING_MAX_ATTEMPTS = 10
+
     def all
       return Backup.none unless destination_configured?
 
@@ -98,7 +104,6 @@ class BackupRepository
       )
       Rails.cache.delete(in_progress_cache_key)
       process_completion!(pending_marker_content)
-      clear_pending!
     end
 
     # The expected filename argument lets process_completion! report a
@@ -152,9 +157,18 @@ class BackupRepository
     end
 
     def pending_marker_content
-      ::File.read(pending_marker_path).strip.presence
+      parse_pending_marker.first
+    end
+
+    # Parses the two-line pending marker into [filename, attempts]: the first
+    # line is the planned filename, the optional second line the recording
+    # retry counter (see bump_pending_attempts!). Returns [nil, 0] when the
+    # marker is missing.
+    def parse_pending_marker
+      filename, attempts = ::File.readlines(pending_marker_path, chomp: true)
+      [filename.presence, attempts.to_i]
     rescue Errno::ENOENT
-      nil
+      [nil, 0]
     end
 
     # `expected_filename` is BackupRunner.start's planned tar name, blank
@@ -180,13 +194,19 @@ class BackupRepository
           # second call is a no-op in that path and handles every other adapter.
           prune!
           :backup
+        elsif bump_pending_attempts!(expected_filename) < RECORDING_MAX_ATTEMPTS
+          # Clean exit but the freshly written tar isn't readable yet — a
+          # transient NAS/docker hiccup. Keep the marker so the next scheduler
+          # tick retries, instead of losing the backup for good.
+          return
         else
-          # Detached backup died without tar or error file (OOM, host crash).
+          # Gave up: the tar never appeared (OOM, host crash, no error file).
           RunnerLog.record_error!(:backup, I18n.t('backups.runner.errors.incomplete'))
           :backup
         end
 
       RunnerLog.record_finished!(kind)
+      clear_pending!
     end
 
     def capture_error!(kind, filename) # rubocop:disable Naming/PredicateMethod
@@ -211,6 +231,15 @@ class BackupRepository
       )
       record.save!
       record
+    end
+
+    # Bumps and returns the recording retry counter, persisted as the marker's
+    # second line so it survives a HELIOS restart. Lets a transient failure to
+    # read a finished tar be retried on later ticks instead of dropped.
+    def bump_pending_attempts!(filename)
+      attempts = parse_pending_marker.last + 1
+      ::File.write(pending_marker_path, "#{filename}\n#{attempts}")
+      attempts
     end
   end
 end

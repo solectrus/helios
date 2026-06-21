@@ -208,13 +208,14 @@ RSpec.describe BackupRepository::External do
       expect(File).not_to exist(runtime_error_path(BackupRepository::ERROR_FILENAME))
     end
 
-    it 'records a generic "incomplete" message when no tar and no error file are present' do
+    it 'records a generic "incomplete" message once the retry budget is exhausted' do
       described_class.mark_pending!(filename)
-      stub_capture2(success: true, output: '') # fetch_metadata returns no bytes
+      stub_capture2(success: true, output: '') # fetch_metadata never yields bytes
 
-      described_class.detect_completion!
+      BackupRepository::Tracking::RECORDING_MAX_ATTEMPTS.times { described_class.detect_completion! }
 
       expect(RunnerLog.message_for(:backup)).to eq(I18n.t('backups.runner.errors.incomplete'))
+      expect(File).not_to exist(described_class.send(:pending_marker_path))
     end
 
     it 'does nothing in the steady state' do
@@ -222,6 +223,22 @@ RSpec.describe BackupRepository::External do
 
       expect(Backup.count).to eq(0)
       expect(RunnerLog.count).to eq(0)
+    end
+
+    # A transient failure to read the freshly written tar (NAS/docker hiccup)
+    # must not lose the backup: the marker is kept and the next tick retries.
+    it 'keeps the marker and records the backup on a later retry' do
+      described_class.mark_pending!(filename)
+      sidecar_responses(['', success_status], [metadata_output, success_status])
+
+      described_class.detect_completion! # first read fails → kept for retry
+      expect(Backup.count).to eq(0)
+      expect(RunnerLog.message_for(:backup)).to be_nil
+      expect(File).to exist(described_class.send(:pending_marker_path))
+
+      described_class.detect_completion! # retry succeeds
+      expect(Backup.find_by(filename:)).to be_present
+      expect(File).not_to exist(described_class.send(:pending_marker_path))
     end
   end
 

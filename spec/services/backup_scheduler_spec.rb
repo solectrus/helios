@@ -72,6 +72,7 @@ RSpec.describe BackupScheduler do
       allow(described_class).to receive(:due?).and_return(true)
       allow(BackupRunner).to receive_messages(unavailable_reason: nil, in_progress: nil, start: true)
       allow(Orchestration::HeliosOperationBroadcaster).to receive(:broadcast!)
+      allow(BackupRepository).to receive(:detect_completion!)
     end
 
     after { FileUtils.remove_entry(data_path) }
@@ -126,6 +127,20 @@ RSpec.describe BackupScheduler do
     it 'swallows BackupRunner errors so the thread survives' do
       allow(BackupRunner).to receive(:start).and_raise(BackupRunner::Error, 'boom')
       expect { described_class.tick }.not_to raise_error
+    end
+
+    it 'records a finished automatic backup every tick, even when not due' do
+      allow(described_class).to receive(:due?).and_return(false)
+      described_class.tick
+      expect(BackupRepository).to have_received(:detect_completion!)
+    end
+
+    it 'still schedules when completion detection fails' do
+      allow(BackupRepository).to receive(:detect_completion!).and_raise(StandardError, 'docker down')
+
+      described_class.tick
+
+      expect(BackupRunner).to have_received(:start).with(automatic: true)
     end
   end
 

@@ -57,12 +57,28 @@ class BackupScheduler < ManagedThread
       return unless tick_gate.make_true
 
       begin
-        Rails.application.executor.wrap { run_due_backup }
+        Rails.application.executor.wrap do
+          detect_finished_backup
+          run_due_backup
+        end
       ensure
         tick_gate.make_false
       end
     rescue StandardError => e
       logger.error("Tick: #{e.class}: #{e.message}")
+    end
+
+    # Record an automatic backup as soon as its detached sidecar finishes,
+    # instead of waiting for someone to open /backups. The scheduler thread is
+    # the only component reliably awake at 01:00, so without this the row is
+    # written only on the next manual visit — and a second run could overwrite
+    # the pending marker first (the durable recording queue then still catches
+    # it, but later than need be). Errors must not block the scheduling
+    # decision, so they are logged and swallowed.
+    def detect_finished_backup
+      BackupRepository.detect_completion!
+    rescue StandardError => e
+      logger.error("detect_completion!: #{e.class}: #{e.message}")
     end
 
     # Pure decision: should an automatic backup be handled at `now`? True once

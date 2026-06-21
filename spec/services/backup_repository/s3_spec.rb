@@ -261,11 +261,11 @@ RSpec.describe BackupRepository::S3 do
       expect(Backup.count).to eq(0)
     end
 
-    it 'records "incomplete" when no tar and no error are present' do
+    it 'records "incomplete" once the retry budget is exhausted with no tar and no error' do
       described_class.mark_pending!(filename)
       s3_client.stub_responses(:get_object, 'NoSuchKey')
 
-      described_class.detect_completion!
+      BackupRepository::Tracking::RECORDING_MAX_ATTEMPTS.times { described_class.detect_completion! }
 
       expect(RunnerLog.message_for(:backup)).to eq(I18n.t('backups.runner.errors.incomplete'))
     end
