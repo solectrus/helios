@@ -121,7 +121,7 @@ class CsvImportUploader
   end
 
   def csv_destination_basename
-    ::File.basename(uploaded_file.original_filename.to_s).presence || 'upload.csv'
+    normalize_csv_extension(::File.basename(uploaded_file.original_filename.to_s).presence || 'upload.csv')
   end
 
   def persist_zip!
@@ -170,9 +170,18 @@ class CsvImportUploader
   end
 
   def extract_entry!(entry, target_root, budget:)
-    destination = safe_destination!(target_root, entry.name)
+    destination = safe_destination!(target_root, normalize_csv_extension(entry.name))
     FileUtils.mkdir_p(::File.dirname(destination))
     write_entry!(entry, destination, budget: budget)
+  end
+
+  # The csv-importer globs case-sensitively (`**/*.csv`), while HELIOS accepts
+  # uploads case-insensitively (FNM_CASEFOLD on the extension). A `.CSV` upload
+  # would be staged but never matched by the importer (→ "Imported 0 files").
+  # Lowercase only the trailing extension so the importer finds the file; the
+  # rest of the name (and any subfolders) keep their original case.
+  def normalize_csv_extension(name)
+    name.sub(/\.csv\z/i, CSV_EXTENSION)
   end
 
   # macOS Finder's "Compress" wraps the archive with AppleDouble metadata

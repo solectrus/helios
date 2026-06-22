@@ -91,6 +91,27 @@ RSpec.describe CsvImportUploader do
       expect(file_mode & 0o004).to eq(0o004) # other read
     end
 
+    # The csv-importer globs case-sensitively (**/*.csv); HELIOS accepts an
+    # uppercase .CSV extension, so it must lowercase the extension on staging
+    # or the importer never matches the file ("Imported 0 files"). Issue #233.
+    it 'lowercases an uppercase .CSV extension on a bare upload' do
+      uploaded = build_upload('Senec-2024.CSV', "a,b\n1,2\n", content_type: 'text/csv')
+
+      described_class.start(uploaded)
+
+      expect(File).to exist(File.join(described_class.extract_directory, 'Senec-2024.csv'))
+      expect(Dir.glob("#{described_class.extract_directory}/**/*.csv")).not_to be_empty
+    end
+
+    it 'lowercases an uppercase .CSV extension on a ZIP entry, keeping subfolders' do
+      uploaded = build_upload('senec.zip', zip_with('2024/WEEK-01.CSV' => 'a,b'))
+
+      described_class.start(uploaded)
+
+      expect(File).to exist(File.join(described_class.extract_directory, '2024/WEEK-01.csv'))
+      expect(Dir.glob("#{described_class.extract_directory}/**/*.csv")).not_to be_empty
+    end
+
     it 'strips path segments from the CSV filename to block path traversal' do
       uploaded = build_upload('../../etc/passwd.csv', "x\n", content_type: 'text/csv')
 
