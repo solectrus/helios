@@ -85,6 +85,19 @@ class BackupRepository
     # → Backup. Triggered by either a live in_progress observation
     # (Rails.cache marker) or the pending-marker file from start.
     def detect_completion! # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
+      cached = Rails.cache.read(in_progress_cache_key)
+      pending = pending_refresh?
+
+      # Idle fast-path. The BackupRunner/RestoreRunner probes below each shell
+      # out to `docker inspect`; the scheduler calls this every 30 s, so on a
+      # host with no backup activity that would be two docker subprocesses per
+      # tick, all day. Both runners drop a durable pending marker before their
+      # sidecar launches (BackupRunner#run_preparing!, RestoreRunner.start), so
+      # any run that could need recording leaves either that marker or the
+      # cached observation from a previous tick. Neither present ⇒ nothing to
+      # detect, so return before touching docker.
+      return unless cached || pending
+
       backup_ip = BackupRunner.in_progress
       restore_ip = RestoreRunner.in_progress
       current = backup_ip&.filename || restore_ip&.filename
@@ -93,10 +106,6 @@ class BackupRepository
         Rails.cache.write(in_progress_cache_key, current, expires_in: 1.hour)
         return
       end
-
-      cached = Rails.cache.read(in_progress_cache_key)
-      pending = pending_refresh?
-      return unless cached || pending
 
       logger.info(
         "[detect_completion!] firing — backup_ip=#{backup_ip.inspect} restore_ip=#{restore_ip.inspect} " \

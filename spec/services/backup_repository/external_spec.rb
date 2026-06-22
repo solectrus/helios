@@ -177,12 +177,23 @@ RSpec.describe BackupRepository::External do
     let(:filename) { 'solectrus-backup-20260508-100000.tar' }
 
     it 'records the current in-progress filename so the next visit can detect completion' do
+      described_class.mark_pending!(filename)
       allow(BackupRunner).to receive(:in_progress)
         .and_return(BackupRepository::InProgress.new(started_at: Time.zone.now, filename: filename))
 
       described_class.detect_completion!
 
       expect(Rails.cache.read(described_class.send(:in_progress_cache_key))).to eq(filename)
+    end
+
+    # The scheduler calls this every 30 s; with no pending marker and no cached
+    # observation there is nothing to detect, so it must not shell out to
+    # `docker inspect` via the in-progress probes.
+    it 'skips the docker probes when neither a marker nor a cached run exists' do
+      described_class.detect_completion!
+
+      expect(BackupRunner).not_to have_received(:in_progress)
+      expect(RestoreRunner).not_to have_received(:in_progress)
     end
 
     it 'inserts the Backup row for the expected filename when the run finishes successfully' do
