@@ -67,6 +67,8 @@ class CsvImportUploader
       validate_archive!
       extract!
     end
+
+    grant_importer_read_access!
   rescue Error
     self.class.cleanup!
     raise
@@ -75,6 +77,19 @@ class CsvImportUploader
   private
 
   attr_reader :uploaded_file
+
+  # The csv-importer image runs as a non-root user (`USER app`). HELIOS runs
+  # as root, so the files it stages inherit root ownership and a mode that
+  # depends on the ambient umask — and a moved Rack tempfile even keeps its
+  # restrictive 0600 mode. Inside the read-only bind mount the importer's UID
+  # then either cannot list the directory (`Dir.glob` returns nothing, logged
+  # as "Imported 0 files") or cannot open the file (EACCES). Widen the whole
+  # extract tree to world-readable, directories also traversable (`X` adds
+  # execute only to directories). The tree is HELIOS' private, transient
+  # staging area holding user-supplied CSVs, so this is harmless. Issue #233.
+  def grant_importer_read_access!
+    FileUtils.chmod_R('a+rX', self.class.extract_directory)
+  end
 
   def error(key, **)
     I18n.t("csv_imports.uploader.errors.#{key}", **)

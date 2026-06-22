@@ -66,6 +66,31 @@ RSpec.describe CsvImportUploader do
       expect(File).not_to exist(described_class.upload_path)
     end
 
+    # The csv-importer container runs as a non-root user and reads the
+    # extract tree through a read-only bind mount: a non-readable file
+    # (a moved Rack tempfile keeps its 0600 mode) raises EACCES, and a
+    # non-listable directory makes Dir.glob return nothing ("Imported 0
+    # files"). Both must end up world-readable. Issue #233.
+    it 'makes a bare CSV world-readable for the non-root importer' do
+      uploaded = build_upload('senec-2024.csv', "a,b\n1,2\n", content_type: 'text/csv')
+
+      described_class.start(uploaded)
+
+      mode = File.stat(File.join(described_class.extract_directory, 'senec-2024.csv')).mode
+      expect(mode & 0o004).to eq(0o004)
+    end
+
+    it 'makes extracted directories listable and files readable for the importer' do
+      uploaded = build_upload('senec.zip', zip_with('2024/week-01.csv' => 'a,b'))
+
+      described_class.start(uploaded)
+
+      dir_mode = File.stat(File.join(described_class.extract_directory, '2024')).mode
+      file_mode = File.stat(File.join(described_class.extract_directory, '2024/week-01.csv')).mode
+      expect(dir_mode & 0o005).to eq(0o005) # other read + execute (traversable)
+      expect(file_mode & 0o004).to eq(0o004) # other read
+    end
+
     it 'strips path segments from the CSV filename to block path traversal' do
       uploaded = build_upload('../../etc/passwd.csv', "x\n", content_type: 'text/csv')
 
