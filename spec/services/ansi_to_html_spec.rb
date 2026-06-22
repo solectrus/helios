@@ -42,6 +42,34 @@ RSpec.describe AnsiToHtml do
       )
     end
 
+    it 'converts dim text' do
+      input = "\e[2mdim\e[0m"
+      expect(described_class.convert(input)).to eq(
+        '<span style="opacity:0.7">dim</span>',
+      )
+    end
+
+    it 'converts italic text' do
+      input = "\e[3mitalic\e[0m"
+      expect(described_class.convert(input)).to eq(
+        '<span style="font-style:italic">italic</span>',
+      )
+    end
+
+    it 'converts underlined text' do
+      input = "\e[4munderline\e[0m"
+      expect(described_class.convert(input)).to eq(
+        '<span style="text-decoration:underline">underline</span>',
+      )
+    end
+
+    it 'converts bright background colors' do
+      input = "\e[102mbright green bg\e[0m"
+      expect(described_class.convert(input)).to eq(
+        '<span style="background-color:#5f5">bright green bg</span>',
+      )
+    end
+
     it 'handles combined codes' do
       input = "\e[1;31mbold red\e[0m"
       expect(described_class.convert(input)).to eq(

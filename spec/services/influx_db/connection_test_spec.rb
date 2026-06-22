@@ -39,6 +39,12 @@ RSpec.describe InfluxDb::ConnectionTest do
       expect(a_request(:get, ping_url)).not_to have_been_made
     end
 
+    it 'reports an error on an unexpected failure (e.g. TLS handshake)' do
+      stub_request(:get, ping_url).to_raise(OpenSSL::SSL::SSLError)
+
+      expect(reachability).to have_attributes(ok: false, reason: :error)
+    end
+
     it 'uses TLS for the https schema' do
       stub = stub_request(:get, 'https://influxdb.test:8443/ping')
              .to_return(status: 204, headers: influxdb_headers)
@@ -94,6 +100,18 @@ RSpec.describe InfluxDb::ConnectionTest do
       stub_write.to_raise(SocketError)
 
       expect(credentials).to have_attributes(ok: false, reason: :unreachable)
+    end
+
+    it 'reports an error on an unexpected server status (e.g. 500)' do
+      stub_write.to_return(status: 500)
+
+      expect(credentials).to have_attributes(ok: false, reason: :error)
+    end
+
+    it 'reports an error on an unexpected failure (e.g. TLS handshake)' do
+      stub_write.to_raise(OpenSSL::SSL::SSLError)
+
+      expect(credentials).to have_attributes(ok: false, reason: :error)
     end
 
     it 'reports incomplete when the token is blank' do

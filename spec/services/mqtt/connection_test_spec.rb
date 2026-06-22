@@ -108,6 +108,16 @@ RSpec.describe Mqtt::ConnectionTest do
       end
     end
 
+    it 'reports an error on an unexpected CONNACK return code' do
+      with_fake_broker(return_code: 2) do |port|
+        expect(credentials(port)).to have_attributes(ok: false, reason: :error)
+      end
+    end
+
+    it 'reports unreachable when the broker connection is refused' do
+      expect(credentials(free_port)).to have_attributes(ok: false, reason: :mqtt_unreachable)
+    end
+
     it 'reports incomplete when the username is blank, without connecting' do
       result = tester.call(check: 'credentials', values: {
                              'mqtt_host' => '127.0.0.1', 'mqtt_port' => '1883', 'mqtt_username' => ''
