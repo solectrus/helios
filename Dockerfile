@@ -1,6 +1,9 @@
 # syntax=docker/dockerfile:1
 # check=error=true
 
+# Skip the builder's Bootsnap precompile: a ~45 MB cache, regenerated at runtime.
+ARG SKIP_BOOTSNAP_PRECOMPILE=1
+
 FROM ghcr.io/ledermann/rails-base-builder:4.0.5-alpine AS builder
 
 # Remove some files not needed in resulting image.
