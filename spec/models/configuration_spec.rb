@@ -530,6 +530,21 @@ RSpec.describe Configuration do
       )
     end
 
+    it 'recognizes a stored external mode without a bind_ip' do
+      config = described_class.current
+      config.update('reverse_proxy', { 'mode' => 'external' })
+
+      expect(config.reverse_proxy_external?).to be true
+      expect(config.reverse_proxy_managed?).to be false
+    end
+
+    it 'still derives external mode from a legacy bind_ip without a stored mode' do
+      config = described_class.current
+      config.update('reverse_proxy', { 'bind_ip' => '10.0.0.5' })
+
+      expect(config.reverse_proxy_external?).to be true
+    end
+
     it 'translates software channel tokens into the registry image URLs' do
       config = described_class.current
       config.update('software', {

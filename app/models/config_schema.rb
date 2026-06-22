@@ -278,6 +278,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   POWER_SPLITTER_FIELDS = %w[image].freeze
 
   REVERSE_PROXY_FIELDS = (STORAGE_FIELDS + %w[
+    mode
     app_domain
     letsencrypt_email
     bind_ip

@@ -179,6 +179,26 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(Configuration.current.reverse_proxy.app_domain).to be_blank
     end
 
+    it 'keeps the external Traefik mode even without a bind_ip' do
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy', data: { mode: 'external' }.to_json }
+
+      config = Configuration.current
+      expect(config.reverse_proxy.mode).to eq('external')
+      expect(config.reverse_proxy_external?).to be true
+    end
+
+    it 'preselects the external mode on reload after saving it without a bind_ip' do
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy', data: { mode: 'external' }.to_json }
+
+      get edit_configuration_setting_path(setting: 'reverse_proxy', name: 'reverse_proxy'),
+          headers: turbo_frame_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('&quot;mode&quot;:&quot;external&quot;')
+    end
+
     it 'derives mode=external from a stored bind_ip when editing' do
       Configuration.current.update('reverse_proxy', { 'bind_ip' => '10.0.0.5' })
 

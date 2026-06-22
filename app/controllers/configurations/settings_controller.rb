@@ -140,13 +140,14 @@ module Configurations
     end
 
     # reverse_proxy uses a tri-state `mode` (none/internal/external) instead of
-    # the boolean `enabled` toggle. The mode itself is not stored — it is
-    # re-derived on load from which fields are present (see #reverse_proxy_mode)
-    # — so strip it here and drop the fields that don't belong to the chosen
-    # mode before saving. Borrowed fields (trusted_proxy_ranges) are routed to
-    # their own section by Configuration#update.
+    # the boolean `enabled` toggle. The mode is stored explicitly: external mode
+    # has no required field of its own (bind_ip is optional), so without a
+    # persisted marker it would be indistinguishable from `none` and silently
+    # collapse on reload. Drop the fields that don't belong to the chosen mode
+    # before saving. Borrowed fields (trusted_proxy_ranges) are routed to their
+    # own section by Configuration#update.
     def persist_reverse_proxy(data)
-      case data.delete('mode')
+      case data['mode']
       when 'external'
         data.delete('app_domain')
         data.delete('letsencrypt_email')
@@ -205,11 +206,12 @@ module Configurations
       data['enabled'] = gating ? data[gating].present? : true
     end
 
-    # Derive the UI-only reverse_proxy mode from persisted fields: a stored
-    # `app_domain` means HELIOS runs its own Traefik (internal), a stored
-    # `bind_ip` means an external Traefik routes to published ports (external),
-    # otherwise there is no custom domain (none).
+    # Resolve the reverse_proxy mode for the UI radio. A persisted `mode` is the
+    # source of truth; fall back to field presence for configs saved before
+    # `mode` was stored and for imported stacks (a stored `app_domain` means a
+    # HELIOS-managed Traefik, a stored `bind_ip` means an external one).
     def reverse_proxy_mode(data)
+      return data['mode'] if data['mode'].present?
       return 'internal' if data['app_domain'].present?
       return 'external' if data['bind_ip'].present?
 

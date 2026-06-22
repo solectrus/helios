@@ -612,9 +612,13 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   # Reverse-proxy "external Traefik" mode: an external Traefik routes to the
   # stack's published host ports, so HELIOS runs no Traefik of its own (no
-  # app_domain) but a bind_ip pins where the ports are published. Mirrors the
-  # tri-state derived in Configurations::SettingsController#reverse_proxy_mode.
+  # app_domain); an optional bind_ip pins where the ports are published.
+  # The stored `mode` is authoritative; fall back to field presence for configs
+  # saved before `mode` was persisted and for imported stacks. Mirrors the
+  # tri-state in Configurations::SettingsController#reverse_proxy_mode.
   def reverse_proxy_external?
+    return reverse_proxy.mode == 'external' if reverse_proxy.mode.present?
+
     reverse_proxy.app_domain.blank? && reverse_proxy.bind_ip.present?
   end
 
