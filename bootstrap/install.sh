@@ -716,6 +716,27 @@ helios_service_present() {
     | grep -Fxq helios
 }
 
+# True when the helios container is actually up for this stack. Declaring the
+# service in compose.yaml (helios_service_present) does NOT mean it is running,
+# so the "already installed" branches consult this before claiming a reachable
+# URL. `docker compose ps -q` lists only running containers (no --all).
+helios_running() {
+  [ -n "$(docker compose -f "$COMPOSE_FILE" ps -q helios 2>/dev/null)" ]
+}
+
+# For the already-installed branches: make sure HELIOS is actually up before
+# pointing at its URL. Being declared in compose.yaml is not the same as
+# running, so start the stack when it's down rather than leaving the user on a
+# dead link. Only reachable after Docker access has been verified
+# (ensure_docker_access), so start_stack can safely talk to the daemon.
+ensure_helios_started() {
+  if ! helios_running; then
+    bold "  HELIOS is installed but not running — starting it..."
+    start_stack
+  fi
+  success "  Visit HELIOS at $(helios_url)"
+}
+
 append_helios_service() {
   # Splice the helios block in right after the `services:` line. Using
   # head/tail sidesteps awk's portability issues with multi-line -v values.
@@ -794,14 +815,16 @@ MSG
 main() {
   COMPOSE_FILE="$(detect_compose_file)" || COMPOSE_FILE=""
 
-  # Short-circuit when HELIOS is already declared, before showing the welcome
-  # banner — otherwise we'd ask "Continue?" only to immediately tell the user
-  # there's nothing to do. Requires docker, so a missing-docker edge case
-  # falls through to the normal flow (and is caught by the inner check below).
+  # Short-circuit when HELIOS is already installed AND running, before showing
+  # the welcome banner — otherwise we'd ask "Continue?" only to immediately tell
+  # the user there's nothing to do. A declared-but-stopped stack deliberately
+  # falls through to the normal flow, where (after Docker access is verified)
+  # the existing-stack branch starts it. Requires docker, so a missing-docker
+  # edge case also falls through and is caught by the inner check below.
   if [ -n "$COMPOSE_FILE" ] && command -v docker >/dev/null 2>&1 \
-     && helios_service_present; then
+     && helios_service_present && helios_running; then
     banner
-    bold "  HELIOS is already installed."
+    bold "  HELIOS is already installed and running."
     success "  Visit HELIOS at $(helios_url)"
     printf '\n'
     return
@@ -823,7 +846,7 @@ main() {
     # The chosen directory may already run HELIOS (idempotent re-run into it).
     if [ -n "$COMPOSE_FILE" ] && helios_service_present; then
       success "  HELIOS is already installed in $(pwd)."
-      success "  Visit HELIOS at $(helios_url)"
+      ensure_helios_started
       printf '\n'
       return
     fi
@@ -842,8 +865,8 @@ main() {
     [ -e "$ENV_FILE" ] || die "$COMPOSE_FILE exists but $ENV_FILE is missing. Refusing to guess."
 
     if helios_service_present; then
-      warn "HELIOS is already declared in $COMPOSE_FILE — nothing to do."
-      success "Visit HELIOS at $(helios_url)"
+      bold "HELIOS is already declared in $COMPOSE_FILE — nothing to add."
+      ensure_helios_started
       return
     fi
 
