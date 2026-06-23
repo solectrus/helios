@@ -131,6 +131,18 @@ prompt_yn() {
   is_true "$reply"
 }
 
+# Read a free-form line from the controlling terminal (stdin is the piped
+# script) and echo it to stdout for command substitution. Callers must only
+# reach this on the interactive path — choose_target_dir gates on /dev/tty.
+# Returns non-zero on EOF (Ctrl-D / closed tty) so the caller can stop asking
+# instead of spinning on an endless stream of empty reads.
+prompt_line() {
+  local reply=""
+  printf '%s' "$1" > /dev/tty
+  read -r reply < /dev/tty || return 1
+  printf '%s' "$reply"
+}
+
 # Soft-fail preflight: print a warning, ask for confirmation, abort cleanly
 # on no. Used by the "below recommended threshold" branches in disk/RAM checks.
 warn_or_abort() {
@@ -213,10 +225,7 @@ welcome() {
     • Pull and start HELIOS, reachable at http://<host>:3999
 
   Recommended host: ≥ ${RECOMMENDED_DISK_GB} GB free disk, ≥ $((RECOMMENDED_RAM_MB / 1024)) GB RAM, Linux x86_64 or arm64
-
-  HELIOS will be installed into:
 TEXT
-  highlight "    $(pwd)"
   printf '\n'
 
   bold "  License"
@@ -416,6 +425,164 @@ MSG
   fi
   printf '\n' >&2
   die "Docker daemon not reachable."
+}
+
+# Verify the current directory is writable before we try to create compose.yaml
+# and .env in it. A non-root user installing into a root-owned directory (the
+# classic `sudo mkdir /opt/solectrus` then install as yourself) sails through
+# every other preflight and then dies on a raw "compose.yaml: Permission denied"
+# from the shell redirect in write_compose_fresh. Catch it here — before we
+# touch anything — with an actionable message.
+#
+# We advise installing into a directory the user owns (e.g. ~/solectrus) rather
+# than a root-owned one under /opt: the installer writes here as the current
+# user, and HELIOS only needs Docker access (already verified by the preceding
+# ensure_docker_access), not a root login.
+ensure_writable_dir() {
+  local probe
+  if probe="$(mktemp ./.helios-write-test.XXXXXX 2>/dev/null)"; then
+    rm -f "$probe"
+    success "  ✓ Directory writable: $(pwd)"
+    return
+  fi
+
+  local user
+  user="$(id -un)"
+  error "  ✗ Directory not writable as user '$user': $(pwd)"
+
+  # Report the actual owner rather than guessing. Field 3 of `ls -ld` is the
+  # owner name (or numeric UID if it has no passwd entry) on both GNU and BSD.
+  # SC2012: `.` is a fixed entry, not a glob — no filename-parsing hazard here,
+  # and `find -printf`/`stat` would sacrifice the GNU/BSD portability we keep.
+  local owner
+  # shellcheck disable=SC2012
+  owner="$(ls -ld . 2>/dev/null | awk 'NR==1 {print $3}')"
+
+  cat >&2 <<MSG
+
+  The installer needs to create compose.yaml and .env here, but this
+  directory is owned by '${owner:-another user}' and is not writable by your
+  user '$user'.
+
+  Install into a directory you own — no root needed. Your user already has
+  Docker access, which is all HELIOS requires:
+
+      mkdir ~/solectrus && cd ~/solectrus
+      # then re-run the installer here
+MSG
+  printf '\n' >&2
+  die "Installation directory not writable."
+}
+
+# Can the current user create or write into DIR *without sudo*? If DIR exists
+# it must be a writable directory; otherwise its nearest existing ancestor must
+# be writable and traversable. Used to flag infeasible menu choices up front so
+# /opt/solectrus on a non-root host is visibly off-limits rather than failing
+# later on a raw redirect. We never shell out to sudo: HELIOS needs Docker
+# access, not a root login (see ensure_docker_access / ensure_writable_dir).
+dir_creatable() {
+  local d="$1" parent
+  if [ -e "$d" ]; then
+    [ -d "$d" ] && [ -w "$d" ]
+    return
+  fi
+  # Walk up to the nearest existing ancestor with parameter expansion rather
+  # than forking `dirname` per level. Stripping the last /segment off "/opt"
+  # yields "", which we pin back to "/" so the loop terminates at the root.
+  parent="${d%/*}"; parent="${parent:-/}"
+  while [ ! -e "$parent" ]; do parent="${parent%/*}"; parent="${parent:-/}"; done
+  [ -w "$parent" ] && [ -x "$parent" ]
+}
+
+# Print one row of the install-directory menu. Shows the number and path, a
+# parenthetical note (e.g. "recommended", "current directory"), and — when the
+# target can't be created without root — a clear "(unavailable)" flag instead,
+# so the user sees why /opt/solectrus is off-limits on a non-root host.
+dir_menu_line() {
+  local n="$1" d="$2" note="$3"
+  if ! dir_creatable "$d"; then
+    dim "    $n) $d   (unavailable — needs root, and the installer never uses sudo)"
+    return
+  fi
+  if [ "$note" = "recommended" ]; then
+    highlight "    $n) $d   (recommended)"
+  elif [ -n "$note" ]; then
+    printf '    %s) %s   (%s)\n' "$n" "$d" "$note"
+  else
+    printf '    %s) %s\n' "$n" "$d"
+  fi
+}
+
+# Accept a chosen directory or reject it with a clear reason. Refuses anything
+# that would require root rather than silently failing downstream.
+try_select_dir() {
+  local d="$1"
+  if dir_creatable "$d"; then
+    TARGET_DIR="$d"
+    return 0
+  fi
+  error "  ✗ Cannot create '$d' as user '$(id -un)' without root."
+  warn  "    Choose a directory you own, or create it first with the right owner."
+  return 1
+}
+
+# Decide where to install and leave the result in TARGET_DIR. Order of
+# precedence:
+#   1. Current dir holds a stack → extend it in place (the deliberate "cd into
+#      my stack, add HELIOS" flow); never relocate.
+#   2. Non-interactive           → current directory (backward compatible).
+#   3. Interactive fresh install → offer a fixed menu of sudo-free targets.
+#      The default depends on privilege: root installs to /opt/solectrus (it
+#      can create and own it without sudo), a normal user to ~/solectrus.
+choose_target_dir() {
+  if detect_compose_file >/dev/null 2>&1 || [ -e "$ENV_FILE" ]; then
+    TARGET_DIR="$PWD"
+    return
+  fi
+
+  if is_true "$HELIOS_ASSUME_YES" || [ ! -r /dev/tty ]; then
+    TARGET_DIR="$PWD"
+    return
+  fi
+
+  # ${HOME:-/root}: an interactive installer always has HOME, but the fallback
+  # keeps `set -u` from aborting here in a pathological env where it is unset.
+  # Root can create+own /opt/solectrus sudo-free, so it's the root default; a
+  # normal user defaults to ~/solectrus. Mark only the default as recommended.
+  local d1="/opt/solectrus" d2="${HOME:-/root}/solectrus" d3="$PWD"
+  local default rec1="" rec2=""
+  if [ "$(id -u)" -eq 0 ]; then default=1; rec1="recommended"; else default=2; rec2="recommended"; fi
+
+  bold "  Where should HELIOS be installed?"
+  printf '\n'
+  dir_menu_line 1 "$d1" "$rec1"
+  dir_menu_line 2 "$d2" "$rec2"
+  dir_menu_line 3 "$d3" "current directory"
+  printf '\n'
+  # No free-form path entry on purpose: to install elsewhere (e.g. a larger or
+  # dedicated data disk — the stack's bind mounts incl. the InfluxDB database
+  # live next to compose.yaml, ADR-0003), the user creates that directory,
+  # cd's into it, and re-runs — it then appears here as the current directory.
+  dim "  To install elsewhere (e.g. a larger or dedicated data disk), create the"
+  dim "  directory, cd into it, and re-run — it appears here as current directory."
+  printf '\n'
+
+  local choice eof
+  while :; do
+    eof=0
+    choice="$(prompt_line "  Choice [$default]: ")" || eof=1
+    choice="${choice:-$default}"
+    case "$choice" in
+      1) try_select_dir "$d1" && break ;;
+      2) try_select_dir "$d2" && break ;;
+      3) try_select_dir "$d3" && break ;;
+      *) warn "  Please enter 1, 2, or 3." ;;
+    esac
+    # On EOF we can't re-prompt; if the (default) target was rejected above,
+    # abort cleanly instead of looping forever on an empty stream.
+    [ "$eof" -eq 1 ] && die "No usable install directory selected. Create a directory you own, cd into it, and re-run."
+  done
+  printf '\n'
 }
 
 generate_secret() { openssl rand -hex 64; }
@@ -643,6 +810,28 @@ main() {
   welcome
   ensure_docker
   ensure_docker_access
+
+  # Pick the install directory (only now, after Docker access is proven — the
+  # only privilege HELIOS needs). This may relocate us into a fresh
+  # ~/solectrus or /opt/solectrus, so re-detect any existing stack afterwards.
+  choose_target_dir
+  if [ "$TARGET_DIR" != "$PWD" ]; then
+    mkdir -p "$TARGET_DIR" || die "Could not create directory: $TARGET_DIR"
+    cd "$TARGET_DIR" || die "Could not enter directory: $TARGET_DIR"
+    COMPOSE_FILE="$(detect_compose_file)" || COMPOSE_FILE=""
+
+    # The chosen directory may already run HELIOS (idempotent re-run into it).
+    if [ -n "$COMPOSE_FILE" ] && helios_service_present; then
+      success "  HELIOS is already installed in $(pwd)."
+      success "  Visit HELIOS at $(helios_url)"
+      printf '\n'
+      return
+    fi
+  fi
+  success "  HELIOS will be installed into: $(pwd)"
+  printf '\n'
+
+  ensure_writable_dir
 
   if [ -n "$COMPOSE_FILE" ] || [ -e "$ENV_FILE" ]; then
     bold "Existing stack detected — adding HELIOS"

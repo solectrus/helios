@@ -55,27 +55,20 @@ Because of this, HELIOS **cannot**:
 
 HELIOS runs as one service inside your SOLECTRUS Docker Compose stack. The bootstrap script handles everything — whether you're setting up SOLECTRUS for the first time or adding HELIOS to a host that already runs it.
 
-Pick the case that matches your setup:
-
-**a) New install** — pick a permanent location on a disk with enough free space (the databases will live here long-term, e.g. `/opt/solectrus` or `~/solectrus`), create the directory and `cd` into it:
-
-```bash
-mkdir -p /opt/solectrus && cd /opt/solectrus
-```
-
-**b) Existing SOLECTRUS stack** — `cd` into the directory that holds your current `compose.yaml` and `.env`:
-
-```bash
-cd /path/to/your/solectrus
-```
-
-Then run the bootstrap script:
+Run the bootstrap script:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/solectrus/helios/main/bootstrap/install.sh | bash
 ```
 
+What it does depends on your setup:
+
+- **New install** — it asks where to install and offers a short menu (`/opt/solectrus`, `~/solectrus`, or the current directory), then creates that directory and sets up the stack there. The databases live here long-term, so pick a disk with enough free space.
+- **Existing SOLECTRUS stack** — `cd` into the directory that holds your current `compose.yaml` and `.env` first; HELIOS detects the stack and is added in place, no menu.
+
 When it finishes, HELIOS is available at `http://<your-host>:3999`.
+
+> Want a specific location, e.g. a dedicated data disk? Create the directory, `cd` into it, and run the installer there — it then appears in the menu as the current directory.
 
 > Prefer not to pipe `curl | bash`? Download `bootstrap/install.sh`, review it, and run it locally.
 
