@@ -47,6 +47,10 @@ RSpec.describe SensorMappings do
       expect(described_class.default_field('inverter_power_forecast', 'forecast')).to eq('watt')
     end
 
+    it 'returns temp (not temperature) for outdoor_temp_forecast on forecast source' do
+      expect(described_class.default_field('outdoor_temp_forecast', 'forecast')).to eq('temp')
+    end
+
     {
       %w[heatpump_power shelly] => 'power',
       %w[inverter_power mqtt] => 'power',
@@ -88,6 +92,12 @@ RSpec.describe SensorMappings do
       config = build_config({})
 
       expect(described_class.mapping_for('inverter_power', config)).to be_nil
+    end
+
+    it 'maps a forecast outdoor_temp_forecast to the temp field by default' do
+      config = build_config('source' => 'forecast', 'measurement' => 'forecast')
+
+      expect(described_class.mapping_for('outdoor_temp_forecast', config)).to eq('forecast:temp')
     end
   end
 end

@@ -278,8 +278,6 @@ sensors:
     measurement: SENEC
     source: external
   outdoor_temp_forecast:
-    field: temp
-    measurement: forecast
     source: forecast
   system_status:
     field: current_state

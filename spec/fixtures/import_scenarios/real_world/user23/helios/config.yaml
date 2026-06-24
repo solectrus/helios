@@ -218,8 +218,6 @@ sensors:
   inverter_power_forecast_clearsky:
     source: forecast
   outdoor_temp_forecast:
-    field: temp
-    measurement: forecast
     source: forecast
   system_status:
     source: senec

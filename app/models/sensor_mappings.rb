@@ -32,11 +32,13 @@ class SensorMappings
     'wallbox_car_connected' => %w[SENEC ev_connected],
   }.freeze
 
-  # Forecast collector mappings
+  # Forecast collector mappings.
+  # Field names must match exactly what the forecast-collector writes to
+  # InfluxDB: `watt`, `watt_clearsky` and `temp` (not `temperature`).
   FORECAST_DEFAULTS = {
     'inverter_power_forecast' => %w[forecast watt],
     'inverter_power_forecast_clearsky' => %w[forecast watt_clearsky],
-    'outdoor_temp_forecast' => %w[forecast temperature],
+    'outdoor_temp_forecast' => %w[forecast temp],
   }.freeze
 
   # Generic SOLECTRUS defaults, applied to any source that is not tied to a
