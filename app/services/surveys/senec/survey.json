@@ -273,7 +273,7 @@
             "de": "Abfrage-Intervall (in Sekunden)",
             "default": "Query interval (in seconds)"
           },
-          "defaultValue": 5,
+          "defaultValueExpression": "iif({adapter} = 'local', 5, iif({version} = 'v4', 60, 300))",
           "isRequired": true,
           "inputType": "number",
           "min": 5,
