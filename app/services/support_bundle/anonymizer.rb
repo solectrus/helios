@@ -18,6 +18,11 @@ module SupportBundle
   # container names stay so support can still see the network topology.
   # `SENSITIVE_KEY_PATTERN` is a name-based catch-all for vendor-specific
   # keys HELIOS has never seen, especially inside unmanaged-service `env_values`.
+  #
+  # `SAFE_VALUES` is a small allowlist of well-known, non-identifying words
+  # ("solectrus", "SENEC") kept visible when they appear as a non-secret
+  # identifier (org/bucket), so the stock naming stays readable. It never
+  # un-redacts a secret — the check sits on the identifier paths only.
   module Anonymizer # rubocop:disable Metrics/ModuleLength
     ENV_KEYS = %w[
       ADMIN_PASSWORD
@@ -49,8 +54,19 @@ module SupportBundle
     ].to_set.freeze
 
     # Identifiers that aren't secret but may give away who/where the user is
-    # (custom bucket like "berlin-pv"). Always redacted regardless of value.
+    # (custom bucket like "berlin-pv"). Redacted unless the value is in the
+    # SAFE_VALUES allowlist below.
     BUCKET_KEYS = %w[INFLUX_BUCKET INFLUX_ORG].to_set.freeze
+
+    # Well-known, non-identifying org/bucket names kept visible: the SOLECTRUS
+    # default name ("solectrus", the default org/bucket) and the vendor name
+    # ("SENEC"). These reveal nothing about who or where the user is, and
+    # keeping them lets support see the stock naming at a glance. Applied only
+    # to the non-secret identifier paths (BUCKET_KEYS / YAML_BUCKET_KEYS), so
+    # it can never expose a secret. Matched case-insensitively against the
+    # *whole* value, so a custom name like "my-solectrus-bucket" or
+    # "berlin-pv" is still masked.
+    SAFE_VALUES = %w[solectrus senec].to_set.freeze
 
     # Hostnames are only redacted when the value is a public FQDN. Private
     # IPs (RFC 1918), loopback and Docker container names stay as-is — they
@@ -78,8 +94,8 @@ module SupportBundle
       ],
     }.freeze
 
-    # YAML identifiers redacted regardless of value — same idea as
-    # `BUCKET_KEYS` on the .env side.
+    # YAML identifiers redacted unless the value is in SAFE_VALUES — same
+    # idea as `BUCKET_KEYS` on the .env side.
     YAML_BUCKET_KEYS = { 'influxdb' => %w[bucket org] }.freeze
 
     # YAML host fields redacted only when the value is a public FQDN.
@@ -158,7 +174,7 @@ module SupportBundle
 
     def redact_yaml_sections(data)
       YAML_KEYS.each { |section, keys| redact_fields(data[section], keys) }
-      YAML_BUCKET_KEYS.each { |section, keys| redact_fields(data[section], keys) }
+      YAML_BUCKET_KEYS.each { |section, keys| redact_bucket_fields(data[section], keys) }
       YAML_HOST_KEYS.each { |section, keys| redact_host_fields(data[section], keys) }
     end
 
@@ -184,6 +200,18 @@ module SupportBundle
       keys.each do |key|
         value = hash[key]
         hash[key] = placeholder_for(key, value) if value.present? && public_hostname?(value)
+      end
+    end
+
+    # Like redact_fields, but keeps well-known org/bucket names visible
+    # (see SAFE_VALUES) — the YAML counterpart to the BUCKET_KEYS gate in
+    # `line_sensitive?`.
+    def redact_bucket_fields(hash, keys)
+      return unless hash.is_a?(Hash)
+
+      keys.each do |key|
+        value = hash[key]
+        hash[key] = placeholder_for(key, value) if value.present? && !safe_value?(value)
       end
     end
 
@@ -252,7 +280,16 @@ module SupportBundle
 
     def sensitive_key?(key)
       upper = key.to_s.upcase
-      ENV_KEYS.include?(upper) || BUCKET_KEYS.include?(upper) || SENSITIVE_KEY_PATTERN.match?(upper)
+      ENV_KEYS.include?(upper) || SENSITIVE_KEY_PATTERN.match?(upper)
+    end
+
+    # True for well-known, non-identifying words ("solectrus", "SENEC") that
+    # stay visible when they appear as a non-secret identifier (org/bucket).
+    # Whole-value, case-insensitive match — a custom name that merely contains
+    # the word ("my-solectrus-bucket") is still masked. Only consulted on
+    # identifier paths, never for secrets.
+    def safe_value?(value)
+      SAFE_VALUES.include?(value.to_s.strip.downcase)
     end
 
     # True for hostnames that point outside the LAN. Comma-separated lists
@@ -348,6 +385,7 @@ module SupportBundle
     def line_sensitive?(key, value)
       upper = key.to_s.upcase
       return true if sensitive_key?(upper)
+      return !safe_value?(value) if BUCKET_KEYS.include?(upper)
       return public_hostname?(value) if HOST_KEYS.include?(upper)
 
       false

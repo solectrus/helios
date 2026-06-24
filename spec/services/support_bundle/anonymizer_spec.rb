@@ -27,6 +27,10 @@ RSpec.describe SupportBundle::Anonymizer do
       expect(described_class.mask('')).to eq('')
     end
 
+    it 'masks well-known words too — the allowlist is applied by callers, not here' do
+      expect(described_class.mask('solectrus')).to match(/\A[A-Z]{5}\z/)
+    end
+
     it 'cycles letters after exhausting A-Z so the 27th value reuses A' do
       26.times { |i| described_class.mask("value-#{i}") }
 
@@ -105,16 +109,31 @@ RSpec.describe SupportBundle::Anonymizer do
       expect(described_class.anonymize_env_style(content)).to eq(content)
     end
 
-    it 'masks INFLUX_BUCKET and INFLUX_ORG regardless of value' do
+    it 'masks custom INFLUX_BUCKET and INFLUX_ORG names' do
       content = <<~ENV
         INFLUX_BUCKET=my-solectrus-bucket
-        INFLUX_ORG=solectrus
+        INFLUX_ORG=berlin-pv
       ENV
 
       expect(described_class.anonymize_env_style(content)).to eq(<<~ENV)
         INFLUX_BUCKET=AAAAA
         INFLUX_ORG=BBBBB
       ENV
+    end
+
+    it 'keeps well-known org/bucket names (default + vendor, case-insensitive)' do
+      content = <<~ENV
+        INFLUX_BUCKET=SeNeC
+        INFLUX_ORG=solectrus
+      ENV
+
+      expect(described_class.anonymize_env_style(content)).to eq(content)
+    end
+
+    it 'still masks a secret even when its value equals a safe word' do
+      content = "INFLUX_PASSWORD=solectrus\n"
+
+      expect(described_class.anonymize_env_style(content)).to eq("INFLUX_PASSWORD=AAAAA\n")
     end
 
     it 'masks *_HOST values that are public FQDNs' do
@@ -271,7 +290,7 @@ RSpec.describe SupportBundle::Anonymizer do
       expect(letters.uniq.size).to be > 1
     end
 
-    it 'masks influxdb bucket/org and a public FQDN host, keeps container hostnames' do
+    it 'masks a custom influxdb bucket and a public FQDN host, keeps container hostnames and the default org' do
       yaml = <<~YAML
         influxdb:
           host: influxdb
@@ -285,7 +304,7 @@ RSpec.describe SupportBundle::Anonymizer do
 
       expect(parsed['influxdb']['host']).to eq('influxdb')
       expect(parsed['influxdb']['bucket']).to match(/\A[A-Z]{5}\z/)
-      expect(parsed['influxdb']['org']).to match(/\A[A-Z]{5}\z/)
+      expect(parsed['influxdb']['org']).to eq('solectrus') # well-known name kept
       expect(parsed['mqtt']['host']).to match(/\A[A-Z]{5}\z/)
     end
 
