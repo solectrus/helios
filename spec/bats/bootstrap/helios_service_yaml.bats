@@ -10,6 +10,13 @@ load helpers
   [[ "$yaml" == *"SECRET_KEY_BASE"* ]]
 }
 
+# TZ passes the host timezone through to the container; without it HELIOS's OS
+# clock runs UTC. Canonical export lists it first (see Export::Services::Helios),
+# so the bootstrap block must too — enforced rigorously by the Ruby drift spec.
+@test "passes TZ through as an env var" {
+  [[ "$(helios_service_yaml)" == *"- TZ"* ]]
+}
+
 @test "exposes the web UI on port 3999:3000" {
   [[ "$(helios_service_yaml)" == *"3999:3000"* ]]
 }

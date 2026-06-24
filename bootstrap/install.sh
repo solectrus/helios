@@ -687,6 +687,7 @@ helios_service_yaml() {
   helios:
     image: ${HELIOS_IMAGE}
     environment:
+      - TZ
       - ADMIN_PASSWORD
       - SECRET_KEY_BASE
     volumes:
@@ -942,6 +943,59 @@ MSG
   fi
 }
 
+# Add HELIOS to a stack that already exists in the current directory (a
+# Compose file and/or .env are present). Patches compose.yaml in place,
+# backfills the secrets, and starts the stack. Assumes preflight (Docker
+# access, writable dir) has already run in main().
+install_into_existing_stack() {
+  bold "Existing stack detected — adding HELIOS"
+
+  if [ -z "$COMPOSE_FILE" ]; then
+    die "$ENV_FILE exists but no Compose file found (${COMPOSE_CANDIDATES[*]}). Refusing to guess."
+  fi
+  [ -e "$ENV_FILE" ] || die "$COMPOSE_FILE exists but $ENV_FILE is missing. Refusing to guess."
+
+  if helios_service_present; then
+    bold "HELIOS is already declared in $COMPOSE_FILE — nothing to add."
+    ensure_helios_started
+    return
+  fi
+
+  ensure_disk_space existing
+  ensure_ram
+  ensure_project_name
+  append_helios_service
+  ensure_helios_secrets
+
+  success "$COMPOSE_FILE updated — added 'helios' service."
+  start_stack
+
+  print_running_banner "${GENERATED_ADMIN_PASSWORD:-}"
+}
+
+# Create a brand-new SOLECTRUS stack from scratch: a fresh compose.yaml + .env
+# with a freshly generated admin password and SECRET_KEY_BASE, then start it.
+install_fresh() {
+  bold "No existing stack found — performing fresh install"
+
+  ensure_disk_space fresh
+  ensure_ram
+
+  COMPOSE_FILE="${COMPOSE_CANDIDATES[0]}"
+
+  local password secret
+  password="$(generate_password)"
+  secret="$(generate_secret)"
+
+  write_compose_fresh
+  write_env_fresh "$password" "$secret"
+
+  success "Created $COMPOSE_FILE and $ENV_FILE."
+  start_stack
+
+  print_running_banner "$password"
+}
+
 main() {
   COMPOSE_FILE="$(detect_compose_file)" || COMPOSE_FILE=""
 
@@ -987,51 +1041,14 @@ main() {
 
   ensure_writable_dir
 
+  # Two install modes: extend an existing stack in place, or create one from
+  # scratch. The branch selection stays here; the bodies live in their own
+  # functions above.
   if [ -n "$COMPOSE_FILE" ] || [ -e "$ENV_FILE" ]; then
-    bold "Existing stack detected — adding HELIOS"
-
-    if [ -z "$COMPOSE_FILE" ]; then
-      die "$ENV_FILE exists but no Compose file found (${COMPOSE_CANDIDATES[*]}). Refusing to guess."
-    fi
-    [ -e "$ENV_FILE" ] || die "$COMPOSE_FILE exists but $ENV_FILE is missing. Refusing to guess."
-
-    if helios_service_present; then
-      bold "HELIOS is already declared in $COMPOSE_FILE — nothing to add."
-      ensure_helios_started
-      return
-    fi
-
-    ensure_disk_space existing
-    ensure_ram
-    ensure_project_name
-    append_helios_service
-    ensure_helios_secrets
-
-    success "$COMPOSE_FILE updated — added 'helios' service."
-    start_stack
-
-    print_running_banner "${GENERATED_ADMIN_PASSWORD:-}"
-    return
+    install_into_existing_stack
+  else
+    install_fresh
   fi
-
-  bold "No existing stack found — performing fresh install"
-
-  ensure_disk_space fresh
-  ensure_ram
-
-  COMPOSE_FILE="${COMPOSE_CANDIDATES[0]}"
-
-  local password secret
-  password="$(generate_password)"
-  secret="$(generate_secret)"
-
-  write_compose_fresh
-  write_env_fresh "$password" "$secret"
-
-  success "Created $COMPOSE_FILE and $ENV_FILE."
-  start_stack
-
-  print_running_banner "$password"
 }
 
 # Run main unless we are being sourced (e.g. by bats tests in spec/bats/bootstrap/).
