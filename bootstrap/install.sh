@@ -526,17 +526,102 @@ try_select_dir() {
   return 1
 }
 
+# Print the working directory (compose.yaml location) of any *running* SOLECTRUS
+# stack on this host, one per line, deduplicated. Identifies a stack by its
+# container images (…solectrus/…) rather than the Compose project name: older
+# SOLECTRUS installs often ship no `name:` in compose.yaml, so their project name
+# is CWD-derived and unreliable, whereas the image family is a hard signal. Reads
+# the working_dir label Docker Compose stamps on every container. Empty output
+# when Docker is absent/unreachable or no such stack runs.
+detect_running_solectrus_dir() {
+  command -v docker >/dev/null 2>&1 || return 0
+  docker ps --format '{{.Image}}|{{.Label "com.docker.compose.project.working_dir"}}' 2>/dev/null \
+    | awk -F'|' '$1 ~ /(^|\/)solectrus\// && $2 != "" { print $2 }' \
+    | sort -u
+}
+
+# True when a HELIOS container is already running as part of the stack whose
+# Compose working dir is DIR. Lets the adopt path short-circuit "already
+# installed" instead of asking to add HELIOS to a stack that already has it.
+# The image must be exactly …solectrus/helios (tag/digest allowed), so a
+# sibling like solectrus/helios-foo wouldn't match.
+helios_running_in_dir() {
+  local dir="$1"
+  command -v docker >/dev/null 2>&1 || return 1
+  docker ps --format '{{.Image}}|{{.Label "com.docker.compose.project.working_dir"}}' 2>/dev/null \
+    | awk -F'|' -v d="$dir" \
+        '$1 ~ /(^|\/)solectrus\/helios(:|@|$)/ && $2 == d { found = 1 } END { exit !found }'
+}
+
+# A SOLECTRUS stack is already running on this host (in the given working dir(s),
+# newline-separated). Because the project name ('solectrus') and HELIOS port
+# (3999) are fixed, a second parallel stack would collide on both — so the only
+# valid outcomes are "adopt that stack" or "abort". We never offer a fresh
+# install alongside it. Sets TARGET_DIR to the adopted directory, or exits.
+adopt_running_stack() {
+  local dirs="$1" count dir
+  count="$(printf '%s\n' "$dirs" | grep -c .)"
+
+  # More than one running stack is already a broken state (they share the fixed
+  # project name). Can't pick for the user — point them at the directories.
+  if [ "$count" -gt 1 ]; then
+    error "  ✗ Multiple running SOLECTRUS stacks detected:"
+    printf '%s\n' "$dirs" | while IFS= read -r d; do [ -n "$d" ] && error "      $d"; done
+    die "Cannot pick automatically. cd into the intended stack directory and re-run."
+  fi
+
+  dir="$dirs"
+
+  # Already standing in it → just continue here (no relocation needed).
+  [ "$dir" = "$PWD" ] && { TARGET_DIR="$PWD"; return; }
+
+  # The detected stack already runs HELIOS → nothing to adopt. Relocate silently
+  # so main's "already installed" guard reports it and ensures it's up, instead
+  # of misleadingly asking to "add" HELIOS to a stack that already has it.
+  if helios_running_in_dir "$dir"; then
+    TARGET_DIR="$dir"
+    return
+  fi
+
+  warn "  A running SOLECTRUS stack was detected at:"
+  highlight "      $dir"
+  printf '\n'
+
+  # Unattended: refuse to mutate a live stack without a human present. Adoption
+  # rewrites someone's running compose.yaml, so it must happen interactively.
+  if is_true "$HELIOS_ASSUME_YES" || [ ! -r /dev/tty ]; then
+    error "  Refusing to modify a running stack unattended."
+    die "cd into $dir and re-run interactively to add HELIOS to it."
+  fi
+
+  bold "  HELIOS will be added to this existing stack."
+  printf '\n'
+  prompt_yn "  Add HELIOS to the stack at $dir? [y/N] " \
+    || { warn "  Aborted."; exit 0; }
+  printf '\n'
+  TARGET_DIR="$dir"
+}
+
 # Decide where to install and leave the result in TARGET_DIR. Order of
 # precedence:
 #   1. Current dir holds a stack → extend it in place (the deliberate "cd into
 #      my stack, add HELIOS" flow); never relocate.
-#   2. Non-interactive           → current directory (backward compatible).
-#   3. Interactive fresh install → offer a fixed menu of sudo-free targets.
+#   2. A SOLECTRUS stack already runs elsewhere → adopt it or abort (a second
+#      parallel stack can't coexist with the fixed project name + port).
+#   3. Non-interactive           → current directory (backward compatible).
+#   4. Interactive fresh install → offer a fixed menu of sudo-free targets.
 #      The default depends on privilege: root installs to /opt/solectrus (it
 #      can create and own it without sudo), a normal user to ~/solectrus.
 choose_target_dir() {
   if detect_compose_file >/dev/null 2>&1 || [ -e "$ENV_FILE" ]; then
     TARGET_DIR="$PWD"
+    return
+  fi
+
+  local running_dirs
+  running_dirs="$(detect_running_solectrus_dir)"
+  if [ -n "$running_dirs" ]; then
+    adopt_running_stack "$running_dirs"
     return
   fi
 
@@ -836,7 +921,8 @@ main() {
 
   # Pick the install directory (only now, after Docker access is proven — the
   # only privilege HELIOS needs). This may relocate us into a fresh
-  # ~/solectrus or /opt/solectrus, so re-detect any existing stack afterwards.
+  # ~/solectrus or /opt/solectrus, or into the working dir of a SOLECTRUS stack
+  # already running on this host, so re-detect any existing stack afterwards.
   choose_target_dir
   if [ "$TARGET_DIR" != "$PWD" ]; then
     mkdir -p "$TARGET_DIR" || die "Could not create directory: $TARGET_DIR"

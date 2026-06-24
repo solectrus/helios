@@ -64,7 +64,7 @@ curl -fsSL https://raw.githubusercontent.com/solectrus/helios/main/bootstrap/ins
 What it does depends on your setup:
 
 - **New install** — it asks where to install and offers a short menu (`/opt/solectrus`, `~/solectrus`, or the current directory), then creates that directory and sets up the stack there. The databases live here long-term, so pick a disk with enough free space.
-- **Existing SOLECTRUS stack** — `cd` into the directory that holds your current `compose.yaml` and `.env` first; HELIOS detects the stack and is added in place, no menu.
+- **Existing SOLECTRUS stack** — `cd` into the directory that holds your current `compose.yaml` and `.env` first; HELIOS detects the stack and is added in place, no menu. If you run the installer from somewhere else while the stack is running, it finds it via Docker and offers to add HELIOS there — a second, separate stack is never created (the project name and port `3999` are fixed and would collide).
 
 When it finishes, HELIOS is available at `http://<your-host>:3999`.
 
@@ -82,6 +82,8 @@ HELIOS_ASSUME_YES=1 HELIOS_ACCEPT_LICENSE=1 \
 - **`HELIOS_ASSUME_YES`** (default `0`) — auto-confirms operational prompts (install Docker, continue below recommended specs).
 - **`HELIOS_ACCEPT_LICENSE`** (default `0`) — accepts the [license](LICENSE.md) without prompting. Kept separate from `HELIOS_ASSUME_YES` on purpose, so license consent is never granted implicitly.
 - **`HELIOS_QUIET`** (default `0`) — silences `docker compose pull` / `up` output.
+
+An unattended run installs into the current directory. If it detects a SOLECTRUS stack already running in a _different_ directory, it aborts rather than create a colliding second stack or silently rewrite the live one — `cd` into that directory and re-run interactively to add HELIOS to it.
 
 ## First run
 
