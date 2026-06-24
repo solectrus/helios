@@ -106,7 +106,7 @@ jobs:
 
       - name: Cache Playwright browsers
         id: playwright-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-browsers-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
@@ -117,7 +117,7 @@ jobs:
 
       - name: Cache Vite build
         id: vite-cache
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: public/vite-test
           key: vite-test-${{ hashFiles('app/frontend/**', 'vite.config.mts', 'bun.lock') }}
@@ -130,7 +130,7 @@ jobs:
       # can balance shards by execution time instead of file size. The key is
       # unique per run, so each run also saves a fresh log via restore-keys.
       - name: Cache RSpec runtime log
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           path: tmp/parallel_runtime_rspec.log
           key: rspec-runtime-${{ runner.os }}-${{ github.run_id }}
