@@ -35,7 +35,13 @@ module Export
       private
 
       def forecast_environment
+        return passthrough_vars + explicit_vars + pvnode_v2_vars if configuration.forecast_pvnode_v2?
+
         passthrough_vars + explicit_vars + forecast_vars + roof_vars + optional_vars + provider_vars
+      end
+
+      def pvnode_v2_vars
+        ::Forecast::PvnodeRules.v2_env_keys(configuration.forecast.forecast_pvnode_paid)
       end
 
       def passthrough_vars
@@ -116,7 +122,7 @@ module Export
       end
 
       def pvnode_paid_plan?(value)
-        value.present? && value.to_s != 'false'
+        ::Forecast::PvnodeRules.paid_plan?(value)
       end
     end
   end

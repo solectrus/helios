@@ -976,6 +976,67 @@ RSpec.describe Configuration do
     end
   end
 
+  describe '#incomplete_forecast_location?' do
+    let(:sensors) { { 'inverter_power_forecast' => { 'source' => 'forecast' } } }
+
+    it 'flags a pvnode v1 setup (stable channel) that is missing the location' do
+      # Typical after a v2 site config was switched back to the stable channel:
+      # a stale site ID, but no location for the location-based API v1.
+      with_config_yaml(
+        'sensors' => sensors,
+        'forecast' => { 'forecast' => 'pvnode', 'forecast_pvnode_apikey' => 'k',
+                        'forecast_pvnode_site_id' => 'site-1' },
+      )
+      config = described_class.current
+      expect(config.incomplete_forecast_location?).to be true
+      # Links to the forecast-collector card, where the location reappears on
+      # the stable channel — not to the release-channel picker.
+      expect(config.setting_incomplete?('forecast')).to be true
+      expect(config.setting_incomplete?('software')).to be false
+    end
+
+    it 'accepts a v2 site config on the develop channel (location lives on pvnode)' do
+      with_config_yaml(
+        'sensors' => sensors,
+        'forecast' => { 'forecast' => 'pvnode', 'forecast_pvnode_apikey' => 'k',
+                        'forecast_pvnode_site_id' => 'site-1',
+                        'image' => 'ghcr.io/solectrus/forecast-collector:develop' },
+      )
+      config = described_class.current
+      expect(config.forecast_pvnode_v2?).to be true
+      expect(config.incomplete_forecast_location?).to be false
+    end
+
+    it 'accepts a pvnode v1 setup with location and roof' do
+      with_config_yaml(
+        'sensors' => sensors,
+        'forecast' => { 'forecast' => 'pvnode', 'forecast_pvnode_apikey' => 'k',
+                        'forecast_latitude' => '51.3', 'forecast_longitude' => '9.5',
+                        'forecast_declination1' => '30', 'forecast_pvnode_azimuth1' => '180',
+                        'forecast_kwp1' => '10' },
+      )
+      expect(described_class.current.incomplete_forecast_location?).to be false
+    end
+
+    it 'flags a pvnode v1 setup with a location but no roof string' do
+      # The location-based API v1 still needs the first roof (kWp/tilt/azimuth)
+      # to produce a forecast — a location alone is not enough.
+      with_config_yaml(
+        'sensors' => sensors,
+        'forecast' => { 'forecast' => 'pvnode', 'forecast_pvnode_apikey' => 'k',
+                        'forecast_latitude' => '51.3', 'forecast_longitude' => '9.5' },
+      )
+      expect(described_class.current.incomplete_forecast_location?).to be true
+    end
+
+    it 'returns false when forecast is not an active source' do
+      with_config_yaml(
+        'forecast' => { 'forecast' => 'pvnode', 'forecast_pvnode_site_id' => 'site-1' },
+      )
+      expect(described_class.current.incomplete_forecast_location?).to be false
+    end
+  end
+
   describe '#configuration_complete?' do
     it 'returns false when setup is not completed yet' do
       with_config_yaml('system' => { 'installation_date' => '2024-01-15' })

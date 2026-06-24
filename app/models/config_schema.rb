@@ -261,6 +261,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     forecast_solcast_id1
     forecast_solcast_id2
     forecast_pvnode_apikey
+    forecast_pvnode_site_id
     forecast_pvnode_paid
     forecast_pvnode_extra_params
     forecast_pvnode_extra_params1

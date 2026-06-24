@@ -46,6 +46,7 @@ forecast:
   forecast_longitude: '7.5'
   forecast_roofs: '1'
   forecast_solar_apikey: my-solar-api-key
+  image: ghcr.io/solectrus/forecast-collector:latest
   measurement: Forecast
 senec:
   adapter: local

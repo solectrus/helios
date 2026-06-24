@@ -43,6 +43,7 @@ forecast:
   forecast_latitude: '53.0000'
   forecast_longitude: '7.0000'
   forecast_roofs: '1'
+  image: ghcr.io/solectrus/forecast-collector:latest
   measurement: Forecast
 mqtt:
   mqtt_host: 192.168.10.10

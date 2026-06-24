@@ -47,6 +47,7 @@ forecast:
   forecast_pvnode_extra_params: pv_technology_type=topcon&temperature_coefficient_power=-0.24&panel_age_years=3&elevation=0&installation_height=5&shading_config=2:1:0:1_6:2:0:2_6:2:0:2
   forecast_pvnode_paid: 'true'
   forecast_roofs: '1'
+  image: ghcr.io/solectrus/forecast-collector:latest
   measurement: forecast
 mqtt:
   mappings:

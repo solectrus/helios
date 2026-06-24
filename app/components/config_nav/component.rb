@@ -119,7 +119,9 @@ module ConfigNav
 
     def show_warning?(tab)
       case tab[:id]
-      when :datasources then Configuration.current.incomplete?
+      when :datasources
+        Configuration.current.incomplete? ||
+          Configuration.current.incomplete_forecast_location?
       when :advanced
         Configuration.current.incomplete_influxdb? ||
           Configuration.current.incomplete_system_general?

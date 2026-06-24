@@ -42,6 +42,7 @@ forecast:
   forecast_latitude: '0.00000'
   forecast_longitude: '0.00000'
   forecast_roofs: '1'
+  image: ghcr.io/solectrus/forecast-collector:latest
 senec:
   adapter: local
   host: 192.168.178.34

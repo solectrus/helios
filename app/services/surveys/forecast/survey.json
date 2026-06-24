@@ -8,6 +8,12 @@
     "de": "Prognose deines PV-Ertrags",
     "default": "Forecast of your PV yield"
   },
+  "calculatedValues": [
+    {
+      "name": "pvnode_v1",
+      "expression": "{forecast} = 'pvnode' and (imageChannel({image}) <> 'develop' or {forecast_pvnode_site_id} empty)"
+    }
+  ],
   "pages": [
     {
       "name": "p_forecast_provider",
@@ -60,8 +66,110 @@
       ]
     },
     {
+      "name": "p_pvnode",
+      "visibleIf": "{forecast} = 'pvnode'",
+      "title": {
+        "de": "pvnode API",
+        "default": "pvnode API"
+      },
+      "description": {
+        "de": "Zugangsdaten für die pvnode-API.",
+        "default": "Credentials for the pvnode API."
+      },
+      "elements": [
+        {
+          "type": "html",
+          "name": "pvnode_apikey_link",
+          "html": {
+            "de": "<p>Den API-Key bekommst du unter <a href=\"https://pvnode.com/settings/api-keys\" target=\"_blank\" rel=\"noopener\">pvnode.com/settings/api-keys</a>.</p>",
+            "default": "<p>You can get the API key at <a href=\"https://pvnode.com/settings/api-keys\" target=\"_blank\" rel=\"noopener\">pvnode.com/settings/api-keys</a>.</p>"
+          }
+        },
+        {
+          "type": "text",
+          "name": "forecast_pvnode_apikey",
+          "title": {
+            "de": "API-Key",
+            "default": "API key"
+          },
+          "isRequired": true
+        },
+        {
+          "type": "radiogroup",
+          "name": "forecast_pvnode_paid",
+          "title": {
+            "de": "pvnode-Tarif",
+            "default": "pvnode plan"
+          },
+          "description": {
+            "de": "Der Tarif muss zum aktiv abonnierten pvnode-Konto passen. Eine falsche Angabe kann Fehler oder vorzeitiges Aufbrauchen des monatlichen Kontingents verursachen.",
+            "default": "The plan must match your active pvnode subscription. A mismatch can cause errors or exhaust the monthly quota prematurely."
+          },
+          "isRequired": true,
+          "defaultValue": "false",
+          "choices": [
+            {
+              "value": "false",
+              "text": {
+                "de": "Free",
+                "default": "Free"
+              }
+            },
+            {
+              "value": "true",
+              "text": {
+                "de": "Light",
+                "default": "Light"
+              }
+            },
+            {
+              "value": "nowcast",
+              "text": {
+                "de": "Plus",
+                "default": "Plus"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_pvnode_site",
+      "visibleIf": "{forecast} = 'pvnode' and imageChannel({image}) = 'develop'",
+      "title": {
+        "de": "pvnode Site (API v2)",
+        "default": "pvnode site (API v2)"
+      },
+      "description": {
+        "de": "Mit einer Site-ID nutzt der Collector die site-basierte pvnode-API v2. Standort und Dachflächen werden dann auf pvnode.com verwaltet und sind hier nicht mehr erforderlich.",
+        "default": "With a site ID the collector uses the site-based pvnode API v2. Location and roofs are then managed on pvnode.com and are no longer needed here."
+      },
+      "elements": [
+        {
+          "type": "html",
+          "name": "pvnode_site_docs",
+          "html": {
+            "de": "<p>Die API v2 ist site-basiert: Die Site wird unter <a href=\"https://pvnode.com\" target=\"_blank\" rel=\"noopener\">pvnode.com</a> angelegt; dort werden Standort und alle Module konfiguriert. Ohne Site-ID verwendet der Collector weiterhin die API v1.</p>",
+            "default": "<p>API v2 is site-based: the site is created at <a href=\"https://pvnode.com\" target=\"_blank\" rel=\"noopener\">pvnode.com</a>, where location and all modules are configured. Without a site ID the collector keeps using API v1.</p>"
+          }
+        },
+        {
+          "type": "text",
+          "name": "forecast_pvnode_site_id",
+          "title": {
+            "de": "Site-ID",
+            "default": "Site ID"
+          },
+          "description": {
+            "de": "ID der Site aus dem pvnode-Konto. Solange leer, verwendet der Collector noch die klassische API v1.",
+            "default": "ID of the site from the pvnode account. While empty, the collector still uses the classic API v1."
+          }
+        }
+      ]
+    },
+    {
       "name": "p_forecast_solar_location",
-      "visibleIf": "{forecast} anyof ['forecast.solar', 'pvnode']",
+      "visibleIf": "{forecast} = 'forecast.solar' or {pvnode_v1}",
       "title": {
         "de": "Standort",
         "default": "Location"
@@ -107,7 +215,7 @@
     },
     {
       "name": "p_forecast_roofs",
-      "visibleIf": "{forecast} anyof ['forecast.solar', 'solcast', 'pvnode']",
+      "visibleIf": "{forecast} anyof ['forecast.solar', 'solcast'] or {pvnode_v1}",
       "title": {
         "de": "Dachflächen",
         "default": "Roofs"
@@ -142,7 +250,7 @@
     },
     {
       "name": "p_forecast_solar_roof1",
-      "visibleIf": "{forecast} anyof ['forecast.solar', 'pvnode']",
+      "visibleIf": "{forecast} = 'forecast.solar' or {pvnode_v1}",
       "title": {
         "de": "1. Dachfläche",
         "default": "1. Roof"
@@ -217,7 +325,7 @@
     },
     {
       "name": "p_forecast_solar_roof2",
-      "visibleIf": "{forecast} anyof ['forecast.solar', 'pvnode'] and {forecast_roofs} anyof [2, 3, 4]",
+      "visibleIf": "({forecast} = 'forecast.solar' or {pvnode_v1}) and {forecast_roofs} anyof [2, 3, 4]",
       "title": {
         "de": "2. Dachfläche",
         "default": "2. Roof"
@@ -292,7 +400,7 @@
     },
     {
       "name": "p_forecast_solar_roof3",
-      "visibleIf": "{forecast} anyof ['forecast.solar', 'pvnode'] and {forecast_roofs} anyof [3, 4]",
+      "visibleIf": "({forecast} = 'forecast.solar' or {pvnode_v1}) and {forecast_roofs} anyof [3, 4]",
       "title": {
         "de": "3. Dachfläche",
         "default": "3. Roof"
@@ -367,7 +475,7 @@
     },
     {
       "name": "p_forecast_solar_roof4",
-      "visibleIf": "{forecast} anyof ['forecast.solar', 'pvnode'] and {forecast_roofs} = '4'",
+      "visibleIf": "({forecast} = 'forecast.solar' or {pvnode_v1}) and {forecast_roofs} = '4'",
       "title": {
         "de": "4. Dachfläche",
         "default": "4. Roof"
@@ -487,76 +595,8 @@
       ]
     },
     {
-      "name": "p_pvnode",
-      "visibleIf": "{forecast} = 'pvnode'",
-      "title": {
-        "de": "pvnode API",
-        "default": "pvnode API"
-      },
-      "description": {
-        "de": "Zugangsdaten für die pvnode-API.",
-        "default": "Credentials for the pvnode API."
-      },
-      "elements": [
-        {
-          "type": "html",
-          "name": "pvnode_apikey_link",
-          "html": {
-            "de": "<p>Den API-Key bekommst du unter <a href=\"https://pvnode.com/settings/api-keys\" target=\"_blank\" rel=\"noopener\">pvnode.com/settings/api-keys</a>.</p>",
-            "default": "<p>You can get the API key at <a href=\"https://pvnode.com/settings/api-keys\" target=\"_blank\" rel=\"noopener\">pvnode.com/settings/api-keys</a>.</p>"
-          }
-        },
-        {
-          "type": "text",
-          "name": "forecast_pvnode_apikey",
-          "title": {
-            "de": "API-Key",
-            "default": "API key"
-          },
-          "isRequired": true
-        },
-        {
-          "type": "radiogroup",
-          "name": "forecast_pvnode_paid",
-          "title": {
-            "de": "pvnode-Tarif",
-            "default": "pvnode plan"
-          },
-          "description": {
-            "de": "Der Tarif muss zum aktiv abonnierten pvnode-Konto passen. Eine falsche Angabe kann Fehler oder vorzeitiges Aufbrauchen des monatlichen Kontingents verursachen.",
-            "default": "The plan must match your active pvnode subscription. A mismatch can cause errors or exhaust the monthly quota prematurely."
-          },
-          "isRequired": true,
-          "defaultValue": "false",
-          "choices": [
-            {
-              "value": "false",
-              "text": {
-                "de": "Kostenlos (40 Abfragen/Monat, 1-Tages-Vorhersage)",
-                "default": "Free (40 queries/month, 1-day forecast)"
-              }
-            },
-            {
-              "value": "true",
-              "text": {
-                "de": "Hobbyist (1.000 Abfragen/Monat, 7-Tages-Vorhersage, stündliche Aktualisierungen)",
-                "default": "Hobbyist (1,000 queries/month, 7-day forecast, hourly updates)"
-              }
-            },
-            {
-              "value": "nowcast",
-              "text": {
-                "de": "Hobbyist mit Nowcast (3.000 Abfragen/Monat, 7-Tages-Vorhersage, 10-Minuten-Aktualisierungen tagsüber)",
-                "default": "Hobbyist with Nowcast (3,000 queries/month, 7-day forecast, 10-minute updates during daytime)"
-              }
-            }
-          ]
-        }
-      ]
-    },
-    {
       "name": "p_pvnode_extra_params",
-      "visibleIf": "{forecast} = 'pvnode'",
+      "visibleIf": "{pvnode_v1}",
       "title": {
         "de": "pvnode Query-Parameter (optional)",
         "default": "pvnode query parameters (optional)"

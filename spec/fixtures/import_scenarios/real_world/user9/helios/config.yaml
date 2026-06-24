@@ -42,6 +42,7 @@ forecast:
   forecast_pvnode_extra_params: panel_age_years=4
   forecast_pvnode_paid: 'false'
   forecast_roofs: '1'
+  image: ghcr.io/solectrus/forecast-collector:develop
   measurement: forecast
 senec:
   adapter: cloud

@@ -570,9 +570,68 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # overall #configuration_complete? gate.
   def incomplete_settings
     ids = incomplete_sources.dup
+    # incomplete_sources flags 'forecast' only when the `forecast` field itself
+    # is blank; incomplete_forecast_location? applies only when it is present.
+    # The two target disjoint states and never flag 'forecast' together.
+    ids << 'forecast' if incomplete_forecast_location?
     ids << 'influxdb' if incomplete_influxdb?
     ids << 'system_general' if incomplete_system_general?
     ids
+  end
+
+  # Effective forecast-collector release channel ('latest' or 'develop').
+  # Defaults to the registry's stable image when nothing is persisted.
+  # Only used to gate pvnode API v2; remove together with the channel
+  # condition in #forecast_pvnode_v2? once v2 ships on the stable channel.
+  def forecast_channel
+    image = forecast.image.presence || DockerImages.current(:FORECAST_COLLECTOR)
+    image_channel(image)
+  end
+
+  # pvnode API v2 is site-based. It currently ships only on the develop channel
+  # of the forecast-collector, so a configured site ID enables v2 only there;
+  # on the stable channel the same config falls back to the location-based v1.
+  # The .env / compose exporters read this as the single server-side switch
+  # (the survey re-derives the same decision client-side via imageChannel).
+  #
+  # When the forecast-collector releases v2 on the stable ('latest') channel,
+  # drop the channel gate so a site ID alone selects v2. That touches:
+  #   1. this method — remove the `forecast_channel == 'develop'` condition
+  #   2. #forecast_channel (above) — then unused, remove it
+  #   3. survey.json calculatedValue `pvnode_v1` — drop the
+  #      `imageChannel({image}) <> 'develop' or` clause
+  #   4. survey.json page `p_pvnode_site` visibleIf — drop the
+  #      `and imageChannel({image}) = 'develop'` clause
+  #   5. survey_controller.ts `imageChannel` — then unused, remove it
+  #   6. wording — the PVNODE_SITE_ID hint in Export::Env::Forecast and the
+  #      `p_pvnode_site` page text ("requires the develop image")
+  def forecast_pvnode_v2?
+    fc = forecast
+    fc.forecast == 'pvnode' && fc.forecast_pvnode_site_id.present? &&
+      forecast_channel == 'develop'
+  end
+
+  # The location-based pvnode API v1 cannot produce a forecast without the
+  # site location and the first roof string (these are exactly the fields the
+  # survey marks required for pvnode v1). A v2 site config (site-based, no
+  # location) switched back to the stable channel carries none of them, so any
+  # missing field marks the section incomplete and the user fills it in the
+  # forecast-collector survey, where those pages reappear on the stable channel.
+  PVNODE_V1_REQUIRED_FIELDS = %w[
+    forecast_latitude
+    forecast_longitude
+    forecast_declination1
+    forecast_pvnode_azimuth1
+    forecast_kwp1
+  ].freeze
+
+  def incomplete_forecast_location?
+    return false unless forecast_required?
+
+    fc = forecast
+    return false unless fc.forecast == 'pvnode' && !forecast_pvnode_v2?
+
+    PVNODE_V1_REQUIRED_FIELDS.any? { |field| fc.public_send(field).blank? }
   end
 
   def setting_incomplete?(setting)

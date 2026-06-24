@@ -42,6 +42,7 @@ forecast:
   forecast_latitude: '0.00000'
   forecast_longitude: '0.00000'
   forecast_roofs: '1'
+  image: ghcr.io/solectrus/forecast-collector:latest
   measurement: Forecast
 senec:
   adapter: local

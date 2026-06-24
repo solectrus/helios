@@ -6,14 +6,32 @@ module Export
         return if fcast.forecast.blank?
 
         env.add_section('Forecast')
-        base_entries(fcast)
-        roof_entries(fcast)
-        provider_entries(fcast)
+        if configuration.forecast_pvnode_v2?
+          pvnode_v2_entries(fcast)
+        else
+          base_entries(fcast)
+          roof_entries(fcast)
+          provider_entries(fcast)
+        end
         entry('INFLUX_MEASUREMENT_FORECAST', fcast.measurement.presence || 'forecast',
               'InfluxDB measurement name for forecasts')
       end
 
       private
+
+      # pvnode API v2 is site-based: location and all PV strings live on the
+      # pvnode site and are referenced by its ID, so HELIOS emits neither the
+      # location nor the roof/extra-param variables. Only available on the
+      # develop channel (see Configuration#forecast_pvnode_v2?); the
+      # "requires the develop image" hint below is part of that gate and drops
+      # when v2 ships on the stable channel.
+      def pvnode_v2_entries(fcast)
+        entry('FORECAST_PROVIDER', fcast.forecast, 'Forecast provider')
+        entry('PVNODE_SITE_ID', fcast.forecast_pvnode_site_id,
+              'pvnode site ID (enables the site-based API v2, requires the develop image)')
+        entry('PVNODE_APIKEY', fcast.forecast_pvnode_apikey, 'pvnode API key')
+        pvnode_paid_entry(fcast)
+      end
 
       def base_entries(fcast)
         entry('FORECAST_PROVIDER', fcast.forecast, 'Forecast provider')
@@ -111,10 +129,7 @@ module Export
 
       def pvnode_entries(fcast)
         entry('PVNODE_APIKEY', fcast.forecast_pvnode_apikey, 'pvnode API key')
-        if pvnode_paid_plan?(fcast.forecast_pvnode_paid)
-          entry('PVNODE_PAID', fcast.forecast_pvnode_paid,
-                'pvnode paid plan — only set for paid accounts (true = Hobbyist, nowcast = Hobbyist with Nowcast)')
-        end
+        pvnode_paid_entry(fcast)
         if fcast.forecast_pvnode_extra_params.present?
           entry('PVNODE_EXTRA_PARAMS', fcast.forecast_pvnode_extra_params,
                 'Additional pvnode parameters')
@@ -122,8 +137,17 @@ module Export
         pvnode_per_roof_extra_params_entries(fcast)
       end
 
+      # PVNODE_PAID is shared by the v1 and v2 emitters; only set for paid
+      # accounts (the collector treats an absent value as the free tier).
+      def pvnode_paid_entry(fcast)
+        return unless pvnode_paid_plan?(fcast.forecast_pvnode_paid)
+
+        entry('PVNODE_PAID', fcast.forecast_pvnode_paid,
+              'pvnode paid plan — only set for paid accounts (true = Light, nowcast = Plus)')
+      end
+
       def pvnode_paid_plan?(value)
-        value.present? && value.to_s != 'false'
+        ::Forecast::PvnodeRules.paid_plan?(value)
       end
 
       def pvnode_per_roof_extra_params_entries(fcast)

@@ -52,6 +52,7 @@ forecast:
   forecast_pvnode_extra_params: diffuse_radiation_model=perez
   forecast_pvnode_paid: 'true'
   forecast_roofs: '4'
+  image: ghcr.io/solectrus/forecast-collector:latest
   measurement: forecast
 senec:
   adapter: cloud

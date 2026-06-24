@@ -26,7 +26,11 @@ module Import
         return unless enabled?
 
         fc_env = service_env('forecast-collector')
-        data = base_data(fc_env)
+        # The image carries the release channel, which drives
+        # Configuration#forecast_pvnode_v2? (the site-based API v2 is
+        # develop-only), so it is captured into the forecast section.
+        data = image_data_for('forecast-collector')
+        data.merge!(base_data(fc_env))
         data.merge!(roof_data(fc_env))
         data.merge!(provider_data(fc_env))
         # Read the forecast measurement from the resolved service env so
@@ -139,6 +143,7 @@ module Import
       def pvnode_data(fc_env)
         data = {
           'forecast_pvnode_apikey' => fc_env['PVNODE_APIKEY'],
+          'forecast_pvnode_site_id' => fc_env['PVNODE_SITE_ID'],
           'forecast_pvnode_paid' => fc_env['PVNODE_PAID'],
           'forecast_pvnode_extra_params' => fc_env['PVNODE_EXTRA_PARAMS'],
         }

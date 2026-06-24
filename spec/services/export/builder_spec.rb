@@ -1127,6 +1127,68 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'with forecast configured for pvnode API v2 (site ID on the develop channel)' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'pvnode',
+                             'forecast_pvnode_apikey' => 'pvnode-key',
+                             'forecast_pvnode_paid' => 'nowcast',
+                             'forecast_pvnode_site_id' => 'site-42',
+                             'image' => 'ghcr.io/solectrus/forecast-collector:develop',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'emits the site-based variables in .env' do
+      env = Env.load
+      expect(env['FORECAST_PROVIDER']).to eq('pvnode')
+      expect(env['PVNODE_SITE_ID']).to eq('site-42')
+      expect(env['PVNODE_APIKEY']).to eq('pvnode-key')
+      expect(env['PVNODE_PAID']).to eq('nowcast')
+    end
+
+    it 'omits location and roof variables (configured on the pvnode site)' do
+      env = Env.load
+      expect(env['FORECAST_LATITUDE']).to be_nil
+      expect(env['FORECAST_LONGITUDE']).to be_nil
+      expect(env['FORECAST_DECLINATION']).to be_nil
+      expect(env['FORECAST_AZIMUTH']).to be_nil
+      expect(env['FORECAST_KWP']).to be_nil
+    end
+
+    it 'limits the forecast-collector environment to the site-based variables' do
+      forecast = Compose.load.services.find('forecast-collector')
+      expect(forecast.environment).to include('PVNODE_SITE_ID', 'PVNODE_APIKEY')
+      expect(forecast.environment).not_to include('FORECAST_LATITUDE', 'FORECAST_DECLINATION')
+    end
+  end
+
+  describe 'with a pvnode site ID but the stable channel (v1 takes precedence)' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'pvnode',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_pvnode_azimuth1' => '180',
+                             'forecast_declination1' => '30',
+                             'forecast_kwp1' => '10',
+                             'forecast_pvnode_apikey' => 'pvnode-key',
+                             'forecast_pvnode_site_id' => 'site-42',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it 'ignores the site ID and emits the location-based v1 variables' do
+      env = Env.load
+      expect(env['PVNODE_SITE_ID']).to be_nil
+      expect(env['FORECAST_LATITUDE']).to eq('51.3')
+      expect(env['FORECAST_AZIMUTH']).to eq('180')
+      expect(env['PVNODE_APIKEY']).to eq('pvnode-key')
+    end
+  end
+
   describe 'with forecast configured for solcast without an explicit interval' do
     before do
       configuration.update('forecast', {

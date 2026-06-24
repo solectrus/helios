@@ -47,6 +47,7 @@ forecast:
   forecast_pvnode_extra_params: diffuse_radiation_model=perez&snow_slide_coefficient=0.8
   forecast_pvnode_paid: nowcast
   forecast_roofs: '1'
+  image: ghcr.io/solectrus/forecast-collector:develop
   measurement: Forecast
 backup: {}
 sensors:

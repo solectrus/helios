@@ -44,6 +44,7 @@ forecast:
   forecast_pvnode_apikey: pvn_secret_1234567890abcdef
   forecast_pvnode_azimuth1: '0'
   forecast_roofs: '1'
+  image: ghcr.io/solectrus/forecast-collector:latest
   measurement: Forecast
 senec:
   adapter: local

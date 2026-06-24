@@ -46,6 +46,7 @@ forecast:
   forecast_solcast_api_key: FFFFF
   forecast_solcast_id1: 2222-3333-4444-5555
   forecast_solcast_id2: 3333-4444-5555-6666
+  image: ghcr.io/solectrus/forecast-collector:latest
   measurement: forecast
 senec:
   adapter: local

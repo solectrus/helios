@@ -43,6 +43,7 @@ forecast:
   forecast_pvnode_apikey: GGGGG
   forecast_pvnode_azimuth1: '208'
   forecast_roofs: '1'
+  image: ghcr.io/solectrus/forecast-collector:latest
   measurement: Forecast
 mqtt:
   mqtt_host: 10.31.22.46

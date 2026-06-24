@@ -37,6 +37,7 @@ forecast:
   forecast_roofs: '1'
   forecast_solcast_api_key: my-api-key
   forecast_solcast_id1: 1111-2222-3333-4444
+  image: ghcr.io/solectrus/forecast-collector:latest
   measurement: Forecast
 senec:
   adapter: local

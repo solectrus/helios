@@ -266,7 +266,7 @@ services:
   # +-----------------------------------------------------------+
   #
   forecast-collector:
-    image: ghcr.io/solectrus/forecast-collector:latest
+    image: ghcr.io/solectrus/forecast-collector:develop
     environment:
     - TZ
     - FORECAST_0_AZIMUTH

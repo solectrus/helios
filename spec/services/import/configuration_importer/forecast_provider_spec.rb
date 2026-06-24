@@ -48,4 +48,44 @@ RSpec.describe 'Import::ConfigurationImporter forecast provider' do
       expect(importer.result[:forecast]).to include('forecast' => 'solcast')
     end
   end
+
+  context 'when pvnode API v2 is configured via PVNODE_SITE_ID' do
+    let(:fc_env) do
+      {
+        'FORECAST_PROVIDER' => 'pvnode',
+        'PVNODE_SITE_ID' => 'site-42',
+        'PVNODE_APIKEY' => 'pvnode-key',
+        'PVNODE_PAID' => 'nowcast',
+      }
+    end
+
+    it 'round-trips the site ID and credentials' do
+      expect(importer.result[:forecast]).to include(
+        'forecast' => 'pvnode',
+        'forecast_pvnode_site_id' => 'site-42',
+        'forecast_pvnode_apikey' => 'pvnode-key',
+        'forecast_pvnode_paid' => 'nowcast',
+      )
+    end
+  end
+
+  context 'when the forecast-collector runs on the develop channel' do
+    let(:services) do
+      {
+        'dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:latest' },
+        'forecast-collector' => {
+          'image' => 'ghcr.io/solectrus/forecast-collector:develop',
+          'environment' => fc_env,
+        },
+      }
+    end
+
+    # The channel drives Configuration#forecast_pvnode_v2?, so the image must
+    # round-trip — otherwise an imported develop+site stack falls back to v1.
+    it 'captures the forecast-collector image' do
+      expect(importer.result[:forecast]).to include(
+        'image' => 'ghcr.io/solectrus/forecast-collector:develop',
+      )
+    end
+  end
 end

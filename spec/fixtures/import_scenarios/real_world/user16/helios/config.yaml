@@ -48,6 +48,7 @@ forecast:
   forecast_pvnode_azimuth2: '338'
   forecast_pvnode_paid: 'true'
   forecast_roofs: '2'
+  image: ghcr.io/solectrus/forecast-collector:latest
   measurement: forecast
 senec:
   adapter: local
