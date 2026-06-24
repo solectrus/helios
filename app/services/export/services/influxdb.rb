@@ -55,7 +55,12 @@ module Export
       end
 
       def data_directories
-        managed_data_directory
+        # The staging directory is a plain bind mount (see #influxdb_volumes),
+        # not a managed volume, so it must be listed here explicitly. Without
+        # it, Export::Builder never creates the source directory and InfluxDB
+        # fails to start on daemons that refuse missing bind-mount sources
+        # (e.g. Synology DSM with Docker 24.0.2).
+        managed_data_directory + [DetachedRunner::INFLUX_STAGING_DIRNAME]
       end
 
       def to_h

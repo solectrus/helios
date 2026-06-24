@@ -35,6 +35,14 @@ module Export
         !volume_env_key.nil?
       end
 
+      # Host path backing this service's data volume: the user's configured
+      # volume_path, or the default ./<service_name>. Single source of truth
+      # for Export::Env::Section#volume_path_entry (emits it to .env) and
+      # #managed_data_directory (creates the relative source up-front).
+      def self.default_host_volume_path(section)
+        section.volume_path.presence || "./#{service_name}"
+      end
+
       def data_directories
         []
       end
@@ -101,14 +109,23 @@ module Export
 
       # Bind mount referencing the service's volume env var; the actual host
       # path is emitted in .env (see `Export::Env#volume_path_entry`). Pair
-      # with `managed_data_directory` to skip creating the default dir when
-      # the user pointed the mount elsewhere.
+      # with `managed_data_directory` to create the relative source up-front.
       def bind_mount(container_path)
         "${#{self.class.volume_env_key}}:#{container_path}"
       end
 
+      # The host directory backing this service's data volume, so
+      # Export::Builder can create it before `docker compose up`. We can't
+      # rely on Docker to auto-create missing bind-mount sources — Synology
+      # DSM refuses them ("Bind mount failed: … does not exist").
+      #
+      # Absolute paths are user-owned (external disk, NAS share) and left
+      # untouched; only relative sources are HELIOS-created.
       def managed_data_directory
-        volume_section.volume_path.present? ? [] : [self.class.service_name]
+        path = self.class.default_host_volume_path(volume_section)
+        return [] if path.start_with?('/')
+
+        [path]
       end
 
       def volume_section

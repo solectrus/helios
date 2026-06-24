@@ -26,6 +26,30 @@ RSpec.describe Export::Builder do
       expect(Dir.exist?(File.join(tmp_dir, 'redis'))).to be true
       expect(Dir.exist?(File.join(tmp_dir, 'influxdb'))).to be true
     end
+
+    it 'creates the influx-backup-staging bind-mount source directory' do
+      # InfluxDB references ./influx-backup-staging as a plain bind mount;
+      # the source must exist before `docker compose up` or the container
+      # fails to start on daemons that refuse missing bind-mount sources.
+      expect(Dir.exist?(File.join(tmp_dir, 'influx-backup-staging'))).to be true
+    end
+
+    # Root guard: derived independently from the generated compose.yaml + .env,
+    # so any future relative bind mount that nobody wires into
+    # create_data_directories! makes this fail instead of only blowing up at
+    # `docker compose up` on a strict daemon (Synology DSM). Docker does not
+    # reliably auto-create missing bind-mount sources, so HELIOS must.
+    it 'creates every relative bind-mount source referenced in compose.yaml' do
+      sources = relative_bind_mount_sources(compose_path)
+
+      expect(sources).not_to be_empty
+      aggregate_failures do
+        sources.each do |source|
+          expect(Dir.exist?(File.join(tmp_dir, source)))
+            .to(be(true), "expected HELIOS to create bind-mount source #{source}")
+        end
+      end
+    end
   end
 
   describe '#write_if_stale!' do
@@ -2193,5 +2217,38 @@ RSpec.describe Export::Builder do
       env = Env.load
       expect(env['POSTGRES_PASSWORD']).to eq('my-existing-secret')
     end
+  end
+
+  describe 'bind-mount source creation with a custom volume_path' do
+    it 'creates a relative custom volume_path so a strict daemon can mount it' do
+      configuration.update('influxdb', configuration.influxdb.merge('volume_path' => './data/influx'))
+
+      described_class.new(Configuration.current).write!
+
+      expect(Dir.exist?(File.join(tmp_dir, 'data', 'influx'))).to be true
+    end
+
+    it 'leaves an absolute custom volume_path untouched (user-owned)' do
+      external = File.join(tmp_dir, 'external-disk', 'influx')
+      configuration.update('influxdb', configuration.influxdb.merge('volume_path' => external))
+
+      described_class.new(Configuration.current).write!
+
+      # HELIOS must not create paths outside its data directory; the user
+      # provisions external disks / NAS shares themselves.
+      expect(Dir.exist?(external)).to be false
+    end
+  end
+
+  # Independent re-derivation of the relative bind-mount sources from the
+  # generated compose.yaml, resolving ${VAR} against the generated .env.
+  def relative_bind_mount_sources(compose_path)
+    env = Env.load
+    compose = YAML.load_file(compose_path)
+
+    compose.fetch('services').values.flat_map { |svc| svc['volumes'] || [] }.filter_map do |volume|
+      source = volume.split(':', 2).first.gsub(/\$\{(\w+)\}/) { env[Regexp.last_match(1)].to_s }
+      source if source.start_with?('./')
+    end.uniq
   end
 end

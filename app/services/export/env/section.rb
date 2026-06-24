@@ -22,7 +22,7 @@ module Export
 
       def volume_path_entry(service_class, label)
         section = configuration.public_send(service_class.config_keys.first)
-        host_path = section.volume_path.presence || "./#{service_class.service_name}"
+        host_path = service_class.default_host_volume_path(section)
         entry(service_class.volume_env_key, host_path, "Volume path for storing the #{label}")
       end
     end
