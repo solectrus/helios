@@ -847,6 +847,49 @@ run_quiet() {
   fi
 }
 
+# Poll HELIOS' health endpoint until it answers, so the success banner's URL
+# actually works when the user opens it. `docker compose up -d` returns as soon
+# as the container is *created*, but Rails needs a few seconds to boot — without
+# this wait, opening the URL immediately yields a "connection refused" and reads
+# as a failed install. We probe /up (Rails health check, served by
+# Rails::HealthController, so no auth).
+#
+# We probe the very URL we advertise (helios_url), not the loopback, so the
+# "up and reachable" we print matches what the user will actually open — a host
+# that binds the port to one interface only would otherwise pass on localhost
+# yet fail for the user. The loopback is used only when the host couldn't be
+# determined (placeholder), where the advertised URL isn't pollable anyway.
+#
+# Best-effort: silently skipped when curl is absent, and on timeout we print a
+# reassuring note rather than fail — a slow boot must never abort the install.
+wait_for_helios() {
+  command -v curl >/dev/null 2>&1 || return 0
+
+  local base
+  base="$(helios_url)"
+  case "$base" in
+    *'<your-host>'*) base="http://localhost:3999" ;;
+  esac
+
+  local url="${base}/up" i=0 max=60 tty=0
+  [ -t 1 ] && tty=1
+
+  [ "$tty" -eq 1 ] && printf '  Waiting for HELIOS to become reachable'
+  while [ "$i" -lt "$max" ]; do
+    if curl -fsS --max-time 2 -o /dev/null "$url" 2>/dev/null; then
+      [ "$tty" -eq 1 ] && printf '\n'
+      success "  HELIOS is up and reachable."
+      return 0
+    fi
+    [ "$tty" -eq 1 ] && printf '.'
+    sleep 1
+    i=$((i + 1))
+  done
+
+  [ "$tty" -eq 1 ] && printf '\n'
+  warn "  HELIOS is still starting; give it a few more seconds before opening the URL."
+}
+
 start_stack() {
   # The staged "Pulling…/Starting…" headers stay either way; only the verbose
   # docker compose progress is suppressed under HELIOS_QUIET (via run_quiet).
@@ -855,6 +898,8 @@ start_stack() {
 
   bold "Starting stack..."
   run_quiet docker compose -f "$COMPOSE_FILE" up -d
+
+  wait_for_helios
 }
 
 # Best-effort URL the user will open. Prefers the primary outbound IPv4
