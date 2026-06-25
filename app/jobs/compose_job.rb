@@ -89,16 +89,27 @@ class ComposeJob < ApplicationJob
 
   def broadcast_results(action, service_name)
     Orchestration::Container.invalidate_cache
-    update_deployed_hashes(action)
+    update_deployed_hashes(action, service_name)
     broadcast_affected_services(action, service_name)
     Orchestration::StackStatus.refresh!
   rescue StandardError => e
     logger.error("ComposeJob broadcast failed: #{e.class}: #{e.message}")
   end
 
-  def update_deployed_hashes(action)
-    if @deploy_succeeded && applies_config?(action)
+  # Re-baseline only what the action actually (re)created:
+  #   - batch :up recreates the whole stack → baseline all services
+  #   - a single-service action recreates only that service → baseline just it,
+  #     so a pending restart on an untouched service (e.g. dashboard waiting for
+  #     a newly added sensor) is not silently cleared
+  def update_deployed_hashes(action, service_name)
+    unless @deploy_succeeded && applies_config?(action)
+      return Orchestration::AffectedServices.invalidate_config_hashes
+    end
+
+    if batch_action?(action)
       Orchestration::AffectedServices.store_deployed_hashes!
+    elsif service_name
+      Orchestration::AffectedServices.update_deployed_hash!(service_name)
     else
       Orchestration::AffectedServices.invalidate_config_hashes
     end

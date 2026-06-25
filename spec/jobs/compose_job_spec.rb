@@ -324,23 +324,43 @@ RSpec.describe ComposeJob do
       allow(Export::Builder).to receive(:new)
         .and_return(instance_double(Export::Builder, write!: nil))
       allow(Orchestration::AffectedServices).to receive(:store_deployed_hashes!)
+      allow(Orchestration::AffectedServices).to receive(:update_deployed_hash!)
       allow(Orchestration::AffectedServices).to receive(:invalidate_config_hashes)
     end
 
     after { Orchestration::StackStatus.reset! }
 
-    %i[up start recreate].each do |action|
-      context "when #{action} succeeds" do
+    context 'when a batch up succeeds' do
+      before do
+        allow(Orchestration::Runner).to receive(:up).and_return(
+          Orchestration::CommandResult.new(output: 'OK', exit_status: 0),
+        )
+      end
+
+      it 'baselines all services' do
+        described_class.perform_now(:up)
+
+        expect(Orchestration::AffectedServices).to have_received(:store_deployed_hashes!)
+      end
+    end
+
+    # A single-service action recreates only that service, so it must not
+    # re-baseline the whole stack — otherwise an untouched service still
+    # pending a restart (e.g. the dashboard after a new sensor) would have its
+    # restart marker silently cleared.
+    %i[start recreate].each do |action|
+      context "when a single-service #{action} succeeds" do
         before do
           allow(Orchestration::Runner).to receive(action).and_return(
             Orchestration::CommandResult.new(output: 'OK', exit_status: 0),
           )
         end
 
-        it 'stores deployed hashes' do
-          described_class.perform_now(action, action == :recreate ? 'redis' : nil)
+        it 'baselines only the affected service' do
+          described_class.perform_now(action, 'redis')
 
-          expect(Orchestration::AffectedServices).to have_received(:store_deployed_hashes!)
+          expect(Orchestration::AffectedServices).to have_received(:update_deployed_hash!).with('redis')
+          expect(Orchestration::AffectedServices).not_to have_received(:store_deployed_hashes!)
         end
       end
     end
