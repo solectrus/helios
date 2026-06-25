@@ -26,6 +26,21 @@ RSpec.describe 'Sessions', :with_admin_password do
       expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include('Invalid password')
     end
+
+    it 'sets a persistent session cookie that survives browser restarts' do
+      post session_path, params: { password: 'test' }
+
+      session_cookie =
+        Array(response.headers['Set-Cookie']).find do |c|
+          c.start_with?('_helios_session=')
+        end
+
+      # An `expires` attribute marks the cookie as persistent; a plain
+      # session cookie (the previous behaviour) would not carry one and
+      # would be dropped when the browser/PWA context ends.
+      expect(session_cookie).to be_present
+      expect(session_cookie).to match(/expires=/i)
+    end
   end
 
   describe 'DELETE /session' do
