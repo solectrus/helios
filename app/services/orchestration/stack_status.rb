@@ -58,6 +58,10 @@ module Orchestration
     end
 
     def mark_config_changed!
+      # Establish the baseline from the *current* (pre-change) compose before
+      # rebuild_stack overwrites it, so the change is measured against the old
+      # state instead of being swallowed by the lazy seed in AffectedServices.
+      AffectedServices.seed_baseline_if_missing!
       rebuild_stack
       AffectedServices.invalidate_config_hashes
       recompute_and_broadcast(force: true)

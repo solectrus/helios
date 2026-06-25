@@ -195,6 +195,85 @@ RSpec.describe Orchestration::AffectedServices do
     end
   end
 
+  describe '.seed_baseline_if_missing!' do
+    before do
+      described_class.invalidate_cache
+      allow(Orchestration::Runner).to receive(:config_hashes).and_return(
+        'redis' => 'aaa111',
+        'dashboard' => 'ccc333',
+        'helios' => 'ddd444',
+      )
+    end
+
+    context 'when no baseline file exists' do
+      it 'writes the current hashes (excluding helios) as the baseline' do
+        described_class.seed_baseline_if_missing!
+
+        stored = JSON.parse(File.read(deployed_hashes_path))
+        expect(stored).to eq('redis' => 'aaa111', 'dashboard' => 'ccc333')
+      end
+    end
+
+    context 'when a baseline file already exists' do
+      before { write_deployed_hashes('redis' => 'old_redis') }
+
+      it 'leaves the existing baseline untouched' do
+        described_class.seed_baseline_if_missing!
+
+        stored = JSON.parse(File.read(deployed_hashes_path))
+        expect(stored).to eq('redis' => 'old_redis')
+      end
+    end
+
+    context 'when docker compose command fails' do
+      before do
+        allow(Orchestration::Runner).to receive(:config_hashes).and_raise(
+          Orchestration::Runner::CommandError,
+          'command failed',
+        )
+      end
+
+      it 'does not create a baseline file' do
+        described_class.seed_baseline_if_missing!
+
+        expect(File.exist?(deployed_hashes_path)).to be(false)
+      end
+    end
+
+    # Reproduces the bug where a config change made before any baseline existed
+    # (e.g. right after import, which performs no deploy) was swallowed: seeding
+    # the pre-change config first makes the subsequent change detectable.
+    context 'when used to bracket a config change' do
+      let(:dashboard_container) do
+        [
+          mock_container('redis', 'any'),
+          mock_container('dashboard', 'any'),
+        ]
+      end
+
+      before do
+        allow(Orchestration::Container).to receive(:all).and_return(
+          dashboard_container,
+        )
+      end
+
+      it 'flags the service changed after the baseline was seeded' do
+        # Pre-change state becomes the baseline.
+        described_class.seed_baseline_if_missing!
+
+        # Config change: dashboard hash differs now.
+        described_class.invalidate_cache
+        allow(Orchestration::Runner).to receive(:config_hashes).and_return(
+          'redis' => 'aaa111',
+          'dashboard' => 'CHANGED',
+          'helios' => 'ddd444',
+        )
+
+        expect(described_class.compute).to eq(['dashboard'])
+      end
+    end
+  end
+
   describe '.update_deployed_hash!' do
     let(:expected_hashes) do
       {

@@ -55,6 +55,23 @@ module Orchestration
       Rails.cache.delete(AFFECTED_CACHE_KEY)
     end
 
+    # Capture the current on-disk compose config as the deployed baseline if
+    # none exists yet. Must run *before* a config change rewrites compose.yaml,
+    # otherwise the lazy seed in #compute would adopt the already-changed config
+    # as the baseline and the change would never be flagged as needing a restart
+    # (no deploy happens on import, so the baseline is absent until then).
+    def self.seed_baseline_if_missing!
+      return unless load_deployed_hashes_file.empty?
+
+      hashes = Runner.config_hashes.except(Runner::SELF_SERVICE)
+      return if hashes.empty?
+
+      write_deployed_hashes_file!(hashes)
+      invalidate_affected_caches
+    rescue Runner::CommandError, ConnectionError => e
+      logger.error("failed to seed deployed baseline: #{e.message}")
+    end
+
     # Update the deployed hash for a single service when its container
     # is recreated externally (e.g. via Docker CLI). This ensures the
     # "restart required" marker disappears after a manual restart that
