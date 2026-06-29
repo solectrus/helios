@@ -17,14 +17,14 @@ module Orchestration
         DOCKER_EVENTS_STORAGE
       end
 
-      # Overrides SingletonLifecycle#restart to add a cooldown (avoids a
-      # restart storm on rapid dev-reloads) and a non-graceful stop.
+      # Overrides SingletonLifecycle#restart to add a cooldown that avoids a
+      # restart storm on rapid dev-reloads.
       def restart
         class_mutex.synchronize do
           next if recently_restarted?
 
           DOCKER_EVENTS_STORAGE[:last_restart] = Time.current
-          stop_instance(graceful: false)
+          stop_instance
           start_instance
         end
       end
@@ -45,7 +45,7 @@ module Orchestration
         class_mutex.synchronize do
           new_count = [subscriber_count - 1, 0].max
           DOCKER_EVENTS_STORAGE[:subscriber_count] = new_count
-          stop_instance(graceful: false) if new_count.zero?
+          stop_instance if new_count.zero?
         end
       end
 
@@ -77,15 +77,6 @@ module Orchestration
 
       private
 
-      # Overrides SingletonLifecycle#stop_instance to forward the graceful flag
-      # to the instance (the listener thread can drain in-flight events).
-      def stop_instance(graceful: true)
-        return unless instance
-
-        instance.stop(graceful:)
-        self.instance = nil
-      end
-
       def recently_restarted?
         last = DOCKER_EVENTS_STORAGE[:last_restart]
         last && Time.current - last < RESTART_COOLDOWN
@@ -116,13 +107,13 @@ module Orchestration
       log_started
     end
 
-    def stop(graceful: true)
+    def stop
       return unless @running.true? || threads_alive?
 
       was_running = @running.true?
       log_stopping if was_running
       @running.make_false
-      join_threads(graceful:)
+      join_threads
       log_stopped if was_running
     end
 
@@ -143,10 +134,13 @@ module Orchestration
       listener_thread&.alive? || scheduler_thread&.alive?
     end
 
-    def join_threads(graceful:)
+    # The scheduler thread sleeps on an interval, so a wakeup lets it exit its
+    # loop and we join it briefly. The listener thread blocks on the Docker
+    # event stream and won't observe @running, so we force-kill it outright
+    # instead of waiting on a join that could only time out.
+    def join_threads
       scheduler_thread&.wakeup rescue nil # rubocop:disable Style/RescueModifier
       scheduler_thread&.join(2)
-      listener_thread&.join(2) if graceful
       kill_thread(listener_thread)
       kill_thread(scheduler_thread)
     end

@@ -58,12 +58,12 @@ RSpec.describe Orchestration::EventsListener do
   end
 
   describe '.stop' do
-    it 'stops the instance gracefully and clears it' do
+    it 'stops the instance and clears it' do
       described_class.start
       described_class.stop
 
       aggregate_failures do
-        expect(fake_instance).to have_received(:stop).with(graceful: true)
+        expect(fake_instance).to have_received(:stop)
         expect(described_class).not_to be_running
       end
     end
@@ -79,7 +79,7 @@ RSpec.describe Orchestration::EventsListener do
       described_class.restart
 
       aggregate_failures do
-        expect(fake_instance).to have_received(:stop).with(graceful: false)
+        expect(fake_instance).to have_received(:stop)
         expect(described_class).to have_received(:new).twice
       end
     end
@@ -110,7 +110,7 @@ RSpec.describe Orchestration::EventsListener do
 
       aggregate_failures do
         expect(described_class.subscriber_count).to eq(0)
-        expect(fake_instance).to have_received(:stop).with(graceful: false)
+        expect(fake_instance).to have_received(:stop)
       end
     end
 

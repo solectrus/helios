@@ -9,8 +9,8 @@
 # Shared by ManagedThread (single-thread workers like BackupScheduler) and by
 # Orchestration::EventsListener, which runs its own multi-thread instance but
 # reuses this exact singleton wiring. A class can override restart/stop_instance
-# (EventsListener adds a restart cooldown and a graceful flag) — its own
-# definitions take precedence over the ones mixed in here.
+# (EventsListener adds a restart cooldown) — its own definitions take
+# precedence over the ones mixed in here.
 module SingletonLifecycle
   def start
     class_mutex.synchronize { start_instance }
