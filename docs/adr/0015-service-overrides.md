@@ -26,23 +26,23 @@ service_overrides:
     privileged: true
   dashboard:
     labels:
-      - "traefik.http.middlewares.test-ratelimit.ratelimit.average=100"
-      - "traefik.http.middlewares.test-ratelimit.ratelimit.burst=200"
+      - 'traefik.http.middlewares.test-ratelimit.ratelimit.average=100'
+      - 'traefik.http.middlewares.test-ratelimit.ratelimit.burst=200'
   influxdb:
     ports:
-      - "8087:8086"
+      - '8087:8086'
 ```
 
 ### Allowlist
 
 Deliberately narrow initial allowlist, covering the operationally relevant divergences observed in real-world fixtures:
 
-| Key             | Merge strategy                         |
-| --------------- | -------------------------------------- |
-| `labels`        | Array concat (dedupe)                  |
-| `ports`         | Array concat (dedupe)                  |
-| `volumes`       | Array concat (dedupe)                  |
-| `environment`   | Hash merge (override wins on conflict) |
+| Key           | Merge strategy                         |
+| ------------- | -------------------------------------- |
+| `labels`      | Array concat (dedupe)                  |
+| `ports`       | Array concat (dedupe)                  |
+| `volumes`     | Array concat (dedupe)                  |
+| `environment` | Hash merge (override wins on conflict) |
 
 Excluded on purpose: `privileged`, `cap_add`, `sysctls`, `tmpfs`, `restart`. These are either security-sensitive or rarely intentional (user6's `privileged: true` on `mqtt-collector` is most likely an accidental leftover, not a deliberate operational choice). Adding any of them to the allowlist requires a follow-up ADR with a concrete real-world need, not speculative coverage.
 

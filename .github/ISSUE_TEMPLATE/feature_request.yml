@@ -1,6 +1,6 @@
 name: Feature request
 description: Suggest an idea or improvement for HELIOS (the installer / control panel for SOLECTRUS).
-type: "Feature"
+type: 'Feature'
 body:
   - type: markdown
     attributes:

@@ -33,4 +33,4 @@ This is only acceptable because of two invariants:
 - A crash or redeploy during a running job drops the job silently — acceptable because Docker keeps running and `EventsListener` re-syncs the UI on boot
 - Jobs share Puma's thread pool; a flood of long jobs could starve web requests (not a realistic risk for this user count)
 - No job retry/backoff machinery — jobs are expected to either succeed or surface errors to the user immediately
-- Not suitable if HELIOS ever grows scheduled/background work it truly *owns* (e.g. polling external APIs on a timer); that would invalidate invariant (1) and require revisiting this decision
+- Not suitable if HELIOS ever grows scheduled/background work it truly _owns_ (e.g. polling external APIs on a timer); that would invalidate invariant (1) and require revisiting this decision

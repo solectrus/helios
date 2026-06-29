@@ -2,7 +2,7 @@
 
 ## Context
 
-HELIOS's production deployment model is special: HELIOS runs *inside* the same Docker Compose stack it manages. It reads the host's Docker socket, edits the stack's `compose.yaml` and `.env`, and restarts sibling containers. Reproducing that exact topology in development would mean running HELIOS in a container, mounting the repo for live reload, exposing Vite, wiring up a dev-only compose file, and still needing a second Docker context for the "managed" stack.
+HELIOS's production deployment model is special: HELIOS runs _inside_ the same Docker Compose stack it manages. It reads the host's Docker socket, edits the stack's `compose.yaml` and `.env`, and restarts sibling containers. Reproducing that exact topology in development would mean running HELIOS in a container, mounting the repo for live reload, exposing Vite, wiring up a dev-only compose file, and still needing a second Docker context for the "managed" stack.
 
 Options considered:
 

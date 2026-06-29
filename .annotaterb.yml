@@ -44,8 +44,8 @@
 :hide_default_column_types: ''
 :hide_limit_column_types: ''
 :timestamp_columns:
-- created_at
-- updated_at
+  - created_at
+  - updated_at
 :ignore_columns:
 :ignore_routes:
 :ignore_multi_database_name: false
@@ -59,7 +59,7 @@
 :classes_default_to_s: []
 :additional_file_patterns: []
 :model_dir:
-- app/models
+  - app/models
 :require: []
 :root_dir:
-- ''
+  - ''
