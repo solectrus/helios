@@ -39,8 +39,15 @@ plugin :tmp_restart
 pidfile ENV['PIDFILE'] if ENV['PIDFILE']
 
 # Run the automatic-backup scheduler only inside the real server process.
-# These hooks never fire under rake, console or RSpec, so the background
-# thread stays out of those environments. HELIOS runs single-mode Puma, so
-# the scheduler thread exists exactly once.
-after_booted { BackupScheduler.start }
-after_stopped { BackupScheduler.stop }
+# This hook never fires under rake, console or RSpec, so the background thread
+# stays out of those environments. HELIOS runs single-mode Puma, so the
+# scheduler thread exists exactly once.
+#
+# Stop via `at_exit` rather than Puma's `after_stopped`: the latter fires inside
+# the signal-trap context on SIGINT/SIGTERM, where the lifecycle's
+# `Mutex#synchronize` would raise ThreadError. `at_exit` runs during normal
+# process teardown, after Puma has left the trap context.
+after_booted do
+  BackupScheduler.start
+  at_exit { BackupScheduler.stop }
+end
