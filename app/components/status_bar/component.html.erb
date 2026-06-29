@@ -26,7 +26,10 @@
         <%= locale_label_tags(labels, "truncate") %>
       </div>
 
-      <div class="flex items-center justify-end gap-2">
+      <%# daisyUI's btn-outline no longer inherits currentColor; without this it %>
+      <%# falls back to base-content and renders illegibly on the colored bar. Pin %>
+      <%# --btn-color so the buttons follow the bar's content color in every state. %>
+      <div class="flex items-center justify-end gap-2 [--btn-color:currentColor]">
         <% if backup_hint_labels %>
           <span class="badge badge-sm badge-soft gap-1.5 tabular-nums">
             <span class="loading loading-spinner loading-xs"></span>
