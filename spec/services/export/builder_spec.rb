@@ -1896,12 +1896,14 @@ RSpec.describe Export::Builder do
                              'language' => 'de',
                              'interval' => '5',
                            })
+      configuration.update('shelly', { 'connection' => 'local', 'interval' => '5' })
       configuration.update_sensor('inverter_power', { 'source' => 'senec' })
       configuration.update_sensor('grid_import_power', { 'source' => 'senec' })
       configuration.update_sensor('house_power', { 'source' => 'senec' })
       configuration.update_sensor('inverter_power_2', {
-                                    'source' => 'external',
+                                    'source' => 'shelly',
                                     'is_balcony' => true,
+                                    'shelly_host' => 'shelly-balcony.local',
                                     'measurement' => 'balcony',
                                     'field' => 'power',
                                   })
@@ -2080,7 +2082,10 @@ RSpec.describe Export::Builder do
   describe 'with Ingest and custom volume path' do
     before do
       configuration.update('ingest', { 'volume_path' => '/volume1/docker/solectrus/ingest' })
-      configuration.update_sensor('inverter_power_1', { 'source' => 'external', 'is_balcony' => true })
+      configuration.update('shelly', { 'connection' => 'local', 'interval' => '5' })
+      configuration.update_sensor('inverter_power_1',
+                                  { 'source' => 'shelly', 'is_balcony' => true,
+                                    'shelly_host' => 'shelly-balcony.local' })
       configuration.update_sensor('house_power', { 'source' => 'senec' })
       described_class.new(Configuration.current).write!
     end
@@ -2103,7 +2108,10 @@ RSpec.describe Export::Builder do
   describe 'with Ingest retention_hours tuning' do
     before do
       configuration.update('ingest', { 'retention_hours' => '24' })
-      configuration.update_sensor('inverter_power_1', { 'source' => 'external', 'is_balcony' => true })
+      configuration.update('shelly', { 'connection' => 'local', 'interval' => '5' })
+      configuration.update_sensor('inverter_power_1',
+                                  { 'source' => 'shelly', 'is_balcony' => true,
+                                    'shelly_host' => 'shelly-balcony.local' })
       configuration.update_sensor('house_power', { 'source' => 'senec' })
       described_class.new(Configuration.current).write!
     end
@@ -2122,9 +2130,11 @@ RSpec.describe Export::Builder do
 
   describe 'Ingest stats password' do
     before do
+      configuration.update('shelly', { 'connection' => 'local', 'interval' => '5' })
       configuration.update_sensor('inverter_power_2', {
-                                    'source' => 'external',
+                                    'source' => 'shelly',
                                     'is_balcony' => true,
+                                    'shelly_host' => 'shelly-balcony.local',
                                     'measurement' => 'balcony',
                                     'field' => 'power',
                                   })

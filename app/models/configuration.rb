@@ -649,10 +649,27 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # Ingest recalculates house_power when a balcony power plant feeds into
   # the home grid and distorts the inverter-reported value. It runs alongside
   # the local InfluxDB only — in collectors_only mode there is nothing to
-  # recalculate. Activation is fully derived from the sensor configuration:
-  # at least one balcony sensor enables ingest, nothing else does.
+  # recalculate.
+  #
+  # SOLECTRUS routes ALL producers through Ingest so it can recompute
+  # house_power from the complete picture (roof + balcony + grid + battery −
+  # wallbox − heatpump …). HELIOS cannot route a source it does not manage, so
+  # as soon as one Ingest input arrives via `source: external`, Ingest would
+  # only ever see partial data. Rather than recalculate on an incomplete set,
+  # HELIOS leaves a correct house_power to the external side and skips Ingest
+  # entirely — an external source must deliver already-correct values.
   def ingest_required?
-    !collectors_only? && balcony_sensors.any?
+    !collectors_only? && balcony_sensors.any? && external_ingest_inputs.empty?
+  end
+
+  # Enabled Ingest inputs (INGEST_SENSORS) fed by an external source. Their
+  # data reaches InfluxDB without passing through the Ingest write proxy, so
+  # their presence disables Ingest (see #ingest_required?).
+  def external_ingest_inputs
+    @external_ingest_inputs ||= enabled_sensors.select do |name|
+      SensorRegistry::INGEST_SENSORS.include?(name) &&
+        sensor_config(name).source.to_s == 'external'
+    end
   end
 
   # --- Deployment mode ---
@@ -690,10 +707,11 @@ class Configuration # rubocop:disable Metrics/ClassLength
   end
 
   # Settings visible in the configuration UI for the current mode. Ingest is
-  # inserted right after influxdb whenever it is activated by a balcony sensor
-  # — the two services sit next to each other in the data path and read more
-  # naturally as neighbors on the card grid. Modes without an influxdb card
-  # (dashboard_only) get ingest appended at the end.
+  # inserted right after influxdb whenever a balcony sensor activates it — the
+  # two services sit next to each other in the data path and read more naturally
+  # as neighbors on the card grid. Ingest only activates when all its inputs are
+  # HELIOS-managed (see #ingest_required?), which today is full mode only, so the
+  # influxdb anchor is always present; the append fallback is purely defensive.
   def visible_settings
     base = case mode
            when ConfigSchema::MODE_COLLECTORS_ONLY then COLLECTORS_ONLY_SETTINGS
@@ -854,6 +872,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
     @enabled_sensors = nil
     @balcony_sensors = nil
+    @external_ingest_inputs = nil
     @effective_sensor_mappings = nil
     @incomplete_sources = nil
     @mode = nil

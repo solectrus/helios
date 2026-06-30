@@ -58,6 +58,34 @@ RSpec.describe 'Starts' do
       end
     end
 
+    context 'when the stack runs Ingest but an Ingest input is external' do
+      let(:dir) { with_config_yaml }
+
+      before do
+        # Ingest service present, no collector → inverter_power_2 (the balcony)
+        # imports as source: external, which HELIOS can't route through Ingest.
+        File.write(File.join(dir, 'compose.yaml'), <<~YAML)
+          services:
+            dashboard:
+              image: ghcr.io/solectrus/solectrus:latest
+              environment:
+                INFLUX_SENSOR_INVERTER_POWER_1: SENEC:inverter_power
+                INFLUX_SENSOR_INVERTER_POWER_2: Balcony:power
+                INFLUX_SENSOR_HOUSE_POWER: SENEC:house_power
+            ingest:
+              image: ghcr.io/solectrus/ingest:latest
+        YAML
+        File.write(File.join(dir, '.env'), "TZ=Europe/Berlin\n")
+      end
+
+      it 'explains the conflict and does not offer the import button' do
+        get start_path
+
+        expect(response.body).to include(I18n.t('starts.show.ingest_conflict_reason'))
+        expect(response.body).not_to include(I18n.t('starts.show.agree'))
+      end
+    end
+
     context 'when the compose file is invalid' do
       let(:dir) { with_config_yaml }
 
@@ -145,6 +173,7 @@ RSpec.describe 'Starts' do
         )
         allow(Import::ConfigurationImporter).to receive(:new).with(stack_reader).and_return(importer)
         allow(importer).to receive(:import!)
+        allow(importer).to receive(:ingest_conflict_sensors).and_return([])
         allow(Export::Builder).to receive(:new).and_return(builder)
       end
 

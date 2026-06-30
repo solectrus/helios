@@ -4,14 +4,7 @@ module Export
       PORT = 4567
 
       # See https://docs.solectrus.de/referenz/ingest/konfiguration/
-      RELEVANT_SENSORS = %w[
-        inverter_power
-        inverter_power_1 inverter_power_2 inverter_power_3 inverter_power_4 inverter_power_5
-        grid_import_power grid_export_power
-        battery_charging_power battery_discharging_power
-        wallbox_power heatpump_power
-        house_power
-      ].freeze
+      RELEVANT_SENSORS = SensorRegistry::INGEST_SENSORS
 
       def self.service_name
         'ingest'

@@ -47,6 +47,23 @@ module Import
       config
     end
 
+    # Ingest-relevant sensors the import would store as `source: external`
+    # while the stack runs an Ingest service. HELIOS routes every Ingest input
+    # through the proxy and cannot reroute an external writer, so adopting the
+    # stack would drop Ingest and lose the house_power correction (see
+    # Configuration#ingest_required?). Non-empty → the import is refused
+    # (StartsController) so the user decides whether Ingest is still needed.
+    def ingest_conflict_sensors
+      return [] if collectors_only?
+      return [] unless @reader.services.key?('ingest')
+      # No balcony → HELIOS wouldn't run Ingest anyway, so external is no conflict.
+      # (balcony_detector, not the dry-run config, since the is_balcony flag is
+      # only set later in #mark_balcony_sensor!.)
+      return [] unless balcony_detector.sensor_name
+
+      dryrun_configuration.external_ingest_inputs
+    end
+
     def collectors_only?
       return @collectors_only if defined?(@collectors_only)
 

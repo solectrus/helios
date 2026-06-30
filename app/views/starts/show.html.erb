@@ -5,7 +5,9 @@
     <%= render LanguageSelect::Component.new %>
   </div>
 
-  <div class="hero-content z-10 w-full flex-col px-0 md:px-4 <%= @compose_error.present? || @unsupported_services.present? ? 'max-w-2xl' : 'max-w-lg' %>">
+  <% refusal = @compose_error.present? || @unsupported_services.present? || @ingest_conflict_sensors.present? %>
+
+  <div class="hero-content z-10 w-full flex-col px-0 md:px-4 <%= refusal ? 'max-w-2xl' : 'max-w-lg' %>">
     <div class="mb-6 text-center">
       <img src="/logo.svg" class="mx-auto mb-3 h-12" alt="HELIOS">
       <p class="text-base-content/65 text-lg"><%= t('.subtitle') %></p>
@@ -13,16 +15,25 @@
 
     <div class="bg-base-100 border-base-content/10 w-full border-y md:rounded-2xl md:border">
       <div class="flex flex-col gap-6 p-7 sm:p-8">
-        <% if @compose_error.present? || @unsupported_services.present? %>
+        <% if refusal %>
           <div class="border-base-content/10 bg-base-200 flex flex-col gap-4 rounded-xl border p-5" role="alert">
             <div class="flex items-start gap-3">
               <i aria-hidden="true" class="fa-solid fa-triangle-exclamation text-error mt-1 text-lg"></i>
-              <p class="leading-snug font-semibold"><%= t('.unsupported_heading') %></p>
+
+              <p class="leading-snug font-semibold">
+                <%= @ingest_conflict_sensors.present? ? t('.ingest_conflict_heading') : t('.unsupported_heading') %>
+              </p>
             </div>
 
             <div class="flex flex-col gap-2">
               <p class="text-base-content/60 text-sm">
-                <%= @compose_error.present? ? t('.invalid_reason_html') : t('.unsupported_reason') %>
+                <% if @compose_error.present? %>
+                  <%= t('.invalid_reason_html') %>
+                <% elsif @ingest_conflict_sensors.present? %>
+                  <%= t('.ingest_conflict_reason') %>
+                <% else %>
+                  <%= t('.unsupported_reason') %>
+                <% end %>
               </p>
 
               <% if @compose_error.present? %>
@@ -32,6 +43,20 @@
                     font-mono text-xs whitespace-pre-wrap
                   "
                 ><%= @compose_error %></pre>
+              <% elsif @ingest_conflict_sensors.present? %>
+                <ul
+                  class="
+                    border-base-content/10 divide-base-content/10 bg-base-100 divide-y overflow-hidden rounded-lg
+                    border
+                  "
+                >
+                  <% @ingest_conflict_sensors.each do |sensor| %>
+                    <li class="flex flex-col gap-0.5 px-3.5 py-2.5">
+                      <span class="text-sm font-medium"><%= t("sensors.#{sensor}") %></span>
+                      <span class="text-base-content/50 font-mono text-xs"><%= sensor %></span>
+                    </li>
+                  <% end %>
+                </ul>
               <% else %>
                 <ul
                   class="
@@ -53,7 +78,13 @@
             </div>
 
             <p class="text-base-content/70 text-sm leading-relaxed">
-              <%= @compose_error.present? ? t('.invalid_hint') : t('.unsupported_hint_html') %>
+              <% if @compose_error.present? %>
+                <%= t('.invalid_hint') %>
+              <% elsif @ingest_conflict_sensors.present? %>
+                <%= t('.ingest_conflict_hint_html') %>
+              <% else %>
+                <%= t('.unsupported_hint_html') %>
+              <% end %>
             </p>
           </div>
         <% else %>

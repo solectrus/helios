@@ -1110,13 +1110,13 @@ RSpec.describe Configuration do
       expect(described_class.current.visible_settings).not_to include('ingest_settings')
     end
 
-    it 'appends ingest_settings in dashboard_only mode (no influxdb to anchor against)' do
+    it 'omits ingest_settings in dashboard_only mode (external sources own the calculation)' do
       with_config_yaml(
         'deployment' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY },
         'sensors' => { 'inverter_power_2' => { 'source' => 'external', 'is_balcony' => true } },
       )
       settings = described_class.current.visible_settings
-      expect(settings.last).to eq('ingest_settings')
+      expect(settings).not_to include('ingest_settings')
       expect(settings).not_to include('influxdb')
     end
   end
@@ -1159,6 +1159,59 @@ RSpec.describe Configuration do
     it 'keeps the data group with storage in dashboard_only mode without a balcony sensor' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY })
       expect(described_class.current.advanced_groups.fetch('data')).to eq(%w[storage])
+    end
+  end
+
+  describe '#ingest_required?' do
+    def ingest_required_for?(data)
+      with_config_yaml(data)
+      described_class.current.ingest_required?
+    end
+
+    it 'is false without a balcony sensor' do
+      expect(ingest_required_for?('sensors' => { 'inverter_power' => { 'source' => 'senec' } })).to be false
+    end
+
+    it 'is true when every Ingest input comes from a managed collector' do
+      expect(
+        ingest_required_for?('sensors' => {
+                               'inverter_power' => { 'source' => 'senec' },
+                               'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true },
+                             }),
+      ).to be true
+    end
+
+    it 'is false when a managed producer is paired with an external Ingest input' do
+      expect(
+        ingest_required_for?('sensors' => {
+                               'inverter_power' => { 'source' => 'external' },
+                               'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true },
+                             }),
+      ).to be false
+    end
+
+    it 'is false when the balcony sensor itself is external' do
+      expect(
+        ingest_required_for?('sensors' => { 'inverter_power_2' => { 'source' => 'external', 'is_balcony' => true } }),
+      ).to be false
+    end
+
+    it 'ignores external sensors Ingest does not consume' do
+      expect(
+        ingest_required_for?('sensors' => {
+                               'outdoor_temp' => { 'source' => 'external' },
+                               'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true },
+                             }),
+      ).to be true
+    end
+
+    it 'is false in collectors_only mode regardless of sensors' do
+      expect(
+        ingest_required_for?(
+          'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+          'sensors' => { 'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true } },
+        ),
+      ).to be false
     end
   end
 end

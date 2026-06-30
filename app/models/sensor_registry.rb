@@ -13,6 +13,21 @@ class SensorRegistry
     inverter_power_5
   ].freeze
 
+  # Sensors Ingest consumes to recalculate house_power for balcony power plants
+  # (mirrors INFLUX_SENSOR_* passed to the container, see
+  # https://docs.solectrus.de/referenz/ingest/konfiguration/). A value written
+  # straight to InfluxDB instead of through Ingest never enters this
+  # recalculation, so the canonical list also decides when an external source
+  # disables Ingest (see Configuration#external_ingest_inputs).
+  INGEST_SENSORS = %w[
+    inverter_power
+    inverter_power_1 inverter_power_2 inverter_power_3 inverter_power_4 inverter_power_5
+    grid_import_power grid_export_power
+    battery_charging_power battery_discharging_power
+    wallbox_power heatpump_power
+    house_power
+  ].freeze
+
   # Sensors carrying a yes/no value instead of a numeric measurement. They have
   # no physical unit, so the UI shows a "yes/no" hint in place of the unit.
   BOOLEAN_SENSORS = %w[

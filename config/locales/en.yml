@@ -582,6 +582,9 @@ en:
       unsupported_reason: 'The following services are unknown:'
       unsupported_no_image: 'no image'
       unsupported_hint_html: 'HELIOS manages the <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> and <code class="rounded bg-base-300 px-1 font-mono">.env</code> files in full and can only take over services it recognizes. You could try moving the services listed above into a separate Compose file and then starting the import again.'
+      ingest_conflict_heading: 'Unfortunately, HELIOS cannot manage this configuration'
+      ingest_conflict_reason: 'These values feed Ingest but come from an external source:'
+      ingest_conflict_hint_html: 'HELIOS sends every Ingest input through the proxy so house consumption can be recalculated for balcony power plants, but it cannot redirect a source it does not manage. With an external source present, Ingest would be dropped on the next export. Either route these values through a HELIOS collector, or remove Ingest first if an external source already delivers a correct house consumption.'
       invalid_reason_html: 'The <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> file is invalid:'
       invalid_hint: 'Fix the error shown above, then start the import again.'
 
