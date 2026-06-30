@@ -199,8 +199,43 @@ RSpec.describe 'Import::ConfigurationImporter Ingest handling' do
       expect(config.sensor_config('inverter_power_3').is_balcony).to be true
     end
 
+    it 'does not flag the MPPT string sharing the main inverter measurement' do
+      config = importer.import!
+      expect(config.sensor_config('inverter_power_2').is_balcony).to be_nil
+    end
+
     it 'imports the ingest section' do
       expect(importer.result[:ingest]).to include('image' => 'ghcr.io/solectrus/ingest:latest')
+    end
+  end
+
+  context 'with an Ingest service and two separate balcony generators' do
+    let(:stack_reader) do
+      stub_stack_reader({
+                          'dashboard' => {
+                            'environment' => {
+                              'INFLUX_SENSOR_INVERTER_POWER_1' => 'SENEC:inverter_power',
+                              'INFLUX_SENSOR_INVERTER_POWER_2' => 'Fence:power',
+                              'INFLUX_SENSOR_INVERTER_POWER_3' => 'Fence2:power',
+                              'INFLUX_SENSOR_HOUSE_POWER' => 'SENEC:house_power',
+                            },
+                          },
+                          'ingest' => {
+                            'image' => 'ghcr.io/solectrus/ingest:latest',
+                            'environment' => {},
+                          },
+                        })
+    end
+
+    it 'flags every distinct-measurement slot as its own balcony generator' do
+      config = importer.import!
+      expect(config.sensor_config('inverter_power_2').is_balcony).to be true
+      expect(config.sensor_config('inverter_power_3').is_balcony).to be true
+    end
+
+    it 'leaves the main roof inverter unflagged' do
+      config = importer.import!
+      expect(config.sensor_config('inverter_power_1').is_balcony).to be_nil
     end
   end
 

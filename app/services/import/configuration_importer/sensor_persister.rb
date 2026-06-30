@@ -93,10 +93,6 @@ module Import
         @enabled_collectors.include?(:forecast) && SensorMappings::FORECAST_DEFAULTS.key?(sensor_name)
       end
 
-      def sensor_measurement(sensor_name)
-        @sensors_data[sensor_name].to_s.split(':', 2).first
-      end
-
       # A shelly device claims a sensor whose mapping is
       # `{measurement}:{power|power_a|power_b|power_c}` — `power` for the
       # device total, the per-phase fields for 3-phase Shellys (Pro/Plus 3EM).

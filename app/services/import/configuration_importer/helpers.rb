@@ -66,6 +66,11 @@ module Import
       def find_sensor_for_candidate(sensors, candidate)
         sensors.find { |_, value| value == candidate }&.first
       end
+
+      # Measurement half of a sensor's `measurement:field` mapping, by name.
+      def sensor_measurement(sensor_name)
+        @sensors_data[sensor_name].to_s.split(':', 2).first
+      end
     end
   end
 end

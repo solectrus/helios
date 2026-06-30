@@ -59,7 +59,7 @@ module Import
       # No balcony → HELIOS wouldn't run Ingest anyway, so external is no conflict.
       # (balcony_detector, not the dry-run config, since the is_balcony flag is
       # only set later in #mark_balcony_sensor!.)
-      return [] unless balcony_detector.sensor_name
+      return [] if balcony_detector.sensor_names.empty?
 
       dryrun_configuration.external_ingest_inputs
     end
@@ -406,11 +406,10 @@ module Import
     end
 
     def mark_balcony_sensor!(config)
-      name = balcony_detector.sensor_name
-      return unless name
-
-      existing = config.sensor_config(name).to_h
-      config.update_sensor(name, existing.merge('is_balcony' => true))
+      balcony_detector.sensor_names.each do |name|
+        existing = config.sensor_config(name).to_h
+        config.update_sensor(name, existing.merge('is_balcony' => true))
+      end
     end
   end
 end
