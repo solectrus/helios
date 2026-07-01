@@ -62,6 +62,20 @@ module Orchestration
         run_compose_with_conflict_recovery(*args)
       end
 
+      # Reconciles the given services against the current compose in a single
+      # `up`: services whose config drifted are recreated, those already
+      # matching are left running, and containers from services no longer in
+      # the compose file are pruned (--remove-orphans). Unlike #up the caller
+      # passes exactly which services to bring in line, so a reconcile after a
+      # single-service operation (e.g. a database upgrade that renamed the DB
+      # service) does not spin up unrelated stopped services. No-op when empty.
+      def reconcile(*services)
+        names = services.flatten.compact
+        return if names.empty?
+
+        run_compose_with_conflict_recovery('up', '--no-build', '--remove-orphans', '-d', *names)
+      end
+
       def stop(service)
         args = ['down']
         args << service

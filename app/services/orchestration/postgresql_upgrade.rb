@@ -14,7 +14,8 @@ module Orchestration
   #      then rebuild the cluster from the dump: stop PostgreSQL, empty the
   #      data directory, start the new major, restore the dump, and verify
   #      the restored table count.
-  #   3. finish! — record the deployment and remove the dump file.
+  #   3. finish! — reconcile the stack against the rewritten compose (recreate
+  #      dependents, prune the pre-upgrade orphan) and remove the dump file.
   #
   # Recovery: the verified dump file is the safety anchor, written before
   # any destructive step. If the upgrade fails, #rollback! automatically
@@ -119,7 +120,7 @@ module Orchestration
     end
 
     def finish!
-      mark_deployed!
+      reconcile_stack!
       cleanup_dump
     end
 
@@ -212,7 +213,7 @@ module Orchestration
         Runner.start(SERVICE)
       end
 
-      mark_deployed!
+      AffectedServices.update_deployed_hash!(SERVICE)
       true
     rescue StandardError => e
       logger.error("rollback failed: #{e.class}: #{e.message}")
@@ -290,6 +291,27 @@ module Orchestration
             t('verify_failed', expected: @expected_tables, actual: actual || '?')
     end
 
+    # Reconciles the running services against the rewritten compose. Recreating
+    # only `postgresql` would leave dependents running against the old database
+    # (the dashboard embeds the host in DB_HOST, which changes when an imported
+    # `db` service becomes the canonical `postgresql`) and leave the pre-rename
+    # container behind as a crash-looping orphan. Reconciling recreates drifted
+    # running services and prunes orphans (--remove-orphans), then baselines
+    # each so stale "restart required" markers clear. A reconcile failure is not
+    # an upgrade failure (the data is already migrated) so it must not roll
+    # back — it is reported with a message pointing the user at a manual restart.
+    def reconcile_stack!
+      # Running services still in the compose — the dependents to bring in line.
+      # Excludes HELIOS itself; orphans (service gone from compose) are not
+      # passed to `up`, they are pruned by Runner.reconcile's --remove-orphans.
+      services = Container.all.select(&:running?).filter_map(&:service_name)
+                          .uniq.intersection(::Compose.load.services.names) - [Runner::SELF_SERVICE]
+      Runner.reconcile(services)
+      services.each { |service| AffectedServices.update_deployed_hash!(service) }
+    rescue Runner::CommandError => e
+      raise UpgradeError, t('reconcile_failed', detail: last_line(e.stdout))
+    end
+
     # --- Helpers ---
 
     # pg_dumpall ends with the completion marker as its final line; its
@@ -314,10 +336,6 @@ module Orchestration
     def dump_path
       @dump_path ||=
         File.join(data_path, "postgresql-upgrade-#{Time.current.strftime('%Y%m%d%H%M%S')}.sql")
-    end
-
-    def mark_deployed!
-      AffectedServices.update_deployed_hash!(SERVICE)
     end
 
     # Writes the postgresql section's image and PGDATA. A nil pgdata removes

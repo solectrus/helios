@@ -6,6 +6,8 @@
 # CI and is skipped in local runs unless requested with `--tag integration`.
 # Also skipped when Docker is unavailable. Slow: it pulls PostgreSQL images
 # and runs initdb several times.
+require 'tmpdir'
+
 RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
   let(:data_path) { Rails.root.join('tmp/pg-upgrade-itest').to_s }
   let(:starting_image) { 'postgres:17-alpine' }
@@ -40,6 +42,29 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
         expect(widget_names).to eq(['helios'])
         expect(Configuration.current.postgresql.image).to eq(described_class.target_image)
         expect(Dir.glob(File.join(data_path, 'postgresql-upgrade-*.sql'))).to be_empty
+      end
+    end
+
+    # Reproduces the field incident: a stack imported from legacy SOLECTRUS,
+    # where the database service was named `db`. After the upgrade renames it to
+    # `postgresql`, the old container lingers as a crash-looping orphan unless
+    # the upgrade's reconcile prunes it (--remove-orphans). Before the fix the
+    # orphan survived and only a full host reboot cleaned it up.
+    it 'prunes the orphan left by a former database service name' do
+      Orchestration::Runner.start('postgresql')
+      wait_until_ready!
+      seed_data!
+
+      start_orphan!('db')
+      expect(project_service_names).to include('db')
+
+      expect(described_class.call).to be true
+
+      wait_until_ready!
+      aggregate_failures do
+        expect(project_service_names).to include('postgresql')
+        expect(project_service_names).not_to include('db')
+        expect(widget_names).to eq(['helios'])
       end
     end
   end
@@ -108,6 +133,37 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
   def seed_data!
     run_sql!('CREATE TABLE widgets (id serial PRIMARY KEY, name text)')
     run_sql!("INSERT INTO widgets (name) VALUES ('helios')")
+  end
+
+  # Starts a container that mimics a leftover from a previously named database
+  # service. Created through Docker Compose (a throwaway one-service file under
+  # the same project name) so it carries the full label set Compose uses for
+  # orphan detection — a `docker run` container with only a subset is not
+  # recognized as an orphan. Reuses the already-pulled starting_image, and
+  # network_mode: none avoids creating a stray project network.
+  def start_orphan!(service)
+    Dir.mktmpdir do |dir|
+      file = File.join(dir, 'orphan-compose.yaml')
+      File.write(file, <<~YAML)
+        name: #{Orchestration::PROJECT_NAME}
+        services:
+          #{service}:
+            image: #{starting_image}
+            entrypoint: ["sleep", "300"]
+            network_mode: none
+      YAML
+      system(
+        'docker', 'compose', '-f', file, '--project-directory', data_path,
+        'up', '--no-build', '-d', service,
+        out: File::NULL, err: File::NULL
+      ) or raise "failed to start orphan service #{service}"
+    end
+  end
+
+  def project_service_names
+    format = '{{.Label "com.docker.compose.service"}}'
+    `docker ps -a --filter label=com.docker.compose.project=#{Orchestration::PROJECT_NAME} --format '#{format}'`
+      .split("\n").map(&:strip).reject(&:empty?)
   end
 
   def widget_names

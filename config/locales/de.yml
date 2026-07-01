@@ -107,6 +107,7 @@ de:
       verify_failed: 'Überprüfung fehlgeschlagen: Die wiederhergestellte Datenbank hat %{actual} Tabellen, erwartet wurden %{expected}.'
       rolled_back: 'Das Upgrade ist fehlgeschlagen (%{detail}). PostgreSQL wurde automatisch auf die vorherige Version %{major} zurückgesetzt – deine Daten sind unverändert erhalten.'
       rollback_failed: 'Das Upgrade ist fehlgeschlagen (%{detail}) und die automatische Wiederherstellung war ebenfalls nicht erfolgreich (%{error}). Deine Daten sind in der Sicherung unter „%{path}“ erhalten und können von dort wiederhergestellt werden.'
+      reconcile_failed: 'PostgreSQL wurde aktualisiert und die Daten sind intakt, aber der Neustart der übrigen Dienste ist fehlgeschlagen (%{detail}). Bitte alle Dienste stoppen und anschließend wieder starten, um die Änderung vollständig anzuwenden.'
 
   datasources:
     show:
