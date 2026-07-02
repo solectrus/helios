@@ -73,7 +73,6 @@ Regenerate with `bin/rake licenses:generate`.
 | `pp`                   | Ruby, BSD-2-Clause |
 | `prettyprint`          | Ruby, BSD-2-Clause |
 | `prism`                | MIT                |
-| `psych`                | MIT                |
 | `puma`                 | BSD-3-Clause       |
 | `racc`                 | Ruby, BSD-2-Clause |
 | `rack`                 | MIT                |
@@ -87,14 +86,14 @@ Regenerate with `bin/rake licenses:generate`.
 | `rails_vite`           | MIT                |
 | `railties`             | MIT                |
 | `rake`                 | MIT                |
-| `rdoc`                 | Ruby               |
+| `rbs`                  | BSD-2-Clause, Ruby |
+| `rdoc`                 | Ruby, GPL-2.0-only |
 | `reline`               | Ruby               |
 | `rubyzip`              | BSD-2-Clause       |
 | `securerandom`         | Ruby, BSD-2-Clause |
 | `solid_cable`          | MIT                |
 | `sqlite3`              | BSD-3-Clause       |
 | `stimulus-rails`       | MIT                |
-| `stringio`             | Ruby, BSD-2-Clause |
 | `thor`                 | MIT                |
 | `timeout`              | Ruby, BSD-2-Clause |
 | `tsort`                | Ruby, BSD-2-Clause |

@@ -215,7 +215,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 ## @fortawesome/fontawesome-free
 
-- Version: 7.2.0
+- Version: 7.3.0
 - License: (CC-BY-4.0 AND OFL-1.1 AND MIT)
 - Homepage: https://fontawesome.com
 
@@ -547,7 +547,7 @@ Source: https://github.com/ElMassimo/stimulus-vite-helpers
 
 ## survey-core
 
-- Version: 2.5.29
+- Version: 2.5.30
 - License: MIT
 - Homepage: https://surveyjs.io/
 
@@ -577,7 +577,7 @@ SOFTWARE.
 
 ## survey-js-ui
 
-- Version: 2.5.29
+- Version: 2.5.30
 - License: MIT
 - Homepage: https://surveyjs.io/
 
