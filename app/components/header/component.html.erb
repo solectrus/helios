@@ -80,7 +80,10 @@
 
           <% if helpers.password_required? %>
             <li>
-              <%= button_to session_path, method: :delete do %>
+              <%= button_to session_path,
+                            method: :delete,
+                            form: { class: "contents" },
+                            class: "flex w-full cursor-pointer items-center gap-2 px-3 py-1.5 rounded-field hover:bg-base-content/10" do %>
                 <i class="fa-solid fa-right-from-bracket fa-fw"></i>
                 <%= t('.logout') %>
               <% end %>
