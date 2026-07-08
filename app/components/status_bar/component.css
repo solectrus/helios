@@ -7,6 +7,22 @@
   display: inline;
 }
 
+/*
+ * daisyUI 5.6 buttons no longer follow currentColor: at rest btn-outline
+ * draws in base-content, and on hover/active/focus-visible the text switches
+ * to --btn-fg while the background is mixed from --btn-color - illegible on
+ * the colored bar. Make the outline buttons inherit the bar's content color
+ * in every state, with a translucent fill for the raised states.
+ */
+#status-bar .btn-outline {
+  --btn-color: currentColor;
+}
+#status-bar .btn-outline:is(:hover, :active, :focus-visible) {
+  color: inherit;
+  background-color: color-mix(in oklab, currentColor 15%, transparent);
+  box-shadow: none;
+}
+
 .status-bar-barber-pole {
   background-image: repeating-linear-gradient(
     -45deg,
