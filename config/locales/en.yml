@@ -339,6 +339,7 @@ en:
         destination_unconfigured: 'Backup destination is not fully configured yet.'
         postgres_not_running: 'PostgreSQL service is not running.'
         influxdb_not_running: 'InfluxDB service is not running.'
+        influxdb_staging_not_mounted: 'InfluxDB container is running with an outdated configuration and must be recreated on the services page.'
         csv_import_in_progress: 'A CSV import is currently running.'
     restorer:
       errors:

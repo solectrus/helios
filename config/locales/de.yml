@@ -315,6 +315,7 @@ de:
         destination_unconfigured: 'Sicherungsziel ist noch nicht vollständig konfiguriert.'
         postgres_not_running: 'PostgreSQL-Dienst läuft nicht.'
         influxdb_not_running: 'InfluxDB-Dienst läuft nicht.'
+        influxdb_staging_not_mounted: 'InfluxDB-Container läuft mit veralteter Konfiguration und muss auf der Dienste-Seite neu erstellt werden.'
         csv_import_in_progress: 'Ein CSV-Import läuft gerade.'
     restorer:
       errors:

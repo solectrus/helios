@@ -26,7 +26,11 @@ RSpec.describe BackupRunner do
       instance_double(Orchestration::Container, name: 'solectrus-postgresql-1'),
     )
     allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(
-      instance_double(Orchestration::Container, name: 'solectrus-influxdb-1'),
+      instance_double(
+        Orchestration::Container,
+        name: 'solectrus-influxdb-1',
+        mount_source: "#{host_data_path}/influx-backup-staging",
+      ),
     )
     allow(RestoreRunner).to receive(:running?).and_return(false)
     allow(CsvImportRunner).to receive_messages(running?: false, in_progress?: false)
@@ -473,6 +477,20 @@ RSpec.describe BackupRunner do
       FileUtils.rm_f(File.join(data_path, '.env'))
 
       expect(described_class.unavailable_reason).to include('.env file is missing')
+    end
+
+    # A container adopted from a pre-HELIOS installation and never recreated
+    # lacks the staging bind mount — `influx backup` would then write into
+    # the container's own filesystem and the run would fail with the cryptic
+    # "produced no output" (issue #291).
+    it 'returns the reason when the InfluxDB container lacks the staging mount' do
+      allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(
+        instance_double(Orchestration::Container, name: 'solectrus-influxdb-1', mount_source: nil),
+      )
+
+      expect(described_class.unavailable_reason).to eq(
+        I18n.t('backups.runner.unavailable_reasons.influxdb_staging_not_mounted'),
+      )
     end
   end
 

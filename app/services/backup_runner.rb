@@ -194,8 +194,14 @@ class BackupRunner < DetachedRunner
     return :config_missing unless ::File.exist?(Configuration.path)
     return :influx_token_missing if env['INFLUX_ADMIN_TOKEN'].blank?
     return :destination_unconfigured if BackupRepository.host_directory.blank?
+
+    database_unavailable_reason_key
+  end
+
+  def database_unavailable_reason_key
     return :postgres_not_running unless postgres_container_name
     return :influxdb_not_running unless influxdb_container_name
+    return :influxdb_staging_not_mounted unless influxdb_staging_mounted?
 
     nil
   end
@@ -298,7 +304,22 @@ class BackupRunner < DetachedRunner
   end
 
   def influxdb_container_name
-    @influxdb_container_name ||= Orchestration::Container.find(INFLUXDB_SERVICE)&.name
+    influxdb_container&.name
+  end
+
+  def influxdb_container
+    @influxdb_container ||= Orchestration::Container.find(INFLUXDB_SERVICE)
+  end
+
+  # The sidecar and the InfluxDB container exchange the dump through the
+  # shared INFLUX_STAGING_MOUNT bind mount. A container created before that
+  # mount existed in compose.yaml — typically adopted from a pre-HELIOS
+  # installation and never recreated (issue #291) — writes the backup into
+  # its own overlay filesystem instead: `influx backup` succeeds, but the
+  # staging dir stays empty and the run dies with the cryptic "InfluxDB
+  # backup produced no output". Catch it up-front with a precise reason.
+  def influxdb_staging_mounted?
+    influxdb_container&.mount_source(INFLUX_STAGING_MOUNT).present?
   end
 
   def env
