@@ -175,6 +175,9 @@ RSpec.describe 'Starts' do
         allow(importer).to receive(:import!)
         allow(importer).to receive(:ingest_conflict_sensors).and_return([])
         allow(Export::Builder).to receive(:new).and_return(builder)
+        # Keep the baseline seeding (issue #291) from shelling out to
+        # `docker compose config --hash` in tests that don't care about it.
+        allow(Orchestration::Runner).to receive(:config_hashes).and_return({})
       end
 
       it 'creates backup files' do
@@ -194,6 +197,20 @@ RSpec.describe 'Starts' do
         post start_path
 
         expect(builder).to have_received(:write!)
+      end
+
+      it 'seeds the restart baseline from the pre-import stack before rewriting' do
+        allow(Orchestration::Runner).to receive(:config_hashes) do
+          # The baseline must capture the adopted (pre-import) compose config,
+          # i.e. be taken before Export::Builder rewrites it (issue #291).
+          expect(builder).not_to have_received(:write!)
+          { 'dashboard' => 'pre-import-hash' }
+        end
+
+        post start_path
+
+        expect(Orchestration::AffectedServices.load_deployed_hashes_file)
+          .to eq('dashboard' => 'pre-import-hash')
       end
 
       it 'redirects to services' do

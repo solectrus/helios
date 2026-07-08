@@ -42,8 +42,15 @@ class StartsController < ApplicationController
     raise Import::IngestExternalConflictError, conflict if conflict.any?
 
     StackBackup.create!
+    # Baseline the adopted stack's compose config *before* the rewrite below
+    # replaces it. The imported containers keep running with their pre-import
+    # definitions (e.g. without the influx-backup-staging mount, issue #291);
+    # only a pre-rewrite baseline lets AffectedServices flag them as
+    # "restart required" instead of lazily adopting the rewritten config.
+    Orchestration::AffectedServices.seed_baseline_if_missing!
     importer.import!
     Export::Builder.new(Configuration.current).write!
+    Orchestration::AffectedServices.invalidate_config_hashes
   end
 
   def stack_reader
