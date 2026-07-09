@@ -69,7 +69,7 @@ de:
     runner:
       errors:
         already_in_progress: 'Es läuft bereits ein CSV-Import.'
-        exit_pending: 'Ein vorheriger Import-Container ist noch nicht aufgeräumt. Bitte die Seite neu laden.'
+        exit_pending: 'Ein vorheriger Import-Vorgang ist noch nicht aufgeräumt. Bitte die Seite neu laden.'
         backup_in_progress: 'Eine Datensicherung läuft gerade. Bitte später erneut versuchen.'
         restore_in_progress: 'Eine Wiederherstellung läuft gerade. Bitte später erneut versuchen.'
         image_pull_failed: 'Das csv-importer-Image konnte nicht geladen werden: %{output}'
@@ -198,7 +198,7 @@ de:
       subtitle: 'In zwei Schritten zur Lösung.'
       step_download:
         title: 'Support-Paket herunterladen'
-        description: 'Enthält Konfiguration, System-Infos und Container-Logs. Passwörter, Tokens, Koordinaten, Bucket-/Org-Namen, öffentliche Hostnamen und der System-Hostname werden automatisch anonymisiert.'
+        description: 'Enthält Konfiguration, System-Infos und Protokolle der Dienste. Passwörter, Tokens, Koordinaten, Bucket-/Org-Namen, öffentliche Hostnamen und der System-Hostname werden automatisch anonymisiert.'
       step_post:
         title: 'Beitrag erstellen'
         description: 'Hänge das ZIP-Archiv deinem Beitrag an. Wähle den passenden Kanal:'
@@ -315,7 +315,7 @@ de:
         destination_unconfigured: 'Sicherungsziel ist noch nicht vollständig konfiguriert.'
         postgres_not_running: 'PostgreSQL-Dienst läuft nicht.'
         influxdb_not_running: 'InfluxDB-Dienst läuft nicht.'
-        influxdb_staging_not_mounted: 'InfluxDB-Container läuft mit veralteter Konfiguration und muss auf der Dienste-Seite neu erstellt werden.'
+        influxdb_staging_not_mounted: 'InfluxDB-Dienst läuft mit veralteter Konfiguration und muss auf der Dienste-Seite aktualisiert werden.'
         csv_import_in_progress: 'Ein CSV-Import läuft gerade.'
     restorer:
       errors:
@@ -552,7 +552,7 @@ de:
       heading: 'Willkommen bei HELIOS'
       step_import_html: 'Deine bestehenden Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> werden importiert und interpretiert'
       step_backup_html: 'Beide Dateien werden als Sicherheitskopie gespeichert (<code class="rounded bg-base-300 px-1 font-mono">.bak</code>)'
-      step_manage: 'Anschließend erfolgt die gesamte Konfiguration von SOLECTRUS sowie der Betrieb der Container webbasiert über HELIOS – die Kommandozeile wird nicht mehr benötigt'
+      step_manage: 'Anschließend erfolgt die gesamte Konfiguration von SOLECTRUS sowie der Betrieb aller Dienste webbasiert über HELIOS – die Kommandozeile wird nicht mehr benötigt'
       hint_exclusive_html: 'Da HELIOS die Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> zukünftig selbst schreibt und ändert, ist eine parallele Nutzung von Portainer, Dockge, Arcane oder ähnlichen Tools nicht mehr vorgesehen.'
       license_notice_html: 'HELIOS ist quellverfügbare Software. Mit dem Start des Imports gelten die <a href="https://github.com/solectrus/helios/blob/develop/docs/legal/LICENSE.de.md" target="_blank" rel="noopener" class="link">Lizenzbedingungen</a> als akzeptiert.'
       agree: 'Einverstanden, Import starten'
