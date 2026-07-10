@@ -2,6 +2,19 @@ module Export
   class Compose
     WATCHTOWER_LABEL = 'com.centurylinklabs.watchtower.scope=solectrus'.freeze
 
+    # Values baked into an unmanaged service's bare INFLUX_* passthrough entries
+    # so it reaches the co-located InfluxDB container — the same local target
+    # managed collectors get inline (see Export::Services::Base#explicit_vars).
+    # Schema is fixed to http: the InfluxDB container serves plain http on the
+    # internal network (any TLS is terminated at Traefik's edge, never
+    # container-to-container), which is why managed collectors omit
+    # INFLUX_SCHEMA and rely on the same http default.
+    UNMANAGED_LOCAL_INFLUX_INFRA = {
+      'INFLUX_HOST' => Services::Influxdb.service_name,
+      'INFLUX_PORT' => Services::Influxdb::CONTAINER_PORT.to_s,
+      'INFLUX_SCHEMA' => 'http',
+    }.freeze
+
     # Keep in sync with Compose::ServiceCollection::PRIORITY_ORDER (UI order).
     SERVICE_ORDER = [
       Services::Dashboard,
@@ -136,8 +149,28 @@ module Export
         # env_values is HELIOS-internal state (values for the environment list,
         # rendered into .env on export) — not a compose key.
         service_config = config.to_h.except('env_values')
+        inline_unmanaged_influx_infra!(service_config)
         compose.add_service(name, service_config,
                             comment: 'Unmanaged service (preserved from existing installation)')
+      end
+    end
+
+    # A bare passthrough entry like `- INFLUX_HOST` in an unmanaged service
+    # expects its value from .env. On a local-InfluxDB stack HELIOS suppresses
+    # INFLUX_HOST/PORT/SCHEMA from .env (managed collectors get them baked
+    # inline), so those bare entries would resolve to nothing and the
+    # container's `ENV.fetch("INFLUX_HOST")` raises KeyError at startup. Bake
+    # the same local values managed collectors use. Skipped in collectors_only
+    # mode, where .env carries the external target and the entry must keep
+    # reading it.
+    def inline_unmanaged_influx_infra!(service_config)
+      return if configuration.collectors_only?
+
+      env = service_config['environment']
+      return unless env.is_a?(Array)
+
+      service_config['environment'] = env.map do |entry|
+        (value = UNMANAGED_LOCAL_INFLUX_INFRA[entry]) ? "#{entry}=#{value}" : entry
       end
     end
 
