@@ -26,9 +26,8 @@ module Import
         return unless enabled?
 
         fc_env = service_env('forecast-collector')
-        # The image carries the release channel, which drives
-        # Configuration#forecast_pvnode_v2? (the site-based API v2 is
-        # develop-only), so it is captured into the forecast section.
+        # The image carries the pinned release channel chosen for the
+        # forecast-collector, so it is captured to round-trip on re-export.
         data = image_data_for('forecast-collector')
         data.merge!(base_data(fc_env))
         data.merge!(roof_data(fc_env))

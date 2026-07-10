@@ -979,28 +979,25 @@ RSpec.describe Configuration do
   describe '#incomplete_forecast_location?' do
     let(:sensors) { { 'inverter_power_forecast' => { 'source' => 'forecast' } } }
 
-    it 'flags a pvnode v1 setup (stable channel) that is missing the location' do
-      # Typical after a v2 site config was switched back to the stable channel:
-      # a stale site ID, but no location for the location-based API v1.
+    it 'flags a pvnode v1 setup (no site ID) that is missing the location' do
+      # Without a site ID the collector uses the location-based API v1, which
+      # needs a location — so the section is incomplete until it is filled in.
       with_config_yaml(
         'sensors' => sensors,
-        'forecast' => { 'forecast' => 'pvnode', 'forecast_pvnode_apikey' => 'k',
-                        'forecast_pvnode_site_id' => 'site-1' },
+        'forecast' => { 'forecast' => 'pvnode', 'forecast_pvnode_apikey' => 'k' },
       )
       config = described_class.current
       expect(config.incomplete_forecast_location?).to be true
-      # Links to the forecast-collector card, where the location reappears on
-      # the stable channel — not to the release-channel picker.
+      # Links to the forecast-collector card, where the location is entered.
       expect(config.setting_incomplete?('forecast')).to be true
       expect(config.setting_incomplete?('software')).to be false
     end
 
-    it 'accepts a v2 site config on the develop channel (location lives on pvnode)' do
+    it 'accepts a v2 site config (location lives on pvnode)' do
       with_config_yaml(
         'sensors' => sensors,
         'forecast' => { 'forecast' => 'pvnode', 'forecast_pvnode_apikey' => 'k',
-                        'forecast_pvnode_site_id' => 'site-1',
-                        'image' => 'ghcr.io/solectrus/forecast-collector:develop' },
+                        'forecast_pvnode_site_id' => 'site-1' },
       )
       config = described_class.current
       expect(config.forecast_pvnode_v2?).to be true

@@ -21,14 +21,12 @@ module Export
 
       # pvnode API v2 is site-based: location and all PV strings live on the
       # pvnode site and are referenced by its ID, so HELIOS emits neither the
-      # location nor the roof/extra-param variables. Only available on the
-      # develop channel (see Configuration#forecast_pvnode_v2?); the
-      # "requires the develop image" hint below is part of that gate and drops
-      # when v2 ships on the stable channel.
+      # location nor the roof/extra-param variables (see
+      # Configuration#forecast_pvnode_v2?).
       def pvnode_v2_entries(fcast)
         entry('FORECAST_PROVIDER', fcast.forecast, 'Forecast provider')
         entry('PVNODE_SITE_ID', fcast.forecast_pvnode_site_id,
-              'pvnode site ID (enables the site-based API v2, requires the develop image)')
+              'pvnode site ID (enables the site-based API v2)')
         entry('PVNODE_APIKEY', fcast.forecast_pvnode_apikey, 'pvnode API key')
         pvnode_paid_entry(fcast)
       end

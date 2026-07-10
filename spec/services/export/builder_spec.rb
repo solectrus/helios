@@ -1151,14 +1151,13 @@ RSpec.describe Export::Builder do
     end
   end
 
-  describe 'with forecast configured for pvnode API v2 (site ID on the develop channel)' do
+  describe 'with forecast configured for pvnode API v2 (site ID)' do
     before do
       configuration.update('forecast', {
                              'forecast' => 'pvnode',
                              'forecast_pvnode_apikey' => 'pvnode-key',
                              'forecast_pvnode_paid' => 'nowcast',
                              'forecast_pvnode_site_id' => 'site-42',
-                             'image' => 'ghcr.io/solectrus/forecast-collector:develop',
                            })
       configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
       described_class.new(Configuration.current).write!
@@ -1185,31 +1184,6 @@ RSpec.describe Export::Builder do
       forecast = Compose.load.services.find('forecast-collector')
       expect(forecast.environment).to include('PVNODE_SITE_ID', 'PVNODE_APIKEY')
       expect(forecast.environment).not_to include('FORECAST_LATITUDE', 'FORECAST_DECLINATION')
-    end
-  end
-
-  describe 'with a pvnode site ID but the stable channel (v1 takes precedence)' do
-    before do
-      configuration.update('forecast', {
-                             'forecast' => 'pvnode',
-                             'forecast_latitude' => '51.3',
-                             'forecast_longitude' => '9.5',
-                             'forecast_pvnode_azimuth1' => '180',
-                             'forecast_declination1' => '30',
-                             'forecast_kwp1' => '10',
-                             'forecast_pvnode_apikey' => 'pvnode-key',
-                             'forecast_pvnode_site_id' => 'site-42',
-                           })
-      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
-      described_class.new(Configuration.current).write!
-    end
-
-    it 'ignores the site ID and emits the location-based v1 variables' do
-      env = Env.load
-      expect(env['PVNODE_SITE_ID']).to be_nil
-      expect(env['FORECAST_LATITUDE']).to eq('51.3')
-      expect(env['FORECAST_AZIMUTH']).to eq('180')
-      expect(env['PVNODE_APIKEY']).to eq('pvnode-key')
     end
   end
 

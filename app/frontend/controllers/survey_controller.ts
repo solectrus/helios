@@ -109,23 +109,6 @@ function anyValueEquals(params: unknown[]): boolean {
 }
 FunctionFactory.Instance.register('anyValueEquals', anyValueEquals);
 
-// Survey expression helper: the channel token (tag) of a Docker image URL,
-// e.g. "ghcr.io/solectrus/forecast-collector:develop" → "develop". The
-// forecast survey uses it to offer the pvnode site ID (API v2) only while the
-// forecast-collector runs on the "develop" channel — the seeded `image` value
-// carries the channel chosen in the Software survey. Server-side twin:
-// Configuration#image_channel (Ruby).
-//
-// Exists only to gate pvnode API v2 on the develop channel. Once v2 ships on
-// the stable channel this helper and its two uses in survey.json become
-// unused — see the promotion checklist on Configuration#forecast_pvnode_v2?.
-function imageChannel(params: unknown[]): string {
-  const [image] = params;
-  if (typeof image !== 'string') return '';
-  return image.split(':').pop() ?? '';
-}
-FunctionFactory.Instance.register('imageChannel', imageChannel);
-
 // Connection-test labels shown before the server replies (the result message
 // itself comes back localized from the server). Kept here because they belong
 // to a transient UI state SurveyJS never sees.

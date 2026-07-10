@@ -80,8 +80,8 @@ RSpec.describe 'Import::ConfigurationImporter forecast provider' do
       }
     end
 
-    # The channel drives Configuration#forecast_pvnode_v2?, so the image must
-    # round-trip — otherwise an imported develop+site stack falls back to v1.
+    # The pinned image (release channel) must round-trip so a re-export keeps
+    # the operator's channel choice for the forecast-collector.
     it 'captures the forecast-collector image' do
       expect(importer.result[:forecast]).to include(
         'image' => 'ghcr.io/solectrus/forecast-collector:develop',

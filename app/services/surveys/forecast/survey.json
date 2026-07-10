@@ -11,7 +11,7 @@
   "calculatedValues": [
     {
       "name": "pvnode_v1",
-      "expression": "{forecast} = 'pvnode' and (imageChannel({image}) <> 'develop' or {forecast_pvnode_site_id} empty)"
+      "expression": "{forecast} = 'pvnode' and {forecast_pvnode_site_id} empty"
     }
   ],
   "pages": [
@@ -135,7 +135,7 @@
     },
     {
       "name": "p_pvnode_site",
-      "visibleIf": "{forecast} = 'pvnode' and imageChannel({image}) = 'develop'",
+      "visibleIf": "{forecast} = 'pvnode'",
       "title": {
         "de": "pvnode Site (API v2)",
         "default": "pvnode site (API v2)"
@@ -145,6 +145,14 @@
         "default": "With a site ID the collector uses the site-based pvnode API v2. Location and roofs are then managed on pvnode.com and are no longer needed here."
       },
       "elements": [
+        {
+          "type": "html",
+          "name": "pvnode_v1_sunset",
+          "html": {
+            "de": "<p>Die klassische API v1 wird zum 31.12.2026 abgeschaltet. Alle Installationen sollten auf die API v2 wechseln.</p>",
+            "default": "<p>The classic API v1 will be discontinued on 2026-12-31. All installations should switch to API v2.</p>"
+          }
+        },
         {
           "type": "html",
           "name": "pvnode_site_docs",
