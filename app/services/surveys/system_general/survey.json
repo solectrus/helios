@@ -5,8 +5,8 @@
     "default": "PV system"
   },
   "description": {
-    "de": "Inbetriebnahme und Zeitzone",
-    "default": "Commissioning date and timezone"
+    "de": "Inbetriebnahme, Zeitzone und Währung",
+    "default": "Commissioning date, timezone and currency"
   },
   "pages": [
     {
@@ -49,6 +49,95 @@
             { "value": "Asia/Tokyo", "text": "Asia/Tokyo" },
             { "value": "Australia/Sydney", "text": "Australia/Sydney" }
           ]
+        }
+      ]
+    },
+    {
+      "name": "p_currency",
+      "elements": [
+        {
+          "type": "dropdown",
+          "name": "currency_preset",
+          "title": {
+            "de": "Währung",
+            "default": "Currency"
+          },
+          "description": {
+            "de": "Für die Anzeige von Geldbeträgen im Dashboard",
+            "default": "For displaying monetary values in the dashboard"
+          },
+          "isRequired": true,
+          "searchEnabled": false,
+          "defaultValueExpression": "iif({currency} = 'CHF' or {currency} = 'USD' or {currency} = 'GBP', {currency}, iif({currency} = 'EUR' or {currency} empty, 'EUR', 'other'))",
+          "choices": [
+            {
+              "value": "EUR",
+              "text": { "de": "Euro (€)", "default": "Euro (€)" }
+            },
+            {
+              "value": "CHF",
+              "text": {
+                "de": "Schweizer Franken (CHF)",
+                "default": "Swiss franc (CHF)"
+              }
+            },
+            {
+              "value": "USD",
+              "text": { "de": "US-Dollar ($)", "default": "US dollar ($)" }
+            },
+            {
+              "value": "GBP",
+              "text": {
+                "de": "Pfund Sterling (£)",
+                "default": "Pound sterling (£)"
+              }
+            },
+            {
+              "value": "other",
+              "text": {
+                "de": "Andere Währung …",
+                "default": "Other currency …"
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "currency",
+          "title": {
+            "de": "ISO-4217-Währungscode",
+            "default": "ISO 4217 currency code"
+          },
+          "description": {
+            "de": "Dreistelliger Code, z. B. SEK, NOK, PLN, JPY",
+            "default": "Three-letter code, e.g. SEK, NOK, PLN, JPY"
+          },
+          "defaultValue": "EUR",
+          "visibleIf": "{currency_preset} = 'other'",
+          "requiredIf": "{currency_preset} = 'other'",
+          "clearIfInvisible": "none",
+          "setValueIf": "{currency_preset} notempty and {currency_preset} != 'other'",
+          "setValueExpression": "{currency_preset}",
+          "placeholder": "SEK",
+          "maxLength": 3,
+          "validators": [
+            {
+              "type": "regex",
+              "regex": "^[A-Za-z]{3}$",
+              "text": {
+                "de": "Bitte einen dreistelligen ISO-4217-Code angeben (z. B. SEK).",
+                "default": "Please enter a three-letter ISO 4217 code (e.g. SEK)."
+              }
+            }
+          ]
+        },
+        {
+          "type": "html",
+          "name": "currency_develop_only",
+          "html": {
+            "de": "<p>Hinweis: Die Währung wirkt bislang nur, wenn das Dashboard im Kanal „Entwicklung“ läuft. Im Kanal „Stabil“ wird sie noch nicht ausgewertet.</p>",
+            "default": "<p>Note: The currency only takes effect while the dashboard runs on the “Development” channel. On the “Stable” channel it is not evaluated yet.</p>"
+          }
         }
       ]
     }

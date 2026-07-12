@@ -204,9 +204,16 @@ RSpec.describe ConfigSchema do
         borrowed = Configuration::BORROWED_FIELDS.fetch(setting, {})
 
         # UI-only toggles that drive visibility but are not persisted: the
-        # boolean `enabled` flag, and reverse_proxy's tri-state `mode` selector
-        # (re-derived from app_domain/bind_ip on load, see SettingsController).
-        ui_only = setting == 'reverse_proxy' ? %w[enabled mode] : %w[enabled]
+        # boolean `enabled` flag, reverse_proxy's tri-state `mode` selector
+        # (re-derived from app_domain/bind_ip on load, see SettingsController),
+        # and system_general's `currency_preset` dropdown (drives the `currency`
+        # freetext field, only `currency` is stored).
+        ui_only =
+          case setting
+          when 'reverse_proxy' then %w[enabled mode]
+          when 'system_general' then %w[enabled currency_preset]
+          else %w[enabled]
+          end
 
         survey_fields.reject { |f| ui_only.include?(f) }.each do |field|
           section = borrowed[field] || parent

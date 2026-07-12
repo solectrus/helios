@@ -18,7 +18,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # sibling keys in the singleton (owned by other mini-surveys) survive
   # untouched. `#setting_data` returns the slice the mini-survey owns.
   SETTING_GROUPS = {
-    'system_general' => { singleton: 'system', keys: %w[installation_date timezone] },
+    'system_general' => { singleton: 'system', keys: %w[installation_date timezone currency] },
     'system_network' => { singleton: 'system', keys: %w[app_host] },
     'system_security' => { singleton: 'system', keys: %w[admin_password] },
     'dashboard_co2' => { singleton: 'dashboard', keys: %w[co2_emission_factor] },

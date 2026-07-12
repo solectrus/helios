@@ -48,7 +48,7 @@ module Export
       # Variables passed through from .env (name only)
       def passthrough_vars
         %w[
-          TZ INSTALLATION_DATE INFLUX_ORG INFLUX_BUCKET SECRET_KEY_BASE ADMIN_PASSWORD
+          TZ INSTALLATION_DATE CURRENCY INFLUX_ORG INFLUX_BUCKET SECRET_KEY_BASE ADMIN_PASSWORD
           APP_HOST FORCE_SSL WEB_CONCURRENCY
         ]
       end

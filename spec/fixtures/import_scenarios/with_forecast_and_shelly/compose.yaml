@@ -32,6 +32,7 @@ services:
     - ADMIN_PASSWORD
     - APP_HOST
     - CO2_EMISSION_FACTOR
+    - CURRENCY
     - DB_DATABASE=solectrus
     - DB_HOST=postgresql
     - DB_PASSWORD=${POSTGRES_PASSWORD}

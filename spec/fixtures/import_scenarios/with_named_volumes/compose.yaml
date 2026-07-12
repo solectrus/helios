@@ -31,6 +31,7 @@ services:
     - TZ
     - ADMIN_PASSWORD
     - APP_HOST
+    - CURRENCY
     - DB_DATABASE=solectrus
     - DB_HOST=postgresql
     - DB_PASSWORD=${POSTGRES_PASSWORD}

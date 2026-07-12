@@ -2,6 +2,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   # Fields configurable via the setup wizard or system survey
   SYSTEM_FIELDS = %w[
     timezone
+    currency
     installation_date
     app_host
     admin_password

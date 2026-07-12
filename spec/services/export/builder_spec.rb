@@ -305,6 +305,34 @@ RSpec.describe Export::Builder do
       expect(env['TZ']).to eq('Europe/Berlin')
     end
 
+    it 'writes CURRENCY=EUR by default so .env states the currency explicitly' do
+      expect(Env.load['CURRENCY']).to eq('EUR')
+    end
+
+    context 'when a common currency is configured' do
+      before do
+        configuration.update('system', { 'installation_date' => '2024-01-15',
+                                         'timezone' => 'Europe/Berlin', 'currency' => 'CHF' })
+        described_class.new(configuration).write!
+      end
+
+      it 'writes CURRENCY to .env' do
+        expect(Env.load['CURRENCY']).to eq('CHF')
+      end
+    end
+
+    context 'when a custom currency is configured' do
+      before do
+        configuration.update('system', { 'installation_date' => '2024-01-15', 'timezone' => 'Europe/Berlin',
+                                         'currency' => 'sek' })
+        described_class.new(configuration).write!
+      end
+
+      it 'emits the free-text code upcased' do
+        expect(Env.load['CURRENCY']).to eq('SEK')
+      end
+    end
+
     it 'generates secrets' do
       env = Env.load
       secrets = %w[POSTGRES_PASSWORD INFLUX_PASSWORD INFLUX_ADMIN_TOKEN INFLUX_TOKEN_READWRITE

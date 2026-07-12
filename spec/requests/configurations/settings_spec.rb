@@ -83,12 +83,13 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
     it 'creates a singleton and redirects to the advanced page' do
       post configuration_settings_path,
-           params: { setting: 'system_general', data: { timezone: 'Europe/Berlin' }.to_json }
+           params: { setting: 'system_general', data: { timezone: 'Europe/Berlin', currency: 'CHF' }.to_json }
 
       expect(response).to redirect_to(advanced_path)
 
       config = Configuration.current
       expect(config.system.timezone).to eq('Europe/Berlin')
+      expect(config.system.currency).to eq('CHF')
     end
 
     it 'persists the automatic-backup schedule in its own section' do

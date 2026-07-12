@@ -28,11 +28,9 @@ module Import
       def core_data
         dashboard_env = service_env('dashboard')
 
-        # Legacy compose files often define TZ in .env but don't reference it
-        # from the dashboard service — fall back to raw_env so the user's
-        # timezone survives the round-trip.
         {
-          'timezone' => dashboard_env['TZ'].presence || @reader.raw_env['TZ'].presence,
+          'timezone' => env_or_raw(dashboard_env, 'TZ'),
+          'currency' => env_or_raw(dashboard_env, 'CURRENCY')&.strip&.upcase,
           'installation_date' => dashboard_env['INSTALLATION_DATE'],
           # Direct raw_env (no .presence) preserves an explicit empty .env value,
           # otherwise ensure_defaults! would regenerate a random secret on every
@@ -43,6 +41,13 @@ module Import
           'network_name' => imported_network_name,
           'update_interval' => @watchtower_interval,
         }
+      end
+
+      # Prefer the value referenced by the dashboard service, but fall back to
+      # the raw .env — legacy compose files often define TZ/CURRENCY in .env
+      # without referencing them from the dashboard service.
+      def env_or_raw(dashboard_env, key)
+        dashboard_env[key].presence || @reader.raw_env[key].presence
       end
 
       # Picks up an explicit `networks: default: name:` override from the
