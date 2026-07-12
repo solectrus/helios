@@ -99,6 +99,22 @@ RSpec.describe SupportBundle::Anonymizer do
       expect(result).to include('SENEC_SYSTEM_ID=0')
     end
 
+    it 'masks Solcast site IDs while keeping distinct sites distinguishable' do
+      content = <<~ENV
+        SOLCAST_SITE=1111-2222-3333-4444
+        SOLCAST_0_SITE=1111-2222-3333-4444
+        SOLCAST_1_SITE=5555-6666-7777-8888
+      ENV
+
+      # The shared value maps to one mask, the second site to another, so
+      # support can still tell the two planes point at different sites.
+      expect(described_class.anonymize_env_style(content)).to eq(<<~ENV)
+        SOLCAST_SITE=AAAAA
+        SOLCAST_0_SITE=AAAAA
+        SOLCAST_1_SITE=BBBBB
+      ENV
+    end
+
     it 'leaves non-whitelisted keys untouched' do
       content = <<~ENV
         TZ=Europe/Berlin
@@ -270,6 +286,23 @@ RSpec.describe SupportBundle::Anonymizer do
         'forecast_longitude' => '13.00000',
         'forecast_roofs' => '1',
       )
+    end
+
+    it 'masks Solcast site IDs in the forecast section' do
+      yaml = <<~YAML
+        forecast:
+          forecast_solcast_id1: 1111-2222-3333-4444
+          forecast_solcast_id2: 5555-6666-7777-8888
+          forecast_roofs: '2'
+      YAML
+
+      parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
+
+      expect(parsed['forecast']['forecast_solcast_id1']).to match(/\A[A-Z]{5}\z/)
+      expect(parsed['forecast']['forecast_solcast_id2']).to match(/\A[A-Z]{5}\z/)
+      expect(parsed['forecast']['forecast_solcast_id1'])
+        .not_to eq(parsed['forecast']['forecast_solcast_id2'])
+      expect(parsed['forecast']['forecast_roofs']).to eq('2')
     end
 
     it 'masks database and broker secrets with consistent letters per value' do
@@ -471,6 +504,16 @@ RSpec.describe SupportBundle::Anonymizer do
       result = described_class.anonymize_text(log, redactions)
 
       expect(result).to eq("ts=2026-05-02T07:38:06+02:00 lat=52.00000 lon=13.00000\n")
+    end
+
+    it 'masks a Solcast site ID that leaks into a forecast collector URL' do
+      env_redactions = described_class.log_redactions("SOLCAST_0_SITE=1111-2222-3333-4444\n")
+      log = "  0: https://api.solcast.com.au/rooftop_sites/1111-2222-3333-4444/forecasts ... OK\n"
+
+      result = described_class.anonymize_text(log, env_redactions)
+
+      expect(result).not_to include('1111-2222-3333-4444')
+      expect(result).to include('/rooftop_sites/AAAAA/forecasts')
     end
 
     it 'masks opaque tokens that leak into log lines, consistent with the .env mask' do

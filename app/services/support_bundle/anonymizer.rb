@@ -49,7 +49,10 @@ module SupportBundle
       SENEC_USERNAME
       SHELLY_AUTH_KEY
       SHELLY_PASSWORD
+      SOLCAST_0_SITE
+      SOLCAST_1_SITE
       SOLCAST_APIKEY
+      SOLCAST_SITE
       TIBBER_TOKEN
     ].to_set.freeze
 
@@ -91,6 +94,7 @@ module SupportBundle
       'forecast' => %w[
         forecast_latitude forecast_longitude
         forecast_solar_apikey forecast_solcast_api_key forecast_pvnode_apikey
+        forecast_solcast_id1 forecast_solcast_id2
       ],
     }.freeze
 
