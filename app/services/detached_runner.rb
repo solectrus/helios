@@ -18,10 +18,17 @@ class DetachedRunner
 
   class Error < StandardError; end
 
-  # Docker-inspect is comparatively expensive, so the "is a run live?"
-  # answer is cached briefly — long enough to spare every /backups render
-  # its own probe, short enough to still feel live.
-  IN_PROGRESS_CACHE_TTL = 3.seconds
+  # Docker-inspect (an `Open3.capture2e('docker', 'inspect', ...)` subprocess)
+  # is comparatively expensive, and /backups probes both the backup and the
+  # restore container on every render — plus every 3 s while the auto-reload
+  # poll runs during an operation. Liveness no longer rides on this TTL: the
+  # Docker events listener invalidates the cache the moment the sidecar
+  # starts or exits (HeliosOperationBroadcaster), and run_container!
+  # invalidates on launch. The TTL is only a fallback for the window when no
+  # events subscriber is connected, so it can be generous — a value equal to
+  # the poll interval just guarantees a cold cache on most polls, spawning two
+  # docker subprocesses per tick on slow hosts (e.g. Raspberry Pi).
+  IN_PROGRESS_CACHE_TTL = 10.seconds
 
   # Local sidecar directory bind-mounted into every runner as `/runtime`.
   # Phase markers (and any other short-lived control files HELIOS reads
