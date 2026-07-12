@@ -1,113 +1,9 @@
 import { Controller } from '@hotwired/stimulus';
-import { Model, surveyLocalization, FunctionFactory } from 'survey-core';
-import { BorderlessDark } from 'survey-core/themes';
+import type { Model } from 'survey-core';
+import { loadSurveyRuntime } from '../utils/survey_loader';
 import { readLocale } from '../utils/preferences_cookie';
 import { prefersReducedMotion } from '../utils/prefers_reduced_motion';
 import { loadingSpinner } from '../utils/loading_spinner';
-
-// SurveyJS sets these as inline CSS variables on the root element, beating
-// any stylesheet rule. Merged into BorderlessDark in one applyTheme() call so
-// vars we don't redefine (e.g. --sjs-general-backcolor-dark for readonly
-// inputs) keep their dark-theme value.
-const HELIOS_THEME = {
-  ...BorderlessDark,
-  cssVariables: {
-    ...BorderlessDark.cssVariables,
-    '--sjs-font-family': 'var(--font-sans)',
-    '--sjs-font-questiontitle-family': 'var(--font-sans)',
-    '--sjs-font-pagetitle-family': 'var(--font-sans)',
-    '--sjs-font-surveytitle-family': 'var(--font-sans)',
-    '--sjs-font-editorfont-family': 'var(--font-sans)',
-
-    // Survey root + body sit on the page color (base-200) so the area below
-    // the gold ribbon reads as a single dark slab — same tone as the page
-    // behind the modal. Only the question cards lift to base-100 (raised
-    // tiles) and inputs go a step lighter on top of that.
-    '--sjs-general-backcolor': 'var(--color-base-200)',
-    '--sjs-general-backcolor-dim': 'var(--color-base-200)',
-    '--sjs-general-backcolor-dim-light': 'var(--color-base-100)',
-    '--sjs-general-backcolor-dim-dark':
-      'color-mix(in oklab, var(--color-base-100) 88%, white)',
-    '--sjs-question-background': 'var(--color-base-100)',
-    '--sjs-editor-background':
-      'color-mix(in oklab, var(--color-base-100) 84%, white)',
-
-    '--sjs-general-forecolor':
-      'color-mix(in oklab, var(--color-base-content) 92%, transparent)',
-    '--sjs-general-forecolor-light':
-      'color-mix(in oklab, var(--color-base-content) 60%, transparent)',
-    '--sjs-general-dim-forecolor': 'var(--color-base-content)',
-    '--sjs-general-dim-forecolor-light':
-      'color-mix(in oklab, var(--color-base-content) 70%, transparent)',
-
-    '--sjs-primary-backcolor': 'var(--color-primary)',
-    '--sjs-primary-backcolor-dark':
-      'color-mix(in oklab, var(--color-primary) 88%, black)',
-    '--sjs-primary-backcolor-light':
-      'color-mix(in oklab, var(--color-primary) 18%, transparent)',
-    '--sjs-primary-forecolor': 'var(--color-primary-content)',
-    '--sjs-primary-forecolor-light':
-      'color-mix(in oklab, var(--color-primary-content) 60%, transparent)',
-
-    '--sjs-border-light':
-      'color-mix(in oklab, var(--color-base-content) 18%, transparent)',
-    '--sjs-border-default':
-      'color-mix(in oklab, var(--color-base-content) 26%, transparent)',
-    '--sjs-border-inside':
-      'color-mix(in oklab, var(--color-base-content) 20%, transparent)',
-    '--sjs-corner-radius': '0.625rem',
-    // BorderlessDark ships with base-unit 8px which inflates every padding
-    // and gap. Drop to 6px so questions feel like form fields, not posters.
-    '--sjs-base-unit': '6px',
-
-    '--sjs-special-red': 'var(--color-error)',
-    '--sjs-special-red-forecolor': 'var(--color-error-content)',
-    '--sjs-special-green': 'var(--color-success)',
-    '--sjs-special-blue': 'var(--color-info)',
-    '--sjs-special-yellow': 'var(--color-warning)',
-
-    '--sjs-shadow-small': 'none',
-    '--sjs-shadow-medium': 'none',
-    '--sjs-shadow-large': 'none',
-    '--sjs-shadow-inner': 'none',
-  },
-};
-
-// Import Survey.JS UI (side-effect: registers UI components)
-import 'survey-js-ui';
-
-// Register German translations (Yes/No buttons, validation messages, etc.)
-import 'survey-core/i18n/german';
-
-// HELIOS uses informal "Du", but survey-core/i18n/german ships with formal
-// "Sie". Patch the strings the user is most likely to see (validation +
-// commonly-rendered prompts) so surveys match the rest of the UI.
-Object.assign(surveyLocalization.locales.de, {
-  requiredError: 'Bitte beantworte diese Frage.',
-  requiredErrorInPanel: 'Bitte beantworte mindestens eine Frage.',
-  requiredInAllRowsError: 'Bitte beantworte alle Fragen.',
-  minSelectError: 'Bitte wähle mindestens {0} Antwort(en) aus.',
-  maxSelectError: 'Bitte wähle nicht mehr als {0} Antwort(en) aus.',
-  minRowCountError: 'Bitte mach in mindestens {0} Zeilen eine Eingabe.',
-  textMinLength: 'Bitte gib mindestens {0} Zeichen ein.',
-  textMaxLength: 'Bitte gib nicht mehr als {0} Zeichen ein.',
-  textMinMaxLength: 'Bitte gib mindestens {0} und maximal {1} Zeichen ein.',
-  invalidEmail: 'Bitte gib eine gültige E-Mail-Adresse ein.',
-  incompletePatternError:
-    'Bitte fülle den Wert aus, um dem erforderlichen Format zu entsprechen.',
-  commentText: 'Bitte hinterlasse einen Kommentar',
-  ratingOptionsCaption: 'Tippe hier, um zu bewerten...',
-});
-
-// Survey expression helper: true when any value of a matrix-style answer
-// object equals `token`. The Software survey uses it so the Watchtower
-// interval question unlocks only when a service runs on the "develop" channel.
-function anyValueEquals(params: unknown[]): boolean {
-  const [answers, token] = params;
-  if (!answers || typeof answers !== 'object') return false;
-  return Object.values(answers as Record<string, unknown>).includes(token);
-}
-FunctionFactory.Instance.register('anyValueEquals', anyValueEquals);
 
 // Connection-test labels shown before the server replies (the result message
 // itself comes back localized from the server). Kept here because they belong
@@ -208,12 +104,16 @@ export default class extends Controller<HTMLElement> {
   private async initSurvey() {
     this.showLoading();
 
-    const response = await fetch(this.urlValue);
-    const surveyJson = await response.json();
+    // Fetch the survey JSON while the SurveyJS runtime chunk downloads in
+    // parallel — the spinner covers both.
+    const [{ Model, theme }, surveyJson] = await Promise.all([
+      loadSurveyRuntime(),
+      fetch(this.urlValue).then((response) => response.json()),
+    ]);
     if (!this.element.isConnected) return;
 
     this.survey = new Model(surveyJson);
-    this.survey.applyTheme(HELIOS_THEME);
+    this.survey.applyTheme(theme);
 
     // Built-in progress bar is replaced by a CSS underline driven by
     // --survey-progress (see updateProgress).

@@ -24,6 +24,11 @@ declare module '@rails/actioncable' {
   export function createConsumer(url?: string): Consumer;
 }
 
+// survey-core ships locale bundles as side-effect-only ES modules without
+// type declarations. Imported dynamically in survey_loader.ts, so declare it
+// as an untyped module to satisfy the type checker.
+declare module 'survey-core/i18n/german';
+
 // Dummy declaration for Turbo 8
 declare module '@hotwired/turbo' {
   export class FrameElement extends HTMLElement {
