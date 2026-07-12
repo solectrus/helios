@@ -99,10 +99,21 @@ module Export
       def provider_vars
         case configuration.forecast.forecast
         when 'forecast.solar' then forecast_solar_vars
-        when 'solcast' then %w[SOLCAST_APIKEY SOLCAST_SITE]
+        when 'solcast' then solcast_vars
         when 'pvnode' then pvnode_vars
         else []
         end
+      end
+
+      # Mirrors Export::Env::Forecast#solcast_entries: for multiple roofs the
+      # collector reads per-plane SOLCAST_<i>_SITE and falls back to SOLCAST_SITE
+      # only when a plane's var is absent. Compose must forward the indexed vars,
+      # otherwise every plane collapses onto SOLCAST_SITE (see issue #307).
+      def solcast_vars
+        roofs = (configuration.forecast.forecast_roofs || 1).to_i
+        vars = %w[SOLCAST_APIKEY SOLCAST_SITE]
+        vars += %w[SOLCAST_0_SITE SOLCAST_1_SITE] if roofs > 1
+        vars
       end
 
       def forecast_solar_vars

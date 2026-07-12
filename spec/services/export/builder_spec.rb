@@ -1319,6 +1319,46 @@ RSpec.describe Export::Builder do
       expect(env['SOLCAST_APIKEY']).to eq('solcast-key')
       expect(env['SOLCAST_SITE']).to eq('site-123')
     end
+
+    it 'lists SOLCAST_SITE (single roof) in the compose environment' do
+      compose = Compose.load
+      forecast = compose.services.find('forecast-collector')
+
+      expect(forecast.environment).to include('SOLCAST_APIKEY', 'SOLCAST_SITE')
+      expect(forecast.environment).not_to include('SOLCAST_0_SITE', 'SOLCAST_1_SITE')
+    end
+  end
+
+  describe 'with solcast multi-roof forecast configured' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'solcast',
+                             'forecast_roofs' => '2',
+                             'forecast_solcast_api_key' => 'solcast-key',
+                             'forecast_solcast_id1' => 'site-east',
+                             'forecast_solcast_id2' => 'site-west',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'writes per-plane site IDs to .env' do
+      env = Env.load
+      expect(env['SOLCAST_0_SITE']).to eq('site-east')
+      expect(env['SOLCAST_1_SITE']).to eq('site-west')
+    end
+
+    # Regression for issue #307: without the indexed vars in the compose
+    # environment, every plane falls back to SOLCAST_SITE inside the collector,
+    # doubling the first roof's forecast.
+    it 'forwards the per-plane site IDs in the compose environment' do
+      compose = Compose.load
+      forecast = compose.services.find('forecast-collector')
+
+      expect(forecast.environment).to include('SOLCAST_0_SITE', 'SOLCAST_1_SITE')
+    end
   end
 
   describe 'with pvnode forecast configured' do
