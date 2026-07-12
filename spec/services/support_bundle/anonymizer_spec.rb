@@ -75,8 +75,8 @@ RSpec.describe SupportBundle::Anonymizer do
 
     it 'reuses the same letter when a value repeats across lines' do
       content = <<~ENV
-        INFLUX_TOKEN=NWD3vfbwdz8kKXiz
-        INFLUX_TOKEN_WRITE=NWD3vfbwdz8kKXiz
+        INFLUX_TOKEN=example-influx-token
+        INFLUX_TOKEN_WRITE=example-influx-token
       ENV
 
       result = described_class.anonymize_env_style(content)
@@ -437,7 +437,7 @@ RSpec.describe SupportBundle::Anonymizer do
       <<~ENV
         FORECAST_LATITUDE=52.51627
         FORECAST_LONGITUDE=13.37774
-        INFLUX_TOKEN=NWD3vfbwdz8kKXiz
+        INFLUX_TOKEN=example-influx-token
         SENEC_PASSWORD=s3cretpw
         TZ=Europe/Berlin
         # SOLCAST_APIKEY=commented-out
@@ -474,9 +474,9 @@ RSpec.describe SupportBundle::Anonymizer do
     end
 
     it 'masks opaque tokens that leak into log lines, consistent with the .env mask' do
-      env_redactions = described_class.log_redactions("INFLUX_TOKEN=NWD3vfbwdz8kKXiz\n")
-      env_mask = described_class.mask('NWD3vfbwdz8kKXiz')
-      log = "POST /api/v2/write Authorization=Token NWD3vfbwdz8kKXiz failed\n"
+      env_redactions = described_class.log_redactions("INFLUX_TOKEN=example-influx-token\n")
+      env_mask = described_class.mask('example-influx-token')
+      log = "POST /api/v2/write Authorization=Token example-influx-token failed\n"
 
       result = described_class.anonymize_text(log, env_redactions)
 

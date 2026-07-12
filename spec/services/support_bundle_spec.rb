@@ -84,18 +84,18 @@ RSpec.describe SupportBundle do
     it 'scrubs coordinates and secrets from container logs' do
       File.write(
         File.join(data_path, '.env'),
-        "FORECAST_LATITUDE=52.51627\nFORECAST_LONGITUDE=13.37774\nINFLUX_TOKEN=NWD3vfbwdz8kKXiz\n",
+        "FORECAST_LATITUDE=52.51627\nFORECAST_LONGITUDE=13.37774\nINFLUX_TOKEN=example-influx-token\n",
       )
       allow(SupportBundle::ContainerLogs).to receive(:collect).and_return(
         'logs/forecast-collector.log' =>
           "fetching https://api.forecast.solar/estimate/52.51627/13.37774/29\n" \
-          "Authorization=Token NWD3vfbwdz8kKXiz\n",
+          "Authorization=Token example-influx-token\n",
       )
 
       log = entries['logs/forecast-collector.log']
       expect(log).not_to include('52.51627')
       expect(log).not_to include('13.37774')
-      expect(log).not_to include('NWD3vfbwdz8kKXiz')
+      expect(log).not_to include('example-influx-token')
       expect(log).to include('forecast.solar/estimate/52.00000/13.00000/29')
       expect(log).to match(/Authorization=Token [A-Z]{5}/)
     end
