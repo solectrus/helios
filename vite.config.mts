@@ -24,9 +24,18 @@ export default defineConfig(() => ({
       output: {
         codeSplitting: {
           groups: [
+            // survey-core and highlight.js are only reached via dynamic
+            // import() (survey_controller / stack_preview_controller), so
+            // giving each its own group keeps them out of the eagerly-loaded
+            // vendor chunk — they load on demand on the few pages that use
+            // them. Order matters: specific groups must precede the catch-all.
             {
               test: /node_modules\/survey/,
               name: 'survey',
+            },
+            {
+              test: /node_modules\/highlight\.js/,
+              name: 'highlight',
             },
             {
               test: /node_modules/,
