@@ -204,4 +204,64 @@ RSpec.describe Orchestration::Container do
       )
     end
   end
+
+  # Guards the cold-cache coalescing in fetch_all_containers: the lazy-loaded
+  # /services page fires N row requests at once, and without the lock each
+  # would run its own Docker::Container.all on a cold cache.
+  describe 'cold-cache coalescing' do
+    # A real store (the suite default is :null_store, which never caches, so
+    # the second thread could never see the first's result).
+    let(:memory_cache) { ActiveSupport::Cache::MemoryStore.new }
+
+    # A named, marshalable stand-in for the raw Docker::Container — MemoryStore
+    # marshals its entries, and RSpec doubles carry singleton methods that
+    # can't be dumped (real Docker::Container objects can).
+    let(:raw_class) { stub_const('FakeRawContainer', Struct.new(:id, :info, :json)) }
+    let(:raw_container) do
+      raw_class.new(
+        'abc123def456',
+        {
+          'Labels' => {
+            'com.docker.compose.project' => 'solectrus',
+            'com.docker.compose.service' => 'dashboard',
+          },
+        },
+        {},
+      )
+    end
+
+    before do
+      allow(Rails).to receive(:cache).and_return(memory_cache)
+      allow(Orchestration::Connection).to receive(:configure!)
+    end
+
+    it 'runs Docker::Container.all once for concurrent cold reads' do
+      docker_calls = Concurrent::AtomicFixnum.new(0)
+      allow(Docker::Container).to receive(:all) do
+        docker_calls.increment
+        sleep 0.05 # hold the lock long enough for the others to queue on it
+        [raw_container]
+      end
+
+      # Concurrency is the whole point here — spawn simultaneous cold reads.
+      threads =
+        Array.new(5) do
+          Thread.new { described_class.all(project: 'solectrus') } # rubocop:disable ThreadSafety/NewThread
+        end
+
+      expect(threads.map(&:value)).to all(
+        contain_exactly(an_instance_of(described_class)),
+      )
+      expect(docker_calls.value).to eq(1)
+    end
+
+    it 'skips Docker entirely once the cache is warm' do
+      allow(Docker::Container).to receive(:all).and_return([raw_container])
+
+      described_class.all(project: 'solectrus') # cold → one call
+      described_class.all(project: 'solectrus') # warm → served from cache
+
+      expect(Docker::Container).to have_received(:all).once
+    end
+  end
 end

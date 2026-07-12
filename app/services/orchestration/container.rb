@@ -3,10 +3,21 @@ module Orchestration
     class NotFoundError < StandardError
     end
 
-    CACHE_TTL = 3.seconds
+    # The cache is primarily kept fresh by the Docker events listener, which
+    # invalidates on every state change (start/stop/health). This TTL is only a
+    # fallback for missed events (e.g. during a listener restart), so it can be
+    # generous — a short TTL just adds redundant inspects on slow hosts.
+    CACHE_TTL = 15.seconds
     LIST_CACHE_KEY = 'docker_containers'.freeze
     INSPECT_CACHE_PREFIX = 'docker_inspect'.freeze
     INSPECT_GENERATION_KEY = 'docker_inspect_generation'.freeze
+
+    # Coalesces concurrent cold-cache misses on the container list: the ~N
+    # simultaneous row requests from a lazy-loaded /services page would each
+    # run Docker::Container.all otherwise (Rails.cache.fetch does not dedupe
+    # concurrent misses). The first request fetches under the lock; the rest
+    # block briefly and then read the freshly populated cache.
+    LIST_FETCH_MUTEX = Mutex.new
 
     class << self
       def all(project: nil)
@@ -57,11 +68,18 @@ module Orchestration
       end
 
       def fetch_all_containers
-        Rails
-          .cache
-          .fetch(LIST_CACHE_KEY, expires_in: CACHE_TTL) do
-            Docker::Container.all(all: true)
-          end
+        # Fast path: serve a warm cache without contending for the lock.
+        cached = Rails.cache.read(LIST_CACHE_KEY)
+        return cached unless cached.nil?
+
+        # Slow path: coalesce so concurrent misses trigger a single Docker call.
+        LIST_FETCH_MUTEX.synchronize do
+          Rails
+            .cache
+            .fetch(LIST_CACHE_KEY, expires_in: CACHE_TTL) do
+              Docker::Container.all(all: true)
+            end
+        end
       end
     end
 
@@ -212,7 +230,7 @@ module Orchestration
     # Inspect data is cached at two levels:
     # - Per-instance memoization for repeated reads inside one render
     #   (health_status + public_port + version on the same container).
-    # - Cross-request via Rails.cache (3s TTL, versioned by INSPECT_GENERATION_KEY)
+    # - Cross-request via Rails.cache (CACHE_TTL, versioned by INSPECT_GENERATION_KEY)
     #   so the N concurrent row requests triggered by lazy-loaded /services
     #   share one inspect per container instead of each hitting the Docker API.
     #   `Container.invalidate_cache` bumps the generation, so events that mutate
