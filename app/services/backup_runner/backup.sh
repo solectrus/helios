@@ -24,14 +24,19 @@ INFLUXDB_CONTAINER="$5"
 
 OUTPUT_DIR="/output"
 RUNTIME_DIR="/runtime"
-# Intermediate dumps + config copy stay in /runtime (HELIOS-local), never on
-# /output. Two reasons: (1) on a remote destination (NAS/SMB/S3 staging)
-# writing multi-GB dumps there is wasteful — the final tar is the only
-# artifact that has to land at the destination; (2) macOS SMB creates
-# `.smbdelete*` tombstones when files are unlinked in-place, which causes
-# `rmdir` on the work dir to fail with "Directory not empty" on the next
-# run. Keeping work local sidesteps both.
-WORK_DIR="$RUNTIME_DIR/work"
+# Intermediate dumps + config copy live on the sidecar's own writable layer
+# (a plain path under `/`, not a bind mount), never on /output or /runtime.
+# Three reasons: (1) on a remote destination (NAS/SMB/S3 staging) writing
+# multi-GB dumps there is wasteful — the final tar is the only artifact that
+# has to land at the destination; (2) macOS SMB creates `.smbdelete*`
+# tombstones when files are unlinked in-place, which causes `rmdir` on the
+# work dir to fail with "Directory not empty" on the next run; (3) the
+# bundling step symlinks the InfluxDB staging dir into WORK_DIR (see below)
+# and `tar -h` dereferences it — but the /runtime bind mount is often backed
+# by a host filesystem that rejects symlink() with EPERM (notably Unraid's
+# `/mnt/user` FUSE user shares, issue #305). The container layer always
+# supports symlinks and is discarded with `--rm`, so it sidesteps all three.
+WORK_DIR="/work"
 PG_FILE="$WORK_DIR/solectrus-postgresql-backup-$BACKUP_DATE.sql.gz"
 CONFIG_DEST="$WORK_DIR/helios/config.yaml"
 # Shared bind mount: InfluxDB writes its backup directly here, and we
@@ -103,11 +108,11 @@ fi
 set_phase bundling
 cp /config.yaml "$CONFIG_DEST" || fail "Failed to copy config.yaml"
 
-# The InfluxDB backup lives on a different bind-mount (staging) than the
-# rest of the work dir (runtime), and BusyBox tar applies only the last
-# `-C` globally and lacks `-r` (append) and `--transform`. Symlink the
-# staging dir into the work dir and let `tar -h` dereference it — the
-# files land under solectrus-influxdb-backup-DATE/ in the archive
+# The InfluxDB backup lives on the staging bind-mount, separate from the
+# rest of the work dir (the sidecar's own layer), and BusyBox tar applies
+# only the last `-C` globally and lacks `-r` (append) and `--transform`.
+# Symlink the staging dir into the work dir and let `tar -h` dereference
+# it — the files land under solectrus-influxdb-backup-DATE/ in the archive
 # without ever copying multi-GB out of the staging mount.
 ln -s "$INFLUX_DIR" "$WORK_DIR/$INFLUX_NAME" \
   || fail "Failed to link InfluxDB backup into work directory"

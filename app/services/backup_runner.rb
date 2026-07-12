@@ -22,12 +22,16 @@
 #   2. backup.sh (inside the detached sidecar; positional argv)
 #      Phases written atomically to /runtime/backup-phase.txt and read
 #      back by `DetachedRunner.current_phase` on every /backups poll:
-#        :dumping_postgres → docker exec pg_dump | gzip → /runtime/work
+#        :dumping_postgres → docker exec pg_dump | gzip → /work (the
+#                            sidecar's own writable layer, not a bind
+#                            mount — the bundling symlink below needs a
+#                            filesystem that supports symlink(), which
+#                            some bind-mount backends don't; issue #305)
 #        :dumping_influx   → docker exec influx backup  → /influx-backup-staging
 #                            (shared bind mount with the InfluxDB
 #                             container; no docker-exec stdio pipe, no
 #                             gzip-on-gzip)
-#        :bundling         → symlink staging into /runtime/work, then
+#        :bundling         → symlink staging into /work, then
 #                            `tar -h -cf` the whole work dir into
 #                            /output/<file>.part; rename to final on
 #                            success. Failures land in
