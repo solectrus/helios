@@ -28,6 +28,26 @@ module SupportBundle
         ORDER BY c.relname
       SQL
 
+      # The dashboard's setup id ties a bundle to an installation. It's stored
+      # YAML-serialized in the key-value `settings` table; we read only that row
+      # (not the `setup_token` secret). Carries no personal data, so it's left
+      # un-anonymized.
+      SETUP_ID_QUERY = "SELECT value FROM settings WHERE var = 'setup_id'".freeze
+
+      # Returns the SOLECTRUS setup id as a plain string, or a short diagnostic
+      # line if it can't be read. Degrades like #tables: never raises.
+      def setup_id
+        container = Orchestration::Container.find(SERVICE)
+        return 'unknown (PostgreSQL container not running)' unless container&.running?
+
+        output, status = run_psql(container.name, SETUP_ID_QUERY)
+        return "unavailable (psql exit #{status.exitstatus})" unless status.success?
+
+        parse_setup_id(output) || 'not registered'
+      rescue StandardError => e
+        "unavailable: #{e.class}: #{e.message}"
+      end
+
       def tables
         container = Orchestration::Container.find(SERVICE)
         return 'PostgreSQL container not found.' unless container
@@ -47,11 +67,11 @@ module SupportBundle
       # PGPASSWORD comes from config.yaml so we don't depend on the postgres
       # image's default `trust` rule for local-socket connections — psql still
       # works if the user has customized pg_hba.conf.
-      def run_psql(container_name)
+      def run_psql(container_name, sql = QUERY)
         Open3.capture2e(
           'docker', 'exec', *password_env, container_name,
           'psql', '-U', POSTGRES_USER, '-d', DATABASE,
-          '-t', '-A', '-F', '|', '-c', QUERY
+          '-t', '-A', '-F', '|', '-c', sql
         )
       end
 
@@ -69,6 +89,14 @@ module SupportBundle
 
           [name, count.to_s]
         end
+      end
+
+      # The value comes back YAML-serialized (e.g. "--- 1720000000\n"). setup_id
+      # is always an integer, so grabbing the first digit run is enough and
+      # avoids a YAML.load round-trip on raw container output. Returns nil when
+      # no row exists (setup not yet registered).
+      def parse_setup_id(output)
+        output[/-?\d+/]
       end
     end
   end

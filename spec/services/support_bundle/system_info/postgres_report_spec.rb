@@ -91,4 +91,81 @@ RSpec.describe SupportBundle::SystemInfo::PostgresReport do
       expect(described_class.parse(output)).to eq([%w[foo 10], %w[bar 20]])
     end
   end
+
+  describe '.setup_id' do
+    let(:container) do
+      instance_double(Orchestration::Container, name: 'solectrus-postgresql-1', running?: true)
+    end
+    let(:configuration) do
+      instance_double(Configuration, postgresql: Configuration::Data.wrap('password' => 'secret123'))
+    end
+
+    before do
+      allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(container)
+      allow(Configuration).to receive(:current).and_return(configuration)
+    end
+
+    it 'extracts the id from the YAML-serialized settings value' do
+      status = instance_double(Process::Status, success?: true)
+      allow(Open3).to receive(:capture2e).and_return(["--- 1720000000\n", status])
+
+      expect(described_class.setup_id).to eq('1720000000')
+    end
+
+    it 'queries only the setup_id row (never setup_token)' do
+      status = instance_double(Process::Status, success?: true)
+      allow(Open3).to receive(:capture2e).and_return(['--- 42', status])
+
+      described_class.setup_id
+
+      expect(Open3).to have_received(:capture2e).with(
+        'docker', 'exec', '-e', 'PGPASSWORD=secret123', 'solectrus-postgresql-1',
+        'psql', '-U', 'postgres', '-d', 'solectrus_production',
+        '-t', '-A', '-F', '|', '-c', "SELECT value FROM settings WHERE var = 'setup_id'"
+      )
+    end
+
+    it 'reports "not registered" when the row is absent' do
+      status = instance_double(Process::Status, success?: true)
+      allow(Open3).to receive(:capture2e).and_return(["\n", status])
+
+      expect(described_class.setup_id).to eq('not registered')
+    end
+
+    it 'surfaces psql failures with the exit code' do
+      status = instance_double(Process::Status, success?: false, exitstatus: 2)
+      allow(Open3).to receive(:capture2e).and_return(['FATAL: relation "settings" does not exist', status])
+
+      expect(described_class.setup_id).to eq('unavailable (psql exit 2)')
+    end
+
+    it 'short-circuits when the container is not running' do
+      allow(container).to receive(:running?).and_return(false)
+
+      expect(described_class.setup_id).to eq('unknown (PostgreSQL container not running)')
+    end
+
+    it 'short-circuits when the container is missing' do
+      allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(nil)
+
+      expect(described_class.setup_id).to eq('unknown (PostgreSQL container not running)')
+    end
+
+    it 'degrades gracefully when Docker is unreachable' do
+      allow(Orchestration::Container).to receive(:find)
+        .and_raise(Orchestration::ConnectionError, 'socket missing')
+
+      expect(described_class.setup_id).to eq('unavailable: Orchestration::ConnectionError: socket missing')
+    end
+  end
+
+  describe '.parse_setup_id' do
+    it 'pulls the integer out of a YAML scalar' do
+      expect(described_class.parse_setup_id("--- 1720000000\n")).to eq('1720000000')
+    end
+
+    it 'returns nil for empty output' do
+      expect(described_class.parse_setup_id("\n")).to be_nil
+    end
+  end
 end

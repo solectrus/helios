@@ -52,6 +52,7 @@ module SupportBundle
       {
         'Version' => Rails.configuration.x.git.commit_version,
         'Commit time' => Rails.configuration.x.git.commit_time,
+        'Setup ID' => PostgresReport.setup_id,
         'Collected at' => Time.current.iso8601,
       }
     end
