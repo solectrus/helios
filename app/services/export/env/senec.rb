@@ -14,7 +14,8 @@ module Export
         end
         entry('SENEC_INTERVAL', senec.interval || '5', 'Polling interval in seconds')
         ignore_entry
-        entry('INFLUX_MEASUREMENT_SENEC', 'SENEC', 'InfluxDB measurement name for SENEC')
+        entry('INFLUX_MEASUREMENT_SENEC', senec.measurement.presence || 'SENEC',
+              'InfluxDB measurement name for SENEC')
       end
 
       private

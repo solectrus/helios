@@ -39,7 +39,14 @@ module Export
       end
 
       def passthrough_vars
-        %w[TZ INFLUX_ORG INFLUX_BUCKET INFLUX_MEASUREMENT_SENEC SENEC_ADAPTER SENEC_INTERVAL]
+        %w[TZ INFLUX_ORG INFLUX_BUCKET SENEC_ADAPTER SENEC_INTERVAL]
+      end
+
+      # senec-collector reads INFLUX_MEASUREMENT, not INFLUX_MEASUREMENT_SENEC —
+      # the latter is only the .env name that keeps the per-collector
+      # measurements apart. Same remapping as the forecast collector.
+      def explicit_vars
+        super + ['INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_SENEC}']
       end
 
       def adapter_vars
