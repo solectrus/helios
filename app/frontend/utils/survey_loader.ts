@@ -79,6 +79,12 @@ function buildTheme(base: ITheme): ITheme {
       '--sjs-font-surveytitle-family': 'var(--font-sans)',
       '--sjs-font-editorfont-family': 'var(--font-sans)',
 
+      // Every other font size in a survey is derived from this one via calc(),
+      // so raising the base lifts titles, descriptions, inputs and buttons
+      // together. 16px (the SurveyJS default) reads too small for forms that
+      // carry this much explanatory text.
+      '--sjs-font-size': '18px',
+
       // Survey root + body sit on the page color (base-200) so the area below
       // the gold ribbon reads as a single dark slab — same tone as the page
       // behind the modal. Only the question cards lift to base-100 (raised

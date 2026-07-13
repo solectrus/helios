@@ -63,7 +63,7 @@
       border: 1px solid var(--sjs-border-default);
       border-radius: var(--sjs-corner-radius);
       padding: 0.5rem 1rem;
-      font-size: 0.875rem;
+      font-size: 0.875em;
       font-weight: 500;
       cursor: pointer;
       transition:
@@ -81,7 +81,7 @@
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      font-size: 0.875rem;
+      font-size: 0.875em;
     }
     & .connection-test__status--ok {
       color: var(--color-success);
@@ -212,7 +212,7 @@
     }
 
     & :is(.sd-question__erbox, .sd-element__erbox) .sd-error__item {
-      font-size: 1rem;
+      font-size: 1em;
       line-height: 1.4;
     }
     & .sd-question--error :is(.sd-input, .sd-text, .sd-dropdown) {
