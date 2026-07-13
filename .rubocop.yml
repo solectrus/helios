@@ -83,6 +83,7 @@ RSpec/ExampleLength:
 RSpec/DescribeClass:
   Exclude:
     - spec/services/scenarios_spec.rb
+    - spec/services/export/service_env_contract_spec.rb
     - spec/services/import/configuration_importer/**/*_spec.rb
     - spec/system/**/*_spec.rb
 

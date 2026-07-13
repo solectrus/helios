@@ -1,0 +1,330 @@
+# Contract between HELIOS's exporters and the services they configure.
+#
+# For every managed service (Export::Compose::SERVICE_ORDER) this lists the
+# environment variables the service ACTUALLY reads — taken from its source, not
+# from its documentation. service_env_contract_spec.rb checks the exported
+# compose.yaml against it in both directions:
+#
+#   * every variable an exporter emits is one the service reads
+#   * every variable the service needs is emitted
+#
+# This is what catches the class of bug where both sides drift apart silently:
+# a collector that defaults an unknown variable (importing to the wrong
+# measurement), or one that reads a name HELIOS never writes.
+#
+# `reads`      — exact variable names the service consumes
+# `patterns`   — dynamically built names (glob), e.g. MAPPING_0_TOPIC
+# `requires`   — must always be emitted; the service fails or misbehaves without it
+# `tolerated`  — knowingly emitted but never read (with a reason); keeps the
+#                gap visible instead of silently widening the `reads` list
+#
+# When a service gains or loses a variable upstream, update it here.
+
+dashboard:
+  upstream: solectrus/config/application.rb, config/database.yml, app/lib/sensor/config.rb
+  reads:
+    - TZ
+    - APP_HOST
+    - FRAME_ANCESTORS
+    - PLAUSIBLE_URL
+    - HONEYBADGER_API_KEY
+    - RORVSWILD_API_KEY
+    - CO2_EMISSION_FACTOR
+    - CURRENCY
+    - INFLUX_SCHEMA
+    - INFLUX_HOST
+    - INFLUX_PORT
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+    - INFLUX_TOKEN
+    - INFLUX_EXCLUDE_FROM_HOUSE_POWER
+    - INSTALLATION_DATE
+    - ADMIN_PASSWORD
+    - LOCKUP_CODEWORD
+    - UI_THEME
+    - SKIP_BROWSER_CHECK
+    - REDIS_URL
+    - DB_HOST
+    - DB_PORT
+    - DB_USER
+    - DB_PASSWORD
+    - RAILS_MAX_THREADS
+    - RAILS_LOG_LEVEL
+    - PORT
+    - ASSET_HOST
+    - FORCE_SSL
+    - TRUSTED_PROXY_RANGES
+    - SECRET_KEY_BASE # read by Rails itself, not by app code
+    - WEB_CONCURRENCY # read by Puma itself (worker count), not by puma.rb
+  patterns:
+    - INFLUX_SENSOR_* # app/lib/sensor/config.rb — one per sensor in the registry
+  requires:
+    - INFLUX_HOST
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+    - DB_HOST
+    - DB_USER
+    - DB_PASSWORD
+
+ingest:
+  upstream: ingest/app/lib/influx_writer.rb, app/lib/sensor_env_config.rb
+  reads:
+    - TZ
+    - INFLUX_HOST
+    - INFLUX_PORT
+    - INFLUX_SCHEMA
+    - INFLUX_ORG # unused by ingest itself, but harmless; see notes below
+    - INFLUX_BUCKET
+    - INFLUX_EXCLUDE_FROM_HOUSE_POWER
+    - RETENTION_HOURS
+    - STATS_PASSWORD
+    - APP_ENV
+  patterns:
+    - INFLUX_SENSOR_* # app/lib/sensor_env_config.rb KEYS
+  requires:
+    - INFLUX_HOST
+  # Ingest authenticates each write with the token the caller passes in the
+  # Authorization header, so it deliberately gets no INFLUX_TOKEN.
+
+mqtt-collector:
+  upstream: mqtt-collector/lib/config.rb
+  reads:
+    - TZ
+    - MQTT_HOST
+    - MQTT_PORT
+    - MQTT_SSL
+    - MQTT_USERNAME
+    - MQTT_PASSWORD
+    - INFLUX_HOST
+    - INFLUX_PORT
+    - INFLUX_SCHEMA
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+  patterns:
+    - MAPPING_*
+  requires:
+    - MQTT_HOST
+    - MQTT_PORT # env.fetch without a fallback — absent means KeyError
+    - INFLUX_HOST
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+
+senec-collector:
+  upstream: senec-collector/lib/config.rb
+  reads:
+    - TZ
+    - SENEC_ADAPTER
+    - SENEC_HOST
+    - SENEC_SCHEMA
+    - SENEC_LANGUAGE
+    - SENEC_INTERVAL
+    - SENEC_IGNORE
+    - SENEC_REQUEST_MODE
+    - SENEC_USERNAME
+    - SENEC_PASSWORD
+    - SENEC_TOTP_URI
+    - SENEC_SYSTEM_ID
+    - INFLUX_HOST
+    - INFLUX_PORT
+    - INFLUX_SCHEMA
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+    - INFLUX_MEASUREMENT # NOT INFLUX_MEASUREMENT_SENEC — that is the .env name only
+  requires:
+    - INFLUX_HOST
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+
+forecast-collector:
+  upstream: forecast-collector/app/config.rb, app/config/*.rb
+  reads:
+    - TZ
+    - FORECAST_PROVIDER
+    - FORECAST_CONFIGURATIONS
+    - FORECAST_INTERVAL
+    - FORECAST_LATITUDE
+    - FORECAST_LONGITUDE
+    - FORECAST_DECLINATION
+    - FORECAST_AZIMUTH
+    - FORECAST_KWP
+    - FORECAST_DAMPING_MORNING
+    - FORECAST_DAMPING_EVENING
+    - FORECAST_INVERTER # kilowatts, not watts
+    - FORECAST_HORIZON
+    - FORECAST_SOLAR_APIKEY
+    - SOLCAST_SITE
+    - SOLCAST_APIKEY
+    - PVNODE_SITE_ID
+    - PVNODE_APIKEY
+    - PVNODE_PAID
+    - PVNODE_EXTRA_PARAMS
+    - INFLUX_HOST
+    - INFLUX_PORT
+    - INFLUX_SCHEMA
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+    - INFLUX_MEASUREMENT
+  patterns:
+    - FORECAST_*_LATITUDE
+    - FORECAST_*_LONGITUDE
+    - FORECAST_*_DECLINATION
+    - FORECAST_*_AZIMUTH
+    - FORECAST_*_KWP
+    - FORECAST_*_DAMPING_MORNING
+    - FORECAST_*_DAMPING_EVENING
+    - FORECAST_*_INVERTER
+    - FORECAST_*_HORIZON
+    - SOLCAST_*_SITE
+    - PVNODE_*_EXTRA_PARAMS
+  requires:
+    - INFLUX_HOST
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+
+shelly-collector:
+  upstream: shelly-collector/lib/config.rb
+  reads:
+    - TZ
+    - SHELLY_HOST
+    - SHELLY_PASSWORD
+    - SHELLY_CLOUD_SERVER
+    - SHELLY_DEVICE_ID
+    - SHELLY_AUTH_KEY
+    - SHELLY_INTERVAL
+    - SHELLY_INVERT_POWER
+    - INFLUX_HOST
+    - INFLUX_PORT
+    - INFLUX_SCHEMA
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+    - INFLUX_MEASUREMENT
+    - INFLUX_MODE
+    - INFLUX_POWER_DATA_TYPE
+  requires:
+    - INFLUX_HOST
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+
+power-splitter:
+  upstream: power-splitter/lib/config.rb
+  reads:
+    - TZ
+    - INSTALLATION_DATE
+    - POWER_SPLITTER_INTERVAL
+    - INFLUX_HOST
+    - INFLUX_PORT
+    - INFLUX_SCHEMA
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+    - INFLUX_EXCLUDE_FROM_HOUSE_POWER
+    - REDIS_URL
+    - DB_HOST
+    - DB_USER
+    - DB_PASSWORD
+  patterns:
+    # The splitter only knows grid_import_power, house_power, heatpump_power,
+    # wallbox_power, battery_charging_power and custom_power_01..20
+    # (lib/config.rb SENSOR_NAMES). HELIOS emits the whole sensor block; the
+    # extra names are simply ignored, so they stay tolerated rather than
+    # tightening the exporter and risking a sensor the splitter does need.
+    - INFLUX_SENSOR_*
+  requires:
+    - INFLUX_SENSOR_GRID_IMPORT_POWER # Config::Error without it
+    - INFLUX_SENSOR_HOUSE_POWER # Config::Error without it
+    - INFLUX_HOST
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+  tolerated:
+    # HELIOS wires the splitter to Postgres via DB_PASSWORD=${POSTGRES_PASSWORD};
+    # the bare POSTGRES_PASSWORD passthrough is what that reference resolves to.
+    - POSTGRES_PASSWORD
+
+# csv-importer is not a compose service — CsvImportRunner starts it with
+# `docker run -e`. Checked separately by the spec.
+csv-importer:
+  upstream: csv-importer/app/config.rb
+  reads:
+    - TZ
+    - IMPORT_FOLDER
+    - IMPORT_PAUSE
+    - SENEC_IGNORE
+    - INFLUX_HOST
+    - INFLUX_PORT
+    - INFLUX_SCHEMA
+    - INFLUX_TOKEN
+    - INFLUX_TOKEN_WRITE
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+    - INFLUX_OPEN_TIMEOUT
+    - INFLUX_READ_TIMEOUT
+    - INFLUX_WRITE_TIMEOUT
+    - INFLUX_SENSOR_INVERTER_POWER
+    - INFLUX_SENSOR_HOUSE_POWER
+    - INFLUX_SENSOR_GRID_IMPORT_POWER
+    - INFLUX_SENSOR_GRID_EXPORT_POWER
+    - INFLUX_SENSOR_BATTERY_CHARGING_POWER
+    - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
+    - INFLUX_SENSOR_BATTERY_SOC
+
+# Third-party images: the variables come from the upstream image, not from a
+# SOLECTRUS source we can read. Listed so a new service cannot slip past the
+# spec unnoticed, but only checked for unknown names.
+influxdb:
+  upstream: docker.io/influxdb (entrypoint)
+  third_party: true
+  reads:
+    - TZ
+    - DOCKER_INFLUXDB_INIT_MODE
+    - DOCKER_INFLUXDB_INIT_USERNAME
+    - DOCKER_INFLUXDB_INIT_PASSWORD
+    - DOCKER_INFLUXDB_INIT_ORG
+    - DOCKER_INFLUXDB_INIT_BUCKET
+    - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+
+postgresql:
+  upstream: docker.io/postgres (entrypoint)
+  third_party: true
+  reads:
+    - TZ
+    - POSTGRES_DB
+    - POSTGRES_PASSWORD
+    - POSTGRES_USER
+
+redis:
+  upstream: docker.io/redis
+  third_party: true
+  reads:
+    - TZ
+
+traefik:
+  upstream: docker.io/traefik (configured via CLI flags and labels, not env)
+  third_party: true
+  reads:
+    - TZ
+
+watchtower:
+  upstream: nickfedor/watchtower
+  third_party: true
+  reads:
+    - TZ
+    - WATCHTOWER_CLEANUP
+    - WATCHTOWER_POLL_INTERVAL
+    - WATCHTOWER_SCOPE
+
+helios:
+  upstream: this app (config/application.rb, config/environments/production.rb)
+  reads:
+    - TZ
+    - ADMIN_PASSWORD
+    - SECRET_KEY_BASE
+    - FORCE_SSL
