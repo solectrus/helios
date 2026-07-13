@@ -1,12 +1,12 @@
-@import '@fontsource-variable/geist/index.css';
-@import '@fontsource-variable/geist-mono/index.css';
+@import '@fontsource-variable/inter/index.css';
+@import '@fontsource-variable/roboto-mono/index.css';
 
 @theme {
   --font-sans:
-    'Geist Variable', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Inter Variable', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
     'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
   --font-mono:
-    'Geist Mono Variable', ui-monospace, SFMono-Regular, 'SF Mono', Menlo,
+    'Roboto Mono Variable', ui-monospace, SFMono-Regular, 'SF Mono', Menlo,
     Consolas, 'Liberation Mono', monospace;
 }
 
@@ -14,7 +14,9 @@ html {
   font-feature-settings:
     'ss01' on,
     'cv11' on;
-  font-variant-numeric: tabular-nums;
+  /* No global tabular-nums: Inter widens the hyphen to a digit's width under
+     tnum, which spaces out compounds like "SENEC-Collector". Components that
+     need aligned digits carry the `tabular-nums` utility themselves. */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
