@@ -48,7 +48,8 @@ module Export
         optional_entry('FORECAST_DAMPING_EVENING', fcast.forecast_damping_evening,
                        'Damping factor for evening hours')
         optional_entry('FORECAST_HORIZON', fcast.forecast_horizon, 'Forecast horizon in hours')
-        optional_entry('FORECAST_INVERTER', fcast.forecast_inverter, 'Inverter efficiency factor')
+        optional_entry('FORECAST_INVERTER', fcast.forecast_inverter,
+                       'Maximum inverter power in kW (forecast.solar caps the forecast at this value)')
       end
 
       def roof_entries(fcast)

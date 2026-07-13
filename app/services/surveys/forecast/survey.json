@@ -750,8 +750,12 @@
           "name": "forecast_inverter",
           "visibleIf": "{forecast} = 'forecast.solar'",
           "title": {
-            "de": "Maximale Wechselrichterleistung in Watt (optional)",
-            "default": "Maximum inverter power in watts (optional)"
+            "de": "Maximale Wechselrichterleistung in Kilowatt (optional)",
+            "default": "Maximum inverter power in kilowatts (optional)"
+          },
+          "description": {
+            "de": "Kilowatt, nicht Watt: Ein 8-kW-Wechselrichter wird als 8 eingetragen.",
+            "default": "Kilowatts, not watts: an 8 kW inverter is entered as 8."
           },
           "inputType": "number",
           "min": 0
