@@ -37,14 +37,16 @@
           "type": "text",
           "name": "mqtt_port",
           "title": {
-            "de": "Port (optional)",
-            "default": "Port (optional)"
+            "de": "Port",
+            "default": "Port"
           },
           "description": {
-            "de": "Standard: 1883 (oder 8883 bei SSL)",
-            "default": "Default: 1883 (or 8883 with SSL)"
+            "de": "Üblich: 1883, bei SSL 8883",
+            "default": "Typically 1883, or 8883 with SSL"
           },
-          "inputType": "number"
+          "inputType": "number",
+          "isRequired": true,
+          "defaultValue": 1883
         },
         {
           "type": "boolean",

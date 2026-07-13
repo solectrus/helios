@@ -87,7 +87,7 @@ module Export
       # installations typically look.
       def collectors_only_environment
         vars = ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS.dup
-        vars += %w[TZ INFLUX_ORG INFLUX_BUCKET MQTT_HOST]
+        vars += %w[TZ INFLUX_ORG INFLUX_BUCKET MQTT_HOST MQTT_PORT]
         vars << influx_token_write_var
         vars += optional_vars
         vars + raw_mapping_vars
@@ -98,11 +98,13 @@ module Export
       end
 
       def passthrough_vars
-        %w[TZ INFLUX_ORG INFLUX_BUCKET MQTT_HOST]
+        %w[TZ INFLUX_ORG INFLUX_BUCKET MQTT_HOST MQTT_PORT]
       end
 
+      # MQTT_PORT is not among these: Export::Env::Mqtt always emits it (with
+      # a default), because the collector has no fallback for it.
       def optional_vars
-        %w[mqtt_port mqtt_ssl mqtt_username mqtt_password].filter_map do |field|
+        %w[mqtt_ssl mqtt_username mqtt_password].filter_map do |field|
           field.upcase if mqtt_config.send(field).present?
         end
       end

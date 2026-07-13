@@ -2,16 +2,19 @@ module Export
   class Env
     class Mqtt < Section
       OPTIONAL_ENTRIES = {
-        'mqtt_port' => ['MQTT_PORT', 'MQTT broker port'],
         'mqtt_ssl' => ['MQTT_SSL', 'Enable SSL for MQTT connection'],
         'mqtt_username' => ['MQTT_USERNAME', 'MQTT broker username'],
         'mqtt_password' => ['MQTT_PASSWORD', 'MQTT broker password'],
       }.freeze
 
+      # mqtt-collector reads MQTT_PORT via `env.fetch('MQTT_PORT')` — without a
+      # fallback, so an omitted variable crash-loops it. The survey field is
+      # mandatory for exactly that reason; MQTT_PORT is exported unconditionally.
       def call
         mqtt = configuration.mqtt
         env.add_section('MQTT broker')
         entry('MQTT_HOST', mqtt.mqtt_host, 'MQTT broker hostname')
+        entry('MQTT_PORT', mqtt.mqtt_port, 'MQTT broker port')
         OPTIONAL_ENTRIES.each do |field, (key, comment)|
           value = mqtt.send(field)
           entry(key, value, comment) if value.present?
