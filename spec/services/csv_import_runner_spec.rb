@@ -82,6 +82,26 @@ RSpec.describe CsvImportRunner do
       expect(cmd).to include('-e', 'INFLUX_SENSOR_INVERTER_POWER=MYSENEC:inverter_power')
     end
 
+    # The importer defaults every unset mapping to SENEC:*, so a name it does
+    # not recognize is not an error — it silently imports to the wrong
+    # measurement. These are the names it reads (csv-importer/app/config.rb).
+    it 'passes through the battery mappings under the names the importer reads' do
+      File.write(File.join(data_path, '.env'),
+                 "INFLUX_ORG=acme\nINFLUX_BUCKET=s\nINFLUX_TOKEN_WRITE=w\n" \
+                 "INFLUX_SENSOR_BATTERY_CHARGING_POWER=MYSENEC:bat_power_plus\n" \
+                 "INFLUX_SENSOR_BATTERY_DISCHARGING_POWER=MYSENEC:bat_power_minus\n" \
+                 "INFLUX_SENSOR_BATTERY_SOC=MYSENEC:bat_fuel_charge\n")
+
+      described_class.start
+
+      cmd = open3_calls.find { |args| args.first == 'docker' && args[1] == 'run' }
+      aggregate_failures do
+        expect(cmd).to include('-e', 'INFLUX_SENSOR_BATTERY_CHARGING_POWER=MYSENEC:bat_power_plus')
+        expect(cmd).to include('-e', 'INFLUX_SENSOR_BATTERY_DISCHARGING_POWER=MYSENEC:bat_power_minus')
+        expect(cmd).to include('-e', 'INFLUX_SENSOR_BATTERY_SOC=MYSENEC:bat_fuel_charge')
+      end
+    end
+
     it 'passes SENEC_IGNORE when set in .env' do
       File.write(File.join(data_path, '.env'),
                  "INFLUX_ORG=a\nINFLUX_BUCKET=b\nINFLUX_TOKEN_WRITE=t\nSENEC_IGNORE=case_temp\n")

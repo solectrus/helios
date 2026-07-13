@@ -40,14 +40,18 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
   EXTRA_COLLECTORS_ONLY_INFLUX_KEYS = %w[INFLUX_HOST].freeze
 
   # Passed through so historical points land on the same measurement+field
-  # pairs the dashboard already reads.
+  # pairs the dashboard already reads. Names must match what the importer
+  # actually reads (csv-importer/app/config.rb#sensors_from_env) — it falls
+  # back to the SENEC defaults for anything it doesn't recognize, so a typo
+  # here silently imports to the wrong measurement instead of failing.
   SENSOR_MAPPING_KEYS = %w[
     INFLUX_SENSOR_INVERTER_POWER
     INFLUX_SENSOR_HOUSE_POWER
     INFLUX_SENSOR_GRID_IMPORT_POWER
     INFLUX_SENSOR_GRID_EXPORT_POWER
-    INFLUX_SENSOR_BATTERY_CHARGE_POWER
-    INFLUX_SENSOR_BATTERY_DISCHARGE_POWER
+    INFLUX_SENSOR_BATTERY_CHARGING_POWER
+    INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
+    INFLUX_SENSOR_BATTERY_SOC
   ].freeze
 
   class << self
