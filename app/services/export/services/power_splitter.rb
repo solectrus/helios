@@ -45,7 +45,7 @@ module Export
       private
 
       def power_splitter_environment
-        passthrough_vars + explicit_vars + sensor_environment
+        passthrough_vars + explicit_vars + optional_vars + sensor_environment
       end
 
       # Variables passed through from .env (name only)
@@ -54,6 +54,15 @@ module Export
           TZ INSTALLATION_DATE INFLUX_ORG INFLUX_BUCKET
           POSTGRES_PASSWORD POWER_SPLITTER_INTERVAL
         ]
+      end
+
+      # The splitter subtracts the excluded consumers from house_power before
+      # dividing the grid draw (power-splitter/lib/splitter.rb#custom_power_total).
+      # Without this it divides by a house_power that still contains them.
+      def optional_vars
+        vars = []
+        vars << 'INFLUX_EXCLUDE_FROM_HOUSE_POWER' if configuration.excluded_from_house_power.any?
+        vars
       end
 
       # Variables with service-specific values (internal Docker references, remappings)
