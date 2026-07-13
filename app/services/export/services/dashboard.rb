@@ -62,7 +62,6 @@ module Export
           DB_HOST=postgresql
           DB_USER=postgres
           DB_PASSWORD=${POSTGRES_PASSWORD}
-          DB_DATABASE=solectrus
         ]
       end
 
