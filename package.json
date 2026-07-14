@@ -25,8 +25,8 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@herb-tools/formatter": "^0.10.1",
-    "@herb-tools/linter": "^0.10.1",
+    "@herb-tools/formatter": "^0.10.2",
+    "@herb-tools/linter": "^0.10.2",
     "@size-limit/file": "^12.1.0",
     "@tailwindcss/vite": "^4.3.2",
     "daisyui": "^5.6.18",
