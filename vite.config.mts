@@ -30,7 +30,7 @@ export default defineConfig(() => ({
             // vendor chunk — they load on demand on the few pages that use
             // them. Order matters: specific groups must precede the catch-all.
             {
-              test: /node_modules\/survey/,
+              test: /node_modules\/survey|utils\/survey_theme/,
               name: 'survey',
             },
             {

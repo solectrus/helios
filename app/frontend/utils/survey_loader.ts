@@ -1,6 +1,6 @@
 import type { Model, ITheme } from 'survey-core';
 
-// Lazily loads the SurveyJS runtime (survey-core + survey-js-ui, ~349 KB gzip)
+// Lazily loads the SurveyJS runtime (survey-core + survey-js-ui, ~360 KB gzip)
 // so it is only downloaded on pages that actually render a survey — not on
 // every page via the eager Stimulus controller glob. The heavy imports live
 // behind dynamic import() calls that Rolldown splits into an async chunk,
@@ -22,7 +22,7 @@ export function loadSurveyRuntime(): Promise<SurveyRuntime> {
 async function initRuntime(): Promise<SurveyRuntime> {
   const [core, { BorderlessDark }] = await Promise.all([
     import('survey-core'),
-    import('survey-core/themes'),
+    import('./survey_theme'),
     // Side-effect imports: register UI components + German translations.
     import('survey-js-ui'),
     import('survey-core/i18n/german'),
