@@ -2011,8 +2011,7 @@ RSpec.describe Export::Builder do
     it 'keeps dashboard pointing at InfluxDB directly' do
       compose = Compose.load
       dashboard = compose.services.find('dashboard')
-      expect(dashboard.environment).to include('INFLUX_HOST=influxdb')
-      expect(dashboard.environment).not_to include(a_string_starting_with('INFLUX_PORT='))
+      expect(dashboard.environment).to include('INFLUX_HOST=influxdb', 'INFLUX_PORT=8086')
     end
 
     it 'keeps power-splitter pointing at InfluxDB directly' do
@@ -2022,8 +2021,7 @@ RSpec.describe Export::Builder do
 
       compose = Compose.load
       splitter = compose.services.find('power-splitter')
-      expect(splitter.environment).to include('INFLUX_HOST=influxdb')
-      expect(splitter.environment).not_to include(a_string_starting_with('INFLUX_PORT='))
+      expect(splitter.environment).to include('INFLUX_HOST=influxdb', 'INFLUX_PORT=8086')
     end
 
     context 'when a forecast collector is also configured' do

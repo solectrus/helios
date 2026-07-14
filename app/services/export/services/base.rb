@@ -87,6 +87,17 @@ module Export
         configuration.ingest_required? ? :ingest : :influxdb
       end
 
+      # Full InfluxDB endpoint for a service on a local stack, spelled out
+      # rather than left to each image's built-in defaults: a default that
+      # changes upstream would silently point the container somewhere else.
+      # Host and port stay out of .env because they differ per service (a
+      # collector may write to Ingest instead of InfluxDB), and the schema is
+      # always http — TLS is terminated at the reverse proxy, never
+      # container-to-container.
+      def influx_endpoint_vars(host = Influxdb.service_name, port = Influxdb::CONTAINER_PORT)
+        ["INFLUX_HOST=#{host}", "INFLUX_PORT=#{port}", 'INFLUX_SCHEMA=http']
+      end
+
       # Container's INFLUX_TOKEN binds to the role-specific write token so
       # collectors don't get admin or read access.
       def influx_token_write_var
@@ -97,9 +108,17 @@ module Export
         if configuration.collectors_only?
           ConfigSchema::INFLUXDB_EXTERNAL_ENV_KEYS + [influx_token_write_var]
         else
-          vars = ["INFLUX_HOST=#{collector_influx_target}", influx_token_write_var]
-          vars << "INFLUX_PORT=#{Ingest::PORT}" if collector_influx_target == :ingest
-          vars
+          local_influx_endpoint_vars + [influx_token_write_var]
+        end
+      end
+
+      # Where a collector writes to on a local stack: InfluxDB itself, or Ingest
+      # (own port) when it recalculates house_power on the way in.
+      def local_influx_endpoint_vars
+        if collector_influx_target == :ingest
+          influx_endpoint_vars(Ingest.service_name, Ingest::PORT)
+        else
+          influx_endpoint_vars
         end
       end
 

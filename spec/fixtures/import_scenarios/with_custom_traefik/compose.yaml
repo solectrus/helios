@@ -39,6 +39,8 @@ services:
     - INFLUX_BUCKET
     - INFLUX_HOST=influxdb
     - INFLUX_ORG
+    - INFLUX_PORT=8086
+    - INFLUX_SCHEMA=http
     - INFLUX_TOKEN=${INFLUX_TOKEN_READ}
     - INSTALLATION_DATE
     - REDIS_URL=redis://redis:6379/1

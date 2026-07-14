@@ -53,11 +53,11 @@ module Export
         ]
       end
 
-      # Variables with service-specific values (internal Docker references, remappings)
+      # Variables with service-specific values (internal Docker references, remappings).
+      # The dashboard reads straight from InfluxDB, never through Ingest (which is write-only).
       def explicit_vars
-        %w[
+        influx_endpoint_vars + %w[
           REDIS_URL=redis://redis:6379/1
-          INFLUX_HOST=influxdb
           INFLUX_TOKEN=${INFLUX_TOKEN_READ}
           DB_HOST=postgresql
           DB_USER=postgres

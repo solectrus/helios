@@ -58,7 +58,7 @@ module Export
       # routes/write.rb + influx_writer.rb), so an env token would be dead config.
       # STATS_PASSWORD reuses ADMIN_PASSWORD so the Ingest stats dashboard shares admin auth.
       def explicit_vars
-        ['INFLUX_HOST=influxdb', 'STATS_PASSWORD=${ADMIN_PASSWORD}']
+        influx_endpoint_vars + ['STATS_PASSWORD=${ADMIN_PASSWORD}']
       end
 
       def optional_vars
