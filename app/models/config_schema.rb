@@ -101,6 +101,12 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   # Four roles — admin (init/backup), readwrite (power-splitter), write
   # (collectors), read (dashboard) — kept as distinct fields so a stack with
   # privilege-separated authorizations round-trips losslessly.
+  #
+  # Note the four lambdas below do NOT yield four different tokens for a stack
+  # HELIOS generates itself: Export::Builder#link_influxdb_tokens! collapses
+  # them onto one shared value right after resolution, because InfluxDB only
+  # lets us dictate the admin token (see the comment there). Distinct values
+  # survive only when they came in from an import.
   INFLUXDB_DEFAULTS = {
     'image' => DockerImages.current(:INFLUXDB),
     'org' => 'solectrus',
