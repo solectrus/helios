@@ -18,7 +18,11 @@ module AboutHelper
 
     html = Commonmarker.to_html(
       markdown.to_s,
-      options: { render: { escape: true, unsafe: false } },
+      options: {
+        # Disable heading anchors/ids; we render clean prose without them.
+        extension: { header_ids: nil },
+        render: { escape: true, unsafe: false },
+      },
     )
     transform_html(html).html_safe # rubocop:disable Rails/OutputSafety
   end
@@ -41,9 +45,6 @@ module AboutHelper
     fragment = Nokogiri::HTML5.fragment(html)
     # Drop the first H1 entirely — the surrounding section already has one.
     fragment.at_css('h1')&.remove
-    # Commonmarker injects anchor links inside every heading. Strip them
-    # before adding our own classes, otherwise they'd be styled as user links.
-    fragment.css('a.anchor').each(&:remove)
     # Demote ## headings one level since the page already has h1 + h2.
     fragment.css('h2').each { |node| node.name = 'h3' }
 
