@@ -805,7 +805,7 @@
     },
     {
       "name": "p_forecast_measurement",
-      "visibleIf": "{forecast} anyof ['forecast.solar', 'solcast']",
+      "visibleIf": "{forecast} anyof ['forecast.solar', 'solcast', 'pvnode']",
       "title": {
         "de": "InfluxDB-Measurement",
         "default": "InfluxDB measurement"
@@ -827,8 +827,7 @@
             "default": "All forecast sensors use the same measurement. Changing this later is very difficult, as previously written data remains permanently tied to this name."
           },
           "defaultValue": "forecast",
-          "isRequired": true,
-          "visibleIf": "{forecast} anyof ['forecast.solar', 'solcast', 'pvnode']"
+          "isRequired": true
         }
       ]
     }
