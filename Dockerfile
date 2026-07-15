@@ -4,13 +4,13 @@
 # Skip the builder's Bootsnap precompile: a ~45 MB cache, regenerated at runtime.
 ARG SKIP_BOOTSNAP_PRECOMPILE=1
 
-FROM ghcr.io/ledermann/rails-base-builder:4.0.5-alpine AS builder
+FROM ghcr.io/ledermann/rails-base-builder:4.0.6-alpine AS builder
 
 # Remove some files not needed in resulting image.
 # Because they are required for building the image, they can't be added to .dockerignore
 RUN rm -r package.json vite.config.mts tsconfig.json
 
-FROM ghcr.io/ledermann/rails-base-final:4.0.5-alpine
+FROM ghcr.io/ledermann/rails-base-final:4.0.6-alpine
 LABEL maintainer="georg@ledermann.dev"
 LABEL org.opencontainers.image.description="HELIOS — knows your SOLECTRUS configuration better than you do"
 
