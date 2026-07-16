@@ -1350,14 +1350,21 @@ RSpec.describe Export::Builder do
       expect(env['SOLCAST_1_SITE']).to eq('site-west')
     end
 
-    # Regression for issue #307: without the indexed vars in the compose
-    # environment, every plane falls back to SOLCAST_SITE inside the collector,
-    # doubling the first roof's forecast.
+    # SOLCAST_SITE is the collector's fallback for an absent plane var, so
+    # alongside the indexed vars it only duplicates roof 1's ID.
+    it 'omits the legacy SOLCAST_SITE from .env' do
+      expect(Env.load.key?('SOLCAST_SITE')).to be(false)
+    end
+
+    # Without the indexed vars in the compose environment, every plane falls
+    # back to SOLCAST_SITE inside the collector, doubling the first roof's
+    # forecast.
     it 'forwards the per-plane site IDs in the compose environment' do
       compose = Compose.load
       forecast = compose.services.find('forecast-collector')
 
       expect(forecast.environment).to include('SOLCAST_0_SITE', 'SOLCAST_1_SITE')
+      expect(forecast.environment).not_to include('SOLCAST_SITE')
     end
   end
 

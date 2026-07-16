@@ -116,14 +116,19 @@ module Export
         end
       end
 
+      # Single roof uses the legacy SOLCAST_SITE; multiple roofs use the
+      # per-plane SOLCAST_<i>_SITE. SOLCAST_SITE is only the collector's
+      # fallback for an absent plane var, so emitting it alongside the indexed
+      # vars just duplicates roof 1's ID in the .env.
       def solcast_entries(fcast)
         roofs = (fcast.forecast_roofs || 1).to_i
         entry('SOLCAST_APIKEY', fcast.forecast_solcast_api_key, 'Solcast API key')
-        entry('SOLCAST_SITE', fcast.forecast_solcast_id1, 'Solcast site ID')
-        return unless roofs > 1
-
-        entry('SOLCAST_0_SITE', fcast.forecast_solcast_id1, 'Solcast site 1 ID')
-        entry('SOLCAST_1_SITE', fcast.forecast_solcast_id2, 'Solcast site 2 ID')
+        if roofs > 1
+          entry('SOLCAST_0_SITE', fcast.forecast_solcast_id1, 'Solcast site 1 ID')
+          entry('SOLCAST_1_SITE', fcast.forecast_solcast_id2, 'Solcast site 2 ID')
+        else
+          entry('SOLCAST_SITE', fcast.forecast_solcast_id1, 'Solcast site ID')
+        end
       end
 
       def pvnode_entries(fcast)

@@ -285,7 +285,6 @@ services:
     - SOLCAST_0_SITE
     - SOLCAST_1_SITE
     - SOLCAST_APIKEY
-    - SOLCAST_SITE
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
