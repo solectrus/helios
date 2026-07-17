@@ -7,7 +7,7 @@
       "dependencies": {
         "@fontsource-variable/inter": "^5.2.8",
         "@fontsource-variable/roboto-mono": "^5.2.9",
-        "@fortawesome/fontawesome-free": "^7.3.0",
+        "@fortawesome/fontawesome-free": "^7.3.1",
         "@hotwired/stimulus": "^3.2.2",
         "@hotwired/turbo-rails": "^8.0.23",
         "@rails/actioncable": "^8.1.300",
@@ -68,7 +68,7 @@
 
     "@fontsource-variable/roboto-mono": ["@fontsource-variable/roboto-mono@5.2.9", "", {}, "sha512-OzFO2AXlSGcXl/NcXS3CGjImb6rczCByPJ1C+Dzp9kkYOrUPyrGTuAtqPcmA/d+nZGX5oyOWKXLk5BrwVLYqkw=="],
 
-    "@fortawesome/fontawesome-free": ["@fortawesome/fontawesome-free@7.3.0", "", {}, "sha512-Yw4Qa43P6e4Xwh0TwEUkHQNRJInWaqIBo73VJmns3j2AIlZPAvUcR4yGIxCPqPRCgyJ5KIVIalF/I1GxhZ/Kgw=="],
+    "@fortawesome/fontawesome-free": ["@fortawesome/fontawesome-free@7.3.1", "", {}, "sha512-wmglKKPDIkgV3aWlZzWECCPoGIkYCulzBwxG9+w7rc5BGapZ6cPMpoPOT8k36J0Ni7PPX6c/rsoMWfS4d1MUMg=="],
 
     "@herb-tools/config": ["@herb-tools/config@0.10.2", "", { "dependencies": { "@herb-tools/core": "0.10.2", "picomatch": "^4.0.5", "tinyglobby": "^0.2.16", "yaml": "^2.9.0" } }, "sha512-hNyNpspNoeiwO7VEorXrr827byq8hCMk6jP24X5d/RAVoVlzlRssqux5zDu3d8MG69J+Zb4EN3hkPDiVhkkELw=="],
 
