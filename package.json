@@ -36,7 +36,7 @@
     "happy-dom": "^20.10.6",
     "playwright": "^1.61.1",
     "prettier": "^3.9.5",
-    "prettier-plugin-tailwindcss": "^0.8.0",
+    "prettier-plugin-tailwindcss": "^0.8.1",
     "rails-vite-plugin": "^0.2.5",
     "size-limit": "^12.1.0",
     "tailwindcss": "^4.3.2",
