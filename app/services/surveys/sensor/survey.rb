@@ -27,6 +27,55 @@ module Surveys
       ),
     }.freeze
 
+    # Custom sensors are part of the house power by default; deducting them
+    # promotes them to their own segment in the energy flow.
+    CUSTOM_HINT_EN = <<~HTML.freeze
+      <p>Normally <strong>No</strong> is the right choice here: the sensor
+      measures a consumer inside the house, and its consumption is already
+      part of the house power.</p>
+      <p><strong>Yes</strong> is only for the rare case that this consumer
+      should deliberately not count as house power, for example a separately
+      billed granny flat. Its measured consumption is then deducted from the
+      house power and shown as a separate segment in the energy flow.</p>
+    HTML
+    private_constant :CUSTOM_HINT_EN
+
+    CUSTOM_HINT_DE = <<~HTML.freeze
+      <p>Normalerweise ist hier <strong>Nein</strong> richtig: Der Sensor
+      misst einen Verbraucher im Haus, dessen Verbrauch ohnehin zum
+      Hausverbrauch gehört.</p>
+      <p><strong>Ja</strong> ist nur für den Ausnahmefall gedacht, dass
+      dieser Verbraucher bewusst nicht als Hausverbrauch gelten soll, etwa
+      eine separat abgerechnete Einliegerwohnung. Der gemessene Verbrauch
+      wird dann vom Hausverbrauch abgezogen und erscheint als eigenes
+      Segment in der Strombilanz.</p>
+    HTML
+    private_constant :CUSTOM_HINT_DE
+
+    # For wallbox and heat pump the setting only decides whether their
+    # consumption is double-counted in the house power.
+    FIXED_HINT_EN = <<~HTML.freeze
+      <p>This setting only decides whether the consumption of this consumer
+      is additionally contained in the house power.</p>
+      <p><strong>Yes</strong> if the house power already includes this
+      consumer. The measured consumption is then deducted so that it is not
+      counted twice.</p>
+      <p><strong>No</strong> if the house power is measured separately and
+      does not contain this consumer at all.</p>
+    HTML
+    private_constant :FIXED_HINT_EN
+
+    FIXED_HINT_DE = <<~HTML.freeze
+      <p>Diese Einstellung entscheidet nur, ob der Verbrauch dieses
+      Verbrauchers zusätzlich im Hausverbrauch steckt.</p>
+      <p><strong>Ja</strong>, wenn der Hausverbrauch diesen Verbraucher schon
+      mitzählt. Der gemessene Verbrauch wird dann abgezogen, damit er nicht
+      doppelt zählt.</p>
+      <p><strong>Nein</strong>, wenn der Hausverbrauch separat gemessen wird
+      und diesen Verbraucher gar nicht enthält.</p>
+    HTML
+    private_constant :FIXED_HINT_DE
+
     # Tailors the generic sensor survey to a specific sensor: filters the
     # source choices, locks measurement/field for fixed-source collectors,
     # and injects optional pages based on what the sensor supports.
@@ -179,7 +228,20 @@ module Surveys
           'name' => 'p_house_power',
           'visibleIf' => "{source} = 'shelly' or {source} = 'mqtt' or {source} = 'external'",
           'title' => self.class.localized(en: 'House power', de: 'Hausverbrauch'),
-          'elements' => [house_power_element],
+          'elements' => [house_power_hint_element, house_power_element],
+        }
+      end
+
+      def house_power_hint_element
+        {
+          'type' => 'html',
+          'name' => 'house_power_hint',
+          'html' =>
+            if custom_power_sensor?
+              self.class.localized(en: CUSTOM_HINT_EN, de: CUSTOM_HINT_DE)
+            else
+              self.class.localized(en: FIXED_HINT_EN, de: FIXED_HINT_DE)
+            end,
         }
       end
 
@@ -191,12 +253,23 @@ module Surveys
             en: 'Deduct from house power',
             de: 'Aus Hausverbrauch herausrechnen',
           ),
-          'description' => self.class.localized(
-            en: "Corrects house power by deducting this sensor's consumption",
-            de: 'Korrigiert den Hausverbrauch, indem der Verbrauch dieses Sensors abgezogen wird',
-          ),
+          'description' => house_power_description,
           'defaultValue' => false,
         }
+      end
+
+      def house_power_description
+        if custom_power_sensor?
+          self.class.localized(
+            en: "Only in exceptional cases: deducts this sensor's consumption from the house power",
+            de: 'Nur in Ausnahmefällen: Zieht den Verbrauch dieses Sensors vom Hausverbrauch ab',
+          )
+        else
+          self.class.localized(
+            en: 'Prevents double counting if the house power already includes this consumer',
+            de: 'Verhindert doppelte Zählung, wenn der Hausverbrauch diesen Verbraucher schon enthält',
+          )
+        end
       end
 
       def inject_balcony_page!(data)
