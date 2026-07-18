@@ -1,0 +1,82 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 4
+system:
+  admin_password: my-admin-password
+  app_host: localhost
+  installation_date: '2022-12-23'
+  secret_key_base: my-secret-key-base
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:15-alpine
+  password: my-secret-db-password
+  volume_path: "/var/lib/docker/solectrus/postgresql"
+influxdb:
+  bucket: my-solectrus-bucket
+  image: influxdb:2.5-alpine
+  org: solectrus
+  password: my-influx-password
+  token_admin: my-super-secret-admin-token
+  token_read: my-super-secret-admin-token
+  token_readwrite: my-super-secret-admin-token
+  token_write: my-super-secret-admin-token
+  volume_path: "/var/lib/docker/solectrus/influxdb"
+redis:
+  image: redis:7-alpine
+  volume_path: "/var/lib/docker/solectrus/redis"
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: forecast.solar
+  forecast_azimuth1: '90'
+  forecast_declination1: '35'
+  forecast_interval: '900'
+  forecast_kwp1: '12'
+  forecast_latitude: '52.5'
+  forecast_longitude: '13.4'
+  forecast_roofs: '1'
+  image: ghcr.io/solectrus/forecast-collector:latest
+senec:
+  adapter: local
+  host: 192.168.33.82
+  interval: '5'
+  schema: https
+  version: v3
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  grid_export_limit:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    source: senec
+  inverter_power_forecast:
+    field: watt
+    measurement: Forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_power:
+    source: senec
+helios:
+  image: ghcr.io/solectrus/helios:latest
