@@ -27,5 +27,40 @@ RSpec.describe Orchestration::StatusBarBroadcaster do
       expect(captured).to include('data-locale="de"')
       expect(captured).not_to match(/data-locale="(de|en)" hidden/)
     end
+
+    # Regression: the events listener, ComposeJob and request threads broadcast
+    # concurrently. When a thread that read the older status finished rendering
+    # after a thread that read the newer one, its stale HTML won and the bar was
+    # stuck on "starting" until a full page reload.
+    it 'never publishes stale HTML after a newer broadcast' do
+      status = Concurrent::AtomicReference.new('starting')
+      published = Concurrent::Array.new
+
+      reading_old_status = Queue.new
+
+      # The thread that read the *old* status renders slowest, so unsynchronized
+      # it would publish last and win.
+      allow(ApplicationController).to receive(:render) do
+        html = status.get
+        if html == 'starting'
+          reading_old_status << true
+          sleep 0.3
+        end
+        html
+      end
+      allow(Turbo::StreamsChannel).to receive(:broadcast_replace_to) do |*, **kwargs|
+        published << kwargs[:html]
+      end
+
+      # rubocop:disable ThreadSafety/NewThread -- the race is the subject here
+      slow = Thread.new { described_class.new.broadcast }
+      reading_old_status.pop
+      status.set('ok')
+      fast = Thread.new { described_class.new.broadcast }
+      # rubocop:enable ThreadSafety/NewThread
+      [slow, fast].each(&:join)
+
+      expect(published.last).to eq('ok')
+    end
   end
 end
