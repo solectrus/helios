@@ -149,7 +149,7 @@ GEM
       excon (>= 0.64.0)
       multi_json
     drb (2.2.3)
-    erb (6.0.5)
+    erb (6.0.6)
     erubi (1.13.1)
     excon (1.6.0)
       logger
