@@ -108,16 +108,16 @@ Regenerate with `bin/rake licenses:generate`.
 
 ## JavaScript Packages
 
-| Package                           | License                         |
-| --------------------------------- | ------------------------------- |
-| `@fontsource-variable/geist`      | OFL-1.1                         |
-| `@fontsource-variable/geist-mono` | OFL-1.1                         |
-| `@fortawesome/fontawesome-free`   | (CC-BY-4.0 AND OFL-1.1 AND MIT) |
-| `@hotwired/stimulus`              | MIT                             |
-| `@hotwired/turbo`                 | MIT                             |
-| `@hotwired/turbo-rails`           | MIT                             |
-| `@rails/actioncable`              | MIT                             |
-| `highlight.js`                    | BSD-3-Clause                    |
-| `stimulus-vite-helpers`           | MIT                             |
-| `survey-core`                     | MIT                             |
-| `survey-js-ui`                    | MIT                             |
+| Package                            | License                         |
+| ---------------------------------- | ------------------------------- |
+| `@fontsource-variable/inter`       | OFL-1.1                         |
+| `@fontsource-variable/roboto-mono` | OFL-1.1                         |
+| `@fortawesome/fontawesome-free`    | (CC-BY-4.0 AND OFL-1.1 AND MIT) |
+| `@hotwired/stimulus`               | MIT                             |
+| `@hotwired/turbo`                  | MIT                             |
+| `@hotwired/turbo-rails`            | MIT                             |
+| `@rails/actioncable`               | MIT                             |
+| `highlight.js`                     | BSD-3-Clause                    |
+| `stimulus-vite-helpers`            | MIT                             |
+| `survey-core`                      | MIT                             |
+| `survey-js-ui`                     | MIT                             |

@@ -9,14 +9,14 @@ for the summary.
 
 Regenerate with `bin/rake licenses:generate`.
 
-## @fontsource-variable/geist
+## @fontsource-variable/inter
 
-- Version: 5.2.9
+- Version: 5.3.0
 - License: OFL-1.1
-- Homepage: https://fontsource.org/fonts/geist
+- Homepage: https://fontsource.org/fonts/inter
 
 ```
-Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font) Geist-Italic[wght].ttf: Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font)
+Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter) Inter-Italic[opsz,wght].ttf: Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
@@ -111,14 +111,14 @@ FROM, OUT OF THE USE OR INABILITY TO USE THE FONT SOFTWARE OR FROM
 OTHER DEALINGS IN THE FONT SOFTWARE.
 ```
 
-## @fontsource-variable/geist-mono
+## @fontsource-variable/roboto-mono
 
-- Version: 5.2.8
+- Version: 5.3.0
 - License: OFL-1.1
-- Homepage: https://fontsource.org/fonts/geist-mono
+- Homepage: https://fontsource.org/fonts/roboto-mono
 
 ```
-Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font.git) GeistMono-Italic[wght].ttf: Copyright 2024 The Geist Project Authors (https://github.com/vercel/geist-font.git)
+Copyright 2015 The Roboto Mono Project Authors (https://github.com/googlefonts/robotomono) RobotoMono-Italic[wght].ttf: Copyright 2015 The Roboto Mono Project Authors (https://github.com/googlefonts/robotomono)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:
@@ -215,7 +215,7 @@ OTHER DEALINGS IN THE FONT SOFTWARE.
 
 ## @fortawesome/fontawesome-free
 
-- Version: 7.3.0
+- Version: 7.3.1
 - License: (CC-BY-4.0 AND OFL-1.1 AND MIT)
 - Homepage: https://fontawesome.com
 
@@ -547,7 +547,7 @@ Source: https://github.com/ElMassimo/stimulus-vite-helpers
 
 ## survey-core
 
-- Version: 2.5.33
+- Version: 2.5.34
 - License: MIT
 - Homepage: https://surveyjs.io/
 
@@ -577,7 +577,7 @@ SOFTWARE.
 
 ## survey-js-ui
 
-- Version: 2.5.33
+- Version: 2.5.34
 - License: MIT
 - Homepage: https://surveyjs.io/
 
