@@ -2,11 +2,6 @@
 
 Web-based control panel for [SOLECTRUS](https://solectrus.de). HELIOS installs the SOLECTRUS stack on your Docker host and lets you configure and operate it through a browser, replacing manual edits to `compose.yaml` / `.env` and `docker compose` commands.
 
-> [!NOTE]
-> **Pre-1.0**
->
-> HELIOS is stable enough for production use. As a pre-1.0 release it is still evolving, so expect occasional rough edges and end-user documentation that is not yet complete.
-
 ## Screenshots
 
 |                                  Configuration                                  |                               Services                                |
@@ -103,7 +98,6 @@ On the first visit to `http://<your-host>:3999`:
 | [Docker Integration](docs/architecture/docker.md) | Compose, volumes, health checks            |
 | [ADRs](docs/adr/)                                 | Architecture Decision Records              |
 | [Development Guide](docs/guides/development.md)   | Local setup, testing                       |
-| [Open TODOs](docs/todos.md)                       | Work items still ahead                     |
 
 ## License
 

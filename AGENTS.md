@@ -11,7 +11,7 @@ Rails 8.1 web-based management tool for SOLECTRUS Docker hosts. Removes the need
 
 ## Documentation
 
-See `docs/README.md` for the full map. Key entry points: `docs/product.md`, `docs/architecture/`, `docs/guides/development.md`, `docs/adr/`, `docs/todos.md`.
+See `docs/README.md` for the full map. Key entry points: `docs/product.md`, `docs/architecture/`, `docs/guides/development.md`, `docs/adr/`.
 
 ## External References
 

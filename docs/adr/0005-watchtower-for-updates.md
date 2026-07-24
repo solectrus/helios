@@ -32,6 +32,6 @@ Use Watchtower (`nickfedor/watchtower:latest`) for automatic container updates.
 
 - Own services use `latest` (intentional, Watchtower updates them)
 - Third-party services pin major version (e.g., `postgres:18-alpine`)
-- A manual "Update now" trigger in HELIOS is planned (see [docs/todos.md](../todos.md))
+- A manual "Update now" trigger in HELIOS is conceivable, but not implemented
 
 Watchtower is always part of the generated stack (see [docs/architecture/docker.md](../architecture/docker.md)).

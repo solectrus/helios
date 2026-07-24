@@ -20,9 +20,3 @@ Three kinds of documents live here:
 | [architecture/docker.md](architecture/docker.md)     | Docker integration, generated files, health checks |
 | [guides/development.md](guides/development.md)       | Local setup, workflow, test strategy               |
 | [adr/](adr/README.md)                                | Architecture Decision Records                      |
-
-### 3. What's left to do
-
-| Document             | Description                      |
-| -------------------- | -------------------------------- |
-| [todos.md](todos.md) | Open work items, grouped by area |
