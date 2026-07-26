@@ -114,7 +114,7 @@ module Orchestration
             tail.to_s,
             service.to_s,
           )
-        io = IO.popen(cmd, err: %i[child out])
+        io = IO.popen(::Env.spawn_overrides, cmd, err: %i[child out])
 
         [io, io.pid]
       end
@@ -128,7 +128,7 @@ module Orchestration
 
         cmd = compose_base_command + ['exec', '-T', service.to_s, *command.map(&:to_s)]
         capture_opts = stdin_data ? { stdin_data: } : {}
-        stdout, stderr, status = Open3.capture3(*cmd, **capture_opts)
+        stdout, stderr, status = Open3.capture3(::Env.spawn_overrides, *cmd, **capture_opts)
         [stdout, stderr, status.exitstatus]
       end
 
@@ -145,7 +145,7 @@ module Orchestration
         Tempfile.create('helios-exec-stderr') do |stderr_file|
           redirects = { err: stderr_file.path, out: out_path || ::File::NULL }
           redirects[:in] = in_path if in_path
-          pid = Process.spawn(*cmd, **redirects)
+          pid = Process.spawn(::Env.spawn_overrides, *cmd, **redirects)
           _, status = Process.waitpid2(pid)
           [::File.read(stderr_file.path), status.exitstatus]
         end
@@ -164,7 +164,7 @@ module Orchestration
         args = %w[run --rm --no-deps -T]
         args.push('--entrypoint', entrypoint.to_s) if entrypoint
         cmd = compose_base_command + args + [service.to_s, *command.map(&:to_s)]
-        stdout, stderr, status = Open3.capture3(*cmd)
+        stdout, stderr, status = Open3.capture3(::Env.spawn_overrides, *cmd)
         [stdout, stderr, status.exitstatus]
       end
 
@@ -242,7 +242,7 @@ module Orchestration
         validate_data_path!
 
         cmd = build_compose_command(*args)
-        output, status = Open3.capture2e(*cmd)
+        output, status = Open3.capture2e(::Env.spawn_overrides, *cmd)
 
         raise_command_error(args.first, output, status) unless status.success?
 

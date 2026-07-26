@@ -157,7 +157,11 @@ module Import
         FileUtils.cp(@compose_path, File.join(tmpdir, 'compose.yaml'))
         FileUtils.cp(@env_path, File.join(tmpdir, '.env')) if File.exist?(@env_path)
 
+        # Without the overrides, HELIOS' own TZ/ADMIN_PASSWORD/SECRET_KEY_BASE
+        # would outrank the adopted stack's .env and get imported as if they
+        # were the user's values (see Env.spawn_overrides).
         stdout, stderr, status = Open3.capture3(
+          ::Env.spawn_overrides(@env_path),
           'docker', 'compose', 'config', '--format', 'json',
           chdir: tmpdir
         )

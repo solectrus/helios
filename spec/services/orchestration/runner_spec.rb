@@ -356,4 +356,52 @@ RSpec.describe Orchestration::Runner do
       end
     end
   end
+
+  describe '.config_hashes' do
+    # Compose resolves the bare `environment: - KEY` form from the process
+    # environment before it consults --env-file. HELIOS' own container carries
+    # an ADMIN_PASSWORD frozen at creation time, which used to shadow .env: the
+    # hash never moved, so a password change was invisible to the drift
+    # detection and the service was never flagged for restart.
+    before do
+      skip_without_docker
+
+      File.write(File.join(data_path, 'compose.yaml'), <<~YAML)
+        name: helios-test
+        services:
+          dashboard:
+            image: alpine:latest
+            environment:
+            - ADMIN_PASSWORD
+      YAML
+    end
+
+    around do |example|
+      previous = ENV.fetch('ADMIN_PASSWORD', nil)
+      example.run
+    ensure
+      ENV['ADMIN_PASSWORD'] = previous
+    end
+
+    def hash_for(password)
+      File.write(File.join(data_path, '.env'), "ADMIN_PASSWORD=#{password}\n")
+      described_class.config_hashes.fetch('dashboard')
+    end
+
+    it 'reflects a changed .env value despite a stale process environment' do
+      ENV['ADMIN_PASSWORD'] = 'frozen-at-container-creation'
+
+      expect(hash_for('first')).not_to eq(hash_for('second'))
+    end
+
+    it 'ignores the value inherited from the process environment' do
+      ENV['ADMIN_PASSWORD'] = 'stale-a'
+      with_stale_a = hash_for('current')
+
+      ENV['ADMIN_PASSWORD'] = 'stale-b'
+      with_stale_b = hash_for('current')
+
+      expect(with_stale_a).to eq(with_stale_b)
+    end
+  end
 end
