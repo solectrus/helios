@@ -60,6 +60,7 @@ Scenarios A and B can coexist (e.g. SENEC collector for the inverter + ioBroker 
 ### Updates
 
 - `Watchtower` is part of the generated stack and updates all images automatically, including HELIOS itself.
+- The update check runs either on an interval (`WATCHTOWER_POLL_INTERVAL`) or daily at a fixed local time (`WATCHTOWER_SCHEDULE`, a 6-field cron). The software survey picks one; Watchtower rejects both at once. See `WatchtowerSchedule`.
 - Image versioning strategy: own services track `latest` (Watchtower-managed), third-party services pin a major version. See [architecture/docker.md](architecture/docker.md#image-versioning-strategy).
 
 ### Backup

@@ -151,6 +151,7 @@ module Import
       @system_extractor ||= SystemExtractor.new(
         @reader,
         watchtower_interval: watchtower_extractor.interval,
+        watchtower_schedule: watchtower_extractor.schedule,
       )
     end
 

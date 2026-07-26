@@ -408,7 +408,7 @@ de:
         description: 'Admin-Passwort und Zugangscode für die Weboberfläche'
       software:
         title: 'Software-Stand'
-        description: 'Stable oder Develop pro Dienst und Watchtower-Prüfintervall'
+        description: 'Stable oder Develop pro Dienst, dazu der Zeitpunkt der Update-Prüfung'
       dashboard_co2:
         title: 'CO₂-Faktor'
         description: 'Strommix für die CO₂-Einsparungsberechnung'

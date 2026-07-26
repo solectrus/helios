@@ -119,4 +119,79 @@ RSpec.describe 'Import::ConfigurationImporter watchtower interval' do
       expect(importer.result[:system]).to include('update_interval' => '86400')
     end
   end
+
+  context 'when WATCHTOWER_SCHEDULE is set in .env' do
+    let(:raw_env) { { 'WATCHTOWER_SCHEDULE' => '0 30 4 * * *' } }
+
+    it 'imports it as a fixed daily update time' do
+      expect(importer.result[:system]).to include('update_mode' => 'time', 'update_time' => '04:30')
+    end
+
+    it 'does not surface the variable as unmanaged' do
+      expect(importer.result[:unmanaged]).to be_nil
+    end
+  end
+
+  context 'when the schedule is set inline on the watchtower service' do
+    let(:services) do
+      {
+        'dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:latest' },
+        'watchtower' => {
+          'image' => 'nickfedor/watchtower:latest',
+          'environment' => { 'WATCHTOWER_SCHEDULE' => '0 0 2 * * *' },
+        },
+      }
+    end
+
+    it 'extracts the time from the service environment' do
+      expect(importer.result[:system]).to include('update_mode' => 'time', 'update_time' => '02:00')
+    end
+  end
+
+  context 'when the schedule is encoded as a --schedule command argument' do
+    let(:services) do
+      {
+        'dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:latest' },
+        'watchtower' => {
+          'image' => 'containrrr/watchtower:latest',
+          'command' => '--schedule "0 15 3 * * *" --scope solectrus',
+        },
+      }
+    end
+
+    it 'extracts the time from the command string' do
+      expect(importer.result[:system]).to include('update_mode' => 'time', 'update_time' => '03:15')
+    end
+  end
+
+  context 'when the schedule is given as a command array' do
+    let(:services) do
+      {
+        'dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:latest' },
+        'watchtower' => {
+          'image' => 'containrrr/watchtower:latest',
+          'command' => ['--schedule', '0 0 5 * * *'],
+        },
+      }
+    end
+
+    it 'extracts the time from the command array' do
+      expect(importer.result[:system]).to include('update_mode' => 'time', 'update_time' => '05:00')
+    end
+  end
+
+  # HELIOS only renders "daily at HH:MM", so an expression it could not rebuild
+  # is dropped instead of being half-managed.
+  context 'when the schedule is a cron HELIOS cannot represent' do
+    let(:raw_env) { { 'WATCHTOWER_SCHEDULE' => '0 0 */6 * * *' } }
+
+    it 'keeps the stack on interval polling' do
+      expect(importer.result[:system]).not_to have_key('update_mode')
+      expect(importer.result[:system]).not_to have_key('update_time')
+    end
+
+    it 'does not surface the variable as unmanaged' do
+      expect(importer.result[:unmanaged]).to be_nil
+    end
+  end
 end

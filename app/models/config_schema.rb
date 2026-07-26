@@ -7,7 +7,9 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     app_host
     admin_password
     network_name
+    update_mode
     update_interval
+    update_time
   ].freeze
 
   # Deployment-mode section. The operating mode lives in its own card on the
@@ -152,9 +154,18 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
 
   # --- Watchtower ---
 
-  # Default WATCHTOWER_POLL_INTERVAL (in seconds) when the user has not
-  # picked an interval — keep in sync with surveys/software/survey.json.
+  # How the update check is scheduled: repeatedly after a fixed interval, or
+  # once per day at a fixed time. Watchtower refuses to start when both its
+  # poll interval and its cron schedule are set, so the mode picks exactly one
+  # (see WatchtowerSchedule).
+  UPDATE_MODE_INTERVAL = 'interval'.freeze
+  UPDATE_MODE_TIME = 'time'.freeze
+  UPDATE_MODES = [UPDATE_MODE_INTERVAL, UPDATE_MODE_TIME].freeze
+
+  # Defaults when the user has not picked anything — keep in sync with
+  # surveys/software/survey.json.
   DEFAULT_UPDATE_INTERVAL = '86400'.freeze
+  DEFAULT_UPDATE_TIME = '04:00'.freeze
 
   WATCHTOWER_DEFAULTS = {
     'image' => DockerImages.current(:WATCHTOWER),

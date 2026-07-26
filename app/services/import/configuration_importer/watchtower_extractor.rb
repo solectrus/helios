@@ -25,6 +25,30 @@ module Import
         index = tokens.index('--interval')
         tokens[index + 1] if index && tokens[index + 1]
       end
+
+      # The cron expression of an installation that checks at a fixed time
+      # instead of polling. Same precedence as #interval. Whether HELIOS can
+      # represent the expression at all is decided by the caller (see
+      # WatchtowerSchedule.time_of_day).
+      def schedule
+        @reader.raw_env['WATCHTOWER_SCHEDULE'].presence ||
+          service_env('watchtower')['WATCHTOWER_SCHEDULE'].presence ||
+          command_schedule
+      end
+
+      private
+
+      def command_schedule
+        parts = Array(@reader.service('watchtower')&.dig('command'))
+
+        # List form keeps the cron in one element: ["--schedule", "0 0 4 * * *"]
+        index = parts.index('--schedule')
+        return parts[index + 1] if index && parts[index + 1]
+
+        # String form arrives shell-style, where a cron has to be quoted to
+        # survive as a single argument.
+        parts.join(' ')[/--schedule[=\s]+["']([^"']+)["']/, 1]
+      end
     end
   end
 end

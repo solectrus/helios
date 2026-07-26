@@ -432,7 +432,7 @@ en:
         description: 'Admin password and access code for the web interface'
       software:
         title: 'Release channel'
-        description: 'Stable or develop per service plus Watchtower check interval'
+        description: 'Stable or develop per service, plus when to check for updates'
       dashboard_co2:
         title: 'CO₂ factor'
         description: 'Power grid mix for CO₂ savings calculation'

@@ -16,7 +16,10 @@ module Export
       def to_h
         {
           image: configuration.watchtower.image,
-          environment: %w[TZ WATCHTOWER_POLL_INTERVAL WATCHTOWER_SCOPE WATCHTOWER_CLEANUP],
+          # Either the poll interval or the cron schedule — never both, see
+          # WatchtowerSchedule. TZ is what makes the cron fire in local time.
+          environment: ['TZ', WatchtowerSchedule.new(configuration).env_key,
+                        'WATCHTOWER_SCOPE', 'WATCHTOWER_CLEANUP'],
           volumes: ['/var/run/docker.sock:/var/run/docker.sock'],
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD', '/watchtower', '--health-check', start_period: '10s'),

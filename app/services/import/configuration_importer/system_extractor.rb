@@ -3,9 +3,10 @@ module Import
     class SystemExtractor
       include Helpers
 
-      def initialize(reader, watchtower_interval:)
+      def initialize(reader, watchtower_interval:, watchtower_schedule:)
         @reader = reader
         @watchtower_interval = watchtower_interval
+        @watchtower_schedule = watchtower_schedule
       end
 
       def section_data
@@ -39,8 +40,24 @@ module Import
           'admin_password' => dashboard_env['ADMIN_PASSWORD'].presence || @reader.raw_env['ADMIN_PASSWORD'],
           'secret_key_base' => dashboard_env['SECRET_KEY_BASE'].presence || @reader.raw_env['SECRET_KEY_BASE'],
           'network_name' => imported_network_name,
+          'update_mode' => update_mode,
           'update_interval' => @watchtower_interval,
+          'update_time' => update_time,
         }
+      end
+
+      # A stack checking at a fixed time keeps doing so — but only if its cron
+      # says "daily at HH:MM", the single shape HELIOS renders. Anything more
+      # elaborate is dropped and the stack falls back to interval polling,
+      # rather than HELIOS pretending to manage an expression it can't rebuild.
+      def update_time
+        return @update_time if defined?(@update_time)
+
+        @update_time = WatchtowerSchedule.time_of_day(@watchtower_schedule)
+      end
+
+      def update_mode
+        ConfigSchema::UPDATE_MODE_TIME if update_time
       end
 
       # Prefer the value referenced by the dashboard service, but fall back to

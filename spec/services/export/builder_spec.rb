@@ -255,6 +255,29 @@ RSpec.describe Export::Builder do
       end
     end
 
+    # Watchtower refuses to start with both a poll interval and a cron
+    # schedule, so switching to a fixed time has to replace the variable in
+    # .env *and* in the service's environment list.
+    context 'when a fixed update time is configured' do
+      before do
+        configuration.update('system',
+                             configuration.system.merge('update_mode' => 'time', 'update_time' => '04:30'))
+        described_class.new(configuration).write!
+      end
+
+      it 'writes the cron expression to .env instead of the poll interval' do
+        env = Env.load
+        expect(env['WATCHTOWER_SCHEDULE']).to eq('0 30 4 * * *')
+        expect(env.key?('WATCHTOWER_POLL_INTERVAL')).to be(false)
+      end
+
+      it 'declares the schedule on the watchtower service' do
+        watchtower = Compose.load.services.find('watchtower')
+        expect(watchtower.environment).to include('WATCHTOWER_SCHEDULE')
+        expect(watchtower.environment).not_to include('WATCHTOWER_POLL_INTERVAL')
+      end
+    end
+
     it 'configures dashboard with depends_on' do
       compose = Compose.load
       dashboard = compose.services.find('dashboard')

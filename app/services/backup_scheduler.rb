@@ -100,7 +100,7 @@ class BackupScheduler < ManagedThread
       return nil unless enabled?(config)
 
       value = config['schedule_time'].to_s
-      parse_hh_mm(value) ? value : nil
+      TimeOfDay.parse(value) ? value : nil
     end
 
     # The date the schedule was last handled, or nil if never (or unreadable).
@@ -227,21 +227,10 @@ class BackupScheduler < ManagedThread
 
     # Build the scheduled instant on `now`'s date in `now`'s timezone.
     def scheduled_time_on(value, now)
-      hour, minute = parse_hh_mm(value)
+      hour, minute = TimeOfDay.parse(value)
       return nil unless hour
 
       now.change(hour:, min: minute, sec: 0)
-    end
-
-    def parse_hh_mm(value)
-      match = value.to_s.match(/\A(\d{1,2}):(\d{2})\z/)
-      return nil unless match
-
-      hour = match[1].to_i
-      minute = match[2].to_i
-      return nil unless hour.between?(0, 23) && minute.between?(0, 59)
-
-      [hour, minute]
     end
   end
 

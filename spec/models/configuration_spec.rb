@@ -583,6 +583,27 @@ RSpec.describe Configuration do
       expect(config.system.update_interval).to eq('3600')
     end
 
+    it 'round-trips the fixed update time through the software survey' do
+      config = described_class.current
+      config.update('software', { 'update_mode' => 'time', 'update_time' => '04:30' })
+
+      expect(config.system.update_mode).to eq('time')
+      expect(config.system.update_time).to eq('04:30')
+      expect(described_class.current.setting_data('software'))
+        .to include('update_mode' => 'time', 'update_time' => '04:30')
+    end
+
+    # SurveyJS drops the hidden question of the mode that isn't active, so the
+    # payload decides: whatever it leaves out is removed from config.yaml.
+    it 'drops the update field the chosen mode does not use' do
+      config = described_class.current
+      config.update('software', { 'update_mode' => 'interval', 'update_interval' => '3600' })
+      config.update('software', { 'update_mode' => 'time', 'update_time' => '04:30' })
+
+      expect(config.system.update_time).to eq('04:30')
+      expect(config.system).not_to have_key('update_interval')
+    end
+
     it 'preserves sibling keys in service singletons when updating software channels' do
       config = described_class.current
       config.update('dashboard', { 'co2_emission_factor' => '401' })

@@ -14,16 +14,41 @@
       "elements": [
         {
           "type": "radiogroup",
+          "name": "update_mode",
+          "title": {
+            "de": "Wann soll nach Updates gesucht werden?",
+            "default": "When to check for updates?"
+          },
+          "isRequired": true,
+          "defaultValue": "interval",
+          "choices": [
+            {
+              "value": "interval",
+              "text": {
+                "de": "In regelmäßigen Abständen",
+                "default": "At regular intervals"
+              }
+            },
+            {
+              "value": "time",
+              "text": {
+                "de": "Täglich zu einer festen Uhrzeit",
+                "default": "Daily at a fixed time"
+              }
+            }
+          ]
+        },
+        {
+          "type": "radiogroup",
           "name": "update_interval",
           "title": {
-            "de": "Wie oft soll Watchtower auf neue Versionen prüfen?",
-            "default": "How often should Watchtower check for new versions?"
+            "de": "Abstand zwischen den Prüfungen",
+            "default": "Time between checks"
           },
           "isRequired": true,
           "defaultValue": "86400",
-          "visibleIf": "anyValueEquals({service_channels}, 'develop') = true",
-          "resetValueIf": "anyValueEquals({service_channels}, 'develop') = false",
-          "clearIfInvisible": "none",
+          "visibleIf": "{update_mode} = 'interval'",
+          "clearIfInvisible": "onHidden",
           "choices": [
             {
               "value": "86400",
@@ -47,6 +72,19 @@
               }
             }
           ]
+        },
+        {
+          "type": "text",
+          "name": "update_time",
+          "title": {
+            "de": "Uhrzeit",
+            "default": "Time of day"
+          },
+          "isRequired": true,
+          "inputType": "time",
+          "defaultValue": "04:00",
+          "visibleIf": "{update_mode} = 'time'",
+          "clearIfInvisible": "onHidden"
         }
       ]
     }

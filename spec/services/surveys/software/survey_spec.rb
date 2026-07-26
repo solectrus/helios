@@ -19,18 +19,34 @@ RSpec.describe Surveys::Software::Survey do
       expect(matrix['defaultValue']).to eq('dashboard' => 'latest', 'helios' => 'latest')
     end
 
+    it 'offers interval and fixed-time checking, defaulting to the interval' do
+      expect(find_survey_element(result, 'update_mode')).to include(
+        'type' => 'radiogroup',
+        'defaultValue' => ConfigSchema::UPDATE_MODE_INTERVAL,
+      )
+      expect(find_survey_element(result, 'update_mode')['choices'].pluck('value'))
+        .to eq(ConfigSchema::UPDATE_MODES)
+    end
+
+    # The setting used to be gated on a service running the develop channel;
+    # it applies to every channel now (Issue #350).
+    it 'asks for the update mode regardless of the chosen channels' do
+      expect(find_survey_element(result, 'update_mode')).not_to have_key('visibleIf')
+    end
+
     it 'keeps the update-interval radiogroup with daily as the default' do
       expect(find_survey_element(result, 'update_interval')).to include(
         'type' => 'radiogroup',
-        'defaultValue' => '86400',
+        'defaultValue' => ConfigSchema::DEFAULT_UPDATE_INTERVAL,
+        'visibleIf' => "{update_mode} = '#{ConfigSchema::UPDATE_MODE_INTERVAL}'",
       )
     end
 
-    it 'shows the update interval only when a service runs on develop' do
-      expect(find_survey_element(result, 'update_interval')).to include(
-        'visibleIf' => "anyValueEquals({service_channels}, 'develop') = true",
-        'resetValueIf' => "anyValueEquals({service_channels}, 'develop') = false",
-        'clearIfInvisible' => 'none',
+    it 'offers a time picker for the fixed-time mode' do
+      expect(find_survey_element(result, 'update_time')).to include(
+        'inputType' => 'time',
+        'defaultValue' => ConfigSchema::DEFAULT_UPDATE_TIME,
+        'visibleIf' => "{update_mode} = '#{ConfigSchema::UPDATE_MODE_TIME}'",
       )
     end
 

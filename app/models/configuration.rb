@@ -78,6 +78,14 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # Per-service singletons whose `image` is owned by the Software survey.
   SOFTWARE_IMAGE_OWNERS = SOFTWARE_SERVICES.values.pluck(:singleton).uniq.freeze
 
+  # `system` fields the Software survey owns besides the channel matrix: when
+  # the stack checks for new images (see WatchtowerSchedule). They live in
+  # `system` rather than the `watchtower` section because that section only
+  # holds the service's own image, and are written with the same grouped
+  # semantics as a mini-survey (see SETTING_GROUPS).
+  SOFTWARE_SYSTEM_FIELDS = %w[update_mode update_interval update_time].freeze
+  SOFTWARE_SYSTEM_GROUP = { singleton: 'system', keys: SOFTWARE_SYSTEM_FIELDS }.freeze
+
   # Settings shown on the Advanced page in full mode. `influxdb` exposes
   # only a couple of host-level toggles (e.g. UI port publication) here —
   # bucket/org/tokens are auto-managed and never user-editable in full mode.
@@ -1087,27 +1095,31 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # so the matrix can preselect the right column. Unrecognised URLs (legacy
   # tags, registry overrides) leave the row blank.
   def software_setting_data
-    channels = SOFTWARE_SERVICES.each_with_object({}) do |(key, spec), result|
+    channels = software_channel_tokens
+    payload = (@data['system'] || {}).slice(*SOFTWARE_SYSTEM_FIELDS).compact_blank
+    payload['service_channels'] = channels if channels.any?
+    Data.wrap(payload)
+  end
+
+  def software_channel_tokens
+    SOFTWARE_SERVICES.each_with_object({}) do |(key, spec), result|
       image = (@data[spec[:singleton]] || {})['image']
       token = software_channel_for(spec[:registry], image)
       result[key] = token if token
     end
-    update_interval = (@data['system'] || {})['update_interval']
-    payload = {}
-    payload['service_channels'] = channels if channels.any?
-    payload['update_interval'] = update_interval if update_interval.present?
-    Data.wrap(payload)
   end
 
   # Write side: translate `'latest'`/`'develop'` tokens into the registry's
-  # full image URL and merge into each service's singleton. `update_interval`
-  # rides along into `system`.
+  # full image URL and merge into each service's singleton. The update-check
+  # fields ride along into `system`.
   def update_software(data)
     raw = deep_unwrap(data)
     changed = apply_software_channels(raw['service_channels'] || {})
-    if raw.key?('update_interval') && merge_singleton_field('system', 'update_interval', raw['update_interval'])
-      changed = true
-    end
+    # Grouped semantics for the update-check fields: what the survey submits is
+    # the truth, anything it left out is removed. SurveyJS drops the field of
+    # the mode that isn't active, so config.yaml never keeps a setting that
+    # nothing acts on.
+    changed = true if update_grouped(SOFTWARE_SYSTEM_GROUP, raw)
     save! if changed
     changed
   end
