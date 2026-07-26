@@ -85,19 +85,50 @@ setup() { in_tmpdir; }
   [[ "$output" != *"0 GB free"* ]]
 }
 
-@test "ensure_disk_space picks the tighter filesystem when /var/lib/docker is smaller" {
-  if [ ! -d /var/lib/docker ]; then
-    skip "needs /var/lib/docker present to exercise the cross-filesystem branch"
-  fi
+@test "ensure_disk_space picks the tighter filesystem when the Docker root is smaller" {
+  docker_root_dir() { echo /volume1/@docker; }
 
   free_mb() {
     case "$1" in
-      /var/lib/docker) echo 0 ;;
+      /volume1/@docker) echo 0 ;;
       *) echo $((50 * 1024)) ;;
     esac
   }
 
   run ensure_disk_space
   [ "$status" -ne 0 ]
-  [[ "$output" == *"0 MB free at /var/lib/docker"* ]]
+  [[ "$output" == *"0 MB free at /volume1/@docker"* ]]
+}
+
+@test "ensure_disk_space ignores the Docker root when it cannot be determined" {
+  docker_root_dir() { return 1; }
+  free_mb() { echo $((50 * 1024)); }
+
+  run ensure_disk_space
+  [ "$status" -eq 0 ]
+  [[ "$output" == *"✓"* ]]
+  [[ "$output" == *"50 GB free at $(pwd)"* ]]
+}
+
+@test "docker_root_dir reports the path the daemon actually uses" {
+  docker() { echo "$PWD"; }
+
+  result="$(docker_root_dir)"
+  [ "$result" = "$PWD" ]
+}
+
+@test "docker_root_dir fails when the reported path does not exist here" {
+  docker() { echo "/this/path/does/not/exist/$RANDOM$RANDOM"; }
+
+  run docker_root_dir
+  [ "$status" -ne 0 ]
+  [ -z "$output" ]
+}
+
+@test "docker_root_dir fails when docker reports nothing" {
+  docker() { return 1; }
+
+  run docker_root_dir
+  [ "$status" -ne 0 ]
+  [ -z "$output" ]
 }

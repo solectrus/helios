@@ -285,6 +285,20 @@ format_space() {
   fi
 }
 
+# Where the daemon actually stores images and volumes. Asks Docker instead of
+# assuming /var/lib/docker: on Synology DSM that path exists as an empty stub
+# on the tiny system partition while the real root sits on /volume1/@docker,
+# which made the check report "592 MB free" on a NAS with 200 GB available.
+# Prints nothing and returns 1 when the answer is unusable here — the daemon
+# may be remote or inside a VM (Docker Desktop), where the reported path says
+# nothing about this host's filesystems.
+docker_root_dir() {
+  local dir
+  dir="$(docker info --format '{{.DockerRootDir}}' 2>/dev/null)"
+  [ -n "$dir" ] && [ -d "$dir" ] || return 1
+  printf '%s\n' "$dir"
+}
+
 # Two callsites, two thresholds:
 #   - "fresh":    user starts from nothing; the next steps will likely pull a
 #                 full stack (~3-4 GB of images: Dashboard, Postgres, InfluxDB,
@@ -297,18 +311,19 @@ format_space() {
 # image won't fit otherwise.
 ensure_disk_space() {
   local mode="${1:-fresh}"
-  local cwd_mb docker_mb available path
+  local cwd_mb docker_mb docker_dir available path
   cwd_mb="$(free_mb "$(pwd)")"
   available="$cwd_mb"
   path="$(pwd)"
 
-  # /var/lib/docker may sit on a different filesystem than $(pwd); when
+  # Docker's data root may sit on a different filesystem than $(pwd); when
   # it does and is tighter, use those numbers instead.
-  if [ -d /var/lib/docker ]; then
-    docker_mb="$(free_mb /var/lib/docker)"
+  docker_dir="$(docker_root_dir)" || docker_dir=""
+  if [ -n "$docker_dir" ]; then
+    docker_mb="$(free_mb "$docker_dir")"
     if [ "$docker_mb" -lt "$available" ]; then
       available="$docker_mb"
-      path="/var/lib/docker"
+      path="$docker_dir"
     fi
   fi
 
