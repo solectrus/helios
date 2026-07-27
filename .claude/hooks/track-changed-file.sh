@@ -9,8 +9,16 @@ session_id=$(printf '%s' "$input" | jq -r '.session_id // "default"')
 
 [[ -n "$file_path" ]] || exit 0
 
+# Only track files inside the project. Scratchpad or temp files elsewhere have
+# no linter config of their own and would fail the Stop hook for no reason.
+[[ -z "${CLAUDE_PROJECT_DIR:-}" || "$file_path" == "$CLAUDE_PROJECT_DIR"/* ]] || exit 0
+
+# Keep in sync with the bucket list in lint-on-stop.sh — a path recorded here
+# but unmatched there (or vice versa) is silently never checked.
 case "$file_path" in
-  *.html.erb | *.rb | *.ts | *.json | *.yml | *.yaml | *.md | *.css) ;;
+  *.erb | *.rb | *.rake | *.ru | */Gemfile | */Rakefile) ;;
+  *.ts | *.js | *.mjs | *.mts | *.sh) ;;
+  *.json | *.yml | *.yaml | *.md | *.css) ;;
   *) exit 0 ;;
 esac
 

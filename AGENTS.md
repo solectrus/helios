@@ -29,9 +29,10 @@ Verify non-trivial UI changes — new flows, complex interactions, anything wher
 
 After modifying code, **always** run the matching linter(s) and fix issues:
 
-- Ruby (`.rb`): `bin/rubocop --autocorrect`
-- ERB (`.html.erb`): `bin/herb lint` + `bun run erb:format` (or `erb:check`)
-- TypeScript (`.ts`): `bun run tsc` + `bun run lint`
+- Ruby (`.rb`, `.rake`, `Gemfile`, `config.ru`): `bin/rubocop --autocorrect`
+- ERB (`.erb`, including `.turbo_stream.erb`): `bun run erb:format` (or `erb:check`) + `bin/herb lint`
+- TypeScript / JavaScript (`.ts`, `.js`, `.mjs`, `.mts`): `bun run lint`, plus `bun run tsc` for `.ts`
+- Shell (`.sh`): `shellcheck`
 - JSON/YAML/Markdown/CSS: `bunx prettier --write`
 
 In Claude Code sessions `.claude/hooks/` runs these at turn end for edited files. `bin/brakeman` occasionally for security scans, not per change.
