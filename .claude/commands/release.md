@@ -30,7 +30,17 @@ explicitly approved at the gate in Stage 3** (respects the global never-push rul
      If it isn't, stop and ask.
    - **CI is green** on the tip of `develop`: `gh run list --branch develop --limit 1`.
      If the latest run failed or is still running, warn and ask before continuing.
-3. **Draft release notes.** Determine the previous tag (`git describe --tags --abbrev=0`)
+3. **Refresh third-party licenses.** The bundled license docs must match the dependencies
+   actually shipped in this release. Run `bin/rake licenses:generate` (regenerates
+   `docs/legal/THIRD_PARTY_LICENSES.md` and `THIRD_PARTY_NOTICES.md`; needs `gh` for
+   upstream notice lookups and runs prettier itself).
+   - If `git status --porcelain docs/legal` is empty, nothing changed — continue.
+   - If it produced changes, show the diff and commit them on `develop` **before** starting
+     the release branch: `chore(legal): refresh third-party licenses`. The commit then lands
+     in this release and shows up in the notes drafted below.
+   - If the task fails (e.g. `gh` unauthenticated or missing `node_modules`), stop and
+     report — do not release with stale license docs.
+4. **Draft release notes.** Determine the previous tag (`git describe --tags --abbrev=0`)
    and read the commits to be released: `git log <prev-tag>..HEAD --no-merges --pretty=...`.
    For tone and structure, look at the last release with `gh release view <prev-tag>`.
    Produce notes in the **exact established style**:
@@ -52,28 +62,28 @@ fast-forward. Do not introduce artificial merge commits.
 
 Only after the notes draft exists:
 
-4. `git flow release start $VERSION` — creates `release/$VERSION` from `develop`.
+5. `git flow release start $VERSION` — creates `release/$VERSION` from `develop`.
    (No files to change on the release branch — HELIOS has no version file.)
-5. `git flow release finish $VERSION -m "Tagging version $VERSION"` — merges the release
+6. `git flow release finish $VERSION -m "Tagging version $VERSION"` — merges the release
    into `main`, creates the signed tag `$TAG`, and deletes the release branch. The `-m`
    reproduces the existing tag-message style ("Tagging version X.Y.Z") and avoids the
    editor. Do **not** pass `--no-sign` (signing is intended).
    - If finish fails on a remote-sync check, report it; only retry with `-f` after telling
      the user why. If it stops on a merge conflict, stop and hand back to the user — do not
      improvise.
-6. **Sync `develop` to the tagged `main`** (the maintainer's `git checkout develop &&
+7. **Sync `develop` to the tagged `main`** (the maintainer's `git checkout develop &&
 git merge main`): `git checkout develop` then `git merge --ff-only main`. This must be a
    clean fast-forward given the linear history; if it isn't, stop and report instead of
    creating a merge commit. End on `develop`.
 
 ## Stage 3 — Push & publish (GATE)
 
-7. **Stop and summarize.** Show exactly what will happen and wait for explicit approval:
+8. **Stop and summarize.** Show exactly what will happen and wait for explicit approval:
    - branches to push: `main`, `develop`
    - tag to push: `$TAG`
    - GitHub release to create for `$TAG` with the drafted notes
      Let the user edit the notes before approving.
-8. **Only on explicit "yes":**
+9. **Only on explicit "yes":**
    - `git push origin main develop`
    - `git push origin $TAG`
    - `gh release create $TAG --title "$TAG" --notes-file <scratchpad>/release-notes-$VERSION.md`
