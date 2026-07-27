@@ -36,12 +36,12 @@ See [ADR-0007: Technology Stack](../adr/0007-technology-stack.md) for details an
 
 ## HELIOS Internal Storage
 
-All user-facing configuration is stored in a single `config.yaml` file (see [ADR-0009](../adr/0009-configuration-model.md)) — there are no Active Record tables for application data. The `primary` SQLite database exists only to satisfy Rails' default setup and is currently empty.
+All user-facing configuration is stored in a single `config.yaml` file (see [ADR-0009](../adr/0009-configuration-model.md)) — no Active Record tables are involved. The `primary` SQLite database holds only operational records that HELIOS produces at runtime (see [ADR-0002](../adr/0002-sqlite-for-internal-storage.md)).
 
 | File              | Purpose                                                              |
 | ----------------- | -------------------------------------------------------------------- |
 | `config.yaml`     | All user configuration (singletons: system, senec, mqtt, sensors, …) |
-| `primary.sqlite3` | Rails primary DB (empty; reserved for future use)                    |
+| `primary.sqlite3` | Operational records (`backups`, `runner_logs`)                       |
 | `cable.sqlite3`   | SolidCable (Turbo Streams / Action Cable pub-sub)                    |
 
 The admin password is stored in `config.yaml` under `system.admin_password` and mirrored to the generated `.env` as `ADMIN_PASSWORD`, since the Dashboard service needs the same value. It is not random: unless `ADMIN_PASSWORD` is supplied via the environment, it is derived deterministically from `secret_key_base` as `Digest::SHA256.hexdigest(secret_key_base)[0, 32]` (see [`ConfigSchema::SYSTEM_DEFAULTS`](../../app/models/config_schema.rb)). This way legacy stacks that pre-date the variable round-trip to the same value on every export instead of churning a fresh random one into `config.yaml`. Login comparison uses `ActiveSupport::SecurityUtils.secure_compare` (see [`Authentication`](../../app/controllers/concerns/authentication.rb) / [`SessionsController`](../../app/controllers/sessions_controller.rb)).
