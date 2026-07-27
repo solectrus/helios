@@ -4,9 +4,9 @@ Web-based control panel for [SOLECTRUS](https://solectrus.de). HELIOS installs t
 
 ## Screenshots
 
-|                                  Configuration                                  |                               Services                                |
-| :-----------------------------------------------------------------------------: | :-------------------------------------------------------------------: |
-| <img src="screenshot-configuration.jpg" alt="HELIOS configuration" width="450"> | <img src="screenshot-services.jpg" alt="HELIOS services" width="450"> |
+|                                  Configuration                                  |                               Services                                |                              Backup                               |
+| :-----------------------------------------------------------------------------: | :-------------------------------------------------------------------: | :---------------------------------------------------------------: |
+| <img src="screenshot-configuration.jpg" alt="HELIOS configuration" width="300"> | <img src="screenshot-services.jpg" alt="HELIOS services" width="300"> | <img src="screenshot-backup.jpg" alt="HELIOS backup" width="300"> |
 
 ## Features
 
@@ -14,8 +14,11 @@ Web-based control panel for [SOLECTRUS](https://solectrus.de). HELIOS installs t
 - **Survey-based configuration** — guided forms cover every documented SOLECTRUS environment variable (devices, data sources, forecasts, reverse proxy, backup).
 - **Sensor mapping** — registry of ~50 SOLECTRUS sensors with live readings from InfluxDB.
 - **Live logs** — tail and search container logs with ANSI colors directly in the UI.
+- **Backup and restore** — one archive per backup (PostgreSQL dump, InfluxDB export, active configuration), stored locally, on a host mount such as an NFS share, or in an S3-compatible object store. On demand or on a daily schedule, with automatic pruning; restore runs from the UI.
+- **CSV import** — load historical measurements from CSV files into InfluxDB, including cache flush and recalculation of the daily summaries.
+- **Database upgrades** — one-click major-version upgrade of PostgreSQL, offered when the data directory still runs an older major.
 - **Auto-import** — detects existing SOLECTRUS installations, reverse-maps the configuration, and preserves anything it does not understand.
-- **Auto-updates** — Watchtower keeps all images (including HELIOS itself) current.
+- **Auto-updates** — Watchtower keeps all images (including HELIOS itself) current, either on an interval or daily at a fixed time.
 - **Real-time UI** — status updates via Turbo Streams + Action Cable, driven by the Docker events API. No polling.
 - **Support bundle** — download a ZIP of the current configuration, container logs, and host snapshot for troubleshooting; secrets are redacted with placeholder values so the bundle can be shared publicly.
 - **Localized** — German and English.
@@ -25,7 +28,7 @@ Web-based control panel for [SOLECTRUS](https://solectrus.de). HELIOS installs t
 - Docker and Docker Compose (v2)
 - Architecture: AMD64 or ARM64 (Raspberry Pi 3/4/5, NAS, VPS, any Linux host)
 - Port 3999 available on the host
-- ~384 MB RAM for the HELIOS container
+- ~256 MB RAM for the HELIOS container
 - ≥ 1 GB free disk for the HELIOS Docker image and local data
 - A directory of your choice on the host with writable `compose.yaml` and `.env` for the SOLECTRUS stack (HELIOS regenerates both)
 

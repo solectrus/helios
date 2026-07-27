@@ -65,7 +65,7 @@ Scenarios A and B can coexist (e.g. SENEC collector for the inverter + ioBroker 
 
 ### Backup
 
-- HELIOS' built-in backup runner writes one tar archive per backup, bundling the PostgreSQL dump, the InfluxDB export and the active `config.yaml`. Backups are created on demand from the UI; the five newest are kept, older ones are pruned automatically.
+- HELIOS' built-in backup runner writes one tar archive per backup, bundling the PostgreSQL dump, the InfluxDB export and the active `config.yaml`. Backups are created on demand from the UI or daily at a configured time (see `BackupScheduler`); the five newest are kept, older ones are pruned automatically.
 - Three destinations are available: the local backups directory under the HELIOS data path, an external host mount (e.g. an NFS share on a NAS) or an S3-compatible object store (AWS S3, MinIO, Backblaze B2, Wasabi …).
 - Restore is initiated from the UI; it runs in a detached container, stops the stack, wipes the database directories, imports the dumps and restarts everything.
 
