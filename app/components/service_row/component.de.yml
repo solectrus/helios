@@ -30,6 +30,12 @@ de:
   legacy_image_confirm: 'Image auf %{image} aktualisieren und den Service neu erstellen?'
   recreate_pending: 'Nicht aktuell – Aktualisierung erforderlich'
   self_recreate_confirm: 'HELIOS wird aktualisiert und neu gestartet, die Oberfläche wird kurz nicht erreichbar sein. Fortfahren?'
+  recalculating: 'Neuberechnung läuft'
+  recalculate: 'Neu berechnen'
+  recalculate_confirm:
+    title: 'Werte neu berechnen?'
+    body: 'Alle vom Power Splitter berechneten Werte werden verworfen und anschließend aus den vorhandenen Messwerten neu ermittelt. Je nach Zeitraum kann das einige Minuten dauern, der Fortschritt wird hier angezeigt.'
+    button: 'Ja, neu berechnen'
   clear_cache: 'Cache leeren'
   clear_cache_confirm:
     title: 'Redis-Cache leeren?'

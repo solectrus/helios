@@ -197,6 +197,83 @@ RSpec.describe 'Services::Rows', :with_admin_password do
       end
     end
 
+    describe 'the power splitter row' do
+      before do
+        mock_compose_service('power-splitter')
+        container = mock_container('power-splitter', running: true)
+        allow(Orchestration::Container).to receive(:find).with('power-splitter').and_return(container)
+        allow(Orchestration::PowerSplitter::Progress).to receive(:call).and_return(nil)
+      end
+
+      it 'offers the recalculation button' do
+        get service_row_path(service_id: 'power-splitter'), headers: turbo_frame_headers
+
+        expect(response.body).to include(service_recalculation_path('power-splitter'))
+      end
+
+      it 'shows no progress badge while nothing is being recalculated' do
+        get service_row_path(service_id: 'power-splitter'), headers: turbo_frame_headers
+
+        expect(response.body).to include('data-service-row--component-recalculating-value="false"')
+        expect(response.body).not_to include('service-power-splitter-recalculation-progress')
+      end
+
+      it 'shows the percentage while a recalculation is running' do
+        allow(Orchestration::PowerSplitter::Progress).to receive(:call).and_return(
+          Orchestration::PowerSplitter::Progress::Snapshot.new(day: Date.new(2026, 7, 22), percent: 30),
+        )
+
+        get service_row_path(service_id: 'power-splitter'), headers: turbo_frame_headers
+
+        aggregate_failures do
+          expect(response.body).to include('data-service-row--component-recalculating-value="true"')
+          expect(response.body).to include('service-power-splitter-recalculation-progress')
+          expect(response.body).to include('30%')
+        end
+      end
+
+      it 'replaces the button with the progress while a recalculation is running' do
+        allow(Orchestration::PowerSplitter::Progress).to receive(:call).and_return(
+          Orchestration::PowerSplitter::Progress::Snapshot.new(day: Date.new(2026, 7, 22), percent: 30),
+        )
+
+        get service_row_path(service_id: 'power-splitter'), headers: turbo_frame_headers
+
+        expect(response.body).not_to include(service_recalculation_path('power-splitter'))
+      end
+
+      it 'disables the button while the service is not running' do
+        allow(Orchestration::Container).to receive(:find).with('power-splitter').and_return(
+          mock_container('power-splitter', running: false),
+        )
+
+        get service_row_path(service_id: 'power-splitter'), headers: turbo_frame_headers
+
+        expect(recalculation_button(response.body)).to match(/\bdisabled\b/)
+      end
+
+      it 'offers the button while nothing is being recalculated' do
+        get service_row_path(service_id: 'power-splitter'), headers: turbo_frame_headers
+
+        expect(recalculation_button(response.body)).not_to match(/\bdisabled\b/)
+      end
+
+      def recalculation_button(body)
+        body[%r{<form[^>]*#{Regexp.escape(service_recalculation_path('power-splitter'))}.*?</form>}m]
+      end
+    end
+
+    it 'does not read the log of other services' do
+      mock_compose_service('redis')
+      container = mock_container('redis', running: true)
+      allow(Orchestration::Container).to receive(:find).with('redis').and_return(container)
+      allow(Orchestration::PowerSplitter::Progress).to receive(:call)
+
+      get service_row_path(service_id: 'redis'), headers: turbo_frame_headers
+
+      expect(Orchestration::PowerSplitter::Progress).not_to have_received(:call)
+    end
+
     it 'disables the start button and shows a warning link when the collector source is incompletely configured' do
       Configuration.current.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
       mock_compose_service('forecast-collector')

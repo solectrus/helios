@@ -1,15 +1,18 @@
 import PollingController from '@/utils/pollingController';
 
 // Polls the server for fresh status while a service is in a transient state
-// (pending or health_starting) by re-fetching the Turbo Frame's `data-src`.
-// `shouldPoll()` is re-evaluated whenever `statusValue` changes, so the timer
-// stops automatically as soon as the status resolves.
+// (pending, health_starting or recalculating) by re-fetching the enclosing
+// Turbo Frame's `data-src`. The controller is mounted on an element inside
+// that frame: a frame reload swaps its children, so each response brings a
+// fresh instance whose values reflect what the server just reported, and the
+// timer stops as soon as the state resolves.
 export default class extends PollingController {
   static targets = ['startButton', 'stopButton', 'recreateButton'];
   static values = {
     ...PollingController.values,
     name: String,
     status: String,
+    recalculating: Boolean,
   };
 
   declare startButtonTarget: HTMLButtonElement;
@@ -20,8 +23,13 @@ export default class extends PollingController {
   declare hasRecreateButtonTarget: boolean;
   declare nameValue: string;
   declare statusValue: string;
+  declare recalculatingValue: boolean;
 
   statusValueChanged() {
+    this.evaluatePolling();
+  }
+
+  recalculatingValueChanged() {
     this.evaluatePolling();
   }
 
@@ -54,14 +62,19 @@ export default class extends PollingController {
 
   protected shouldPoll(): boolean {
     return (
-      this.statusValue === 'pending' || this.statusValue === 'health_starting'
+      this.statusValue === 'pending' ||
+      this.statusValue === 'health_starting' ||
+      // Power splitter recalculating: keeps the progress badge counting up.
+      this.recalculatingValue
     );
   }
 
   protected refresh() {
-    const frame = this.element as HTMLElement;
-    const src = frame.dataset.src;
-    if (!src) return;
+    // The controller sits inside the frame so that every reload re-reads its
+    // values; the element to reload is therefore the enclosing frame.
+    const frame = this.element.closest('turbo-frame') as HTMLElement | null;
+    const src = frame?.dataset.src;
+    if (!frame || !src) return;
 
     frame.removeAttribute('complete');
     frame.removeAttribute('src');

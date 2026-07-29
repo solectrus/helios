@@ -272,11 +272,49 @@ module ServiceRow
       container&.stoppable?
     end
 
+    # Service actions that reach into the container itself (exec, signal) need
+    # one that is actually up and not in the middle of an operation.
+    def container_actionable?
+      !lazy && !pending && running?
+    end
+
     # Flushing the cache is Redis-specific and runs `redis-cli` inside the
     # container, so it only works while Redis is running.
     def clear_cache_enabled?
-      service_name == 'redis' && !lazy && !pending && running?
+      redis? && container_actionable?
     end
+
+    def redis?
+      service_name == 'redis'
+    end
+
+    def power_splitter?
+      service_name == Orchestration::PowerSplitter::SERVICE
+    end
+
+    # Recalculating means signalling the running container, so it needs a
+    # container that is actually up.
+    def recalculation_enabled?
+      power_splitter? && container_actionable?
+    end
+
+    # Snapshot of a running recalculation (nil when none is in flight).
+    # Reads the container log, so it is fetched only for the one service
+    # that can be recalculating at all, and never for a skeleton row.
+    def recalculation
+      return @recalculation if defined?(@recalculation)
+
+      @recalculation =
+        (Orchestration::PowerSplitter::Progress.call(container) if recalculation_enabled?)
+    end
+
+    def recalculating?
+      recalculation.present?
+    end
+
+    # nil until the log reveals how much there is to do; the badge then shows
+    # a spinner instead of a number.
+    delegate :percent, to: :recalculation, prefix: true
 
     # A PostgreSQL major-version upgrade migrates the database via dump &
     # restore (see Orchestration::PostgresqlUpgrade) — offered while an older

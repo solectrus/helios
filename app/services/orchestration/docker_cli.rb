@@ -1,9 +1,11 @@
 require 'open3'
+require 'timeout'
 
 module Orchestration
-  # Thin wrappers around `docker` invocations shared by the detached
-  # backup/restore runners. Each helper returns plain values so callers
-  # can raise their own domain-specific errors with their own i18n keys.
+  # Thin wrappers around `docker` invocations, shared by the detached
+  # backup/restore runners and by request threads reading a container log.
+  # Each helper returns plain values so callers can raise their own
+  # domain-specific errors with their own i18n keys.
   module DockerCli
     extend Loggable
 
@@ -41,6 +43,25 @@ module Orchestration
         )
         nil
       end
+    end
+
+    # Last `lines` lines of a container's log. Deliberately the CLI and not
+    # docker-api, whose non-TTY log stream is multiplexed and would have to be
+    # de-framed. Read from request threads on every poll, so a hung Docker
+    # daemon must not pile up Puma workers — the timeout is generous because a
+    # tail read is normally sub-second. Returns '' when the log is unreadable.
+    LOG_TAIL_TIMEOUT = 5
+
+    def log_tail(name, lines:, timestamps: false)
+      command = ['docker', 'logs', '--tail', lines.to_s]
+      command << '--timestamps' if timestamps
+
+      Timeout.timeout(LOG_TAIL_TIMEOUT) do
+        output, = Open3.capture2e(*command, name)
+        output
+      end
+    rescue StandardError
+      ''
     end
 
     def pull_image(image)

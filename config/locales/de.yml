@@ -50,6 +50,10 @@ de:
       destroy:
         success: 'Redis-Cache geleert.'
         failure: 'Redis-Cache konnte nicht geleert werden. Läuft der Redis-Dienst?'
+    recalculations:
+      create:
+        success: 'Die Neuberechnung wurde gestartet.'
+        failure: 'Die Neuberechnung konnte nicht gestartet werden. Läuft der Dienst Power Splitter?'
 
   csv_imports:
     show:

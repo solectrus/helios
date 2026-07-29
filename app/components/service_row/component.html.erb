@@ -3,13 +3,23 @@
                              loading: (:lazy if lazy),
                              class: row_class,
                              data: {
-                               controller: "service-row--component",
-                               service_row__component_name_value: service_name,
-                               service_row__component_status_value: status_value,
                                visibility_target: "frame",
                                src: helpers.service_row_path(service_name),
                              } do %>
-  <div class="flex items-center justify-between gap-2 sm:gap-4">
+  <%#
+    The Stimulus controller lives inside the frame, not on it: a frame reload
+    replaces only the frame's children, so values placed on the frame itself
+    would keep the state of the very first render and the polling gate would
+    never see the answer it just fetched.
+  %>
+
+  <div
+    class="flex items-center justify-between gap-2 sm:gap-4"
+    data-controller="service-row--component"
+    data-service-row--component-name-value="<%= service_name %>"
+    data-service-row--component-status-value="<%= status_value %>"
+    data-service-row--component-recalculating-value="<%= recalculating? %>"
+  >
     <div class="flex min-w-0 flex-1 items-center gap-3 sm:gap-4">
       <% if lazy %>
         <%# Skeleton placeholder for lazy loading %>
@@ -121,6 +131,55 @@
               <i class="fa-solid fa-trash-can"></i>
             <% end %>
           </div>
+        <% end %>
+        <%#
+          Power-splitter-only: signals the container to derive all calculated
+          values again. Kept at the left of the cluster, like the Redis broom.
+        %>
+        <% if power_splitter? %>
+          <%#
+            The progress takes the place of its own trigger: a second signal
+            would discard what the running one has produced so far. The bare
+            percentage is enough here, what it counts is in the tooltip.
+          %>
+          <% if recalculating? %>
+            <span
+              id="<%= dom_id %>-recalculation-progress"
+              class="tooltip tooltip-info flex h-8 min-w-8 items-center justify-center"
+              data-tip="<%= t('.recalculating') %>"
+            >
+              <%#
+                Outlined rather than filled, so the number keeps the full
+                contrast of the row's own text color. Only the dot pulses:
+                animating the number itself would halve its contrast for half
+                of every cycle, which is what makes such a badge look faded.
+              %>
+
+              <span class="badge badge-sm border-base-content/60 gap-1.5 bg-transparent font-medium tabular-nums">
+                <% if recalculation_percent %>
+                  <span class="bg-info size-1.5 shrink-0 rounded-full motion-safe:animate-pulse"></span>
+                  <%= number_to_percentage(recalculation_percent, precision: 0) %>
+                <% else %>
+                  <span class="loading loading-spinner loading-xs"></span>
+                <% end %>
+              </span>
+            </span>
+          <% else %>
+            <div id="<%= dom_id %>-recalculation" class="tooltip tooltip-info" data-tip="<%= t('.recalculate') %>">
+              <%= button_to service_recalculation_path(service_name),
+                            method: :post,
+                            disabled: !recalculation_enabled?,
+                            class: "btn btn-ghost btn-sm btn-square",
+                            data: {
+                              turbo_confirm: t('.recalculate_confirm.body'),
+                              turbo_confirm_title: t('.recalculate_confirm.title'),
+                              turbo_confirm_button: t('.recalculate_confirm.button'),
+                              turbo_frame: "_top",
+                            } do %>
+                <i class="fa-solid fa-broom"></i>
+              <% end %>
+            </div>
+          <% end %>
         <% end %>
         <%#
           Redis-only: kept at the left of the cluster so the start/stop/recreate

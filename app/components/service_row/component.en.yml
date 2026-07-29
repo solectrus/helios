@@ -30,6 +30,12 @@ en:
   legacy_image_confirm: 'Update image to %{image} and recreate the service?'
   recreate_pending: 'Out of date — update required'
   self_recreate_confirm: 'HELIOS will be updated and restarted, the interface will be briefly unavailable. Continue?'
+  recalculating: 'Recalculation in progress'
+  recalculate: 'Recalculate'
+  recalculate_confirm:
+    title: 'Recalculate values?'
+    body: 'All values calculated by Power Splitter are discarded and then derived again from the existing measurements. Depending on the time range this can take several minutes; the progress is shown here.'
+    button: 'Yes, recalculate'
   clear_cache: 'Clear cache'
   clear_cache_confirm:
     title: 'Clear the Redis cache?'

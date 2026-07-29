@@ -74,6 +74,10 @@ en:
       destroy:
         success: 'Redis cache cleared.'
         failure: 'Could not clear the Redis cache. Is the Redis service running?'
+    recalculations:
+      create:
+        success: 'Recalculation started.'
+        failure: 'Could not start the recalculation. Is the Power Splitter service running?'
 
   csv_imports:
     show:

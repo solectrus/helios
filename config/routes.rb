@@ -57,6 +57,7 @@
 #                                   DELETE /services/:service_id/task(.:format)           services/tasks#destroy
 #                                   POST   /services/:service_id/task(.:format)           services/tasks#create
 #                     service_cache DELETE /services/:service_id/cache(.:format)          services/caches#destroy
+#            service_recalculation POST   /services/:service_id/recalculation(.:format)  services/recalculations#create
 #                   service_upgrade POST   /services/:service_id/upgrade(.:format)        services/upgrades#create
 #                     service_image PATCH  /services/:service_id/image(.:format)          services/images#update
 #                                   PUT    /services/:service_id/image(.:format)          services/images#update
@@ -146,6 +147,7 @@ Rails.application.routes.draw do
     resource :log, only: :show, module: :services
     resource :task, only: %i[create update destroy], module: :services
     resource :cache, only: :destroy, module: :services
+    resource :recalculation, only: :create, module: :services
     resource :upgrade, only: :create, module: :services
     resource :image, only: :update, module: :services
 

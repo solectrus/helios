@@ -117,19 +117,8 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
       mutex.synchronize { @completion_phase = phase }
     end
 
-    # Read on every /show poll; a hung docker daemon must not pile up Puma
-    # workers blocked on docker-logs. The timeout is generous because docker
-    # logs is normally a sub-second tail read.
-    LOG_TAIL_TIMEOUT = 5
-    private_constant :LOG_TAIL_TIMEOUT
-
-    def log_tail(lines = 50)
-      Timeout.timeout(LOG_TAIL_TIMEOUT) do
-        output, = Open3.capture2e('docker', 'logs', '--tail', lines.to_s, CONTAINER_NAME)
-        output
-      end
-    rescue StandardError
-      ''
+    def log_tail(lines)
+      Orchestration::DockerCli.log_tail(CONTAINER_NAME, lines:)
     end
 
     # Live progress for the UI. Phase follows the active thread:

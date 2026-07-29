@@ -9,6 +9,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, 'app/frontend'),
+      '@components': path.resolve(import.meta.dirname, 'app/components'),
     },
   },
 });

@@ -176,6 +176,14 @@ module Orchestration
       raw_container.exec(command, **)
     end
 
+    # Sends a Unix signal to the container's main process (`docker kill
+    # --signal`), for services that expose an action through a signal handler
+    # — e.g. the power-splitter's USR1 recalculation. Despite the name this
+    # does not terminate the container unless the signal says so.
+    def kill(signal:)
+      raw_container.kill!('signal' => signal.to_s)
+    end
+
     def created_at
       Time.zone.parse(raw_container.info['Created'])
     end
