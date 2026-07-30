@@ -130,7 +130,13 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
     File.write(Configuration.path, YAML.dump(data))
   end
 
+  # Mirrors a real stack: the postgres image creates `solectrus` from
+  # POSTGRES_DB and leaves it empty, while SOLECTRUS itself works in
+  # `solectrus_production`. Seeding there is what makes the upgrade's own
+  # table-count verification (PostgresqlUpgrade::DATABASE) meaningful — against
+  # the empty `solectrus` it would compare 0 to 0 and pass no matter what.
   def seed_data!
+    run_sql!("CREATE DATABASE #{described_class::DATABASE}", database: 'solectrus')
     run_sql!('CREATE TABLE widgets (id serial PRIMARY KEY, name text)')
     run_sql!("INSERT INTO widgets (name) VALUES ('helios')")
   end
@@ -173,14 +179,14 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
     stdout.split("\n").map(&:strip)
   end
 
-  def run_sql!(sql)
-    _stdout, stderr, code = psql('-c', sql)
+  def run_sql!(sql, database: described_class::DATABASE)
+    _stdout, stderr, code = psql('-c', sql, database:)
     raise "SQL failed (#{sql}): #{stderr}" unless code&.zero?
   end
 
-  def psql(*)
+  def psql(*, database: described_class::DATABASE)
     Orchestration::Runner.compose_exec(
-      'postgresql', 'psql', '-U', 'postgres', '-d', 'solectrus', *
+      'postgresql', 'psql', '-U', 'postgres', '-d', database, *
     )
   end
 

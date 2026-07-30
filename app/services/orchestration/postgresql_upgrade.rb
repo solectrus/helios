@@ -37,7 +37,10 @@ module Orchestration
     include Loggable
 
     SERVICE = 'postgresql'.freeze
-    DATABASE = 'solectrus'.freeze
+    # SOLECTRUS' own database — the one holding the tables worth verifying.
+    # Not `solectrus`, which the postgres image creates from POSTGRES_DB and
+    # which stays empty (see restore.sh for the same distinction).
+    DATABASE = 'solectrus_production'.freeze
     READY_TIMEOUT = 180 # seconds to wait for the upgraded server
     POLL_INTERVAL = 1   # a `pg_isready` probe is cheap; poll responsively
     TABLE_COUNT_SQL =

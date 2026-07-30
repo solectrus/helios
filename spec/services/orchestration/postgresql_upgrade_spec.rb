@@ -95,4 +95,30 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
       )
     end
   end
+
+  # The post-restore check counts tables — in SOLECTRUS' own database. Pinned
+  # here because getting the name wrong is silent: against the empty `solectrus`
+  # that the postgres image creates from POSTGRES_DB, the check compared 0 to 0
+  # and passed no matter what the restore did.
+  describe '#verify_restore!' do
+    let(:upgrade) { described_class.new }
+
+    it 'counts the tables in SOLECTRUS own database' do
+      allow(Orchestration::Runner).to receive(:compose_exec).and_return(['3', '', 0])
+
+      expect(upgrade.send(:count_tables)).to eq(3)
+      expect(Orchestration::Runner).to have_received(:compose_exec).with(
+        'postgresql', 'psql', '-U', 'postgres', '-d', 'solectrus_production', '-tAc', anything
+      )
+    end
+
+    it 'reports a restore that came back with fewer tables' do
+      upgrade.instance_variable_set(:@expected_tables, 5)
+      allow(upgrade).to receive(:count_tables).and_return(2)
+
+      expect { upgrade.send(:verify_restore!) }.to raise_error(
+        described_class::UpgradeError, /5/
+      )
+    end
+  end
 end
