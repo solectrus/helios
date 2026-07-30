@@ -442,6 +442,78 @@ MSG
   die "Docker daemon not reachable."
 }
 
+# Minimum Docker Engine version HELIOS runs on. Mirrors
+# Orchestration::Connection::MIN_ENGINE_VERSION (kept in sync by
+# spec/bootstrap/engine_version_drift_spec.rb).
+MIN_ENGINE_VERSION="24.0"
+
+# Verify the daemon is new enough to run HELIOS at all. Without this the
+# install succeeds and HELIOS starts, but its own StartupCheck then blocks
+# every request with a 503 fail screen ("Docker Engine … is too old") — an
+# installed, unusable HELIOS. Better to say so before pulling 250 MB.
+ensure_engine_version() {
+  local version major minor min_major min_minor
+  version="$(docker version --format '{{.Server.Version}}' 2>/dev/null)" || version=""
+
+  # An unparseable version is not a reason to refuse: the daemon answered
+  # ensure_docker_access, so let the install proceed and leave the verdict
+  # to HELIOS itself.
+  [[ "$version" =~ ^([0-9]+)\.([0-9]+) ]] || return 0
+  major="${BASH_REMATCH[1]}"
+  minor="${BASH_REMATCH[2]}"
+
+  min_major="${MIN_ENGINE_VERSION%%.*}"
+  min_minor="${MIN_ENGINE_VERSION#*.}"
+  if [ "$major" -gt "$min_major" ] \
+     || { [ "$major" -eq "$min_major" ] && [ "$minor" -ge "$min_minor" ]; }; then
+    success "  ✓ Docker Engine $version"
+    return
+  fi
+
+  error "  ✗ Docker Engine $version is too old — HELIOS requires $MIN_ENGINE_VERSION or newer."
+  cat >&2 <<'MSG'
+
+  Synology DSM 7.1 and older ship Docker 20.10 with the "Docker" package.
+  Update to DSM 7.2 or newer and install "Container Manager", which brings
+  a current Docker Engine.
+
+  Other systems: https://docs.docker.com/engine/install/
+MSG
+  printf '\n' >&2
+  die "Docker Engine too old."
+}
+
+# Verify the Compose v2 CLI plugin is present. Every compose operation in this
+# installer goes through `docker compose` (config, ps, pull, up) — the
+# standalone `docker-compose` v1 binary is not a substitute and is not
+# probed for. Hosts that ship only v1 (Synology DSM 7.1's "Docker" package,
+# older distro packages) otherwise sail through `docker info` and then fail
+# on the first compose call, where the swallowed "'compose' is not a docker
+# command" masquerades as an unparseable compose file (issue #363).
+ensure_compose_v2() {
+  local version
+  version="$(docker compose version --short 2>/dev/null)" || version=""
+
+  # Compose reports either `2.29.1` or `v2.29.1`; the major is all we gate on.
+  version="${version#v}"
+  if [[ "$version" =~ ^([0-9]+)\. ]] && [ "${BASH_REMATCH[1]}" -ge 2 ]; then
+    success "  ✓ Docker Compose v$version available"
+    return
+  fi
+
+  error "  ✗ Docker Compose v2 is not available ('docker compose' failed)."
+  cat >&2 <<'MSG'
+
+  HELIOS requires the Compose v2 CLI plugin. The standalone 'docker-compose'
+  (v1) binary is not sufficient.
+
+  Debian/Ubuntu:  sudo apt install docker-compose-plugin
+  Other systems:  https://docs.docker.com/compose/install/
+MSG
+  printf '\n' >&2
+  die "Docker Compose v2 not available."
+}
+
 # Verify the current directory is writable before we try to create compose.yaml
 # and .env in it. A non-root user installing into a root-owned directory (the
 # classic `sudo mkdir /opt/solectrus` then install as yourself) sails through
@@ -776,14 +848,21 @@ ensure_helios_secrets() {
 
 ensure_project_name() {
   # Let `docker compose config` canonicalize the YAML so we don't have to
-  # worry about quoting variants. The top-level `name:` is unindented;
-  # nested names (e.g. networks.default.name) are indented, so `^name:`
-  # picks the top-level one.
+  # worry about quoting variants. Capture stderr alongside stdout: on failure
+  # it carries the only clue why (bad YAML, unresolvable ${VAR}, unknown key),
+  # and without it the abort below is undiagnosable. Merging is safe for the
+  # success path too — Compose warnings never start a line with `name:`.
+  local config_output
+  if ! config_output="$(docker compose -f "$COMPOSE_FILE" config 2>&1)"; then
+    error "  ✗ $COMPOSE_FILE could not be parsed by 'docker compose config':"
+    printf '\n%s\n\n' "$config_output" >&2
+    die "Fix $COMPOSE_FILE manually and re-run."
+  fi
+
+  # The top-level `name:` is unindented; nested names (e.g.
+  # networks.default.name) are indented, so `^name:` picks the top-level one.
   local effective_name
-  effective_name="$(
-    docker compose -f "$COMPOSE_FILE" config 2>/dev/null \
-      | awk '/^name:/ {print $2; exit}'
-  )" || die "$COMPOSE_FILE could not be parsed by 'docker compose config'. Fix manually and re-run."
+  effective_name="$(printf '%s\n' "$config_output" | awk '/^name:/ {print $2; exit}')"
 
   # `docker compose config` always emits a name — either from the `name:` key
   # in the file, or falling back to the directory name. Grep the raw file to
@@ -1032,6 +1111,8 @@ main() {
   welcome
   ensure_docker
   ensure_docker_access
+  ensure_engine_version
+  ensure_compose_v2
 
   # Pick the install directory (only now, after Docker access is proven — the
   # only privilege HELIOS needs). This may relocate us into a fresh

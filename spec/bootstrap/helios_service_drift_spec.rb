@@ -1,5 +1,3 @@
-require 'shellwords'
-
 # The bootstrap installer (bootstrap/install.sh) hard-codes the `helios` service
 # block as static YAML — a curl|bash installer can't run Ruby. HELIOS's own
 # Export::Compose generates the same block from Export::Services::Helios. The two
@@ -8,16 +6,11 @@ require 'shellwords'
 # Ruby side (timezone passthrough, labels, image, logging) silently never reaches
 # fresh installs. This spec is the guard that keeps both definitions aligned.
 RSpec.describe 'bootstrap installer ↔ Export::Compose drift' do # rubocop:disable RSpec/DescribeClass
-  let(:install_sh) { Rails.root.join('bootstrap/install.sh').to_s }
-
   # The `helios:` block the installer would write, parsed into a Hash. Sourced in
   # a clean shell with HELIOS_IMAGE unset so we exercise the shipped default, not
   # whatever happens to be in this process's environment.
   let(:bootstrap_service) do
-    script = "unset HELIOS_IMAGE; source #{install_sh.shellescape}; helios_service_yaml"
-    yaml = `bash -c #{script.shellescape} 2>/dev/null`
-    raise "helios_service_yaml produced no output (is #{install_sh} sourceable?)" if yaml.strip.empty?
-
+    yaml = bootstrap_eval('helios_service_yaml', env: 'unset HELIOS_IMAGE')
     YAML.safe_load(yaml).fetch('helios')
   end
 

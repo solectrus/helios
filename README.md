@@ -25,14 +25,14 @@ Web-based control panel for [SOLECTRUS](https://solectrus.de). HELIOS installs t
 
 ## Requirements
 
-- Docker and Docker Compose (v2)
+- Docker Engine ≥ 24.0 with the Compose v2 plugin (the standalone `docker-compose` v1 binary is not sufficient)
 - Architecture: AMD64 or ARM64 (Raspberry Pi 3/4/5, NAS, VPS, any Linux host)
 - Host RAM: ≥ 1 GB, 2 GB recommended (HELIOS itself needs ~256 MB, the rest is for the SOLECTRUS services)
 - Free disk: ≥ 1 GB when adding HELIOS to an existing stack, 5 GB recommended for a fresh install (the full stack pulls 3-4 GB of images, and the databases grow from there)
 - Port 3999 available on the host. With managed HTTPS, Traefik additionally binds 80 and 443 (plus the InfluxDB port, if exposed)
 - A directory of your choice on the host with writable `compose.yaml` and `.env` for the SOLECTRUS stack (HELIOS regenerates both)
 
-The bootstrap script checks RAM and disk before installing and aborts below the hard minimums.
+The bootstrap script checks Docker Engine version, Compose v2, RAM and disk before installing and aborts below the hard minimums.
 
 ## Supported setups and limitations
 

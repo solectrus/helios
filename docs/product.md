@@ -78,13 +78,13 @@ Scenarios A and B can coexist (e.g. SENEC collector for the inverter + ioBroker 
 
 ## Technical Constraints
 
-| Area               | Constraint                                                                                                                                              |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Architectures      | AMD64, ARM64                                                                                                                                            |
-| Target hosts       | Raspberry Pi (3/4/5), NAS (Synology, QNAP with Docker), VPS, any Linux with Docker                                                                      |
-| Tech stack         | Rails 8.1+, Hotwire (Turbo + Stimulus, TypeScript), Tailwind v4 + daisyUI, Vite, SQLite, RSpec. See [ADR-0007](adr/0007-technology-stack.md).           |
-| Network            | LAN-only by default, port 3999 (`http://<host-ip>:3999`). No outbound internet required.                                                                |
-| Security           | Single admin with random password (stored plaintext in `config.yaml`, mirrored to `.env`). Docker socket mount required. Session persists indefinitely. |
-| Resource footprint | Target < 256 MB RAM for the HELIOS container (suitable for Raspberry Pi)                                                                                |
-| Localization       | German + English UI                                                                                                                                     |
-| Telemetry          | Planned: opt-in update checks + anonymous usage stats via `update.solectrus.de`. Not yet implemented.                                                   |
+| Area               | Constraint                                                                                                                                                 |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Architectures      | AMD64, ARM64                                                                                                                                               |
+| Target hosts       | Raspberry Pi (3/4/5), NAS (Synology DSM 7.2+ with Container Manager, QNAP with Docker), VPS, any Linux with Docker Engine ≥ 24.0 and the Compose v2 plugin |
+| Tech stack         | Rails 8.1+, Hotwire (Turbo + Stimulus, TypeScript), Tailwind v4 + daisyUI, Vite, SQLite, RSpec. See [ADR-0007](adr/0007-technology-stack.md).              |
+| Network            | LAN-only by default, port 3999 (`http://<host-ip>:3999`). No outbound internet required.                                                                   |
+| Security           | Single admin with random password (stored plaintext in `config.yaml`, mirrored to `.env`). Docker socket mount required. Session persists indefinitely.    |
+| Resource footprint | Target < 256 MB RAM for the HELIOS container (suitable for Raspberry Pi)                                                                                   |
+| Localization       | German + English UI                                                                                                                                        |
+| Telemetry          | Planned: opt-in update checks + anonymous usage stats via `update.solectrus.de`. Not yet implemented.                                                      |
