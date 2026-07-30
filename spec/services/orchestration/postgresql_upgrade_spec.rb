@@ -49,15 +49,24 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
   end
 
   # finish! runs after the database is already upgraded and verified. It
-  # reconciles the running services against the rewritten compose — recreating
-  # drifted dependents (the dashboard's DB_HOST) and pruning the pre-upgrade
-  # orphan — rather than only re-baselining postgresql. The real reconcile and
-  # orphan pruning are exercised against Docker in the integration spec; here
-  # we pin the wiring and the failure handling.
+  # reconciles PostgreSQL and the services depending on it against the rewritten
+  # compose — recreating drifted dependents (the dashboard's DB_HOST) and pruning
+  # the pre-upgrade orphan. The real reconcile and orphan pruning are exercised
+  # against Docker in the integration spec; here we pin which services are
+  # picked, and the failure handling.
   describe '#finish! (stack reconcile)' do
     subject(:finish!) { described_class.new.send(:finish!) }
 
-    let(:services) { instance_double(Compose::ServiceCollection, names: %w[postgresql dashboard]) }
+    # A real collection, so the depends_on lookup runs against the actual
+    # compose structure: the dashboard talks to the database, the forecast
+    # collector does not.
+    let(:services) do
+      Compose::ServiceCollection.new(
+        'postgresql' => { 'image' => 'postgres:18-alpine' },
+        'dashboard' => { 'depends_on' => { 'postgresql' => { 'condition' => 'service_healthy' } } },
+        'forecast-collector' => { 'depends_on' => { 'influxdb' => { 'condition' => 'service_healthy' } } },
+      )
+    end
     let(:compose) { instance_double(Compose::File, services:) }
 
     def running(service_name)
@@ -68,12 +77,12 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
       allow(FileUtils).to receive(:rm_f)
       allow(Compose).to receive(:load).and_return(compose)
       allow(Orchestration::Container).to receive(:all).and_return(
-        [running('dashboard'), running('postgresql')],
+        [running('dashboard'), running('postgresql'), running('forecast-collector')],
       )
       allow(Orchestration::AffectedServices).to receive(:update_deployed_hash!)
     end
 
-    it 'reconciles the running compose services and baselines each as deployed' do
+    it 'reconciles PostgreSQL and its dependents, and baselines each as deployed' do
       allow(Orchestration::Runner).to receive(:reconcile)
 
       finish!
@@ -83,6 +92,21 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
       )
       expect(Orchestration::AffectedServices).to have_received(:update_deployed_hash!).with('dashboard')
       expect(Orchestration::AffectedServices).to have_received(:update_deployed_hash!).with('postgresql')
+    end
+
+    # Drift unrelated to the upgrade (an imported stack that was never
+    # redeployed drifts everywhere) must not be swept along: recreating those
+    # containers discards their logs, the only trace left when something fails.
+    it 'leaves services that do not depend on PostgreSQL alone' do
+      allow(Orchestration::Runner).to receive(:reconcile)
+
+      finish!
+
+      expect(Orchestration::Runner).not_to have_received(:reconcile).with(
+        array_including('forecast-collector'),
+      )
+      expect(Orchestration::AffectedServices).not_to have_received(:update_deployed_hash!)
+        .with('forecast-collector')
     end
 
     it 'reports a reconcile failure without rolling back' do

@@ -326,25 +326,42 @@ module Orchestration
             t('verify_failed', expected: @expected_tables, actual: actual || '?')
     end
 
-    # Reconciles the running services against the rewritten compose. Recreating
-    # only `postgresql` would leave dependents running against the old database
-    # (the dashboard embeds the host in DB_HOST, which changes when an imported
-    # `db` service becomes the canonical `postgresql`) and leave the pre-rename
-    # container behind as a crash-looping orphan. Reconciling recreates drifted
-    # running services and prunes orphans (--remove-orphans), then baselines
-    # each so stale "restart required" markers clear. A reconcile failure is not
-    # an upgrade failure (the data is already migrated) so it must not roll
-    # back — it is reported with a message pointing the user at a manual restart.
+    # Brings the affected services in line with the rewritten compose (see
+    # #reconcile_services for which those are). Recreating only `postgresql`
+    # would leave dependents running against the old database (the dashboard
+    # embeds the host in DB_HOST, which changes when an imported `db` service
+    # becomes the canonical `postgresql`) and leave the pre-rename container
+    # behind as a crash-looping orphan. Each reconciled service is baselined
+    # afterwards so its stale "restart required" marker clears. A reconcile
+    # failure is not an upgrade failure (the data is already migrated) so it must
+    # not roll back — it is reported with a message pointing the user at a
+    # manual restart.
     def reconcile_stack!
-      # Running services still in the compose — the dependents to bring in line.
-      # Excludes HELIOS itself; orphans (service gone from compose) are not
-      # passed to `up`, they are pruned by Runner.reconcile's --remove-orphans.
-      services = Container.all.select(&:running?).filter_map(&:service_name)
-                          .uniq.intersection(::Compose.load.services.names) - [Runner::SELF_SERVICE]
+      services = reconcile_services
       Runner.reconcile(services)
       services.each { |service| AffectedServices.update_deployed_hash!(service) }
     rescue Runner::CommandError => e
       raise UpgradeError, t('reconcile_failed', detail: last_line(e.stdout))
+    end
+
+    # PostgreSQL itself plus the running services that depend on it — exactly
+    # those the upgrade affects: their database container was replaced, and in
+    # an imported stack their DB_HOST changed with the rename to `postgresql`.
+    #
+    # Deliberately not every running service: an imported stack that was never
+    # redeployed drifts in every service, and sweeping that along would recreate
+    # containers the user never asked about — discarding their logs, which are
+    # the only trace left when something goes wrong. Excludes HELIOS itself;
+    # orphans (service gone from compose) are pruned project-wide by
+    # Runner.reconcile's --remove-orphans, not by being listed here.
+    def reconcile_services
+      compose_services = ::Compose.load.services
+      running = Container.all.select(&:running?).filter_map(&:service_name).uniq
+
+      dependents =
+        running.select { |name| compose_services.find(name)&.depends_on&.include?(SERVICE) }
+
+      ([SERVICE] + dependents).uniq - [Runner::SELF_SERVICE]
     end
 
     # --- Helpers ---
