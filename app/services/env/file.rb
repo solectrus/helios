@@ -19,7 +19,10 @@ module Env
     def load
       return unless ::File.exist?(path)
 
-      @lines = ::File.readlines(path, chomp: true)
+      # Hand-edited files are regularly not UTF-8, or carry a byte order mark
+      # (see TextEncoding); parsed raw they would raise on the first umlaut in
+      # a comment and silently swallow the first variable.
+      @lines = TextEncoding.utf8(::File.read(path)).lines(chomp: true)
       parse_lines
       self
     end

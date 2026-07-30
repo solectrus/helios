@@ -100,6 +100,15 @@ RSpec.describe SupportBundle do
       expect(log).to match(/Authorization=Token [A-Z]{5}/)
     end
 
+    it 'builds a bundle from files that are not UTF-8' do
+      File.binwrite(File.join(data_path, '.env'), "# Sch\xF6nes Wetter\nSENEC_PASSWORD=secret\n")
+      allow(SupportBundle::ContainerLogs).to receive(:collect).and_return({})
+
+      # Zip entries come back tagged BINARY; the bytes themselves are UTF-8.
+      env = entries['.env'].force_encoding(Encoding::UTF_8)
+      expect(env).to match(/\A# Schönes Wetter\nSENEC_PASSWORD=[A-Z]{5}\n\z/)
+    end
+
     it 'skips files that do not exist on disk' do
       File.delete(File.join(data_path, 'compose.yaml.bak'))
 

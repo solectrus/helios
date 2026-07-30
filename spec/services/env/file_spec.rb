@@ -14,6 +14,95 @@ RSpec.describe Env::File do
       env = described_class.load('/nonexistent/path/.env')
       expect(env.keys).to be_empty
     end
+
+    context 'with a file that is not UTF-8' do
+      let(:tmp_path) { Rails.root.join("tmp/latin1#{ENV.fetch('TEST_ENV_NUMBER', nil)}.env") }
+
+      before do
+        File.binwrite(tmp_path, "# Sch\xF6nes Wetter\nTZ=Europe/Berlin\nCITY=M\xFCnchen\n")
+      end
+
+      it 'parses variables instead of raising' do
+        env = described_class.load(tmp_path)
+
+        expect(env['TZ']).to eq('Europe/Berlin')
+        expect(env['CITY']).to eq('München')
+      end
+
+      it 'repairs the encoding when writing the file back' do
+        env = described_class.load(tmp_path)
+        env.save
+
+        expect(File.read(tmp_path)).to eq("# Schönes Wetter\nTZ=Europe/Berlin\nCITY=München\n")
+      end
+    end
+
+    # The realistic case after two editors touched the same file. Repairing it
+    # as a whole would rewrite the intact password as "GrÃ¼n123", and the
+    # services would then no longer match their data volume.
+    context 'with a file that mixes Latin-1 and UTF-8' do
+      let(:tmp_path) { Rails.root.join("tmp/mixed#{ENV.fetch('TEST_ENV_NUMBER', nil)}.env") }
+
+      before do
+        File.binwrite(tmp_path, "# Sch\xF6nes Wetter\nPOSTGRES_PASSWORD=Grün123\n")
+      end
+
+      it 'leaves the already valid value untouched' do
+        env = described_class.load(tmp_path)
+
+        expect(env['POSTGRES_PASSWORD']).to eq('Grün123')
+      end
+
+      it 'keeps the value when writing the file back' do
+        env = described_class.load(tmp_path)
+        env.save
+
+        expect(File.read(tmp_path)).to eq("# Schönes Wetter\nPOSTGRES_PASSWORD=Grün123\n")
+      end
+    end
+
+    # Notepad calls UTF-16 LE "Unicode" and offers it right next to UTF-8.
+    context 'with a UTF-16 file' do
+      let(:tmp_path) { Rails.root.join("tmp/utf16#{ENV.fetch('TEST_ENV_NUMBER', nil)}.env") }
+
+      before do
+        File.binwrite(tmp_path, "\uFEFFTZ=Europe/Berlin\nCITY=München\n".encode(Encoding::UTF_16LE))
+      end
+
+      it 'parses variables instead of returning none' do
+        env = described_class.load(tmp_path)
+
+        expect(env.to_h).to eq('TZ' => 'Europe/Berlin', 'CITY' => 'München')
+      end
+
+      it 'writes the file back as UTF-8' do
+        env = described_class.load(tmp_path)
+        env.save
+
+        expect(File.read(tmp_path)).to eq("TZ=Europe/Berlin\nCITY=München\n")
+      end
+    end
+
+    # Editors offer "UTF-8 with BOM" (Synology's does); docker compose ignores
+    # the BOM, so the first variable must not go missing here either.
+    context 'with a byte order mark' do
+      let(:tmp_path) { Rails.root.join("tmp/bom#{ENV.fetch('TEST_ENV_NUMBER', nil)}.env") }
+
+      before { File.write(tmp_path, "\uFEFFTZ=Europe/Berlin\nCITY=Muenchen\n") }
+
+      it 'parses the first variable' do
+        env = described_class.load(tmp_path)
+
+        expect(env.to_h).to eq('TZ' => 'Europe/Berlin', 'CITY' => 'Muenchen')
+      end
+
+      it 'drops the mark when writing the file back' do
+        env = described_class.load(tmp_path)
+        env.save
+
+        expect(File.read(tmp_path)).to eq("TZ=Europe/Berlin\nCITY=Muenchen\n")
+      end
+    end
   end
 
   describe '#[]' do

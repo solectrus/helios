@@ -70,6 +70,34 @@ RSpec.describe Import::StackReader do
     end
   end
 
+  # Hand-edited .env files are regularly Latin-1. docker reads them, but
+  # replaces the invalid bytes with U+FFFD — so without normalization the
+  # resolved value and raw_env disagree, and the extractors read both.
+  describe 'a .env that is not UTF-8' do
+    let(:tmpdir) { Dir.mktmpdir }
+    let(:compose_path) { File.join(tmpdir, 'compose.yaml') }
+    let(:env_path) { File.join(tmpdir, '.env') }
+    let(:reader) { described_class.new(compose_path: compose_path, env_path: env_path) }
+
+    before do
+      File.write(compose_path, <<~YAML)
+        services:
+          dashboard:
+            image: ghcr.io/solectrus/solectrus:latest
+            environment:
+              ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      YAML
+      File.binwrite(env_path, "ADMIN_PASSWORD=gehe\xFCm\n")
+    end
+
+    after { FileUtils.remove_entry(tmpdir) }
+
+    it 'resolves values the way raw_env reads them' do
+      expect(reader.service('dashboard')['environment']['ADMIN_PASSWORD']).to eq('geheüm')
+      expect(reader.raw_env['ADMIN_PASSWORD']).to eq('geheüm')
+    end
+  end
+
   describe 'image-based aliasing' do
     # Legacy SOLECTRUS installations often use historical service names:
     # 'app' instead of 'dashboard', 'db' instead of 'postgresql'. Callers should

@@ -155,7 +155,11 @@ module Import
     def run_compose_config
       Dir.mktmpdir do |tmpdir|
         FileUtils.cp(@compose_path, File.join(tmpdir, 'compose.yaml'))
-        FileUtils.cp(@env_path, File.join(tmpdir, '.env')) if File.exist?(@env_path)
+        # Normalized copy rather than FileUtils.cp: docker replaces invalid
+        # bytes with U+FFFD, so a Latin-1 umlaut in a *value* (a password!)
+        # would be imported corrupted here, while raw_env reads it correctly.
+        # Extractors mix both sources, so the two have to agree.
+        File.write(File.join(tmpdir, '.env'), TextEncoding.utf8(File.read(@env_path))) if File.exist?(@env_path)
 
         # Without the overrides, HELIOS' own TZ/ADMIN_PASSWORD/SECRET_KEY_BASE
         # would outrank the adopted stack's .env and get imported as if they

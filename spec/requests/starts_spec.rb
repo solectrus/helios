@@ -36,6 +36,26 @@ RSpec.describe 'Starts' do
       end
     end
 
+    # Hand-edited .env files are regularly Latin-1 instead of UTF-8; a single
+    # umlaut in a comment used to raise Encoding::CompatibilityError here.
+    # docker compose reads such a file fine, so HELIOS has to as well.
+    context 'when the .env file is not UTF-8' do
+      let(:dir) { with_config_yaml }
+
+      before do
+        File.write(File.join(dir, 'compose.yaml'),
+                   "services:\n  dashboard:\n    image: ghcr.io/solectrus/solectrus:latest\n")
+        File.binwrite(File.join(dir, '.env'), "# Sch\xF6nes Wetter\nTZ=Europe/Berlin\n")
+      end
+
+      it 'offers the import button' do
+        get start_path
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include(I18n.t('starts.show.agree'))
+      end
+    end
+
     context 'when the stack contains an unsupported service' do
       let(:dir) { with_config_yaml }
 

@@ -22,7 +22,7 @@ module SupportBundle
       next unless File.exist?(path)
 
       zip.put_next_entry(entry_name)
-      zip.write(anonymize(entry_name, File.read(path)))
+      zip.write(anonymize(entry_name, TextEncoding.utf8(File.read(path))))
     end
   end
 
@@ -49,7 +49,7 @@ module SupportBundle
   def log_redactions
     return [] unless File.exist?(Env.path)
 
-    Anonymizer.log_redactions(File.read(Env.path))
+    Anonymizer.log_redactions(TextEncoding.utf8(File.read(Env.path)))
   end
 
   def filename
