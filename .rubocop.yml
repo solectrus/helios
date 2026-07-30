@@ -78,13 +78,15 @@ RSpec/ExampleLength:
   Max: 20
 
 # Fixture-driven cross-class specs and system specs use string descriptions:
-# the scenarios_spec covers the whole import/export round-trip, and system
-# specs describe end-to-end UI flows, not a single class.
+# the scenarios_spec covers the whole import/export round-trip, system specs
+# describe end-to-end UI flows, and log_silencing_spec covers middleware
+# configuration — none of them a single class.
 RSpec/DescribeClass:
   Exclude:
     - spec/services/scenarios_spec.rb
     - spec/services/export/service_env_contract_spec.rb
     - spec/services/import/configuration_importer/**/*_spec.rb
+    - spec/requests/log_silencing_spec.rb
     - spec/system/**/*_spec.rb
 
 # Integration specs manage expensive external resources (Docker containers,

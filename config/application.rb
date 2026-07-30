@@ -61,6 +61,21 @@ module Helios
       config.middleware.insert(0, StartupCheckMiddleware)
     end
 
+    # Endpoints the UI polls every few seconds for as long as a page is open.
+    # Logging them floods the log and pushes the diagnostic history out within
+    # minutes: in a real support bundle the 500 captured lines covered 11
+    # minutes, nearly all of it /host-stats. Silenced like the healthcheck path
+    # below, so what stays in the log is what actually happened. The silence
+    # ends at ERROR (ActiveSupport::LoggerSilence's default), so failures in
+    # these endpoints still surface.
+    %w[
+      /host-stats
+      /sensors/readings
+      /datasources/mqtt-topics/readings
+    ].each do |path|
+      config.middleware.insert_before(Rails::Rack::Logger, Rails::Rack::SilenceRequest, path:)
+    end
+
     config.x.git.commit_version =
       ENV.fetch('COMMIT_VERSION') { `git describe --always --abbrev=7`.chomp }
 
