@@ -121,4 +121,52 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
       )
     end
   end
+
+  # The dump in prepare! can fail because the container went away while it ran —
+  # an environment hiccup, not something HELIOS did. Nothing would start
+  # PostgreSQL again then, and the stack sits without a database until someone
+  # notices (in the field: the next backup refusing to run).
+  describe '#call (service left down by an aborted upgrade)' do
+    subject(:call) { upgrade.call }
+
+    let(:upgrade) { described_class.new }
+
+    before do
+      allow(upgrade).to receive(:prepare!).and_raise(
+        described_class::UpgradeError, 'dump incomplete'
+      )
+      allow(Orchestration::Container).to receive(:invalidate_cache)
+      allow(Orchestration::Runner).to receive(:start)
+    end
+
+    def stub_container(running:)
+      container = instance_double(Orchestration::Container, running?: running)
+      allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(container)
+    end
+
+    it 'starts PostgreSQL again and still reports the failure' do
+      stub_container(running: false)
+
+      expect { call }.to raise_error(described_class::UpgradeError, /dump incomplete/)
+      expect(Orchestration::Runner).to have_received(:start).with('postgresql')
+    end
+
+    it 'leaves a still-running PostgreSQL alone' do
+      stub_container(running: true)
+
+      expect { call }.to raise_error(described_class::UpgradeError)
+      expect(Orchestration::Runner).not_to have_received(:start)
+    end
+
+    # Once the data directory has been wiped, the dump is the only complete copy
+    # and #rollback! owns the recovery. A half-rebuilt cluster must not come up
+    # and let the dashboard write into it.
+    it 'does not start a cluster whose data directory was already wiped' do
+      stub_container(running: false)
+      upgrade.instance_variable_set(:@data_directory_touched, true)
+
+      expect { call }.to raise_error(described_class::UpgradeError)
+      expect(Orchestration::Runner).not_to have_received(:start)
+    end
+  end
 end

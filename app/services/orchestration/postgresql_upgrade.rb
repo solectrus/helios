@@ -25,6 +25,11 @@ module Orchestration
   # stack on the old version. Only if the rollback itself fails is the dump
   # kept on disk and the user pointed to it.
   #
+  # On top of that, #ensure_running! guarantees that an abort never leaves the
+  # stack without a database as long as the original cluster is intact. Even a
+  # read-only phase can end with PostgreSQL down: the dump fails precisely
+  # because the container went away while it ran.
+  #
   # The dump never passes through Ruby's heap: pg_dumpall is streamed to the
   # file and psql reads it back streamed from the file, so the upgrade is
   # not bounded by available memory.
@@ -33,7 +38,7 @@ module Orchestration
   # touches the PostgreSQL data directory from the host — so it works
   # regardless of whether PostgreSQL uses a bind mount, a custom path, or a
   # named volume.
-  class PostgresqlUpgrade
+  class PostgresqlUpgrade # rubocop:disable Metrics/ClassLength
     include Loggable
 
     SERVICE = 'postgresql'.freeze
@@ -90,8 +95,10 @@ module Orchestration
       finish!
       true
     rescue UpgradeError
+      ensure_running!
       raise
     rescue StandardError => e
+      ensure_running!
       raise UpgradeError, "#{e.class}: #{e.message}"
     end
 
@@ -125,6 +132,31 @@ module Orchestration
     def finish!
       reconcile_stack!
       cleanup_dump
+    end
+
+    # Brings PostgreSQL back up after an abort that left the original cluster
+    # intact. #prepare! is read-only, so an abort there is meant to leave a
+    # running service behind — but the dump can fail precisely because the
+    # container went away while it ran, and then nothing would start it again:
+    # the stack would sit without a database until someone notices (the next
+    # backup refusing to run, for instance).
+    #
+    # Skipped once the data directory has been wiped: there the dump is still
+    # the only complete copy, and a half-rebuilt cluster must not come up and
+    # let the dashboard write into it. #rollback! owns that case.
+    def ensure_running!
+      return if @data_directory_touched
+      return if running?
+
+      logger.warn("#{SERVICE} is down after a failed upgrade, starting it again")
+      Runner.start(SERVICE)
+    rescue StandardError => e
+      logger.error("failed to start #{SERVICE} after a failed upgrade: #{e.class}: #{e.message}")
+    end
+
+    def running?
+      Container.invalidate_cache
+      Container.find(SERVICE)&.running? || false
     end
 
     # --- Steps ---
