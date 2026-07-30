@@ -10,27 +10,29 @@ Web-based control panel for [SOLECTRUS](https://solectrus.de). HELIOS installs t
 
 ## Features
 
-- **Service dashboard** — live status, versions, health for every container; start / stop / restart / recreate per service or in batch.
-- **Survey-based configuration** — guided forms cover every documented SOLECTRUS environment variable (devices, data sources, forecasts, reverse proxy, backup).
-- **Sensor mapping** — registry of ~50 SOLECTRUS sensors with live readings from InfluxDB.
-- **Live logs** — tail and search container logs with ANSI colors directly in the UI.
-- **Backup and restore** — one archive per backup (PostgreSQL dump, InfluxDB export, active configuration), stored locally, on a host mount such as an NFS share, or in an S3-compatible object store. On demand or on a daily schedule, with automatic pruning; restore runs from the UI.
-- **CSV import** — load historical measurements from CSV files into InfluxDB, including cache flush and recalculation of the daily summaries.
-- **Database upgrades** — one-click major-version upgrade of PostgreSQL, offered when the data directory still runs an older major.
-- **Auto-import** — detects existing SOLECTRUS installations, reverse-maps the configuration, and preserves anything it does not understand.
-- **Auto-updates** — Watchtower keeps all images (including HELIOS itself) current, either on an interval or daily at a fixed time.
-- **Real-time UI** — status updates via Turbo Streams + Action Cable, driven by the Docker events API. No polling.
-- **Support bundle** — download a ZIP of the current configuration, container logs, and host snapshot for troubleshooting; secrets are redacted with placeholder values so the bundle can be shared publicly.
+- **Service dashboard** — live status, version and health per service; start, stop and update individually or across the stack. Updates arrive in real time, no polling.
+- **Guided configuration** — surveys cover every documented SOLECTRUS environment variable, with built-in connection tests. `compose.yaml` and `.env` are regenerated after every change.
+- **Sensor mapping** — ~50 SOLECTRUS sensors mapped to InfluxDB fields, with live readings; MQTT topics and Shelly devices included.
+- **HTTPS** — optional managed Traefik with automatic Let's Encrypt certificates, or an existing external proxy.
+- **Live logs** — live tail of service logs with ANSI colors.
+- **Backup and restore** — PostgreSQL, InfluxDB and configuration in one archive; on demand or daily, stored locally, on a host mount or in S3-compatible storage. Restore runs from the UI.
+- **CSV import** — load historical measurements into InfluxDB, including recalculation of the daily summaries.
+- **Database upgrades** — one-click major-version upgrade of PostgreSQL.
+- **Auto-import** — detects an existing SOLECTRUS installation and preserves anything it does not understand.
+- **Auto-updates** — Watchtower keeps all images current, including HELIOS itself.
+- **Support bundle** — ZIP with configuration, logs and host snapshot, secrets redacted so it can be shared publicly.
 - **Localized** — German and English.
 
 ## Requirements
 
 - Docker and Docker Compose (v2)
 - Architecture: AMD64 or ARM64 (Raspberry Pi 3/4/5, NAS, VPS, any Linux host)
-- Port 3999 available on the host
-- ~256 MB RAM for the HELIOS container
-- ≥ 1 GB free disk for the HELIOS Docker image and local data
+- Host RAM: ≥ 1 GB, 2 GB recommended (HELIOS itself needs ~256 MB, the rest is for the SOLECTRUS services)
+- Free disk: ≥ 1 GB when adding HELIOS to an existing stack, 5 GB recommended for a fresh install (the full stack pulls 3-4 GB of images, and the databases grow from there)
+- Port 3999 available on the host. With managed HTTPS, Traefik additionally binds 80 and 443 (plus the InfluxDB port, if exposed)
 - A directory of your choice on the host with writable `compose.yaml` and `.env` for the SOLECTRUS stack (HELIOS regenerates both)
+
+The bootstrap script checks RAM and disk before installing and aborts below the hard minimums.
 
 ## Supported setups and limitations
 
@@ -106,6 +108,6 @@ On the first visit to `http://<your-host>:3999`:
 
 Copyright © 2026 Georg Ledermann. All rights reserved.
 
-HELIOS is **proprietary source-available software** — not open source. The official Docker image may be pulled and operated free of charge for non-commercial, personal use; commercial use requires prior written permission. The source code is published for transparency, reference, and review only. See [`LICENSE.md`](./LICENSE.md) for the full terms and [`docs/legal/THIRD_PARTY_LICENSES.md`](./docs/legal/THIRD_PARTY_LICENSES.md) for bundled third-party components.
+HELIOS is **proprietary source-available software** — not open source. The official Docker image may be pulled and operated free of charge for non-commercial, personal use; commercial use requires prior written permission. The source code is published for transparency, reference, and review only. See [`LICENSE.md`](./LICENSE.md) for the full terms ([German translation](./docs/legal/LICENSE.de.md)) and [`docs/legal/THIRD_PARTY_LICENSES.md`](./docs/legal/THIRD_PARTY_LICENSES.md) for bundled third-party components.
 
 These terms apply to HELIOS only. [SOLECTRUS](https://github.com/solectrus/solectrus) itself remains open source under the **GNU AGPL-3.0** license.
