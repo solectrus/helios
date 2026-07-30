@@ -43,6 +43,17 @@ RSpec.describe 'Services::Logs', :with_admin_password do
       expect(response).to redirect_to(services_path)
     end
 
+    # Regression: every String operation on the output (blank?, match?,
+    # html_escape) raised on the invalid byte and the log page returned a 500.
+    it 'repairs non-UTF-8 log output' do
+      mock_logs("influxdb-1  | 2024-03-23T14:30:05.000000000Z Gr\xFCn\n")
+
+      get service_log_path(service_id: 'influxdb'), headers: turbo_frame_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('Grün')
+    end
+
     context 'with until parameter' do
       it 'returns only the HTML fragment' do
         mock_logs("influxdb-1  | 2024-03-23T14:29:00.000000000Z older line\n")
@@ -53,6 +64,16 @@ RSpec.describe 'Services::Logs', :with_admin_password do
         expect(response).to have_http_status(:ok)
         expect(response.body).to include('15:29:00') # UTC+1 (Europe/Berlin, CET)
         expect(response.body).not_to include('turbo-frame')
+      end
+
+      it 'repairs non-UTF-8 log output' do
+        mock_logs("influxdb-1  | 2024-03-23T14:29:00.000000000Z Gr\xFCn\n")
+
+        get service_log_path(service_id: 'influxdb'),
+            params: { until: '2024-03-23T14:30:05.000000000Z' }
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('Grün')
       end
 
       it 'passes until_timestamp to runner' do
@@ -109,6 +130,17 @@ RSpec.describe 'Services::Logs', :with_admin_password do
 
         expect(response).to have_http_status(:ok)
         expect(response.body.strip).to be_empty
+      end
+
+      it 'repairs non-UTF-8 error output' do
+        allow(Orchestration::Runner).to receive(:logs).and_raise(
+          Orchestration::Runner::CommandError.new('failed', stdout: "Gr\xFCn"),
+        )
+
+        get service_log_path(service_id: 'influxdb'), headers: turbo_frame_headers
+
+        expect(response).to have_http_status(:ok)
+        expect(response.body).to include('Grün')
       end
     end
   end

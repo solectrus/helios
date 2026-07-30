@@ -35,6 +35,26 @@ RSpec.describe LogsChannel do
       expect(Orchestration::Runner).to have_received(:stream_logs).with(service: service_name, tail: 0)
     end
 
+    # Regression: the invalid byte raised in the formatter, #read_log_stream
+    # only rescues IOError and the future swallowed the rest — the live log
+    # froze silently and never recovered.
+    context 'with non-UTF-8 log output' do
+      let(:fake_io) do
+        StringIO.new(
+          "influxdb-1  | 2024-03-23T14:30:05.000000000Z Gr\xFCn\n" \
+          "influxdb-1  | 2024-03-23T14:30:06.000000000Z after\n",
+        )
+      end
+
+      it 'repairs the line and keeps streaming' do
+        subscribe(service: service_name)
+        subscription.instance_variable_get(:@reader_future).wait(5)
+
+        html = broadcasts(subscription.streams.first).map { |b| JSON.parse(b).fetch('html') }
+        expect(html).to include(a_string_including('Grün'), a_string_including('after'))
+      end
+    end
+
     it 'rejects subscription for blank service' do
       subscribe(service: '')
 

@@ -45,6 +45,16 @@ RSpec.describe SupportBundle::ContainerLogs do
     end
   end
 
+  describe '.fetch_log' do
+    it 'repairs output that is not UTF-8' do
+      allow(Open3).to receive(:capture2e).and_return(
+        ["Gr\xFCn\n", instance_double(Process::Status, success?: true)],
+      )
+
+      expect(described_class.fetch_log('abc123def456')).to eq("Grün\n")
+    end
+  end
+
   describe '.collect' do
     it 'returns an error entry when Docker is not reachable' do
       allow(Orchestration::Container).to receive(:all).and_raise(

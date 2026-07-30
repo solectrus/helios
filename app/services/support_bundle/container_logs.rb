@@ -25,6 +25,9 @@ module SupportBundle
       output, status = Open3.capture2e(
         'docker', 'logs', '--tail', TAIL_LINES.to_s, '--timestamps', container_id
       )
+      # Services log in whatever encoding they please; anonymizing invalid
+      # UTF-8 would raise and take the whole bundle down.
+      output = TextEncoding.utf8(output)
       return output if status.success?
 
       "failed (exit #{status.exitstatus}):\n#{output}"

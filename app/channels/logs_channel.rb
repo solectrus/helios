@@ -48,7 +48,11 @@ class LogsChannel < ApplicationCable::Channel
 
   def read_log_stream(io, stream_id, pid)
     io.each_line do |line|
-      html = LogLineFormatter.call(line.chomp)
+      # Services log in whatever encoding they please. An invalid byte would
+      # raise in the formatter (and again in the broadcast's JSON encoding),
+      # and this future swallows that: the live log would freeze without a
+      # trace.
+      html = LogLineFormatter.call(TextEncoding.utf8(line).chomp)
       ActionCable.server.broadcast(stream_id, { html: })
     end
   rescue IOError
