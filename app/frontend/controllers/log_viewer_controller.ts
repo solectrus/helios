@@ -93,8 +93,8 @@ export default class LogViewerController extends Controller {
       { channel: 'LogsChannel', service: this.serviceValue },
       {
         received: (data: unknown) => {
-          const { html } = data as { html: string };
-          this.insertLine(html);
+          const { html } = data as { html: string[] };
+          this.insertLines(html);
         },
         connected: () => {
           this.streamingValue = 'connected';
@@ -109,6 +109,14 @@ export default class LogViewerController extends Controller {
   private unsubscribe() {
     this.subscription?.unsubscribe();
     this.subscription = undefined;
+  }
+
+  // The server sends the lines a service wrote in one go as one message, so
+  // trimming and scrolling happen once per batch instead of once per line.
+  private insertLines(htmlLines: string[]) {
+    for (const html of htmlLines) this.insertLine(html);
+
+    this.trimAndScroll();
   }
 
   private insertLine(html: string) {
@@ -145,6 +153,10 @@ export default class LogViewerController extends Controller {
         this.outputTarget.prepend(el);
       }
     }
+  }
+
+  private trimAndScroll() {
+    const children = this.outputTarget.children;
 
     // Trim oldest lines regardless of scroll position to bound DOM growth.
     // When trimming, compensate scrollTop so the visible content does not

@@ -77,8 +77,9 @@ describe('LogViewerController', () => {
     await tick();
   }
 
-  function receive(line: string) {
-    capturedMixin!.received({ html: line });
+  // The server batches the lines a service wrote in one go into one message.
+  function receive(...lines: string[]) {
+    capturedMixin!.received({ html: lines });
   }
 
   it('trims oldest lines once MAX_LINES is exceeded', async () => {
@@ -95,6 +96,46 @@ describe('LogViewerController', () => {
     // The freshly inserted line is kept, the oldest pre-existing line is gone.
     expect(output.lastElementChild?.textContent).toBe('brand new');
     expect(output.firstElementChild?.textContent).toBe('existing 1');
+  });
+
+  it('inserts a batch of lines in timestamp order', async () => {
+    await start();
+
+    // Docker Compose interleaves output from replicas, so a line can arrive
+    // out of order within the batch.
+    receive(
+      `<div data-ts="2026-01-01T00:00:01Z">first</div>`,
+      `<div data-ts="2026-01-01T00:00:03Z">third</div>`,
+      `<div data-ts="2026-01-01T00:00:02Z">second</div>`,
+    );
+
+    const output = document.querySelector(
+      '[data-log-viewer-target="output"]',
+    ) as HTMLElement;
+    expect(Array.from(output.children).map((el) => el.textContent)).toEqual([
+      'first',
+      'second',
+      'third',
+    ]);
+  });
+
+  it('trims a batch that overshoots MAX_LINES in one go', async () => {
+    await start({ existingLines: 4995 });
+
+    receive(
+      ...Array.from(
+        { length: 20 },
+        (_, i) =>
+          `<div data-ts="2030-01-01T00:00:${String(i).padStart(4, '0')}Z">new ${i}</div>`,
+      ),
+    );
+
+    const output = document.querySelector(
+      '[data-log-viewer-target="output"]',
+    ) as HTMLElement;
+    expect(output.children.length).toBe(5000);
+    expect(output.lastElementChild?.textContent).toBe('new 19');
+    expect(output.firstElementChild?.textContent).toBe('existing 15');
   });
 
   it('removes the log-line-enter class once the fade-in animation ends', async () => {

@@ -1,6 +1,10 @@
 class LogsChannel < ApplicationCable::Channel
   MAX_SUBSCRIPTIONS = 5
 
+  # Upper bound for a single batch, so a service dumping its startup output
+  # neither grows the buffer nor delays the first lines without end.
+  MAX_BATCH = 500
+
   def subscribed
     @service_name = params[:service]
     return reject unless valid_service?
@@ -46,20 +50,39 @@ class LogsChannel < ApplicationCable::Channel
     end
   end
 
+  # While a service keeps writing, collect its lines and send them as one
+  # message. Solid Cable polls at 0.1s and hands out everything from a cycle at
+  # once, so one broadcast per line buys no speed and costs a row plus a trim
+  # job (~0.8ms) each, while the browser restarts its smooth scroll per line.
+  # Batching only when the pipe is not empty keeps latency untouched: as soon as
+  # the service goes quiet, the batch goes out.
   def read_log_stream(io, stream_id, pid)
+    batch = []
+
     io.each_line do |line|
       # Services log in whatever encoding they please. An invalid byte would
       # raise in the formatter (and again in the broadcast's JSON encoding),
       # and this future swallows that: the live log would freeze without a
       # trace.
-      html = LogLineFormatter.call(TextEncoding.utf8(line).chomp)
-      ActionCable.server.broadcast(stream_id, { html: })
+      batch << LogLineFormatter.call(TextEncoding.utf8(line).chomp)
+      next if batch.size < MAX_BATCH && io.wait_readable(0)
+
+      broadcast_batch(stream_id, batch)
     end
   rescue IOError
     # expected when IO is closed during shutdown
   ensure
+    # At EOF the IO reads as ready, so the last batch is flushed here.
+    broadcast_batch(stream_id, batch)
     io.close unless io.closed?
     reap_process(pid)
+  end
+
+  def broadcast_batch(stream_id, batch)
+    return if batch.empty?
+
+    ActionCable.server.broadcast(stream_id, { html: batch })
+    batch.clear
   end
 
   # Runs from #unsubscribed, which is called on the connection's single thread
