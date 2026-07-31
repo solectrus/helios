@@ -117,7 +117,71 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
     end
   end
 
+  # A killed HELIOS (restart, reboot, OOM) does not run any of the in-process
+  # rollback paths — the process is simply gone. Simulated here by raising an
+  # Exception that is not a StandardError, so neither `migrate!`'s rescue nor
+  # `call`'s runs and the journal is left on disk exactly as a crash would
+  # leave it. The next boot then has to make the stack whole again.
+  describe '.recover! (upgrade killed mid-run)' do
+    # The worst window: the data directory has been emptied and the dump is
+    # the only copy of the data left.
+    it 'rebuilds the emptied cluster from the dump and completes the upgrade' do
+      Orchestration::Runner.start('postgresql')
+      wait_until_ready!
+      seed_data!
+
+      crash_during!(:restore_dump!)
+
+      expect(Orchestration::PostgresqlUpgrade::Journal.load.phase).to eq(:rebuilding)
+
+      expect(described_class.recover!).to be true
+
+      upgraded = wait_until_ready!
+      aggregate_failures do
+        expect(described_class.current_major(upgraded)).to eq(described_class.target_major)
+        expect(widget_names).to eq(['helios'])
+        expect(Orchestration::PostgresqlUpgrade::Journal.load).to be_nil
+        expect(Dir.glob(File.join(data_path, 'postgresql-upgrade-*.sql'))).to be_empty
+      end
+    end
+
+    # Killed before anything was emptied: the old cluster is intact, so the
+    # bumped image has to go — a new major refuses to start on it.
+    it 'reverts a run killed after the image was bumped' do
+      Orchestration::Runner.start('postgresql')
+      wait_until_ready!
+      seed_data!
+
+      crash_during!(:rebuild_cluster_from_dump!)
+
+      expect(Orchestration::PostgresqlUpgrade::Journal.load.phase).to eq(:migrating)
+      expect(Configuration.current.postgresql.image).to eq(described_class.target_image)
+
+      expect { described_class.recover! }.to raise_error(
+        described_class::UpgradeError, /previous version 17|Version 17/
+      )
+
+      restored = wait_until_ready!
+      aggregate_failures do
+        expect(described_class.current_major(restored)).to eq(17)
+        expect(widget_names).to eq(['helios'])
+        expect(Configuration.current.postgresql.image).to eq(starting_image)
+        expect(Orchestration::PostgresqlUpgrade::Journal.load).to be_nil
+      end
+    end
+  end
+
   # --- helpers ---
+
+  # Runs a real upgrade until it reaches `step`, then kills it the way a
+  # terminated process would: with an exception no rescue in the upgrade
+  # catches, so no rollback and no cleanup runs.
+  def crash_during!(step)
+    upgrade = described_class.new
+    allow(upgrade).to receive(step).and_raise(Interrupt)
+
+    expect { upgrade.call }.to raise_error(Interrupt)
+  end
 
   # Builds a known-good HELIOS configuration (a real fixture stack) pinned to
   # the older PostgreSQL major, so Export::Builder produces a valid stack.

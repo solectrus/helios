@@ -146,6 +146,165 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
     end
   end
 
+  # A killed HELIOS (restart, reboot, OOM) takes the upgrade job with it, so
+  # none of the in-process rollback paths run. What is left is the journal on
+  # disk; these examples pin what the next boot makes of each phase.
+  describe '.recover!' do
+    subject(:recover!) { described_class.recover! }
+
+    let(:journal) { Orchestration::PostgresqlUpgrade::Journal }
+    let(:dump_path) { File.join(config_yaml_dir, 'postgresql-upgrade-20260731120000.sql') }
+
+    before do
+      with_config_yaml('postgresql' => { 'image' => 'postgres:18-alpine' })
+      allow(Orchestration::Container).to receive(:invalidate_cache)
+      allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(
+        instance_double(Orchestration::Container, running?: true),
+      )
+      allow(Orchestration::Runner).to receive(:start)
+      allow(Orchestration::Runner).to receive(:stop)
+      allow(Orchestration::AffectedServices).to receive(:update_deployed_hash!)
+      allow(Export::Builder).to receive(:new).and_return(
+        instance_double(Export::Builder, write!: true),
+      )
+    end
+
+    def open_journal!(phase)
+      entry = journal.start!(
+        dump_path:,
+        previous_image: 'postgres:17-alpine',
+        previous_pgdata: nil,
+        previous_major: 17,
+        expected_tables: 3,
+      )
+      entry.advance!(phase) unless phase == :preparing
+      entry
+    end
+
+    def write_dump!(complete: true)
+      body = "CREATE TABLE widgets;\n"
+      body += "--\n-- #{described_class::DUMP_COMPLETE_MARKER}\n--\n" if complete
+      File.write(dump_path, body)
+    end
+
+    it 'does nothing when no upgrade was interrupted' do
+      expect(recover!).to be(false)
+    end
+
+    context 'when it was killed while dumping' do
+      before do
+        open_journal!(:preparing)
+        write_dump!(complete: false)
+      end
+
+      it 'reports that nothing happened and drops the partial dump' do
+        expect { recover! }.to raise_error(described_class::UpgradeError, /interrupted before any data/i)
+
+        aggregate_failures do
+          expect(File).not_to exist(dump_path)
+          expect(journal.load).to be_nil
+        end
+      end
+    end
+
+    context 'when it was killed after the image was bumped' do
+      before do
+        open_journal!(:migrating)
+        write_dump!
+      end
+
+      # The old cluster is still on disk. Leaving the new major configured
+      # would have PostgreSQL refuse to start on the next recreate.
+      it 'reverts to the previous major and reports the interruption' do
+        expect { recover! }.to raise_error(described_class::UpgradeError, /previous version 17|Version 17/)
+
+        aggregate_failures do
+          expect(Configuration.current.postgresql.image).to eq('postgres:17-alpine')
+          expect(Orchestration::Runner).to have_received(:start).with('postgresql')
+          expect(File).not_to exist(dump_path)
+          expect(journal.load).to be_nil
+        end
+      end
+    end
+
+    context 'when it was killed with an emptied data directory' do
+      before do
+        open_journal!(:rebuilding)
+        write_dump!
+      end
+
+      it 'rebuilds the cluster from the dump and finishes the upgrade' do
+        upgrade = described_class.new
+        allow(described_class).to receive(:new).and_return(upgrade)
+        allow(upgrade).to receive_messages(
+          wipe_data_directory!: true,
+          wait_until_ready!: true,
+          restore_dump!: true,
+          count_tables: 3,
+          reconcile_stack!: true,
+        )
+
+        expect(recover!).to be(true)
+
+        aggregate_failures do
+          expect(upgrade).to have_received(:restore_dump!)
+          expect(Configuration.current.postgresql.image).to eq('postgres:18-alpine')
+          expect(File).not_to exist(dump_path)
+          expect(journal.load).to be_nil
+        end
+      end
+
+      # Nothing left to rebuild from — retrying this on every boot would not
+      # change the outcome, so the journal goes and the user is told.
+      it 'gives up when the dump is gone' do
+        FileUtils.rm_f(dump_path)
+
+        expect { recover! }.to raise_error(described_class::UpgradeError, /backup|Datensicherung/i)
+
+        expect(journal.load).to be_nil
+      end
+
+      it 'gives up when the dump is truncated' do
+        write_dump!(complete: false)
+
+        expect { recover! }.to raise_error(described_class::UpgradeError)
+
+        expect(journal.load).to be_nil
+      end
+    end
+
+    context 'when it was killed after the restore was verified' do
+      before do
+        open_journal!(:finishing)
+        write_dump!
+      end
+
+      it 'only reconciles the stack and closes the journal' do
+        upgrade = described_class.new
+        allow(described_class).to receive(:new).and_return(upgrade)
+        allow(upgrade).to receive(:reconcile_stack!)
+
+        expect(recover!).to be(true)
+
+        aggregate_failures do
+          expect(upgrade).to have_received(:reconcile_stack!)
+          expect(File).not_to exist(dump_path)
+          expect(journal.load).to be_nil
+        end
+      end
+    end
+
+    # Starting a second upgrade on top of a half-migrated stack would dump a
+    # cluster that may not even be the original one.
+    it 'refuses a fresh upgrade while a recovery is pending' do
+      open_journal!(:rebuilding)
+
+      expect { described_class.call }.to raise_error(
+        described_class::UpgradeError, /interrupted|unterbrochen/i
+      )
+    end
+  end
+
   # The dump in prepare! can fail because the container went away while it ran —
   # an environment hiccup, not something HELIOS did. Nothing would start
   # PostgreSQL again then, and the stack sits without a database until someone

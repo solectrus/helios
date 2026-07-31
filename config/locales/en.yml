@@ -136,6 +136,10 @@ en:
       rolled_back: 'The upgrade failed (%{detail}). PostgreSQL was automatically rolled back to the previous version %{major}; your data is intact.'
       rollback_failed: 'The upgrade failed (%{detail}) and the automatic rollback did not succeed either (%{error}). Your data is preserved in the backup at "%{path}" and can be restored from there.'
       reconcile_failed: 'PostgreSQL was upgraded and its data is intact, but restarting the remaining services failed (%{detail}). Please stop all services and start them again to finish applying the change.'
+      recovery_pending: 'An interrupted PostgreSQL upgrade is being completed right now.'
+      recovery_aborted: 'The PostgreSQL upgrade was interrupted before any data was changed. It did not take place, the database is unchanged.'
+      recovery_reverted: 'The PostgreSQL upgrade was interrupted. The configuration has been reset to the previous version %{major}, the data is intact.'
+      recovery_impossible: 'The PostgreSQL upgrade was interrupted after the database had been emptied, and its backup at "%{path}" is gone. The data can now only be restored from a backup.'
 
   datasources:
     show:

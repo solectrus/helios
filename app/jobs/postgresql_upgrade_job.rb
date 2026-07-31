@@ -3,14 +3,30 @@ class PostgresqlUpgradeJob < ApplicationJob
 
   SERVICE = Orchestration::PostgresqlUpgrade::SERVICE
 
+  # Resumes an upgrade that a killed HELIOS left half-finished. Called once per
+  # boot from config/puma.rb, so it never fires under rake, console or RSpec.
+  # The pending operation is set right here, synchronously during boot: it
+  # keeps the first /services render from offering an upgrade button (or a
+  # start button) for a database the recovery is about to take over.
+  def self.recover_later
+    return unless Orchestration::PostgresqlUpgrade.interrupted?
+
+    Orchestration::PendingOperations.set(SERVICE, :upgrade)
+    perform_later(recover: true)
+  rescue StandardError => e
+    # Runs inside Puma's boot hook: whatever goes wrong here, HELIOS still has
+    # to come up — it is the only way to reach the stack at all.
+    Rails.logger.error("PostgresqlUpgradeJob.recover_later failed: #{e.class}: #{e.message}")
+  end
+
   # An automatic update recreating PostgreSQL between the dump and the restore
   # would destroy the cluster the upgrade is rebuilding, so the whole run holds
   # an update pause. Unlike the detached runners, this operation finishes
   # inside the HELIOS process, so it can end the pause itself.
-  def perform
+  def perform(recover: false)
     Orchestration::UpdatePause.pause!(:postgresql_upgrade)
     Orchestration::ErrorStore.clear(SERVICE)
-    Orchestration::PostgresqlUpgrade.call
+    recover ? Orchestration::PostgresqlUpgrade.recover! : Orchestration::PostgresqlUpgrade.call
   rescue Orchestration::PostgresqlUpgrade::UpgradeError => e
     logger.error("PostgresqlUpgradeJob failed: #{e.message}")
     Orchestration::ErrorStore.set(SERVICE, e.message)

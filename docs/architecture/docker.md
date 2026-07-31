@@ -248,6 +248,23 @@ While paused, Watchtower is left out of [`StackStatus`](../../app/services/orche
 
 A "Start all" from the UI is not blocked and brings Watchtower back — an explicit user action outranks the pause. The marker stays consistent, the sweep simply finds the service already running.
 
+### Interrupted PostgreSQL Upgrades
+
+The major-version upgrade ([`PostgresqlUpgrade`](../../app/services/orchestration/postgresql_upgrade.rb)) is the one long-running operation that cannot be handed to a detached sidecar: it rewrites `config.yaml` and `compose.yaml` between the Docker calls. It therefore dies with the HELIOS process — and it has a window between emptying the data directory and restoring the dump where dying means the database is gone and only the dump file holds the data.
+
+Its own rollback covers an upgrade that _fails_; it does nothing for one that is _killed_. So every step that changes something is recorded first in a [`Journal`](../../app/services/orchestration/postgresql_upgrade/journal.rb) (`helios/postgresql_upgrade.json`), and `config/puma.rb` hands an unfinished journal to `PostgresqlUpgrade.recover!` on the next boot:
+
+| Phase        | State on disk                            | Recovery                                                                 |
+| ------------ | ---------------------------------------- | ------------------------------------------------------------------------ |
+| `preparing`  | dump half-written, nothing else touched  | drop the dump, report that the upgrade did not happen                    |
+| `migrating`  | image bumped, old cluster intact         | revert image and PGDATA, start the old major again                       |
+| `rebuilding` | data directory emptied, dump is the data | rebuild the cluster from the dump; on failure roll back to the old major |
+| `finishing`  | data migrated and verified               | reconcile the stack, close the journal                                   |
+
+The pending operation is set synchronously during boot, so the first `/services` render cannot offer an upgrade (or a start) for a database the recovery is about to take over, and a fresh upgrade is refused while a journal exists. A failed recovery in the `rebuilding` phase keeps the journal: the preserved dump is worth another attempt on the next boot. Only a dump that is gone or truncated ends the automatic path — the user is then pointed at a backup.
+
+The crash paths are covered against real Docker in [`spec/integration/orchestration/postgresql_upgrade_spec.rb`](../../spec/integration/orchestration/postgresql_upgrade_spec.rb).
+
 ---
 
 ## Compose File Conflict Handling

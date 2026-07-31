@@ -50,4 +50,10 @@ pidfile ENV['PIDFILE'] if ENV['PIDFILE']
 after_booted do
   BackupScheduler.start
   at_exit { BackupScheduler.stop }
+
+  # Pick up a PostgreSQL upgrade that was killed mid-run (see
+  # Orchestration::PostgresqlUpgrade#recover!). Same reasoning as above: this
+  # starts and stops containers, so it belongs in the real server process and
+  # nowhere else.
+  PostgresqlUpgradeJob.recover_later
 end

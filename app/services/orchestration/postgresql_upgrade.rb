@@ -30,6 +30,15 @@ module Orchestration
   # read-only phase can end with PostgreSQL down: the dump fails precisely
   # because the container went away while it ran.
   #
+  # All of that covers an upgrade that *fails*. An upgrade that is *killed*
+  # (HELIOS restarted, host rebooted, container OOM-killed) never reaches any
+  # of it — the whole job lives in the HELIOS process. That is what the Journal
+  # is for: every step that changes something is recorded on disk first, so the
+  # next boot can tell how far the upgrade got and finish or undo it (see
+  # #recover!, wired up from config/puma.rb). Automatic updates are paused for
+  # the duration on top (see UpdatePause), which removes the most likely cause
+  # of such a kill in the first place.
+  #
   # The dump never passes through Ruby's heap: pg_dumpall is streamed to the
   # file and psql reads it back streamed from the file, so the upgrade is
   # not bounded by available memory.
@@ -87,9 +96,22 @@ module Orchestration
       new.call
     end
 
+    # True when a previous run was killed before it could finish or undo
+    # itself. Drives the recovery at boot; also blocks a fresh upgrade, since
+    # the stack is not in a state to start one from.
+    def self.interrupted?
+      Journal.load.present?
+    end
+
+    def self.recover!
+      new.recover!
+    end
+
     # Raises UpgradeError with a user-facing message on any failure;
     # returns true on success.
     def call
+      raise UpgradeError, t('recovery_pending') if self.class.interrupted?
+
       prepare!
       migrate!
       finish!
@@ -102,7 +124,123 @@ module Orchestration
       raise UpgradeError, "#{e.class}: #{e.message}"
     end
 
+    # --- Recovery after an interrupted run ---
+
+    # Picks up where a killed upgrade left off. Returns false when there is
+    # nothing to recover (the normal case) and true when the upgrade was
+    # carried to its end. It raises UpgradeError with the message the user has
+    # to see whenever the outcome is not simply "upgraded": an upgrade that had
+    # to be undone reports just like a failed one does, since in both cases the
+    # user clicked Upgrade and did not get one.
+    #
+    # What "a defined state" means depends on how far the upgrade got:
+    #
+    #   preparing   nothing was changed — drop the half-written dump
+    #   migrating   only the configured image was bumped, the old cluster is
+    #               untouched — revert to the previous major
+    #   rebuilding  the data directory was emptied, the dump is the only copy
+    #               of the data — rebuild the cluster from it, exactly as the
+    #               upgrade itself would have. A failure here falls through to
+    #               the normal rollback, which rebuilds the *old* major from
+    #               the same dump
+    #   finishing   the data is already migrated and verified — only the stack
+    #               reconcile is left
+    def recover!
+      interrupted = Journal.load
+      return false if interrupted.nil?
+
+      adopt!(interrupted)
+      logger.warn("resuming an upgrade interrupted in phase #{journal.phase}")
+      recover_from(journal.phase)
+      logger.info("recovery from phase #{journal.phase} completed")
+      true
+    rescue UpgradeError
+      raise
+    rescue StandardError => e
+      raise UpgradeError, "#{e.class}: #{e.message}"
+    end
+
     private
+
+    attr_reader :journal
+
+    def recover_from(phase)
+      case phase
+      when :preparing then abandon_upgrade!
+      when :migrating then revert_upgrade!
+      when :rebuilding then resume_rebuild!
+      when :finishing then finish!
+      end
+    end
+
+    # Restores the state the interrupted run held in memory, so the recovery
+    # steps can reuse the very code paths the upgrade itself uses.
+    def adopt!(interrupted)
+      @journal = interrupted
+      @dump_path = interrupted.dump_path
+      @previous_image = interrupted.previous_image
+      @previous_pgdata = interrupted.previous_pgdata
+      @previous_major = interrupted.previous_major
+      @expected_tables = interrupted.expected_tables
+    end
+
+    # Phase :preparing — the dump was still being written, so nothing outside
+    # HELIOS' own data directory was touched. Only the partial dump has to go.
+    def abandon_upgrade!
+      cleanup_dump
+      journal.clear!
+      ensure_running!
+
+      raise UpgradeError, t('recovery_aborted')
+    end
+
+    # Phase :migrating — the new image is configured but the old cluster is
+    # still on disk, untouched. Reverting the configuration is all it takes;
+    # leaving it would have PostgreSQL refuse to start on the next recreate
+    # (a new major does not read an old major's data directory).
+    def revert_upgrade!
+      write_postgresql_config(image: @previous_image, pgdata: @previous_pgdata)
+      rebuild_stack!
+      Runner.start(SERVICE)
+      AffectedServices.update_deployed_hash!(SERVICE)
+      cleanup_dump
+      journal.clear!
+
+      raise UpgradeError, t('recovery_reverted', major: @previous_major)
+    end
+
+    # Phase :rebuilding — the data directory was emptied, so the dump is the
+    # only complete copy of the data. Finish the upgrade from it; a failure
+    # hands over to the normal rollback, which rebuilds the previous major
+    # from the same dump.
+    #
+    # Without the dump there is nothing left to rebuild from: the journal is
+    # dropped (retrying it every boot would not change the outcome) and the
+    # user is pointed at a backup.
+    def resume_rebuild!
+      unless dump_available?
+        journal.clear!
+        raise UpgradeError, t('recovery_impossible', path: dump_path)
+      end
+
+      @data_directory_touched = true
+      begin
+        rebuild_cluster_from_dump!
+        verify_restore!
+      rescue StandardError => e
+        rollback!(e)
+      end
+      journal.advance!(:finishing)
+      finish!
+    end
+
+    # A dump that is missing entirely raises out of dump_complete? and lands
+    # in the same "cannot be rebuilt from" answer as a truncated one.
+    def dump_available?
+      dump_complete?
+    rescue SystemCallError
+      false
+    end
 
     # --- Phases ---
 
@@ -116,15 +254,26 @@ module Orchestration
       @previous_pgdata = Configuration.current.postgresql.pgdata
       @previous_major = self.class.current_major(container)
       @expected_tables = count_tables
+      # Opened before the dump, not after: a dump killed halfway leaves a
+      # partial file behind that nothing else would ever clean up.
+      @journal = Journal.start!(
+        dump_path:,
+        previous_image: @previous_image,
+        previous_pgdata: @previous_pgdata,
+        previous_major: @previous_major,
+        expected_tables: @expected_tables,
+      )
       create_dump!
     end
 
     # The phase that mutates the stack. Any failure hands off to #rollback!,
     # which always raises an UpgradeError describing the outcome.
     def migrate!
+      journal.advance!(:migrating)
       bump_image!
       rebuild_cluster_from_dump!
       verify_restore!
+      journal.advance!(:finishing)
     rescue StandardError => e
       rollback!(e)
     end
@@ -132,6 +281,7 @@ module Orchestration
     def finish!
       reconcile_stack!
       cleanup_dump
+      journal&.clear!
     end
 
     # Brings PostgreSQL back up after an abort that left the original cluster
@@ -201,6 +351,10 @@ module Orchestration
     # which differ only in which image is configured beforehand. Starts by
     # stopping PostgreSQL so the data directory can be emptied safely.
     def rebuild_cluster_from_dump!
+      # Recorded before the data directory is touched: from here on, a killed
+      # HELIOS leaves a cluster that only the dump can rebuild, and the next
+      # boot must not let PostgreSQL come up on the empty directory instead.
+      journal.advance!(:rebuilding)
       Runner.stop(SERVICE)
       # From here on the data directory is gone — a failure can only be
       # recovered by rebuilding the cluster, never by reverting files.
@@ -221,8 +375,13 @@ module Orchestration
 
       if perform_rollback
         cleanup_dump
+        journal.clear!
         raise UpgradeError, t('rolled_back', detail:, major: @previous_major)
       end
+
+      # The journal survives a failed rollback on purpose: the cluster is not
+      # in a usable state, and rebuilding it from the preserved dump is worth
+      # another attempt on the next boot.
 
       raise UpgradeError,
             t(
