@@ -82,6 +82,21 @@ module Orchestration
         run_compose(*args)
       end
 
+      # Freezes a service in place instead of tearing it down: the container,
+      # its logs and its state survive, Docker reports it as `paused`, and
+      # #unpause brings it back in a fraction of a second. Used for the update
+      # pause (see UpdatePause), where recreating the container is the very
+      # thing to avoid.
+      def pause(service)
+        run_compose('pause', service.to_s)
+      end
+
+      # Fails when the container is not paused, so callers that cannot rule
+      # that out have to check first.
+      def unpause(service)
+        run_compose('unpause', service.to_s)
+      end
+
       def logs(
         service: nil,
         tail: nil,

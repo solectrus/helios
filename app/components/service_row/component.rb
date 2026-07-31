@@ -103,6 +103,19 @@ module ServiceRow
       'stopped'
     end
 
+    # Watchtower is frozen because HELIOS paused it for the duration of a
+    # long-running operation (see Orchestration::UpdatePause). Docker reports
+    # the container as `paused`, so status label, color and dot need no special
+    # case — only the start button does, since starting a paused container does
+    # nothing but would silently promise to undo the protection.
+    def updates_paused?
+      return @updates_paused if defined?(@updates_paused)
+
+      @updates_paused =
+        service_name == Orchestration::UpdatePause::SERVICE &&
+        !running? && Orchestration::UpdatePause.paused?
+    end
+
     def status_indicator_class
       if pending
         color = start_pending? ? 'text-success' : 'text-base-content/30'
@@ -248,7 +261,8 @@ module ServiceRow
     # the global start button and the server-side require_configuration_complete
     # guard, so the UI never offers a start that the server would reject.
     def start_disabled?
-      lazy || pending || running? || !Configuration.current.configuration_complete?
+      lazy || pending || running? || updates_paused? ||
+        !Configuration.current.configuration_complete?
     end
 
     # Per-row source warning (links to /datasources). Narrower than

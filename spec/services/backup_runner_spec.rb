@@ -32,6 +32,8 @@ RSpec.describe BackupRunner do
         mount_source: "#{host_data_path}/influx-backup-staging",
       ),
     )
+    # The backup pauses automatic updates; no Watchtower in this stack.
+    allow(Orchestration::Container).to receive(:find).with('watchtower').and_return(nil)
     allow(RestoreRunner).to receive(:running?).and_return(false)
     allow(CsvImportRunner).to receive_messages(running?: false, in_progress?: false)
 
@@ -66,6 +68,20 @@ RSpec.describe BackupRunner do
       described_class.start
 
       expect(described_class).to have_received(:spawn_preparing_thread!)
+    end
+
+    # Before the first subprocess, not just before the dump: the pull and the
+    # destination preflight run ahead of the container and take minutes on a
+    # fresh host, and an update landing there recreates HELIOS — the preparing
+    # thread dies with it and the backup never starts.
+    it 'pauses automatic updates before anything else touches docker' do
+      calls_at_pause = nil
+      allow(Orchestration::UpdatePause).to receive(:pause!) { calls_at_pause = state[:open3_calls].dup }
+
+      described_class.start
+
+      expect(Orchestration::UpdatePause).to have_received(:pause!).with(:backup)
+      expect(calls_at_pause).to eq([])
     end
 
     it 'records a fresh runner-log entry before the preparing thread starts' do

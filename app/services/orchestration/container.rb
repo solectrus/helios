@@ -148,8 +148,35 @@ module Orchestration
       :ok
     end
 
+    # Docker reports `unhealthy` for a container it simply could not probe, not
+    # only for one that failed a probe: pausing a container stops its health
+    # monitor and flips the status, and after `unpause` it stays that way until
+    # a full interval has elapsed. The failing streak tells the two apart — it
+    # stays at zero when no probe ever failed, while a genuine fault has counted
+    # at least one failure.
+    #
+    # Which of the two harmless cases it is, the probe log answers: it survives
+    # the pause, so a container that was passing when it was frozen still has
+    # that result on record and is reported healthy the moment it is thawed,
+    # instead of dragging the whole stack to `starting` for an entire interval
+    # after every update pause (see UpdatePause). An empty log means nothing was
+    # ever probed — a freshly started container, which `starting` describes.
     def health_status
-      inspect_data&.dig('State', 'Health', 'Status')
+      raw = inspect_data&.dig('State', 'Health', 'Status')
+      return raw unless raw == 'unhealthy' && failing_streak.zero?
+
+      last_probe_exit_code&.zero? ? 'healthy' : 'starting'
+    end
+
+    def failing_streak
+      inspect_data&.dig('State', 'Health', 'FailingStreak').to_i
+    end
+
+    # Docker keeps the last five probe results; the most recent one is what the
+    # frozen status was computed from.
+    def last_probe_exit_code
+      log = inspect_data&.dig('State', 'Health', 'Log')
+      log&.last&.dig('ExitCode')
     end
 
     def healthcheck_configured?

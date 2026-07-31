@@ -109,14 +109,24 @@ module Orchestration
     private
 
     def refresh_service_statuses
-      compose_services = ::Compose.load.services.reject(&:helios?)
       containers_by_name = Orchestration::Container.all.index_by(&:service_name)
 
       @service_statuses.clear
-      compose_services.each do |cs|
+      counted_services.each do |cs|
         container = containers_by_name[cs.name]
         @service_statuses[cs.name] = container&.effective_status || :stopped
       end
+    end
+
+    # Watchtower is left out entirely while HELIOS holds it down for a
+    # long-running operation (see UpdatePause): a service stopped on purpose is
+    # not a stopped service, and counting it would turn the whole stack amber
+    # for the duration of every nightly backup.
+    def counted_services
+      services = ::Compose.load.services.reject(&:helios?)
+      return services unless UpdatePause.paused?
+
+      services.reject { |cs| cs.name == UpdatePause::SERVICE }
     end
 
     def rebuild_stack

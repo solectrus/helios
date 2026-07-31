@@ -225,6 +225,27 @@ Defaults live in the [`DockerImages`](../../app/models/docker_images.rb) registr
 - Own services default to `latest` – Watchtower handles updates automatically; `develop` is available for users who want pre-release builds
 - Third-party services pin major version – prevents breaking changes, allows minor/patch updates
 
+### Update Pause During Long-Running Operations
+
+A Watchtower update _recreates_ the container it updates. That is fatal in the middle of an operation that spans several containers and minutes to hours: InfluxDB disappearing halfway through a CSV import truncates it, PostgreSQL recreated between the dump and the restore of a major upgrade loses the cluster.
+
+[`Orchestration::UpdatePause`](../../app/services/orchestration/update_pause.rb) therefore freezes Watchtower (`docker compose pause watchtower`) for the duration of a CSV import, a backup, a restore and a PostgreSQL major upgrade. Nothing in `compose.yaml`/`.env` changes, so the mechanism also covers adopted stacks that were never redeployed, and it protects every service at once rather than the ones a given operation happens to touch.
+
+The pause starts with the operation, not with its container: every runner spends minutes on HELIOS-side preparation first (pull the `docker:cli` image, probe an external destination, download a backup from S3, and for a restore rewrite `config.yaml` and `compose.yaml`), and an update landing there recreates HELIOS itself — the preparation dies with the process and the run never happens. `pause_updates!` is therefore the first step of every runner, preceded only by the lock checks that can still reject the run.
+
+Docker's own pause rather than a stop: the container keeps its identity, its logs and its place in the stack, and `docker compose unpause` brings it back in a fraction of a second. It also reports itself — `paused` is a state Docker returns, so the row renders it through the ordinary status path (label "Paused", blue dot) instead of a special case. The one thing HELIOS still overrides is the start button, which stays disabled: starting a paused container does nothing, so offering it would only promise to undo the protection.
+
+The failure mode to avoid is a leaked pause – a stack that silently never sees another update. Hence:
+
+- A marker file (`helios/watchtower_pause.json`) records only that _HELIOS_ paused Watchtower, so a service the user stopped themselves is never brought back. `unpause` additionally errors on a container that is not paused, so the state is checked before it runs — otherwise a Watchtower the user recreated meanwhile would strand the marker forever.
+- Whether the pause may end is never read from that marker: it is derived from live state (is a sidecar container still running, is an upgrade still pending), which a HELIOS crash cannot falsify — a crash drops the in-process flags along with the operation they belonged to.
+- `BackupScheduler` sweeps on every tick — the one thread reliably awake — and lifts the pause as soon as nothing is in flight. `UpdatePause::MAX_AGE` is the last-resort valve for when liveness cannot be determined at all.
+- A pause that fails is resolved from live state rather than assumed to have failed cleanly. The marker is written before the `docker compose pause`, so an error afterwards can mean either "never froze" or "froze and reported an error anyway"; the marker is dropped only in the first case, and kept when Docker cannot answer at all. A stale marker costs a single sweep, a missing one would leave Watchtower frozen for good.
+
+While paused, Watchtower is left out of [`StackStatus`](../../app/services/orchestration/stack_status.rb) entirely: a paused container is not running, so counting it would turn the whole stack amber for the duration of every nightly backup.
+
+A "Start all" from the UI is not blocked and brings Watchtower back — an explicit user action outranks the pause. The marker stays consistent, the sweep simply finds the service already running.
+
 ---
 
 ## Compose File Conflict Handling

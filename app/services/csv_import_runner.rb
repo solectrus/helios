@@ -31,6 +31,7 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
   REDIS_SERVICE = 'redis'.freeze
   IMPORT_MOUNT = '/data'.freeze
   I18N_SCOPE = 'csv_imports.runner'.freeze
+  UPDATE_PAUSE_REASON = :csv_import
 
   # Always required for the importer to write into InfluxDB.
   REQUIRED_INFLUX_KEYS = %w[INFLUX_TOKEN_WRITE INFLUX_ORG INFLUX_BUCKET].freeze
@@ -192,6 +193,7 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
   # Body of the preparing thread; surfaces failures into the state file so
   # the UI can show them on the next poll.
   def run_preparing!
+    pause_updates!
     pull_image_if_needed!
     run_container!
     self.class.invalidate_in_progress_cache!

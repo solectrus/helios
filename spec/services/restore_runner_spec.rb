@@ -53,6 +53,8 @@ RSpec.describe RestoreRunner do
         ),
       ),
     )
+    # The restore pauses automatic updates; no Watchtower in this stack.
+    allow(Orchestration::Container).to receive(:find).with('watchtower').and_return(nil)
     allow(Orchestration::Container).to receive(:all).and_return(
       [
         mock_container('solectrus-postgresql-1', 'postgresql', running: true),
@@ -79,6 +81,22 @@ RSpec.describe RestoreRunner do
       config = Configuration.load_file(Configuration.path)
       expect(config.dig('postgresql', 'image')).to eq('postgres:18-alpine')
       expect(Export::Builder).to have_received(:new).with(Configuration.current)
+    end
+
+    # Before the first subprocess, so the pull, an S3 download and above all
+    # the config swap in prepare_restored_stack! are covered too: that step
+    # rewrites compose.yaml, and an update recreating a service from the spec
+    # it just replaced is exactly what the pause exists to prevent.
+    it 'pauses automatic updates before the pull and the config swap' do
+      calls_at_pause = nil
+      allow(Orchestration::UpdatePause).to receive(:pause!) { calls_at_pause = state[:open3_calls].dup }
+
+      described_class.start(filename)
+
+      expect(Orchestration::UpdatePause).to have_received(:pause!).with(:restore)
+      # Only the lock check has run by then, and deliberately so: a restore
+      # rejected for a concurrent run must not freeze updates on its way out.
+      expect(calls_at_pause.map { |args| args.first(2) }).to all(eq(%w[docker inspect]))
     end
 
     it 'launches docker:cli with the restore script and required mounts' do

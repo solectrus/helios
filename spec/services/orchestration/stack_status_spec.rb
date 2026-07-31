@@ -118,6 +118,58 @@ RSpec.describe Orchestration::StackStatus do
     end
   end
 
+  # Watchtower is down for as long as a backup, import, restore or upgrade
+  # runs (see UpdatePause). Counting it would report the stack as partially
+  # down for the duration, every single night.
+  describe '#refresh! (Watchtower while updates are paused)' do
+    before do
+      described_class.instance.instance_variable_get(:@initialized).make_true
+      allow(Orchestration::StatusBarBroadcaster).to receive(:new).and_return(
+        instance_double(Orchestration::StatusBarBroadcaster, broadcast: nil),
+      )
+      allow(Orchestration::AffectedServices).to receive_messages(
+        compute: [], invalidate_config_hashes: nil,
+      )
+      allow(Compose).to receive(:load).and_return(
+        instance_double(
+          Compose::File,
+          services: [
+            instance_double(Compose::Service, name: 'postgresql', helios?: false),
+            instance_double(Compose::Service, name: 'watchtower', helios?: false),
+          ],
+        ),
+      )
+      allow(Orchestration::Container).to receive_messages(
+        invalidate_cache: nil,
+        all: [instance_double(Orchestration::Container, service_name: 'postgresql', effective_status: :ok)],
+      )
+    end
+
+    it 'leaves it out of the stack status entirely' do
+      allow(Orchestration::UpdatePause).to receive(:paused?).and_return(true)
+
+      described_class.refresh!
+
+      aggregate_failures do
+        expect(described_class.status_for('watchtower')).to be_nil
+        expect(described_class.service_counts).to eq(running: 1, total: 1)
+        expect(described_class.overall).to eq(:ok)
+      end
+    end
+
+    it 'counts it like any other service otherwise' do
+      allow(Orchestration::UpdatePause).to receive(:paused?).and_return(false)
+
+      described_class.refresh!
+
+      aggregate_failures do
+        expect(described_class.status_for('watchtower')).to eq(:stopped)
+        expect(described_class.service_counts).to eq(running: 1, total: 2)
+        expect(described_class.overall).to eq(:partial)
+      end
+    end
+  end
+
   describe '#mark_starting!' do
     before do
       described_class.instance.instance_variable_get(:@initialized).make_true

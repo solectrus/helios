@@ -7,6 +7,8 @@
 #   1. `start` (this class, Ruby/HELIOS side)
 #      - validate!         — env, config, tokens, destination, both DB
 #                            services running, no concurrent restore
+#      - pause_updates!    — freeze Watchtower for the whole run, the pull
+#                            included (see Orchestration::UpdatePause)
 #      - pull_image_if_needed!  (docker:cli)
 #      - preflight_destination! — sidecar probe of an external mount
 #                                 *before* the long-running container, so
@@ -62,6 +64,7 @@ class BackupRunner < DetachedRunner
   INFLUXDB_SERVICE = 'influxdb'.freeze
   PHASE_FILENAME = 'backup-phase.txt'.freeze
   I18N_SCOPE = 'backups.runner'.freeze
+  UPDATE_PAUSE_REASON = :backup
 
   # Phase names the backup script writes into PHASE_FILENAME. Anything
   # outside this allowlist falls back to the generic "In progress…" label.
@@ -223,6 +226,7 @@ class BackupRunner < DetachedRunner
   # dir that detect_completion! turns into a red completion card — so the
   # user gets the message on the progress page instead of a button spinner.
   def run_preparing!
+    pause_updates!
     pull_image_if_needed!
     preflight_destination!
     run_container!

@@ -107,8 +107,79 @@ RSpec.describe Orchestration::Container do
   end
 
   describe '#health_status' do
+    def container_with_health(status, failing_streak, state: 'running', log: [])
+      raw = instance_double(
+        Docker::Container,
+        id: 'abc123def456',
+        info: mock_container.info.merge('State' => state),
+        json: {
+          'State' => {
+            'Health' => {
+              'Status' => status,
+              'FailingStreak' => failing_streak,
+              'Log' => log,
+            },
+          },
+        },
+      )
+      described_class.new(raw)
+    end
+
     it 'returns the health status' do
       expect(container.health_status).to eq('healthy')
+    end
+
+    # Pausing a container stops its health monitor: Docker flips the status to
+    # `unhealthy` without a single probe having failed, and it stays that way
+    # until the next interval after `unpause`. Reporting that as a fault turned
+    # the whole stack red for a few seconds after every update pause.
+    it 'reads unhealthy without a failing streak as not yet probed' do
+      subject = container_with_health('unhealthy', 0)
+
+      aggregate_failures do
+        expect(subject.health_status).to eq('starting')
+        expect(subject.effective_status).to eq(:starting)
+      end
+    end
+
+    # The log survives the pause, so the last successful probe is still on
+    # record while Docker reports the frozen `unhealthy`. Without it the whole
+    # stack would sit at `starting` for a full interval after every thaw.
+    it 'reads unhealthy with a passing probe on record as healthy' do
+      subject = container_with_health('unhealthy', 0, log: [{ 'ExitCode' => 1 }, { 'ExitCode' => 0 }])
+
+      aggregate_failures do
+        expect(subject.health_status).to eq('healthy')
+        expect(subject.effective_status).to eq(:ok)
+      end
+    end
+
+    # A container frozen inside its start period can have a failed probe on
+    # record with the streak still at zero — not yet a fault, but not passing
+    # either.
+    it 'reads unhealthy with a failed probe on record as not yet probed' do
+      subject = container_with_health('unhealthy', 0, log: [{ 'ExitCode' => 1 }])
+
+      aggregate_failures do
+        expect(subject.health_status).to eq('starting')
+        expect(subject.effective_status).to eq(:starting)
+      end
+    end
+
+    it 'keeps unhealthy once a probe has actually failed' do
+      subject = container_with_health('unhealthy', 1)
+
+      aggregate_failures do
+        expect(subject.health_status).to eq('unhealthy')
+        expect(subject.effective_status).to eq(:error)
+      end
+    end
+
+    # The pause itself must still read as stopped-on-purpose, not as starting.
+    it 'reports a paused container as stopped regardless of its health' do
+      subject = container_with_health('unhealthy', 0, state: 'paused')
+
+      expect(subject.effective_status).to eq(:stopped)
     end
   end
 
@@ -143,7 +214,12 @@ RSpec.describe Orchestration::Container do
         instance_double(
           Docker::Container,
           id: mock_container.id,
-          json: { 'State' => { 'Health' => { 'Status' => 'unhealthy' } } },
+          # A failed probe on record, so the value survives #health_status's
+          # "unhealthy without a failing streak means not yet probed" reading
+          # and this example keeps testing the cache rather than that rule.
+          json: {
+            'State' => { 'Health' => { 'Status' => 'unhealthy', 'FailingStreak' => 3 } },
+          },
         )
       second = described_class.new(fresh_raw)
 

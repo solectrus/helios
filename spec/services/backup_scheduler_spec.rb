@@ -135,6 +135,23 @@ RSpec.describe BackupScheduler do
       expect(BackupRepository).to have_received(:detect_completion!)
     end
 
+    it 'ends a finished update pause every tick, even when not due' do
+      allow(described_class).to receive(:due?).and_return(false)
+      allow(Orchestration::UpdatePause).to receive(:resume_if_idle!)
+
+      described_class.tick
+
+      expect(Orchestration::UpdatePause).to have_received(:resume_if_idle!)
+    end
+
+    it 'still schedules when ending the update pause fails' do
+      allow(Orchestration::UpdatePause).to receive(:resume_if_idle!).and_raise(StandardError, 'docker down')
+
+      described_class.tick
+
+      expect(BackupRunner).to have_received(:start).with(automatic: true)
+    end
+
     it 'still schedules when completion detection fails' do
       allow(BackupRepository).to receive(:detect_completion!).and_raise(StandardError, 'docker down')
 

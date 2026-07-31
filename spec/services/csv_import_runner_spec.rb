@@ -38,6 +38,8 @@ RSpec.describe CsvImportRunner do
     postgres_container = instance_double(Orchestration::Container, running?: true)
     allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(influx_container)
     allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(postgres_container)
+    # The import pauses automatic updates; no Watchtower in this stack.
+    allow(Orchestration::Container).to receive(:find).with('watchtower').and_return(nil)
     allow(Orchestration::DockerCli).to receive(:inspect_container)
       .with(described_class::CONTAINER_NAME).and_return(nil)
 
@@ -53,6 +55,23 @@ RSpec.describe CsvImportRunner do
   after { FileUtils.remove_entry(data_path) }
 
   describe '.start' do
+    # Before the pull, not merely before the run: on a fresh host the pull is
+    # the minutes-long part, and an update landing in it recreates HELIOS —
+    # which takes the preparing thread, and with it the import, down with it.
+    it 'pauses automatic updates before the importer starts writing' do
+      order = []
+      allow(Orchestration::UpdatePause).to receive(:pause!) { |reason| order << reason }
+      allow(Open3).to receive(:capture2e) do |*args|
+        order << :docker_pull if args[0..1] == %w[docker pull]
+        order << :docker_run if args[0..1] == %w[docker run]
+        ['', instance_double(Process::Status, success?: true)]
+      end
+
+      described_class.start
+
+      expect(order).to eq(%i[csv_import docker_pull docker_run])
+    end
+
     it 'launches docker run with the expected mounts, network and influx env' do
       described_class.start
 

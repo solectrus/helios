@@ -1,6 +1,9 @@
 module Orchestration
   class Event
-    RELEVANT_ACTIONS = %w[create start stop die destroy].freeze
+    # pause/unpause are what an update pause looks like from Docker's side
+    # (see Orchestration::UpdatePause): the container is never stopped, so
+    # without them the row would keep reporting the service as running.
+    RELEVANT_ACTIONS = %w[create start stop die destroy pause unpause].freeze
     HELIOS_OPERATION_CONTAINER_NAMES = [
       BackupRunner::CONTAINER_NAME,
       RestoreRunner::CONTAINER_NAME,

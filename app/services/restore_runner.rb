@@ -8,6 +8,9 @@
 #
 #   1. `start(filename)` (this class, Ruby/HELIOS side)
 #      - validate_locks!   — no concurrent backup, no concurrent restore
+#      - pause_updates!    — freeze Watchtower for the whole run, the S3
+#                            download and the config swap below included
+#                            (see Orchestration::UpdatePause)
 #      - pull_image_if_needed!  (docker:cli)
 #      - clear_errors!     — wipe last run's error markers
 #      - mark_pending!     — UI shows the target filename
@@ -81,6 +84,7 @@ class RestoreRunner < DetachedRunner
   ERROR_FILENAME = 'restore-error.txt'.freeze
   PHASE_FILENAME = 'restore-phase.txt'.freeze
   I18N_SCOPE = 'backups.restorer'.freeze
+  UPDATE_PAUSE_REASON = :restore
 
   # Phase names the restore script writes into PHASE_FILENAME. Anything
   # outside this allowlist falls back to the generic "Restoring…" label.
@@ -113,6 +117,7 @@ class RestoreRunner < DetachedRunner
     @backup = BackupRepository.find!(filename)
     logger.info("start filename=#{filename} s3=#{BackupRepository.s3?}")
     validate_locks!
+    pause_updates!
     pull_image_if_needed!
     clear_errors!
     RunnerLog.record_started!(:restore)

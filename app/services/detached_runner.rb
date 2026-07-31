@@ -10,8 +10,8 @@ require 'open3'
 # second run of the same kind cannot start. Status is read straight from
 # Docker (`docker inspect`); no marker files are needed for "in progress".
 #
-# Subclasses must define the constants CONTAINER_NAME, IMAGE and I18N_SCOPE
-# and the instance method `docker_run_command`.
+# Subclasses must define the constants CONTAINER_NAME, IMAGE, I18N_SCOPE and
+# UPDATE_PAUSE_REASON and the instance method `docker_run_command`.
 class DetachedRunner
   include Loggable
   extend Loggable
@@ -146,6 +146,21 @@ class DetachedRunner
 
   private
 
+  # Freezes automatic updates for the whole run, not just for the part that
+  # happens inside the container: every runner does minutes of HELIOS-side
+  # preparation first (pull an image, probe the destination, download from
+  # S3, for a restore even rewrite compose.yaml), and an update landing in
+  # that stretch breaks the run just as thoroughly — it recreates HELIOS
+  # itself, and the preparation dies with it. Called at the top of each
+  # runner's preparation therefore, not next to `docker run`.
+  #
+  # Ending the pause stays with the sweep (see Orchestration::UpdatePause):
+  # a preparation that fails before any container exists leaves nothing in
+  # flight, so the next tick thaws Watchtower on its own.
+  def pause_updates!
+    Orchestration::UpdatePause.pause!(self.class::UPDATE_PAUSE_REASON)
+  end
+
   # Always pull — some runners point at floating tags (csv-importer is on
   # `:develop`), so a locally-cached image may be stale. `docker pull` is
   # cheap when the digest already matches (manifest check only), and the
@@ -176,7 +191,6 @@ class DetachedRunner
   # detect_completion! to fire prematurely and paint the card green.
   def run_container! # rubocop:disable Metrics/AbcSize
     ensure_bind_mount_sources!
-
     logger.info("docker run -d (image=#{self.class::IMAGE})")
     output, status = Open3.capture2e(*docker_run_command)
     logger.info("docker run success=#{status.success?} output=#{output.strip.inspect}")

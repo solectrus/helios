@@ -24,7 +24,10 @@ RSpec.describe Orchestration::Event do
       expect(event).not_to be_relevant
     end
 
-    %w[create start stop die destroy].each do |action|
+    # pause/unpause matter because an update pause never stops the container
+    # (see Orchestration::UpdatePause) — without them the row would go on
+    # reporting a frozen service as running.
+    %w[create start stop die destroy pause unpause].each do |action|
       it "returns true for '#{action}' action" do
         event = described_class.new(build_raw_event(action:))
         expect(event).to be_relevant

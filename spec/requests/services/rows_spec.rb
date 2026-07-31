@@ -263,6 +263,43 @@ RSpec.describe 'Services::Rows', :with_admin_password do
       end
     end
 
+    describe 'the Watchtower row while automatic updates are paused' do
+      before do
+        # A pending operation would take precedence over the pause label, and
+        # the store is process-wide — drop whatever an earlier spec left behind.
+        Orchestration::PendingOperations.clear('watchtower')
+        mock_compose_service('watchtower')
+        allow(Orchestration::Container).to receive(:find).with('watchtower')
+                                                         .and_return(mock_container('watchtower', running: false,
+                                                                                                  status: 'paused'))
+        allow(Orchestration::UpdatePause).to receive(:paused?).and_return(true)
+      end
+
+      # Docker reports the frozen container as `paused`, so the row renders it
+      # through the ordinary status path — same wording and styling as every
+      # other state. Sidecar translations live in the component's own I18n
+      # backend, hence the rendered copy instead of a global key.
+      it 'reports the container as paused' do
+        get service_row_path(service_id: 'watchtower'), headers: turbo_frame_headers
+
+        aggregate_failures do
+          expect(response.body).to include('data-tip="Paused"')
+          expect(response.body).to include('bg-info')
+          expect(response.body).not_to include('Not created')
+        end
+      end
+
+      it 'does not offer to start the service' do
+        get service_row_path(service_id: 'watchtower'), headers: turbo_frame_headers
+
+        expect(start_button(response.body)).to match(/\bdisabled\b/)
+      end
+
+      def start_button(body)
+        body[%r{<form[^>]*#{Regexp.escape(service_task_path('watchtower'))}.*?</form>}m]
+      end
+    end
+
     it 'does not read the log of other services' do
       mock_compose_service('redis')
       container = mock_container('redis', running: true)

@@ -59,6 +59,7 @@ class BackupScheduler < ManagedThread
       begin
         Rails.application.executor.wrap do
           detect_finished_backup
+          resume_automatic_updates
           run_due_backup
         end
       ensure
@@ -79,6 +80,17 @@ class BackupScheduler < ManagedThread
       BackupRepository.detect_completion!
     rescue StandardError => e
       logger.error("detect_completion!: #{e.class}: #{e.message}")
+    end
+
+    # Second piece of housekeeping riding on the one thread that is reliably
+    # awake: every long-running operation takes Watchtower down at its start
+    # (see Orchestration::UpdatePause), and only live Docker state can tell
+    # that the operation is over — including after a HELIOS restart that
+    # killed everything which could have reported it.
+    def resume_automatic_updates
+      Orchestration::UpdatePause.resume_if_idle!
+    rescue StandardError => e
+      logger.error("resume_if_idle!: #{e.class}: #{e.message}")
     end
 
     # Pure decision: should an automatic backup be handled at `now`? True once
