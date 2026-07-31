@@ -27,9 +27,13 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
       influxdb:2.5-alpine
       influxdb:2.5.1
       influxdb:2.5.0
+      influxdb:2.4-alpine
       influxdb:2.4.0-alpine
+      influxdb:2.3-alpine
       influxdb:2.3.0-alpine
+      influxdb:2.2-alpine
       influxdb:2.2.0-alpine
+      influxdb:2.1-alpine
       influxdb:2.1.1-alpine
     ],
   }.freeze
