@@ -3,6 +3,7 @@ class ComposeJob < ApplicationJob
 
   def perform(action, service_name = nil)
     action = action.to_sym
+    Orchestration::UpdatePause.pause!(:service_update) if pauses_updates?(action, service_name)
     rebuild_stack if applies_config?(action)
     remove_errored_containers(action)
     clear_errors(action, service_name)
@@ -14,9 +15,26 @@ class ComposeJob < ApplicationJob
   ensure
     clear_pending_operations(action, service_name)
     broadcast_results(action, service_name)
+    # Last: the pending flag it just cleared is what tells UpdatePause this
+    # recreate is still in flight.
+    Orchestration::UpdatePause.resume_if_idle! if pauses_updates?(action, service_name)
   end
 
   private
+
+  # A recreate tears the container down and builds it back up from the
+  # compose.yaml this job has just rewritten. An automatic update landing in
+  # that window either kills HELIOS mid-job — leaving the service down, since
+  # nothing would run the `up` — or rebuilds a container from the spec it is
+  # still running, which is the one compose.yaml no longer describes.
+  #
+  # Only :recreate. The batch actions bring Watchtower up or down themselves,
+  # and start/stop have no down-then-up window to protect. Watchtower's own
+  # recreate is excluded too: it comes straight back, so the pause would leave
+  # nothing but a marker for the sweep to clean up.
+  def pauses_updates?(action, service_name)
+    action == :recreate && service_name != Orchestration::UpdatePause::SERVICE
+  end
 
   def rebuild_stack
     Export::Builder.new(Configuration.current).write!

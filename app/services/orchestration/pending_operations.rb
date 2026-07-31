@@ -35,9 +35,16 @@ module Orchestration
         OPERATIONS.clear
       end
 
-      def any_start_pending?
-        OPERATIONS.each_pair { |_, op| return true if START_OPERATIONS.include?(op) }
+      # True while any service carries one of the given operations. Answers
+      # "is HELIOS still working on something of this kind?" without the
+      # caller having to know which service it runs on.
+      def any_pending?(*operations)
+        OPERATIONS.each_pair { |_, op| return true if operations.include?(op) }
         false
+      end
+
+      def any_start_pending?
+        any_pending?(*START_OPERATIONS)
       end
     end
   end

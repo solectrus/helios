@@ -388,6 +388,77 @@ RSpec.describe ComposeJob do
     end
   end
 
+  # A recreate runs `down <svc>` then `up <svc>`; an automatic update landing
+  # in that window leaves the service down or rebuilds it from the spec the
+  # freshly written compose.yaml has just replaced.
+  describe 'the update pause' do
+    before do
+      allow(Orchestration::UpdatePause).to receive(:pause!)
+      allow(Orchestration::UpdatePause).to receive(:resume_if_idle!)
+      allow(Orchestration::Runner).to receive_messages(
+        recreate: Orchestration::CommandResult.new(output: 'OK', exit_status: 0),
+        start: Orchestration::CommandResult.new(output: 'OK', exit_status: 0),
+        stop: Orchestration::CommandResult.new(output: 'OK', exit_status: 0),
+        up: Orchestration::CommandResult.new(output: 'OK', exit_status: 0),
+      )
+    end
+
+    it 'holds it for the whole recreate' do
+      allow(Orchestration::Runner).to receive(:recreate) do
+        expect(Orchestration::UpdatePause).to have_received(:pause!).with(:service_update)
+        expect(Orchestration::UpdatePause).not_to have_received(:resume_if_idle!)
+        Orchestration::CommandResult.new(output: 'OK', exit_status: 0)
+      end
+
+      described_class.perform_now(:recreate, 'influxdb')
+
+      expect(Orchestration::UpdatePause).to have_received(:resume_if_idle!)
+    end
+
+    # The pending flag is what tells UpdatePause the recreate is still running,
+    # so the resume has to come after it is gone.
+    it 'releases it only after the pending flag is cleared' do
+      Orchestration::PendingOperations.set('influxdb', :recreate)
+      allow(Orchestration::UpdatePause).to receive(:resume_if_idle!) do
+        expect(Orchestration::PendingOperations.get('influxdb')).to be_nil
+      end
+
+      described_class.perform_now(:recreate, 'influxdb')
+
+      expect(Orchestration::UpdatePause).to have_received(:resume_if_idle!)
+    end
+
+    it 'releases it when the recreate fails' do
+      allow(Orchestration::Runner).to receive(:recreate)
+        .and_raise(Orchestration::Runner::CommandError.new('boom', stdout: 'boom'))
+
+      described_class.perform_now(:recreate, 'influxdb')
+
+      expect(Orchestration::UpdatePause).to have_received(:resume_if_idle!)
+    end
+
+    # Recreating Watchtower brings it straight back, so pausing would leave
+    # nothing but a marker for the sweep to clean up.
+    it 'leaves Watchtower alone when Watchtower itself is recreated' do
+      described_class.perform_now(:recreate, 'watchtower')
+
+      aggregate_failures do
+        expect(Orchestration::UpdatePause).not_to have_received(:pause!)
+        expect(Orchestration::UpdatePause).not_to have_received(:resume_if_idle!)
+      end
+    end
+
+    # Batch actions bring Watchtower up or down themselves; start/stop have no
+    # down-then-up window to protect.
+    it 'does not touch the pause for other actions' do
+      described_class.perform_now(:start, 'influxdb')
+      described_class.perform_now(:stop, 'influxdb')
+      described_class.perform_now(:up)
+
+      expect(Orchestration::UpdatePause).not_to have_received(:pause!)
+    end
+  end
+
   describe 'batch error with dependencies' do
     let(:influxdb_service) do
       instance_double(

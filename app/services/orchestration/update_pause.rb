@@ -1,13 +1,15 @@
 module Orchestration
-  # Keeps Watchtower from recreating containers while a long-running,
-  # interruption-sensitive operation is in flight: a CSV import, a backup, a
-  # restore or a PostgreSQL major upgrade.
+  # Keeps Watchtower from recreating containers while an interruption-sensitive
+  # operation is in flight: a CSV import, a backup, a restore, a PostgreSQL
+  # major upgrade, or a single service being recreated from the UI.
   #
   # An automatic update *recreates* the container it updates. InfluxDB going
   # away halfway through an import loses the rest of the import; PostgreSQL
   # recreated between the dump and the restore of a major upgrade loses the
-  # cluster. HELIOS itself surviving such a restart is already covered (the
-  # sidecars are detached, their state lives in files), the neighbouring
+  # cluster; a service recreated while ComposeJob is between its own `down`
+  # and `up` is left down, or comes back built from the spec compose.yaml has
+  # just replaced. HELIOS itself surviving such a restart is already covered
+  # (the sidecars are detached, their state lives in files), the neighbouring
   # services are not.
   #
   # The pause is the blunt but complete variant: Watchtower is frozen for the
@@ -32,14 +34,20 @@ module Orchestration
   #
   # Ending the pause therefore belongs to the sweep, not to the operations:
   # while a runner's own completion callback runs, its thread is still alive
-  # and the operation still counts as in flight. An operation that finishes
-  # inside the HELIOS process (the PostgreSQL upgrade) is the exception — it
-  # resumes directly from its own ensure.
+  # and the operation still counts as in flight. Operations that finish inside
+  # the HELIOS process (the PostgreSQL upgrade, a recreate) are the exception —
+  # they resume directly from their own ensure.
   class UpdatePause
     extend Loggable
 
     SERVICE = 'watchtower'.freeze
     STATE_FILENAME = 'watchtower_pause.json'.freeze
+
+    # Pending operations that run inside the HELIOS process and hold a pause
+    # while they do. Unlike the detached sidecars they leave no trace Docker
+    # could report, so the sweep reads their flag instead — and a HELIOS that
+    # died mid-operation correctly drops it, since the operation died too.
+    PAUSING_OPERATIONS = %i[upgrade recreate].freeze
 
     # How long a pause may persist before it is lifted regardless of what the
     # liveness check says. Only reachable when that check is broken (Docker
@@ -102,7 +110,7 @@ module Orchestration
       # `docker inspect` (the others read an in-memory map or a short-lived
       # cache). A backup, restore or upgrade therefore answers without one.
       def operation_in_flight?
-        PendingOperations.get(PostgresqlUpgrade::SERVICE) == :upgrade ||
+        PendingOperations.any_pending?(*PAUSING_OPERATIONS) ||
           BackupRunner.in_progress.present? ||
           RestoreRunner.in_progress.present? ||
           CsvImportRunner.in_progress?

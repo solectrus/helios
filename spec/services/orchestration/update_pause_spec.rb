@@ -174,6 +174,26 @@ RSpec.describe Orchestration::UpdatePause do
       expect(described_class).to be_paused
     end
 
+    it 'keeps the pause while a service is being recreated' do
+      described_class.pause!(:service_update)
+      Orchestration::PendingOperations.set('influxdb', :recreate)
+
+      described_class.resume_if_idle!
+
+      expect(described_class).to be_paused
+    end
+
+    # A start is not a recreate: it has no window a Watchtower update could
+    # land in, so it must not keep an unrelated pause alive.
+    it 'ignores pending operations that hold no pause' do
+      described_class.pause!(:service_update)
+      Orchestration::PendingOperations.set('influxdb', :start)
+
+      described_class.resume_if_idle!
+
+      expect(described_class).not_to be_paused
+    end
+
     it 'keeps the pause when the in-flight check itself fails' do
       described_class.pause!(:backup)
       allow(CsvImportRunner).to receive(:in_progress?).and_raise(StandardError, 'docker down')

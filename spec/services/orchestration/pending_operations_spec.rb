@@ -51,6 +51,24 @@ RSpec.describe Orchestration::PendingOperations do
     end
   end
 
+  describe '.any_pending?' do
+    it 'returns false when nothing is pending' do
+      expect(described_class.any_pending?(:recreate, :upgrade)).to be false
+    end
+
+    it 'finds the operation whatever service carries it' do
+      described_class.set('influxdb', :recreate)
+
+      expect(described_class.any_pending?(:recreate, :upgrade)).to be true
+    end
+
+    it 'ignores operations that were not asked for' do
+      described_class.set('influxdb', :stop)
+
+      expect(described_class.any_pending?(:recreate, :upgrade)).to be false
+    end
+  end
+
   describe '.any_start_pending?' do
     it 'returns false when nothing is pending' do
       expect(described_class.any_start_pending?).to be false
