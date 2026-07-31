@@ -133,6 +133,7 @@ en:
       not_ready: 'The upgraded PostgreSQL did not become ready in time.'
       restore_failed: 'Restoring the database failed: %{detail}'
       verify_failed: 'Verification failed: the restored database has %{actual} tables, expected %{expected}.'
+      auth_failed: 'Verification failed: the upgraded database does not accept the configured password (%{detail}).'
       rolled_back: 'The upgrade failed (%{detail}). PostgreSQL was automatically rolled back to the previous version %{major}; your data is intact.'
       rollback_failed: 'The upgrade failed (%{detail}) and the automatic rollback did not succeed either (%{error}). Your data is preserved in the backup at "%{path}" and can be restored from there.'
       reconcile_failed: 'PostgreSQL was upgraded and its data is intact, but restarting the remaining services failed (%{detail}). Please stop all services and start them again to finish applying the change.'

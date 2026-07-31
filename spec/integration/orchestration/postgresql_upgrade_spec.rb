@@ -10,7 +10,12 @@ require 'tmpdir'
 
 RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
   let(:data_path) { Rails.root.join('tmp/pg-upgrade-itest').to_s }
-  let(:starting_image) { 'postgres:17-alpine' }
+  # The oldest major still found in the field, and the interesting one: up to
+  # 13 the superuser password is stored MD5-encrypted, from 14 on the image
+  # demands scram-sha-256 for TCP connections. Starting any closer to the
+  # target would exercise a strictly easier path.
+  let(:starting_image) { 'postgres:13-alpine' }
+  let(:starting_major) { 13 }
 
   before do
     skip_without_docker
@@ -31,7 +36,7 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
     it 'migrates the database to the new major with data intact' do
       Orchestration::Runner.start('postgresql')
       container = wait_until_ready!
-      expect(described_class.current_major(container)).to eq(17)
+      expect(described_class.current_major(container)).to eq(starting_major)
       seed_data!
 
       expect(described_class.call).to be true
@@ -42,6 +47,13 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
         expect(widget_names).to eq(['helios'])
         expect(Configuration.current.postgresql.image).to eq(described_class.target_image)
         expect(Dir.glob(File.join(data_path, 'postgresql-upgrade-*.sql'))).to be_empty
+        # The check the other services depend on, and the one every socket-based
+        # check misses: PostgreSQL 13 stores the password MD5-encrypted, 18
+        # demands scram-sha-256 over TCP and cannot fall back to an MD5 secret.
+        # Carrying the old hash over in the dump left a fully restored database
+        # that nothing could log in to.
+        expect(password_login_works?).to be(true)
+        expect(stored_password_verifier).to start_with('SCRAM-SHA-256')
       end
     end
 
@@ -73,7 +85,7 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
     it 'returns to the previous major with data intact' do
       Orchestration::Runner.start('postgresql')
       container = wait_until_ready!
-      expect(described_class.current_major(container)).to eq(17)
+      expect(described_class.current_major(container)).to eq(starting_major)
       seed_data!
 
       # Fail after the dump has been restored into the new major, so the
@@ -87,9 +99,15 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
       )
 
       restored = wait_until_ready!
-      expect(described_class.current_major(restored)).to eq(17)
-      expect(widget_names).to eq(['helios'])
-      expect(Configuration.current.postgresql.image).to eq(starting_image)
+      aggregate_failures do
+        expect(described_class.current_major(restored)).to eq(starting_major)
+        expect(widget_names).to eq(['helios'])
+        expect(Configuration.current.postgresql.image).to eq(starting_image)
+        # The old cluster is rebuilt from the same password-less dump, so its
+        # password has to come back from POSTGRES_PASSWORD as well, MD5-encrypted
+        # this time, which is what this major's pg_hba.conf asks for.
+        expect(password_login_works?).to be(true)
+      end
     end
   end
 
@@ -97,7 +115,7 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
     it 'reverts the image and leaves the running cluster untouched' do
       Orchestration::Runner.start('postgresql')
       container = wait_until_ready!
-      expect(described_class.current_major(container)).to eq(17)
+      expect(described_class.current_major(container)).to eq(starting_major)
       seed_data!
 
       # Fail inside bump_image!, before the destructive phase begins. The
@@ -111,7 +129,7 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
       )
 
       restored = wait_until_ready!
-      expect(described_class.current_major(restored)).to eq(17)
+      expect(described_class.current_major(restored)).to eq(starting_major)
       expect(widget_names).to eq(['helios'])
       expect(Configuration.current.postgresql.image).to eq(starting_image)
     end
@@ -158,12 +176,12 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
       expect(Configuration.current.postgresql.image).to eq(described_class.target_image)
 
       expect { described_class.recover! }.to raise_error(
-        described_class::UpgradeError, /previous version 17|Version 17/
+        described_class::UpgradeError, /previous version 13|Version 13/
       )
 
       restored = wait_until_ready!
       aggregate_failures do
-        expect(described_class.current_major(restored)).to eq(17)
+        expect(described_class.current_major(restored)).to eq(starting_major)
         expect(widget_names).to eq(['helios'])
         expect(Configuration.current.postgresql.image).to eq(starting_image)
         expect(Orchestration::PostgresqlUpgrade::Journal.load).to be_nil
@@ -234,6 +252,31 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
     format = '{{.Label "com.docker.compose.service"}}'
     `docker ps -a --filter label=com.docker.compose.project=#{Orchestration::PROJECT_NAME} --format '#{format}'`
       .split("\n").map(&:strip).reject(&:empty?)
+  end
+
+  # Logs in the way the dashboard and the collectors do: over TCP with
+  # POSTGRES_PASSWORD, against the container's own Docker address. Neither the
+  # Unix socket nor 127.0.0.1 would do — the image's pg_hba.conf trusts both
+  # unconditionally, so they pass even when no password works at all.
+  def password_login_works?
+    _stdout, _stderr, code =
+      Orchestration::Runner.compose_exec(
+        'postgresql', 'sh', '-c',
+        'PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$(hostname)" -U postgres ' \
+        "-d postgres -tAc 'SELECT 1' > /dev/null"
+      )
+    code&.zero?
+  end
+
+  # How the server has the superuser's password on file: "SCRAM-SHA-256$…" or
+  # the bare "md5…" hash of the pre-14 majors.
+  def stored_password_verifier
+    stdout, stderr, code =
+      psql('-tAc', "SELECT rolpassword FROM pg_authid WHERE rolname = 'postgres'",
+           database: 'postgres')
+    raise "reading the stored password failed: #{stderr}" unless code&.zero?
+
+    stdout.strip
   end
 
   def widget_names

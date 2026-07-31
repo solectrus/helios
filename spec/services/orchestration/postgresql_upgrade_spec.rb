@@ -146,6 +146,47 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
     end
   end
 
+  # A cluster can hold every table and still be useless: PostgreSQL 13 and
+  # older store the superuser password MD5-encrypted, and from 14 on the
+  # image's pg_hba.conf demands scram-sha-256, which cannot fall back to an
+  # MD5 secret. Carrying that hash over in the dump left a database no service
+  # could log in to — invisible to every other check, since HELIOS talks to
+  # PostgreSQL over the Unix socket, which the image trusts.
+  describe 'password authentication across majors' do
+    let(:upgrade) { described_class.new }
+
+    it 'dumps without the role passwords, so the new cluster keeps its own' do
+      allow(Orchestration::Runner).to receive(:compose_exec_streaming).and_return(['', 0])
+      allow(upgrade).to receive(:dump_complete?).and_return(true)
+
+      upgrade.send(:create_dump!)
+
+      expect(Orchestration::Runner).to have_received(:compose_exec_streaming).with(
+        'postgresql', 'pg_dumpall', '-U', 'postgres', '--no-role-passwords', out_path: anything
+      )
+    end
+
+    it 'probes the login over TCP, the path the other services use' do
+      allow(Orchestration::Runner).to receive(:compose_exec).and_return(['1', '', 0])
+
+      upgrade.send(:verify_authentication!)
+
+      expect(Orchestration::Runner).to have_received(:compose_exec).with(
+        'postgresql', 'sh', '-c', a_string_matching(/PGPASSWORD.*psql -h "\$\(hostname\)"/m)
+      )
+    end
+
+    it 'fails the upgrade when the configured password no longer authenticates' do
+      allow(Orchestration::Runner).to receive(:compose_exec).and_return(
+        ['', 'FATAL: password authentication failed for user "postgres"', 2],
+      )
+
+      expect { upgrade.send(:verify_authentication!) }.to raise_error(
+        described_class::UpgradeError, /password authentication failed/
+      )
+    end
+  end
+
   # A killed HELIOS (restart, reboot, OOM) takes the upgrade job with it, so
   # none of the in-process rollback paths run. What is left is the journal on
   # disk; these examples pin what the next boot makes of each phase.
@@ -241,6 +282,7 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
           wait_until_ready!: true,
           restore_dump!: true,
           count_tables: 3,
+          verify_authentication!: true,
           reconcile_stack!: true,
         )
 

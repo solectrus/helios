@@ -13,7 +13,8 @@ module Orchestration
   #   2. migrate! — destructive. Bump the configured image to the new major,
   #      then rebuild the cluster from the dump: stop PostgreSQL, empty the
   #      data directory, start the new major, restore the dump, and verify
-  #      the restored table count.
+  #      both the restored table count and that the configured password still
+  #      logs in.
   #   3. finish! — reconcile the stack against the rewritten compose (recreate
   #      dependents, prune the pre-upgrade orphan) and remove the dump file.
   #
@@ -62,6 +63,16 @@ module Orchestration
     # pg_dumpall prints this as its final line; its absence means the dump
     # was truncated and must not be trusted.
     DUMP_COMPLETE_MARKER = 'PostgreSQL database cluster dump complete'.freeze
+    # Logs in exactly the way the other services do: over TCP, against the
+    # container's own Docker address, with POSTGRES_PASSWORD. The address has
+    # to be the container's own rather than 127.0.0.1, since only the former
+    # matches the `host all all all scram-sha-256` rule the image appends to
+    # pg_hba.conf. Password and address are resolved inside the container, so
+    # neither ends up in an argument list, a process listing or a log.
+    AUTH_PROBE = <<~SH.freeze
+      [ -n "$POSTGRES_PASSWORD" ] || exit 0
+      PGPASSWORD="$POSTGRES_PASSWORD" psql -h "$(hostname)" -U postgres -d postgres -tAc 'SELECT 1' > /dev/null
+    SH
 
     class UpgradeError < StandardError
     end
@@ -227,6 +238,7 @@ module Orchestration
       begin
         rebuild_cluster_from_dump!
         verify_restore!
+        verify_authentication!
       rescue StandardError => e
         rollback!(e)
       end
@@ -273,6 +285,7 @@ module Orchestration
       bump_image!
       rebuild_cluster_from_dump!
       verify_restore!
+      verify_authentication!
       journal.advance!(:finishing)
     rescue StandardError => e
       rollback!(e)
@@ -323,9 +336,22 @@ module Orchestration
     # the old server still runs — never buffering the dump in memory. A
     # truncated dump is rejected (and removed) before the destructive phase
     # begins.
+    #
+    # --no-role-passwords keeps the dump from carrying the superuser's password
+    # hash across majors. PostgreSQL 13 and older store it MD5-encrypted, while
+    # the image's pg_hba.conf demands scram-sha-256 from 14 on — and SCRAM
+    # cannot fall back to an MD5 secret (only the reverse works). Restoring the
+    # hash would overwrite the SCRAM secret initdb just derived from
+    # POSTGRES_PASSWORD and leave a cluster no service can log in to. Without
+    # the passwords the dump only recreates the roles themselves, and the
+    # password the new cluster was initialized with stays in place — correctly
+    # encrypted for whichever major is being built, so a rollback to the old
+    # one works just the same.
     def create_dump!
       stderr, code =
-        Runner.compose_exec_streaming(SERVICE, 'pg_dumpall', '-U', 'postgres', out_path: dump_path)
+        Runner.compose_exec_streaming(
+          SERVICE, 'pg_dumpall', '-U', 'postgres', '--no-role-passwords', out_path: dump_path
+        )
 
       unless code&.zero?
         cleanup_dump
@@ -483,6 +509,23 @@ module Orchestration
 
       raise UpgradeError,
             t('verify_failed', expected: @expected_tables, actual: actual || '?')
+    end
+
+    # Guards against a cluster that is up and holds all its data, but that no
+    # service can log in to. Every other check runs over a connection the
+    # image's pg_hba.conf trusts unconditionally — HELIOS' own psql calls go
+    # through the Unix socket, #accepting_tcp_connections? probes 127.0.0.1 —
+    # so a broken password would pass verification and surface much later, as
+    # a dashboard that cannot reach its database.
+    #
+    # Skipped when the container has no POSTGRES_PASSWORD (see AUTH_PROBE):
+    # there is nothing to probe with then, and failing an otherwise complete
+    # upgrade over it would do more harm than not checking.
+    def verify_authentication!
+      _stdout, stderr, code = Runner.compose_exec(SERVICE, 'sh', '-c', AUTH_PROBE)
+      return if code&.zero?
+
+      raise UpgradeError, t('auth_failed', detail: last_line(stderr))
     end
 
     # Brings the affected services in line with the rewritten compose (see
