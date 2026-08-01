@@ -37,6 +37,25 @@
   --noise: 0;
 }
 
+/* Workaround for a daisyUI regression since 5.7.7: the default top placement
+   is emitted after `.tooltip-bottom` in the same layer and wins at equal
+   specificity, so every `tooltip-bottom` flips to the top. Unlayered rules
+   beat every layer, which restores the intended placement.
+
+   REMOVE this block once https://github.com/saadeghi/daisyui/issues/4647 is
+   fixed and released. Verify by hovering the CPU/RAM stats in the navbar:
+   the tooltip has to open downwards. */
+.tooltip-bottom[data-tip]::before,
+.tooltip-bottom::after {
+  inset: var(--tt-off) auto auto 50%;
+  transform: translateX(var(--tt-trans, -50%))
+    translateY(var(--tt-pos, -0.25rem));
+}
+.tooltip-bottom::after {
+  inset: var(--tt-tail) auto auto 50%;
+  rotate: 180deg;
+}
+
 /* Tooltips: hover-only (not on keyboard focus), suppressed on touch */
 .tooltip:has(:focus-visible)::before,
 .tooltip:has(:focus-visible)::after {
