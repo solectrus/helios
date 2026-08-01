@@ -35,7 +35,8 @@ module Export
       end
 
       def pvnode_v2_vars
-        ::Forecast::PvnodeRules.v2_env_keys(configuration.forecast.forecast_pvnode_paid)
+        fcast = configuration.forecast
+        ::Forecast::PvnodeRules.v2_env_keys(fcast.forecast_pvnode_paid, fcast.forecast_pvnode_request_limit)
       end
 
       def explicit_vars
@@ -109,6 +110,7 @@ module Export
         fcast = configuration.forecast
         vars = %w[PVNODE_APIKEY]
         vars << 'PVNODE_PAID' if pvnode_paid_plan?(fcast.forecast_pvnode_paid)
+        vars << 'PVNODE_REQUEST_LIMIT' if fcast.forecast_pvnode_request_limit.present?
         vars << 'PVNODE_EXTRA_PARAMS' if fcast.forecast_pvnode_extra_params.present?
         roofs = (fcast.forecast_roofs || 1).to_i
         roofs.times do |i|

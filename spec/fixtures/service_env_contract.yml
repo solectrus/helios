@@ -162,6 +162,7 @@ forecast-collector:
     - PVNODE_SITE_ID
     - PVNODE_APIKEY
     - PVNODE_PAID
+    - PVNODE_REQUEST_LIMIT
     - PVNODE_EXTRA_PARAMS
     - INFLUX_HOST
     - INFLUX_PORT

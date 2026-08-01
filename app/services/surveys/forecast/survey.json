@@ -93,43 +93,6 @@
             "default": "API key"
           },
           "isRequired": true
-        },
-        {
-          "type": "radiogroup",
-          "name": "forecast_pvnode_paid",
-          "title": {
-            "de": "pvnode-Tarif",
-            "default": "pvnode plan"
-          },
-          "description": {
-            "de": "Der Tarif muss zum aktiv abonnierten pvnode-Konto passen. Eine falsche Angabe kann Fehler oder vorzeitiges Aufbrauchen des monatlichen Kontingents verursachen.",
-            "default": "The plan must match your active pvnode subscription. A mismatch can cause errors or exhaust the monthly quota prematurely."
-          },
-          "isRequired": true,
-          "defaultValue": "false",
-          "choices": [
-            {
-              "value": "false",
-              "text": {
-                "de": "Free",
-                "default": "Free"
-              }
-            },
-            {
-              "value": "true",
-              "text": {
-                "de": "Light",
-                "default": "Light"
-              }
-            },
-            {
-              "value": "nowcast",
-              "text": {
-                "de": "Plus",
-                "default": "Plus"
-              }
-            }
-          ]
         }
       ]
     },
@@ -800,6 +763,71 @@
             "de": "Nur erforderlich für die kostenpflichtige Variante von forecast.solar",
             "default": "Only required for the paid variant of forecast.solar"
           }
+        }
+      ]
+    },
+    {
+      "name": "p_pvnode_plan",
+      "visibleIf": "{forecast} = 'pvnode'",
+      "title": {
+        "de": "pvnode-Tarif und Kontingent",
+        "default": "pvnode plan and quota"
+      },
+      "description": {
+        "de": "Der Tarif bestimmt, wie oft der Collector die Prognose abrufen darf.",
+        "default": "The plan determines how often the collector may query the forecast."
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "forecast_pvnode_paid",
+          "title": {
+            "de": "pvnode-Tarif",
+            "default": "pvnode plan"
+          },
+          "description": {
+            "de": "Der Tarif muss zum aktiv abonnierten pvnode-Konto passen. Eine falsche Angabe kann Fehler oder vorzeitiges Aufbrauchen des monatlichen Kontingents verursachen.",
+            "default": "The plan must match your active pvnode subscription. A mismatch can cause errors or exhaust the monthly quota prematurely."
+          },
+          "isRequired": true,
+          "defaultValue": "false",
+          "choices": [
+            {
+              "value": "false",
+              "text": {
+                "de": "Free",
+                "default": "Free"
+              }
+            },
+            {
+              "value": "true",
+              "text": {
+                "de": "Light",
+                "default": "Light"
+              }
+            },
+            {
+              "value": "nowcast",
+              "text": {
+                "de": "Plus",
+                "default": "Plus"
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "forecast_pvnode_request_limit",
+          "title": {
+            "de": "Abfragen limitieren (optional)",
+            "default": "Limit requests (optional)"
+          },
+          "description": {
+            "de": "Maximale Anzahl der Abfragen pro Monat. Ohne Angabe wird das komplette Monatskontingent des Tarifs genutzt. Ein niedrigerer Wert hält Abfragen für andere Anwendungen frei, die dasselbe pvnode-Konto verwenden; der Collector ruft die Prognose dann entsprechend seltener ab. Ein Wert oberhalb des Monatskontingents bleibt wirkungslos.",
+            "default": "Maximum number of requests per month. When left empty, the full monthly quota of the plan is used. A lower value keeps requests available for other applications sharing the same pvnode account; the collector then queries the forecast correspondingly less often. A value above the monthly quota has no effect."
+          },
+          "inputType": "number",
+          "min": 1
         }
       ]
     },

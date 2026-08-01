@@ -299,6 +299,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     forecast_pvnode_apikey
     forecast_pvnode_site_id
     forecast_pvnode_paid
+    forecast_pvnode_request_limit
     forecast_pvnode_extra_params
     forecast_pvnode_extra_params1
     forecast_pvnode_extra_params2

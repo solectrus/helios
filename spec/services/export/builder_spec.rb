@@ -1209,6 +1209,7 @@ RSpec.describe Export::Builder do
                              'forecast_pvnode_apikey' => 'pvnode-key',
                              'forecast_pvnode_paid' => 'nowcast',
                              'forecast_pvnode_site_id' => 'site-42',
+                             'forecast_pvnode_request_limit' => '750',
                            })
       configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
       described_class.new(Configuration.current).write!
@@ -1220,6 +1221,7 @@ RSpec.describe Export::Builder do
       expect(env['PVNODE_SITE_ID']).to eq('site-42')
       expect(env['PVNODE_APIKEY']).to eq('pvnode-key')
       expect(env['PVNODE_PAID']).to eq('nowcast')
+      expect(env['PVNODE_REQUEST_LIMIT']).to eq('750')
     end
 
     it 'omits location and roof variables (configured on the pvnode site)' do
@@ -1233,7 +1235,7 @@ RSpec.describe Export::Builder do
 
     it 'limits the forecast-collector environment to the site-based variables' do
       forecast = Compose.load.services.find('forecast-collector')
-      expect(forecast.environment).to include('PVNODE_SITE_ID', 'PVNODE_APIKEY')
+      expect(forecast.environment).to include('PVNODE_SITE_ID', 'PVNODE_APIKEY', 'PVNODE_REQUEST_LIMIT')
       expect(forecast.environment).not_to include('FORECAST_LATITUDE', 'FORECAST_DECLINATION')
     end
   end
@@ -1426,6 +1428,41 @@ RSpec.describe Export::Builder do
       forecast = compose.services.find('forecast-collector')
 
       expect(forecast.environment).to include('PVNODE_APIKEY', 'PVNODE_PAID', 'PVNODE_EXTRA_PARAMS')
+    end
+
+    it 'omits PVNODE_REQUEST_LIMIT when no limit is configured' do
+      expect(File.read(env_path)).not_to include('PVNODE_REQUEST_LIMIT')
+      forecast = Compose.load.services.find('forecast-collector')
+      expect(forecast.environment).not_to include('PVNODE_REQUEST_LIMIT')
+    end
+  end
+
+  describe 'with a pvnode request limit configured' do
+    before do
+      configuration.update('forecast', {
+                             'forecast' => 'pvnode',
+                             'forecast_latitude' => '51.3',
+                             'forecast_longitude' => '9.5',
+                             'forecast_declination1' => '30',
+                             'forecast_pvnode_azimuth1' => '180',
+                             'forecast_kwp1' => '10',
+                             'forecast_pvnode_apikey' => 'pvnode-key',
+                             'forecast_pvnode_paid' => 'true',
+                             'forecast_pvnode_request_limit' => '500',
+                           })
+      configuration.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
+      described_class.new(Configuration.current).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'writes PVNODE_REQUEST_LIMIT to .env' do
+      expect(Env.load['PVNODE_REQUEST_LIMIT']).to eq('500')
+    end
+
+    it 'lists PVNODE_REQUEST_LIMIT in the compose environment' do
+      forecast = Compose.load.services.find('forecast-collector')
+      expect(forecast.environment).to include('PVNODE_REQUEST_LIMIT')
     end
   end
 

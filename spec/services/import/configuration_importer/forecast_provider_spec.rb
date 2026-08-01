@@ -56,6 +56,7 @@ RSpec.describe 'Import::ConfigurationImporter forecast provider' do
         'PVNODE_SITE_ID' => 'site-42',
         'PVNODE_APIKEY' => 'pvnode-key',
         'PVNODE_PAID' => 'nowcast',
+        'PVNODE_REQUEST_LIMIT' => '750',
       }
     end
 
@@ -66,6 +67,10 @@ RSpec.describe 'Import::ConfigurationImporter forecast provider' do
         'forecast_pvnode_apikey' => 'pvnode-key',
         'forecast_pvnode_paid' => 'nowcast',
       )
+    end
+
+    it 'round-trips the self-imposed request limit' do
+      expect(importer.result[:forecast]).to include('forecast_pvnode_request_limit' => '750')
     end
   end
 

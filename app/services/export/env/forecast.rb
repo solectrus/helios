@@ -29,6 +29,7 @@ module Export
               'pvnode site ID (enables the site-based API v2)')
         entry('PVNODE_APIKEY', fcast.forecast_pvnode_apikey, 'pvnode API key')
         pvnode_paid_entry(fcast)
+        pvnode_request_limit_entry(fcast)
       end
 
       def base_entries(fcast)
@@ -134,6 +135,7 @@ module Export
       def pvnode_entries(fcast)
         entry('PVNODE_APIKEY', fcast.forecast_pvnode_apikey, 'pvnode API key')
         pvnode_paid_entry(fcast)
+        pvnode_request_limit_entry(fcast)
         if fcast.forecast_pvnode_extra_params.present?
           entry('PVNODE_EXTRA_PARAMS', fcast.forecast_pvnode_extra_params,
                 'Additional pvnode parameters')
@@ -152,6 +154,14 @@ module Export
 
       def pvnode_paid_plan?(value)
         ::Forecast::PvnodeRules.paid_plan?(value)
+      end
+
+      # Self-imposed monthly request limit, shared by the v1 and v2 emitters.
+      # Without it the collector schedules against the full request budget of
+      # the plan; a value above that budget has no effect.
+      def pvnode_request_limit_entry(fcast)
+        optional_entry('PVNODE_REQUEST_LIMIT', fcast.forecast_pvnode_request_limit,
+                       'Monthly pvnode request limit (leaves the rest of the plan quota to other consumers)')
       end
 
       def pvnode_per_roof_extra_params_entries(fcast)

@@ -17,10 +17,13 @@ module Forecast
       value.present? && value.to_s != 'false'
     end
 
-    # The full, ordered v2 env-var key list for the given PVNODE_PAID value.
-    def v2_env_keys(paid_value)
+    # The full, ordered v2 env-var key list for the given pvnode settings.
+    # PVNODE_REQUEST_LIMIT is optional in both API versions: without it the
+    # collector schedules against the full request budget of the plan.
+    def v2_env_keys(paid_value, request_limit = nil)
       keys = V2_BASE_KEYS.dup
       keys << 'PVNODE_PAID' if paid_plan?(paid_value)
+      keys << 'PVNODE_REQUEST_LIMIT' if request_limit.present?
       keys
     end
   end

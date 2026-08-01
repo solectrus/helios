@@ -144,6 +144,7 @@ module Import
           'forecast_pvnode_apikey' => fc_env['PVNODE_APIKEY'],
           'forecast_pvnode_site_id' => fc_env['PVNODE_SITE_ID'],
           'forecast_pvnode_paid' => fc_env['PVNODE_PAID'],
+          'forecast_pvnode_request_limit' => fc_env['PVNODE_REQUEST_LIMIT'],
           'forecast_pvnode_extra_params' => fc_env['PVNODE_EXTRA_PARAMS'],
         }
         configs = fc_env['FORECAST_CONFIGURATIONS']&.to_i || 1
