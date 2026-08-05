@@ -9,9 +9,13 @@ module Forecast
   # operator-supplied values through unchanged and falls back to a 900s
   # baseline on export when no value is set. The operator is expected to
   # match this to their API plan's limits — there is no clamping in
-  # either direction.
+  # either direction. The 900s floor is enforced by the survey (`min` on
+  # forecast_interval) so absurd values like 1 cannot be entered; imported
+  # values below it survive until the form is saved again.
   #
-  # Source: https://docs.solectrus.de/referenz/forecast-collector/
+  # Sources: https://docs.solectrus.de/referenz/forecast-collector/
+  #   and https://doc.forecast.solar/api — "forecasts are updated at the
+  #   earliest every 15 min. […] so it makes no sense to query more often"
   module IntervalRules
     EXPORT_DEFAULT = '900'.freeze
 

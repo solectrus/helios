@@ -746,10 +746,15 @@
             "default": "Query interval (seconds)"
           },
           "description": {
-            "de": "Richte dich nach dem API-Limit deines Tarifs.",
-            "default": "Match this to your provider plan's API limit."
+            "de": "Die Prognose wird höchstens alle 15 Minuten aktualisiert, häufigere Abfragen bringen nichts. Bei knappem API-Limit des Tarifs ist ein höherer Wert nötig.",
+            "default": "The forecast is updated at most every 15 minutes, so querying more often gains nothing. A tight API limit on the provider plan requires a higher value."
           },
-          "inputType": "number"
+          "inputType": "number",
+          "min": 900,
+          "minErrorText": {
+            "de": "Häufiger als alle 900 Sekunden (15 Minuten) abzufragen ist nicht sinnvoll.",
+            "default": "Querying more often than every 900 seconds (15 minutes) is not useful."
+          }
         },
         {
           "type": "text",
