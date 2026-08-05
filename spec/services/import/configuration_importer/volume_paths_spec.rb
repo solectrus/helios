@@ -5,6 +5,7 @@ RSpec.describe 'Import::ConfigurationImporter volume path handling' do
 
   let(:services) { {} }
   let(:raw_compose) { { 'services' => services } }
+  let(:env_path) { Rails.root.join("tmp/volume_paths#{ENV.fetch('TEST_ENV_NUMBER', nil)}.env") }
   let(:stack_reader) do
     instance_double(
       Import::StackReader,
@@ -15,6 +16,16 @@ RSpec.describe 'Import::ConfigurationImporter volume path handling' do
     ).tap do |double|
       allow(double).to receive(:service) { |name| services[name] }
     end
+  end
+
+  after { FileUtils.rm_f(env_path) }
+
+  # A real Env::File wherever the expectation turns on how .env values are
+  # read: a plain Hash can carry references that reading would have resolved,
+  # a state the parser cannot produce.
+  def env_file(content)
+    File.write(env_path, content)
+    Env::File.load(env_path)
   end
 
   context 'when the path resolves to the default bind mount next to compose.yaml' do
@@ -190,10 +201,10 @@ RSpec.describe 'Import::ConfigurationImporter volume path handling' do
 
   context 'when *_VOLUME_PATH env var itself uses ${VAR} interpolation' do
     let(:raw_env) do
-      {
-        'BASE_DIR' => '/home/user/docker/solectrus',
-        'INFLUX_VOLUME_PATH' => '${BASE_DIR}/influxdb',
-      }
+      env_file(<<~ENV)
+        BASE_DIR=/home/user/docker/solectrus
+        INFLUX_VOLUME_PATH=${BASE_DIR}/influxdb
+      ENV
     end
 
     it 'resolves the env-var value before storing it as volume_path' do
@@ -220,10 +231,10 @@ RSpec.describe 'Import::ConfigurationImporter volume path handling' do
 
   context 'when ${VAR} interpolation chains through multiple .env entries' do
     let(:raw_env) do
-      {
-        'STACK_ROOT' => '/srv/stacks',
-        'BASE_DIR' => '${STACK_ROOT}/solectrus',
-      }
+      env_file(<<~ENV)
+        STACK_ROOT=/srv/stacks
+        BASE_DIR=${STACK_ROOT}/solectrus
+      ENV
     end
     let(:raw_compose) do
       {
@@ -238,18 +249,29 @@ RSpec.describe 'Import::ConfigurationImporter volume path handling' do
     end
   end
 
-  context 'when ${VAR} interpolation forms a cycle' do
+  # docker resolves .env references once, while reading the file. Expanding the
+  # already-resolved value a second time would eat text the container actually
+  # mounts.
+  context 'when a *_VOLUME_PATH value contains an escaped dollar' do
+    let(:raw_env) { env_file("INFLUX_VOLUME_PATH=/data/$${LITERAL}\n") }
+
+    it 'stores the path docker passes to the mount' do
+      expect(importer.result[:influxdb]).to include('volume_path' => '/data/${LITERAL}')
+    end
+  end
+
+  context 'when ${VAR} references form a cycle' do
     let(:raw_env) do
-      {
-        'A' => '${B}',
-        'B' => '${A}',
-      }
+      env_file(<<~ENV)
+        A=${B}
+        B=${A}
+      ENV
     end
     let(:raw_compose) do
       { 'services' => { 'redis' => { 'volumes' => ['${A}:/data'] } } }
     end
 
-    it 'returns no volume_path instead of recursing forever' do
+    it 'returns no volume_path' do
       expect(importer.result[:redis] || {}).not_to have_key('volume_path')
     end
   end

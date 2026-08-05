@@ -27,9 +27,6 @@ module Import
                              container_target: '/letsencrypt', service_name: 'traefik' },
       }.freeze
 
-      INTERPOLATION_RE = /\$\{([A-Z_][A-Z0-9_]*)\}/
-      INTERPOLATION_MAX_DEPTH = 10
-
       # Docker named-volume name: starts with alphanumeric, no slashes — the
       # only form Compose accepts on the source side that isn't a host path.
       NAMED_VOLUME_RE = /\A[a-zA-Z0-9][a-zA-Z0-9_.-]*\z/
@@ -46,8 +43,7 @@ module Import
       # dropped — they match HELIOS's default anyway.
       def path_data(section)
         mapping = VOLUME_PATH_ENVS.fetch(section)
-        value = inline_volume_source(section, mapping) ||
-                resolve_interpolation(@reader.raw_env[mapping[:env_key]])
+        value = inline_volume_source(section, mapping) || @reader.raw_env[mapping[:env_key]]
         return {} unless meaningful_volume_value?(value, mapping)
 
         { 'volume_path' => value }
@@ -60,22 +56,16 @@ module Import
         File.expand_path(value) != File.expand_path(mapping[:default_dir], @reader.stack_dir)
       end
 
-      # Recursive `${VAR}` substitution against raw .env, with cycle protection.
-      # Real-world stacks chain references (e.g. `HOST_DUMP=${BASE_DIR}/db_dumps`),
-      # so a single-pass gsub isn't enough.
-      def resolve_interpolation(value, depth = 0, seen = Set.new)
-        return value if depth > INTERPOLATION_MAX_DEPTH || value.nil?
-
-        value.to_s.gsub(INTERPOLATION_RE) do
-          var = ::Regexp.last_match(1)
-          next '' if seen.include?(var)
-
-          raw = @reader.raw_env[var]
-          raw.nil? ? '' : resolve_interpolation(raw, depth + 1, seen + [var])
-        end
-      end
-
       private
+
+      # `${VAR}` substitution for values read out of compose.yaml, which docker
+      # resolves against .env. A single pass is enough: Env::File already
+      # expanded the .env values themselves, so a chain like
+      # `HOST_DUMP=${BASE_DIR}/db_dumps` arrives flat and no reference can
+      # reappear in the substituted text.
+      def resolve_interpolation(value)
+        ::Env::Interpolation.resolve(value.to_s, @reader.raw_env)
+      end
 
       # First inline `volumes:` source matching any of the section's container
       # targets. Postgres lists two (see VOLUME_PATH_ENVS) so a stack importing
@@ -95,7 +85,7 @@ module Import
       def resolved_volume_source(service_name, target)
         raw_volumes = Array(raw_service_config(service_name)&.dig('volumes'))
         raw_source = raw_volumes.lazy.filter_map { |entry| volume_source_for_target(entry, target) }.first
-        resolved = resolve_interpolation(raw_source).to_s.chomp('/')
+        resolved = resolve_interpolation(raw_source).chomp('/')
         return nil if resolved.blank?
 
         resolved if resolved.start_with?('/') || resolved.match?(NAMED_VOLUME_RE)
@@ -119,7 +109,7 @@ module Import
         source, mounted_target, = entry.split(':', 3)
         return nil unless mounted_target
 
-        resolved = resolve_interpolation(mounted_target).to_s.chomp('/')
+        resolved = resolve_interpolation(mounted_target).chomp('/')
         source if resolved == target.to_s.chomp('/')
       end
     end
