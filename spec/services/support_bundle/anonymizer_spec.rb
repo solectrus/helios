@@ -500,6 +500,19 @@ RSpec.describe SupportBundle::Anonymizer do
       expect(result).to include('https://api.forecast.solar/estimate/52.00000/13.00000/29/-50/9.75')
     end
 
+    it 'scrubs southern/western coordinates that start with a minus sign' do
+      env_redactions = described_class.log_redactions(
+        "FORECAST_LATITUDE=-33.86785\nFORECAST_LONGITUDE=-151.20732\n",
+      )
+      log = "  0: https://api.forecast.solar/estimate/-33.86785/-151.20732/45/0/8.51 ... OK\n"
+
+      result = described_class.anonymize_text(log, env_redactions)
+
+      expect(result).not_to include('-33.86785')
+      expect(result).not_to include('-151.20732')
+      expect(result).to include('/estimate/-33.00000/-151.00000/45/0/8.51')
+    end
+
     it 'catches coordinates that gained extra Float-precision digits while keeping the integer part' do
       log = "lat=52.51627999 lon=13.37774001\n"
 

@@ -366,8 +366,13 @@ module SupportBundle
       [[value, mask(value)]]
     end
 
+    # `\b` cannot be used in front of the value: a southern/western
+    # coordinate starts with a minus sign, and between the `/` of a URL path
+    # and that minus there is no word boundary — so `\b-33.86785\b` never
+    # matched and the coordinate stayed readable in the logs. Lookarounds
+    # for digits and dots delimit the number regardless of its sign.
     def coord_redaction(value)
-      [/\b#{Regexp.escape(value)}\d*\b/, method(:coord_mask)]
+      [/(?<![\d.])#{Regexp.escape(value)}\d*(?![\d.])/, method(:coord_mask)]
     end
 
     def host_redactions(value)
