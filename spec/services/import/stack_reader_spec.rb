@@ -1,3 +1,12 @@
+RSpec.shared_context 'with a stack on disk' do
+  let(:tmpdir) { Dir.mktmpdir }
+  let(:compose_path) { File.join(tmpdir, 'compose.yaml') }
+  let(:env_path) { File.join(tmpdir, '.env') }
+  let(:reader) { described_class.new(compose_path: compose_path, env_path: env_path) }
+
+  after { FileUtils.remove_entry(tmpdir) }
+end
+
 RSpec.describe Import::StackReader do
   describe '.image_matches?' do
     it 'accepts an exact-match image' do
@@ -43,12 +52,7 @@ RSpec.describe Import::StackReader do
   end
 
   describe 'invalid compose project' do
-    let(:tmpdir) { Dir.mktmpdir }
-    let(:compose_path) { File.join(tmpdir, 'compose.yaml') }
-    let(:env_path) { File.join(tmpdir, '.env') }
-    let(:reader) { described_class.new(compose_path: compose_path, env_path: env_path) }
-
-    after { FileUtils.remove_entry(tmpdir) }
+    include_context 'with a stack on disk'
 
     it 'raises Error carrying the docker message without warning noise' do
       # ${UNDEFINED_VAR} triggers a warning; the undefined depends_on fails.
@@ -74,10 +78,7 @@ RSpec.describe Import::StackReader do
   # replaces the invalid bytes with U+FFFD — so without normalization the
   # resolved value and raw_env disagree, and the extractors read both.
   describe 'a .env that is not UTF-8' do
-    let(:tmpdir) { Dir.mktmpdir }
-    let(:compose_path) { File.join(tmpdir, 'compose.yaml') }
-    let(:env_path) { File.join(tmpdir, '.env') }
-    let(:reader) { described_class.new(compose_path: compose_path, env_path: env_path) }
+    include_context 'with a stack on disk'
 
     before do
       File.write(compose_path, <<~YAML)
@@ -90,11 +91,40 @@ RSpec.describe Import::StackReader do
       File.binwrite(env_path, "ADMIN_PASSWORD=gehe\xFCm\n")
     end
 
-    after { FileUtils.remove_entry(tmpdir) }
-
     it 'resolves values the way raw_env reads them' do
       expect(reader.service('dashboard')['environment']['ADMIN_PASSWORD']).to eq('geheüm')
       expect(reader.raw_env['ADMIN_PASSWORD']).to eq('geheüm')
+    end
+  end
+
+  # docker compose expands `$…` while reading .env, so a token written
+  # unquoted reaches the container truncated — and that truncated value is the
+  # one InfluxDB was set up with. Reading the literal instead would import a
+  # secret the stack never used (#377).
+  describe 'a .env value containing a dollar sign' do
+    include_context 'with a stack on disk'
+
+    before do
+      File.write(compose_path, <<~YAML)
+        services:
+          influxdb:
+            image: influxdb:2.7-alpine
+            environment:
+              DOCKER_INFLUXDB_INIT_ADMIN_TOKEN: ${INFLUX_ADMIN_TOKEN}
+      YAML
+      File.write(env_path, <<~ENV)
+        INFLUX_ADMIN_TOKEN=abc$myTokenPart
+        INFLUX_BUCKET='abc$myTokenPart'
+      ENV
+    end
+
+    it 'reads the expanded value, the way the container receives it' do
+      expect(reader.service('influxdb')['environment']['DOCKER_INFLUXDB_INIT_ADMIN_TOKEN']).to eq('abc')
+      expect(reader.raw_env['INFLUX_ADMIN_TOKEN']).to eq('abc')
+    end
+
+    it 'keeps a single-quoted value literal, as docker compose does' do
+      expect(reader.raw_env['INFLUX_BUCKET']).to eq('abc$myTokenPart')
     end
   end
 
@@ -103,10 +133,7 @@ RSpec.describe Import::StackReader do
     # 'app' instead of 'dashboard', 'db' instead of 'postgresql'. Callers should
     # be able to look these up under the canonical name without caring about
     # what the user chose to name the service.
-    let(:tmpdir) { Dir.mktmpdir }
-    let(:compose_path) { File.join(tmpdir, 'compose.yaml') }
-    let(:env_path) { File.join(tmpdir, '.env') }
-    let(:reader) { described_class.new(compose_path: compose_path, env_path: env_path) }
+    include_context 'with a stack on disk'
 
     before do
       File.write(compose_path, <<~YAML)
@@ -118,8 +145,6 @@ RSpec.describe Import::StackReader do
       YAML
       File.write(env_path, '')
     end
-
-    after { FileUtils.remove_entry(tmpdir) }
 
     it 'resolves canonical names via image prefix' do
       expect(reader.service('dashboard')).to include('image' => 'ghcr.io/solectrus/solectrus:latest')

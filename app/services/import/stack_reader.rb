@@ -109,7 +109,10 @@ module Import
       @raw_compose ||= (YAML.safe_load_file(@compose_path, permitted_classes: [Symbol], aliases: true) || {}).deep_dup
     end
 
-    # Raw environment variables from .env file (unresolved, preserving original values)
+    # Environment variables from the .env file, read the way docker compose reads
+    # them: `$VAR` references expanded, single-quoted values kept literal. That is
+    # the value the containers actually received, which is what an import has to
+    # persist (#377).
     def raw_env
       @raw_env ||= Env::File.load(@env_path)
     end

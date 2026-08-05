@@ -1,8 +1,13 @@
 RSpec.describe Env::File do
   let(:fixture_path) { Rails.root.join('spec/fixtures/import_scenarios/minimal/.env.bak') }
-  let(:tmp_path) { Rails.root.join('tmp/test.env') }
+  let(:tmp_path) { Rails.root.join("tmp/test#{ENV.fetch('TEST_ENV_NUMBER', nil)}.env") }
 
   after { FileUtils.rm_f(tmp_path) }
+
+  def parse(content)
+    File.write(tmp_path, content)
+    described_class.load(tmp_path)
+  end
 
   describe '.load' do
     it 'loads an existing file' do
@@ -265,24 +270,158 @@ RSpec.describe Env::File do
   end
 
   describe 'quoted values' do
-    let(:tmp_path) { Rails.root.join('tmp/quoted.env') }
+    let(:tmp_path) { Rails.root.join("tmp/quoted#{ENV.fetch('TEST_ENV_NUMBER', nil)}.env") }
 
     it 'handles double-quoted values' do
-      File.write(tmp_path, 'QUOTED="hello world"')
-      env = described_class.load(tmp_path)
-      expect(env['QUOTED']).to eq('hello world')
+      expect(parse('QUOTED="hello world"')['QUOTED']).to eq('hello world')
     end
 
     it 'handles single-quoted values' do
-      File.write(tmp_path, "QUOTED='hello world'")
-      env = described_class.load(tmp_path)
-      expect(env['QUOTED']).to eq('hello world')
+      expect(parse("QUOTED='hello world'")['QUOTED']).to eq('hello world')
     end
 
     it 'handles quoted values with inline comments' do
-      File.write(tmp_path, 'QUOTED="hello" # a comment')
-      env = described_class.load(tmp_path)
-      expect(env['QUOTED']).to eq('hello')
+      expect(parse('QUOTED="hello" # a comment')['QUOTED']).to eq('hello')
+    end
+
+    it 'unescapes double-quoted values' do
+      expect(parse('QUOTED="say \"hi\" \\\\ now"')['QUOTED']).to eq('say "hi" \\ now')
+    end
+
+    # Compose reads a quoted value across line breaks, and a donor .env holding
+    # a certificate does exactly that. Stopping at the first newline would both
+    # truncate the value and turn its remainder into phantom variables.
+    { 'double' => '"', 'single' => "'" }.each do |style, quote|
+      describe "a value spanning several lines in #{style} quotes" do
+        let(:content) { %(CERT=#{quote}-----BEGIN-----\nbody\n-----END-----#{quote}\nAFTER=tail\n) }
+
+        it 'reads the whole block as one value' do
+          expect(parse(content)['CERT']).to eq("-----BEGIN-----\nbody\n-----END-----")
+        end
+
+        it 'keeps parsing the variables below it' do
+          expect(parse(content).to_h.keys).to eq(%w[CERT AFTER])
+        end
+
+        it 'writes the file back unchanged' do
+          env = parse(content)
+          env.save
+
+          expect(File.read(tmp_path)).to eq(content)
+        end
+      end
+    end
+
+    # The escaped quote must not end the value early, otherwise the rest of it
+    # is mistaken for an inline comment and grafted onto the next write.
+    it 'rewrites a value containing an escaped quote without leaving debris' do
+      env = described_class.new(tmp_path)
+      env['SECRET'] = %q(a"b'c #d)
+      env.save
+
+      reloaded = described_class.load(tmp_path)
+      reloaded['SECRET'] = 'new'
+      reloaded.save
+
+      expect(File.read(tmp_path)).to eq("SECRET=new\n")
+    end
+  end
+
+  # Docker Compose expands variable references while reading .env, so an
+  # imported value has to be read the same way — otherwise HELIOS persists a
+  # secret the running containers never saw (#377).
+  describe 'variable interpolation' do
+    let(:tmp_path) { Rails.root.join("tmp/interpolation#{ENV.fetch('TEST_ENV_NUMBER', nil)}.env") }
+
+    it 'drops a reference to an undefined variable' do
+      expect(parse('INFLUX_ADMIN_TOKEN=abc$myToken123')['INFLUX_ADMIN_TOKEN']).to eq('abc')
+    end
+
+    it 'resolves a reference to a variable defined earlier in the file' do
+      env = parse("BASE=/srv/solectrus\nDB_VOLUME_PATH=${BASE}/postgresql\n")
+      expect(env['DB_VOLUME_PATH']).to eq('/srv/solectrus/postgresql')
+    end
+
+    it 'resolves the bare $VAR form' do
+      expect(parse("BASE=/srv\nPATH_=$BASE/db\n")['PATH_']).to eq('/srv/db')
+    end
+
+    it 'keeps a $$-escaped dollar as a literal' do
+      expect(parse('PRICE=10$$')['PRICE']).to eq('10$')
+    end
+
+    it 'leaves a dollar that starts no variable name alone' do
+      expect(parse('MAPPING_0_JSON_PATH=$.meters.soc')['MAPPING_0_JSON_PATH']).to eq('$.meters.soc')
+    end
+
+    it 'substitutes a default for an unset variable' do
+      expect(parse('PORT=${HOST_PORT:-8086}')['PORT']).to eq('8086')
+    end
+
+    it 'prefers the value over the default when the variable is set' do
+      expect(parse("HOST_PORT=18086\nPORT=${HOST_PORT:-8086}\n")['PORT']).to eq('18086')
+    end
+
+    # A default is a value in its own right — Compose interpolates the text it
+    # falls back to, so the literal `$FALLBACK` never reaches the container.
+    it 'expands a bare reference inside a default' do
+      expect(parse("FALLBACK=abc\nTOKEN=${TOKEN_EXT:-$FALLBACK}\n")['TOKEN']).to eq('abc')
+    end
+
+    it 'expands a braced reference inside a default' do
+      env = parse("BASE=/srv\nDB_VOLUME_PATH=${DB_DATA:-${BASE}/postgres}\n")
+      expect(env['DB_VOLUME_PATH']).to eq('/srv/postgres')
+    end
+
+    it 'expands the alternative of :+ as well' do
+      expect(parse("BASE=/srv\nALT=${BASE:+$BASE/data}\n")['ALT']).to eq('/srv/data')
+    end
+
+    # Only the empty string is empty to Compose. A separator of one space is a
+    # set variable, and treating it as blank would invert both operators.
+    it 'counts a whitespace-only value as set' do
+      expect(parse("SEP=' '\nLIST=${SEP:-,}\n")['LIST']).to eq(' ')
+    end
+
+    it 'takes the alternative for a whitespace-only value' do
+      expect(parse("SEP=' '\nALT=${SEP:+yes}\n")['ALT']).to eq('yes')
+    end
+
+    it 'does not interpolate inside single quotes' do
+      expect(parse("TOKEN='abc$myToken123'")['TOKEN']).to eq('abc$myToken123')
+    end
+
+    it 'does interpolate inside double quotes' do
+      expect(parse('TOKEN="abc$myToken123"')['TOKEN']).to eq('abc')
+    end
+
+    # Escapes and references resolve in one pass, so the backslash takes the
+    # dollar out of play instead of handing a bare `$` to a second pass.
+    it 'keeps a backslash-escaped reference literal' do
+      env = parse(<<~ENV)
+        HOME_=/root
+        A="literal \\${HOME_} here"
+      ENV
+
+      expect(env['A']).to eq('literal ${HOME_} here')
+    end
+
+    # HELIOS's own .env has to survive being read back unchanged, whichever
+    # quoting form the value forced. A line break is the interesting one: the
+    # literal single-quoted form would span lines the parser reads separately,
+    # so it has to go out escaped.
+    describe 'round-trip through the writer' do
+      ['abc$token', "it's secret", "quote\"and'dollar$x", 'back\\slash$y', 'plain',
+       "-----BEGIN-----\nabc$def\n-----END-----", "tab\there and 'quote'",
+       "carriage\rreturn'"].each do |secret|
+        it "preserves #{secret.inspect}" do
+          env = described_class.new(tmp_path)
+          env['SECRET'] = secret
+          env.save
+
+          expect(described_class.load(tmp_path)['SECRET']).to eq(secret)
+        end
+      end
     end
   end
 end
