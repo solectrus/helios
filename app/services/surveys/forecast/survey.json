@@ -164,7 +164,17 @@
           "isRequired": true,
           "inputType": "number",
           "min": -90,
-          "max": 90
+          "max": 90,
+          "validators": [
+            {
+              "type": "expression",
+              "expression": "{forecast_latitude} empty or ({forecast_latitude} >= -80 and {forecast_latitude} <= 80)",
+              "text": {
+                "de": "Dieser Breitengrad liegt in der Polarregion. Bitte den Standort der Anlage eintragen.",
+                "default": "This latitude is in the polar region. Please enter the location of the system."
+              }
+            }
+          ]
         },
         {
           "type": "text",
@@ -180,7 +190,17 @@
           "isRequired": true,
           "inputType": "number",
           "min": -180,
-          "max": 180
+          "max": 180,
+          "validators": [
+            {
+              "type": "expression",
+              "expression": "{forecast_longitude} empty or {forecast_latitude} != 0 or {forecast_longitude} != 0",
+              "text": {
+                "de": "Breiten- und Längengrad sind beide 0, das ist ein Punkt im Atlantik. Bitte den Standort der Anlage eintragen.",
+                "default": "Latitude and longitude are both 0, a spot in the Atlantic Ocean. Please enter the location of the system."
+              }
+            }
+          ]
         }
       ]
     },
