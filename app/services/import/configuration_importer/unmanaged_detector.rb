@@ -1,7 +1,6 @@
 module Import
   class ConfigurationImporter
     class UnmanagedDetector # rubocop:disable Metrics/ClassLength
-      INTERPOLATION_RE = VolumeResolver::INTERPOLATION_RE
       # All .env variable keys that HELIOS manages (generates in .env)
       MANAGED_ENV_KEYS = %w[
         TZ INSTALLATION_DATE CURRENCY ADMIN_PASSWORD SECRET_KEY_BASE
@@ -68,7 +67,8 @@ module Import
       #     {FORECAST,SENEC,SHELLY,MQTT}_INFLUX_MEASUREMENT quartet —
       #     non-canonical aliases of INFLUX_MEASUREMENT_* emitted by the Online
       #     Configurator between 2024-03 and 2024-10, whose value round-trips
-      #     via the canonical var.
+      #     via the canonical var. (HELIOS_BIND_IP is absorbed the same way but
+      #     only conditionally dropped — see absorbed_bind_ip?.)
       #   - Obsolete: superseded by UI-managed settings (e.g. historical prices)
       #     or ignored by newer releases (INFLUX_POLL_INTERVAL since dashboard
       #     v1.2.0).
@@ -132,12 +132,16 @@ module Import
       end
 
       def normalized_unmanaged_services
-        raw = @reader.raw_compose['services'] || {}
-        unmanaged = raw.reject { |name, config| managed_service?(name, config) }
-
-        pre = unmanaged.transform_values { |config| extract_referenced(config) }
+        pre = unmanaged_raw_services.transform_values { |config| extract_referenced(config) }
         distribute_env_file_orphans!(pre)
         pre.transform_values { |service| finalize_service(service) }.presence
+      end
+
+      # Services HELIOS will not re-emit, in their untouched compose form.
+      # extract_referenced works on copies, so these stay readable afterwards.
+      def unmanaged_raw_services
+        @unmanaged_raw_services ||=
+          (@reader.raw_compose['services'] || {}).reject { |name, config| managed_service?(name, config) }
       end
 
       # First-pass extraction: split the raw compose service config into
@@ -260,7 +264,7 @@ module Import
       end
 
       def scan_interpolations(value)
-        value.to_s.scan(INTERPOLATION_RE).flatten
+        ::Env::Interpolation.references(value)
       end
 
       def valid_env_name?(name)
@@ -341,16 +345,43 @@ module Import
         managed.include?(key) ||
           managed_shelly_env_key?(key) ||
           deprecated_mqtt_collector_var?(key) ||
+          absorbed_bind_ip?(key) ||
           referenced_only_by_managed_services?(key) ||
           redundant_measurement_alias?(key, value) ||
           unreferenced_in_stack?(key)
       end
 
+      # HELIOS_BIND_IP is absorbed into reverse_proxy.bind_ip and baked into
+      # every port HELIOS publishes itself, so the variable reaches nothing
+      # once every reader is managed. A service HELIOS does not re-emit keeps
+      # its ports verbatim though, `${HELIOS_BIND_IP}` and all: dropping the
+      # variable would leave that reference resolving to nothing, and the
+      # service would publish on every interface instead of the private IP.
+      def absorbed_bind_ip?(key)
+        key == 'HELIOS_BIND_IP' && vars_referenced_by_unmanaged_services.exclude?(key)
+      end
+
+      # Names an unmanaged service interpolates anywhere in its config, rather
+      # than in `environment:` alone. A `ports:` or `volumes:` entry has no env
+      # slot the value could travel in, so the variable itself has to survive.
+      def vars_referenced_by_unmanaged_services
+        @vars_referenced_by_unmanaged_services ||=
+          unmanaged_raw_services.each_value.with_object(Set.new) do |config, vars|
+            scan_strings(config) { |string| vars.merge(scan_interpolations(string)) }
+          end
+      end
+
       # True if no service can read this var: not interpolated as ${VAR}
-      # anywhere in compose or .env, and not bare-listed in any service's
-      # environment block. Catches stale leftovers like FS_FORECAST_* after a
+      # anywhere in compose, and not bare-listed in any service's environment
+      # block. Catches stale leftovers like FS_FORECAST_* after a
       # forecast.solar → pvnode migration, or PYTHONUNBUFFERED for a container
       # that no longer exists.
+      #
+      # .env values are deliberately not scanned: Env::File resolves their
+      # references on read, so a var reachable only from another .env value is
+      # already baked into that value and nothing needs it any more. The one
+      # `${VAR}` text that survives reading sits inside single quotes, where
+      # docker passes it on literally rather than as a reference.
       def unreferenced_in_stack?(key)
         @referenced_vars ||= collect_referenced_vars
         @referenced_vars.exclude?(key)
@@ -359,7 +390,6 @@ module Import
       def collect_referenced_vars
         vars = Set.new
         scan_strings(@reader.raw_compose) { |s| vars.merge(scan_interpolations(s)) }
-        @reader.raw_env.to_h.each_value { |v| vars.merge(scan_interpolations(v.to_s)) }
         each_service_environment { |env| vars.merge(declared_env_names(env) - value_carrying_names(env)) }
         vars
       end
