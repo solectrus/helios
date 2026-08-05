@@ -271,9 +271,15 @@ module SupportBundle
     # Lat/Lng: keep the integer (and sign) so the rough latitude band is
     # visible for diagnostics, zero everything after the decimal point.
     # Length is preserved so `52.51627` → `52.00000` and `52.5162799` (a
-    # float-precision tail seen in forecast logs) → `52.0000000`.
+    # float-precision tail seen in forecast logs) → `52.0000000`. A value
+    # given without decimals is already just that integer part, so it stays
+    # as it is — the letter mask would hide nothing extra while making the
+    # bundle harder to read and the replayed stack unable to parse it.
     def coord_mask(value)
-      match = value.to_s.match(/\A(-?\d+)\.(\d+)\z/)
+      str = value.to_s
+      return str if str.match?(/\A-?\d+\z/)
+
+      match = str.match(/\A(-?\d+)\.(\d+)\z/)
       return mask(value) unless match
 
       "#{match[1]}.#{'0' * match[2].length}"
@@ -359,11 +365,23 @@ module SupportBundle
     end
 
     def build_redactions(key, value)
-      return [coord_redaction(value)] if COORD_KEYS.include?(key)
+      return coord_redactions(value) if COORD_KEYS.include?(key)
       return host_redactions(value) if HOST_KEYS.include?(key)
       return [] if value.length < LOG_REDACTION_MIN_LENGTH
 
       [[value, mask(value)]]
+    end
+
+    # A coordinate without decimals carries no more than what coord_mask
+    # would keep anyway (the integer part), so there is nothing left to
+    # redact — and a pattern built from one or two digits is actively
+    # harmful: a longitude of `0` turned into `0\d*` and swallowed every
+    # number starting with a zero across the whole bundle, down to the month
+    # in `2026-08-05` and the patch level in `Ruby 4.0.6`.
+    def coord_redactions(value)
+      return [] unless value.include?('.')
+
+      [coord_redaction(value)]
     end
 
     # `\b` cannot be used in front of the value: a southern/western

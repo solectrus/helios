@@ -51,6 +51,11 @@ RSpec.describe SupportBundle::Anonymizer do
       expect(described_class.coord_mask('52.5162799')).to eq('52.0000000')
     end
 
+    it 'keeps a coordinate given without decimals as it is' do
+      expect(described_class.coord_mask('0')).to eq('0')
+      expect(described_class.coord_mask('-90')).to eq('-90')
+    end
+
     it 'falls back to the 5-letter mask for non-coordinate strings' do
       expect(described_class.coord_mask('not-a-coord')).to match(/\A[A-Z]{5}\z/)
     end
@@ -498,6 +503,16 @@ RSpec.describe SupportBundle::Anonymizer do
       expect(result).not_to include('52.51627')
       expect(result).not_to include('13.37774')
       expect(result).to include('https://api.forecast.solar/estimate/52.00000/13.00000/29/-50/9.75')
+    end
+
+    it 'leaves the rest of the log alone when a coordinate has no decimals' do
+      env_redactions = described_class.log_redactions("FORECAST_LATITUDE=-90\nFORECAST_LONGITUDE=0\n")
+      log = <<~LOG
+        2026-08-05T03:49:01.352Z Forecast collector v0.11.0, Ruby 4.0.6
+          0: https://api.forecast.solar/estimate/-90/0/45/0/8.51 ... Error HTTP 404
+      LOG
+
+      expect(described_class.anonymize_text(log, env_redactions)).to eq(log)
     end
 
     it 'scrubs southern/western coordinates that start with a minus sign' do
