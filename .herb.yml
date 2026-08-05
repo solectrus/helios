@@ -1,11 +1,13 @@
+# Applies to both formatter and linter (additive to Herb's defaults).
+# public/ holds the unmodified Rails error page templates.
+files:
+  exclude:
+    - 'public/**'
+
 formatter:
   enabled: true
   indentWidth: 2
   maxLineLength: 120
-
-  exclude:
-    - 'public/**'
-    - node_modules/**
 
   rewriter:
     # Pre-format rewriters (run before formatting)
