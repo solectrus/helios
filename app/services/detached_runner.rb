@@ -161,11 +161,11 @@ class DetachedRunner
     Orchestration::UpdatePause.pause!(self.class::UPDATE_PAUSE_REASON)
   end
 
-  # Always pull — some runners point at floating tags (csv-importer is on
-  # `:develop`), so a locally-cached image may be stale. `docker pull` is
-  # cheap when the digest already matches (manifest check only), and the
-  # cost is irrelevant compared to the user-initiated container run that
-  # follows.
+  # Always pull — every runner points at a floating tag (csv-importer on
+  # `:latest`, backup/restore on `docker:29-cli`), so a locally-cached image
+  # may be stale. `docker pull` is cheap when the digest already matches
+  # (manifest check only), and the cost is irrelevant compared to the
+  # user-initiated container run that follows.
   def pull_image_if_needed!
     image = self.class::IMAGE
     ok, output = Orchestration::DockerCli.pull_image(image)
