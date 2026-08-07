@@ -35,7 +35,7 @@ After modifying code, **always** run the matching linter(s) and fix issues:
 - Shell (`.sh`): `shellcheck`
 - JSON/YAML/Markdown/CSS: `bunx prettier --write`
 
-In Claude Code sessions `.claude/hooks/` runs these at turn end for edited files. `bin/brakeman` occasionally for security scans, not per change.
+Run them before you call the change done. `bin/brakeman` occasionally for security scans, not per change.
 
 ## Rails Conventions
 

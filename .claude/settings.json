@@ -21,30 +21,5 @@
       "Bash(gh repo view:*)",
       "Bash(gh search issues:*)"
     ]
-  },
-  "hooks": {
-    "PostToolUse": [
-      {
-        "matcher": "Edit|Write",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/track-changed-file.sh",
-            "timeout": 5
-          }
-        ]
-      }
-    ],
-    "Stop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/lint-on-stop.sh",
-            "timeout": 180
-          }
-        ]
-      }
-    ]
   }
 }
