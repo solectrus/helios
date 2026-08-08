@@ -76,8 +76,22 @@ module Surveys
       ]
     end
 
-    def filter_inputs
-      [min_input, max_input, null_to_zero_input]
+    # Min/max/null_to_zero only apply to numeric payloads, so they are gated on
+    # the data type. The condition sits on every input rather than on the
+    # enclosing page: SurveyJS clears an invisible value (clearInvisibleValues:
+    # onHidden) only when the question's own `visible` flips. A page-level gate
+    # hides the inputs but keeps their values, so switching the type from float
+    # to string used to leave a stale NULL_TO_ZERO=true in the export. A page
+    # whose questions are all invisible disappears on its own, so dropping the
+    # page condition costs nothing.
+    #
+    # `guard` adds a survey-specific precondition (the sensor survey also
+    # requires source = mqtt); it is ANDed with the type check.
+    def filter_inputs(type_field: field('type'), guard: nil)
+      condition = "({#{type_field}} = 'float' or {#{type_field}} = 'integer')"
+      condition = "#{guard} and #{condition}" if guard
+
+      [min_input, max_input, null_to_zero_input].map { |input| input.merge('visibleIf' => condition) }
     end
 
     private

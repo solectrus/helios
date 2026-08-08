@@ -158,7 +158,6 @@
     },
     {
       "name": "p_mqtt_filter",
-      "visibleIf": "{source} = 'mqtt' and ({mqtt_payload_type} = 'float' or {mqtt_payload_type} = 'integer')",
       "title": {
         "de": "MQTT — Filter (optional)",
         "default": "MQTT — Filters (optional)"

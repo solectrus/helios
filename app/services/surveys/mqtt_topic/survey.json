@@ -62,7 +62,6 @@
     },
     {
       "name": "p_filters",
-      "visibleIf": "{type} = 'float' or {type} = 'integer'",
       "title": {
         "de": "Filter (optional)",
         "default": "Filters (optional)"

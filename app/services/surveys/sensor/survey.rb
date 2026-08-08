@@ -113,7 +113,9 @@ module Surveys
         end
 
         filter_page = find_page(data, 'p_mqtt_filter')
-        filter_page['elements'] = fields.filter_inputs if filter_page
+        return unless filter_page
+
+        filter_page['elements'] = fields.filter_inputs(type_field: 'mqtt_payload_type', guard: "{source} = 'mqtt'")
       end
 
       def custom_power_sensor?

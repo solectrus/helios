@@ -39,9 +39,20 @@ RSpec.describe Surveys::MqttTopic::Survey do
       expect(result['clearInvisibleValues']).to eq('onHidden')
     end
 
-    it 'hides the filters page for non-numeric data types' do
+    # The numeric gate sits on the inputs, not on the page: clearInvisibleValues
+    # clears a question only when its own visibility flips, so a page-level
+    # condition left a stale min/max/null_to_zero behind after a type change.
+    # SurveyJS hides a page whose questions are all invisible on its own.
+    it 'gates each filter input on a numeric data type instead of the page' do
       filters_page = result['pages'].find { |p| p['name'] == 'p_filters' }
-      expect(filters_page['visibleIf']).to include("{type} = 'float'", "{type} = 'integer'")
+      condition = "({type} = 'float' or {type} = 'integer')"
+
+      expect(filters_page).not_to have_key('visibleIf')
+      expect(filters_page['elements'].to_h { |e| [e['name'], e['visibleIf']] }).to eq(
+        'min' => condition,
+        'max' => condition,
+        'null_to_zero' => condition,
+      )
     end
   end
 end
