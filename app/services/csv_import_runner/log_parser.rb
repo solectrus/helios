@@ -5,15 +5,16 @@ class CsvImportRunner
   # csv-importer 0dd4738 (AppLogger emits bare `msg\n` without timestamp
   # or severity prefix), each successful file produces one log line:
   #
-  #   Imported /data/<path> (<Adapter>, <N> points)
+  #   Imported /data/<path> (<Adapter>, <N> rows)
   #
   # The patterns below match these literal substrings printed by
   # csv-importer (see https://github.com/solectrus/csv-importer/blob/main/app/import.rb):
   #
-  #   - `Imported <path> (<Adapter>, <N> points)` (per file with count > 0)
+  #   - `Imported <path> (<Adapter>, <N> rows)` (per file with count > 0)
   #     → DONE_PATTERN; counted to derive "N files done" while running.
-  #       The trailing `, <N> points)` is what disambiguates it from the
-  #       final summary line below.
+  #       The trailing `, <N> rows)` is what disambiguates it from the
+  #       final summary line below. Older importer versions wrote
+  #       `points` instead of `rows`, so both nouns are accepted.
   #
   #   - `Imported <N> files` (the run's final summary, on its own line)
   #     → TOTAL_PATTERN captures the total for the success card
@@ -24,7 +25,7 @@ class CsvImportRunner
   # spec/services/csv_import_runner/log_parser_spec.rb pins the patterns;
   # bump the importer image with care and re-run that spec when updating.
   module LogParser
-    DONE_PATTERN = /Imported .+ \(.+, \d+ points\)/
+    DONE_PATTERN = /Imported .+ \(.+, \d+ (?:rows|points)\)/
     TOTAL_PATTERN = /Imported (?<count>\d+) files?\b/
 
     module_function

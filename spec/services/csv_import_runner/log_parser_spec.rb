@@ -12,9 +12,9 @@ RSpec.describe CsvImportRunner::LogParser do
       Pushing to InfluxDB at http://influxdb:8086, bucket solectrus
       Using time zone Europe/Berlin
       Importing data from /data ...
-      Imported /data/Statistische Daten/2025/S1234567890-week-10-2025.csv (SenecRecord, 2006 points)
-      Imported /data/Statistische Daten/2025/S1234567890-week-11-2025.csv (SenecRecord, 2007 points)
-      Imported /data/Statistische Daten/2025/S1234567890-week-12-2025.csv (SenecRecord, 2005 points)
+      Imported /data/Statistische Daten/2025/S1234567890-week-10-2025.csv (SenecAdapter, 2006 rows)
+      Imported /data/Statistische Daten/2025/S1234567890-week-11-2025.csv (SenecAdapter, 2007 rows)
+      Imported /data/Statistische Daten/2025/S1234567890-week-12-2025.csv (SenecAdapter, 2005 rows)
       Imported 3 files
     LOG
   end
@@ -30,6 +30,12 @@ RSpec.describe CsvImportRunner::LogParser do
 
     it 'does not count the final summary line as a completed file' do
       expect(described_class.progress('Imported 3 files')).to eq(done: 0)
+    end
+
+    it 'still counts the legacy points wording' do
+      legacy = 'Imported /data/foo.csv (SenecRecord, 2006 points)'
+
+      expect(described_class.progress(legacy)[:done]).to eq(1)
     end
   end
 
@@ -47,7 +53,7 @@ RSpec.describe CsvImportRunner::LogParser do
     end
 
     it 'does not pick up the per-file Imported line as a total' do
-      per_file = 'Imported /data/foo.csv (SenecRecord, 50 points)'
+      per_file = 'Imported /data/foo.csv (SenecAdapter, 50 rows)'
 
       expect(described_class.total_files(per_file)).to eq(0)
     end
