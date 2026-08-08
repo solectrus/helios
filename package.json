@@ -20,8 +20,8 @@
     "@rails/actioncable": "^8.1.301",
     "highlight.js": "^11.11.1",
     "stimulus-vite-helpers": "^3.1.0",
-    "survey-core": "^2.5.36",
-    "survey-js-ui": "^2.5.36"
+    "survey-core": "^2.5.37",
+    "survey-js-ui": "^2.5.37"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
