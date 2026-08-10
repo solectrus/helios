@@ -64,6 +64,7 @@ module Orchestration
       AffectedServices.seed_baseline_if_missing!
       rebuild_stack
       AffectedServices.invalidate_config_hashes
+      sync_service_statuses
       recompute_and_broadcast(force: true)
     end
 
@@ -116,6 +117,34 @@ module Orchestration
         container = containers_by_name[cs.name]
         @service_statuses[cs.name] = container&.effective_status || :stopped
       end
+    end
+
+    # The rewritten compose can have gained or lost services, so bring the
+    # status map in line with it. Without this a service that the config
+    # change removed keeps its (usually :stopped) entry and the status bar
+    # counts a service that no longer exists — "9 of 10 services running"
+    # with no tenth service anywhere in the list.
+    #
+    # Only the keys are touched. Existing entries keep their status, so an
+    # optimistic :starting from a job in flight survives the rewrite.
+    def sync_service_statuses
+      expected = counted_services.map(&:name)
+
+      (@service_statuses.keys - expected).each { |name| @service_statuses.delete(name) }
+      (expected - @service_statuses.keys).each do |name|
+        @service_statuses[name] = current_status_of(name)
+      end
+    end
+
+    # A service the config change added normally has no container yet, but it
+    # can have one already (a service switched back on while its container was
+    # merely stopped). Docker being unreachable must not break the config save,
+    # so fall back to :stopped and let the next refresh! correct it.
+    def current_status_of(service_name)
+      Orchestration::Container.find(service_name)&.effective_status || :stopped
+    rescue StandardError => e
+      logger.warn("status lookup for #{service_name} failed: #{e.class}: #{e.message}")
+      :stopped
     end
 
     # Watchtower is left out entirely while HELIOS holds it down for a

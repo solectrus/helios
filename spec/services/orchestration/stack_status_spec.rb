@@ -262,6 +262,16 @@ RSpec.describe Orchestration::StackStatus do
       allow(described_class.instance).to receive(:rebuild_stack)
     end
 
+    # The services the rewritten compose contains afterwards.
+    def stub_compose_with(*names)
+      allow(Compose).to receive(:load).and_return(
+        instance_double(
+          Compose::File,
+          services: names.map { |name| instance_double(Compose::Service, name:, helios?: false) },
+        ),
+      )
+    end
+
     it 'rebuilds stack files' do
       allow(Orchestration::AffectedServices).to receive_messages(
         compute: [],
@@ -289,10 +299,65 @@ RSpec.describe Orchestration::StackStatus do
         compute: %w[redis],
         invalidate_config_hashes: nil,
       )
+      stub_compose_with('redis')
       described_class.update('redis', :running)
       described_class.mark_config_changed!
 
       expect(described_class.overall).to eq(:restart_required)
+    end
+
+    # A service switched off in the settings vanishes from the rewritten
+    # compose. Its stale entry used to survive in the status map and keep the
+    # bar amber with "9 of 10 services running" while no tenth service existed.
+    it 'drops services the rewritten compose no longer has' do
+      allow(Orchestration::AffectedServices).to receive_messages(
+        compute: [],
+        invalidate_config_hashes: nil,
+      )
+      stub_compose_with('postgresql')
+      described_class.update('postgresql', :ok)
+      described_class.update('tibber', :stopped)
+
+      described_class.mark_config_changed!
+
+      aggregate_failures do
+        expect(described_class.status_for('tibber')).to be_nil
+        expect(described_class.service_counts).to eq(running: 1, total: 1)
+        expect(described_class.overall).to eq(:ok)
+      end
+    end
+
+    it 'picks up services the rewritten compose has gained' do
+      allow(Orchestration::AffectedServices).to receive_messages(
+        compute: [],
+        invalidate_config_hashes: nil,
+      )
+      stub_compose_with('postgresql', 'tibber')
+      allow(Orchestration::Container).to receive(:find).with('tibber').and_return(nil)
+      described_class.update('postgresql', :ok)
+
+      described_class.mark_config_changed!
+
+      aggregate_failures do
+        expect(described_class.status_for('tibber')).to eq(:stopped)
+        expect(described_class.service_counts).to eq(running: 1, total: 2)
+        expect(described_class.overall).to eq(:partial)
+      end
+    end
+
+    it 'keeps the running status of a service whose container is still up' do
+      allow(Orchestration::AffectedServices).to receive_messages(
+        compute: [],
+        invalidate_config_hashes: nil,
+      )
+      stub_compose_with('tibber')
+      allow(Orchestration::Container).to receive(:find).with('tibber').and_return(
+        instance_double(Orchestration::Container, effective_status: :ok),
+      )
+
+      described_class.mark_config_changed!
+
+      expect(described_class.service_counts).to eq(running: 1, total: 1)
     end
 
     it 'returns affected service names' do
