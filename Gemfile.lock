@@ -151,7 +151,7 @@ GEM
     drb (2.2.3)
     erb (6.0.7)
     erubi (1.13.1)
-    excon (1.6.0)
+    excon (1.7.0)
       logger
     foreman (0.90.0)
       thor (~> 1.4)
