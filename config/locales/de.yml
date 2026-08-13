@@ -19,6 +19,7 @@ de:
   about:
     show:
       title: 'Über'
+      tagline: 'Einrichtung und Verwaltung von'
       copyright_notice: 'Alle Rechte vorbehalten.'
       version_label: 'Version'
       version_unknown: 'unbekannt'

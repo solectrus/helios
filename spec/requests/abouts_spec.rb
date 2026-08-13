@@ -6,7 +6,7 @@ RSpec.describe 'About', :with_admin_password do
       get about_path
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include('HELIOS configures SOLECTRUS')
+      expect(response.body).to include(I18n.t('about.show.tagline'))
       expect(response.body).to include(I18n.t('about.show.license_heading'))
       expect(response.body).to include(I18n.t('about.show.components_heading'))
     end

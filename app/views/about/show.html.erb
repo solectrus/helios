@@ -1,13 +1,19 @@
 <% content_for :title, t('.title') %>
 
 <div class="mx-auto max-w-6xl px-4 py-6 md:p-8">
-  <section class="animate-about-rise relative mb-12 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_auto] lg:items-start">
+  <section class="animate-about-rise relative mb-12 grid grid-cols-1 gap-10 lg:grid-cols-[1fr_auto] lg:items-center">
     <div>
-      <h1 class="text-base-content">
-        <%= render HeliosSolectrusLogo::Component.new(css_class: 'block w-full') %>
+      <h1>
+        <img src="/logo.svg" class="block h-14 w-auto md:h-20" alt="">
+        <span class="sr-only">HELIOS</span>
       </h1>
 
-      <p class="text-base-content/55 mt-6">
+      <p class="text-base-content/70 mt-5 flex flex-wrap items-center gap-x-2.5 gap-y-2 text-base md:text-lg">
+        <%= t('.tagline') %>
+        <%= render SolectrusLogo::Component.new(css_class: 'block h-4 w-auto md:h-5') %>
+      </p>
+
+      <p class="text-base-content/55 mt-6 text-sm">
         © 2026 Georg Ledermann · <%= t('.copyright_notice') %>
       </p>
     </div>

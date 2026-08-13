@@ -43,6 +43,7 @@ en:
   about:
     show:
       title: 'About'
+      tagline: 'Setup and management of'
       copyright_notice: 'All rights reserved.'
       version_label: 'Version'
       version_unknown: 'unknown'

@@ -1,8 +1,8 @@
 module SolectrusLogo
   class Component < ViewComponent::Base
     # SOLECTRUS wordmark (bolt in place of the O) as SVG path data, drawn
-    # for a tight "0 28 1626 205" viewBox. Also reused by
-    # HeliosSolectrusLogo::Component for the combined lockup.
+    # for a tight "0 28 1626 205" viewBox. The HELIOS wordmark is a static
+    # file instead (public/logo.svg), because it never changes color.
     WORDMARK_PATH =
       'm3 199c18 18 45 30 82 30 51 0 77-26 77-61 0-43-41-53-72-60-23-5-39-9-39-22 0-11 10-19 28-19 ' \
       '19 0 40 6 55 21l23-30c-19-18-44-27-75-27-45 0-73 26-73 58 0 43 41 51 72 58 22 6 39 11 39 25 ' \
