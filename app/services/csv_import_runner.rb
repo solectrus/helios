@@ -64,6 +64,14 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
     # Keeps the user on the progress page across all phases.
     def in_progress? = preparing? || running? || completing?
 
+    # Request-scoped memo of the same answer, for the read paths that ask
+    # more than once per render: /backups reads it for the action gate and
+    # again inside BackupRunner.unavailable_reason, and each uncached read
+    # forks a `docker inspect`. Validation must keep calling `in_progress?`,
+    # which always re-probes — a stale "no import running" there could let a
+    # backup launch on top of a live import.
+    def in_progress_cached? = Current.instance.fetch(:csv_import_in_progress) { in_progress? }
+
     # True while the background thread is pulling the image + launching the
     # container. Process-local; killed by a HELIOS restart — the user then
     # simply re-uploads.

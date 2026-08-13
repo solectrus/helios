@@ -196,7 +196,11 @@ class BackupRunner < DetachedRunner
     # CSV import is checked first to match `validate!` priority — otherwise a
     # transient env hiccup (e.g. token reload mid-import) would show a stale
     # config error in the UI while the actual block is the running import.
-    return :csv_import_in_progress if CsvImportRunner.in_progress?
+    #
+    # The memoized probe is safe for both callers: it renders the reason in
+    # the UI, and inside validate! it runs *after* an uncached in_progress?
+    # check has already rejected a concurrent import.
+    return :csv_import_in_progress if CsvImportRunner.in_progress_cached?
     return :env_missing if env.nil?
     return :config_missing unless ::File.exist?(Configuration.path)
     return :influx_token_missing if env['INFLUX_ADMIN_TOKEN'].blank?

@@ -93,16 +93,20 @@ module Backups
 
       @backups = BackupRepository.all.to_a
       @backup_databases_configured = BackupRunner.databases_configured?
+      @csv_import_running = CsvImportRunner.in_progress_cached?
+      @actions_disabled_reason = actions_disabled_reason
       @backup_unavailable_reason = BackupRunner.unavailable_reason
       @backup_schedule_time = BackupScheduler.scheduled_time_label
     end
 
+    # Only the state the shell needs to choose its layout. The CSV-import
+    # probe stays out: it forks a `docker inspect`, by far the most expensive
+    # step in this render on a slow host, and nothing above the backup list
+    # reads it — paying for it here delays the first paint of every visit.
     def load_runner_state!
       @backup_in_progress = BackupRunner.in_progress
       @restore_in_progress = RestoreRunner.in_progress
-      @csv_import_running = CsvImportRunner.in_progress?
       @in_progress = @backup_in_progress || @restore_in_progress
-      @actions_disabled_reason = actions_disabled_reason
       failures = RunnerLog.messages_for(%i[backup restore])
       @backup_failure = failures[:backup]
       @restore_failure = failures[:restore]
