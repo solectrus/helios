@@ -1,7 +1,8 @@
 <% content_for :title, t('.title') %>
 
 <%= render "shared/configuration_page", active_tab: :advanced do %>
-  <div class="flex flex-col gap-8">
+  <%# Nothing on this page is full-bleed, so the whole list carries the mobile inset %>
+  <div class="flex flex-col gap-8 px-6 md:px-0">
     <% @configuration.advanced_groups.each do |group, settings| %>
       <section>
         <h2 class="text-base-content/55 mb-3 text-xs font-medium tracking-wider uppercase">

@@ -6,25 +6,28 @@
 <% content_for :title, page_title %>
 
 <%= render "shared/configuration_page", active_tab: :datasources do %>
-  <%= link_to datasources_path,
-              class: "text-base-content/60 hover:text-base-content focus-visible:text-base-content inline-flex items-center gap-1.5 text-sm",
-              data: { turbo_frame: "_top" } do %>
-    <i class="fa-solid fa-arrow-left text-xs"></i>
-    <%= back_label %>
-  <% end %>
-
-  <div class="mt-3 mb-2 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
-    <h1 class="text-3xl font-semibold tracking-tight"><%= page_title %></h1>
-
-    <%= link_to new_datasources_mqtt_topic_path,
-                class: "btn btn-primary shrink-0",
-                data: { turbo_frame: "setting-modal-content" } do %>
-      <i aria-hidden="true" class="fa-solid fa-plus"></i>
-      <%= add_label %>
+  <%# The table below stays full-bleed on mobile, so the header carries its own inset %>
+  <div class="px-6 md:px-0">
+    <%= link_to datasources_path,
+                class: "text-base-content/60 hover:text-base-content focus-visible:text-base-content inline-flex items-center gap-1.5 text-sm",
+                data: { turbo_frame: "_top" } do %>
+      <i class="fa-solid fa-arrow-left text-xs"></i>
+      <%= back_label %>
     <% end %>
-  </div>
 
-  <p class="text-base-content/60 mb-6 max-w-prose text-sm"><%= page_description %></p>
+    <div class="mt-3 mb-2 flex flex-col items-start gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4">
+      <h1 class="text-3xl font-semibold tracking-tight"><%= page_title %></h1>
+
+      <%= link_to new_datasources_mqtt_topic_path,
+                  class: "btn btn-primary shrink-0",
+                  data: { turbo_frame: "setting-modal-content" } do %>
+        <i aria-hidden="true" class="fa-solid fa-plus"></i>
+        <%= add_label %>
+      <% end %>
+    </div>
+
+    <p class="text-base-content/60 mb-6 max-w-prose text-sm"><%= page_description %></p>
+  </div>
 
   <%= render MqttTopicsTable::Component.new(topics: @topics, readings: @readings) %>
 <% end %>
