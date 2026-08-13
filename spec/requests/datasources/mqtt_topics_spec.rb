@@ -24,6 +24,16 @@ RSpec.describe 'Datasources::MqttTopics', :with_admin_password do
       expect(response.body).to include('sensors/power').and include('house').and include('power')
     end
 
+    # A mapping imported before HELIOS cast the flags still holds the env
+    # string, and in Ruby "false" is true.
+    it 'treats a stored "false" as off' do
+      Configuration.current.add_mqtt_topic(basic_topic.merge('null_to_zero' => 'false'))
+
+      get datasources_mqtt_topics_path
+
+      expect(response.body).not_to include(I18n.t('datasources.mqtt_topics.filters.null_to_zero'))
+    end
+
     it 'omits the polling controller wiring in collectors_only mode' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
       Configuration.current.add_mqtt_topic(basic_topic)

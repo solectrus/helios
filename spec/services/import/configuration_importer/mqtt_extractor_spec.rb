@@ -314,4 +314,27 @@ RSpec.describe Import::ConfigurationImporter::MqttExtractor do
       end
     end
   end
+
+  # The surveys store a real boolean. Keeping the env string would leave two
+  # shapes for one field, and in Ruby the string "false" is true.
+  describe '#raw_mappings with a flag the collector reads as a boolean' do
+    let(:env) do
+      {
+        'MAPPING_0_TOPIC' => 'a/b',
+        'MAPPING_0_MEASUREMENT' => 'm',
+        'MAPPING_0_FIELD' => 'f',
+        'MAPPING_0_TYPE' => 'float',
+        'MAPPING_0_NULL_TO_ZERO' => 'true',
+        'MAPPING_1_TOPIC' => 'c/d',
+        'MAPPING_1_MEASUREMENT' => 'm',
+        'MAPPING_1_FIELD' => 'g',
+        'MAPPING_1_TYPE' => 'float',
+        'MAPPING_1_NULL_TO_ZERO' => 'yes',
+      }
+    end
+
+    it 'converts the two values the collector accepts and keeps anything else' do
+      expect(extractor.raw_mappings.pluck('null_to_zero')).to eq([true, 'yes'])
+    end
+  end
 end

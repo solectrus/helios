@@ -67,7 +67,7 @@ sensors:
     measurement: xxx-pv-messung
     mqtt_json_formula: IF((round({$.meters.storage.agg_p_mw} / 1000)) < 0, -(round({$.meters.storage.agg_p_mw}
       / 1000)), 0)
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: integer
     mqtt_topic: envoy/json
     source: mqtt
@@ -76,7 +76,7 @@ sensors:
     measurement: xxx-pv-messung
     mqtt_json_formula: IF((round({$.meters.storage.agg_p_mw} / 1000)) > 0, (round({$.meters.storage.agg_p_mw}
       / 1000)), 0)
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: integer
     mqtt_topic: envoy/json
     source: mqtt
@@ -84,7 +84,7 @@ sensors:
     field: bat_fuel_charge
     measurement: xxx-pv-messung
     mqtt_json_path: "$.meters.soc"
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: float
     mqtt_topic: envoy/json
     source: mqtt
@@ -97,7 +97,7 @@ sensors:
   case_temp:
     field: battery_case_temp
     measurement: xxx-pv-messung
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: float
     mqtt_topic: forSOLECTRUS/hausakkutemperatur
     source: mqtt
@@ -105,7 +105,7 @@ sensors:
     field: power
     measurement: waschmaschine
     mqtt_json_key: apower
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: float
     mqtt_topic: shelly/waschmaschine/status/switch:0
     name: waschmaschine
@@ -114,7 +114,7 @@ sensors:
     field: power
     measurement: spulmaschine
     mqtt_json_key: apower
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: float
     mqtt_topic: shelly/spuelmaschine/status/switch:0
     name: spulmaschine
@@ -123,7 +123,7 @@ sensors:
     field: power
     measurement: ebikeladestation
     mqtt_json_key: apower
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: float
     mqtt_topic: shelly/ebikeladestation/status/switch:0
     name: ebikeladestation
@@ -132,7 +132,7 @@ sensors:
     field: power
     measurement: luftentfeuchter
     mqtt_json_key: apower
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: float
     mqtt_topic: shelly/luftentfeuchter/status/switch:0
     name: luftentfeuchter
@@ -141,7 +141,7 @@ sensors:
     field: power
     measurement: rocket
     mqtt_json_key: apower
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: float
     mqtt_topic: shelly/rocket/status/switch:0
     name: rocket
@@ -150,7 +150,7 @@ sensors:
     field: power
     measurement: kuhlschrank
     mqtt_json_key: apower
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: float
     mqtt_topic: shelly/kuehlschrank/status/switch:0
     name: kuhlschrank
@@ -159,7 +159,7 @@ sensors:
     field: power
     measurement: serverschrank
     mqtt_json_key: apower
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: float
     mqtt_topic: shelly/serverschrank/status/switch:0
     name: serverschrank
@@ -168,7 +168,7 @@ sensors:
     field: power
     measurement: 3ddrucker
     mqtt_json_key: apower
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: float
     mqtt_topic: shelly/3ddrucker/status/switch:0
     name: 3ddrucker
@@ -177,7 +177,7 @@ sensors:
     field: power
     measurement: heizluefter
     mqtt_json_key: apower
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: integer
     mqtt_topic: shelly/heizluefter/status/switch:0
     name: heizluefter
@@ -186,7 +186,7 @@ sensors:
     field: power
     measurement: schreibtisch
     mqtt_json_key: apower
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: float
     mqtt_topic: shelly/schreibtisch/status/switch:0
     name: schreibtisch
@@ -196,7 +196,7 @@ sensors:
     measurement: xxx-pv-messung
     mqtt_json_formula: IF((round({$.meters.grid.agg_p_mw} / 1000)) < 0, -(round({$.meters.grid.agg_p_mw}
       / 1000)), 0)
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: integer
     mqtt_topic: envoy/json
     source: mqtt
@@ -205,7 +205,7 @@ sensors:
     measurement: xxx-pv-messung
     mqtt_json_formula: IF((round({$.meters.grid.agg_p_mw} / 1000)) > 0, (round({$.meters.grid.agg_p_mw}
       / 1000)), 0)
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: integer
     mqtt_topic: envoy/json
     source: mqtt
@@ -224,7 +224,7 @@ sensors:
     exclude_from_house_power: true
     field: power
     measurement: heatpump
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: float
     mqtt_topic: forSOLECTRUS/heatpump_bereinigt
     source: mqtt
@@ -248,7 +248,7 @@ sensors:
   house_power:
     field: house_power
     measurement: xxx-pv-messung
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: integer
     mqtt_topic: forSOLECTRUS/hausverbrauchMINUSauto
     source: mqtt
@@ -256,28 +256,28 @@ sensors:
     field: inverter_power
     measurement: xxx-pv-messung
     mqtt_json_formula: round({$.meters.pv.agg_p_mw} / 1000)
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: integer
     mqtt_topic: envoy/json
     source: mqtt
   inverter_power_1:
     field: pv_ost
     measurement: xxx-pv-messung
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: integer
     mqtt_topic: forSOLECTRUS/pv_ost
     source: mqtt
   inverter_power_2:
     field: pv_sued
     measurement: xxx-pv-messung
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: integer
     mqtt_topic: forSOLECTRUS/pv_sued
     source: mqtt
   inverter_power_3:
     field: pv_west
     measurement: xxx-pv-messung
-    mqtt_null_to_zero: 'true'
+    mqtt_null_to_zero: true
     mqtt_payload_type: integer
     mqtt_topic: forSOLECTRUS/pv_west
     source: mqtt

@@ -29,8 +29,17 @@ module MqttTopicsTable
       chips = []
       chips << "min #{topic['min']}" if topic['min'].present?
       chips << "max #{topic['max']}" if topic['max'].present?
-      chips << t('datasources.mqtt_topics.filters.null_to_zero') if topic['null_to_zero']
+      chips << t('datasources.mqtt_topics.filters.null_to_zero') if truthy?(topic['null_to_zero'])
       chips
+    end
+
+    private
+
+    # A mapping saved through the survey holds a real boolean, one imported
+    # before HELIOS cast them still holds the env string. In Ruby the string
+    # "false" is true, so a plain check would show an option that is off.
+    def truthy?(value)
+      value == true || value.to_s == 'true'
     end
   end
 end

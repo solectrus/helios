@@ -14,6 +14,13 @@ module Import
         measurement_positive measurement_negative field_positive field_negative
       ].freeze
 
+      # Mapping options mqtt-collector reads as a flag. It accepts exactly
+      # "true" or "false" for them (Config#validate_mapping! with an allow
+      # list), while the surveys store a real boolean. Keeping the env string
+      # would leave two shapes for one field in config.yaml, and in Ruby the
+      # string "false" is true.
+      BOOLEAN_FIELDS = %i[null_to_zero].freeze
+
       # Pre-MAPPING-style env vars that mqtt-collector still accepts for backward
       # compatibility (see mqtt-collector/lib/config.rb DEPRECATED_ENV). Each maps
       # to a fixed (field, type) pair; the measurement comes from INFLUX_MEASUREMENT.
@@ -143,9 +150,21 @@ module Import
         mapping_indices(mqtt_env).map do |i|
           MAPPING_FIELDS.each_with_object({}) do |f, hash|
             value = mqtt_env["MAPPING_#{i}_#{f.upcase}"]
-            hash[f.to_s] = value if value.present?
+            hash[f.to_s] = cast(f, value) if value.present?
           end
         end.reject(&:empty?)
+      end
+
+      # Anything the collector would refuse anyway stays as it arrived, so a
+      # wrong value remains visible instead of turning into a silent false.
+      def cast(field, value)
+        return value unless BOOLEAN_FIELDS.include?(field)
+
+        case value
+        when 'true' then true
+        when 'false' then false
+        else value
+        end
       end
 
       # Sign-split mappings (FIELD_POSITIVE/_NEGATIVE) round-trip through the
@@ -164,7 +183,9 @@ module Import
 
       def parse_mappings(mqtt_env)
         raw = mapping_indices(mqtt_env).map do |i|
-          MAPPING_FIELDS.index_with { |f| mqtt_env["MAPPING_#{i}_#{f.upcase}"] }.compact
+          MAPPING_FIELDS.index_with { |f| mqtt_env["MAPPING_#{i}_#{f.upcase}"] }
+                        .compact
+                        .to_h { |f, value| [f, cast(f, value)] }
         end
         raw.concat(parse_deprecated_mappings(mqtt_env))
         raw.flat_map { |m| expand_sign_split(m) }

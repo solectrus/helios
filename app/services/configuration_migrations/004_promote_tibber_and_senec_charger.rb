@@ -66,8 +66,10 @@ module ConfigurationMigrations
     end
 
     # Mirrors Import::ConfigurationImporter::SenecChargerExtractor#section_data,
-    # including its boolean dry_run: the survey's boolean question can't read
-    # back the raw 'true' string and would render an imported test mode as off.
+    # including its boolean dry_run: the survey writes a real boolean, so a
+    # promoted section must not leave a second shape for the same field behind.
+    # In Ruby the string "false" is true, which turns every later plain
+    # truthiness check into a latent bug.
     def senec_charger_section(env)
       section = Export::Env::SenecCharger::ENTRIES.to_h { |key, (field, *)| [field, env[key]] }
       section['dry_run'] = section['dry_run'].to_s == 'true' if section['dry_run'].present?
