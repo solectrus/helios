@@ -27,6 +27,20 @@ module Surveys
       ),
     }.freeze
 
+    # The label names the sensor within HELIOS only. The SOLECTRUS dashboard
+    # carries its own name for the same sensor.
+    LABEL_ELEMENT = {
+      'type' => 'text',
+      'name' => 'name',
+      'title' => Base.localized(en: 'Label for this sensor', de: 'Bezeichnung für diesen Sensor'),
+      'description' => Base.localized(
+        en: 'Only used inside HELIOS. The name in the SOLECTRUS dashboard is set there separately.',
+        de: 'Gilt nur innerhalb von HELIOS. Die Bezeichnung im SOLECTRUS-Dashboard wird dort separat eingestellt.',
+      ),
+      'placeholder' => Base.localized(en: 'e.g. Fridge', de: 'z.B. Kühlschrank'),
+    }.freeze
+    private_constant :LABEL_ELEMENT
+
     # Custom sensors are part of the house power by default; deducting them
     # promotes them to their own segment in the energy flow.
     CUSTOM_HINT_EN = <<~HTML.freeze
@@ -175,21 +189,9 @@ module Surveys
         label_page = {
           'name' => 'p_name',
           'title' => self.class.localized(en: 'Label', de: 'Bezeichnung'),
-          'elements' => [label_element],
+          'elements' => [LABEL_ELEMENT],
         }
         data['pages'].insert(1, label_page)
-      end
-
-      def label_element
-        {
-          'type' => 'text',
-          'name' => 'name',
-          'title' => self.class.localized(
-            en: 'Label for this sensor',
-            de: 'Bezeichnung für diesen Sensor',
-          ),
-          'placeholder' => self.class.localized(en: 'e.g. Fridge', de: 'z.B. Kühlschrank'),
-        }
       end
 
       def inject_shelly_connection_page!(data)
