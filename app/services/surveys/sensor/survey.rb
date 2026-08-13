@@ -103,33 +103,13 @@ module Surveys
       def customize!(data)
         inject_sensor_title!(data)
         inject_source_choices!(data)
-        inject_mqtt_fields!(data)
+        MqttInjector.new(sensor_name).call(data)
         MappingInjector.new(sensor_name).call(data)
         inject_label_page!(data) if custom_power_sensor?
         inject_shelly_connection_page!(data)
         inject_shelly_invert_power!(data) if invert_power_relevant?
         inject_house_power_page!(data) if exclude_from_house_power_relevant?
         inject_balcony_page!(data) if balcony_relevant?
-      end
-
-      def inject_mqtt_fields!(data)
-        fields = MqttFields.new(prefix: 'mqtt_')
-
-        method_page = find_page(data, 'p_mqtt_extraction')
-        method_page['elements'] = [fields.extraction_method_radio(name: 'mqtt_extraction_mode')] if method_page
-
-        value_page = find_page(data, 'p_mqtt_extraction_value')
-        if value_page
-          value_page['elements'] = [
-            *fields.extraction_value_inputs(method_field: 'mqtt_extraction_mode'),
-            fields.type_dropdown(name: 'mqtt_payload_type'),
-          ]
-        end
-
-        filter_page = find_page(data, 'p_mqtt_filter')
-        return unless filter_page
-
-        filter_page['elements'] = fields.filter_inputs(type_field: 'mqtt_payload_type', guard: "{source} = 'mqtt'")
       end
 
       def custom_power_sensor?

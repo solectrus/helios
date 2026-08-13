@@ -313,6 +313,104 @@ RSpec.describe Import::ConfigurationImporter::MqttExtractor do
         expect(extractor.orphan_mappings).to be_empty
       end
     end
+
+    # An orphan is re-exported unchanged, so dropping these on the way in would
+    # silently switch throttling off on the user's next export.
+    context 'with the write-behavior options of mqtt-collector 0.8' do
+      let(:env) do
+        {
+          'MAPPING_0_TOPIC' => 'burst/power',
+          'MAPPING_0_MEASUREMENT' => 'METER',
+          'MAPPING_0_FIELD' => 'power',
+          'MAPPING_0_TYPE' => 'integer',
+          'MAPPING_0_AGGREGATE_INTERVAL' => '60',
+          'MAPPING_0_DEDUP' => 'true',
+          'MAPPING_0_HEARTBEAT_INTERVAL' => '900',
+        }
+      end
+      let(:sensors_data) { {} }
+
+      it 'keeps them on the orphan mapping' do
+        expect(extractor.orphan_mappings).to contain_exactly(
+          hash_including(
+            'aggregate_interval' => '60',
+            'dedup' => true,
+            'heartbeat_interval' => '900',
+          ),
+        )
+      end
+    end
+  end
+
+  describe '#mappings with the write-behavior options of mqtt-collector 0.8' do
+    let(:env) do
+      {
+        'MAPPING_0_TOPIC' => 'grid/topic',
+        'MAPPING_0_TYPE' => 'integer',
+        'MAPPING_0_MEASUREMENT_POSITIVE' => 'grid',
+        'MAPPING_0_FIELD_POSITIVE' => 'import_power',
+        'MAPPING_0_MEASUREMENT_NEGATIVE' => 'grid',
+        'MAPPING_0_FIELD_NEGATIVE' => 'export_power',
+        'MAPPING_0_AGGREGATE_INTERVAL' => '30',
+        'MAPPING_0_DEDUP' => 'true',
+      }
+    end
+
+    # The collector aggregates before the split and deduplicates each written
+    # field on its own, so both halves keep the options of the source mapping.
+    it 'carries them into both halves of a sign-split mapping' do
+      expect(extractor.mappings).to all(include(aggregate_interval: '30', dedup: true))
+      expect(extractor.mappings.size).to eq(2)
+    end
+  end
+
+  # From 0.8.0 a mapping without a topic calculates its value from mappings it
+  # reads by name. It stands for no device, and it stays a standalone entry
+  # unless its target matches a HELIOS sensor.
+  describe 'a calculated mapping' do
+    subject(:extractor) { described_class.new(reader, sensors_data) }
+
+    let(:env) do
+      {
+        'MAPPING_0_TOPIC' => 'h/p',
+        'MAPPING_0_MEASUREMENT' => 'PV',
+        'MAPPING_0_FIELD' => 'house_power',
+        'MAPPING_0_TYPE' => 'integer',
+        'MAPPING_0_NAME' => 'house_power',
+        'MAPPING_0_MAX_AGE' => '300',
+        'MAPPING_1_MEASUREMENT' => 'Household',
+        'MAPPING_1_FIELD' => 'base_load',
+        'MAPPING_1_TYPE' => 'integer',
+        'MAPPING_1_FORMULA' => '{house_power} - 100',
+        'MAPPING_2_TOPIC' => 'w/p',
+        'MAPPING_2_TYPE' => 'integer',
+        'MAPPING_2_NAME' => 'wallbox',
+        'MAPPING_2_SKIP_WRITE' => 'true',
+      }
+    end
+    let(:sensors_data) { { 'house_power' => 'PV:house_power' } }
+
+    it 'keeps the name and the maximum age on the mapping' do
+      expect(extractor.mappings.first).to include(name: 'house_power', max_age: '300')
+    end
+
+    it 'keeps a calculated mapping that no sensor consumes as a standalone entry' do
+      expect(extractor.orphan_mappings).to include(
+        hash_including('formula' => '{house_power} - 100', 'field' => 'base_load'),
+      )
+    end
+
+    # Nothing is written for it, so it can match no sensor and its flag has to
+    # survive as a real boolean.
+    it 'keeps a memory-only mapping as a standalone entry' do
+      expect(extractor.orphan_mappings).to include(hash_including('name' => 'wallbox', 'skip_write' => true))
+    end
+
+    # A device is inferred from the topics feeding a measurement. Household has
+    # none, so it stands for nothing.
+    it 'infers no device from it' do
+      expect(extractor.device_data.pluck(:name)).not_to include('Household')
+    end
   end
 
   # The surveys store a real boolean. Keeping the env string would leave two

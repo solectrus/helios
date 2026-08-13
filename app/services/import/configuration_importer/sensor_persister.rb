@@ -6,19 +6,7 @@ module Import
       # Maps mapping env-keys (symbol) to sensor-config keys (string).
       # Sign-based splitting (measurement_positive/negative, field_positive/negative)
       # is already expanded upstream by MqttExtractor — HELIOS models 1 sensor = 1 Influx target.
-      MQTT_MAPPING_TO_SENSOR_KEY = {
-        measurement: 'measurement',
-        field: 'field',
-        topic: 'mqtt_topic',
-        type: 'mqtt_payload_type',
-        json_key: 'mqtt_json_key',
-        json_path: 'mqtt_json_path',
-        json_formula: 'mqtt_json_formula',
-        formula: 'mqtt_formula',
-        min: 'mqtt_min',
-        max: 'mqtt_max',
-        null_to_zero: 'mqtt_null_to_zero',
-      }.freeze
+      MQTT_MAPPING_TO_SENSOR_KEY = ConfigSchema::MQTT_MAPPING_SENSOR_KEYS.transform_keys(&:to_sym).freeze
 
       def initialize(sensors_data:, devices:, enabled_collectors:, mqtt_mappings:, # rubocop:disable Metrics/ParameterLists
                      excluded_sensors: [], senec_measurement: nil)

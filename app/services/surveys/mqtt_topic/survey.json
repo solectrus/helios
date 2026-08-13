@@ -1,11 +1,19 @@
 {
   "locale": "de",
   "title": {
-    "de": "MQTT-Topic",
+    "de": "MQTT-Zuordnung",
     "default": "MQTT mapping"
   },
   "clearInvisibleValues": "onHidden",
   "pages": [
+    {
+      "name": "p_kind",
+      "title": {
+        "de": "Art",
+        "default": "Kind"
+      },
+      "elements": []
+    },
     {
       "name": "p_topic",
       "title": {
@@ -13,13 +21,14 @@
         "default": "Source"
       },
       "description": {
-        "de": "Wähle das MQTT-Topic, aus dem dieser Sensor seinen Wert bezieht.",
-        "default": "Choose the MQTT topic this sensor draws its value from."
+        "de": "Das MQTT-Topic, aus dem der Wert stammt.",
+        "default": "The MQTT topic the value comes from."
       },
       "elements": [
         {
           "type": "text",
           "name": "topic",
+          "visibleIf": "{kind} = 'topic'",
           "title": {
             "de": "MQTT-Topic",
             "default": "MQTT topic"
@@ -42,21 +51,13 @@
         "de": "Wertgewinnung",
         "default": "Value extraction"
       },
-      "description": {
-        "de": "Lege fest, wie aus der empfangenen Nachricht ein Messwert gewonnen wird.",
-        "default": "Define how a measurement is derived from the received message."
-      },
       "elements": []
     },
     {
       "name": "p_extraction_value",
       "title": {
-        "de": "Wertgewinnung — Details",
-        "default": "Value extraction — details"
-      },
-      "description": {
-        "de": "Feinheiten der Wertgewinnung — abhängig von der zuvor gewählten Methode.",
-        "default": "Details of value extraction — depending on the method chosen before."
+        "de": "Wertgewinnung, Details",
+        "default": "Value extraction, details"
       },
       "elements": []
     },
@@ -66,9 +67,21 @@
         "de": "Filter (optional)",
         "default": "Filters (optional)"
       },
-      "description": {
-        "de": "Optionale Filter, um Ausreißer oder unplausible Werte vor dem Speichern zu verwerfen.",
-        "default": "Optional filters to discard outliers or implausible values before storing."
+      "elements": []
+    },
+    {
+      "name": "p_name",
+      "title": {
+        "de": "Name (optional)",
+        "default": "Name (optional)"
+      },
+      "elements": []
+    },
+    {
+      "name": "p_write",
+      "title": {
+        "de": "Schreibverhalten (optional)",
+        "default": "Write behavior (optional)"
       },
       "elements": []
     },
@@ -86,6 +99,7 @@
         {
           "type": "text",
           "name": "measurement",
+          "visibleIf": "{skip_write} <> true",
           "title": {
             "de": "InfluxDB Measurement",
             "default": "InfluxDB measurement"
@@ -96,6 +110,7 @@
         {
           "type": "text",
           "name": "field",
+          "visibleIf": "{skip_write} <> true",
           "title": {
             "de": "InfluxDB Field",
             "default": "InfluxDB field"

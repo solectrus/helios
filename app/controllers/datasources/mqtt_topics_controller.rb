@@ -10,6 +10,9 @@ module Datasources
     def index
       @topics = @configuration.mqtt_topics
       @readings = fetch_topic_readings(configuration: @configuration)
+      # Lets the list disable a removal the `destroy` guard would refuse
+      # anyway, and say why before it is attempted.
+      @graph = Mqtt::MappingGraph.new(@configuration)
     end
 
     def new
@@ -38,9 +41,18 @@ module Datasources
       redirect_to datasources_mqtt_topics_path
     end
 
+    # Removing an entry a formula reads leaves a reference that no mapping
+    # defines, and mqtt-collector refuses to start on that. The reason would
+    # only show in its own log, so the removal is refused here instead.
     def destroy
-      @configuration.remove_mqtt_topic(params[:id])
-      Orchestration::StackStatus.mark_config_changed!
+      dependents = Mqtt::MappingGraph.new(@configuration).dependents_of(@topic['name'])
+      if dependents.any?
+        flash[:alert] = t('datasources.mqtt_topics.index.delete_blocked', names: dependents.join(', '))
+      else
+        @configuration.remove_mqtt_topic(params[:id])
+        Orchestration::StackStatus.mark_config_changed!
+      end
+
       redirect_to datasources_mqtt_topics_path
     end
 

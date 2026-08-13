@@ -273,6 +273,48 @@ RSpec.describe Configuration do
 
       expect(config.mqtt_topic(0)).not_to include('attacker')
     end
+
+    # A formula reads another mapping by its MAPPING_X_NAME. Renaming without
+    # carrying the formulas along would leave a reference that no mapping
+    # defines, and mqtt-collector refuses to start on that.
+    describe 'renaming a mapping that formulas read' do
+      before do
+        config = described_class.current
+        config.add_mqtt_topic(basic_topic.merge('name' => 'washer'))
+        config.add_mqtt_topic('measurement' => 'm', 'field' => 'rest', 'type' => 'integer',
+                              'formula' => '{house} - {washer}')
+        config.update_sensor('house_power',
+                             { 'source' => 'mqtt', 'measurement' => 'm', 'field' => 'f',
+                               'mqtt_formula' => '{washer} * 2' })
+      end
+
+      it 'carries the new name into every formula' do
+        config = described_class.current
+        config.update_mqtt_topic(0, basic_topic.merge('name' => 'dishwasher'))
+
+        expect(config.mqtt_topic(1)['formula']).to eq('{house} - {dishwasher}')
+        expect(config.sensor_config('house_power').mqtt_formula).to eq('{dishwasher} * 2')
+      end
+
+      it 'leaves the formulas alone when the name stays' do
+        config = described_class.current
+        config.update_mqtt_topic(0, basic_topic.merge('name' => 'washer', 'field' => 'energy'))
+
+        expect(config.mqtt_topic(1)['formula']).to eq('{house} - {washer}')
+      end
+
+      it 'carries a renamed sensor into every formula' do
+        config = described_class.current
+        config.update_sensor('house_power',
+                             { 'source' => 'mqtt', 'measurement' => 'm', 'field' => 'f',
+                               'mqtt_topic' => 'h/p', 'mqtt_name' => 'house' })
+        config.update_sensor('house_power',
+                             { 'source' => 'mqtt', 'measurement' => 'm', 'field' => 'f',
+                               'mqtt_topic' => 'h/p', 'mqtt_name' => 'house_total' })
+
+        expect(config.mqtt_topic(1)['formula']).to eq('{house_total} - {washer}')
+      end
+    end
   end
 
   describe 'shelly_devices CRUD' do

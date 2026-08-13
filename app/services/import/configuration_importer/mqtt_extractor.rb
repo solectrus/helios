@@ -3,23 +3,21 @@ module Import
     class MqttExtractor # rubocop:disable Metrics/ClassLength
       include Helpers
 
-      MAPPING_FIELDS = %i[
-        topic measurement field
-        measurement_positive measurement_negative field_positive field_negative
-        json_key json_path json_formula formula
-        type min max null_to_zero
-      ].freeze
-
       SPLIT_FIELDS = %i[
         measurement_positive measurement_negative field_positive field_negative
       ].freeze
+
+      # Every field of a mapping, read back under the same name it is written
+      # under, plus the sign-split vars the collector accepts on top. Derived
+      # from the schema, so an option the export emits cannot be dropped here.
+      MAPPING_FIELDS = (ConfigSchema::MQTT_MAPPING_FIELDS.map(&:to_sym) + SPLIT_FIELDS).freeze
 
       # Mapping options mqtt-collector reads as a flag. It accepts exactly
       # "true" or "false" for them (Config#validate_mapping! with an allow
       # list), while the surveys store a real boolean. Keeping the env string
       # would leave two shapes for one field in config.yaml, and in Ruby the
       # string "false" is true.
-      BOOLEAN_FIELDS = %i[null_to_zero].freeze
+      BOOLEAN_FIELDS = %i[null_to_zero dedup skip_write].freeze
 
       # Pre-MAPPING-style env vars that mqtt-collector still accepts for backward
       # compatibility (see mqtt-collector/lib/config.rb DEPRECATED_ENV). Each maps
@@ -276,9 +274,12 @@ module Import
                 .sort
       end
 
+      # A device is inferred from the topics that feed a measurement. A
+      # calculated mapping has no topic and stands for no device, so it must not
+      # conjure one out of its measurement alone.
       def build_devices(device_mappings)
         # Group mappings by measurement name (one measurement = one device)
-        grouped = device_mappings.group_by { |m| m[:measurement].presence }
+        grouped = device_mappings.select { |m| m[:topic].present? }.group_by { |m| m[:measurement].presence }
         grouped.delete(nil) # skip mappings without measurement
 
         grouped.filter_map do |measurement, group|

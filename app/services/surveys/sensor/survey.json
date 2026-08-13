@@ -100,11 +100,20 @@
       ]
     },
     {
+      "name": "p_mqtt_kind",
+      "visibleIf": "{source} = 'mqtt'",
+      "title": {
+        "de": "MQTT-Art",
+        "default": "MQTT kind"
+      },
+      "elements": []
+    },
+    {
       "name": "p_mqtt",
       "visibleIf": "{source} = 'mqtt'",
       "title": {
-        "de": "MQTT — Topic",
-        "default": "MQTT — Topic"
+        "de": "MQTT-Topic",
+        "default": "MQTT topic"
       },
       "description": {
         "de": "Das MQTT-Topic, auf dem der gewünschte Messwert veröffentlicht wird.",
@@ -114,6 +123,7 @@
         {
           "type": "text",
           "name": "mqtt_topic",
+          "visibleIf": "{source} = 'mqtt' and {mqtt_kind} = 'topic'",
           "title": {
             "de": "MQTT-Topic",
             "default": "MQTT topic"
@@ -137,10 +147,6 @@
         "de": "MQTT — Wertgewinnung",
         "default": "MQTT — Value Extraction"
       },
-      "description": {
-        "de": "Lege fest, wie aus der empfangenen Nachricht ein Messwert gewonnen wird.",
-        "default": "Define how a measurement is derived from the received message."
-      },
       "elements": []
     },
     {
@@ -150,10 +156,6 @@
         "de": "MQTT — Wertgewinnung — Details",
         "default": "MQTT — Value Extraction — Details"
       },
-      "description": {
-        "de": "Feinheiten der Wertgewinnung — abhängig von der zuvor gewählten Methode.",
-        "default": "Details of value extraction — depending on the method chosen before."
-      },
       "elements": []
     },
     {
@@ -162,9 +164,21 @@
         "de": "MQTT — Filter (optional)",
         "default": "MQTT — Filters (optional)"
       },
-      "description": {
-        "de": "Optionale Filter, um Ausreißer oder unplausible Werte vor dem Speichern zu verwerfen.",
-        "default": "Optional filters to discard outliers or implausible values before storing."
+      "elements": []
+    },
+    {
+      "name": "p_mqtt_name",
+      "title": {
+        "de": "MQTT-Name (optional)",
+        "default": "MQTT name (optional)"
+      },
+      "elements": []
+    },
+    {
+      "name": "p_mqtt_write",
+      "title": {
+        "de": "MQTT-Schreibverhalten (optional)",
+        "default": "MQTT write behavior (optional)"
       },
       "elements": []
     },

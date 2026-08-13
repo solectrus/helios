@@ -23,11 +23,15 @@ module SensorReadings
     fetch_readings_for(configuration.effective_sensor_mappings, configuration:)
   end
 
+  # A mapping with SKIP_WRITE has no InfluxDB target, so there is nothing to
+  # query for it. Including it would ask InfluxDB for ":".
   def fetch_topic_readings(configuration:)
-    mappings = configuration.mqtt_topics.each_with_index.to_h do |topic, index|
+    mappings = configuration.mqtt_topics.each_with_index.filter_map do |topic, index|
+      next if topic['measurement'].blank? || topic['field'].blank?
+
       [index.to_s, "#{topic['measurement']}:#{topic['field']}"]
     end
-    fetch_readings_for(mappings, configuration:)
+    fetch_readings_for(mappings.to_h, configuration:)
   end
 
   def fetch_readings_for(mappings, configuration:)

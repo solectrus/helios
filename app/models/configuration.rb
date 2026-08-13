@@ -367,6 +367,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     sanitized = sanitize_sensor_data(raw)
     return false if @data['sensors'][name.to_s] == sanitized
 
+    rename_mapping_name!(sensor_mqtt_name(name), sanitized['mqtt_name'])
     @data['sensors'][name.to_s] = sanitized
     save!
     prune_shadowed_shelly_devices! if prune
@@ -408,14 +409,17 @@ class Configuration # rubocop:disable Metrics/ClassLength
   end
 
   def add_mqtt_topic(data)
-    write_mqtt_topics(mqtt_topics + [sanitize_fields(data, MQTT_TOPIC_FIELDS)])
+    write_mqtt_topics(mqtt_topics + [sanitize_fields(fold_computed_formula(data, ''), MQTT_TOPIC_FIELDS)])
   end
 
   def update_mqtt_topic(index, data)
     list = mqtt_topics.dup
-    return unless list[index.to_i]
+    previous = list[index.to_i]
+    return unless previous
 
-    list[index.to_i] = sanitize_fields(data, MQTT_TOPIC_FIELDS)
+    sanitized = sanitize_fields(fold_computed_formula(data, ''), MQTT_TOPIC_FIELDS)
+    rename_mapping_name!(previous['name'], sanitized['name'])
+    list[index.to_i] = sanitized
     write_mqtt_topics(list)
   end
 
@@ -618,11 +622,9 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'forecast' => 'forecast',
   }.freeze
 
-  MQTT_TOPIC_FIELDS = %w[
-    topic measurement field type
-    json_key json_path json_formula formula
-    min max null_to_zero
-  ].freeze
+  # What a standalone entry may store: every field of a mapping, so the
+  # allowlist can never fall behind what the export emits.
+  MQTT_TOPIC_FIELDS = ConfigSchema::MQTT_MAPPING_FIELDS
 
   SHELLY_DEVICE_FIELDS = %w[name measurement host device_id password invert_power].freeze
 
@@ -994,12 +996,14 @@ class Configuration # rubocop:disable Metrics/ClassLength
       source measurement field name shelly_connection shelly_host shelly_interval shelly_password
       shelly_device_id shelly_invert_power exclude_from_house_power is_balcony
     ],
-    'mqtt' => %w[
-      source name measurement field
-      mqtt_topic mqtt_payload_type
-      mqtt_json_key mqtt_json_path mqtt_json_formula mqtt_formula
-      mqtt_min mqtt_max mqtt_null_to_zero
-      exclude_from_house_power is_balcony
+    # The mapping fields come from the schema, so a new collector option cannot
+    # be stripped here while the export still emits it.
+    'mqtt' => [
+      'source',
+      'name',
+      *ConfigSchema::MQTT_MAPPING_SENSOR_KEYS.values,
+      'exclude_from_house_power',
+      'is_balcony',
     ],
   }.freeze
 
@@ -1182,6 +1186,53 @@ class Configuration # rubocop:disable Metrics/ClassLength
     deep_unwrap(data).slice(*fields).compact_blank
   end
 
+  # The surveys ask for the two kinds of formula in two questions, because a
+  # formula over a topic reads {value} while a calculated one reads the names
+  # of other mappings, and one question could not validate both. mqtt-collector
+  # knows a single MAPPING_X_FORMULA, so they are folded here. The UI-only key
+  # is dropped by the field slice right after.
+  # Only the incoming survey payload carries the UI-only key, so the stored
+  # sensors this runs over on every save are returned untouched. Unwrapping
+  # them first would rebuild every sensor hash for nothing.
+  def fold_computed_formula(data, prefix)
+    computed = data["#{prefix}computed_formula"]
+    return data if computed.blank?
+
+    deep_unwrap(data).merge("#{prefix}formula" => computed)
+  end
+
+  # A sensor can still be stored as a bare "measurement:field" string, so the
+  # entry is not always a hash.
+  def sensor_mqtt_name(name)
+    entry = @data['sensors'][name.to_s]
+    entry['mqtt_name'] if entry.is_a?(Hash)
+  end
+
+  # Carries a renamed MAPPING_X_NAME into every formula that reads it, in both
+  # kinds of entry. Without this the collector would refuse to start on the
+  # next export, naming a reference that no mapping defines any more, and that
+  # message is only visible in its own log.
+  #
+  # Clearing a name is not handled here: the surveys make the field mandatory
+  # while something reads it, so the case does not arise through the UI.
+  def rename_mapping_name!(previous, current)
+    return if previous.blank? || current.blank? || previous == current
+
+    from = "{#{previous}}"
+    to = "{#{current}}"
+
+    rewrite_formula_key!((@data['sensors'] || {}).values, 'mqtt_formula', from, to)
+    rewrite_formula_key!(mqtt_topics, 'formula', from, to)
+  end
+
+  def rewrite_formula_key!(entries, key, from, to)
+    entries.each do |entry|
+      next unless entry.is_a?(Hash) && entry[key]&.include?(from)
+
+      entry[key] = entry[key].gsub(from, to)
+    end
+  end
+
   def write_mqtt_topics(list)
     @data['mqtt'] ||= {}
     if list.empty?
@@ -1294,7 +1345,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     allowed = SENSOR_FIELDS_BY_SOURCE[source]
     return data unless allowed
 
-    data.slice(*allowed).compact_blank
+    fold_computed_formula(data, 'mqtt_').slice(*allowed).compact_blank
   end
 
   def sanitize_all_sensors!(result)

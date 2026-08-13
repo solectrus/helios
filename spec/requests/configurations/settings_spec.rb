@@ -410,6 +410,38 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(config.sensor_config('inverter_power').source).to eq('mqtt')
     end
 
+    # Switching the source hides the whole MQTT page, so SurveyJS clears the
+    # name and the survey's own mandatory-field rule cannot bite.
+    it 'refuses a source change that would drop an MQTT name a formula reads' do
+      config = Configuration.current
+      config.update_sensor('house_power',
+                           { 'source' => 'mqtt', 'measurement' => 'm', 'field' => 'f',
+                             'mqtt_topic' => 'h/p', 'mqtt_name' => 'house' })
+      config.add_mqtt_topic('measurement' => 'm', 'field' => 'rest', 'type' => 'integer',
+                            'formula' => '{house} - 100', 'name' => 'rest')
+
+      patch configuration_setting_path(setting: 'sensor', name: 'house_power'),
+            params: { data: { 'source' => 'external', 'measurement' => 'm', 'field' => 'f' }.to_json }
+
+      expect(Configuration.current.sensor_config('house_power').source).to eq('mqtt')
+      expect(flash[:alert]).to include('rest')
+    end
+
+    it 'allows renaming, the formulas follow' do
+      config = Configuration.current
+      config.update_sensor('house_power',
+                           { 'source' => 'mqtt', 'measurement' => 'm', 'field' => 'f',
+                             'mqtt_topic' => 'h/p', 'mqtt_name' => 'house' })
+      config.add_mqtt_topic('measurement' => 'm', 'field' => 'rest', 'type' => 'integer',
+                            'formula' => '{house} - 100', 'name' => 'rest')
+
+      patch configuration_setting_path(setting: 'sensor', name: 'house_power'),
+            params: { data: { 'source' => 'mqtt', 'measurement' => 'm', 'field' => 'f',
+                              'mqtt_topic' => 'h/p', 'mqtt_name' => 'house_total' }.to_json }
+
+      expect(Configuration.current.mqtt_topic(0)['formula']).to eq('{house_total} - 100')
+    end
+
     it 'updates a singleton without changing name' do
       setting_data = { 'app_host' => 'example.com' }
 
@@ -478,6 +510,22 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
       expect(response).to redirect_to(sensors_path)
       expect(Configuration.current.sensor_enabled?('inverter_power')).to be false
+    end
+
+    # A formula reads the sensor by its MAPPING_X_NAME. Disabling it leaves a
+    # reference that no mapping defines, and mqtt-collector refuses to start.
+    it 'refuses while a formula reads the MQTT name' do
+      config = Configuration.current
+      config.update_sensor('house_power',
+                           { 'source' => 'mqtt', 'measurement' => 'm', 'field' => 'f',
+                             'mqtt_topic' => 'h/p', 'mqtt_name' => 'house' })
+      config.add_mqtt_topic('measurement' => 'm', 'field' => 'rest', 'type' => 'integer',
+                            'formula' => '{house} - 100', 'name' => 'rest')
+
+      delete configuration_setting_path(setting: 'sensor', name: 'house_power')
+
+      expect(Configuration.current.sensor_enabled?('house_power')).to be true
+      expect(flash[:alert]).to include('rest')
     end
   end
 

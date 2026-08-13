@@ -138,6 +138,7 @@ de:
         add: 'Topic hinzufügen'
         back: 'Zurück zu den Datenquellen'
         delete_confirm: 'Topic wirklich entfernen?'
+        delete_blocked: 'Entfernen nicht möglich, der Name wird gelesen von: %{names}'
       table:
         topic: 'Topic'
         target: 'InfluxDB-Ziel'
@@ -150,14 +151,27 @@ de:
         json_path: 'JSON-Path'
         json_formula: 'JSON-Formel'
         formula: 'Formel'
-        plain: 'unverändert'
       filters:
-        label: 'Filter'
+        range: '%{min} … %{max}'
+        min: '≥ %{min}'
+        max: '≤ %{max}'
+        range_tip: 'Werte außerhalb dieser Grenzen werden verworfen'
         null_to_zero: 'NULL → 0'
+        null_to_zero_tip: 'NULL-Werte werden als 0 übernommen'
+      write_behavior:
+        aggregate: 'Ø %{seconds} s'
+        aggregate_tip: 'Mittelwert über %{seconds} s'
+        dedup_tip: 'Nur geänderte Werte, Lebenszeichen alle %{seconds} s'
+      naming:
+        tip: 'Name für Formeln'
+        max_age: '%{seconds} s'
+        max_age_tip: 'Steht Formeln höchstens %{seconds} s zur Verfügung'
+      computed:
+        label: 'Berechnet'
       target:
-        measurement: 'Measurement'
-        field: 'Field'
-        type: 'Typ'
+        type_tip: 'Datentyp'
+        skip_write: 'Nur im Speicher'
+        skip_write_tip: 'Wird nicht gespeichert, sondern nur für Formeln bereitgehalten'
       inline:
         label: 'MQTT-Topics'
         count:
@@ -494,6 +508,8 @@ de:
   sensors:
     show:
       title: 'Sensoren'
+    errors:
+      mqtt_name_in_use: 'Änderung nicht möglich, der MQTT-Name wird gelesen von: %{names}'
     inverter_power: 'Gesamte PV-Erzeugung'
     inverter_power_1: 'PV-Erzeuger 1'
     inverter_power_2: 'PV-Erzeuger 2'

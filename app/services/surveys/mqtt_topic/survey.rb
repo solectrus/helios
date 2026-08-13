@@ -1,16 +1,23 @@
 module Surveys
   module MqttTopic
-    # Pulls the shared MQTT extraction-mode + filter elements from
-    # MqttFields into the page placeholders defined in survey.json.
+    # The standalone MQTT mapping survey, whose pages MqttPages fills from the
+    # shared MqttFields fragments.
     class Survey < Base
+      PAGES = {
+        kind: 'p_kind',
+        extraction_method: 'p_extraction_method',
+        extraction_value: 'p_extraction_value',
+        filters: 'p_filters',
+        name: 'p_name',
+        write: 'p_write',
+      }.freeze
+
       private
 
       def customize!(data)
-        fields = MqttFields.new
-
-        find_page(data, 'p_extraction_method')['elements'] = [fields.extraction_method_radio]
-        find_page(data, 'p_extraction_value')['elements'] = [*fields.extraction_value_inputs, fields.type_dropdown]
-        find_page(data, 'p_filters')['elements'] = fields.filter_inputs
+        # Only a standalone entry may skip writing: a sensor names an InfluxDB
+        # target by definition.
+        MqttPages.new(fields: MqttFields.new(skip_write: true), key: [:topic, index], pages: PAGES).call(data)
       end
     end
   end

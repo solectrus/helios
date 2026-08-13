@@ -39,12 +39,12 @@ module Export
         sensors.each_with_index do |(sensor_name, config), index|
           env.add_comment("--- Mapping #{index} for #{sensor_name.upcase}")
           written = false
-          Services::MqttCollector::MAPPING_FIELDS.each do |config_key, env_suffix|
-            value = config[config_key]
+          ConfigSchema::MQTT_MAPPING_SENSOR_KEYS.each do |mapping_field, sensor_key|
+            value = config[sensor_key]
             next if value.blank?
 
             env.add_blank_line unless written
-            env["MAPPING_#{index}_#{env_suffix}"] = value
+            env["MAPPING_#{index}_#{mapping_field.upcase}"] = value
             written = true
           end
           env.add_blank_line
@@ -73,12 +73,12 @@ module Export
       def emit_raw_mapping(mapping, index, suffix: nil)
         env.add_comment("--- Mapping #{index}#{suffix}")
         written = false
-        Services::MqttCollector::COLLECTORS_ONLY_MAPPING_KEYS.each do |key, env_suffix|
-          value = mapping[key]
+        ConfigSchema::MQTT_MAPPING_FIELDS.each do |mapping_field|
+          value = mapping[mapping_field]
           next if value.to_s.blank?
 
           env.add_blank_line unless written
-          env["MAPPING_#{index}_#{env_suffix}"] = value
+          env["MAPPING_#{index}_#{mapping_field.upcase}"] = value
           written = true
         end
         env.add_blank_line

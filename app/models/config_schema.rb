@@ -252,21 +252,43 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     devices
   ].freeze
 
-  # --- Per-sensor fields (vary by source) ---
+  # --- MQTT mapping fields ---
 
-  SENSOR_SHELLY_FIELDS = %w[
-    source name shelly_host shelly_password shelly_interval
-    shelly_device_id shelly_invert_power shelly_connection
-    exclude_from_house_power
+  # The fields of one mqtt-collector mapping, in the order HELIOS emits them.
+  # The collector reads each one as MAPPING_X_<FIELD>, upcased, so the env name
+  # is derived instead of tabulated a second time.
+  #
+  # This is the single place a new option of the collector is added. Everything
+  # that stores, emits or reads back a mapping derives its own list from here:
+  # `Configuration::MQTT_TOPIC_FIELDS` and `SENSOR_FIELDS_BY_SOURCE` (what may
+  # be stored), `Export::Env::Mqtt` (what reaches .env) and
+  # `Import::ConfigurationImporter::MqttExtractor` (what is read back).
+  # Listing them apart used to let one copy fall behind, which drops a value
+  # with no error on either side.
+  MQTT_MAPPING_FIELDS = %w[
+    topic measurement field type
+    json_key json_path json_formula formula
+    min max null_to_zero
+    aggregate_interval dedup heartbeat_interval
+    name max_age skip_write
   ].freeze
 
-  SENSOR_MQTT_FIELDS = %w[
-    source name
-    mqtt_topic mqtt_payload_type
-    mqtt_json_key mqtt_json_path mqtt_json_formula mqtt_formula
-    mqtt_min mqtt_max mqtt_null_to_zero
-    exclude_from_house_power
-  ].freeze
+  # mqtt-collector's own default for MAPPING_X_HEARTBEAT_INTERVAL, so the list
+  # and the survey state the same number.
+  MQTT_DEFAULT_HEARTBEAT_INTERVAL = 60
+
+  # How a sensor stores the same fields. Most take the `mqtt_` prefix; the
+  # InfluxDB target keeps the name every sensor uses, and the data type was
+  # named before that convention settled. SKIP_WRITE is left out, because a
+  # sensor names a target by definition and therefore always writes.
+  MQTT_MAPPING_SENSOR_KEYS =
+    MQTT_MAPPING_FIELDS.excluding('skip_write').index_with do |mapping_field|
+      case mapping_field
+      when 'measurement', 'field' then mapping_field
+      when 'type' then 'mqtt_payload_type'
+      else "mqtt_#{mapping_field}"
+      end
+    end.freeze
 
   # --- Singleton fields ---
 

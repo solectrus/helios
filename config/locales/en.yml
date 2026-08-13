@@ -162,6 +162,7 @@ en:
         add: 'Add topic'
         back: 'Back to data sources'
         delete_confirm: 'Really remove this topic?'
+        delete_blocked: 'Cannot be removed, the name is read by: %{names}'
       table:
         topic: 'Topic'
         target: 'InfluxDB target'
@@ -174,14 +175,27 @@ en:
         json_path: 'JSON path'
         json_formula: 'JSON formula'
         formula: 'Formula'
-        plain: 'plain'
       filters:
-        label: 'Filter'
+        range: '%{min} … %{max}'
+        min: '≥ %{min}'
+        max: '≤ %{max}'
+        range_tip: 'Values outside these limits are discarded'
         null_to_zero: 'NULL → 0'
+        null_to_zero_tip: 'NULL values are stored as 0'
+      write_behavior:
+        aggregate: 'Ø %{seconds} s'
+        aggregate_tip: 'Average over %{seconds} s'
+        dedup_tip: 'Changed values only, heartbeat every %{seconds} s'
+      naming:
+        tip: 'Name for formulas'
+        max_age: '%{seconds} s'
+        max_age_tip: 'Available to formulas for %{seconds} s at most'
+      computed:
+        label: 'Calculated'
       target:
-        measurement: 'Measurement'
-        field: 'Field'
-        type: 'Type'
+        type_tip: 'Data type'
+        skip_write: 'Memory only'
+        skip_write_tip: 'Not stored, kept for formulas only'
       inline:
         label: 'MQTT topics'
         count:
@@ -518,6 +532,8 @@ en:
   sensors:
     show:
       title: 'Sensors'
+    errors:
+      mqtt_name_in_use: 'Cannot be changed, the MQTT name is read by: %{names}'
     inverter_power: 'Total PV generation'
     inverter_power_1: 'PV generator 1'
     inverter_power_2: 'PV generator 2'

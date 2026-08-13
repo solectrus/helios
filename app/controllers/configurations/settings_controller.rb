@@ -40,19 +40,17 @@ module Configurations
     end
 
     def create
-      save_setting
-      Orchestration::StackStatus.mark_config_changed!
-      redirect_to redirect_target
+      save_and_redirect
     end
 
     def update
-      save_setting
-      Orchestration::StackStatus.mark_config_changed!
-      redirect_to redirect_target
+      save_and_redirect
     end
 
     def destroy
       if sensor_setting?
+        return if mqtt_name_still_needed?
+
         @configuration.remove_sensor(sensor_name)
       end
 
@@ -61,6 +59,16 @@ module Configurations
     end
 
     private
+
+    # A refused save has already responded, so nothing is marked and no second
+    # redirect is attempted.
+    def save_and_redirect
+      save_setting
+      return if performed?
+
+      Orchestration::StackStatus.mark_config_changed!
+      redirect_to redirect_target
+    end
 
     def setting
       params[:setting]
@@ -107,11 +115,15 @@ module Configurations
       advanced_path
     end
 
+    # Every path that saves nothing has already responded, so the caller checks
+    # `performed?` rather than a return value of its own.
     def save_setting
       data = setting_params
       return unless data
 
       if sensor_setting?
+        return if mqtt_name_still_needed?(data['mqtt_name'])
+
         normalize_fixed_source_mapping!(data)
         @configuration.update_sensor(sensor_name, data)
         @configuration.auto_enable_senec_sensors! if data['source'] == 'senec'
@@ -123,6 +135,27 @@ module Configurations
       # chosen time (today if still ahead, tomorrow if already passed) rather
       # than an immediate catch-up.
       BackupScheduler.reschedule! if setting == 'backup_schedule'
+    end
+
+    # A formula reads an MQTT mapping by its MAPPING_X_NAME. Dropping that name
+    # leaves a reference that no mapping defines, and mqtt-collector refuses to
+    # start on it, saying so in its own log alone.
+    #
+    # Renaming is fine, Configuration carries the new name into the formulas.
+    # Only losing the name outright is refused, and the survey keeps the field
+    # mandatory for the one case it can see. It cannot cover the other two:
+    # switching the sensor to another source, which drops the MQTT section as a
+    # whole, and disabling the sensor.
+    def mqtt_name_still_needed?(next_name = nil)
+      current = @configuration.sensor_config(sensor_name).mqtt_name
+      return false if current.blank? || next_name.present?
+
+      dependents = Mqtt::MappingGraph.new(@configuration).dependents_of(current)
+      return false if dependents.empty?
+
+      flash[:alert] = t('sensors.errors.mqtt_name_in_use', names: dependents.join(', '))
+      redirect_to redirect_target
+      true
     end
 
     # Handle the `enabled` UI flag: when false, clear the section entirely;
@@ -283,21 +316,13 @@ module Configurations
       data['ui_theme'] = '' if data['ui_theme'] == 'user'
     end
 
-    # Derive UI-only state (extraction mode) from persisted MQTT fields.
-    # This key is stripped by sanitize_sensor_data on save, so it never touches config.yaml.
+    # Derive UI-only state (kind, extraction mode, formula of a calculated
+    # sensor) from persisted MQTT fields. These keys are stripped by
+    # sanitize_sensor_data on save, so they never touch config.yaml.
     def inject_mqtt_ui_state!(data)
       return unless data['source'] == 'mqtt'
 
-      data['mqtt_extraction_mode'] = mqtt_extraction_mode_from(data)
-    end
-
-    def mqtt_extraction_mode_from(data)
-      return 'json_key' if data['mqtt_json_key'].present?
-      return 'json_path' if data['mqtt_json_path'].present?
-      return 'json_formula' if data['mqtt_json_formula'].present?
-      return 'formula' if data['mqtt_formula'].present?
-
-      'plain'
+      data.merge!(Surveys::MqttFields.ui_state(data, prefix: 'mqtt_', method_field: 'mqtt_extraction_mode'))
     end
 
     def collector_measurement(source)

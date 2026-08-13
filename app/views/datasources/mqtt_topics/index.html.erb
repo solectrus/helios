@@ -29,5 +29,5 @@
     <p class="text-base-content/60 mb-6 max-w-prose text-sm"><%= page_description %></p>
   </div>
 
-  <%= render MqttTopicsTable::Component.new(topics: @topics, readings: @readings) %>
+  <%= render MqttTopicsTable::Component.new(topics: @topics, readings: @readings, graph: @graph) %>
 <% end %>

@@ -1,0 +1,17 @@
+<span
+  class="<%= css_class %>"
+  <% if tip %>
+    data-tip="<%= tip %>"
+  <% end %>
+  <% if icon_only? %>
+    aria-label="<%= tip %>"
+  <% end %>
+>
+  <% if icon %>
+    <i aria-hidden="true" class="fa-solid <%= icon_class %> <%= icon %>"></i>
+  <% end %>
+
+  <% if text.present? %>
+    <span class="truncate"><%= text %></span>
+  <% end %>
+</span>

@@ -23,8 +23,12 @@ module Surveys
       { 'default' => en, 'de' => de }
     end
 
-    def initialize(sensor_name: nil)
+    # `index` identifies the entry of a list-backed survey (today only the
+    # standalone MQTT mappings) so it can be told apart from its siblings, the
+    # way `sensor_name` does for the sensor survey.
+    def initialize(sensor_name: nil, index: nil)
       @sensor_name = sensor_name
+      @index = index.presence&.to_i
     end
 
     def call
@@ -41,7 +45,7 @@ module Surveys
 
     private
 
-    attr_reader :sensor_name
+    attr_reader :sensor_name, :index
 
     def json_path
       Rails.root.join('app/services/surveys', self.class.survey_id, 'survey.json')
