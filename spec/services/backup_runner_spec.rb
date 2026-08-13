@@ -48,8 +48,7 @@ RSpec.describe BackupRunner do
     # Freeze the instant to 14:30 in the app timezone (Europe/Berlin, set as
     # config.time_zone for tests). The filename/date are built from Time.current,
     # so they stay deterministic and encode 14:30 Berlin wall-clock.
-    frozen = ActiveSupport::TimeZone['Europe/Berlin'].local(2026, 5, 8, 14, 30, 0)
-    allow(Time).to receive_messages(current: frozen, now: frozen.to_time)
+    freeze_at(frozen_time)
 
     allow(Open3).to receive(:capture2e) do |*args|
       state[:open3_calls] << args
@@ -386,6 +385,65 @@ RSpec.describe BackupRunner do
       expect(described_class.in_progress).to be_nil
     end
 
+    # The status bar asks on every page render, and each probe forks a
+    # `docker inspect` — expensive enough on a Raspberry Pi to be felt as a
+    # slow click. The test cache store is a null store, so this needs a real
+    # one to observe the caching at all.
+    context 'with a real cache store' do
+      before { allow(Rails).to receive(:cache).and_return(ActiveSupport::Cache::MemoryStore.new) }
+
+      # Each call starts its own request; without the reset the per-request
+      # memo would answer instead of the cache under test.
+      def probe
+        Current.reset
+        described_class.in_progress
+      end
+
+      def inspect_calls
+        state[:open3_calls].count { |args| args.first(2) == %w[docker inspect] }
+      end
+
+      it 'probes docker once while the idle answer is cached' do
+        state[:docker_inspect_success] = false
+
+        3.times { expect(probe).to be_nil }
+
+        expect(inspect_calls).to eq(1)
+      end
+
+      it 'probes docker again once the cache is invalidated' do
+        state[:docker_inspect_success] = false
+        probe
+
+        described_class.invalidate_in_progress_cache!
+        probe
+
+        expect(inspect_calls).to eq(2)
+      end
+
+      it 'serves a running container from the cache too' do
+        2.times { expect(probe).to be_a(BackupRepository::InProgress) }
+
+        expect(inspect_calls).to eq(1)
+      end
+
+      # A run can only begin through HELIOS, which invalidates the cache
+      # before the sidecar exists, so the idle answer may be held far longer
+      # than a live one — that is what keeps ordinary navigation fork-free.
+      it 'holds the idle answer past the TTL of a live one' do
+        state[:docker_inspect_success] = false
+        probe
+
+        freeze_at(frozen_time + DetachedRunner::IN_PROGRESS_CACHE_TTL + 1.second)
+        probe
+        expect(inspect_calls).to eq(1)
+
+        freeze_at(frozen_time + DetachedRunner::IDLE_CACHE_TTL + 1.second)
+        probe
+        expect(inspect_calls).to eq(2)
+      end
+    end
+
     it 'returns an InProgress with started_at and filename when running' do
       state[:docker_inspect_started_at] = '2026-05-08T14:30:00.000000000Z'
       state[:docker_inspect_args] = [
@@ -544,6 +602,16 @@ RSpec.describe BackupRunner do
     File.read(File.join(Rails.configuration.data_path, 'helios', 'runners', 'error.txt')).strip
   rescue Errno::ENOENT
     nil
+  end
+
+  def frozen_time
+    ActiveSupport::TimeZone['Europe/Berlin'].local(2026, 5, 8, 14, 30, 0)
+  end
+
+  # Both clocks at once: Time.current drives the app, Time.now drives cache
+  # entry expiry.
+  def freeze_at(moment)
+    allow(Time).to receive_messages(current: moment, now: moment.to_time)
   end
 
   def stub_open3_response(args)

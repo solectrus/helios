@@ -30,6 +30,18 @@ class DetachedRunner
   # docker subprocesses per tick on slow hosts (e.g. Raspberry Pi).
   IN_PROGRESS_CACHE_TTL = 10.seconds
 
+  # Fallback TTL for the far more common "nothing is running" answer, which
+  # the status bar asks for on *every* page render. A run can only begin
+  # through HELIOS itself (UI click or BackupScheduler), and every start
+  # path invalidates the cache before the sidecar exists, so an idle answer
+  # cannot go stale unnoticed. A cold cache after a HELIOS restart still
+  # probes, which is what recovers a sidecar that outlived the process.
+  IDLE_CACHE_TTL = 2.minutes
+
+  # Marks the cached idle answer. Rails.cache cannot tell a stored nil from
+  # a miss, and a miss must fall through to the docker probe.
+  IDLE = :idle
+
   # Local sidecar directory bind-mounted into every runner as `/runtime`.
   # Phase markers (and any other short-lived control files HELIOS reads
   # while a run is live) belong here, not in the backup destination —
@@ -122,15 +134,29 @@ class DetachedRunner
 
     private
 
+    # Two TTLs instead of Rails.cache.fetch, which cannot vary the expiry by
+    # result: a live run stays short-lived so its end still surfaces without
+    # events, while the idle answer holds for IDLE_CACHE_TTL.
     def container_in_progress
       Current.instance.fetch(:"#{name.underscore}_in_progress") do
-        Rails.cache.fetch(in_progress_cache_key, expires_in: IN_PROGRESS_CACHE_TTL) do
-          container = Orchestration::DockerCli.running_container(self::CONTAINER_NAME)
-          next nil unless container
+        cached = Rails.cache.read(in_progress_cache_key)
+        next (cached == IDLE ? nil : cached) if cached
 
-          BackupRepository::InProgress.new(started_at: container.started_at, filename: container.args[4])
-        end
+        probe_container_in_progress
       end
+    end
+
+    def probe_container_in_progress
+      container = Orchestration::DockerCli.running_container(self::CONTAINER_NAME)
+
+      unless container
+        Rails.cache.write(in_progress_cache_key, IDLE, expires_in: IDLE_CACHE_TTL)
+        return nil
+      end
+
+      BackupRepository::InProgress
+        .new(started_at: container.started_at, filename: container.args[4])
+        .tap { |value| Rails.cache.write(in_progress_cache_key, value, expires_in: IN_PROGRESS_CACHE_TTL) }
     end
 
     def phase_filename
