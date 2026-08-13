@@ -1,0 +1,14 @@
+/* Turbo Drive's navigation progress bar, recolored to the HELIOS primary
+   amber (the library default is a blue that belongs to no theme here).
+
+   Turbo appends its own stylesheet to <head> at runtime, so it always comes
+   after this file in the cascade — the `html` prefix buys the specificity
+   needed to win.
+
+   Paired with the shortened progressBarDelay in setupStimulus.ts: on a slow
+   host (Raspberry Pi) a page can take a second or more to arrive, and the
+   bar is the only thing that answers the click in the meantime. */
+html .turbo-progress-bar {
+  height: 3px;
+  background: var(--color-primary);
+}

@@ -1,4 +1,10 @@
-<nav class="dock dock-md bg-base-300 border-base-content/10 border-t lg:hidden" aria-label="<%= t('.label') %>">
+<nav
+  class="dock dock-md bg-base-300 border-base-content/10 border-t lg:hidden"
+  aria-label="<%= t('.label') %>"
+  data-controller="nav-highlight"
+  data-action="turbo:click->nav-highlight#mark"
+  data-nav-highlight-active-class="dock-active"
+>
   <% items.each do |item| %>
     <% if item[:type] == :sheet %>
       <button
@@ -9,6 +15,7 @@
         data-controller="modal-opener"
         data-action="click->modal-opener#open"
         data-modal-opener-id-param="<%= SHEET_ID %>"
+        data-nav-highlight-target="item"
       >
         <i class="text-lg <%= item[:icon] %>" aria-hidden="true"></i>
         <span class="dock-label"><%= item[:label] %></span>
@@ -16,7 +23,8 @@
     <% else %>
       <%= link_to send(item[:path_helper]),
                   class: ('dock-active' if active?(item)),
-                  data: { turbo_frame: "_top" } do %>
+                  aria: { current: ("page" if active?(item)) },
+                  data: { turbo_frame: "_top", nav_highlight_target: "item" } do %>
         <i class="text-lg <%= item[:icon] %>" aria-hidden="true"></i>
         <span class="dock-label"><%= item[:label] %></span>
       <% end %>

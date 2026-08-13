@@ -15,6 +15,12 @@ module Header
     TAB_BASE_CLASSES = 'flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-semibold ' \
                        'tracking-widest uppercase transition-colors'.freeze
 
+    # Split out because the nav-highlight Stimulus controller swaps the same
+    # two sets on click, before the new page arrives. Keeping them here makes
+    # the template the single place that spells them out.
+    TAB_ACTIVE_CLASSES = 'text-base-content bg-base-content/10'.freeze
+    TAB_INACTIVE_CLASSES = 'text-base-content/60 hover:bg-base-content/5 hover:text-base-content'.freeze
+
     def initialize(active_tab:)
       super()
       @active_tab = active_tab
@@ -46,9 +52,13 @@ module Header
     def tab_classes(tab)
       class_names(
         TAB_BASE_CLASSES,
-        'text-base-content bg-base-content/10': tab[:id] == active_tab,
-        'text-base-content/60 hover:bg-base-content/5 hover:text-base-content': tab[:id] != active_tab,
+        TAB_ACTIVE_CLASSES => active?(tab),
+        TAB_INACTIVE_CLASSES => !active?(tab),
       )
+    end
+
+    def active?(tab)
+      tab[:id] == active_tab
     end
 
     # Cache keys for the two fragment-cached regions in the template. The

@@ -9,6 +9,7 @@
 @import '../styles/fonts.css';
 @import '../styles/daisyui.css';
 @import '../styles/survey.css';
+@import '../styles/turbo.css';
 @import '../styles/utilities.css';
 
 @source '../../**/*.{erb,rb}';

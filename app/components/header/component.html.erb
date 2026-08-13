@@ -17,9 +17,18 @@
         <span class="sr-only">HELIOS</span>
       </h1>
 
-      <div class="hidden items-center gap-1 lg:flex">
+      <div
+        class="hidden items-center gap-1 lg:flex"
+        data-controller="nav-highlight"
+        data-action="turbo:click->nav-highlight#mark"
+        data-nav-highlight-active-class="<%= TAB_ACTIVE_CLASSES %>"
+        data-nav-highlight-inactive-class="<%= TAB_INACTIVE_CLASSES %>"
+      >
         <% tabs.each do |tab| %>
-          <%= link_to tab[:path], class: tab_classes(tab), data: { turbo_frame: "_top" } do %>
+          <%= link_to tab[:path],
+                      class: tab_classes(tab),
+                      aria: { current: ("page" if active?(tab)) },
+                      data: { turbo_frame: "_top", nav_highlight_target: "item" } do %>
             <i class="<%= tab[:icon] %>"></i>
             <%= tab[:label] %>
           <% end %>

@@ -45,6 +45,9 @@ Turbo.StreamActions.redirect = function (this: Element) {
 // so that dialog.returnValue reflects the user's choice.
 declare module '@hotwired/turbo' {
   const config: {
+    drive: {
+      progressBarDelay: number;
+    };
     forms: {
       confirm: (
         message: string,
@@ -54,6 +57,13 @@ declare module '@hotwired/turbo' {
     };
   };
 }
+
+// Turbo waits 500 ms before it shows the progress bar, which is tuned for
+// hosts that answer most navigations within that window. HELIOS runs on
+// Raspberry Pi class hardware where a page can take a second or more, so the
+// default turns the first half second into a dead moment. 100 ms is late
+// enough that a fast navigation still completes without any bar appearing.
+Turbo.config.drive.progressBarDelay = 100;
 
 Turbo.config.forms.confirm = (
   message: string,
