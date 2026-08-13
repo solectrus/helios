@@ -69,20 +69,23 @@ module ConfigNav
       tab[:id] == active_tab
     end
 
+    # Neutral rather than primary: the primary amber belongs to the HELIOS
+    # wordmark, so both navigations mark the current entry with brightness
+    # alone (see Header::Component#tab_classes).
     def item_classes(tab)
       active = active?(tab)
 
       if compact?
         class_names(
           item_base_classes,
-          'bg-primary/15 text-primary font-semibold': active,
-          'text-base-content/70 hover:bg-base-content/5 hover:text-base-content': !active,
+          'bg-base-content/10 text-base-content font-semibold': active,
+          'text-base-content/60 hover:bg-base-content/5 hover:text-base-content': !active,
         )
       else
         class_names(
           item_base_classes,
-          'bg-primary/10 text-primary font-semibold before:bg-primary': active,
-          'text-base-content/75 hover:bg-base-content/5 hover:text-base-content before:bg-transparent': !active,
+          'bg-base-content/10 text-base-content font-semibold before:bg-base-content': active,
+          'text-base-content/60 hover:bg-base-content/5 hover:text-base-content before:bg-transparent': !active,
         )
       end
     end
@@ -102,7 +105,7 @@ module ConfigNav
 
       class_names(
         'w-5 shrink-0 text-center text-base',
-        'text-primary': active?(tab),
+        'text-base-content': active?(tab),
         'text-base-content/55 group-hover:text-base-content': !active?(tab),
       )
     end
