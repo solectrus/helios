@@ -41,54 +41,62 @@ module Surveys
     }.freeze
     private_constant :LABEL_ELEMENT
 
-    # Custom sensors are part of the house power by default; deducting them
-    # promotes them to their own segment in the energy flow.
-    CUSTOM_HINT_EN = <<~HTML.freeze
-      <p>Normally <strong>No</strong> is the right choice here: the sensor
-      measures a consumer inside the house, and its consumption is already
-      part of the house power.</p>
-      <p><strong>Yes</strong> is only for the rare case that this consumer
-      should deliberately not count as house power, for example a separately
-      billed granny flat. Its measured consumption is then deducted from the
-      house power and shown as a separate segment in the energy flow.</p>
-    HTML
-    private_constant :CUSTOM_HINT_EN
+    # Answer labels of the house-power question, each carrying its own hint.
+    HOUSE_POWER_LABELS = { yes: { en: 'Yes', de: 'Ja' }, no: { en: 'No', de: 'Nein' } }.freeze
+    private_constant :HOUSE_POWER_LABELS
 
-    CUSTOM_HINT_DE = <<~HTML.freeze
-      <p>Normalerweise ist hier <strong>Nein</strong> richtig: Der Sensor
-      misst einen Verbraucher im Haus, dessen Verbrauch ohnehin zum
-      Hausverbrauch gehört.</p>
-      <p><strong>Ja</strong> ist nur für den Ausnahmefall gedacht, dass
-      dieser Verbraucher bewusst nicht als Hausverbrauch gelten soll, etwa
-      eine separat abgerechnete Einliegerwohnung. Der gemessene Verbrauch
-      wird dann vom Hausverbrauch abgezogen und erscheint als eigenes
-      Segment in der Strombilanz.</p>
-    HTML
-    private_constant :CUSTOM_HINT_DE
+    # The hints name the device instead of calling it "this consumer". German
+    # declines the name, so the article travels with the noun and a future
+    # device of another gender stays grammatical.
+    FIXED_DEVICES = {
+      'heatpump_power' => {
+        device_en: 'the heat pump',
+        device_de_gen: 'der Wärmepumpe',
+        device_de_acc: 'die Wärmepumpe',
+      },
+      'wallbox_power' => {
+        device_en: 'the wallbox',
+        device_de_gen: 'der Wallbox',
+        device_de_acc: 'die Wallbox',
+      },
+    }.freeze
+    private_constant :FIXED_DEVICES
 
     # For wallbox and heat pump the setting only decides whether their
     # consumption is double-counted in the house power.
-    FIXED_HINT_EN = <<~HTML.freeze
-      <p>This setting only decides whether the consumption of this consumer
-      is additionally contained in the house power.</p>
-      <p><strong>Yes</strong> if the house power already includes this
-      consumer. The measured consumption is then deducted so that it is not
-      counted twice.</p>
-      <p><strong>No</strong> if the house power is measured separately and
-      does not contain this consumer at all.</p>
-    HTML
-    private_constant :FIXED_HINT_EN
+    FIXED_HINTS = {
+      yes: {
+        en: 'The house power already includes %<device_en>s. It is then reduced by the ' \
+            'consumption of %<device_en>s, so that nothing is counted twice.',
+        de: 'Der Hausverbrauch zählt %<device_de_acc>s schon mit. Er wird dann um den ' \
+            'Verbrauch %<device_de_gen>s reduziert, damit nichts doppelt zählt.',
+      },
+      no: {
+        en: 'The house power is measured separately and does not contain %<device_en>s at all.',
+        de: 'Der Hausverbrauch wird separat gemessen und enthält %<device_de_acc>s gar nicht.',
+      },
+    }.freeze
+    private_constant :FIXED_HINTS
 
-    FIXED_HINT_DE = <<~HTML.freeze
-      <p>Diese Einstellung entscheidet nur, ob der Verbrauch dieses
-      Verbrauchers zusätzlich im Hausverbrauch steckt.</p>
-      <p><strong>Ja</strong>, wenn der Hausverbrauch diesen Verbraucher schon
-      mitzählt. Der gemessene Verbrauch wird dann abgezogen, damit er nicht
-      doppelt zählt.</p>
-      <p><strong>Nein</strong>, wenn der Hausverbrauch separat gemessen wird
-      und diesen Verbraucher gar nicht enthält.</p>
-    HTML
-    private_constant :FIXED_HINT_DE
+    # Custom sensors are part of the house power by default; deducting them
+    # promotes them to their own segment in the energy flow.
+    CUSTOM_HINTS = {
+      yes: {
+        en: 'Only for the rare case that this consumer should deliberately not count as ' \
+            'house power, for example a separately billed granny flat. Its consumption then ' \
+            'appears as a separate segment in the energy flow.',
+        de: 'Nur für den Ausnahmefall, dass dieser Verbraucher bewusst nicht als ' \
+            'Hausverbrauch gelten soll, etwa eine separat abgerechnete Einliegerwohnung. ' \
+            'Der Verbrauch erscheint dann als eigenes Segment in der Strombilanz.',
+      },
+      no: {
+        en: 'The normal case: the sensor measures a consumer inside the house, and its ' \
+            'consumption is already part of the house power.',
+        de: 'Der Normalfall: Der Sensor misst einen Verbraucher im Haus, dessen Verbrauch ' \
+            'ohnehin zum Hausverbrauch gehört.',
+      },
+    }.freeze
+    private_constant :CUSTOM_HINTS
 
     # Tailors the generic sensor survey to a specific sensor: filters the
     # source choices, locks measurement/field for fixed-source collectors,
@@ -211,49 +219,49 @@ module Surveys
         data['pages'] << {
           'name' => 'p_house_power',
           'visibleIf' => "{source} = 'shelly' or {source} = 'mqtt' or {source} = 'external'",
-          'title' => self.class.localized(en: 'House power', de: 'Hausverbrauch'),
-          'elements' => [house_power_hint_element, house_power_element],
+          'title' => self.class.localized(
+            en: 'Deduct from the house power',
+            de: 'Aus dem Hausverbrauch herausrechnen',
+          ),
+          'elements' => [house_power_element],
         }
       end
 
-      def house_power_hint_element
-        {
-          'type' => 'html',
-          'name' => 'house_power_hint',
-          'html' =>
-            if custom_power_sensor?
-              self.class.localized(en: CUSTOM_HINT_EN, de: CUSTOM_HINT_DE)
-            else
-              self.class.localized(en: FIXED_HINT_EN, de: FIXED_HINT_DE)
-            end,
-        }
-      end
-
+      # Radio buttons rather than a toggle: the two answers need an
+      # explanation each, and only a choice list can carry it where it
+      # belongs, next to the answer it describes.
       def house_power_element
         {
-          'type' => 'boolean',
+          'type' => 'radiogroup',
           'name' => 'exclude_from_house_power',
           'title' => self.class.localized(
-            en: 'Deduct from house power',
-            de: 'Aus Hausverbrauch herausrechnen',
+            en: 'Should this consumption be deducted from the house power?',
+            de: 'Soll der Verbrauch aus dem Hausverbrauch herausgerechnet werden?',
           ),
-          'description' => house_power_description,
+          'choices' => [house_power_choice(:yes), house_power_choice(:no)],
           'defaultValue' => false,
         }
       end
 
-      def house_power_description
-        if custom_power_sensor?
-          self.class.localized(
-            en: "Only in exceptional cases: deducts this sensor's consumption from the house power",
-            de: 'Nur in Ausnahmefällen: Zieht den Verbrauch dieses Sensors vom Hausverbrauch ab',
-          )
-        else
-          self.class.localized(
-            en: 'Prevents double counting if the house power already includes this consumer',
-            de: 'Verhindert doppelte Zählung, wenn der Hausverbrauch diesen Verbraucher schon enthält',
-          )
-        end
+      # The stored value is a boolean, so the choices carry one. The frontend
+      # splits a choice text at the blank line and renders the remainder as a
+      # muted subtitle below the label.
+      def house_power_choice(answer)
+        label = HOUSE_POWER_LABELS.fetch(answer)
+
+        {
+          'value' => answer == :yes,
+          'text' => self.class.localized(
+            en: "#{label[:en]}\n\n#{house_power_hint(answer, :en)}",
+            de: "#{label[:de]}\n\n#{house_power_hint(answer, :de)}",
+          ),
+        }
+      end
+
+      def house_power_hint(answer, locale)
+        return CUSTOM_HINTS.fetch(answer).fetch(locale) if custom_power_sensor?
+
+        format(FIXED_HINTS.fetch(answer).fetch(locale), FIXED_DEVICES.fetch(sensor_name))
       end
 
       def inject_balcony_page!(data)
