@@ -24,23 +24,33 @@
       transparent
     );
 
-    /* Drop default 540px max-width so the form fills the modal */
+    /* survey-core nests the form in two overflow:auto boxes. Neither ever
+       scrolls here, because the modal around them is the scroll container, but
+       they would still capture the sticky action bar below. Opt them out. */
+    overflow: visible;
+    & .sv-scroll__scroller {
+      overflow: visible;
+    }
+
+    /* Drop the default 540px max-width so the form fills the modal, which is
+       itself capped at max-w-3xl. */
     & .sd-body {
-      max-width: 720px;
-      margin: 0 auto;
-      padding: 2rem 0 1.5rem;
+      max-width: none;
+      /* No padding below: the action bar is the last child and sticks to the
+         bottom, and a sticky element stops at its containing block's edge. */
+      padding: 1.25rem 0 0;
       view-transition-name: helios-survey-body;
     }
 
     & .sd-page {
       padding: 0 1.25rem;
     }
-    /* One place owns the card padding. survey-core 3.0 pads an inner container
-       on top of it, but only for plain questions, not for matrix ones, so
-       zeroing that container keeps every card on the same rhythm. */
+    /* One place owns the card padding. survey-core pads an inner container on
+       top of it, but only for plain questions, not for matrix ones, so zeroing
+       that container keeps every card on the same rhythm. */
     & .sd-question {
       border: 1px solid var(--sjs2-color-border-basic-secondary);
-      padding: 1rem 1.25rem 1.125rem;
+      padding: 0.875rem 1.25rem 1rem;
       --sd-question-header-content-container-padding-block: 0;
       --sd-question-header-content-container-padding-inline: 0;
     }
@@ -98,7 +108,28 @@
       color: var(--helios-text-muted);
     }
     & :is(.sd-action-bar, .sd-footer, .sd-navigation) {
-      padding: 1rem 1.25rem;
+      padding: 0.75rem 1.25rem;
+    }
+    /* Primary action bottom right, secondary to its left. */
+    & .sd-footer {
+      justify-content: flex-end;
+    }
+
+    /* Keep the primary action reachable on short screens. The bar sits in a
+       wrapper column of its own height, and a sticky element can only travel
+       inside its own containing block, so the wrapper is what has to stick.
+       Read-only forms render the bar without any action, and an empty bar must
+       not cover the last question. */
+    & .sd-body > :has(> .sd-footer .sd-action) {
+      position: sticky;
+      bottom: 0;
+      /* Above the sticky cells of a matrix question, which sit at 12. */
+      z-index: 20;
+      background-color: var(--color-base-200);
+      /* The bar stops at the modal's content edge, so rows would still show
+         through its bottom padding. Carry the fill down over that strip; the
+         modal clips whatever is left over. */
+      box-shadow: 0 2rem 0 var(--color-base-200);
     }
 
     & .sd-page__title {
@@ -106,15 +137,19 @@
       font-weight: 600;
       letter-spacing: -0.01em;
     }
+    /* No margin below the title: survey-core already puts a gap between the
+       question header and its control. */
     & .sd-question__title {
-      margin-bottom: 0.375rem;
       font-weight: 600;
     }
 
     /* Title underline doubles as progress bar — driven by --survey-progress
        set in survey_controller; defaults to 100% (full gold rule). */
     & :is(.sd-container-modern__title, .sd-title.sd-container-modern__title) {
-      padding-bottom: 1.25rem;
+      /* Same inset as .sd-page, so the heading starts on the card edge. The
+         modal already pads above the heading, so it needs little of its own. */
+      padding-block: 0.5rem 1.25rem;
+      padding-inline: 1.25rem;
       box-shadow: none;
       background-image: linear-gradient(
         to right,

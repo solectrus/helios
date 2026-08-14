@@ -88,16 +88,31 @@ function buildTheme(base: ITheme): ITheme {
       '--sjs2-base-unit-spacing': '6px',
       '--sjs2-base-unit-radius': '0.625rem',
 
-      // survey-core 3.0 adds spacing where HELIOS already provides its own, so
-      // these zeros keep the layout as it was under 2.5. The gap between cards
-      // stays at the 24px that version derived from the base unit.
-      '--sjs2-layout-component-page-box-gap-vertical': '1.5rem',
-      '--sjs2-layout-component-survey-box-gap-vertical': '0',
-      // .sd-question__title carries the gap to the input below it.
-      '--sjs2-layout-component-question-box-gap-vertical': '0',
-      // .sd-page carries the horizontal inset.
+      // Gaps around and between the question cards. survey-core asks for 30px
+      // each, which costs about 100px on a form of five questions. A 1280x800
+      // laptop must show a whole page without scrolling, so both drop to 16px.
+      '--sjs2-layout-component-page-box-gap-vertical': '1rem',
+      '--sjs2-layout-component-survey-box-gap-vertical': '1rem',
+
+      // Gap between a question title and its input.
+      '--sjs2-layout-component-question-box-gap-vertical': '0.5rem',
+
+      // survey-core insets the page content by another 30px on top of the
+      // padding .sd-page already carries. Drop it, so the cards, the page
+      // heading and the action bar all line up on one edge.
       '--sjs2-layout-component-page-content-area-padding-horizontal': '0',
       '--sjs2-layout-component-page-header-padding-horizontal': '0',
+
+      // The two headings above a form scale off the 18px base and grow to
+      // 31.5px and 24.75px. That is more weight than a settings dialog needs,
+      // and it costs height on every form, so both come down a step.
+      '--sjs2-typography-font-size-component-survey-header-title': '1.5rem',
+      '--sjs2-typography-line-height-component-survey-header-title': '2rem',
+      // The heading picks up the gold of the rule below it.
+      '--sjs2-color-component-survey-header-default-title':
+        'var(--color-primary)',
+      '--sjs2-typography-font-size-component-page-title': '1.25rem',
+      '--sjs2-typography-line-height-component-page-title': '1.75rem',
 
       // Survey root + body sit on the page color (base-200) so the area below
       // the gold ribbon reads as a single dark slab, same tone as the page
