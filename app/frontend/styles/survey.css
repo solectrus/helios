@@ -35,9 +35,14 @@
     & .sd-page {
       padding: 0 1.25rem;
     }
+    /* One place owns the card padding. survey-core 3.0 pads an inner container
+       on top of it, but only for plain questions, not for matrix ones, so
+       zeroing that container keeps every card on the same rhythm. */
     & .sd-question {
-      border: 1px solid var(--sjs-border-light);
+      border: 1px solid var(--sjs2-color-border-basic-secondary);
       padding: 1rem 1.25rem 1.125rem;
+      --sd-question-header-content-container-padding-block: 0;
+      --sd-question-header-content-container-padding-inline: 0;
     }
     /* Drop the matrix table's own background so it inherits the question-box
        fill and reads as one element. */
@@ -60,8 +65,8 @@
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      border: 1px solid var(--sjs-border-default);
-      border-radius: var(--sjs-corner-radius);
+      border: 1px solid var(--sjs2-color-component-input-default-line);
+      border-radius: var(--sjs2-base-unit-radius);
       padding: 0.5rem 1rem;
       font-size: 0.875em;
       font-weight: 500;
@@ -122,29 +127,27 @@
       background-repeat: no-repeat;
     }
 
-    /* Inputs — BorderlessDark hides borders; restore so fields read as active */
-    & :is(.sd-input, .sd-text, .sd-dropdown) {
-      border: 1px solid var(--sjs-border-default);
+    /* Inputs — BorderlessDark hides borders; restore so fields read as active.
+       .sd-formbox is the field shell (text inputs and dropdowns alike), the
+       .sd-formbox__input inside it carries the value. */
+    & .sd-formbox {
+      border: 1px solid var(--sjs2-color-component-input-default-line);
       color: var(--color-base-content);
       transition:
         border-color 150ms,
         background-color 150ms,
         box-shadow 150ms;
     }
-    & :is(.sd-input, .sd-text)::placeholder {
+    & .sd-formbox__input::placeholder {
       color: var(--helios-text-muted);
     }
-    & :is(.sd-input, .sd-text).sd-input--readonly {
+    & .sd-formbox--readonly {
       color: color-mix(in oklab, var(--color-base-content) 65%, transparent);
     }
-    & :is(.sd-input, .sd-text):hover:not(:disabled, .sd-input--readonly),
-    & .sd-dropdown:hover:not(.sd-input--readonly) {
+    & .sd-formbox:hover:not(.sd-formbox--readonly, .sd-formbox--disabled) {
       border-color: var(--helios-border-hover);
     }
-    &
-      :is(.sd-input, .sd-text, .sd-dropdown):is(:focus, :focus-within):not(
-        .sd-input--readonly
-      ) {
+    & .sd-formbox:focus-within:not(.sd-formbox--readonly) {
       border-color: var(--helios-border-focus);
       background-color: color-mix(in oklab, var(--color-base-100) 92%, white);
       box-shadow: none;
@@ -153,7 +156,7 @@
 
     /* Native date/time picker icon needs to be visible on dark bg */
     &
-      .sd-input:is(
+      .sd-formbox__input:is(
         [type='date'],
         [type='datetime-local'],
         [type='time']
@@ -184,23 +187,36 @@
       margin-top: 0.625rem;
     }
 
-    /* Navigation buttons */
+    /* Navigation buttons. survey-core renders them in its subdued
+       "tertiary-surface" style; HELIOS promotes forward navigation to the
+       primary action. The label lives in a nested span that takes its colour
+       from an action token, so it has to be repainted alongside the button. */
     & :is(.sd-navigation__next-btn, .sd-navigation__complete-btn) {
-      background-color: var(--sjs-primary-backcolor);
-      color: var(--sjs-primary-forecolor);
+      background-color: var(--sjs2-color-bg-brand-primary);
+      color: var(--sjs2-color-fg-brand-on-primary);
       font-weight: 600;
       transition:
         background-color 200ms,
         transform 150ms;
     }
+    &
+      :is(.sd-navigation__next-btn, .sd-navigation__complete-btn)
+      .sd-action__title {
+      color: var(--sjs2-color-fg-brand-on-primary);
+      font-weight: 600;
+    }
     & :is(.sd-navigation__next-btn, .sd-navigation__complete-btn):hover {
-      background-color: var(--sjs-primary-backcolor-dark);
+      background-color: var(--sjs2-color-bg-brand-primary-dim);
       transform: translateY(-1px);
     }
     & .sd-navigation__prev-btn {
       background-color: transparent;
-      color: var(--sjs-general-forecolor);
-      border: 1px solid var(--sjs-border-default);
+      color: var(--sjs2-color-fg-basic-primary);
+      border: 1px solid var(--sjs2-color-component-input-default-line);
+      font-weight: 500;
+    }
+    & .sd-navigation__prev-btn .sd-action__title {
+      color: var(--sjs2-color-fg-basic-primary);
       font-weight: 500;
     }
     & .sd-navigation__prev-btn:hover {
@@ -230,14 +246,10 @@
       font-size: 1em;
       line-height: 1.4;
     }
-    & .sd-question--error :is(.sd-input, .sd-text, .sd-dropdown) {
+    & .sd-question--error .sd-formbox {
       border-color: var(--color-error);
     }
-    &
-      .sd-question--error
-      :is(.sd-input, .sd-text, .sd-dropdown):is(:focus, :focus-within):not(
-        .sd-input--readonly
-      ) {
+    & .sd-question--error .sd-formbox:focus-within:not(.sd-formbox--readonly) {
       border-color: var(--color-error);
       box-shadow: 0 0 0 3px
         color-mix(in oklab, var(--color-error) 25%, transparent);
