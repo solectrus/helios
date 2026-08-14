@@ -28,7 +28,7 @@ async function initRuntime(): Promise<SurveyRuntime> {
     import('survey-core/i18n/german'),
   ]);
 
-  const { Model, surveyLocalization, FunctionFactory } = core;
+  const { Model, surveyLocalization } = core;
 
   // HELIOS uses informal "Du", but survey-core/i18n/german ships with formal
   // "Sie". Patch the strings the user is most likely to see (validation +
@@ -50,18 +50,7 @@ async function initRuntime(): Promise<SurveyRuntime> {
     ratingOptionsCaption: 'Tippe hier, um zu bewerten...',
   });
 
-  // Survey expression helper: true when any value of a matrix-style answer
-  // object equals `token`. The Software survey uses it so the Watchtower
-  // interval question unlocks only when a service runs on the "develop" channel.
-  FunctionFactory.Instance.register('anyValueEquals', anyValueEquals);
-
   return { Model, theme: buildTheme(BorderlessDark) };
-}
-
-function anyValueEquals(params: unknown[]): boolean {
-  const [answers, token] = params;
-  if (!answers || typeof answers !== 'object') return false;
-  return Object.values(answers as Record<string, unknown>).includes(token);
 }
 
 // SurveyJS sets these as inline CSS variables on the root element, beating
