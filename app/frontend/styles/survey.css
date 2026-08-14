@@ -78,7 +78,9 @@
       border: 1px solid var(--sjs2-color-component-input-default-line);
       border-radius: var(--sjs2-base-unit-radius);
       padding: 0.5rem 1rem;
-      font-size: 0.875em;
+      font-size: var(
+        --sjs2-typography-font-size-component-question-description
+      );
       font-weight: 500;
       cursor: pointer;
       transition:
@@ -96,7 +98,9 @@
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
-      font-size: 0.875em;
+      font-size: var(
+        --sjs2-typography-font-size-component-question-description
+      );
     }
     & .connection-test__status--ok {
       color: var(--color-success);
@@ -207,15 +211,37 @@
       padding: 0 0.25rem;
     }
 
-    /* Explanatory prose supports the questions rather than competing with
-       them, so it sits a notch below their text size. survey-core sizes
-       .sd-html and each of its p/div/span/td off these article tokens, so
-       retuning the tokens beats overriding every one of those selectors.
-       Scoped away from the connection test, which is an action row of buttons
-       rather than prose and keeps the base size. */
+    /* Prose blocks join the secondary tier the descriptions define, in size
+       and in color alike. survey-core sizes .sd-html and each of its
+       p/div/span/td off these article tokens, so retuning the tokens beats
+       overriding every one of those selectors. Scoped away from the
+       connection test, which is an action row of buttons rather than prose
+       and keeps the base size. */
     & .sd-question--html:not(:has(.connection-test)) {
-      --sjs-article-font-default-fontSize: 0.875rem;
-      --sjs-article-font-default-lineHeight: 1.5;
+      --sjs-article-font-default-fontSize: var(
+        --sjs2-typography-font-size-component-question-description
+      );
+      --sjs-article-font-default-lineHeight: var(
+        --sjs2-typography-line-height-component-question-description
+      );
+    }
+    & .sd-question--html:not(:has(.connection-test)) .sd-html {
+      color: var(--sjs2-color-component-question-default-description);
+    }
+
+    /* Hint below a choice label, appended by the markdown hook in
+       survey_controller. Same tier as a description, and the label around it
+       carries the body color, so it repaints itself. */
+    & .sd-hint {
+      display: block;
+      margin-top: 0.25rem;
+      font-size: var(
+        --sjs2-typography-font-size-component-question-description
+      );
+      line-height: var(
+        --sjs2-typography-line-height-component-question-description
+      );
+      color: var(--sjs2-color-component-question-default-description);
     }
     /* Paragraphs would otherwise run together — the reset drops their margin. */
     & .sd-question--html p + p {

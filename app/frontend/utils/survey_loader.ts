@@ -114,6 +114,24 @@ function buildTheme(base: ITheme): ITheme {
       '--sjs2-typography-font-size-component-page-title': '1.25rem',
       '--sjs2-typography-line-height-component-page-title': '1.75rem',
 
+      // Explanatory text supports what it belongs to rather than competing
+      // with it, so it sits below the 18px body. survey-core sizes all of it
+      // like the body and separates it by color alone, which leaves a form of
+      // nothing but 18px lines. Two steps instead of one, because the text
+      // under a heading of 24px or 20px carries the whole modal or the whole
+      // page, while the text under an 18px question title carries one field.
+      '--sjs2-typography-font-size-component-survey-header-description': '1rem',
+      '--sjs2-typography-line-height-component-survey-header-description':
+        '1.5rem',
+      '--sjs2-typography-font-size-component-page-description': '1rem',
+      '--sjs2-typography-line-height-component-page-description': '1.5rem',
+      // The question step is the whole 14px tier: the prose blocks, the hint
+      // under a choice label and the connection-test row read these two
+      // values back out of the CSS instead of carrying sizes of their own.
+      '--sjs2-typography-font-size-component-question-description': '0.875rem',
+      '--sjs2-typography-line-height-component-question-description':
+        '1.3125rem',
+
       // Survey root + body sit on the page color (base-200) so the area below
       // the gold ribbon reads as a single dark slab, same tone as the page
       // behind the modal. Only the question cards lift to base-100 (raised

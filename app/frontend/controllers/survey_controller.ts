@@ -147,7 +147,7 @@ export default class extends Controller<HTMLElement> {
 
       const main = options.text.slice(0, separator);
       const hint = options.text.slice(separator + 2);
-      options.html = `${main}<span class="mt-1 block text-sm opacity-60">${hint}</span>`;
+      options.html = `${main}<span class="sd-hint">${hint}</span>`;
     });
 
     // Load initial data if provided
