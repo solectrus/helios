@@ -4,11 +4,11 @@
       <%= link_to tab[:path], class: item_classes(tab), data: { turbo_frame: "_top" } do %>
         <i class="<%= icon_box_classes(tab) %> <%= tab[:icon] %>" aria-hidden="true"></i>
 
-        <span><%= tab[:label] %></span>
+        <span class="min-w-0 truncate"><%= tab[:label] %></span>
 
         <% if show_warning?(tab) %>
           <span
-            class="tooltip tooltip-right tooltip-warning ml-auto"
+            class="tooltip tooltip-right tooltip-warning ml-auto shrink-0"
             data-tip="<%= t('configurations.show.incomplete') %>"
           >
             <i class="fa-solid fa-triangle-exclamation text-warning"></i>
