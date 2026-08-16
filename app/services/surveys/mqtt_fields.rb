@@ -161,9 +161,15 @@ module Surveys
     # clearInvisibleValues drops a value the collector would refuse: an
     # aggregation interval on a string mapping, or a heartbeat without
     # deduplication.
+    #
+    # No released mqtt-collector reads these variables yet. A released one
+    # collects them with the rest of the mapping and then ignores them, so the
+    # questions stay away until the collector runs on the development channel.
+    # Drop the condition once the stable channel carries them.
     def write_behavior_inputs
+      return [] unless Configuration.current.develop_channel?('mqtt_collector')
+
       [
-        visible_if(develop_only_note, guard),
         (visible_if(skip_write_input, named_condition) if skip_write),
         *throttle_inputs,
       ].compact
@@ -513,23 +519,6 @@ module Surveys
           de: 'Leere oder NULL-Werte werden als 0 in InfluxDB gespeichert',
         ),
         'defaultValue' => false,
-      }
-    end
-
-    # No released mqtt-collector reads these variables yet. A released one
-    # collects them with the rest of the mapping and then ignores them, so
-    # nothing breaks, but nothing happens either. Remove this note once the
-    # stable channel carries them.
-    def develop_only_note
-      {
-        'type' => 'html',
-        'name' => field('write_behavior_develop_only'),
-        'html' => Base.localized(
-          en: '<p>Note: These settings only take effect while the MQTT Collector runs on the ' \
-              '“Development” channel.</p>',
-          de: '<p>Hinweis: Diese Einstellungen wirken bislang nur, wenn der MQTT-Collector im ' \
-              'Kanal „Entwicklung“ läuft.</p>',
-        ),
       }
     end
 

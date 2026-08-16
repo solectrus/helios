@@ -54,6 +54,7 @@
     },
     {
       "name": "p_currency",
+      "visibleIfDevelop": "dashboard",
       "elements": [
         {
           "type": "dropdown",
@@ -130,14 +131,6 @@
               }
             }
           ]
-        },
-        {
-          "type": "html",
-          "name": "currency_develop_only",
-          "html": {
-            "de": "<p>Hinweis: Die Währung wirkt bislang nur, wenn das Dashboard im Kanal „Entwicklung“ läuft. Im Kanal „Stabil“ wird sie noch nicht ausgewertet.</p>",
-            "default": "<p>Note: The currency only takes effect while the dashboard runs on the “Development” channel. On the “Stable” channel it is not evaluated yet.</p>"
-          }
         }
       ]
     }

@@ -2,7 +2,9 @@ RSpec.describe Surveys::MqttTopic::Survey do
   describe '#call' do
     subject(:result) { described_class.new.call }
 
-    before { with_config_yaml }
+    # The write-behavior questions only exist on the development channel, and
+    # the schema check below expects the complete mapping.
+    before { with_config_yaml('mqtt' => { 'image' => 'ghcr.io/solectrus/mqtt-collector:develop' }) }
 
     # `html` elements carry no value, so they are no part of the mapping schema.
     let(:all_field_names) do
@@ -102,12 +104,13 @@ RSpec.describe Surveys::MqttTopic::Survey do
       end
 
       # No released mqtt-collector reads these variables yet, and it ignores
-      # them without an error, so nothing tells the user by itself.
-      it 'names the channel the options need' do
-        note = elements['write_behavior_develop_only']
+      # them without an error. Offering them on the stable channel would ask
+      # for settings that do nothing.
+      it 'disappears while the collector runs on the stable channel' do
+        with_config_yaml('mqtt' => { 'image' => 'ghcr.io/solectrus/mqtt-collector:latest' })
 
-        expect(note['type']).to eq('html')
-        expect(note['html']['default']).to include('Development')
+        expect(page('p_write')).to be_nil
+        expect(all_field_names).not_to include('aggregate_interval', 'dedup', 'heartbeat_interval', 'skip_write')
       end
 
       it 'refuses a heartbeat that would make deduplication pointless' do

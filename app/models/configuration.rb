@@ -752,6 +752,19 @@ class Configuration # rubocop:disable Metrics/ClassLength
     mode == ConfigSchema::MODE_DASHBOARD_ONLY
   end
 
+  # --- Release channels ---
+
+  # Does the named service (a SOFTWARE_SERVICES key) follow the development
+  # channel? Surveys ask before they offer a setting that only a develop image
+  # reads, so nobody on the stable channel is confronted with it.
+  def develop_channel?(service)
+    spec = SOFTWARE_SERVICES[service]
+    return false unless spec
+
+    image = (@data[spec[:singleton]] || {})['image']
+    image.present? && image_channel(image) == 'develop'
+  end
+
   # Reverse-proxy "external Traefik" mode: an external Traefik routes to the
   # stack's published host ports, so HELIOS runs no Traefik of its own (no
   # app_domain); an optional bind_ip pins where the ports are published.

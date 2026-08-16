@@ -13,6 +13,12 @@ module Surveys
       'not_collectors_only' => ->(mode) { mode != ConfigSchema::MODE_COLLECTORS_ONLY },
     }.freeze
 
+    # `visibleIfDevelop` is the second such marker: its value names a service
+    # (a `Configuration::SOFTWARE_SERVICES` key), and the node survives only
+    # while that service runs on the development channel. It carries the
+    # settings no released image reads yet — asking for them on the stable
+    # channel only confuses everyone who never switches.
+
     def self.survey_id
       name.split('::')[-2].underscore
     end
@@ -38,7 +44,7 @@ module Surveys
       return nil unless path.exist?
 
       data = JSON.parse(path.read)
-      apply_mode_visibility!(data)
+      apply_marker_visibility!(data)
       customize!(data)
       data
     end
@@ -70,15 +76,21 @@ module Surveys
       nil
     end
 
-    # Strips pages and elements whose `visibleIfMode` marker doesn't match the
-    # current deployment mode. The marker itself is removed from the rendered
-    # JSON either way so it never reaches SurveyJS.
-    def apply_mode_visibility!(data)
+    # Strips pages and elements whose server-side markers don't hold. Every
+    # marker is removed from the rendered JSON either way so it never reaches
+    # SurveyJS.
+    def apply_marker_visibility!(data)
       mode = Configuration.current.mode
-      data['pages']&.reject! { |page| hidden_for_mode?(page, mode) }
+      data['pages']&.reject! { |page| hidden_by_marker?(page, mode) }
       data['pages']&.each do |page|
-        page['elements']&.reject! { |element| hidden_for_mode?(element, mode) }
+        page['elements']&.reject! { |element| hidden_by_marker?(element, mode) }
       end
+    end
+
+    # A node dropped by the first marker takes its remaining markers with it,
+    # so short-circuiting leaves nothing behind.
+    def hidden_by_marker?(node, mode)
+      hidden_for_mode?(node, mode) || hidden_for_channel?(node)
     end
 
     def hidden_for_mode?(node, mode)
@@ -89,6 +101,13 @@ module Surveys
       return false unless predicate
 
       !predicate.call(mode)
+    end
+
+    def hidden_for_channel?(node)
+      service = node.delete('visibleIfDevelop')
+      return false unless service
+
+      !Configuration.current.develop_channel?(service)
     end
   end
 end

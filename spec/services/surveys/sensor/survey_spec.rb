@@ -36,25 +36,30 @@ RSpec.describe Surveys::Sensor::Survey do
     end
 
     describe 'MQTT write-behavior page' do
+      # No released mqtt-collector reads these variables, so the page exists
+      # for the development channel alone.
+      before { with_config_yaml('mqtt' => { 'image' => 'ghcr.io/solectrus/mqtt-collector:develop' }) }
+
       let(:write_page) { result['pages'].find { |p| p['name'] == 'p_mqtt_write' } }
       let(:elements) { write_page['elements'].index_by { |e| e['name'] } }
 
       it 'offers the averaging interval plus deduplication with its heartbeat' do
         expect(write_page['elements'].pluck('name')).to eq(
-          %w[
-            mqtt_write_behavior_develop_only
-            mqtt_aggregate_interval mqtt_dedup mqtt_heartbeat_interval
-          ],
+          %w[mqtt_aggregate_interval mqtt_dedup mqtt_heartbeat_interval],
         )
+      end
+
+      it 'disappears while the collector runs on the stable channel' do
+        with_config_yaml('mqtt' => { 'image' => 'ghcr.io/solectrus/mqtt-collector:latest' })
+
+        expect(write_page).to be_nil
+        expect(find_survey_element(result, 'mqtt_dedup')).to be_nil
       end
 
       # Every gate carries the MQTT source, so switching a sensor to Shelly or
       # external clears the write options along with the rest of the MQTT page.
-      # The note is gated too, otherwise it would keep the page on screen for a
-      # sensor that reads no topic at all.
       it 'gates each input on an MQTT sensor and on what the collector requires' do
         expect(write_page).not_to have_key('visibleIf')
-        expect(elements['mqtt_write_behavior_develop_only']['visibleIf']).to eq("{source} = 'mqtt'")
         expect(elements['mqtt_aggregate_interval']['visibleIf']).to eq(
           "{source} = 'mqtt' and ({mqtt_payload_type} = 'float' or {mqtt_payload_type} = 'integer')",
         )
