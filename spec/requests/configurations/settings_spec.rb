@@ -72,6 +72,52 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(config.sensor_config('inverter_power').field).to eq('inverter_power')
     end
 
+    it 'keeps a measurement holding a space, which line protocol escapes' do
+      sensor_data = { 'source' => 'external', 'measurement' => 'PQ Inverter', 'field' => 'power' }
+
+      post configuration_settings_path,
+           params: { setting: 'sensor', name: 'inverter_power', data: sensor_data.to_json }
+
+      expect(Configuration.current.sensor_config('inverter_power').measurement).to eq('PQ Inverter')
+    end
+
+    # The survey refuses these client-side; this covers a request going around
+    # the UI. A comma would split INFLUX_MEASUREMENT, a colon the sensor
+    # mapping, and InfluxDB reserves the leading underscore for itself.
+    ['PQ,Inverter', 'PQ:Inverter', '_inverter'].each do |measurement|
+      it "refuses to store the measurement #{measurement.inspect}" do
+        sensor_data = { 'source' => 'external', 'measurement' => measurement, 'field' => 'power' }
+
+        post configuration_settings_path,
+             params: { setting: 'sensor', name: 'inverter_power', data: sensor_data.to_json }
+
+        expect(response).to redirect_to(sensors_path)
+        expect(flash[:alert]).to include(measurement)
+        expect(Configuration.current.sensor_config('inverter_power').measurement).to be_nil
+      end
+    end
+
+    it 'refuses a field starting with the reserved underscore' do
+      sensor_data = { 'source' => 'external', 'measurement' => 'inverter', 'field' => '_power' }
+
+      post configuration_settings_path,
+           params: { setting: 'sensor', name: 'inverter_power', data: sensor_data.to_json }
+
+      expect(flash[:alert]).to include('_power')
+      expect(Configuration.current.sensor_config('inverter_power').field).to be_nil
+    end
+
+    # A fixed source overwrites measurement and field on save, so the payload's
+    # names never reach storage and must not block the save either.
+    it 'accepts an unusable measurement when the source overwrites it anyway' do
+      sensor_data = { 'source' => 'senec', 'measurement' => 'a,b', 'field' => 'c' }
+
+      post configuration_settings_path,
+           params: { setting: 'sensor', name: 'inverter_power', data: sensor_data.to_json }
+
+      expect(Configuration.current.sensor_config('inverter_power').measurement).to eq('SENEC')
+    end
+
     it 'auto-activates other SENEC-capable sensors that are not yet configured' do
       post configuration_settings_path,
            params: { setting: 'sensor', name: 'inverter_power', data: { 'source' => 'senec' }.to_json }

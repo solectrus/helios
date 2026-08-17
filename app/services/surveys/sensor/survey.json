@@ -204,7 +204,17 @@
             "de": "Name des InfluxDB-Measurements, in das der Sensor schreibt",
             "default": "Name of the InfluxDB measurement the sensor writes to"
           },
-          "isRequired": true
+          "isRequired": true,
+          "validators": [
+            {
+              "type": "regex",
+              "regex": "^[^_,:][^,:]*$",
+              "text": {
+                "de": "Komma, Doppelpunkt und ein Unterstrich am Anfang sind hier nicht erlaubt.",
+                "default": "Comma, colon and a leading underscore are not allowed here."
+              }
+            }
+          ]
         },
         {
           "type": "text",
@@ -219,7 +229,17 @@
             "de": "Name des InfluxDB-Fields innerhalb des Measurements",
             "default": "Name of the InfluxDB field within the measurement"
           },
-          "isRequired": true
+          "isRequired": true,
+          "validators": [
+            {
+              "type": "regex",
+              "regex": "^[^_].*$",
+              "text": {
+                "de": "Ein Unterstrich am Anfang ist hier nicht erlaubt.",
+                "default": "A leading underscore is not allowed here."
+              }
+            }
+          ]
         }
       ]
     },

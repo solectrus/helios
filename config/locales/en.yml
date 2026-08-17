@@ -534,6 +534,7 @@ en:
       title: 'Sensors'
     errors:
       mqtt_name_in_use: 'Cannot be changed, the MQTT name is read by: %{names}'
+      invalid_influx_name: 'Not saved. "%{name}" is not a valid name: no comma, no colon, no leading underscore.'
     inverter_power: 'Total PV generation'
     inverter_power_1: 'PV generator 1'
     inverter_power_2: 'PV generator 2'

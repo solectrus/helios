@@ -85,6 +85,7 @@ RSpec/DescribeClass:
   Exclude:
     - spec/services/scenarios_spec.rb
     - spec/services/export/service_env_contract_spec.rb
+    - spec/services/surveys/influx_name_validators_spec.rb
     - spec/services/import/configuration_importer/**/*_spec.rb
     - spec/requests/log_silencing_spec.rb
     - spec/system/**/*_spec.rb

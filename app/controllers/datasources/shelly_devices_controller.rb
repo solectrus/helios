@@ -1,6 +1,7 @@
 module Datasources
   class ShellyDevicesController < ApplicationController
     include TurboFrameOnly
+    include InfluxNameValidation
 
     before_action :set_configuration
     before_action :require_turbo_frame, only: %i[new edit]
@@ -21,6 +22,7 @@ module Datasources
     def create
       data = device_params
       return unless data
+      return if invalid_influx_name?(data, datasources_shelly_devices_path)
 
       @configuration.add_shelly_device(data)
       Orchestration::StackStatus.mark_config_changed!
@@ -30,6 +32,7 @@ module Datasources
     def update
       data = device_params
       return unless data
+      return if invalid_influx_name?(data, datasources_shelly_devices_path)
 
       @configuration.update_shelly_device(params[:id], data)
       Orchestration::StackStatus.mark_config_changed!

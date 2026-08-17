@@ -11,6 +11,7 @@ Fetch on demand:
 - daisyUI: https://daisyui.com/llms.txt
 - SurveyJS: https://surveyjs.io/form-library/documentation/overview
 - SOLECTRUS env var semantics: https://docs.solectrus.de/ — **source of truth** for `INFLUX_*`, `FORECAST_*`, `SENEC_*`, `MQTT_*`, `SHELLY_*`, `POWER_SPLITTER_*`, `WATCHTOWER_*` defaults and ranges. Don't infer them from existing HELIOS code; it may be wrong.
+- InfluxDB line protocol: https://docs.influxdata.com/influxdb/v2/reference/syntax/line-protocol/ — **source of truth** for which characters a measurement, tag or field name may carry. Consult it before tightening or relaxing a name validator; most separators are escapable and therefore legal.
 
 ## Verifying in the browser
 

@@ -1,6 +1,7 @@
 module Configurations
   class SettingsController < ApplicationController
     include TurboFrameOnly
+    include InfluxNameValidation
 
     # Settings whose survey uses an `enabled` boolean to toggle the whole
     # section. The flag is stripped on save; on load we re-derive it from the
@@ -124,7 +125,11 @@ module Configurations
       if sensor_setting?
         return if mqtt_name_still_needed?(data['mqtt_name'])
 
+        # After normalization: a fixed source overwrites whatever names the
+        # payload carried, so only what actually gets stored is judged.
         normalize_fixed_source_mapping!(data)
+        return if invalid_influx_name?(data, redirect_target)
+
         @configuration.update_sensor(sensor_name, data)
         @configuration.auto_enable_senec_sensors! if data['source'] == 'senec'
       else

@@ -80,6 +80,25 @@ RSpec.describe 'Datasources::ShellyDevices', :with_admin_password do
       expect(response).to redirect_to(datasources_shelly_devices_path)
       expect(Configuration.current.shelly_devices).to contain_exactly(local_device)
     end
+
+    it 'keeps a measurement holding a space, which line protocol escapes' do
+      post datasources_shelly_devices_path, params: { data: local_device.merge('measurement' => 'PQ Inverter').to_json }
+
+      expect(Configuration.current.shelly_device(0)['measurement']).to eq('PQ Inverter')
+    end
+
+    # The survey refuses these client-side; this covers a request going around
+    # the UI. A comma would split INFLUX_MEASUREMENT, a colon the sensor
+    # mapping, and InfluxDB reserves the leading underscore for itself.
+    ['PQ,Inverter', 'PQ:Inverter', '_inverter'].each do |measurement|
+      it "refuses to store the measurement #{measurement.inspect}" do
+        post datasources_shelly_devices_path, params: { data: local_device.merge('measurement' => measurement).to_json }
+
+        expect(response).to redirect_to(datasources_shelly_devices_path)
+        expect(flash[:alert]).to include(measurement)
+        expect(Configuration.current.shelly_devices).to be_empty
+      end
+    end
   end
 
   describe 'PATCH /datasources/shelly-devices/:id' do
@@ -92,6 +111,12 @@ RSpec.describe 'Datasources::ShellyDevices', :with_admin_password do
 
       expect(response).to redirect_to(datasources_shelly_devices_path)
       expect(Configuration.current.shelly_device(0)['measurement']).to eq('shelly_hp_v2')
+    end
+
+    it 'leaves the stored device untouched when the new measurement is refused' do
+      patch datasources_shelly_device_path(0), params: { data: local_device.merge('measurement' => 'a,b').to_json }
+
+      expect(Configuration.current.shelly_device(0)['measurement']).to eq('shelly_hp')
     end
   end
 

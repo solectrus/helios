@@ -100,4 +100,59 @@ RSpec.describe SensorMappings do
       expect(described_class.mapping_for('outdoor_temp_forecast', config)).to eq('forecast:temp')
     end
   end
+
+  # Line protocol escapes `,`, `=` and space, so a name carrying one of them
+  # survives a round trip. Only what HELIOS itself splits on, plus the
+  # underscore InfluxDB reserves, cannot work.
+  describe '.valid_measurement?' do
+    it 'accepts a plain name' do
+      expect(described_class).to be_valid_measurement('SENEC')
+    end
+
+    it 'accepts non-ASCII letters' do
+      expect(described_class).to be_valid_measurement('Lüfter_Garage')
+    end
+
+    it 'accepts a space, which line protocol escapes' do
+      expect(described_class).to be_valid_measurement('PQ Inverter')
+    end
+
+    it 'accepts an equals sign, which line protocol escapes' do
+      expect(described_class).to be_valid_measurement('a=b')
+    end
+
+    it 'rejects a comma, which splits INFLUX_MEASUREMENT' do
+      expect(described_class).not_to be_valid_measurement('PQ,Inverter')
+    end
+
+    it 'rejects a colon, which splits the measurement:field mapping' do
+      expect(described_class).not_to be_valid_measurement('PQ:Inverter')
+    end
+
+    it 'rejects a leading underscore, which InfluxDB reserves' do
+      expect(described_class).not_to be_valid_measurement('_inverter')
+    end
+
+    it 'accepts an underscore that does not lead' do
+      expect(described_class).to be_valid_measurement('pq_inverter')
+    end
+
+    it 'rejects a blank name' do
+      expect(described_class).not_to be_valid_measurement('')
+    end
+  end
+
+  describe '.valid_field?' do
+    it 'accepts a plain name' do
+      expect(described_class).to be_valid_field('power')
+    end
+
+    it 'accepts a colon, which the mapping split tolerates in a field' do
+      expect(described_class).to be_valid_field('a:b')
+    end
+
+    it 'rejects a leading underscore, which InfluxDB reserves' do
+      expect(described_class).not_to be_valid_field('_power')
+    end
+  end
 end

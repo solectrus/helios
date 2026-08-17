@@ -145,7 +145,17 @@
             "default": "Name of the InfluxDB table the collector writes the readings to."
           },
           "isRequired": true,
-          "placeholder": "shelly_heatpump"
+          "placeholder": "shelly_heatpump",
+          "validators": [
+            {
+              "type": "regex",
+              "regex": "^[^_,:][^,:]*$",
+              "text": {
+                "de": "Komma, Doppelpunkt und ein Unterstrich am Anfang sind hier nicht erlaubt.",
+                "default": "Comma, colon and a leading underscore are not allowed here."
+              }
+            }
+          ]
         }
       ]
     }

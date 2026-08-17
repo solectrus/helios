@@ -114,6 +114,34 @@ class SensorMappings
     end
   end
 
+  # Names that cannot work, for two separate reasons. Line protocol itself is
+  # permissive: it escapes `,`, `=` and space, so those survive a round trip.
+  # What does not survive:
+  #
+  #   - A leading underscore. InfluxDB reserves the `_` namespace for system
+  #     use, so a measurement or field named that way never receives data.
+  #   - A comma or a colon in a measurement. Both are HELIOS separators: a
+  #     colon splits the `measurement:field` mapping below, a comma splits the
+  #     shelly collector's `INFLUX_MEASUREMENT` list. Either one points a
+  #     service at a different measurement than the UI shows, and no consumer
+  #     downstream can repair that.
+  #
+  # Kept in sync with the `regex` validators in the sensor and shelly-device
+  # surveys, which spec/services/surveys/influx_name_validators_spec.rb guards.
+  #
+  # Reference:
+  # https://docs.influxdata.com/influxdb/v2/reference/syntax/line-protocol/
+  VALID_MEASUREMENT_REGEX = /\A[^_,:][^,:]*\z/
+  VALID_FIELD_REGEX = /\A[^_].*\z/
+
+  def self.valid_measurement?(measurement)
+    measurement.to_s.match?(VALID_MEASUREMENT_REGEX)
+  end
+
+  def self.valid_field?(field)
+    field.to_s.match?(VALID_FIELD_REGEX)
+  end
+
   # Returns the InfluxDB mapping string for a given sensor and its config
   def self.mapping_for(sensor_name, config)
     source = config.source.to_s
