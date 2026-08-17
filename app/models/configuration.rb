@@ -374,7 +374,19 @@ class Configuration # rubocop:disable Metrics/ClassLength
     true
   end
 
+  # Picking SENEC as a source fills in every other sensor the collector can
+  # deliver, so a fresh setup does not have to add them one by one.
+  #
+  # This is a convenience for that first pick, not a rule the configuration
+  # keeps enforcing. Once SENEC is established, the sensor set belongs to the
+  # user, and a sensor they removed must stay removed. inverter_power is the
+  # case that matters: the total and the parts inverter_power_1..5 are
+  # alternatives, never both, so a user who adds a second producer removes the
+  # total on purpose. Restoring it would silently put house power back on the
+  # total alone and drop that producer from the calculation.
   def auto_enable_senec_sensors!
+    return [] unless senec_source_new?
+
     candidates = SensorRegistry::SENSORS.each_key.select do |name|
       SensorRegistry.sources_for(name).include?('senec') && !sensor_enabled?(name)
     end
@@ -384,6 +396,12 @@ class Configuration # rubocop:disable Metrics/ClassLength
     candidates.each { |name| @data['sensors'][name] = { 'source' => 'senec' } }
     save!
     candidates
+  end
+
+  # True while at most one sensor reads from SENEC. Callers run after saving
+  # that sensor, so "one" is the pick that just happened and nothing before it.
+  def senec_source_new?
+    enabled_sensors.count { |name| sensor_config(name).source == 'senec' } <= 1
   end
 
   # Disable/remove a sensor

@@ -968,6 +968,38 @@ RSpec.describe Configuration do
         expect(config.sensor_enabled?('heatpump_power')).to be false
         expect(config.sensor_enabled?('car_battery_soc')).to be false
       end
+
+      # The total inverter_power and the parts inverter_power_1..5 are
+      # alternatives. A user who adds a second producer removes the total on
+      # purpose, and bringing it back would drop that producer from the house
+      # power calculation without telling anyone.
+      #
+      # Ends on saving another SENEC sensor, which is what used to restore it.
+      def established_senec_setup_with_total_removed
+        described_class.current.tap do |config|
+          config.update_sensor('inverter_power', { 'source' => 'senec' })
+          config.auto_enable_senec_sensors!
+          config.update_sensor('inverter_power_4',
+                               { 'source' => 'shelly', 'measurement' => 'balcony', 'field' => 'power' })
+          config.remove_sensor('inverter_power')
+          config.update_sensor('battery_soc', { 'source' => 'senec' })
+        end
+      end
+
+      it 'leaves a removed sensor removed once SENEC is established' do
+        config = established_senec_setup_with_total_removed
+
+        expect(config.auto_enable_senec_sensors!).to eq([])
+        expect(config.sensor_enabled?('inverter_power')).to be false
+      end
+
+      it 'keeps the removed total out of the sensor mappings' do
+        config = established_senec_setup_with_total_removed
+        config.auto_enable_senec_sensors!
+
+        expect(config.effective_sensor_mappings).not_to have_key('inverter_power')
+        expect(config.effective_sensor_mappings).to include('inverter_power_4' => 'balcony:power')
+      end
     end
   end
 
