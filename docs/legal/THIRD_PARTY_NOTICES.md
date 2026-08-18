@@ -494,7 +494,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ## highlight.js
 
-- Version: 11.11.1
+- Version: 11.12.0
 - License: BSD-3-Clause
 - Homepage: https://highlightjs.org/
 
