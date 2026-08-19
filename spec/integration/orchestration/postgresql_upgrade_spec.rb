@@ -9,7 +9,13 @@
 require 'tmpdir'
 
 RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
-  let(:data_path) { Rails.root.join('tmp/pg-upgrade-itest').to_s }
+  # A fresh path per example, never a reused one. The teardown deletes the
+  # whole data path, and Docker Desktop keeps its bind mount on the deleted
+  # inode when the next example recreates the same path: initdb then fails
+  # with `could not create directory ".../pg_wal"`, the container restarts
+  # forever and the readiness wait times out. The random suffix also keeps
+  # parallel workers apart (see TEST_ENV_NUMBER in the sibling specs).
+  let(:data_path) { Rails.root.join("tmp/pg-upgrade-itest-#{SecureRandom.hex(4)}").to_s }
   # The oldest major still found in the field, and the interesting one: up to
   # 13 the superuser password is stored MD5-encrypted, from 14 on the image
   # demands scram-sha-256 for TCP connections. Starting any closer to the
