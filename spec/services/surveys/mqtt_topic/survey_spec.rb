@@ -2,10 +2,6 @@ RSpec.describe Surveys::MqttTopic::Survey do
   describe '#call' do
     subject(:result) { described_class.new.call }
 
-    # The write-behavior questions only exist on the development channel, and
-    # the schema check below expects the complete mapping.
-    before { with_config_yaml('mqtt' => { 'image' => 'ghcr.io/solectrus/mqtt-collector:develop' }) }
-
     # `html` elements carry no value, so they are no part of the mapping schema.
     let(:all_field_names) do
       result['pages'].flat_map { |p| p['elements'].reject { |e| e['type'] == 'html' }.pluck('name') }
@@ -45,6 +41,15 @@ RSpec.describe Surveys::MqttTopic::Survey do
 
     it 'always shows the extraction-value page, it hosts the data type both kinds need' do
       expect(page('p_extraction_value')).not_to have_key('visibleIf')
+    end
+
+    # A mapping with a topic resolves {value} alone. The collector refuses to
+    # start on any other reference here, so the form refuses it first.
+    it 'restricts the payload formula to {value}' do
+      validator = elements_of('p_extraction_value')['formula']['validators'].sole
+
+      expect(validator['type']).to eq('regex')
+      expect(validator['regex']).to eq('^[^{]*(\\{value\\}[^{]*)+$')
     end
 
     # The numeric gate sits on the inputs, not on the page: clearInvisibleValues
@@ -103,23 +108,13 @@ RSpec.describe Surveys::MqttTopic::Survey do
         expect(elements.values.pluck('isRequired').compact).to be_empty
       end
 
-      # No released mqtt-collector reads these variables yet, and it ignores
-      # them without an error. Offering them on the stable channel would ask
-      # for settings that do nothing.
-      it 'disappears while the collector runs on the stable channel' do
-        with_config_yaml('mqtt' => { 'image' => 'ghcr.io/solectrus/mqtt-collector:latest' })
-
-        expect(page('p_write')).to be_nil
-        expect(all_field_names).not_to include('aggregate_interval', 'dedup', 'heartbeat_interval', 'skip_write')
-      end
-
       it 'refuses a heartbeat that would make deduplication pointless' do
         validator = elements['heartbeat_interval']['validators'].sole
 
         expect(validator['type']).to eq('expression')
         expect(validator['expression']).to eq(
-          '{aggregate_interval} empty or {heartbeat_interval} empty or ' \
-          '{heartbeat_interval} > {aggregate_interval}',
+          '{aggregate_interval} empty or ' \
+          'iif({heartbeat_interval} empty, 60, {heartbeat_interval}) > {aggregate_interval}',
         )
       end
     end

@@ -54,14 +54,6 @@ module Surveys
         page = survey['pages']&.find { |candidate| candidate['name'] == pages.fetch(logical) }
         next unless page
 
-        # A page whose questions all fell away (the write behavior outside the
-        # development channel) would remain as a step with a description and
-        # nothing to answer, so it goes.
-        if elements.empty?
-          survey['pages'].delete(page)
-          next
-        end
-
         page['description'] = DESCRIPTIONS.fetch(logical)
         page['elements'] = elements
       end

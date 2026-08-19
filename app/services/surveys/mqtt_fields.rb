@@ -161,14 +161,7 @@ module Surveys
     # clearInvisibleValues drops a value the collector would refuse: an
     # aggregation interval on a string mapping, or a heartbeat without
     # deduplication.
-    #
-    # No released mqtt-collector reads these variables yet. A released one
-    # collects them with the rest of the mapping and then ignores them, so the
-    # questions stay away until the collector runs on the development channel.
-    # Drop the condition once the stable channel carries them.
     def write_behavior_inputs
-      return [] unless Configuration.current.develop_channel?('mqtt_collector')
-
       [
         (visible_if(skip_write_input, named_condition) if skip_write),
         *throttle_inputs,
@@ -480,6 +473,22 @@ module Surveys
           de: '{value} steht für die komplette Payload, z.B. round({value} * 1000)',
         ),
         'placeholder' => 'round({value} * 1000)',
+        'validators' => [value_only_validator],
+      }
+    end
+
+    # A mapping with a topic knows one reference, the payload itself. From
+    # 0.8.0 the collector refuses to start on any other name here, so the form
+    # catches it instead of the startup log. Requiring at least one {value}
+    # mirrors the rule that a formula without a reference is a constant.
+    def value_only_validator
+      {
+        'type' => 'regex',
+        'regex' => '^[^{]*(\\{value\\}[^{]*)+$',
+        'text' => Base.localized(
+          en: 'Only {value} can be used here, the name of another mapping is not resolved.',
+          de: 'Hier ist nur {value} verwendbar, der Name einer anderen Zuordnung wird nicht aufgelöst.',
+        ),
       }
     end
 
@@ -554,7 +563,9 @@ module Surveys
 
     # The collector only warns when the heartbeat is not longer than the
     # averaging interval, and keeps running. HELIOS generates the file, so a
-    # combination without effect is refused right here.
+    # combination without effect is refused right here. An empty field counts
+    # as the collector's default, which is short enough to be pointless next
+    # to an averaging interval of 60 seconds or more.
     def heartbeat_interval_input
       {
         'type' => 'text',
@@ -576,12 +587,16 @@ module Surveys
     def heartbeat_interval_validator
       {
         'type' => 'expression',
-        'expression' => "{#{field('aggregate_interval')}} empty or {#{field('heartbeat_interval')}} empty or " \
-                        "{#{field('heartbeat_interval')}} > {#{field('aggregate_interval')}}",
+        'expression' =>
+          "{#{field('aggregate_interval')}} empty or " \
+          "iif({#{field('heartbeat_interval')}} empty, #{ConfigSchema::MQTT_DEFAULT_HEARTBEAT_INTERVAL}, " \
+          "{#{field('heartbeat_interval')}}) > {#{field('aggregate_interval')}}",
         'text' => Base.localized(
-          en: 'The heartbeat interval must be longer than the averaging interval, ' \
+          en: 'The heartbeat interval must be longer than the averaging interval ' \
+              "(default: #{ConfigSchema::MQTT_DEFAULT_HEARTBEAT_INTERVAL}), " \
               'otherwise every average is stored and nothing is left out.',
-          de: 'Das Lebenszeichen-Intervall muss länger sein als das Mittelungsintervall, ' \
+          de: 'Das Lebenszeichen-Intervall muss länger sein als das Mittelungsintervall ' \
+              "(Standard: #{ConfigSchema::MQTT_DEFAULT_HEARTBEAT_INTERVAL}), " \
               'sonst wird jeder Mittelwert gespeichert und nichts ausgelassen.',
         ),
       }

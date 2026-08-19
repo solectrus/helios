@@ -36,10 +36,6 @@ RSpec.describe Surveys::Sensor::Survey do
     end
 
     describe 'MQTT write-behavior page' do
-      # No released mqtt-collector reads these variables, so the page exists
-      # for the development channel alone.
-      before { with_config_yaml('mqtt' => { 'image' => 'ghcr.io/solectrus/mqtt-collector:develop' }) }
-
       let(:write_page) { result['pages'].find { |p| p['name'] == 'p_mqtt_write' } }
       let(:elements) { write_page['elements'].index_by { |e| e['name'] } }
 
@@ -47,13 +43,6 @@ RSpec.describe Surveys::Sensor::Survey do
         expect(write_page['elements'].pluck('name')).to eq(
           %w[mqtt_aggregate_interval mqtt_dedup mqtt_heartbeat_interval],
         )
-      end
-
-      it 'disappears while the collector runs on the stable channel' do
-        with_config_yaml('mqtt' => { 'image' => 'ghcr.io/solectrus/mqtt-collector:latest' })
-
-        expect(write_page).to be_nil
-        expect(find_survey_element(result, 'mqtt_dedup')).to be_nil
       end
 
       # Every gate carries the MQTT source, so switching a sensor to Shelly or
