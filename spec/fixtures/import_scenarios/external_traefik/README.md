@@ -31,6 +31,9 @@ Shape of the donor stack:
   `postgresql:` via image-prefix aliasing.
 - **InfluxDB host-port publication** — the donor publishes `8086`, so
   `influxdb.publish_port: true` is captured and re-exported.
+- **`FORCE_SSL=true` → `dashboard.force_ssl`** — the external Traefik ends the
+  TLS connection, so the flag is captured and re-exported. Without it the login
+  fails behind that proxy.
 - **Single forecast-collector (pvnode)** — provider, API key, the literal
   `FORECAST_AZIMUTH=209` (→ `forecast_pvnode_azimuth1`), declination, kWp.
 - **No false balcony detection** — `inverter_power_1/2/3` all share the `SENEC`

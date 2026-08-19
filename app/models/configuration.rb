@@ -36,13 +36,14 @@ class Configuration # rubocop:disable Metrics/ClassLength
   SENEC_CHARGER_SURVEY_FIELDS = (ConfigSchema::SENEC_CHARGER_FIELDS - %w[image]).freeze
 
   # Survey fields persisted in a section other than the survey's own.
-  # lockup_codeword and trusted_proxy_ranges are Dashboard environment
-  # variables and keep living in the `dashboard` section, but surface in the
-  # security and reverse-proxy surveys for UX grouping. `#setting_data` merges
-  # them in for prefill; `#update` writes them back to their `dashboard` keys.
+  # lockup_codeword, trusted_proxy_ranges and force_ssl are Dashboard
+  # environment variables and keep living in the `dashboard` section, but
+  # surface in the security and reverse-proxy surveys for UX grouping.
+  # `#setting_data` merges them in for prefill; `#update` writes them back to
+  # their `dashboard` keys.
   BORROWED_FIELDS = {
     'system_security' => { 'lockup_codeword' => 'dashboard' },
-    'reverse_proxy' => { 'trusted_proxy_ranges' => 'dashboard' },
+    'reverse_proxy' => { 'trusted_proxy_ranges' => 'dashboard', 'force_ssl' => 'dashboard' },
     # The prices survey configures two services at once: the Tibber collector
     # (its own section) plus, where the preconditions hold, the SENEC charger
     # that consumes the prices. The charger's tuning is routed into its own

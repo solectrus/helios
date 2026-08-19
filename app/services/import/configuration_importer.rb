@@ -160,7 +160,15 @@ module Import
     end
 
     def dashboard_extractor
-      @dashboard_extractor ||= DashboardExtractor.new(@reader)
+      @dashboard_extractor ||= DashboardExtractor.new(@reader, traefik_managed: traefik_managed?)
+    end
+
+    # True when the imported stack runs a Traefik that HELIOS adopts as its own
+    # (an app_domain was recovered from the dashboard router labels). Such a
+    # stack gets FORCE_SSL from the reverse-proxy mode alone, so the dashboard
+    # extractor must not persist the flag a second time.
+    def traefik_managed?
+      reverse_proxy_extractor.section_data&.key?('app_domain') || false
     end
 
     def redis_extractor

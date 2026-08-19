@@ -10,6 +10,8 @@ Anonymized but otherwise untouched.
 
 - **Legacy service names `app:` and `db:`** — renamed to `dashboard:` and
   `postgresql:` on re-export via `SERVICE_IMAGE_PREFIXES` (same as user4).
+- **`FORCE_SSL=true` → `dashboard.force_ssl`** — the Swarm Traefik ends the TLS
+  connection, so the flag is captured and re-exported.
 - **No false-positive balcony detection** — `inverter_power_1/_2/_3` all
   share the `SENEC` measurement (a SENEC V3's three MPPTs); the importer's
   measurement-divergence heuristic recognizes this as one multi-string

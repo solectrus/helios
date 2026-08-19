@@ -5,8 +5,8 @@
     "default": "Custom domain"
   },
   "description": {
-    "de": "Domain & HTTPS über Traefik",
-    "default": "Domain & HTTPS via Traefik"
+    "de": "Domain & HTTPS",
+    "default": "Domain & HTTPS"
   },
   "pages": [
     {
@@ -39,8 +39,8 @@
             {
               "value": "external",
               "text": {
-                "de": "Eigene Domain über externen Traefik (Sonderfall)",
-                "default": "Custom domain via external Traefik (advanced)"
+                "de": "Eigene Domain über externen Reverse Proxy (Sonderfall)",
+                "default": "Custom domain via external reverse proxy (advanced)"
               }
             }
           ]
@@ -87,8 +87,8 @@
           "type": "html",
           "name": "external_hint",
           "html": {
-            "de": "<p>Ein externer Traefik (z.B. im Docker Swarm) routet auf die veröffentlichten Host-Ports dieses Stacks. HELIOS startet hier <strong>keinen</strong> eigenen Traefik; die Routen werden im externen Traefik gepflegt.</p>",
-            "default": "<p>An external Traefik (e.g. in a Docker Swarm) routes to this stack's published host ports. HELIOS does <strong>not</strong> start its own Traefik here; the routes are maintained in the external Traefik.</p>"
+            "de": "<p>Ein externer Reverse Proxy (Traefik, nginx, Apache) routet auf die veröffentlichten Host-Ports dieses Stacks. HELIOS startet hier <strong>keinen</strong> eigenen Traefik; die Routen werden im externen Proxy gepflegt.</p>",
+            "default": "<p>An external reverse proxy (Traefik, nginx, Apache) routes to this stack's published host ports. HELIOS does <strong>not</strong> start its own Traefik here; the routes are maintained in the external proxy.</p>"
           }
         },
         {
@@ -107,11 +107,26 @@
     },
     {
       "name": "p_proxy",
-      "visibleIf": "{mode} <> 'none'",
       "elements": [
+        {
+          "type": "boolean",
+          "name": "force_ssl",
+          "visibleIf": "{mode} <> 'internal'",
+          "title": {
+            "de": "HTTPS erzwingen",
+            "default": "Force HTTPS"
+          },
+          "description": {
+            "de": "Nötig, wenn ein vorgelagerter Reverse Proxy HTTPS bereitstellt. Ohne diese Option schlägt die Anmeldung fehl. Beim internen Traefik ist HTTPS immer aktiv.",
+            "default": "Required if an upstream reverse proxy provides HTTPS. Without this option the login fails. The built-in Traefik always uses HTTPS."
+          },
+          "defaultValue": false,
+          "renderAs": "checkbox"
+        },
         {
           "type": "text",
           "name": "trusted_proxy_ranges",
+          "visibleIf": "{mode} <> 'none'",
           "title": {
             "de": "IP-Bereiche eines vorgelagerten Proxys (optional)",
             "default": "IP ranges of an upstream proxy (optional)"

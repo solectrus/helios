@@ -226,8 +226,8 @@ module Configurations
     # has no required field of its own (bind_ip is optional), so without a
     # persisted marker it would be indistinguishable from `none` and silently
     # collapse on reload. Drop the fields that don't belong to the chosen mode
-    # before saving. Borrowed fields (trusted_proxy_ranges) are routed to their
-    # own section by Configuration#update.
+    # before saving. Borrowed fields (trusted_proxy_ranges, force_ssl) are
+    # routed to their own section by Configuration#update.
     def persist_reverse_proxy(data)
       case data['mode']
       when 'external'
@@ -236,9 +236,17 @@ module Configurations
         @configuration.update('reverse_proxy', data)
       when 'internal'
         data.delete('bind_ip')
+        # The managed Traefik terminates TLS itself, so the flag is implied and
+        # the survey hides it. Blank it, or a value left over from a previous
+        # mode would survive invisibly.
+        data['force_ssl'] = nil
         @configuration.update('reverse_proxy', data)
       else # 'none' (or missing): clear the whole section
-        @configuration.update('reverse_proxy', {})
+        # `force_ssl` survives: a proxy can terminate TLS without HELIOS
+        # knowing a domain, so the survey asks for it in this mode too.
+        # Configuration#update routes it into `dashboard` and empties the
+        # section with what remains.
+        @configuration.update('reverse_proxy', data.slice('force_ssl'))
       end
     end
 

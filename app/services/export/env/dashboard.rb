@@ -5,14 +5,21 @@ module Export
         env.add_section('Dashboard')
         entry('APP_HOST', configuration.system.app_host.presence || 'localhost',
               'Hostname for the SOLECTRUS web interface')
-        entry('FORCE_SSL', Services::Traefik.enabled?(configuration),
-              'Must be FALSE, unless Traefik terminates TLS in front of the dashboard')
+        entry('FORCE_SSL', force_ssl?,
+              'Must be TRUE only when a reverse proxy terminates TLS in front of the dashboard')
         entry('WEB_CONCURRENCY', 0,
               'Number of Puma worker processes (0 = single-process mode, sufficient for most setups)')
         optional_entries(configuration.dashboard)
       end
 
       private
+
+      # TLS in front of the dashboard: implied by the HELIOS-managed Traefik,
+      # otherwise taken from the `force_ssl` flag the reverse-proxy survey sets
+      # for a proxy the user runs themselves (Traefik, nginx, Apache).
+      def force_ssl?
+        Services::Traefik.enabled?(configuration) || configuration.dashboard.force_ssl.present?
+      end
 
       def optional_entries(dashboard)
         optional_entry('CO2_EMISSION_FACTOR', dashboard.co2_emission_factor, 'CO2 emission factor (g/kWh)')

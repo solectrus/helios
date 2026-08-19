@@ -63,16 +63,21 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
 
   # Dashboard-specific fields, mostly emitted as Dashboard environment
   # variables. co2_emission_factor, ui_theme and frame_ancestors are set via
-  # the dashboard mini-surveys; lockup_codeword and trusted_proxy_ranges are
-  # Dashboard env vars stored here too, but surface in the security /
-  # reverse-proxy surveys (see Configuration::BORROWED_FIELDS). `host_port`
-  # controls the published compose port.
+  # the dashboard mini-surveys; lockup_codeword, trusted_proxy_ranges and
+  # force_ssl are Dashboard env vars stored here too, but surface in the
+  # security / reverse-proxy surveys (see Configuration::BORROWED_FIELDS).
+  # `host_port` controls the published compose port.
+  #
+  # `force_ssl` (FORCE_SSL) marks that TLS is terminated by a proxy the user
+  # runs themselves. A HELIOS-managed Traefik implies it, so the field only
+  # carries the cases HELIOS cannot derive: `true` or absent, never `false`.
   DASHBOARD_FIELDS = %w[
     co2_emission_factor
     ui_theme
     frame_ancestors
     lockup_codeword
     trusted_proxy_ranges
+    force_ssl
     host_port
   ].freeze
 

@@ -14,6 +14,7 @@ system:
   secret_key_base: MMMMM
   timezone: Europe/Berlin
 dashboard:
+  force_ssl: true
   frame_ancestors: https://iframetester.com/
   image: ghcr.io/solectrus/solectrus:develop
   trusted_proxy_ranges: 10.0.0.0/8,192.0.2.1

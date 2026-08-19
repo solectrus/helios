@@ -246,6 +246,39 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(response.body).to include('&quot;mode&quot;:&quot;external&quot;')
     end
 
+    # FORCE_SSL is a dashboard variable, so the survey borrows the field into
+    # the `dashboard` section (issue #416).
+    it 'stores force_ssl for the external mode' do
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'external', bind_ip: '10.0.0.5', force_ssl: true }.to_json }
+
+      config = Configuration.current
+      expect(config.dashboard.force_ssl).to be true
+      expect(config.reverse_proxy.force_ssl).to be_blank
+    end
+
+    # A proxy can terminate TLS without HELIOS knowing a domain, so the flag
+    # outlives the section it is edited in.
+    it 'keeps force_ssl for mode none' do
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy', data: { mode: 'none', force_ssl: true }.to_json }
+
+      config = Configuration.current
+      expect(config.dashboard.force_ssl).to be true
+      expect(config.reverse_proxy.app_domain).to be_blank
+    end
+
+    it 'drops force_ssl for the internal mode, which implies HTTPS' do
+      Configuration.current.update('dashboard', { 'force_ssl' => true })
+
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'internal', app_domain: 'demo.example.com', force_ssl: true }.to_json }
+
+      expect(Configuration.current.dashboard.force_ssl).to be_blank
+    end
+
     it 'derives mode=external from a stored bind_ip when editing' do
       Configuration.current.update('reverse_proxy', { 'bind_ip' => '10.0.0.5' })
 

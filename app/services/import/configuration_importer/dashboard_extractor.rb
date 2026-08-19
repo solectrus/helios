@@ -6,8 +6,9 @@ module Import
       # Container port the Rails dashboard always listens on.
       DASHBOARD_CONTAINER_PORT = 3000
 
-      def initialize(reader)
+      def initialize(reader, traefik_managed: false)
         @reader = reader
+        @traefik_managed = traefik_managed
       end
 
       def section_data
@@ -19,11 +20,24 @@ module Import
           'ui_theme' => dashboard_env['UI_THEME'],
           'lockup_codeword' => dashboard_env['LOCKUP_CODEWORD'],
           'trusted_proxy_ranges' => dashboard_env['TRUSTED_PROXY_RANGES'],
+          'force_ssl' => force_ssl(dashboard_env),
           'host_port' => host_port,
         ).compact
       end
 
       private
+
+      # FORCE_SSL=true from a stack that runs its own reverse proxy (Apache,
+      # nginx, an external Traefik). Without it the re-export would drop the
+      # flag and every login through that proxy would fail. A HELIOS-managed
+      # Traefik implies the flag, so it is not persisted there. Returns nil for
+      # every other case so .compact drops the key.
+      def force_ssl(dashboard_env)
+        return nil if @traefik_managed
+        return nil unless ActiveModel::Type::Boolean.new.cast(dashboard_env['FORCE_SSL'])
+
+        true
+      end
 
       # Host-side port the imported compose maps to the dashboard container. Returns
       # nil for the canonical 3000:3000 (HELIOS's default, no need to
