@@ -26,9 +26,8 @@ class ManagedThread
   def start
     @running.make_true
 
-    # rubocop:disable ThreadSafety/NewThread -- background thread is intentional
+    # rubocop:disable-next ThreadSafety/NewThread -- background thread is intentional
     self.thread = Thread.new { run_loop }
-    # rubocop:enable ThreadSafety/NewThread
     thread.name = thread_name
     logger.info("Started (#{thread.name})")
   end
