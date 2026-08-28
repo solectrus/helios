@@ -32,9 +32,8 @@ class BackupRepository
             # navigates back to /backups.
             @thread = Thread.new(filename) do |f| # rubocop:disable ThreadSafety/NewThread
               logger.info("thread starting filename=#{f}")
-              # rubocop:disable Naming/BlockForwarding
+              # rubocop:disable-next Naming/BlockForwarding
               Rails.application.executor.wrap { run(f, **, &on_complete) }
-              # rubocop:enable Naming/BlockForwarding
               logger.info('thread run() returned')
             ensure
               logger.info('thread ensure → broadcast!')
@@ -77,11 +76,10 @@ class BackupRepository
 
         # State guarded by @mutex; the ThreadSafety cop is silenced for
         # this single-flight singleton state.
-        # rubocop:disable ThreadSafety/ClassInstanceVariable
+        # rubocop:disable-next ThreadSafety/ClassInstanceVariable
         def mutex
           @mutex ||= Mutex.new
         end
-        # rubocop:enable ThreadSafety/ClassInstanceVariable
 
         # Captures the latest transfer-manager callback in #current.
         # Skips the cross-thread write when the rounded percent has not

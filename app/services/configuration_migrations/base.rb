@@ -12,7 +12,7 @@ module ConfigurationMigrations
   class Base
     # Class-level state is set once at load time during DSL evaluation and
     # only read afterwards — no concurrent writes.
-    # rubocop:disable ThreadSafety/ClassInstanceVariable
+    # rubocop:disable-next ThreadSafety/ClassInstanceVariable
     class << self
       def inherited(subclass)
         super
@@ -35,7 +35,6 @@ module ConfigurationMigrations
         Array(fields).each { |field| operations << [:move, field, from, to] }
       end
     end
-    # rubocop:enable ThreadSafety/ClassInstanceVariable
 
     def up(data)
       self.class.operations.each do |type, *args|
