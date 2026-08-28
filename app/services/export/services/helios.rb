@@ -36,7 +36,7 @@ module Export
       # dedicated :3999 entrypoint) instead of publishing a plain host port.
       # Holds whenever Traefik is active — including an imported custom Traefik:
       # HELIOS owns its own UI, so it injects the `helios` entrypoint into that
-      # command (see Traefik#traefik_command_with_helios) and derives the
+      # command (see Traefik#effective_traefik_command) and derives the
       # certresolver from it (Traefik.certresolver) rather than leaving the UI
       # on plain HTTP.
       def self.traefik_managed_routing?(configuration)

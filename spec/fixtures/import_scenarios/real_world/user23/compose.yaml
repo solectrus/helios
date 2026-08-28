@@ -406,6 +406,10 @@ services:
     - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
     - "--log.level=INFO"
     - "--entrypoints.helios.address=:3999"
+    - "--entrypoints.web.http.aliasHeadersStrategy=delete"
+    - "--entrypoints.websecure.http.aliasHeadersStrategy=delete"
+    - "--entrypoints.influxdb.http.aliasHeadersStrategy=delete"
+    - "--entrypoints.helios.http.aliasHeadersStrategy=delete"
     environment:
     - TZ
     volumes:

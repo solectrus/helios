@@ -541,6 +541,16 @@ RSpec.describe Export::Builder do
       expect(traefik.config['command']).to include('--log.level=INFO')
     end
 
+    it 'drops aliasing request headers on every entrypoint' do
+      compose = Compose.load
+      traefik = compose.services.find('traefik')
+      expect(traefik.config['command']).to include(
+        '--entrypoints.web.http.aliasHeadersStrategy=delete',
+        '--entrypoints.websecure.http.aliasHeadersStrategy=delete',
+        '--entrypoints.helios.http.aliasHeadersStrategy=delete',
+      )
+    end
+
     it 'removes dashboard ports' do
       compose = Compose.load
       dashboard = compose.services.find('dashboard')
@@ -952,6 +962,119 @@ RSpec.describe Export::Builder do
         command = Compose.load.services.find('traefik').config['command']
         expect(command).to include('--log.level=DEBUG')
         expect(command).not_to include('--log.level=INFO')
+      end
+    end
+
+    # An imported Traefik can name its entrypoints freely. HELIOS drops the
+    # aliasing headers on each of them, not just on its own default names.
+    context 'with an imported Traefik using custom entrypoint names' do
+      before do
+        configuration.update('reverse_proxy', {
+                               'app_domain' => 'solar.example.com',
+                               'command' => [
+                                 '--providers.docker=true',
+                                 '--entrypoints.http.address=:80',
+                                 '--entryPoints.https.address=:443',
+                               ],
+                               'ports' => %w[80:80 443:443],
+                             })
+        described_class.new(configuration).write!
+      end
+
+      it 'drops aliasing headers on the imported entrypoints' do
+        command = Compose.load.services.find('traefik').config['command']
+        expect(command).to include(
+          '--entrypoints.http.http.aliasHeadersStrategy=delete',
+          '--entrypoints.https.http.aliasHeadersStrategy=delete',
+        )
+      end
+    end
+
+    # `aliasHeadersStrategy` arrived in Traefik 3.7. An older Traefik does not
+    # just ignore the unknown flag, it refuses to start ("failed to decode
+    # configuration from flags: field not found"), so HELIOS must not emit it.
+    context 'with a Traefik older than 3.7' do
+      before do
+        configuration.update('reverse_proxy', {
+                               'app_domain' => 'solar.example.com',
+                               'image' => 'traefik:v3.6',
+                             })
+        described_class.new(configuration).write!
+      end
+
+      it 'emits no alias headers strategy' do
+        command = Compose.load.services.find('traefik').config['command']
+        expect(command).to(be_none { |arg| arg.include?('aliasHeadersStrategy') })
+      end
+    end
+
+    # A rolling tag can resolve to an older binary on the host, so HELIOS stays
+    # on the safe side and emits nothing.
+    context 'with a Traefik pinned to a rolling tag' do
+      before do
+        configuration.update('reverse_proxy', {
+                               'app_domain' => 'solar.example.com',
+                               'image' => 'traefik:v3',
+                             })
+        described_class.new(configuration).write!
+      end
+
+      it 'emits no alias headers strategy' do
+        command = Compose.load.services.find('traefik').config['command']
+        expect(command).to(be_none { |arg| arg.include?('aliasHeadersStrategy') })
+      end
+    end
+
+    # Downgrade after a re-import: the captured command still carries the flag
+    # from the newer Traefik it was exported for. Leaving it in would keep the
+    # older Traefik from starting, so HELIOS removes it again.
+    context 'with a downgraded Traefik whose imported command carries the flag' do
+      before do
+        configuration.update('reverse_proxy', {
+                               'app_domain' => 'solar.example.com',
+                               'image' => 'traefik:v3.6',
+                               'command' => [
+                                 '--providers.docker=true',
+                                 '--entrypoints.web.address=:80',
+                                 '--entrypoints.web.http.aliasHeadersStrategy=delete',
+                               ],
+                               'ports' => %w[80:80],
+                             })
+        described_class.new(configuration).write!
+      end
+
+      it 'strips the flag the old Traefik would choke on' do
+        command = Compose.load.services.find('traefik').config['command']
+        expect(command).to include('--entrypoints.web.address=:80')
+        expect(command).to(be_none { |arg| arg.include?('aliasHeadersStrategy') })
+      end
+    end
+
+    # Re-import of HELIOS's own managed output: the captured command already
+    # carries the strategy, so a second export must not append a duplicate.
+    context 'with an imported Traefik that declares the alias headers strategy' do
+      before do
+        configuration.update('reverse_proxy', {
+                               'app_domain' => 'solar.example.com',
+                               'command' => [
+                                 '--providers.docker=true',
+                                 '--entrypoints.web.address=:80',
+                                 '--entrypoints.websecure.address=:443',
+                                 '--entrypoints.web.http.aliasHeadersStrategy=reject',
+                                 '--entrypoints.websecure.http.aliasHeadersStrategy=delete',
+                               ],
+                               'ports' => %w[80:80 443:443],
+                             })
+        described_class.new(configuration).write!
+      end
+
+      it 'preserves the imported strategy and adds no second one' do
+        command = Compose.load.services.find('traefik').config['command']
+        expect(command).to include('--entrypoints.web.http.aliasHeadersStrategy=reject')
+        expect(command).not_to include('--entrypoints.web.http.aliasHeadersStrategy=delete')
+        expect(
+          command.count { |arg| arg.start_with?('--entrypoints.websecure.http.aliasHeadersStrategy') },
+        ).to eq(1)
       end
     end
 

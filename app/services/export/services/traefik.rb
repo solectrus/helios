@@ -5,6 +5,11 @@ module Export
       # custom Traefik configs may name it differently (see .certresolver).
       DEFAULT_CERTRESOLVER = 'letsencrypt'.freeze
 
+      # First Traefik version that knows `aliasHeadersStrategy`. Older versions
+      # abort the start with "field not found", so the flag must never reach
+      # them (see alias_headers_supported?).
+      ALIAS_HEADERS_MIN_VERSION = Gem::Version.new('3.7')
+
       def self.service_name
         'traefik'
       end
@@ -52,8 +57,8 @@ module Export
 
       def to_h
         {
-          image: configuration.reverse_proxy.image.presence || DockerImages.current(:TRAEFIK),
-          command: traefik_command_with_helios,
+          image: traefik_image,
+          command: effective_traefik_command,
           environment: override_or(:environment, nil),
           ports: traefik_ports_with_helios,
           volumes: override_or(:volumes, [
@@ -77,22 +82,79 @@ module Export
 
       # The Traefik `command`, additively ensuring the bits HELIOS needs exist
       # while keeping every imported arg verbatim (idempotent, never appends a
-      # second time):
-      #   - a log level — Traefik's own default is ERROR, leaving the log empty;
-      #     INFO only when no level is declared (an explicit imported level wins)
-      #   - a `helios` entrypoint when HELIOS routes its UI through Traefik
-      def traefik_command_with_helios
-        base = override_or(:command, traefik_command)
-        base += ['--log.level=INFO'] if base.none? { |arg| arg.to_s.start_with?('--log.level') }
-        return base unless helios_routed?
-        return base if base.any? { |arg| arg.to_s.start_with?('--entrypoints.helios.') }
+      # second time).
+      def effective_traefik_command
+        command = override_or(:command, traefik_command)
+        command = with_log_level(command)
+        command = with_helios_entrypoint(command)
+        with_alias_headers_strategy(command)
+      end
 
-        base + ["--entrypoints.helios.address=:#{Helios::HOST_PORT}"]
+      # Traefik's own default log level is ERROR, which leaves the log empty.
+      # INFO only when no level is declared — an explicit imported level wins.
+      def with_log_level(command)
+        return command if command.any? { |arg| arg.to_s.start_with?('--log.level') }
+
+        command + ['--log.level=INFO']
+      end
+
+      def with_helios_entrypoint(command)
+        return command unless helios_routed?
+        return command if command.any? { |arg| arg.to_s.start_with?('--entrypoints.helios.') }
+
+        command + ["--entrypoints.helios.address=:#{Helios::HOST_PORT}"]
+      end
+
+      # Header names that differ only in their separators (`X_Forwarded_For` vs
+      # `X-Forwarded-For`) stay distinct for Traefik, but Rack derives its env
+      # keys from them and folds both onto `HTTP_X_FORWARDED_FOR`. Traefik
+      # forwards such aliases unchanged by default and warns about it for every
+      # entrypoint at startup, so drop them at the edge.
+      #
+      # A Traefik too old for the flag refuses to start when it sees it, so on
+      # those versions HELIOS strips it back out too — a re-imported command can
+      # carry it in from a later version the user has since downgraded from.
+      def with_alias_headers_strategy(command)
+        return command.reject { |arg| alias_headers_strategy?(arg) } unless alias_headers_supported?
+
+        entrypoints(command).reduce(command) do |result, name|
+          next result if result.any? { |arg| alias_headers_strategy?(arg, name) }
+
+          result + ["--entrypoints.#{name}.http.aliasHeadersStrategy=delete"]
+        end
+      end
+
+      # Matches the flag for one entrypoint, or for any of them when no name is
+      # given. Traefik reads its flag names case-insensitively, so do the same.
+      def alias_headers_strategy?(arg, entrypoint = nil)
+        name = entrypoint ? Regexp.escape(entrypoint) : '[^.]+'
+        arg.to_s.match?(/\A--entrypoints\.#{name}\.http\.aliasheadersstrategy/i)
+      end
+
+      # Every entrypoint the command declares, HELIOS-generated or imported.
+      def entrypoints(command)
+        command.filter_map { |arg| arg.to_s[/\A--entrypoints\.([^.]+)\./i, 1] }.uniq
+      end
+
+      def traefik_image
+        configuration.reverse_proxy.image.presence || DockerImages.current(:TRAEFIK)
+      end
+
+      # Only when the pinned tag proves the version is new enough. A rolling tag
+      # (`v3`, `latest`), a digest or an unparsable tag can still resolve to an
+      # older binary on the host, and a Traefik that does not know the flag
+      # refuses to start at all — so stay silent rather than break the stack.
+      def alias_headers_supported?
+        tag = traefik_image.split('/').last.to_s.split(':').last.to_s
+        version = tag[/\Av?(\d+\.\d+(?:\.\d+)?)\z/, 1]
+        return false unless version
+
+        Gem::Version.new(version) >= ALIAS_HEADERS_MIN_VERSION
       end
 
       # Published ports, additively ensuring the HELIOS entrypoint port is bound
       # when routed through Traefik. Same additive/idempotent contract as
-      # traefik_command_with_helios.
+      # effective_traefik_command.
       def traefik_ports_with_helios
         base = override_or(:ports, default_ports)
         return base unless helios_routed?
