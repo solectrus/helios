@@ -54,7 +54,6 @@
     },
     {
       "name": "p_currency",
-      "visibleIfDevelop": "dashboard",
       "elements": [
         {
           "type": "dropdown",

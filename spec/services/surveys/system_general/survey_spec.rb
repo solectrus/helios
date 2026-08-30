@@ -16,29 +16,15 @@ RSpec.describe Surveys::SystemGeneral::Survey do
       expect(find_survey_element(result, 'timezone')).to be_present
     end
 
-    # Only a develop dashboard reads CURRENCY. Asking on the stable channel
-    # would collect a setting that nothing acts on.
     describe 'currency' do
-      let(:develop_dashboard) { { 'dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:develop' } } }
-
-      it 'stays away while the dashboard runs on the stable channel' do
-        expect(section_names(result)).to eq(%w[p_general])
-        expect(find_survey_element(result, 'currency_preset')).to be_nil
-        expect(result['description']['default']).not_to include('currency')
-      end
-
-      it 'offers the preset dropdown and a single free-text field on the development channel' do
-        with_config_yaml(develop_dashboard)
-
+      it 'offers the preset dropdown and a single free-text field' do
         expect(section_names(result)).to eq(%w[p_general p_currency])
         expect(find_survey_element(result, 'currency_preset')).to include('type' => 'dropdown')
         currency = find_survey_element(result, 'currency')
         expect(currency).to include('type' => 'text', 'visibleIf' => "{currency_preset} = 'other'")
       end
 
-      it 'announces itself in the header on the development channel' do
-        with_config_yaml(develop_dashboard)
-
+      it 'announces itself in the header' do
         expect(result['description']['default']).to include('currency')
       end
     end
