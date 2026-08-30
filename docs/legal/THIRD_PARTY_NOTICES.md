@@ -547,7 +547,7 @@ Source: https://github.com/ElMassimo/stimulus-vite-helpers
 
 ## survey-core
 
-- Version: 3.0.0
+- Version: 3.0.2
 - License: MIT
 - Homepage: https://surveyjs.io/
 
@@ -577,7 +577,7 @@ SOFTWARE.
 
 ## survey-js-ui
 
-- Version: 3.0.0
+- Version: 3.0.2
 - License: MIT
 - Homepage: https://surveyjs.io/
 
