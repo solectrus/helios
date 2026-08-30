@@ -33,7 +33,7 @@
     "eslint": "^10.9.1",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
-    "happy-dom": "^20.11.6",
+    "happy-dom": "^20.11.8",
     "playwright": "^1.62.1",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
