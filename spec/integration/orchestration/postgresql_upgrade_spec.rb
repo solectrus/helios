@@ -223,8 +223,15 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
   # `solectrus_production`. Seeding there is what makes the upgrade's own
   # table-count verification (PostgresqlUpgrade::DATABASE) meaningful — against
   # the empty `solectrus` it would compare 0 to 0 and pass no matter what.
+  #
+  # The CREATE runs from `postgres`, never from `solectrus`: initdb always
+  # leaves `postgres` behind, whereas `solectrus` is created one step later by
+  # the entrypoint, between initdb and the handover to the real server. A first
+  # start interrupted in that window (the image restarts on `unless-stopped`)
+  # leaves a cluster that is healthy and accepting TCP connections, logs
+  # "Skipping initialization" and has no `solectrus` — the flake this avoids.
   def seed_data!
-    run_sql!("CREATE DATABASE #{described_class::DATABASE}", database: 'solectrus')
+    run_sql!("CREATE DATABASE #{described_class::DATABASE}", database: 'postgres')
     run_sql!('CREATE TABLE widgets (id serial PRIMARY KEY, name text)')
     run_sql!("INSERT INTO widgets (name) VALUES ('helios')")
   end
