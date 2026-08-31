@@ -121,6 +121,13 @@ module Orchestration
       raw_container.info['Image']
     end
 
+    # The image reference the container was created with, e.g.
+    # `postgres:15-alpine`. Unlike #image this survives the tag moving on to a
+    # newly pulled image, where the container list reports a bare `sha256:`
+    # digest instead. #image stays right for spotting a container that runs an
+    # older build than its service configures — that needs the digest.
+    def configured_image = inspect_data&.dig('Config', 'Image').presence || image
+
     def config_hash
       raw_container.info.dig('Labels', COMPOSE_CONFIG_HASH_LABEL)
     end

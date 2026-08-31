@@ -63,8 +63,8 @@ RSpec.describe Orchestration::ServiceBroadcaster do
       let(:container) { mock_container(running: true, status: :ok) }
       let(:compose_service) { nil }
 
-      it 'returns false without broadcasting' do
-        expect(broadcaster.broadcast(service_name)).to be false
+      it 'reports the unknown service without broadcasting' do
+        expect(broadcaster.broadcast(service_name)).to be(:unknown_service)
       end
     end
 

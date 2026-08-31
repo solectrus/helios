@@ -163,4 +163,94 @@ RSpec.describe Orchestration::EventsListener do
       end
     end
   end
+
+  # Before this, a leftover container whose service compose.yaml no longer
+  # knows produced three failed broadcasts per event, and the next event
+  # started over. The broadcaster now reports it and the sweep removes it.
+  describe 'an event for a service compose.yaml no longer knows' do
+    include ActiveSupport::Testing::TimeHelpers
+
+    let(:listener) { described_class.new }
+    let(:broadcaster) { instance_double(Orchestration::ServiceBroadcaster) }
+
+    let(:event) do
+      instance_double(
+        Orchestration::Event,
+        relevant?: true,
+        helios_operation?: false,
+        service_name: 'db',
+        action: 'start',
+      )
+    end
+
+    # A broadcast falls due BROADCAST_DELAY after its event, and both the
+    # broadcast and the sweep run on the scheduler thread, so a tick past that
+    # delay has to follow the event. Two seconds, because `travel` truncates
+    # to whole seconds and one would land short of the delay often enough.
+    def process_and_tick(times: 1)
+      times.times { listener.send(:process_event, event) }
+      travel(2.seconds) { listener.send(:run_scheduler_tick) }
+    end
+
+    before do
+      # The outer `before` stubs `new` away so no Docker threads spawn; this
+      # block needs a real instance.
+      allow(described_class).to receive(:new).and_call_original
+      allow(Orchestration::ServiceBroadcaster).to receive(:new).and_return(broadcaster)
+      allow(Orchestration::OrphanedServices).to receive(:prune!)
+    end
+
+    context 'when the service is still in compose.yaml' do
+      before { allow(broadcaster).to receive(:broadcast).and_return(true) }
+
+      it 'leaves the container alone' do
+        process_and_tick
+
+        expect(Orchestration::OrphanedServices).not_to have_received(:prune!)
+      end
+    end
+
+    context 'when the service is gone from compose.yaml' do
+      before { allow(broadcaster).to receive(:broadcast).and_return(:unknown_service) }
+
+      it 'sweeps the leftover container away' do
+        process_and_tick
+
+        expect(Orchestration::OrphanedServices).to have_received(:prune!)
+      end
+
+      # Retrying cannot bring the service back into compose.yaml, so the three
+      # failed broadcasts per event have to stop.
+      it 'does not retry the broadcast' do
+        process_and_tick
+        travel(20.seconds) { listener.send(:run_scheduler_tick) }
+
+        expect(broadcaster).to have_received(:broadcast).once
+      end
+
+      # A leftover container under `restart: always` emits events faster than
+      # the sweep returns, so the tick has to coalesce them.
+      it 'sweeps once for a burst of events' do
+        process_and_tick(times: 3)
+
+        expect(Orchestration::OrphanedServices).to have_received(:prune!).once
+      end
+
+      it 'does not sweep again on a tick without a new event' do
+        process_and_tick
+        listener.send(:run_scheduler_tick)
+
+        expect(Orchestration::OrphanedServices).to have_received(:prune!).once
+      end
+
+      # The removal emits stop/die/destroy events of its own, and each of them
+      # would otherwise arm another sweep that can only find the same claim.
+      it 'asks for no sweep while the removal is already queued' do
+        Orchestration::PendingOperations.set('db', :remove)
+        process_and_tick
+
+        expect(Orchestration::OrphanedServices).not_to have_received(:prune!)
+      end
+    end
+  end
 end

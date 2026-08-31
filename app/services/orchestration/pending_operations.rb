@@ -19,6 +19,14 @@ module Orchestration
         OPERATIONS[service_name.to_s] = operation.to_sym
       end
 
+      # Like `set`, but only for the first caller: answers true for the one
+      # that added the name and false while an operation for it is already in
+      # flight. Lets two callers race for the same service — the automatic
+      # orphan sweep and the Remove button — without queueing two jobs.
+      def claim?(service_name, operation)
+        OPERATIONS.put_if_absent(service_name.to_s, operation.to_sym).nil?
+      end
+
       def get(service_name)
         OPERATIONS[service_name.to_s]
       end

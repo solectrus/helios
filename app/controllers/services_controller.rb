@@ -67,7 +67,9 @@ class ServicesController < ApplicationController
   end
 
   def destroy_orphaned_container
-    OrphanedStopJob.perform_later(service_id)
+    # Claims the name, so a click during a running sweep does not queue a
+    # second job — and the sweep keeps its claim until this removal is done.
+    Orchestration::OrphanedServices.remove!(service_id)
     render_pending_row OrphanedServiceRow::Component.new(container:, pending: true)
   end
 

@@ -119,6 +119,7 @@ RSpec.describe 'Services', :with_admin_password do
         status: stoppable ? 'running' : 'exited',
         stoppable?: stoppable,
         image: "#{name}:latest",
+        configured_image: "#{name}:latest",
       )
     end
 

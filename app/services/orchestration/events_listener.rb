@@ -89,6 +89,7 @@ module Orchestration
       @id = SecureRandom.hex(4)
       @mutex = Mutex.new
       @pending_broadcasts = {}
+      @prune_requested = Concurrent::AtomicBoolean.new(false)
       @running = Concurrent::AtomicBoolean.new(false)
       @broadcaster = ServiceBroadcaster.new(listener_id: id)
     end
@@ -127,7 +128,7 @@ module Orchestration
 
     private
 
-    attr_reader :mutex, :pending_broadcasts, :broadcaster
+    attr_reader :mutex, :pending_broadcasts, :prune_requested, :broadcaster
     attr_accessor :listener_thread, :scheduler_thread
 
     def threads_alive?
@@ -220,8 +221,13 @@ module Orchestration
       log_loop_ended('Scheduler')
     end
 
+    # One sweep when the listener takes over: a leftover container that a host
+    # reboot restarted emitted its events long before anyone opened HELIOS, so
+    # waiting for the next one could take until its service crashes again.
+    # refresh! has just refilled the container list, so hand it over.
     def initial_refresh
       Orchestration::StackStatus.refresh!
+      Orchestration::OrphanedServices.prune!(containers: Orchestration::Container.all)
     rescue StandardError => e
       logger.error("[#{id}] Initial refresh: #{e.class}: #{e.message}")
     end
@@ -244,6 +250,7 @@ module Orchestration
 
     def run_scheduler_tick
       process_pending_broadcasts
+      process_pending_prune
     rescue StandardError => e
       logger.error("[#{id}] Scheduler: #{e.class}: #{e.message}")
     end
@@ -257,6 +264,17 @@ module Orchestration
           created: created || existing&.dig(:created),
         }
       end
+    end
+
+    # The sweep lists containers over the Docker socket, so it runs here rather
+    # than on the event thread, where it would stall the event stream and turn
+    # a socket hiccup into a listener reconnect. make_false answers true only
+    # for the tick that takes the request, so a request arriving during the
+    # sweep survives for the next one.
+    def process_pending_prune
+      return unless prune_requested.make_false
+
+      Orchestration::OrphanedServices.prune!
     end
 
     def process_pending_broadcasts
@@ -275,11 +293,25 @@ module Orchestration
     end
 
     def execute_broadcast(service_name, retries: 0, created: false)
-      if broadcaster.broadcast(service_name, created:)
-        log_broadcast(service_name)
-      else
-        retry_broadcast(service_name, retries:)
+      case broadcaster.broadcast(service_name, created:)
+      when :unknown_service then request_prune(service_name)
+      when false then retry_broadcast(service_name, retries:)
+      else log_broadcast(service_name)
       end
+    end
+
+    # A container whose service compose.yaml no longer knows cannot be drawn as
+    # a row, and a retry cannot change that — it is a leftover from a service
+    # rename, which `restart: always` brings back after every host reboot. So
+    # ask for the sweep that removes it instead of retrying three times and
+    # starting over with its next event.
+    def request_prune(service_name)
+      # The job is already on its way, and the stop/die/destroy events it emits
+      # would otherwise arm one fruitless sweep per tick until it is done.
+      return if Orchestration::PendingOperations.get(service_name) == :remove
+
+      logger.warn("[#{id}] #{service_name} is unknown to compose.yaml, sweeping")
+      prune_requested.make_true
     end
 
     def retry_broadcast(service_name, retries:)

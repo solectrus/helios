@@ -27,7 +27,10 @@ module Orchestration
       container = Orchestration::Container.find(service_name)
       compose_service = ::Compose.load.services.find(service_name)
 
-      return false unless compose_service
+      # Distinct from the `false` a failed broadcast returns: this one cannot
+      # succeed on a retry either. The container is a leftover whose service
+      # compose.yaml no longer knows, so EventsListener sweeps it away instead.
+      return :unknown_service unless compose_service
 
       # Only rendering + broadcasting need executor (auto-loading, DB connections)
       Rails.application.executor.wrap do

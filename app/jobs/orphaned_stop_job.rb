@@ -10,6 +10,10 @@ class OrphanedStopJob < ApplicationJob
   ensure
     Orchestration::Container.invalidate_cache
     Orchestration::StackStatus.refresh!
+    # Frees the name for the automatic removal again. Last, because the removal
+    # above emits stop/die/destroy events: clearing before the refresh lets one
+    # of them claim the name again and queue a second job.
+    Orchestration::PendingOperations.clear(service_name)
   end
 
   private
