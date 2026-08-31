@@ -63,6 +63,7 @@ module Compose
       healthcheck
       ulimits
       restart
+      stop_grace_period
       logging
     ].freeze
 

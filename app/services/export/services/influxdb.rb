@@ -70,6 +70,7 @@ module Export
           volumes: influxdb_volumes,
           ulimits: influxdb_ulimits,
           restart: 'unless-stopped',
+          stop_grace_period: STOP_GRACE_PERIOD,
           healthcheck: healthcheck('CMD', 'influx', 'ping'),
         }
 

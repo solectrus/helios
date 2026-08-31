@@ -126,6 +126,7 @@ services:
         soft: 65536
         hard: 65536
     restart: unless-stopped
+    stop_grace_period: 60s
     logging:
       driver: json-file
       options:
@@ -156,6 +157,7 @@ services:
       - CMD-SHELL
       - pg_isready -U postgres
     restart: unless-stopped
+    stop_grace_period: 60s
     logging:
       driver: json-file
       options:
@@ -325,6 +327,7 @@ services:
     - WATCHTOWER_CLEANUP
     - WATCHTOWER_POLL_INTERVAL
     - WATCHTOWER_SCOPE
+    - WATCHTOWER_TIMEOUT
     volumes:
     - "/var/run/docker.sock:/var/run/docker.sock"
     labels:

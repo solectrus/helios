@@ -368,6 +368,7 @@ watchtower:
     - WATCHTOWER_POLL_INTERVAL
     - WATCHTOWER_SCHEDULE
     - WATCHTOWER_SCOPE
+    - WATCHTOWER_TIMEOUT
 
 helios:
   upstream: this app (config/application.rb, config/environments/production.rb)

@@ -31,6 +31,7 @@ module Export
           environment: postgres_environment,
           volumes: [bind_mount(container_data_path)],
           restart: 'unless-stopped',
+          stop_grace_period: STOP_GRACE_PERIOD,
           healthcheck: healthcheck('CMD-SHELL', 'pg_isready -U postgres'),
         }
       end

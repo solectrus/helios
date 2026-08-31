@@ -19,7 +19,8 @@ module Export
           # Either the poll interval or the cron schedule — never both, see
           # WatchtowerSchedule. TZ is what makes the cron fire in local time.
           environment: ['TZ', WatchtowerSchedule.new(configuration).env_key,
-                        'WATCHTOWER_SCOPE', 'WATCHTOWER_CLEANUP'],
+                        'WATCHTOWER_SCOPE', 'WATCHTOWER_CLEANUP',
+                        'WATCHTOWER_TIMEOUT'],
           volumes: ['/var/run/docker.sock:/var/run/docker.sock'],
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD', '/watchtower', '--health-check', start_period: '10s'),

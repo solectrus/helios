@@ -47,6 +47,18 @@ module Export
         []
       end
 
+      # Seconds Docker waits after the stop signal before it sends SIGKILL.
+      # Docker's default of 10s is too short for the databases: PostgreSQL
+      # treats its stop signal as a fast shutdown and writes a checkpoint
+      # first, InfluxDB flushes its WAL into TSM files. On slow storage with
+      # a long history either can exceed 10s, and the SIGKILL then leaves a
+      # data directory that only crash recovery can open. The PostgreSQL image
+      # documents the same recommendation next to its own `STOPSIGNAL SIGINT`.
+      #
+      # Watchtower ignores `stop_grace_period` and uses WATCHTOWER_TIMEOUT
+      # instead, so `Export::Env::Watchtower` emits this same value.
+      STOP_GRACE_PERIOD = '60s'.freeze
+
       HEALTHCHECK_DEFAULTS = {
         interval: '10s',
         timeout: '5s',
