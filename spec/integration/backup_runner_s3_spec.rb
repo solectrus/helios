@@ -39,7 +39,7 @@ RSpec.describe BackupRunner, :docker_stack do
 
   after do
     compose_down!(data_path)
-    remove_data_path!(data_path, cleanup_image: described_class::IMAGE)
+    clear_data_path!(data_path, cleanup_image: described_class::IMAGE)
   end
 
   describe '.start (real backup uploaded to S3)' do

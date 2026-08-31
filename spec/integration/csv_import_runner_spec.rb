@@ -35,7 +35,7 @@ RSpec.describe CsvImportRunner, :docker_stack do
 
   after do
     compose_down!(data_path)
-    remove_data_path!(data_path, cleanup_image: described_class::IMAGE)
+    clear_data_path!(data_path, cleanup_image: described_class::IMAGE)
   end
 
   describe '.start (real csv-importer against a live stack)' do

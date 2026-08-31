@@ -35,7 +35,7 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
 
   after do
     compose_down!(data_path)
-    remove_data_path!(data_path, cleanup_image: starting_image)
+    clear_data_path!(data_path, cleanup_image: starting_image)
   end
 
   describe '.call (real major-version upgrade)' do
