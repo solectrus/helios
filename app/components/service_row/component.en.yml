@@ -14,6 +14,9 @@ en:
   running: 'Active'
   healthy: 'Active (healthy)'
   unhealthy: 'Unhealthy'
+  # The space before the noun is a non-breaking space (U+00A0). It keeps the
+  # count and its noun on one line when the tooltip wraps.
+  crash_looping: 'Restarting repeatedly (%{restarts} attempts)'
   statuses:
     created: 'Created'
     restarting: 'Restarting...'

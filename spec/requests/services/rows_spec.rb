@@ -1,4 +1,6 @@
 RSpec.describe 'Services::Rows', :with_admin_password do
+  after { Orchestration::ErrorStore.clear_all }
+
   before do
     login
     with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
@@ -21,18 +23,20 @@ RSpec.describe 'Services::Rows', :with_admin_password do
     service
   end
 
-  def mock_container(service_name, running: true, status: nil, public_port: nil)
-    effective_status = status || (running ? 'running' : 'exited')
+  def mock_container(service_name, running: true, **overrides)
     instance_double(
       Orchestration::Container,
       service_name: service_name,
       running?: running,
-      status: effective_status,
+      status: running ? 'running' : 'exited',
       health_status: nil,
       version: '1.0.0',
-      public_port:,
+      public_port: nil,
       stoppable?: running,
       image: "#{service_name}:latest",
+      restart_count: 0,
+      crash_looping?: false,
+      **overrides,
     )
   end
 
@@ -46,6 +50,75 @@ RSpec.describe 'Services::Rows', :with_admin_password do
 
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('influxdb')
+    end
+
+    # A container Docker keeps restarting reports the same `restarting` state
+    # as one that is starting normally, so the row showed the green start
+    # spinner for as long as the service kept crashing.
+    it 'marks a crash looping service as broken instead of starting' do
+      mock_compose_service('postgresql')
+      container = mock_container('postgresql', running: false, status: 'restarting',
+                                               crash_looping?: true, restart_count: 12)
+      allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(container)
+
+      get service_row_path(service_id: 'postgresql'), headers: turbo_frame_headers
+
+      aggregate_failures do
+        expect(response.body).to include("Restarting repeatedly (12\u00A0attempts)")
+        expect(response.body).to include('bg-error')
+        expect(response.body).to include('motion-safe:animate-ping')
+        expect(response.body).not_to include('loading-spinner')
+      end
+    end
+
+    # Docker reports a looping container as `running` for as long as it
+    # survives each attempt, and its healthcheck can pass in that window.
+    it 'marks a crash looping service as broken while it is briefly up' do
+      mock_compose_service('postgresql')
+      container = mock_container('postgresql', health_status: 'healthy',
+                                               crash_looping?: true, restart_count: 12)
+      allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(container)
+
+      get service_row_path(service_id: 'postgresql'), headers: turbo_frame_headers
+
+      aggregate_failures do
+        expect(response.body).to include("Restarting repeatedly (12\u00A0attempts)")
+        expect(response.body).to include('bg-error')
+        expect(response.body).not_to include('fa-check')
+      end
+    end
+
+    # A failed compose run leaves an error on the service. While its
+    # container is between two restart attempts, the row read that state as
+    # a normal start and showed the error text in a green tooltip.
+    it 'marks a service with a stored error as broken while it restarts' do
+      mock_compose_service('postgresql')
+      container = mock_container('postgresql', running: false, status: 'restarting')
+      allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(container)
+      Orchestration::ErrorStore.set('postgresql', 'dependency failed to start')
+
+      get service_row_path(service_id: 'postgresql'), headers: turbo_frame_headers
+
+      aggregate_failures do
+        expect(response.body).to include('dependency failed to start')
+        expect(response.body).to include('bg-error')
+        expect(response.body).to include('tooltip-error')
+        expect(response.body).not_to include('loading-spinner')
+        expect(response.body).not_to include('animate-ping')
+      end
+    end
+
+    it 'keeps the start spinner while a service is only starting' do
+      mock_compose_service('postgresql')
+      container = mock_container('postgresql', running: false, status: 'restarting', restart_count: 1)
+      allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(container)
+
+      get service_row_path(service_id: 'postgresql'), headers: turbo_frame_headers
+
+      aggregate_failures do
+        expect(response.body).to include('loading-spinner')
+        expect(response.body).not_to include('Restarting repeatedly')
+      end
     end
 
     it 'renders the service row component for a stopped service' do

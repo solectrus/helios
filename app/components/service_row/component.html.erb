@@ -30,7 +30,17 @@
         <%# Full content %>
         <div id="<%= dom_id %>-status" class="<%= tooltip_class %>" data-tip="<%= status_label %>">
           <div class="flex size-5 items-center justify-center">
-            <% if healthcheck_passing? || healthcheck_waiting? %>
+            <% if crash_looping? %>
+              <%#
+                A service caught in a restart loop is not simply broken and
+                idle, it keeps trying. The pulsing ring says that, and tells
+                it apart from the plain red dot of a service that just sits
+                there. Held back when the viewer asks for reduced motion.
+              %>
+              <span class="bg-error relative inline-block size-5 rounded-full">
+                <span class="bg-error absolute inset-0 rounded-full opacity-75 motion-safe:animate-ping"></span>
+              </span>
+            <% elsif healthcheck_passing? || healthcheck_waiting? %>
               <span class="bg-success flex size-5 items-center justify-center rounded-full">
                 <% if healthcheck_passing? %>
                   <i class="fa-solid fa-check text-success-content text-xs"></i>

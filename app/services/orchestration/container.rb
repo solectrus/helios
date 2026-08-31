@@ -19,6 +19,19 @@ module Orchestration
     # block briefly and then read the freshly populated cache.
     LIST_FETCH_MUTEX = Mutex.new
 
+    # Restarts by the restart policy before a container counts as crash
+    # looping. Docker holds a failing container in `restarting` between
+    # attempts, so one or two are still a normal recovery — three in a row
+    # mean the service never gets past its own start.
+    CRASH_LOOP_RESTARTS = 3
+
+    # How long a container has to stay up after a restart before it counts as
+    # recovered. Docker's restart backoff starts at 100 ms and only grows, so
+    # a service that dies a second or two into its boot spends most of the
+    # first minute in `running` — long enough to look healthy while it is in
+    # fact looping.
+    CRASH_LOOP_SETTLED = 60.seconds
+
     class << self
       def all(project: nil)
         with_docker_connection(project:) do |proj|
@@ -135,6 +148,28 @@ module Orchestration
 
     def stoppable?
       %w[running restarting paused].include?(status)
+    end
+
+    # How often the restart policy has brought this container back after it
+    # exited. A container started by hand stays at zero, so the count is what
+    # separates a service that is booting from one that keeps dying.
+    def restart_count
+      inspect_data&.dig('RestartCount').to_i
+    end
+
+    # Container is caught in a restart loop rather than merely starting up.
+    # Docker reports both as `restarting`, which is why the count has to
+    # decide: a single failed start is a hiccup the next attempt may well
+    # fix, while a service that has died this often needs the user to look
+    # at its log.
+    #
+    # A looping container is not always caught between two attempts. Docker
+    # reports it as `running` for as long as it survives each time, so a
+    # restarted container counts as looping until it has stayed up.
+    def crash_looping?
+      return false if restart_count < CRASH_LOOP_RESTARTS
+
+      status == 'restarting' || (running? && !settled_after_restart?)
     end
 
     def effective_status
@@ -273,6 +308,18 @@ module Orchestration
     #   still surface fresh data on the next read.
     # Catches all Docker/network errors to prevent cascade failures when a
     # single container is temporarily unreachable.
+    # Whether the container has been up long enough since its last restart to
+    # count as recovered. An unparsable or missing start time reads as
+    # settled, so a container is never flagged on a value we cannot read.
+    def settled_after_restart?
+      started = inspect_data&.dig('State', 'StartedAt')
+      return true unless started
+
+      Time.current - Time.zone.parse(started) >= CRASH_LOOP_SETTLED
+    rescue ArgumentError, TypeError
+      true
+    end
+
     def inspect_data
       return @inspect_data if instance_variable_defined?(:@inspect_data)
 

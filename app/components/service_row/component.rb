@@ -121,12 +121,15 @@ module ServiceRow
         color = start_pending? ? 'text-success' : 'text-base-content/30'
         return "loading loading-spinner loading-sm #{color}"
       end
+
+      dot = 'inline-block size-5 rounded-full'
+      # A crash loop never reaches this: the template draws its own pulsing
+      # dot before it asks for this class.
+      return "#{dot} bg-error" if error?
+
       if status_starting?
         return 'loading loading-spinner loading-sm text-success'
       end
-
-      dot = 'inline-block size-5 rounded-full'
-      return "#{dot} bg-error" if error?
 
       "#{dot} #{indicator_class}"
     end
@@ -135,6 +138,7 @@ module ServiceRow
       return pending_label if pending
       return error_message if error?
       return t('.not_created') if container.nil?
+      return crash_loop_label if crash_looping?
 
       running? ? running_status_label : container_status_label
     end
@@ -160,11 +164,30 @@ module ServiceRow
     # start spinner and the green check mark. Pending/error states take
     # precedence (spinner/red dot).
     def healthcheck_waiting?
-      healthcheck_starting? && !pending && !error?
+      healthcheck_starting? && health_reportable?
     end
 
     def healthcheck_passing?
-      running? && health == 'healthy' && !pending && !error?
+      running? && health == 'healthy' && health_reportable?
+    end
+
+    # Whether the container's own health is what the row should report. An
+    # operation in flight, a stored error and a restart loop all describe the
+    # service better than a healthcheck that happens to pass between two
+    # crashes.
+    def health_reportable?
+      !pending && !error? && !crash_looping?
+    end
+
+    # Container keeps dying and being restarted instead of coming up. Docker
+    # labels that `restarting` just like a normal start, so without this a
+    # service that has been failing for an hour shows the same green spinner
+    # as one that started a second ago. A pending operation takes precedence:
+    # the user just asked for it and the restarts are its own doing.
+    def crash_looping?
+      return false if pending
+
+      container&.crash_looping?
     end
 
     def tooltip_class
@@ -183,10 +206,10 @@ module ServiceRow
     # Single source of truth for the status color, shared by the dot and its
     # tooltip. Precedence mirrors how the dot is rendered in the template.
     def status_color
-      return :success if healthcheck_passing? || healthcheck_waiting?
       return start_pending? ? :success : :muted if pending
+      return :error if error? || crash_looping?
+      return :success if healthcheck_passing? || healthcheck_waiting?
       return :success if status_starting?
-      return :error if error?
 
       container_color
     end
@@ -389,6 +412,10 @@ module ServiceRow
       return t('.unknown') unless status
 
       t(".statuses.#{status}", default: status.capitalize)
+    end
+
+    def crash_loop_label
+      t('.crash_looping', restarts: container.restart_count)
     end
   end
 end

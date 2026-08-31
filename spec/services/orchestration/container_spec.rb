@@ -106,6 +106,65 @@ RSpec.describe Orchestration::Container do
     end
   end
 
+  describe '#crash_looping?' do
+    def container_in_state(state, restart_count, started_at: 1.hour.ago)
+      raw = instance_double(
+        Docker::Container,
+        id: 'abc123def456',
+        info: mock_container.info.merge('State' => state),
+        json: {
+          'RestartCount' => restart_count,
+          'State' => {
+            'StartedAt' => started_at.iso8601(9),
+            'Health' => {
+              'Status' => 'starting',
+            },
+          },
+        },
+      )
+      described_class.new(raw)
+    end
+
+    it 'reports a container that waits between attempts as crash looping' do
+      subject = container_in_state('restarting', 7)
+
+      aggregate_failures do
+        expect(subject.restart_count).to eq(7)
+        expect(subject).to be_crash_looping
+      end
+    end
+
+    # The first restarts after a crash are indistinguishable from a slow
+    # start, so they must keep the ordinary starting indicator.
+    it 'does not report the first restarts as crash looping' do
+      expect(container_in_state('restarting', 1)).not_to be_crash_looping
+    end
+
+    # Docker's restart backoff starts at 100 ms, so a service that dies two
+    # seconds into its boot is reported as `running` most of the time. Read
+    # literally, that turns a dying service green.
+    it 'reports a freshly restarted running container as crash looping' do
+      subject = container_in_state('running', 7, started_at: 2.seconds.ago)
+
+      expect(subject).to be_crash_looping
+    end
+
+    # A container that crash looped an hour ago but recovered keeps its
+    # restart count forever — only a recent restart makes it a loop.
+    it 'does not report a container that stayed up as crash looping' do
+      subject = container_in_state('running', 7)
+
+      aggregate_failures do
+        expect(subject.restart_count).to eq(7)
+        expect(subject).not_to be_crash_looping
+      end
+    end
+
+    it 'treats a missing restart count as zero' do
+      expect(container.restart_count).to eq(0)
+    end
+  end
+
   describe '#health_status' do
     def container_with_health(status, failing_streak, state: 'running', log: [])
       raw = instance_double(
