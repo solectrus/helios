@@ -51,13 +51,19 @@ module Orchestration
         previous_image = Orchestration::Container.find(service)&.image
         pull(service:)
         run_compose('down', service.to_s)
-        result = run_compose_with_conflict_recovery('up', '--no-build', '-d', service.to_s)
+        result = run_compose_with_conflict_recovery('up', '--no-build', '--remove-orphans', '-d', service.to_s)
         ImageCleanup.run(previous_image:)
         result
       end
 
+      # --remove-orphans for the same reason as #up, and it matters most here:
+      # a rename leaves the old container running under its old name, and this
+      # is where its replacement comes into being. For a database the two would
+      # write to the same directory and destroy each other's data. Compose
+      # removes the leftover before it starts the replacement, so the two never
+      # run side by side.
       def start(*services)
-        args = %w[up --no-build -d]
+        args = %w[up --no-build --remove-orphans -d]
         args.concat(services.flatten.compact)
         run_compose_with_conflict_recovery(*args)
       end
@@ -73,7 +79,7 @@ module Orchestration
         names = services.flatten.compact
         return if names.empty?
 
-        run_compose_with_conflict_recovery('up', '--no-build', '--remove-orphans', '-d', *names)
+        start(*names)
       end
 
       def stop(service)

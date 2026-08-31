@@ -247,6 +247,50 @@ RSpec.describe Orchestration::Runner do
     end
   end
 
+  describe '.start' do
+    before { skip_without_docker }
+
+    # The import renames services ('db' to 'postgresql'), and until the
+    # replacement is started the old container keeps running under its old
+    # name. Both mount the same data directory, and two PostgreSQL clusters on
+    # one directory destroy the data (discussion #5878). Compose removes the
+    # leftover before it starts the replacement, so the two never run at once.
+    context 'when a rename left the old container running' do
+      before do
+        write_compose(<<~YAML)
+          db:
+            image: alpine:latest
+            command: sleep 30
+          keeper:
+            image: alpine:latest
+            command: sleep 30
+        YAML
+        system(
+          'docker compose up -d',
+          chdir: data_path,
+          out: File::NULL,
+          err: File::NULL,
+        )
+        write_compose(<<~YAML)
+          postgresql:
+            image: alpine:latest
+            command: sleep 30
+          keeper:
+            image: alpine:latest
+            command: sleep 30
+        YAML
+      end
+
+      after { compose_down }
+
+      it 'removes the old container while starting the new one' do
+        described_class.start('postgresql')
+
+        expect(running_services).to contain_exactly('postgresql', 'keeper')
+      end
+    end
+  end
+
   describe '.down' do
     before { skip_without_docker }
 
@@ -334,9 +378,65 @@ RSpec.describe Orchestration::Runner do
       end
     end
 
+    # Recreating the replacement of a renamed service is the other way its
+    # container comes into being, so it clears the leftover just as #start does.
+    context 'when a rename left the old container running' do
+      before do
+        write_compose(<<~YAML)
+          db:
+            image: alpine:latest
+            command: sleep 30
+          keeper:
+            image: alpine:latest
+            command: sleep 30
+        YAML
+        system(
+          'docker compose up -d',
+          chdir: data_path,
+          out: File::NULL,
+          err: File::NULL,
+        )
+        write_compose(<<~YAML)
+          postgresql:
+            image: alpine:latest
+            pull_policy: never
+            command: sleep 30
+          keeper:
+            image: alpine:latest
+            command: sleep 30
+        YAML
+      end
+
+      after { compose_down }
+
+      it 'removes the old container while creating the new one' do
+        described_class.recreate('postgresql')
+
+        expect(running_services).to contain_exactly('postgresql', 'keeper')
+      end
+    end
+
     def image_exists?(image)
       system('docker', 'image', 'inspect', image, out: File::NULL, err: File::NULL)
     end
+  end
+
+  def write_compose(services)
+    File.write(
+      File.join(data_path, 'compose.yaml'),
+      "name: helios-test\nservices:\n#{services.indent(2)}",
+    )
+  end
+
+  def compose_down
+    system('docker compose down -v', chdir: data_path, out: File::NULL, err: File::NULL)
+  end
+
+  # Service names of the containers currently running for the test project.
+  def running_services
+    format = '{{.Label "com.docker.compose.service"}}'
+    `docker ps --filter label=com.docker.compose.project=helios-test --format '#{format}'`
+      .split("\n")
   end
 
   describe '.ps' do
