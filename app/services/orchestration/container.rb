@@ -304,17 +304,6 @@ module Orchestration
 
     attr_reader :raw_container
 
-    # Inspect data is cached at two levels:
-    # - Per-instance memoization for repeated reads inside one render
-    #   (health_status + public_port + version on the same container).
-    # - Cross-request via Rails.cache (CACHE_TTL, versioned by INSPECT_GENERATION_KEY)
-    #   so the N concurrent row requests triggered by lazy-loaded /services
-    #   share one inspect per container instead of each hitting the Docker API.
-    #   `Container.invalidate_cache` bumps the generation, so events that mutate
-    #   state without changing the container ID (start/stop/health transitions)
-    #   still surface fresh data on the next read.
-    # Catches all Docker/network errors to prevent cascade failures when a
-    # single container is temporarily unreachable.
     # Whether the container has been up long enough since its last restart to
     # count as recovered. An unparsable or missing start time reads as
     # settled, so a container is never flagged on a value we cannot read.
@@ -327,6 +316,17 @@ module Orchestration
       true
     end
 
+    # Inspect data is cached at two levels:
+    # - Per-instance memoization for repeated reads inside one render
+    #   (health_status + public_port + version on the same container).
+    # - Cross-request via Rails.cache (CACHE_TTL, versioned by INSPECT_GENERATION_KEY)
+    #   so the N concurrent row requests triggered by lazy-loaded /services
+    #   share one inspect per container instead of each hitting the Docker API.
+    #   `Container.invalidate_cache` bumps the generation, so events that mutate
+    #   state without changing the container ID (start/stop/health transitions)
+    #   still surface fresh data on the next read.
+    # Catches all Docker/network errors to prevent cascade failures when a
+    # single container is temporarily unreachable.
     def inspect_data
       return @inspect_data if instance_variable_defined?(:@inspect_data)
 
