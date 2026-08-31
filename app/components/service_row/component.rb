@@ -168,7 +168,12 @@ module ServiceRow
     end
 
     def tooltip_class
-      base = 'tooltip tooltip-right xl:tooltip-left'
+      # The status dot sits at the left edge of the card, so below 2xl a
+      # tooltip opening to the left would run past the window edge. From 2xl
+      # the centered layout leaves room beside the card — but only 241px at
+      # exactly 1536px, less than a long label needs (a restart loop names
+      # its count). So the left variant caps the width and wraps instead.
+      base = 'tooltip tooltip-right 2xl:tooltip-left 2xl:before:max-w-56'
       # Long error messages need to wrap and stay readable; short status
       # labels keep the default tooltip size to match the other tooltips.
       base += ' before:max-w-2xs before:text-left before:text-xs before:break-words' if error?
