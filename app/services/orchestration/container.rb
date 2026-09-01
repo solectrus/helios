@@ -25,7 +25,7 @@ module Orchestration
     # mean the service never gets past its own start.
     CRASH_LOOP_RESTARTS = 3
 
-    # How long a container has to stay up after a restart before it counts as
+    # How long a container has to stay free of exits before it counts as
     # recovered. Docker's restart backoff starts at 100 ms and only grows, so
     # a service that dies a second or two into its boot spends most of the
     # first minute in `running` — long enough to look healthy while it is in
@@ -158,8 +158,11 @@ module Orchestration
     end
 
     # How often the restart policy has brought this container back after it
-    # exited. A container started by hand stays at zero, so the count is what
-    # separates a service that is booting from one that keeps dying.
+    # exited. Docker keeps the count over the life of the container: a start
+    # out of `restarting` carries it over, and only a start out of `exited`
+    # clears it. On its own the count therefore says that the container died
+    # this often at some point, never that it is dying now. #crash_looping? is
+    # what adds the "now".
     def restart_count
       inspect_data&.dig('RestartCount').to_i
     end
@@ -171,12 +174,12 @@ module Orchestration
     # at its log.
     #
     # A looping container is not always caught between two attempts. Docker
-    # reports it as `running` for as long as it survives each time, so a
-    # restarted container counts as looping until it has stayed up.
+    # reports it as `running` for as long as it survives each time, so the
+    # running half asks how long ago the container last died.
     def crash_looping?
       return false if restart_count < CRASH_LOOP_RESTARTS
 
-      status == 'restarting' || (running? && !settled_after_restart?)
+      status == 'restarting' || (running? && died_recently?)
     end
 
     def effective_status
@@ -304,16 +307,29 @@ module Orchestration
 
     attr_reader :raw_container
 
-    # Whether the container has been up long enough since its last restart to
-    # count as recovered. An unparsable or missing start time reads as
-    # settled, so a container is never flagged on a value we cannot read.
-    def settled_after_restart?
-      started = inspect_data&.dig('State', 'StartedAt')
-      return true unless started
+    # Whether the container's last exit is recent enough to still belong to a
+    # loop. It reads `FinishedAt`, the end of the previous run, and not
+    # `StartedAt`, the beginning of the current one, because only the exit
+    # says that the container is still dying.
+    #
+    # The two part company after a host reboot: the daemon brings the stack up
+    # through the restart policy, which moves `StartedAt` to boot time and
+    # leaves `RestartCount` at whatever an earlier loop left it. Read off
+    # `StartedAt`, every service that ever looped would come back from a
+    # reboot flagged for its first minute. `FinishedAt` stays on the exit
+    # before the shutdown and reads as long recovered. In a real loop the two
+    # are milliseconds apart, so nothing is lost by asking the exit instead.
+    #
+    # A container that never exited carries `0001-01-01T00:00:00Z` and so
+    # reads as long recovered. A missing or unparsable time reads the same
+    # way, so a container is never flagged on a value we cannot read.
+    def died_recently?
+      finished = inspect_data&.dig('State', 'FinishedAt')
+      return false unless finished
 
-      Time.current - Time.zone.parse(started) >= CRASH_LOOP_SETTLED
+      Time.current - Time.zone.parse(finished) < CRASH_LOOP_SETTLED
     rescue ArgumentError, TypeError
-      true
+      false
     end
 
     # Inspect data is cached at two levels:

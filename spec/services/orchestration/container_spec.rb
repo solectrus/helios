@@ -107,7 +107,8 @@ RSpec.describe Orchestration::Container do
   end
 
   describe '#crash_looping?' do
-    def container_in_state(state, restart_count, started_at: 1.hour.ago)
+    def container_in_state(state, restart_count, finished_at: 1.hour.ago,
+                           started_at: 1.hour.ago)
       raw = instance_double(
         Docker::Container,
         id: 'abc123def456',
@@ -116,9 +117,8 @@ RSpec.describe Orchestration::Container do
           'RestartCount' => restart_count,
           'State' => {
             'StartedAt' => started_at.iso8601(9),
-            'Health' => {
-              'Status' => 'starting',
-            },
+            'FinishedAt' => finished_at.iso8601(9),
+            'Health' => { 'Status' => 'starting' },
           },
         },
       )
@@ -143,14 +143,16 @@ RSpec.describe Orchestration::Container do
     # Docker's restart backoff starts at 100 ms, so a service that dies two
     # seconds into its boot is reported as `running` most of the time. Read
     # literally, that turns a dying service green.
-    it 'reports a freshly restarted running container as crash looping' do
-      subject = container_in_state('running', 7, started_at: 2.seconds.ago)
+    it 'reports a running container that just died as crash looping' do
+      subject =
+        container_in_state('running', 7, finished_at: 2.seconds.ago,
+                                         started_at: 1.second.ago)
 
       expect(subject).to be_crash_looping
     end
 
     # A container that crash looped an hour ago but recovered keeps its
-    # restart count forever — only a recent restart makes it a loop.
+    # restart count forever — only a recent exit makes it a loop.
     it 'does not report a container that stayed up as crash looping' do
       subject = container_in_state('running', 7)
 
@@ -158,6 +160,18 @@ RSpec.describe Orchestration::Container do
         expect(subject.restart_count).to eq(7)
         expect(subject).not_to be_crash_looping
       end
+    end
+
+    # What a host reboot leaves behind: the restart policy brings the container
+    # up again, so StartedAt is seconds old while RestartCount still carries
+    # the loop it survived weeks ago. Read off StartedAt, every service that
+    # ever looped would come back from a reboot flagged.
+    it 'does not report a rebooted container with an old count as crash looping' do
+      subject =
+        container_in_state('running', 7, finished_at: 1.hour.ago,
+                                         started_at: 2.seconds.ago)
+
+      expect(subject).not_to be_crash_looping
     end
 
     it 'treats a missing restart count as zero' do
