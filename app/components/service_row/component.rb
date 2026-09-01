@@ -280,8 +280,27 @@ module ServiceRow
       @recommended_image ||= DockerImages.recommended_for(service_name)
     end
 
+    # Why the update button is highlighted. The button does the same thing in
+    # every case, but the reason matters to the reader: a repulled image means
+    # the service itself moved to a newer version, a changed configuration only
+    # means the container comes back with the current settings.
+    def recreate_reason
+      return @recreate_reason if defined?(@recreate_reason)
+
+      @recreate_reason =
+        if outdated_image?
+          restart_pending? ? :image_and_config : :image
+        elsif restart_pending?
+          :config
+        end
+    end
+
     def recreate_warning?
-      restart_pending? || outdated_image?
+      recreate_reason.present?
+    end
+
+    def recreate_tooltip
+      recreate_reason ? t(".recreate_pending.#{recreate_reason}") : t('.recreate')
     end
 
     # Starting any service is blocked until the whole configuration is complete
