@@ -187,15 +187,7 @@ RSpec.describe Orchestration::Runner do
             command: sleep 10
       YAML
 
-      after do
-        # Clean up containers
-        system(
-          'docker compose down -v',
-          chdir: data_path,
-          out: File::NULL,
-          err: File::NULL,
-        )
-      end
+      after { compose_down }
 
       it 'starts containers in detached mode' do
         result = described_class.up
@@ -213,12 +205,7 @@ RSpec.describe Orchestration::Runner do
               image: alpine:latest
               command: sleep 30
         YAML
-        system(
-          'docker compose up -d',
-          chdir: data_path,
-          out: File::NULL,
-          err: File::NULL,
-        )
+        docker_quietly('docker compose up -d')
         File.write(File.join(data_path, 'compose.yaml'), <<~YAML)
           name: helios-test
           services:
@@ -228,21 +215,12 @@ RSpec.describe Orchestration::Runner do
         YAML
       end
 
-      after do
-        system(
-          'docker compose down -v',
-          chdir: data_path,
-          out: File::NULL,
-          err: File::NULL,
-        )
-      end
+      after { compose_down }
 
       it 'removes orphaned containers from the previous service definition' do
         described_class.up
 
-        format = '{{.Label "com.docker.compose.service"}}'
-        running = `docker ps --filter label=com.docker.compose.project=helios-test --format '#{format}'`
-        expect(running.split("\n")).to contain_exactly('new')
+        expect(running_services).to contain_exactly('new')
       end
     end
   end
@@ -265,12 +243,7 @@ RSpec.describe Orchestration::Runner do
             image: alpine:latest
             command: sleep 30
         YAML
-        system(
-          'docker compose up -d',
-          chdir: data_path,
-          out: File::NULL,
-          err: File::NULL,
-        )
+        docker_quietly('docker compose up -d')
         write_compose(<<~YAML)
           postgresql:
             image: alpine:latest
@@ -289,6 +262,172 @@ RSpec.describe Orchestration::Runner do
         expect(running_services).to contain_exactly('postgresql', 'keeper')
       end
     end
+
+    # A HELIOS restart during a stack start kills the `up` it is running,
+    # which can leave a container behind that hangs in no network. Compose
+    # builds a *running* one anew by itself, so the one it starts as it found
+    # it is a container that is not running.
+    context 'when an interrupted start left a container without a network' do
+      before do
+        sweep_for_real
+        write_compose(<<~YAML)
+          test:
+            image: alpine:latest
+            command: sleep 30
+          keeper:
+            image: alpine:latest
+            command: sleep 30
+        YAML
+        docker_quietly('docker compose up -d')
+        docker_quietly('docker compose stop test')
+        docker_quietly('docker network disconnect helios-test_default helios-test-test-1')
+      end
+
+      after { compose_down }
+
+      it 'recreates it without touching the other containers' do
+        keeper_id = container_id('helios-test-keeper-1')
+        expect(container_networks('helios-test-test-1')).to be_empty
+
+        described_class.start('test')
+
+        aggregate_failures do
+          expect(container_networks('helios-test-test-1')).to eq(['helios-test_default'])
+          expect(running_services).to contain_exactly('test', 'keeper')
+          expect(container_id('helios-test-keeper-1')).to eq(keeper_id)
+        end
+      end
+    end
+
+    # The sweep leaves running containers alone: compose repairs those itself
+    # once an `up` covers them, and killing one that no `up` covers would
+    # leave the user with nothing at all.
+    context 'when a running container lost its network' do
+      before do
+        sweep_for_real
+        write_compose(<<~YAML)
+          test:
+            image: alpine:latest
+            command: sleep 30
+          keeper:
+            image: alpine:latest
+            command: sleep 30
+        YAML
+        docker_quietly('docker compose up -d')
+        docker_quietly('docker network disconnect helios-test_default helios-test-keeper-1')
+      end
+
+      after { compose_down }
+
+      it 'keeps it alive while another service starts' do
+        described_class.start('test')
+
+        expect(running_services).to include('keeper')
+      end
+
+      it 'lets compose repair it once the service itself starts' do
+        described_class.start('keeper')
+
+        expect(container_networks('helios-test-keeper-1')).to eq(['helios-test_default'])
+      end
+    end
+
+    # Everything rests on a stopped container keeping its network entry. Were
+    # that not so, every `up` would delete every stopped service of the stack.
+    context 'when another service is merely stopped' do
+      before do
+        sweep_for_real
+        write_compose(<<~YAML)
+          test:
+            image: alpine:latest
+            command: sleep 30
+          keeper:
+            image: alpine:latest
+            command: sleep 30
+        YAML
+        docker_quietly('docker compose up -d')
+        docker_quietly('docker compose stop keeper')
+      end
+
+      after { compose_down }
+
+      it 'leaves its container alone' do
+        keeper_id = container_id('helios-test-keeper-1')
+
+        described_class.start('test')
+
+        expect(container_id('helios-test-keeper-1')).to eq(keeper_id)
+      end
+    end
+
+    # The price of sweeping the whole project: a stopped container of a
+    # service outside the `up` is removed and nothing brings it back, so the
+    # service reads as "not created" until it is started. That beats keeping
+    # a container that can never reach its dependencies.
+    context 'when a stopped container of another service lost its network' do
+      before do
+        sweep_for_real
+        write_compose(<<~YAML)
+          test:
+            image: alpine:latest
+            command: sleep 30
+          keeper:
+            image: alpine:latest
+            command: sleep 30
+        YAML
+        docker_quietly('docker compose up -d')
+        docker_quietly('docker compose stop keeper')
+        docker_quietly('docker network disconnect helios-test_default helios-test-keeper-1')
+      end
+
+      after { compose_down }
+
+      it 'removes it and leaves it uncreated' do
+        described_class.start('test')
+
+        expect(container_id('helios-test-keeper-1')).to be_nil
+      end
+    end
+  end
+
+  # Without Docker the specs above are skipped, so this is what keeps the
+  # sweep wired into every `up` the runner does.
+  describe 'sweeping before every up' do
+    before do
+      allow(described_class).to receive(:run_compose_with_conflict_recovery)
+      allow(described_class).to receive(:run_compose).and_return(
+        Orchestration::CommandResult.new(output: '', exit_status: 0),
+      )
+      allow(Orchestration::ImageCleanup).to receive(:run)
+      allow(Orchestration::Container).to receive(:find)
+    end
+
+    it 'sweeps before it starts a service' do
+      described_class.start('dashboard')
+
+      expect(Orchestration::DetachedContainers).to have_received(:sweep).ordered
+      expect(described_class).to have_received(:run_compose_with_conflict_recovery).ordered
+    end
+
+    it 'sweeps before it brings the stack up' do
+      allow(described_class).to receive(:services_except_self).and_return(%w[dashboard])
+
+      described_class.up
+
+      expect(Orchestration::DetachedContainers).to have_received(:sweep)
+    end
+
+    it 'sweeps before it recreates a service' do
+      described_class.recreate('dashboard')
+
+      expect(Orchestration::DetachedContainers).to have_received(:sweep)
+    end
+
+    it 'sweeps before it reconciles services' do
+      described_class.reconcile('dashboard')
+
+      expect(Orchestration::DetachedContainers).to have_received(:sweep)
+    end
   end
 
   describe '.down' do
@@ -303,12 +442,7 @@ RSpec.describe Orchestration::Runner do
               image: alpine:latest
               command: sleep 30
         YAML
-        system(
-          'docker compose up -d',
-          chdir: data_path,
-          out: File::NULL,
-          err: File::NULL,
-        )
+        docker_quietly('docker compose up -d')
       end
 
       it 'stops and removes containers' do
@@ -356,12 +490,7 @@ RSpec.describe Orchestration::Runner do
       end
 
       after do
-        system(
-          'docker compose down -v',
-          chdir: data_path,
-          out: File::NULL,
-          err: File::NULL,
-        )
+        compose_down
         system('docker', 'image', 'rm', new_image, out: File::NULL, err: File::NULL)
       end
 
@@ -390,12 +519,7 @@ RSpec.describe Orchestration::Runner do
             image: alpine:latest
             command: sleep 30
         YAML
-        system(
-          'docker compose up -d',
-          chdir: data_path,
-          out: File::NULL,
-          err: File::NULL,
-        )
+        docker_quietly('docker compose up -d')
         write_compose(<<~YAML)
           postgresql:
             image: alpine:latest
@@ -429,7 +553,28 @@ RSpec.describe Orchestration::Runner do
   end
 
   def compose_down
-    system('docker compose down -v', chdir: data_path, out: File::NULL, err: File::NULL)
+    docker_quietly('docker compose down -v')
+  end
+
+  # spec/support/detached_containers.rb stubs the sweep out for every spec, so
+  # that a real `compose up` here cannot touch the developer's own stack. The
+  # examples about the sweep want it back, scoped to their own project.
+  def sweep_for_real
+    stub_const('Orchestration::PROJECT_NAME', 'helios-test')
+    allow(Orchestration::DetachedContainers).to receive(:sweep).and_call_original
+  end
+
+  def docker_quietly(command)
+    system(command, chdir: data_path, out: File::NULL, err: File::NULL)
+  end
+
+  # Names of the networks a container is connected to.
+  def container_networks(name)
+    Orchestration::DockerCli.inspect_container(name)&.dig('NetworkSettings', 'Networks')&.keys || []
+  end
+
+  def container_id(name)
+    Orchestration::DockerCli.inspect_container(name)&.fetch('Id')
   end
 
   # Service names of the containers currently running for the test project.

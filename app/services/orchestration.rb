@@ -9,6 +9,7 @@ module Orchestration
   COMPOSE_PROJECT_LABEL = 'com.docker.compose.project'.freeze
   COMPOSE_SERVICE_LABEL = 'com.docker.compose.service'.freeze
   COMPOSE_CONFIG_HASH_LABEL = 'com.docker.compose.config-hash'.freeze
+  COMPOSE_ONEOFF_LABEL = 'com.docker.compose.oneoff'.freeze
 
   # The Docker Compose project name is always "solectrus". This matches the
   # name written by HELIOS when generating compose.yaml (see Export::Compose)

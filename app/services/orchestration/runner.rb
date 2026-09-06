@@ -22,14 +22,7 @@ module Orchestration
       def up(detach: true)
         validate_data_path!
 
-        # --remove-orphans clears containers that linger after a service
-        # rename (e.g. legacy 'app' → canonical 'dashboard' from import).
-        # Compose only deletes containers carrying its own project label,
-        # so user-launched sidecars are not affected.
-        args = %w[up --no-build --remove-orphans]
-        args << '-d' if detach
-        args.concat(services_except_self)
-        result = run_compose_with_conflict_recovery(*args)
+        result = compose_up(services_except_self, detach:)
         ImageCleanup.run
         result
       end
@@ -51,21 +44,13 @@ module Orchestration
         previous_image = Orchestration::Container.find(service)&.image
         pull(service:)
         run_compose('down', service.to_s)
-        result = run_compose_with_conflict_recovery('up', '--no-build', '--remove-orphans', '-d', service.to_s)
+        result = compose_up([service.to_s])
         ImageCleanup.run(previous_image:)
         result
       end
 
-      # --remove-orphans for the same reason as #up, and it matters most here:
-      # a rename leaves the old container running under its old name, and this
-      # is where its replacement comes into being. For a database the two would
-      # write to the same directory and destroy each other's data. Compose
-      # removes the leftover before it starts the replacement, so the two never
-      # run side by side.
       def start(*services)
-        args = %w[up --no-build --remove-orphans -d]
-        args.concat(services.flatten.compact)
-        run_compose_with_conflict_recovery(*args)
+        compose_up(services)
       end
 
       # Reconciles the given services against the current compose in a single
@@ -79,7 +64,7 @@ module Orchestration
         names = services.flatten.compact
         return if names.empty?
 
-        start(*names)
+        compose_up(names)
       end
 
       def stop(service)
@@ -218,6 +203,26 @@ module Orchestration
       end
 
       private
+
+      # DetachedContainers first: compose would start a detached container
+      # as-is, so it has to go before anything comes up.
+      #
+      # --remove-orphans clears containers that linger after a service rename
+      # (e.g. legacy 'app' → canonical 'dashboard' from import). It matters
+      # most for a single service: the rename leaves the old container running
+      # under its old name, and this is where its replacement comes into
+      # being. For a database the two would write to the same directory and
+      # destroy each other's data. Compose removes the leftover before it
+      # starts the replacement, so the two never run side by side. Only
+      # containers carrying this compose project's label are touched, so
+      # user-launched sidecars are not affected.
+      def compose_up(services, detach: true)
+        DetachedContainers.sweep
+
+        args = %w[up --no-build --remove-orphans]
+        args << '-d' if detach
+        run_compose_with_conflict_recovery(*args, *services.flatten.compact)
+      end
 
       # Runs a compose command and, if it fails because a container name is
       # already in use, force-removes the offending stale container(s) and

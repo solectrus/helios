@@ -265,6 +265,24 @@ The pending operation is set synchronously during boot, so the first `/services`
 
 The crash paths are covered against real Docker in [`spec/integration/orchestration/postgresql_upgrade_spec.rb`](../../spec/integration/orchestration/postgresql_upgrade_spec.rb).
 
+### Interrupted Stack Starts
+
+A stack start dies with the HELIOS process for the same reason: `docker compose` runs inside the HELIOS container. If the process dies between the creation of a container and the connection of that container to the project network, Compose leaves a container behind that belongs to no network. The service then resolves no other service name and waits for its dependencies forever. Its log shows only `nc: bad address 'redis'`.
+
+Compose does not repair that container. It compares the configuration hash, finds it unchanged, and starts the container as it found it. A container that runs is the exception, because Compose sees the drift and builds that one anew.
+
+[`DetachedContainers`](../../app/services/orchestration/detached_containers.rb) therefore removes every stopped container of the project that sits in no network, before each `up` that [`Runner`](../../app/services/orchestration/runner.rb) issues. Compose then builds a connected container in the same command. Five rules limit what the sweep removes:
+
+- A container that runs stays. Compose repairs that one itself, and a container outside the dependency chain of the current `up` would otherwise be removed with nothing to bring it back.
+- The HELIOS container stays. No `up` includes it, so nothing would build it back.
+- A one-off container of `compose run` stays. It belongs to no service of the stack, and it sits unconnected between its creation and its start.
+- A container in network mode `host`, `none` or `container:` stays. These modes carry no network entry either, but the missing entry is intended.
+- A container whose network mode cannot be read stays. The sweep never discards a container on a value it cannot see.
+
+The sweep covers the whole project, not only the service a caller named, because `up <service>` starts that service and its dependencies. [`ComposeJob#remove_errored_containers`](../../app/jobs/compose_job.rb) takes down every errored service before an `up`, a `start` or a `recreate`, for the same reason. The price is that a detached stopped container of an untouched service is removed too, and no `up` builds it back. That service then reads as "Not created" until it is started.
+
+The compose behaviour this rests on is pinned against real Docker in [`spec/services/orchestration/runner_spec.rb`](../../spec/services/orchestration/runner_spec.rb): a stopped container keeps its network entry, a detached one does not come back on its own, and a running one is rebuilt by Compose.
+
 ---
 
 ## Compose File Conflict Handling
