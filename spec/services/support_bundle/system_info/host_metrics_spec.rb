@@ -408,10 +408,133 @@ RSpec.describe SupportBundle::SystemInfo::HostMetrics do
     end
   end
 
+  # macOS dev boxes have no /proc and no cgroup filesystem; every value comes
+  # from sysctl and vm_stat there. The stubs keep these examples deterministic
+  # on Linux CI, where those binaries answer nothing useful.
+  describe 'the macOS fallbacks' do
+    before do
+      stub_missing_host_file('/usr/sbin/sysctl')
+      stub_host_file('/sbin/sysctl')
+    end
+
+    it 'reads model and core count from sysctl' do
+      stub_capture(%w[sysctl -n machdep.cpu.brand_string hw.ncpu], "Apple M4 Pro\n14")
+
+      expect(described_class.cpu_from_sysctl).to eq('Model' => 'Apple M4 Pro', 'Cores' => '14')
+    end
+
+    it 'falls back to "unknown" when sysctl answers nothing' do
+      stub_capture(%w[sysctl -n machdep.cpu.brand_string hw.ncpu], '')
+
+      expect(described_class.cpu_from_sysctl).to eq('Model' => 'unknown', 'Cores' => 'unknown')
+    end
+
+    it 'reports total RAM from sysctl and available RAM from vm_stat' do
+      stub_capture(%w[sysctl -n hw.memsize hw.pagesize], "2147483648\n16384")
+      stub_capture(['vm_stat'], <<~VM_STAT)
+        Mach Virtual Memory Statistics: (page size of 16384 bytes)
+        Pages free:                               10000.
+        Pages inactive:                           20000.
+        Pages speculative:                         2536.
+      VM_STAT
+
+      expect(described_class.memory_from_sysctl).to eq('Total' => '2 GB', 'Available' => '508 MB')
+    end
+
+    it 'reports unknown available RAM when sysctl gives no page size' do
+      stub_capture(%w[sysctl -n hw.memsize hw.pagesize], '2147483648')
+
+      expect(described_class.memory_from_sysctl).to eq('Total' => '2 GB', 'Available' => 'unknown')
+    end
+
+    it 'reads the product name, version and build from sw_vers' do
+      stub_host_file('/usr/bin/sw_vers')
+      stub_capture(['sw_vers'], <<~SW_VERS)
+        ProductName:\t\tmacOS
+        ProductVersion:\t\t15.0
+        BuildVersion:\t\t24A335
+      SW_VERS
+
+      expect(described_class.macos_os_release).to eq('macOS 15.0 (24A335)')
+      expect(described_class.os_release).to eq('macOS 15.0 (24A335)')
+    end
+  end
+
+  describe '.os_release' do
+    it 'is unavailable when neither os-release nor sw_vers exist' do
+      stub_missing_host_file('/etc/os-release')
+      stub_missing_host_file('/usr/bin/sw_vers')
+
+      expect(described_class.os_release).to eq('unavailable')
+    end
+  end
+
+  describe '.disk' do
+    before { allow(Rails.configuration).to receive(:data_path).and_return('/data') }
+
+    it 'reports the parsed df values next to the data path' do
+      allow(described_class).to receive(:parse_df).with('/data').and_return('Total' => '1 TB')
+
+      expect(described_class.disk).to eq('Data path' => '/data', 'Total' => '1 TB')
+    end
+
+    it 'falls back to the raw df output when parsing fails' do
+      allow(described_class).to receive(:parse_df).with('/data').and_return(nil)
+      stub_capture(%w[df -kP /data], 'df: /data: No such file or directory')
+
+      expect(described_class.disk).to eq(
+        'Data path' => '/data',
+        'Usage' => 'df: /data: No such file or directory',
+      )
+    end
+  end
+
+  describe '.data_volumes' do
+    let(:data_path) { Dir.mktmpdir }
+
+    before { allow(Rails.configuration).to receive(:data_path).and_return(data_path) }
+
+    after { FileUtils.remove_entry(data_path) }
+
+    it 'reports the size of every subdirectory of the data path' do
+      FileUtils.mkdir_p(File.join(data_path, 'influxdb'))
+      FileUtils.mkdir_p(File.join(data_path, 'postgresql'))
+      File.write(File.join(data_path, 'compose.yaml'), "services:\n")
+
+      result = described_class.data_volumes
+
+      expect(result.keys).to eq(%w[influxdb postgresql])
+      expect(result.values).to all(match(/\A\d+(\.\d+)? (Bytes|[KMGT]B)\z/))
+    end
+
+    it 'reports an empty data path' do
+      expect(described_class.data_volumes).to eq('Status' => 'no data directories found')
+    end
+
+    it 'reports a data path that does not exist' do
+      allow(Rails.configuration).to receive(:data_path).and_return(File.join(data_path, 'gone'))
+
+      expect(described_class.data_volumes).to eq('Status' => 'data path unavailable')
+    end
+
+    it 'reports unknown sizes when du fails' do
+      FileUtils.mkdir_p(File.join(data_path, 'influxdb'))
+      allow(described_class).to receive(:directory_sizes).and_call_original
+      stub_capture(['du', '-sk', File.join(data_path, 'influxdb')], 'failed (exit 1): du: cannot read')
+
+      expect(described_class.data_volumes).to eq('influxdb' => 'unknown')
+    end
+  end
+
   # Single helper for the cgroup-stub pattern: pass `v2: true/false` plus a
   # path => content mapping. Files not in the mapping return nil.
   def stub_cgroup(v2:, **paths) # rubocop:disable Naming/MethodParameterName
     allow(SupportBundle::SystemInfo::CgroupReader).to receive(:v2?).and_return(v2)
     allow(SupportBundle::SystemInfo::CgroupReader).to receive(:read_first_line) { |path| paths[path] }
+  end
+
+  def stub_capture(command, output)
+    allow(SupportBundle::SystemInfo::OutputFormatter)
+      .to receive(:capture).with(*command).and_return(output)
   end
 end

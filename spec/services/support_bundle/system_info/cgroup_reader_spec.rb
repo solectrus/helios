@@ -70,6 +70,46 @@ RSpec.describe SupportBundle::SystemInfo::CgroupReader do
     end
   end
 
+  describe '.v2?' do
+    it 'is true when the unified hierarchy exposes cgroup.controllers' do
+      stub_host_file('/sys/fs/cgroup/cgroup.controllers')
+
+      expect(described_class).to be_v2
+      expect(described_class.source).to eq('cgroup v2 (container limit)')
+    end
+
+    it 'is false without it, so the v1 paths are used' do
+      stub_missing_host_file('/sys/fs/cgroup/cgroup.controllers')
+
+      expect(described_class).not_to be_v2
+      expect(described_class.source).to eq('cgroup v1 (container limit)')
+    end
+  end
+
+  describe '.cpu_quota_cores' do
+    it 'divides quota by period on cgroup v2' do
+      stub_cgroup(v2: true, '/sys/fs/cgroup/cpu.max' => '150000 100000')
+
+      expect(described_class.cpu_quota_cores).to eq(1.5)
+    end
+
+    it 'reads the two CFS files on cgroup v1' do
+      stub_cgroup(
+        v2: false,
+        '/sys/fs/cgroup/cpu/cpu.cfs_quota_us' => '200000',
+        '/sys/fs/cgroup/cpu/cpu.cfs_period_us' => '100000',
+      )
+
+      expect(described_class.cpu_quota_cores).to eq(2.0)
+    end
+
+    it 'is nil when cgroup v2 reports no quota' do
+      stub_cgroup(v2: true, '/sys/fs/cgroup/cpu.max' => 'max 100000')
+
+      expect(described_class.cpu_quota_cores).to be_nil
+    end
+  end
+
   describe '.cpuset_cores' do
     context 'when the cpuset covers every host CPU' do
       before do

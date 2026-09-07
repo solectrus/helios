@@ -182,12 +182,51 @@ RSpec.describe HostStats do
     end
   end
 
-  # macOS dev fallback: no /proc at all, so the numbers come from sysctl.
+  # macOS dev fallback: no /proc at all, so the numbers come from sysctl and
+  # vm_stat. Both are stubbed, so the examples also run on Linux CI, where
+  # these commands exist but answer nothing.
   describe 'the sysctl fallback' do
     it 'reports nothing when sysctl cannot be run' do
       allow(described_class).to receive(:capture_int).and_raise(Errno::ENOENT, 'sysctl')
 
       expect(described_class.send(:mem_from_sysctl)).to be_nil
+    end
+
+    it 'reports total RAM from sysctl and available RAM from the vm_stat pages' do
+      page_size = Etc.sysconf(Etc::SC_PAGE_SIZE)
+      stub_sysctl(total: '8589934592')
+      stub_vm_stat(<<~VM_STAT)
+        Mach Virtual Memory Statistics: (page size of #{page_size} bytes)
+        Pages free:                               10000.
+        Pages inactive:                           20000.
+        Pages speculative:                         5000.
+      VM_STAT
+
+      expect(described_class.send(:mem_from_sysctl)).to eq([8_589_934_592, 35_000 * page_size])
+    end
+
+    it 'reports nothing when sysctl answers no memory size' do
+      stub_sysctl(total: 'unknown')
+
+      expect(described_class.send(:mem_from_sysctl)).to be_nil
+    end
+
+    it 'reports nothing when vm_stat fails' do
+      stub_sysctl(total: '8589934592')
+      stub_vm_stat('vm_stat: command not found', success: false)
+
+      expect(described_class.send(:mem_from_sysctl)).to be_nil
+    end
+
+    def stub_sysctl(total:)
+      allow(Open3).to receive(:capture2e).and_call_original
+      allow(Open3).to receive(:capture2e).with('sysctl', '-n', 'hw.memsize')
+                                         .and_return([total, instance_double(Process::Status, success?: true)])
+    end
+
+    def stub_vm_stat(output, success: true)
+      allow(Open3).to receive(:capture2e).with('vm_stat')
+                                         .and_return([output, instance_double(Process::Status, success?: success)])
     end
   end
 
