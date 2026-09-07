@@ -171,4 +171,31 @@ RSpec.describe HostStats do
       end
     end
   end
+
+  # /proc/stat without the aggregate `cpu` line says nothing about CPU usage,
+  # so the reader falls through to the next source instead of guessing.
+  describe 'reading /proc/stat' do
+    it 'reports nothing when the aggregate cpu line is missing' do
+      write_proc_file('stat', "intr 12345\n")
+
+      expect(described_class.send(:read_proc_stat)).to be_nil
+    end
+  end
+
+  # macOS dev fallback: no /proc at all, so the numbers come from sysctl.
+  describe 'the sysctl fallback' do
+    it 'reports nothing when sysctl cannot be run' do
+      allow(described_class).to receive(:capture_int).and_raise(Errno::ENOENT, 'sysctl')
+
+      expect(described_class.send(:mem_from_sysctl)).to be_nil
+    end
+  end
+
+  describe '.proc_root' do
+    it 'points at /proc by default' do
+      allow(described_class).to receive(:proc_root).and_call_original
+
+      expect(described_class.proc_root).to eq('/proc')
+    end
+  end
 end

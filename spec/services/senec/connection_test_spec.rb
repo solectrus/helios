@@ -46,6 +46,14 @@ RSpec.describe Senec::ConnectionTest do
       expect(reachability).to have_attributes(ok: false, reason: :senec_not_senec)
     end
 
+    # Anything the two specific rescue lists do not name (a malformed reply the
+    # JSON parser chokes on) still has to end as a plain error, never as a 500.
+    it 'reports a generic error for an unexpected failure' do
+      stub_request(:post, probe_url).to_raise(JSON::ParserError)
+
+      expect(reachability).to have_attributes(ok: false, reason: :error)
+    end
+
     it 'reports incomplete when the host is blank, without probing' do
       expect(reachability('host' => '')).to have_attributes(ok: false, reason: :incomplete)
       expect(a_request(:post, probe_url)).not_to have_been_made
@@ -73,7 +81,5 @@ RSpec.describe Senec::ConnectionTest do
     end
   end
 
-  it 'reports an error for an unknown check' do
-    expect(tester.call(check: 'bogus', values: {})).to have_attributes(ok: false, reason: :error)
-  end
+  it_behaves_like 'a survey connection test'
 end

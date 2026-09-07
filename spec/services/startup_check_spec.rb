@@ -128,6 +128,31 @@ RSpec.describe StartupCheck do
       end
     end
 
+    # Only production talks to Docker; in development the socket is often
+    # absent and the checks would fail every boot.
+    it 'runs the Docker checks in production' do
+      allow(Rails.env).to receive(:production?).and_return(true)
+      allow(Orchestration::Connection).to receive_messages(configure!: nil, engine_version: nil)
+      allow(File).to receive(:exist?).and_call_original
+      Orchestration::Connection::SOCKET_PATHS.each do |path|
+        allow(File).to receive(:exist?).with(path).and_return(false)
+      end
+
+      expect(described_class.run.map(&:name)).to include('Docker socket')
+    end
+
+    it 'reports a compose file that cannot be parsed' do
+      allow(File).to receive(:directory?).and_call_original
+      allow(File).to receive(:directory?).with(Rails.configuration.data_path).and_return(true)
+      allow(File).to receive(:exist?).and_call_original
+      allow(File).to receive(:exist?).with(match(%r{/(compose|docker-compose)\.(yaml|yml)$})).and_return(true)
+      allow(YAML).to receive(:safe_load_file).and_raise(Psych::SyntaxError.new('compose.yaml', 1, 1, 0, 'bad', nil))
+
+      failure = described_class.run.find { |check| check.name == 'Compose project name' }
+
+      expect(failure.message).to include('Could not parse compose file')
+    end
+
     it 'skips Docker checks outside production' do
       failures = described_class.run
       names = failures.map(&:name)
@@ -173,6 +198,22 @@ RSpec.describe StartupCheck do
         result = described_class.send(:check_docker_connection)
         expect(result.name).to eq('Docker connection')
         expect(result.message).to include('connection refused')
+      end
+    end
+
+    # A socket that answers something other than OK is not a working daemon
+    # either — reported without an exception to quote.
+    describe 'when Docker answers the ping with something unexpected' do
+      before do
+        allow(File).to receive(:exist?).and_call_original
+        allow(File).to receive(:exist?).with(Orchestration::Connection::SOCKET_PATHS.first).and_return(true)
+        allow(Docker).to receive(:ping).and_return('nope')
+      end
+
+      it 'reports the connection as failed' do
+        result = described_class.send(:check_docker_connection)
+
+        expect(result.message).to eq('Docker socket exists but connection failed.')
       end
     end
 

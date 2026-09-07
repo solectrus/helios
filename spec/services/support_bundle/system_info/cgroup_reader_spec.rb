@@ -15,6 +15,36 @@ RSpec.describe SupportBundle::SystemInfo::CgroupReader do
     it 'returns 0 for an empty cpuset' do
       expect(described_class.parse_cpuset_count('')).to eq(0)
     end
+
+    it 'ignores a part that is neither a number nor a range' do
+      expect(described_class.parse_cpuset_count('0,junk,2')).to eq(2)
+    end
+  end
+
+  describe '.read_first_line' do
+    let(:tmp_dir) { Dir.mktmpdir }
+
+    after { FileUtils.remove_entry(tmp_dir) }
+
+    it 'returns the stripped first line' do
+      path = File.join(tmp_dir, 'value')
+      File.write(path, "42\n99\n")
+
+      expect(described_class.read_first_line(path)).to eq('42')
+    end
+
+    it 'returns nil for a missing file' do
+      expect(described_class.read_first_line(File.join(tmp_dir, 'nope'))).to be_nil
+    end
+
+    # An empty cgroup file makes readline raise EOFError; the reader must not
+    # take the whole support bundle down with it.
+    it 'returns nil when the file is empty' do
+      path = File.join(tmp_dir, 'empty')
+      File.write(path, '')
+
+      expect(described_class.read_first_line(path)).to be_nil
+    end
   end
 
   describe '.memory_limit' do

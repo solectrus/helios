@@ -128,7 +128,5 @@ RSpec.describe InfluxDb::ConnectionTest do
     end
   end
 
-  it 'reports an error for an unknown check' do
-    expect(tester.call(check: 'bogus', values: {})).to have_attributes(ok: false, reason: :error)
-  end
+  it_behaves_like 'a survey connection test'
 end

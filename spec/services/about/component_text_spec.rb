@@ -10,6 +10,16 @@ RSpec.describe About::ComponentText do
         expect(payload[:text]).to be_a(String).and(be_present)
       end
 
+      # Not every gem ships its license inside the packaged gem; the page then
+      # points at the upstream project instead of showing nothing.
+      it 'points at the upstream project when the gem ships no license file' do
+        allow(File).to receive(:file?).and_return(false)
+
+        payload = described_class.for(category: 'gem', name: 'rake')
+
+        expect(payload[:text]).to include('No LICENSE file ships inside the rake gem')
+      end
+
       it 'returns nil for an unknown gem' do
         expect(described_class.for(category: 'gem', name: 'no-such-gem')).to be_nil
       end

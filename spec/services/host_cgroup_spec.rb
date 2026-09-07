@@ -58,6 +58,20 @@ RSpec.describe HostCgroup do
     end
   end
 
+  # A cgroup file can exist and still be unreadable — a mount that went away
+  # under the running process, or one HELIOS has no permission for.
+  describe 'a cgroup file that cannot be read' do
+    it 'reads as no value' do
+      write_cgroup_file('memory.current', "1221120000\n")
+      write_cgroup_file('cpu.stat', "usage_usec 1\n")
+      allow(File).to receive(:read).and_raise(Errno::EACCES)
+      allow(File).to receive(:foreach).and_raise(Errno::EACCES)
+
+      expect(described_class.memory_current).to be_nil
+      expect(described_class.cpu_usage_usec).to be_nil
+    end
+  end
+
   describe '.cpu_usage_usec' do
     it 'reads usage_usec from cpu.stat' do
       write_cgroup_file('cpu.stat', <<~STAT)

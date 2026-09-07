@@ -178,6 +178,91 @@ RSpec.describe SupportBundle::SystemInfo::HostMetrics do
     end
   end
 
+  # A locked-down host still has to produce a bundle: every reader answers
+  # with no value, and only the memory section carries the reason.
+  describe 'a host file that is there but cannot be read' do
+    {
+      '/proc/cpuinfo' => :proc_cpuinfo,
+      '/proc/uptime' => :uptime_from_proc,
+      '/proc/loadavg' => :read_loadavg,
+      '/etc/os-release' => :linux_os_release,
+    }.each do |path, reader|
+      it "makes .#{reader} answer with nothing" do
+        stub_host_file(path, error: Errno::EACCES)
+
+        expect(described_class.public_send(reader)).to be_nil
+      end
+    end
+
+    it 'reports it in the memory section instead of raising' do
+      stub_host_file('/proc/meminfo', error: Errno::EACCES)
+
+      expect(described_class.memory_from_proc['Status']).to start_with('unavailable: Errno::EACCES')
+    end
+  end
+
+  describe '.containerized?' do
+    it 'is true when the Docker marker file is present' do
+      stub_host_file('/.dockerenv')
+
+      expect(described_class).to be_containerized
+    end
+
+    # Without the marker, the container runtime shows up in PID 1's cgroup.
+    { "0::/docker/abc\n" => true, "0::/init.scope\n" => false }.each do |cgroup, containerized|
+      it "is #{containerized} for #{cgroup.strip}" do
+        stub_missing_host_file('/.dockerenv')
+        stub_host_file('/proc/1/cgroup', content: cgroup)
+
+        expect(described_class.containerized?).to be(containerized)
+      end
+    end
+
+    it 'is false when the cgroup file cannot be read' do
+      stub_missing_host_file('/.dockerenv')
+      stub_host_file('/proc/1/cgroup', error: Errno::EACCES)
+
+      expect(described_class).not_to be_containerized
+    end
+  end
+
+  describe '.proc_cpuinfo' do
+    it 'counts the processors and reads the model name' do
+      stub_host_file('/proc/cpuinfo',
+                     lines: ["processor\t: 0\n", "model name\t: Intel(R) N150\n", "processor\t: 1\n"])
+
+      expect(described_class.proc_cpuinfo).to eq(count: 2, model: 'Intel(R) N150')
+      expect(described_class.cpu_from_proc).to include('Model' => 'Intel(R) N150', 'Cores' => 2)
+    end
+
+    it 'falls back to "unknown" when the file names no model' do
+      stub_host_file('/proc/cpuinfo', lines: ["processor\t: 0\n"])
+
+      expect(described_class.cpu_from_proc).to include('Model' => 'unknown')
+    end
+
+    it 'is nil when the file lists no processor at all' do
+      stub_host_file('/proc/cpuinfo', lines: ["flags\t: none\n"])
+
+      expect(described_class.proc_cpuinfo).to be_nil
+    end
+  end
+
+  describe '.linux_os_release' do
+    it 'reads the pretty name, unquoted' do
+      stub_host_file('/etc/os-release',
+                     lines: ["ID=debian\n", %(PRETTY_NAME="Debian GNU/Linux 12 (bookworm)"\n)])
+
+      expect(described_class.linux_os_release).to eq('Debian GNU/Linux 12 (bookworm)')
+    end
+
+    it 'is nil when the file names no pretty name' do
+      stub_host_file('/etc/os-release', lines: ["ID=debian\n"])
+
+      expect(described_class.linux_os_release).to be_nil
+    end
+  end
+
   describe '.cpu' do
     context 'when cpuset restricts the container to two cores' do
       before do

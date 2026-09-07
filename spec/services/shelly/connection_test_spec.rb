@@ -159,6 +159,18 @@ RSpec.describe Shelly::ConnectionTest do
       expect(cloud).to have_attributes(ok: false, reason: :shelly_cloud_unreachable)
     end
 
+    it 'reports a plain error for a status it does not know' do
+      stub_cloud.to_return(status: 500)
+
+      expect(cloud).to have_attributes(ok: false, reason: :error)
+    end
+
+    it 'reports a plain error when the cloud check fails unexpectedly' do
+      stub_cloud.to_raise(JSON::ParserError)
+
+      expect(cloud).to have_attributes(ok: false, reason: :error)
+    end
+
     it 'reports incomplete when the auth key is blank, without probing' do
       expect(cloud('auth_key' => '')).to have_attributes(ok: false, reason: :incomplete)
       expect(a_request(:post, cloud_url)).not_to have_been_made
@@ -184,7 +196,13 @@ RSpec.describe Shelly::ConnectionTest do
     end
   end
 
-  it 'reports an error for an unknown check' do
-    expect(tester.call(check: 'bogus', values: {})).to have_attributes(ok: false, reason: :error)
+  it 'reports a plain error when the reachability check fails unexpectedly' do
+    stub_request(:get, %r{http://shelly.test/shelly}).to_raise(JSON::ParserError)
+
+    result = tester.call(check: 'reachability', values: { 'host' => 'shelly.test' })
+
+    expect(result).to have_attributes(ok: false, reason: :error)
   end
+
+  it_behaves_like 'a survey connection test'
 end

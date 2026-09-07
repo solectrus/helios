@@ -61,5 +61,23 @@ RSpec.describe LogLineFormatter do
       expect(html).to include('&lt;b&gt;bold&lt;/b&gt;')
       expect(html).not_to include('<b>bold</b>')
     end
+
+    # `docker logs` emits a bare timestamp for a blank log line; the row is
+    # kept so the log keeps its original spacing.
+    it 'keeps an empty line as an empty row' do
+      html = described_class.call('influxdb-1  | 2026-05-08T10:00:00.000000000Z ')
+
+      expect(html).to include('data-ts="2026-05-08T10:00:00.000000000Z"')
+      expect(html).to include("\n</span>")
+    end
+
+    it 'leaves the time empty when the timestamp cannot be parsed' do
+      allow(Time.zone).to receive(:parse).and_raise(ArgumentError)
+
+      html = described_class.call('influxdb-1  | 2026-05-08T10:00:00.000000000Z hello')
+
+      expect(html).to include('hello')
+      expect(html).to include('<time')
+    end
   end
 end

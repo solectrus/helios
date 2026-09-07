@@ -81,6 +81,14 @@ RSpec.describe SupportBundle::SystemInfo::InfluxReport do
       expect(described_class.overview['Target']).to eq('http://192.168.1.10:8086')
     end
 
+    # A host the user typed with a stray space cannot be parsed; masking is
+    # skipped rather than losing the whole InfluxDB section.
+    it 'passes an unparsable endpoint through unchanged' do
+      client = instance_double(InfluxDb::Client, endpoint: 'http://in valid:8086')
+
+      expect(described_class.anonymized_endpoint(client)).to eq('http://in valid:8086')
+    end
+
     it 'reports the bucket data size when the directory exists' do
       stub_request(:post, query_url).to_return(status: 200, body: measurements_csv)
       dir = File.join(config_yaml_dir, 'influxdb')
