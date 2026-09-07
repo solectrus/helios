@@ -6,7 +6,6 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
 
   describe 'GET /configuration/surveys/:id' do
     (Configuration::ALL - Configuration::HIDDEN).each do |setting|
-      next if setting == 'sensors' # sensors is dynamic, no survey file
       next if setting == 'service_overrides' # advanced overrides edited inline, no survey
       next if setting == 'system' # split into system_* mini-surveys
       next if setting == 'dashboard' # split into dashboard_* mini-surveys

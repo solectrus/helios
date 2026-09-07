@@ -618,6 +618,20 @@ RSpec.describe 'Backups', :with_admin_password do
       expect(response).to have_http_status(:not_found)
     end
 
+    # A remote destination can refuse the delete (S3 permissions, an
+    # unreachable mount); the user is told instead of seeing a 500.
+    it 'reports a destination that refuses the delete' do
+      persist_backup('solectrus-backup-20260508-110000.tar')
+      allow(BackupRepository).to receive(:destroy!).and_raise(
+        BackupRepository::Error, 'AccessDenied'
+      )
+
+      delete backup_path('solectrus-backup-20260508-110000')
+
+      expect(response).to redirect_to(backups_path)
+      expect(flash[:alert]).to include('AccessDenied')
+    end
+
     it 'rejects ids not matching the pattern' do
       delete '/backups/not-a-backup'
 
@@ -781,15 +795,5 @@ RSpec.describe 'Backups', :with_admin_password do
       f.rewind
     end
     Rack::Test::UploadedFile.new(tempfile.path, 'application/x-tar', true, original_filename: filename)
-  end
-
-  def tar_archive(entries)
-    StringIO.new.tap do |io|
-      Gem::Package::TarWriter.new(io) do |tar|
-        entries.each do |name, content|
-          tar.add_file_simple(name, 0o644, content.bytesize) { |entry| entry.write(content) }
-        end
-      end
-    end.string
   end
 end

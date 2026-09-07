@@ -27,6 +27,15 @@ RSpec.describe 'Services', :with_admin_password do
   end
 
   describe 'GET /services' do
+    let(:dashboard_container) do
+      instance_double(
+        Orchestration::Container,
+        service_name: 'dashboard', running?: true, status: 'running', health_status: nil,
+        version: '1.0.0', public_port: 3001, configured_image: 'dashboard:latest',
+        image: 'dashboard:latest', crash_looping?: false, stoppable?: true
+      )
+    end
+
     it 'shows services when authenticated and setup completed' do
       allow(Orchestration::Container).to receive(:all).and_return([])
       mock_compose_services
@@ -37,18 +46,33 @@ RSpec.describe 'Services', :with_admin_password do
       expect(response.body).to include('HELIOS')
     end
 
+    # A tab switch is a frame request: the containers are loaded up front so
+    # the rows render filled in instead of flashing skeletons first.
+    it 'renders the rows filled in on a turbo frame request' do
+      allow(Orchestration::Container).to receive(:all).and_return([dashboard_container])
+      mock_compose_services('dashboard')
+
+      get services_path, headers: turbo_frame_headers
+
+      expect(response.body).to include('dashboard')
+      expect(response.body).not_to include('loading="lazy"')
+    end
+
+    # Docker being unreachable must still render the page; the rows then show
+    # what the compose file knows and nothing more.
+    it 'renders without container state when Docker cannot be reached' do
+      allow(Orchestration::Container).to receive(:all)
+        .and_raise(Orchestration::ConnectionError, 'no socket')
+      mock_compose_services('dashboard')
+
+      get services_path, headers: turbo_frame_headers
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('dashboard')
+    end
+
     it 'shows service skeleton with lazy loading' do
-      container =
-        instance_double(
-          Orchestration::Container,
-          service_name: 'dashboard',
-          running?: true,
-          status: 'running',
-          health_status: nil,
-          version: '1.0.0',
-          public_port: 3001,
-        )
-      allow(Orchestration::Container).to receive(:all).and_return([container])
+      allow(Orchestration::Container).to receive(:all).and_return([dashboard_container])
       mock_compose_services('dashboard')
 
       get services_path

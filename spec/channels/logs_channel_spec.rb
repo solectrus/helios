@@ -128,6 +128,16 @@ RSpec.describe LogsChannel do
       expect(subscription).to be_rejected
     end
 
+    # Docker being unreachable makes the compose lookup raise; the channel
+    # then has nothing to stream and rejects rather than crashing the socket.
+    it 'rejects subscription when the compose file cannot be read' do
+      allow(Compose).to receive(:load).and_raise(StandardError, 'no compose')
+
+      subscribe(service: service_name)
+
+      expect(subscription).to be_rejected
+    end
+
     it 'rejects subscription when limit is reached' do
       identifiers = Array.new(described_class::MAX_SUBSCRIPTIONS) do
         { channel: 'LogsChannel' }.to_json
@@ -144,6 +154,49 @@ RSpec.describe LogsChannel do
       subscribe(service: service_name)
 
       expect(subscription).to be_rejected
+    end
+
+    # An identifier that is not JSON cannot be counted; the subscription is
+    # allowed rather than locked out by a malformed neighbour.
+    it 'allows the subscription when an identifier is not JSON' do
+      stub_connection(
+        subscriptions: instance_double(
+          ActionCable::Connection::Subscriptions,
+          identifiers: ['not json'],
+          remove_subscription: nil,
+          add: nil,
+        ),
+      )
+
+      subscribe(service: service_name)
+
+      expect(subscription).to be_confirmed
+    end
+  end
+
+  describe 'waiting for the log process to exit' do
+    # A `docker compose logs -f` that ignores SIGTERM would otherwise keep the
+    # cleanup thread (and the pipe) alive forever.
+    it 'kills a process that does not exit within the timeout' do
+      subscribe(service: service_name)
+      allow(Process).to receive(:wait).with(fake_pid, Process::WNOHANG).and_return(nil)
+      allow(Process).to receive(:wait).with(fake_pid).and_return(fake_pid)
+      allow(subscription).to receive(:sleep)
+
+      subscription.send(:wait_for_exit, fake_pid, timeout: -1)
+
+      expect(Process).to have_received(:kill).with('KILL', fake_pid)
+    end
+
+    it 'keeps waiting while the process is still running' do
+      subscribe(service: service_name)
+      states = [nil, fake_pid]
+      allow(Process).to receive(:wait).with(fake_pid, Process::WNOHANG) { states.shift }
+      allow(subscription).to receive(:sleep)
+
+      subscription.send(:wait_for_exit, fake_pid, timeout: 5)
+
+      expect(subscription).to have_received(:sleep).with(0.1)
     end
   end
 

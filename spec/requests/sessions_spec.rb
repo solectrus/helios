@@ -15,6 +15,12 @@ RSpec.describe 'Sessions', :with_admin_password do
     end
   end
 
+  it 'sends an unauthenticated visitor to the login page' do
+    get sensors_path
+
+    expect(response).to redirect_to(new_session_path)
+  end
+
   describe 'POST /session' do
     it 'logs in with correct password' do
       post session_path, params: { password: 'test' }

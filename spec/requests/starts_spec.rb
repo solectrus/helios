@@ -269,6 +269,42 @@ RSpec.describe 'Starts' do
       end
     end
 
+    # The same conflict the start page explains: a POST that slips past it
+    # (a stale page, a direct request) must refuse just as clearly.
+    context 'when an Ingest input arrives from an external source' do
+      let(:dir) { with_config_yaml }
+
+      before do
+        File.write(File.join(dir, 'compose.yaml'), <<~YAML)
+          services:
+            dashboard:
+              image: ghcr.io/solectrus/solectrus:latest
+              environment:
+                INFLUX_SENSOR_INVERTER_POWER_1: SENEC:inverter_power
+                INFLUX_SENSOR_INVERTER_POWER_2: Balcony:power
+                INFLUX_SENSOR_HOUSE_POWER: SENEC:house_power
+            ingest:
+              image: ghcr.io/solectrus/ingest:latest
+        YAML
+        File.write(File.join(dir, '.env'), "TZ=Europe/Berlin\n")
+      end
+
+      it 'refuses the import and names the offending sensor' do
+        post start_path
+
+        expect(response).to have_http_status(:unprocessable_content)
+        expect(response.body).to include(I18n.t('starts.show.ingest_conflict_reason'))
+        expect(response.body).to include('inverter_power_2')
+      end
+
+      it 'does not back up or import the stack' do
+        post start_path
+
+        expect(File.exist?(File.join(dir, 'compose.yaml.bak'))).to be false
+        expect(File.exist?(Configuration.path)).to be false
+      end
+    end
+
     context 'when the compose file is invalid' do
       let(:dir) { with_config_yaml }
 

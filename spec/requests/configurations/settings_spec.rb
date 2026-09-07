@@ -288,6 +288,50 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(response).to have_http_status(:ok)
       expect(response.body).to include('&quot;10.0.0.5&quot;')
     end
+
+    # A section left over from an earlier configuration that names neither a
+    # domain nor a bind IP has no reverse proxy: the radio preselects "none".
+    it 'preselects mode none for a section without domain or bind IP' do
+      Configuration.current.update('reverse_proxy', { 'letsencrypt_email' => 'me@example.com' })
+
+      get edit_configuration_setting_path(setting: 'reverse_proxy', name: 'reverse_proxy'),
+          headers: turbo_frame_headers
+
+      expect(response.body).to include('&quot;mode&quot;:&quot;none&quot;')
+    end
+  end
+
+  describe 'the survey payload' do
+    # The dashboard stores "user-selectable" as an empty string, which SurveyJS
+    # cannot preselect — the form gets a `user` sentinel instead.
+    it 'injects the theme sentinel when no theme is fixed' do
+      get edit_configuration_setting_path(setting: 'dashboard_theme', name: 'dashboard_theme'),
+          headers: turbo_frame_headers
+
+      expect(response.body).to include('&quot;ui_theme&quot;:&quot;user&quot;')
+    end
+
+    # The MQTT pages are driven by UI-only fields derived from the stored
+    # mapping, so editing an MQTT sensor reopens on the right page.
+    it 'derives the MQTT ui state when editing an MQTT sensor' do
+      Configuration.current.update_sensor('house_power', {
+                                            'source' => 'mqtt', 'measurement' => 'MQTT',
+                                            'field' => 'power', 'json_key' => 'total'
+                                          })
+
+      get edit_configuration_setting_path(setting: 'sensor', name: 'house_power'),
+          headers: turbo_frame_headers
+
+      expect(response.body).to include('mqtt_extraction_mode')
+    end
+
+    # Shared by every survey-backed controller (SurveyData): a body that is
+    # not JSON is a client bug, not a validation error.
+    it 'answers a malformed JSON body with 400' do
+      post configuration_settings_path, params: { setting: 'reverse_proxy', data: 'not json' }
+
+      expect(response).to have_http_status(:bad_request)
+    end
   end
 
   describe 'POST /configuration/settings for the dynamic electricity prices' do
