@@ -63,6 +63,7 @@ bin/rspec spec/services/compose/file_spec.rb   # single file
 bin/rspec --tag integration                    # integration specs only (real Docker, slow)
 bin/turbo_tests                                # full suite, sharded across cores
 bin/coverage                                   # merged coverage report (after bin/turbo_tests)
+SKIP_INTEGRATION=1 bin/ci                      # full CI without the integration specs (~1 min)
 bun run test                                   # Vitest (frontend specs)
 bats --recursive spec/bats/                    # shell scripts
 ```

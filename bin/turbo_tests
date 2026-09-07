@@ -3,7 +3,8 @@ require 'bundler/setup'
 require 'fileutils'
 
 # Start from a clean slate so bin/coverage only collates this run's results,
-# not stale per-worker results merged from earlier runs.
-FileUtils.rm_f('coverage/.resultset.json')
+# not stale per-worker results merged from earlier runs. A NO_COVERAGE run
+# records nothing, so it leaves the results of the last real run alone.
+FileUtils.rm_f('coverage/.resultset.json') unless ENV['NO_COVERAGE']
 
 load Gem.bin_path('turbo_tests', 'turbo_tests')

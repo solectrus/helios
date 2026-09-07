@@ -19,6 +19,18 @@ CI.run do
   step 'Build: Vite assets', 'bunx vite build --mode test'
 
   step 'Test: Bats', 'bats --recursive spec/bats/'
-  step 'Test: RSpec', 'bin/turbo_tests'
+
+  # Mirrors .github/workflows/ci.yml, where the two RSpec runs are separate
+  # jobs. The coverage gate must see the fast suite alone, exactly as the
+  # `rspec` job does. If it saw the integration specs too, code covered only
+  # by them would pass here and fail on GitHub.
+  step 'Test: RSpec', "bin/turbo_tests -t '~integration'"
   step 'Test: Coverage', 'bin/coverage'
+  # The slowest step by far, and it needs a Docker daemon. `SKIP_INTEGRATION=1
+  # bin/ci` leaves it out for a quick loop. NO_COVERAGE keeps the report of
+  # the fast suite intact, because this run must not count towards the gate.
+  unless ENV['SKIP_INTEGRATION']
+    step 'Test: RSpec (integration)',
+         'NO_COVERAGE=1 bin/turbo_tests -t integration spec/integration'
+  end
 end

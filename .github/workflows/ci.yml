@@ -172,11 +172,13 @@ jobs:
         with:
           bundler-cache: true
 
-      - name: Setup Database
-        run: bin/rails db:setup
-
+      # turbo_tests overlaps the Docker-stack chain with the files that hold
+      # no lock, which the serial runner cannot do. It also creates the
+      # database of every worker, so no separate setup step is needed.
+      # NO_COVERAGE skips the instrumentation: this job never reports
+      # coverage, the `rspec` job above does.
       - name: Run integration tests
-        run: bin/rspec --tag integration
+        run: NO_COVERAGE=1 bin/turbo_tests -t integration spec/integration
 
   build:
     runs-on: ${{ matrix.runner }}
