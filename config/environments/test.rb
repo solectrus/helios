@@ -42,8 +42,11 @@ Rails.application.configure do
   # Raise error when a before_action's only/except options reference missing actions.
   config.action_controller.raise_on_missing_callback_actions = true
 
-  # Use fixtures directory as stack path for tests
-  config.data_path = Rails.root.join('spec/fixtures').to_s
+  # Throwaway stack path, one per parallel worker. Specs that touch the stack
+  # stub this anyway. The default only has to be disposable, so that a spec
+  # which forgets to stub it cannot write into the working tree.
+  config.data_path =
+    Rails.root.join("tmp/data_path#{ENV.fetch('TEST_ENV_NUMBER', nil)}").to_s
 
   # Pin the app timezone for deterministic time specs, independent of the
   # host's TZ env var (production derives it from TZ; see config/application.rb).

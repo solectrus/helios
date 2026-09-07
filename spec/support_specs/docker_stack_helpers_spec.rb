@@ -1,9 +1,8 @@
 RSpec.describe DockerStackHelpers do
-  # `clear_data_path!` runs rm_rf on whatever a spec's `data_path` names. The
-  # fallbacks are dangerous: the test default of `Rails.configuration.data_path`
-  # is `spec/fixtures` (every import scenario), the development one is `stack/`
-  # (the live local stack). The guard is what keeps a forgotten stub from
-  # deleting either.
+  # `clear_data_path!` runs rm_rf on whatever a spec's `data_path` names. A
+  # forgotten stub hands it the fallback instead, which in development is
+  # `stack/`, the live local stack. The guard is what keeps that from being
+  # deleted.
   subject(:helper) { Class.new { include DockerStackHelpers }.new }
 
   def disposable(path)
@@ -16,14 +15,14 @@ RSpec.describe DockerStackHelpers do
     )
   end
 
-  it 'refuses the fixtures directory (the test-env default)' do
-    expect { disposable(Rails.configuration.data_path) }.to raise_error(
-      ArgumentError, /only paths below/
-    )
+  it 'accepts the test-env default, which is disposable by design' do
+    expect(disposable(Rails.configuration.data_path)).to be_present
   end
 
   it 'refuses the live stack directory (the development default)' do
-    expect { disposable(Rails.root.join('stack').to_s) }.to raise_error(ArgumentError)
+    expect { disposable(Rails.root.join('stack').to_s) }.to raise_error(
+      ArgumentError, /only paths below/
+    )
   end
 
   it 'refuses tmp/ itself' do

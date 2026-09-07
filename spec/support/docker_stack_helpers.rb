@@ -66,11 +66,10 @@ module DockerStackHelpers
   private
 
   # Guards every deletion in this module. `data_path` reaches it from a spec's
-  # `let`, and the fallbacks are bad: the test default of
-  # `Rails.configuration.data_path` is `spec/fixtures` (all import scenarios),
-  # the development one is `stack/` (the live local stack). A spec that forgets
-  # to stub it, or stubs it too late, would hand one of those to rm_rf. Only a
-  # path below `tmp/` is disposable, so anything else raises instead.
+  # `let`, and a spec that forgets to stub it, or stubs it too late, hands the
+  # fallback to rm_rf instead. In development that fallback is `stack/`, the
+  # live local stack. Only a path below `tmp/` is disposable, so anything else
+  # raises.
   def disposable!(data_path)
     resolved = File.expand_path(data_path.to_s)
     scratch = File.expand_path(Rails.root.join('tmp').to_s)
