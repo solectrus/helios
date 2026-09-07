@@ -53,7 +53,7 @@ Both modes use the same hybrid Docker access (docker-api gem + `docker compose` 
 
 ## Testing
 
-**Aim for high coverage, but don't chase 100%** — write tests proportional to the code's complexity. Focus on unit and request specs; use real Docker (not mocks). [`spec/support/docker_helpers.rb`](../../spec/support/docker_helpers.rb) exposes `skip_without_docker` for tests that need a running daemon.
+Line coverage must stay at 100%. `bin/coverage` exits non-zero below that threshold, so the CI step fails. Write unit and request specs proportional to the complexity of the code. If a line is not reachable, delete the line instead of writing a spec for it. Integration specs use real Docker, not mocks. [`spec/support/docker_helpers.rb`](../../spec/support/docker_helpers.rb) exposes `skip_without_docker` for tests that need a running daemon.
 
 ### Run Tests
 
@@ -69,7 +69,9 @@ bats --recursive spec/bats/                    # shell scripts
 
 CI runs the suite with `turbo_tests`, sharding it across the runner's cores and balancing shards by recorded per-file runtime, with one aggregated output stream instead of fragmented per-process output.
 
-SimpleCov runs unconditionally from [`spec/spec_helper.rb`](../../spec/spec_helper.rb) and writes the coverage report to `coverage/index.html`. In parallel runs each worker only persists its result; `bin/coverage` then collates them into a single merged report.
+SimpleCov runs unconditionally from [`spec/spec_helper.rb`](../../spec/spec_helper.rb) and writes the coverage report to `coverage/index.html`. In parallel runs each worker only persists its result. `bin/coverage` then collates the results into one merged report and applies the 100% threshold. The threshold is set in `bin/coverage` and not in `.simplecov`, because Ruby loads `.simplecov` on every `require 'simplecov'`. A single-file `bin/rspec` run would fail on it.
+
+The gate applies to the fast suite alone. CI runs the integration specs in a separate job, and the coverage of that job never reaches the report. Every line must therefore be covered without Docker. Integration specs prove the behavior against real containers, they are not a source of coverage. A spec that only runs with Docker also skips when the daemon is absent, so a merged number would drop for reasons that have nothing to do with the tests.
 
 ### Test Structure
 

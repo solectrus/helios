@@ -7,4 +7,23 @@ require 'simplecov'
 resultset = 'coverage/.resultset.json'
 abort 'No coverage results found — run bin/turbo_tests first.' unless File.exist?(resultset)
 
-SimpleCov.collate [resultset], 'rails'
+# The gate. Every line of app/ is covered today, and this keeps it that way:
+# a merged report below 100 percent exits non-zero and fails `bin/ci`. The
+# threshold lives here, not in .simplecov, because .simplecov is loaded on
+# every `require 'simplecov'`. A single `bin/rspec spec/one_spec.rb` would
+# fail on it.
+SimpleCov.minimum_coverage line: 100
+
+# The default status line names the command of every worker: "Coverage report
+# generated for rspec-1, rspec-10, ... to coverage/index.html". Twenty names
+# say nothing, so keep the path and the per-criterion numbers below it.
+class QuietFormatter < SimpleCov::Formatter::HTMLFormatter
+  private
+
+  def output_message(result)
+    lines = result.coverage_statistics.filter_map { |criterion, stat| stats_line(criterion, stat) }
+    ["Coverage report: #{displayable_output_path}", *lines].join("\n")
+  end
+end
+
+SimpleCov.collate([resultset], 'rails') { formatter QuietFormatter.new }

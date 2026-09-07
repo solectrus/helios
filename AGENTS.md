@@ -67,5 +67,5 @@ Copy rules:
 
 - `spec/integration/` drives real Docker stacks, is auto-tagged `:integration` and is skipped by a bare `bin/rspec`. Run it explicitly with `--tag integration`. Use real Docker, no mocking
 - Parallel runs (`bin/turbo_tests`, `bin/ci`, CI): a spec writing to a fixed disk path must scope it per process with `TEST_ENV_NUMBER`, or it clobbers other workers
-- Aim for high coverage, but don't chase 100% — unit and request specs, proportional to complexity. The only system spec is `spec/system/smoke_spec.rb` (Playwright); usually no need to touch it
+- Line coverage must stay at 100%. `bin/coverage` fails the build below it. If a line is not reachable, delete it instead of writing a spec for it. The only system spec is `spec/system/smoke_spec.rb` (Playwright); usually no need to touch it
 - Details: `docs/guides/development.md`
