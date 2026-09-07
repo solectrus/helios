@@ -65,9 +65,23 @@ RSpec.configure do |config|
   # `--tag integration`. On CI (ENV['CI'] set) they always run.
   config.filter_run_excluding(:integration) unless ENV['CI']
 
+  # Every parallel worker announces the same filter ("Run options: exclude
+  # {integration: true}") and, when its shard holds no matching file, "All
+  # examples were filtered out". Twenty workers turn that into noise around
+  # the progress dots. A serial `bin/rspec` still announces its filters.
+  config.silence_filter_announcements = true if ENV['TEST_ENV_NUMBER']
+
   # The Anonymizer keeps a per-bundle value→letter registry; reset between
   # specs so expectations don't depend on the order tests happen to run in.
   config.before { SupportBundle::Anonymizer.reset_registry! }
+
+  # Specs under spec/components render a ViewComponent in isolation; the
+  # helpers give them `render_inline` and the Capybara matchers on `page`.
+  # Every component reads Configuration.current, so each starts on a config
+  # of its own — examples that need the directory keep `config_yaml_dir`.
+  config.include ViewComponent::TestHelpers, type: :component
+  config.include Capybara::RSpecMatchers, type: :component
+  config.before(type: :component) { with_config_yaml }
 
   # AR rows are scoped to one example via a transaction that's rolled back
   # at teardown, so a Backup created in one example never leaks into the next.
