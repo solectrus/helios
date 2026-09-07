@@ -23,6 +23,32 @@ RSpec.describe Export::Env::Unmanaged do
     end
   end
 
+  # An unmanaged MQTT-style collector carries one block of MAPPING_<N>_* keys
+  # per sensor. Grouping by the plain prefix would merge them all into one
+  # "MAPPING" block, so the index is part of the group title.
+  context 'with an unmanaged service carrying indexed mapping variables' do
+    before do
+      with_config_yaml(
+        '_unmanaged' => {
+          'services' => {
+            'legacy-collector' => {
+              'image' => 'example/legacy:latest',
+              'env_values' => {
+                'MAPPING_0_TOPIC' => 'a/b',
+                'MAPPING_1_TOPIC' => 'c/d',
+                'LEGACY_INTERVAL' => '30',
+              },
+            },
+          },
+        },
+      )
+    end
+
+    it 'separates the mappings by index and keeps the rest under its prefix' do
+      expect(env).to include('--- Mapping 0', '--- Mapping 1', '--- LEGACY')
+    end
+  end
+
   context 'when every orphan is shadowed by a managed section' do
     before do
       with_config_yaml(

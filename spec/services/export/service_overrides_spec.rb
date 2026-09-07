@@ -89,6 +89,22 @@ RSpec.describe Export::ServiceOverrides do
       end
     end
 
+    # YAML allows a mapping inside the list form; docker compose reads it the
+    # same way, so HELIOS must too.
+    context 'with environment override as a list of single-pair mappings' do
+      let(:service_hash) { { image: 'foo:1', environment: ['TZ'] } }
+
+      before do
+        configuration.update('service_overrides', {
+                               service_name => { 'environment' => [{ 'CUSTOM_FLAG' => 'on' }] },
+                             })
+      end
+
+      it 'flattens each mapping into NAME=value' do
+        expect(apply[:environment]).to eq(['TZ', 'CUSTOM_FLAG=on'])
+      end
+    end
+
     context 'with disallowed override key persisted in config.yaml' do
       before do
         FileUtils.mkdir_p(File.dirname(Configuration.path))

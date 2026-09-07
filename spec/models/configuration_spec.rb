@@ -1442,4 +1442,70 @@ RSpec.describe Configuration do
       ).to be false
     end
   end
+
+  describe 'the software survey payload' do
+    before { with_config_yaml }
+
+    # The survey shows a channel, not an image URL, so a pinned image has to
+    # translate back into the token it was chosen from.
+    it 'derives the channel token from the pinned image' do
+      config = described_class.current
+      config.update('dashboard', { 'image' => DockerImages.choices(:DASHBOARD).last })
+
+      expect(described_class.current.setting_data('software')['service_channels'])
+        .to include('dashboard')
+    end
+
+    it 'leaves out a service pinned to an image no channel offers' do
+      config = described_class.current
+      config.update('dashboard', { 'image' => 'example/custom:1.0' })
+
+      expect(described_class.current.setting_data('software')['service_channels'].to_h)
+        .not_to include('dashboard')
+    end
+  end
+
+  describe 'service overrides' do
+    before { with_config_yaml }
+
+    it 'keeps only the allowed compose keys' do
+      described_class.current.update('service_overrides', {
+                                       'dashboard' => { 'labels' => ['a=1'], 'image' => 'evil:latest' },
+                                     })
+
+      expect(described_class.current.service_overrides['dashboard']).to eq('labels' => ['a=1'])
+    end
+
+    # Nothing allowed survived, so the section goes rather than staying behind
+    # as an empty hash.
+    it 'drops the section when nothing allowed remains' do
+      described_class.current.update('service_overrides', { 'dashboard' => { 'image' => 'evil:latest' } })
+
+      expect(described_class.current.service_overrides).to be_blank
+    end
+  end
+
+  describe 'a computed MQTT mapping' do
+    before { with_config_yaml }
+
+    # The survey asks for the formula in its own question (a computed mapping
+    # reads other mapping names, a topic formula reads {value}); on save it is
+    # folded back into the single `formula` field the collector reads.
+    it 'stores the formula the survey collected' do
+      described_class.current.add_mqtt_topic(
+        'measurement' => 'MQTT', 'field' => 'power', 'computed_formula' => '{washer} + {oven}',
+      )
+
+      expect(described_class.current.mqtt_topic(0)['formula']).to eq('{washer} + {oven}')
+    end
+  end
+
+  describe 'the data wrapper' do
+    it 'answers respond_to? for the keys it carries' do
+      data = Configuration::Data.wrap('image' => 'alpine')
+
+      expect(data).to respond_to(:image)
+      expect(data).not_to respond_to(:no_such_key)
+    end
+  end
 end

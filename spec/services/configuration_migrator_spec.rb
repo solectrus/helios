@@ -26,6 +26,17 @@ RSpec.describe ConfigurationMigrator do
     YAML.safe_load_file(path, permitted_classes: [Date])
   end
 
+  describe '.run!' do
+    # The boot initializer calls this form; it must reach the live config path.
+    it 'runs against the configuration path' do
+      with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
+
+      expect(described_class.run!).to eq(:migrated)
+      expect(Configuration.load_file(Configuration.path)[Configuration::SCHEMA_VERSION_KEY])
+        .to eq(ConfigurationMigrations.current_version)
+    end
+  end
+
   describe '#run!' do
     context 'when the file does not exist' do
       it 'returns :missing without writing anything' do

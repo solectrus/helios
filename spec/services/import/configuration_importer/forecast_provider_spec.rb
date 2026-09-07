@@ -74,6 +74,19 @@ RSpec.describe 'Import::ConfigurationImporter forecast provider' do
     end
   end
 
+  # A provider HELIOS does not know (a newer collector, a typo) carries no
+  # provider-specific fields; the coordinates and roofs still import.
+  context 'when FORECAST_PROVIDER names an unknown provider' do
+    let(:fc_env) { base_env.merge('FORECAST_PROVIDER' => 'something-new') }
+
+    it 'keeps the value and imports no provider-specific fields' do
+      result = importer.result[:forecast]
+
+      expect(result).to include('forecast' => 'something-new', 'forecast_latitude' => '50.0')
+      expect(result.keys.grep(/apikey|solcast|pvnode/)).to be_empty
+    end
+  end
+
   context 'when the forecast-collector runs on the develop channel' do
     let(:services) do
       {

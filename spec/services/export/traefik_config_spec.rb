@@ -30,6 +30,28 @@ RSpec.describe Export::TraefikConfig do
     expect(router['middlewares']).to eq(['CHANGE_ME'])
   end
 
+  # A balcony plant turns Ingest on, and the external Traefik has to reach it
+  # on its own port.
+  context 'with Ingest running' do
+    before do
+      configuration.update('deployment', { 'mode' => 'full' })
+      configuration.update('shelly', { 'connection' => 'local', 'interval' => '5' })
+      configuration.update_sensor('inverter_power_2', {
+                                    'source' => 'shelly',
+                                    'is_balcony' => true,
+                                    'shelly_host' => 'shelly-balcony.local',
+                                    'measurement' => 'balcony',
+                                    'field' => 'power',
+                                  })
+    end
+
+    it 'routes ingest on a subdomain to port 4567' do
+      expect(document.dig('http', 'routers', 'solectrus-ingest', 'rule')).to eq('Host(`ingest.demo.example.com`)')
+      expect(document.dig('http', 'services', 'solectrus-ingest', 'loadBalancer', 'servers', 0, 'url'))
+        .to eq('http://10.0.0.5:4567')
+    end
+  end
+
   it 'starts with an explanatory header comment' do
     expect(output).to start_with('# Traefik dynamic configuration')
   end

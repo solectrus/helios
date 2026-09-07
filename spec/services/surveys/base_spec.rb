@@ -9,6 +9,16 @@ RSpec.describe Surveys::Base do
     end
   end
 
+  describe '#find_element' do
+    it 'searches every page, and answers nil when no page carries the element' do
+      survey = Surveys::Backup::Survey.new
+      data = { 'pages' => [{ 'elements' => [{ 'name' => 'host' }] }, { 'name' => 'second' }] }
+
+      expect(survey.send(:find_element, data, 'host')).to eq('name' => 'host')
+      expect(survey.send(:find_element, data, 'missing')).to be_nil
+    end
+  end
+
   describe '#call' do
     let(:fake_survey_class) do
       Class.new(described_class) do

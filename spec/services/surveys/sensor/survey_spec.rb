@@ -112,5 +112,22 @@ RSpec.describe Surveys::Sensor::Survey do
     it 'clears invisible values so filters of an abandoned source do not leak into config' do
       expect(result['clearInvisibleValues']).to eq('onHidden')
     end
+
+    describe 'source choices in dashboard_only mode' do
+      before { with_config_yaml('deployment' => { 'mode' => 'dashboard_only' }) }
+
+      it 'offers only the sources a dashboard-only stack can serve' do
+        element = find_survey_element(result, 'source')
+
+        expect(element['choices'].pluck('value')).to all(be_in(Configuration::DASHBOARD_ONLY_SOURCES))
+      end
+
+      it 'explains why the device collectors are missing' do
+        element = find_survey_element(result, 'source')
+
+        expect(element['description']).to include('default' => a_string_including('dashboard-only mode'),
+                                                  'de' => a_string_including('Geräte-Kollektoren'))
+      end
+    end
   end
 end

@@ -312,6 +312,25 @@ RSpec.describe Env::File do
       end
     end
 
+    it 'keeps the inline comment behind a single-quoted value on rewrite' do
+      File.write(tmp_path, "SECRET='old value' # keep me\n")
+      env = described_class.load(tmp_path)
+      env['SECRET'] = 'new'
+      env.save
+
+      expect(File.read(tmp_path)).to eq("SECRET=new # keep me\n")
+    end
+
+    # A `#` inside the quotes belongs to the value, not to a comment.
+    it 'does not mistake a hash inside a single-quoted value for a comment' do
+      File.write(tmp_path, "SECRET='a # b'\n")
+      env = described_class.load(tmp_path)
+      env['SECRET'] = 'new'
+      env.save
+
+      expect(File.read(tmp_path)).to eq("SECRET=new\n")
+    end
+
     # The escaped quote must not end the value early, otherwise the rest of it
     # is mistaken for an inline comment and grafted onto the next write.
     it 'rewrites a value containing an escaped quote without leaving debris' do

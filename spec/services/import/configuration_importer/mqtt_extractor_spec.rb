@@ -427,12 +427,17 @@ RSpec.describe Import::ConfigurationImporter::MqttExtractor do
         'MAPPING_1_MEASUREMENT' => 'm',
         'MAPPING_1_FIELD' => 'g',
         'MAPPING_1_TYPE' => 'float',
-        'MAPPING_1_NULL_TO_ZERO' => 'yes',
+        'MAPPING_1_NULL_TO_ZERO' => 'false',
+        'MAPPING_2_TOPIC' => 'e/f',
+        'MAPPING_2_MEASUREMENT' => 'm',
+        'MAPPING_2_FIELD' => 'h',
+        'MAPPING_2_TYPE' => 'float',
+        'MAPPING_2_NULL_TO_ZERO' => 'yes',
       }
     end
 
     it 'converts the two values the collector accepts and keeps anything else' do
-      expect(extractor.raw_mappings.pluck('null_to_zero')).to eq([true, 'yes'])
+      expect(extractor.raw_mappings.pluck('null_to_zero')).to eq([true, false, 'yes'])
     end
   end
 end
