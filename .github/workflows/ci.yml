@@ -311,7 +311,6 @@ jobs:
         with:
           images: ghcr.io/solectrus/helios
           tags: |
-            type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=semver,pattern={{major}}
