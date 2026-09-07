@@ -448,6 +448,7 @@ RSpec.describe SupportBundle::SystemInfo::HostMetrics do
     end
 
     it 'reads the product name, version and build from sw_vers' do
+      stub_missing_host_file('/etc/os-release')
       stub_host_file('/usr/bin/sw_vers')
       stub_capture(['sw_vers'], <<~SW_VERS)
         ProductName:\t\tmacOS

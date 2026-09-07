@@ -20,7 +20,14 @@ module HostFileHelpers
 
   private
 
+  # Only the first call sets the pass-through. A later bare `and_call_original`
+  # matches every argument and, as the newest stub, wins over the `with` stubs
+  # registered before it. Two stubbed paths in one example would then keep only
+  # the last one.
   def stub_real_file_access
+    return if @real_file_access_stubbed
+
+    @real_file_access_stubbed = true
     allow(File).to receive(:exist?).and_call_original
     allow(File).to receive(:read).and_call_original
     allow(File).to receive(:foreach).and_call_original
