@@ -76,6 +76,16 @@ RSpec.describe BackupRepository::S3::Downloader do
       expect(File.read(error_file)).to include('S3 download failed').and include('AccessDenied')
     end
 
+    it 'writes a restore-error for a failure the adapter did not wrap' do
+      FileUtils.touch(staged_tar)
+      allow(BackupRepository::S3).to receive(:download_to_staging!).and_raise(Errno::EPIPE)
+
+      described_class.send(:run, filename) { raise 'on_complete must not be called on failure' }
+
+      expect(File).not_to exist(staged_tar)
+      expect(File.read(error_file)).to include('Errno::EPIPE')
+    end
+
     it 'writes the raw error from on_complete (no S3-download prefix) when post-download work fails' do
       described_class.send(:run, filename) { raise RestoreRunner::Error, 'INFLUX_ADMIN_TOKEN missing' }
 

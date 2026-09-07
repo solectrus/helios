@@ -151,6 +151,53 @@ RSpec.describe BackupRepository do
     it 'returns nil for an unparseable filename' do
       expect(described_class.created_at_from('not-a-backup.txt')).to be_nil
     end
+
+    # The pattern only checks the digit count, so an impossible date reaches
+    # strptime and must not raise.
+    it 'returns nil for a filename with an impossible date' do
+      expect(described_class.created_at_from('solectrus-backup-20261345-996060.tar')).to be_nil
+    end
+  end
+
+  describe '.read_archive' do
+    it 'returns an empty archive for a file that is not there' do
+      expect(described_class.read_archive(File.join(backups_dir, 'gone.tar')))
+        .to eq(described_class::EMPTY_ARCHIVE)
+    end
+
+    it 'returns an empty archive for a file that is not a tar' do
+      FileUtils.mkdir_p(backups_dir)
+      path = File.join(backups_dir, 'broken.tar')
+      File.binwrite(path, 'y' * 1024)
+
+      expect(described_class.read_archive(path)).to eq(described_class::EMPTY_ARCHIVE)
+    end
+
+    # A backup whose config.yaml is corrupt still lists its entries; only the
+    # config is dropped.
+    it 'keeps the entries when the embedded config.yaml is unparseable' do
+      write_tar('solectrus-backup-20260508-110000.tar', archive: { 'helios/config.yaml' => "a:\n  - b\n c\n" })
+
+      archive = described_class.read_archive(File.join(backups_dir, 'solectrus-backup-20260508-110000.tar'))
+
+      expect(archive.entries.map(&:name)).to eq(['helios/config.yaml'])
+      expect(archive.config).to be_nil
+    end
+  end
+
+  describe BackupRepository::Local do
+    # The backup file can be removed between the runner finishing and the
+    # record being written (a prune, a user deleting it on the host).
+    it 'records nothing when the file vanished before it was read' do
+      expect(described_class.record_backup!('solectrus-backup-20260508-110000.tar')).to be_nil
+      expect(described_class.all).to be_empty
+    end
+
+    it 'raises NotFound when downloading a file that is not there' do
+      expect do
+        described_class.download('solectrus-backup-20260508-110000.tar') { |chunk| chunk }
+      end.to raise_error(BackupRepository::NotFound)
+    end
   end
 
   describe '.prune!' do
@@ -314,15 +361,5 @@ RSpec.describe BackupRepository do
     File.write(Configuration.path,
                YAML.dump('backup' => { 'destination' => destination, **fields.transform_keys(&:to_s) }))
     Current.reset
-  end
-
-  def tar_archive(entries)
-    StringIO.new.tap do |io|
-      Gem::Package::TarWriter.new(io) do |tar|
-        entries.each do |name, content|
-          tar.add_file_simple(name, 0o644, content.bytesize) { |entry| entry.write(content) }
-        end
-      end
-    end.string
   end
 end

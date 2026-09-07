@@ -153,6 +153,53 @@ RSpec.describe CsvImportUploader do
                         I18n.t('csv_imports.uploader.errors.too_large_extracted'))
     end
 
+    # A malicious archive can understate its entry size in the central
+    # directory, so the cap is enforced mid-stream as well.
+    it 'aborts mid-stream when an entry lies about its size' do
+      stub_const('CsvImportUploader::MAX_EXTRACTED_BYTES', 100)
+      allow_any_instance_of(Zip::Entry).to receive(:size).and_return(1) # rubocop:disable RSpec/AnyInstance
+
+      uploaded = build_upload('senec.zip', zip_with('big.csv' => 'x' * 200))
+
+      expect { described_class.start(uploaded) }
+        .to raise_error(CsvImportUploader::Error,
+                        I18n.t('csv_imports.uploader.errors.too_large_extracted'))
+      expect(File).not_to exist(File.join(described_class.extract_directory, 'big.csv'))
+    end
+
+    it 'reports a ZIP that cannot be written to the staging directory' do
+      uploaded = build_upload('senec.zip', zip_with('week.csv' => 'a,b'))
+      allow(FileUtils).to receive(:mv).and_raise(Errno::EACCES)
+
+      expect { described_class.start(uploaded) }
+        .to raise_error(CsvImportUploader::Error, /#{I18n.t('csv_imports.uploader.errors.write_failed',
+                                                            message: '')}/)
+    end
+
+    it 'reports a bare CSV that cannot be written to the staging directory' do
+      uploaded = build_upload('week.csv', 'a,b', content_type: 'text/csv')
+      allow(FileUtils).to receive(:mv).and_raise(Errno::EACCES)
+
+      expect { described_class.start(uploaded) }.to raise_error(CsvImportUploader::Error)
+    end
+
+    # The archive validates and then fails while being read — a truncated
+    # upload, or a file removed under the process.
+    it 'reports an archive that breaks during extraction' do
+      uploaded = build_upload('senec.zip', zip_with('week.csv' => 'a,b'))
+      original = Zip::File.method(:open)
+      calls = 0
+      allow(Zip::File).to receive(:open) do |*args, &block|
+        calls += 1
+        raise Zip::Error, 'truncated' if calls > 1
+
+        original.call(*args, &block)
+      end
+
+      expect { described_class.start(uploaded) }
+        .to raise_error(CsvImportUploader::Error, /truncated/)
+    end
+
     it 'wipes the staging directory if extraction fails' do
       uploaded = build_upload('senec.zip', 'corrupt')
 

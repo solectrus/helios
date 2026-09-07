@@ -230,6 +230,125 @@ RSpec.describe CsvImportRunner do
     end
   end
 
+  # The threads themselves: the outer `before` runs their bodies inline, so
+  # these examples restore the real implementations.
+  describe 'background threads' do
+    def join_thread(name)
+      described_class.send(:instance_variable_get, name)&.join(5)
+    end
+
+    it 'reports preparing while the prepare thread runs' do
+      allow(described_class).to receive(:spawn_preparing_thread!).and_call_original
+      allow(described_class).to receive(:preparing?).and_call_original
+      instance = described_class.new
+      allow(instance).to receive(:run_preparing!)
+
+      described_class.send(:spawn_preparing_thread!, instance)
+      join_thread(:@preparing_thread)
+
+      expect(instance).to have_received(:run_preparing!)
+      expect(described_class).not_to be_preparing
+    end
+
+    # Two /show polls can reach detect_completion! at the same moment; running
+    # the truncate + Redis flush twice would be destructive.
+    it 'starts only one completion thread' do
+      allow(described_class).to receive(:spawn_completion_thread!).and_call_original
+      allow(described_class).to receive(:completing?).and_call_original
+      gate = Queue.new
+      instance = described_class.new
+      allow(instance).to receive(:process_completion!) { gate.pop }
+      allow(described_class).to receive(:new).and_return(instance)
+
+      described_class.send(:spawn_completion_thread!, {})
+      described_class.send(:spawn_completion_thread!, {})
+      expect(described_class).to be_completing
+      gate << :go
+      join_thread(:@completion_thread)
+
+      expect(instance).to have_received(:process_completion!).once
+    end
+  end
+
+  describe '.progress' do
+    it 'reports the preparing phase while the image is being pulled' do
+      allow(described_class).to receive(:preparing?).and_return(true)
+
+      expect(described_class.progress).to eq(phase: :preparing, done: 0, total: 0)
+    end
+
+    it 'reports the phase the completion thread is in' do
+      allow(described_class).to receive(:completing?).and_return(true)
+      described_class.completion_phase = :truncating
+
+      expect(described_class.progress).to eq(phase: :truncating, done: 0, total: 0)
+    ensure
+      described_class.completion_phase = nil
+    end
+
+    # The total is the number of extracted CSV files, the count comes off the
+    # container log.
+    it 'counts imported files against the extracted ones while importing' do
+      allow(described_class).to receive(:log_tail).and_return("Importing week-01.csv\n")
+
+      expect(described_class.progress).to include(phase: :importing, total: 1)
+    end
+  end
+
+  describe 'failure handling' do
+    # The UI polls the state file, so every failure has to end up in it.
+    { StandardError.new('docker down') => 'docker down',
+      Class.new(StandardError) { def message = '' } => '(no message)' }.each do |error, message|
+      it "captures a failed preparation reading #{message.inspect}" do
+        instance = described_class.new
+        allow(instance).to receive(:pause_updates!).and_raise(error)
+
+        instance.send(:run_preparing!)
+
+        expect(described_class.error_message).to include(message)
+        expect(Dir).not_to exist(CsvImportUploader.extract_directory)
+      end
+    end
+
+    it 'captures a completion that fails outright' do
+      instance = described_class.new
+      allow(instance).to receive(:capture_outcome!).and_raise(StandardError, 'psql gone')
+      allow(instance).to receive(:remove_container!)
+
+      instance.process_completion!('State' => { 'Status' => 'exited', 'ExitCode' => 0 })
+
+      expect(described_class.error_message).to eq('psql gone')
+    end
+
+    # The cache flush is best-effort: the import itself already succeeded.
+    it 'reports a failing Redis flush as a phase failure, not as an exception' do
+      stub_container_find('redis')
+      allow(Orchestration::RedisCacheFlush).to receive(:call).and_raise(StandardError, 'redis gone')
+
+      expect(described_class.new.send(:flush_redis_cache!)).to be(false)
+    end
+
+    # An exception from the cleanup steps would bypass the rescue above them
+    # and leave the UI stuck at "running" forever.
+    it 'swallows a failing cleanup step' do
+      expect { described_class.new.send(:safely, :remove_container) { raise 'boom' } }.not_to raise_error
+    end
+
+    # A failed `docker rm` leaves the exited container in place, which the next
+    # detect_completion! would pick up again — so it is logged loudly.
+    it 'logs a docker rm that does not succeed' do
+      allow(Open3).to receive(:capture2e).with('docker', 'rm', '-f', described_class::CONTAINER_NAME)
+                                         .and_return(['no such container', process_status(success: false)])
+      logger = instance_double(Loggable::PrefixedLogger, warn: nil)
+      instance = described_class.new
+      allow(instance).to receive(:logger).and_return(logger)
+
+      instance.send(:remove_container!)
+
+      expect(logger).to have_received(:warn).with(/docker rm failed \(exit 1\)/)
+    end
+  end
+
   describe '#process_completion!' do
     let(:redis_container) { instance_double(Orchestration::Container, running?: true) }
     let(:postgres_container) do

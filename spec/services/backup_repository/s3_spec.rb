@@ -5,6 +5,7 @@ RSpec.describe BackupRepository::S3 do
   let(:host_data_path) { '/host/data' }
   let(:bucket) { 'my-backups' }
   let(:s3_client) { Aws::S3::Client.new(stub_responses: true, region: 'eu-central-1') }
+  let(:filename) { 'solectrus-backup-20260508-100000.tar' }
 
   before do
     allow(Rails.configuration).to receive(:data_path).and_return(data_path)
@@ -111,8 +112,6 @@ RSpec.describe BackupRepository::S3 do
   end
 
   describe '.destroy!' do
-    let(:filename) { 'solectrus-backup-20260508-100000.tar' }
-
     it 'issues a delete_objects call for the tar, then removes the DB row' do
       create_row(filename)
 
@@ -141,8 +140,6 @@ RSpec.describe BackupRepository::S3 do
   end
 
   describe '.direct_download_url' do
-    let(:filename) { 'solectrus-backup-20260508-100000.tar' }
-
     it 'returns a presigned URL pointing at the object key, with attachment disposition' do
       create_row(filename)
 
@@ -171,6 +168,117 @@ RSpec.describe BackupRepository::S3 do
     end
   end
 
+  describe '.download' do
+    it 'streams the object to the block' do
+      create_row(filename)
+      s3_client.stub_responses(:get_object, body: 'tar-bytes')
+
+      chunks = []
+      described_class.download(filename) { |chunk| chunks << chunk }
+
+      expect(chunks.join).to eq('tar-bytes')
+    end
+
+    # The row says the backup exists, but the object is gone (deleted in the
+    # bucket, or a lifecycle rule expired it).
+    it 'raises NotFound when the object is gone from the bucket' do
+      create_row(filename)
+      s3_client.stub_responses(:get_object, 'NoSuchKey')
+
+      expect { described_class.download(filename) { |chunk| chunk } }
+        .to raise_error(BackupRepository::NotFound)
+    end
+  end
+
+  describe '.read_archive_for' do
+    it 'returns an empty archive when the destination is not configured' do
+      with_config_yaml('backup' => { 'destination' => 's3' })
+
+      expect(described_class.read_archive_for(filename)).to eq(BackupRepository::EMPTY_ARCHIVE)
+    end
+
+    it 'returns an empty archive when nothing is staged locally' do
+      expect(described_class.read_archive_for(filename)).to eq(BackupRepository::EMPTY_ARCHIVE)
+    end
+
+    it 'reads the staged copy the download left behind' do
+      write_staged_tar(filename)
+
+      expect(described_class.read_archive_for(filename).config).to eq('system' => {})
+    end
+  end
+
+  describe '.upload_from_staging!' do
+    it 'raises a repository error when S3 rejects the upload' do
+      write_staged_tar(filename)
+      s3_client.stub_responses(:put_object, 'AccessDenied')
+
+      expect { described_class.upload_from_staging!(filename) }
+        .to raise_error(BackupRepository::Error, /AccessDenied/)
+    end
+  end
+
+  describe '.record_from_staging!' do
+    # Right after an upload the tar is still on disk; reading it there saves
+    # downloading back what was just sent.
+    it 'records the row from the staged copy' do
+      write_staged_tar(filename)
+
+      described_class.record_from_staging!(filename)
+
+      expect(described_class.find!(filename).files.pluck('name')).to eq(['helios/config.yaml'])
+    end
+
+    it 'records nothing when the staged copy is already gone' do
+      expect(described_class.record_from_staging!(filename)).to be_nil
+      expect(Backup.count).to eq(0)
+    end
+
+    it 'rejects a filename that is not a backup' do
+      expect { described_class.record_from_staging!('garbage.tar') }.to raise_error(BackupRepository::NotFound)
+    end
+  end
+
+  # The SDK reports one entry per multipart part; the UI only wants a total.
+  describe 'upload progress' do
+    it 'sums the per-part numbers into one pair' do
+      reported = nil
+
+      described_class.send(:progress_bridge, ->(done, total) { reported = [done, total] })
+                     .call([10, 20], [100, 200])
+
+      expect(reported).to eq([30, 300])
+    end
+
+    it 'passes no callback through when the caller wants no progress' do
+      expect(described_class.send(:progress_bridge, nil)).to be_nil
+    end
+  end
+
+  describe '.download_to_staging!' do
+    it 'reports progress against the size the caller knows' do
+      s3_client.stub_responses(:get_object, body: 'tar-bytes')
+      progress = []
+
+      described_class.download_to_staging!(
+        filename, progress_callback: ->(done, total) { progress << [done, total] }, total: 9
+      )
+
+      expect(progress.last).to eq([9, 9])
+      expect(File.read(described_class.staging_path(filename))).to eq('tar-bytes')
+    end
+  end
+
+  describe '.remove_files!' do
+    # Pruning deletes what the DB lists; an object someone already removed in
+    # the bucket must not abort the prune.
+    it 'ignores objects that are already gone' do
+      s3_client.stub_responses(:delete_objects, 'NoSuchKey')
+
+      expect { described_class.remove_files!(['solectrus-backup-20260508-100000.tar']) }.not_to raise_error
+    end
+  end
+
   describe '.error_message' do
     it 'reads the backup runner error from RunnerLog' do
       RunnerLog.record_error!(:backup, 'Disk full')
@@ -183,8 +291,6 @@ RSpec.describe BackupRepository::S3 do
   end
 
   describe '.record_backup!' do
-    let(:filename) { 'solectrus-backup-20260508-100000.tar' }
-
     it 'downloads the tar to staging, parses it locally, then inserts a row and clears staging' do
       tar_bytes = sample_tar(influxdb: 'influxdb:2.9-alpine', postgresql: 'postgres:18-alpine')
       s3_client.stub_responses(:get_object, body: tar_bytes)
@@ -223,8 +329,6 @@ RSpec.describe BackupRepository::S3 do
   end
 
   describe '.mark_pending! / .detect_completion!' do
-    let(:filename) { 'solectrus-backup-20260508-100000.tar' }
-
     it 'creates the pending marker only when the destination is ready' do
       described_class.mark_pending!
       expect(File).to exist(described_class.pending_marker_path)
@@ -289,6 +393,11 @@ RSpec.describe BackupRepository::S3 do
       expect(client.config.region).to eq('eu-central-1')
       expect(client.config.force_path_style).to be(false)
     end
+  end
+
+  def write_staged_tar(filename)
+    FileUtils.mkdir_p(described_class.directory)
+    File.binwrite(described_class.staging_path(filename), config_only_tar)
   end
 
   def create_row(filename, bucket: self.bucket, prefix: 'solectrus', endpoint_url: nil)

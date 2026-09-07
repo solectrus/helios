@@ -116,6 +116,14 @@ RSpec.describe Backups::ConnectionTest do
       expect(probe(full_values)).to have_attributes(ok: false, reason: :s3_error)
     end
 
+    # A malformed endpoint URL raises before any request goes out; the survey
+    # still has to show a result rather than a stack trace.
+    it 'reports a plain S3 error when the probe cannot even be built' do
+      allow(Aws::S3::Client).to receive(:new).and_raise(ArgumentError, 'invalid endpoint')
+
+      expect(probe(full_values)).to have_attributes(ok: false, reason: :s3_error)
+    end
+
     it 'sends the bucket and prefix to S3' do
       s3_client.stub_responses(:list_objects_v2, contents: [])
       probe(full_values)
@@ -136,6 +144,8 @@ RSpec.describe Backups::ConnectionTest do
       expect(captured).to include(endpoint: 'https://minio.example.com', force_path_style: true)
     end
   end
+
+  it_behaves_like 'a survey connection test'
 
   def stub_probe(exitstatus:, output:)
     status = instance_double(Process::Status, exitstatus: exitstatus, success?: exitstatus.zero?)

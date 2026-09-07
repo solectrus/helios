@@ -154,6 +154,18 @@ RSpec.describe BackupRepository::S3::Uploader do
       expect(File).not_to exist(staged_tar)
       expect(File.read(error_file)).to include('S3 upload failed').and include('AccessDenied')
     end
+
+    # Anything the adapter does not wrap (a broken pipe, a bug) must end the
+    # same way, not leave the UI waiting on an upload that is already dead.
+    it 'writes an error.txt for a failure the adapter did not wrap' do
+      FileUtils.touch(staged_tar)
+      allow(BackupRepository::S3).to receive(:upload_from_staging!).and_raise(Errno::EPIPE)
+
+      described_class.send(:run, filename)
+
+      expect(File).not_to exist(staged_tar)
+      expect(File.read(error_file)).to include('Errno::EPIPE')
+    end
   end
 
   describe '.wait_for_container_exit' do

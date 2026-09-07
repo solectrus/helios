@@ -53,6 +53,24 @@ RSpec.describe BackupUploader do
         .to raise_error(BackupUploader::Error, I18n.t('backups.uploader.errors.invalid_archive'))
     end
 
+    # The tempfile can be gone before HELIOS reads it (a request that was
+    # aborted); that reads as "not a tar", not as an exception.
+    it 'rejects an upload whose tempfile has vanished' do
+      uploaded = build_upload('solectrus-backup-20260507-101234.tar', valid_archive)
+      File.unlink(uploaded.tempfile.path)
+
+      expect { described_class.start(uploaded) }
+        .to raise_error(BackupUploader::Error, I18n.t('backups.uploader.errors.invalid_archive'))
+    end
+
+    it 'reports a backup that cannot be written to disk' do
+      uploaded = build_upload('solectrus-backup-20260507-101234.tar', valid_archive)
+      allow(FileUtils).to receive(:mv).and_raise(Errno::EACCES)
+
+      expect { described_class.start(uploaded) }.to raise_error(BackupUploader::Error, /Permission denied/)
+      expect(Dir.glob(File.join(backups_dir, '*.part'))).to be_empty
+    end
+
     it 'rejects an archive without a PostgreSQL dump' do
       archive = valid_archive_entries.except('solectrus-postgresql-backup-2026-05-07.sql.gz')
       uploaded = build_upload('solectrus-backup-20260507-101234.tar', tar_archive(archive))
@@ -159,16 +177,6 @@ RSpec.describe BackupUploader do
       'solectrus-influxdb-backup-2026-05-07/data.tar.gz' => 'i' * 128,
       'helios/config.yaml' => "system:\n  admin_password: secret\n",
     }
-  end
-
-  def tar_archive(entries)
-    StringIO.new.tap do |io|
-      Gem::Package::TarWriter.new(io) do |tar|
-        entries.each do |name, content|
-          tar.add_file_simple(name, 0o644, content.bytesize) { |entry| entry.write(content) }
-        end
-      end
-    end.string
   end
 
   def build_upload(filename, content)

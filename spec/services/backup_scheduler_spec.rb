@@ -124,6 +124,32 @@ RSpec.describe BackupScheduler do
       expect(described_class.send(:tick_gate).false?).to be(true)
     end
 
+    it 'skips the backup while another one is already running' do
+      allow(BackupRunner).to receive(:in_progress).and_return(
+        BackupRepository::InProgress.new(started_at: Time.current, filename: 'x.tar'),
+      )
+
+      described_class.tick
+
+      expect(BackupRunner).not_to have_received(:start)
+      expect(Orchestration::HeliosOperationBroadcaster).not_to have_received(:broadcast!)
+    end
+
+    it 'swallows an unexpected failure so the thread survives' do
+      allow(BackupRunner).to receive(:start).and_raise(TypeError, 'boom')
+
+      expect { described_class.tick }.not_to raise_error
+    end
+
+    # The tick runs on the scheduler thread; anything escaping it would take
+    # the thread down and stop every later backup.
+    it 'swallows a failure from the executor wrapper itself' do
+      allow(described_class).to receive(:detect_finished_backup).and_raise(StandardError, 'boom')
+
+      expect { described_class.tick }.not_to raise_error
+      expect(described_class.send(:tick_gate).false?).to be(true)
+    end
+
     it 'swallows BackupRunner errors so the thread survives' do
       allow(BackupRunner).to receive(:start).and_raise(BackupRunner::Error, 'boom')
       expect { described_class.tick }.not_to raise_error
@@ -256,6 +282,32 @@ RSpec.describe BackupScheduler do
 
       expect(logger).to have_received(:warn)
         .with('2 earlier scheduled backup(s) were missed (last automatic backup handled 2026-05-26)')
+    end
+  end
+
+  # The scheduler is a ManagedThread: ticking every TICK_INTERVAL seconds and
+  # logging the armed schedule as soon as the thread comes up.
+  describe 'the background thread' do
+    let(:scheduler) { described_class.new }
+
+    after { scheduler.stop }
+
+    it 'logs the schedule state when the thread starts' do
+      allow(described_class).to receive(:log_schedule_state)
+      allow(described_class).to receive(:tick)
+
+      scheduler.start
+
+      expect(scheduler).to be_running
+      expect(described_class).to have_received(:log_schedule_state)
+    end
+
+    it 'ticks the class body on its own interval' do
+      allow(described_class).to receive(:tick)
+
+      expect(scheduler.send(:interval)).to eq(described_class::TICK_INTERVAL)
+      scheduler.send(:run_once)
+      expect(described_class).to have_received(:tick)
     end
   end
 end

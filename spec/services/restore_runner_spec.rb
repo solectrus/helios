@@ -130,6 +130,18 @@ RSpec.describe RestoreRunner do
       )
     end
 
+    # A relative volume_path is relative to the compose project directory, so
+    # the restore container has to see it as an absolute host path.
+    it 'expands a relative volume_path against the host data path' do
+      Configuration.current.update('postgresql', { 'volume_path' => './pgdata' })
+
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      placeholder_index = run.index('_')
+      expect(run[placeholder_index + 4]).to eq("#{host_data_path}/pgdata")
+    end
+
     it 'passes the actual compose filename when the user uses compose.yml' do
       File.write(File.join(data_path, 'compose.yml'), "services: {}\n")
 
@@ -604,15 +616,5 @@ RSpec.describe RestoreRunner do
 
   def mock_container(name, service_name, running:)
     instance_double(Orchestration::Container, name: name, service_name: service_name, running?: running)
-  end
-
-  def tar_archive(entries)
-    StringIO.new.tap do |io|
-      Gem::Package::TarWriter.new(io) do |tar|
-        entries.each do |name, content|
-          tar.add_file_simple(name, 0o644, content.bytesize) { |entry| entry.write(content) }
-        end
-      end
-    end.string
   end
 end

@@ -36,6 +36,28 @@ RSpec.describe BackupRepository::PipeIo do
     expect { pipe.rewind }.to raise_error(Errno::EINVAL)
   end
 
+  it 'tracks position across readpartial' do
+    IO.pipe.then do |reader, writer|
+      writer.write('hello world')
+      writer.close
+      pipe = described_class.new(reader)
+
+      expect(pipe.readpartial(5)).to eq('hello')
+      expect(pipe.pos).to eq(5)
+      reader.close
+    end
+  end
+
+  it 'tracks position across getc, including at the end of the stream' do
+    pipe = described_class.new(StringIO.new('hi'))
+
+    expect(pipe.getc).to eq('h')
+    expect(pipe.getc).to eq('i')
+    expect(pipe.pos).to eq(2)
+    expect(pipe.getc).to be_nil
+    expect(pipe.pos).to eq(2)
+  end
+
   it 'tracks position across reads' do
     pipe = described_class.new(StringIO.new('hello world'))
     expect(pipe.pos).to eq(0)

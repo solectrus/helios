@@ -173,6 +173,12 @@ RSpec.describe BackupRepository::External do
     end
   end
 
+  describe '.direct_download_url' do
+    it 'is nil because the browser cannot reach the external mount' do
+      expect(described_class.direct_download_url('solectrus-backup-20260508-100000.tar')).to be_nil
+    end
+  end
+
   describe '.detect_completion!' do
     let(:filename) { 'solectrus-backup-20260508-100000.tar' }
 
@@ -229,6 +235,18 @@ RSpec.describe BackupRepository::External do
       expect(File).not_to exist(described_class.send(:pending_marker_path))
     end
 
+    # RestoreRunner marks a pending run without a filename — nothing to record,
+    # so the clean exit is logged as a finished restore.
+    it 'closes a restore run that left no filename behind' do
+      described_class.mark_pending!
+
+      described_class.detect_completion!
+
+      expect(RunnerLog.find_by(kind: 'restore').last_finished_at).to be_present
+      expect(Backup.count).to eq(0)
+      expect(File).not_to exist(described_class.send(:pending_marker_path))
+    end
+
     it 'does nothing in the steady state' do
       described_class.detect_completion!
 
@@ -273,6 +291,15 @@ RSpec.describe BackupRepository::External do
     it 'returns EMPTY_ARCHIVE when host_directory is missing' do
       with_config_yaml('backup' => { 'destination' => 'external' })
       expect(described_class.read_archive_for('whatever.tar')).to eq(BackupRepository::EMPTY_ARCHIVE)
+    end
+
+    it 'streams the archive through the sidecar' do
+      allow(described_class).to receive(:stream_sidecar_archive).and_return(BackupRepository::EMPTY_ARCHIVE)
+
+      described_class.read_archive_for('solectrus-backup-20260508-100000.tar')
+
+      expect(described_class).to have_received(:stream_sidecar_archive)
+        .with('cat', '/data/solectrus-backup-20260508-100000.tar')
     end
   end
 
