@@ -67,10 +67,6 @@ module ServiceRow
       "service-#{service_name}"
     end
 
-    def skip_lazy_loading?
-      !lazy || pending || error?
-    end
-
     def error?
       error_message.present?
     end

@@ -17,15 +17,13 @@ module SettingForm
       setting == 'sensor'
     end
 
+    # Only a sensor can be new: every other setting has its own section in
+    # config.yaml and is always updated in place.
     def form_url
       if sensor_setting?
-        if new_record?
-          helpers.configuration_settings_path
-        else
-          helpers.configuration_setting_path(setting: 'sensor', name: sensor_name)
-        end
-      elsif new_record?
-        helpers.configuration_settings_path
+        return helpers.configuration_settings_path if new_record?
+
+        helpers.configuration_setting_path(setting: 'sensor', name: sensor_name)
       else
         helpers.configuration_setting_path(setting:, name: setting)
       end

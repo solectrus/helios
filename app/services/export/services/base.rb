@@ -18,7 +18,7 @@ module Export
       end
 
       # Hash-key path locating this service's settings in `config.yaml`,
-      # e.g. `['backup', 'influxdb']`. Nil opts the service out of in-place
+      # e.g. `['dashboard']`. Nil opts the service out of in-place
       # updates (HELIOS uses self-recreate instead).
       def self.config_keys
         nil

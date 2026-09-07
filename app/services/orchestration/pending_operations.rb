@@ -35,10 +35,6 @@ module Orchestration
         OPERATIONS.delete(service_name.to_s)
       end
 
-      def each_key(&)
-        OPERATIONS.each_key(&)
-      end
-
       def clear_all
         OPERATIONS.clear
       end

@@ -285,11 +285,6 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   # --- Sensor access ---
 
-  # All configured sensors as a hash: { 'inverter_power' => { 'source' => 'senec' }, ... }
-  def sensors
-    Data.wrap(@data['sensors'] || {})
-  end
-
   # List of enabled sensor names
   def enabled_sensors
     @enabled_sensors ||= (@data['sensors'] || {}).keys.select { |name| SensorRegistry.valid?(name) }

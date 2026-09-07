@@ -19,12 +19,6 @@ module Export
         configuration.shelly_collector_devices.any?
       end
 
-      def self.shelly?(device_data)
-        %w[data_source wallbox_vendor heatpump_access battery_vendor].any? do |field|
-          device_data.try(field) == 'shelly'
-        end
-      end
-
       def to_h
         {
           image: shelly_defaults&.image.presence || DockerImages.current(:SHELLY_COLLECTOR),

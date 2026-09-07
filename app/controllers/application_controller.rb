@@ -60,15 +60,12 @@ class ApplicationController < ActionController::Base
     false
   end
 
+  # SessionsController skips this filter, so the login page itself stays
+  # reachable while nobody is signed in.
   def require_authentication
     return if authorized?
-    return if sessions_controller?
 
     redirect_to new_session_path
-  end
-
-  def sessions_controller?
-    is_a?(SessionsController)
   end
 
   def preferences

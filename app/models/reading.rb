@@ -17,10 +17,6 @@ class Reading
     !value.nil?
   end
 
-  def numeric?
-    value.is_a?(Numeric)
-  end
-
   def boolean?
     value.is_a?(String) && value.match?(/\A(?:true|false)\z/i)
   end

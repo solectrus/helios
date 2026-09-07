@@ -56,12 +56,11 @@ module TextEncoding
 
   # Ruby's UTF-16 reads the endianness off the mark and consumes it. Replacing
   # what a truncated file cuts in half costs a single character, while falling
-  # through to the single-byte repair would cost the whole file.
+  # through to the single-byte repair would cost the whole file. The two
+  # :replace options make the conversion total, so it cannot raise.
   def utf16(bytes)
     return unless UTF_16_BOMS.include?(bytes.byteslice(0, 2))
 
     bytes.encode(Encoding::UTF_8, Encoding::UTF_16, invalid: :replace, undef: :replace)
-  rescue EncodingError
-    nil
   end
 end

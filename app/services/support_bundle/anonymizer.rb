@@ -158,10 +158,6 @@ module SupportBundle
       @registry = {} # rubocop:disable ThreadSafety/ClassInstanceVariable
     end
 
-    def registry
-      @registry # rubocop:disable ThreadSafety/ClassInstanceVariable
-    end
-
     def anonymize_env_style(content)
       content.each_line.map { |line| anonymize_env_line(line) }.join
     end
