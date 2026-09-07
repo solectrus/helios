@@ -172,6 +172,15 @@ jobs:
         with:
           bundler-cache: true
 
+      # Same balancing as the fast suite, but with a key of its own: the two
+      # runs record different files, and one log must not overwrite the other.
+      - name: Cache RSpec runtime log
+        uses: actions/cache@v6
+        with:
+          path: tmp/parallel_runtime_rspec.log
+          key: rspec-integration-runtime-${{ runner.os }}-${{ github.run_id }}
+          restore-keys: rspec-integration-runtime-${{ runner.os }}-
+
       # turbo_tests overlaps the Docker-stack chain with the files that hold
       # no lock, which the serial runner cannot do. It also creates the
       # database of every worker, so no separate setup step is needed.
