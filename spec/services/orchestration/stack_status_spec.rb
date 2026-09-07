@@ -170,6 +170,38 @@ RSpec.describe Orchestration::StackStatus do
     end
   end
 
+  describe '#refresh! failures' do
+    # A refresh that cannot reach Docker must still mark the status as
+    # initialized, otherwise every later read would retry the same failure.
+    it 'marks itself initialized and keeps going' do
+      described_class.instance.instance_variable_get(:@initialized).make_false
+      allow(Orchestration::Container).to receive(:invalidate_cache)
+        .and_raise(Orchestration::ConnectionError, 'no socket')
+
+      expect { described_class.refresh! }.not_to raise_error
+      expect(described_class.instance.instance_variable_get(:@initialized).true?).to be(true)
+    end
+  end
+
+  describe '#status_for a service Docker cannot answer for' do
+    # Saving a configuration must not fail because Docker is briefly away; the
+    # service reads as stopped until the next refresh corrects it.
+    it 'reads as stopped' do
+      allow(Orchestration::Container).to receive(:find)
+        .and_raise(Orchestration::ConnectionError, 'no socket')
+
+      expect(described_class.instance.send(:current_status_of, 'postgresql')).to eq(:stopped)
+    end
+  end
+
+  describe '#broadcast!' do
+    it 'swallows a failing broadcast' do
+      allow(Orchestration::StatusBarBroadcaster).to receive(:new).and_raise(StandardError, 'no cable')
+
+      expect { described_class.instance.send(:broadcast!) }.not_to raise_error
+    end
+  end
+
   describe '#mark_starting!' do
     before do
       described_class.instance.instance_variable_get(:@initialized).make_true

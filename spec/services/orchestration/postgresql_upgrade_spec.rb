@@ -313,6 +313,32 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
 
         expect(journal.load).to be_nil
       end
+
+      # The resumed rebuild fails just like the original one would: the
+      # rollback takes over, and since it rebuilds from the very same dump it
+      # fails too. The dump then has to survive, it is the only copy left.
+      it 'hands a failing rebuild over to the rollback and keeps the dump' do
+        upgrade = described_class.new
+        allow(described_class).to receive(:new).and_return(upgrade)
+        allow(upgrade).to receive_messages(wipe_data_directory!: true, wait_until_ready!: true)
+        allow(upgrade).to receive(:restore_dump!).and_raise(StandardError, 'psql gone')
+
+        expect { recover! }.to raise_error(described_class::UpgradeError, /psql gone/)
+
+        expect(Configuration.current.postgresql.image).to eq('postgres:17-alpine')
+        expect(File).to exist(dump_path)
+      end
+    end
+
+    # Whatever goes wrong during a recovery, the user gets one UpgradeError —
+    # a raw exception here would surface as a 500 on the start page.
+    it 'wraps an unexpected failure' do
+      open_journal!(:finishing)
+      upgrade = described_class.new
+      allow(described_class).to receive(:new).and_return(upgrade)
+      allow(upgrade).to receive(:reconcile_stack!).and_raise(TypeError, 'boom')
+
+      expect { recover! }.to raise_error(described_class::UpgradeError, /TypeError: boom/)
     end
 
     context 'when it was killed after the restore was verified' do
@@ -344,6 +370,200 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
       expect { described_class.call }.to raise_error(
         described_class::UpgradeError, /interrupted|unterbrochen/i
       )
+    end
+  end
+
+  # The full upgrade, with every Docker call stubbed but the real journal,
+  # dump file and config rewrite. Pins the order of the destructive steps and
+  # what each failure leaves behind.
+  describe '#call' do
+    subject(:call) { upgrade.call }
+
+    let(:upgrade) { described_class.new }
+    let(:table_count) { '5' }
+    let(:dump_path) { upgrade.send(:dump_path) }
+
+    before do
+      with_config_yaml('postgresql' => { 'image' => 'postgres:17-alpine' })
+      allow(Orchestration::Container).to receive(:invalidate_cache)
+      stub_postgresql_container(running: true)
+      allow(Orchestration::Container).to receive(:all).and_return([])
+      allow(Orchestration::Runner).to receive_messages(start: nil, stop: nil, pull: nil, reconcile: nil)
+      allow(Orchestration::AffectedServices).to receive(:update_deployed_hash!)
+      allow(Export::Builder).to receive(:new).and_return(instance_double(Export::Builder, write!: true))
+      allow(Compose).to receive(:load).and_return(
+        instance_double(Compose::File, services: Compose::ServiceCollection.new(
+          'postgresql' => { 'image' => 'postgres:18-alpine' },
+        )),
+      )
+
+      # psql/pg_isready/auth probe all answer "fine"; count_tables reports the
+      # same number before and after, so the restore verifies.
+      allow(Orchestration::Runner).to receive_messages(compose_exec: [table_count, '', 0],
+                                                       compose_run: ['', '', 0])
+      allow(Orchestration::Runner).to receive(:compose_exec_streaming) do |*, **kwargs|
+        if kwargs[:out_path]
+          File.write(dump_path,
+                     "CREATE TABLE widgets;\n-- #{described_class::DUMP_COMPLETE_MARKER}\n")
+        end
+        ['', 0]
+      end
+    end
+
+    it 'dumps, wipes and rebuilds on the target image' do
+      expect(call).to be(true)
+
+      expect(Configuration.current.postgresql.image).to eq(described_class.target_image)
+      expect(Orchestration::Runner).to have_received(:pull).with(service: 'postgresql')
+      # The data directory is emptied from inside a throwaway container, and
+      # only after the dump is known to be complete.
+      expect(Orchestration::Runner).to have_received(:compose_run)
+        .with('postgresql', '-c', a_string_including('find /var/lib/postgresql '), entrypoint: 'sh')
+      expect(Orchestration::Runner).to have_received(:reconcile).with(['postgresql'])
+    end
+
+    it 'leaves neither a journal nor a dump behind' do
+      call
+
+      expect(described_class).not_to be_interrupted
+      expect(File).not_to exist(dump_path)
+    end
+
+    context 'when the dump command fails' do
+      before do
+        allow(Orchestration::Runner).to receive(:compose_exec_streaming).and_return(['permission denied', 1])
+      end
+
+      it 'aborts before anything is changed and removes the partial dump' do
+        expect { call }.to raise_error(described_class::UpgradeError, /permission denied/)
+
+        expect(Configuration.current.postgresql.image).to eq('postgres:17-alpine')
+        expect(File).not_to exist(dump_path)
+      end
+    end
+
+    context 'when the dump is truncated' do
+      before do
+        allow(Orchestration::Runner).to receive(:compose_exec_streaming) do |*, **kwargs|
+          File.write(dump_path, "CREATE TABLE widgets;\n") if kwargs[:out_path]
+          ['', 0]
+        end
+      end
+
+      it 'refuses to migrate from an incomplete dump' do
+        expect { call }.to raise_error(described_class::UpgradeError)
+
+        expect(Orchestration::Runner).not_to have_received(:pull)
+      end
+    end
+
+    # The restore is verified against the table count taken before the dump; a
+    # mismatch rolls the stack back onto the previous major.
+    context 'when the restored cluster holds fewer tables' do
+      before do
+        counts = [[table_count, '', 0], ['2', '', 0]]
+        allow(Orchestration::Runner).to receive(:compose_exec) do |_service, *command|
+          command.include?('pg_isready') ? ['', '', 0] : (counts.shift || ['2', '', 0])
+        end
+      end
+
+      it 'rolls back to the previous image and reports it' do
+        expect { call }.to raise_error(described_class::UpgradeError, /17/)
+
+        expect(Configuration.current.postgresql.image).to eq('postgres:17-alpine')
+        expect(File).not_to exist(dump_path)
+        expect(described_class).not_to be_interrupted
+      end
+    end
+
+    # Anything unexpected (a bug, a gem raising) must still reach the user as
+    # an UpgradeError, and PostgreSQL must come back up.
+    context 'when a step fails with an error the upgrade does not know' do
+      before { allow(upgrade).to receive(:prepare!).and_raise(TypeError, 'boom') }
+
+      it 'wraps it and starts PostgreSQL again' do
+        stub_postgresql_container(running: false)
+
+        expect { call }.to raise_error(described_class::UpgradeError, /TypeError: boom/)
+        expect(Orchestration::Runner).to have_received(:start).with('postgresql')
+      end
+
+      # Docker being unreachable is exactly why the service is down; the
+      # original failure is what the user needs to see, not a second one.
+      it 'keeps the original error when the restart fails too' do
+        stub_postgresql_container(running: false)
+        allow(Orchestration::Runner).to receive(:start).and_raise(StandardError, 'docker gone')
+
+        expect { call }.to raise_error(described_class::UpgradeError, /TypeError: boom/)
+      end
+    end
+
+    # Before the data directory is emptied, reverting the compose files and
+    # starting the old container is all the rollback has to do.
+    context 'when the image bump fails before anything was wiped' do
+      before { allow(Orchestration::Runner).to receive(:pull).and_raise(StandardError, 'no such image') }
+
+      it 'restarts the previous container without rebuilding the cluster' do
+        expect { call }.to raise_error(described_class::UpgradeError, /17/)
+
+        expect(Configuration.current.postgresql.image).to eq('postgres:17-alpine')
+        expect(Orchestration::Runner).to have_received(:start).with('postgresql')
+        expect(Orchestration::Runner).not_to have_received(:compose_run)
+      end
+    end
+
+    context 'when the data directory cannot be emptied' do
+      before { allow(Orchestration::Runner).to receive(:compose_run).and_return(['', 'permission denied', 1]) }
+
+      it 'reports the wipe failure' do
+        expect { call }.to raise_error(described_class::UpgradeError, /permission denied/)
+      end
+    end
+
+    context 'when the new server never accepts connections' do
+      before do
+        stub_const("#{described_class}::READY_TIMEOUT", 0.02)
+        stub_const("#{described_class}::POLL_INTERVAL", 0.01)
+        allow(Orchestration::Runner).to receive(:compose_exec) do |_service, *command|
+          command.include?('pg_isready') ? ['', '', 1] : [table_count, '', 0]
+        end
+      end
+
+      it 'gives up after the ready timeout' do
+        expect { call }.to raise_error(described_class::UpgradeError)
+      end
+    end
+
+    context 'when the restore itself fails' do
+      before do
+        allow(Orchestration::Runner).to receive(:compose_exec_streaming) do |*, **kwargs|
+          if kwargs[:out_path]
+            File.write(dump_path, "CREATE TABLE widgets;\n-- #{described_class::DUMP_COMPLETE_MARKER}\n")
+            ['', 0]
+          else
+            ['could not connect', 1]
+          end
+        end
+      end
+
+      it 'reports what psql said' do
+        expect { call }.to raise_error(described_class::UpgradeError, /could not connect/)
+      end
+    end
+
+    # A rollback that fails itself leaves the journal and the dump in place —
+    # the next boot retries, and the user still has the data.
+    context 'when the rollback fails as well' do
+      before do
+        allow(Orchestration::Runner).to receive(:start).and_raise(StandardError, 'docker gone')
+      end
+
+      it 'keeps the dump and points at it' do
+        expect { call }.to raise_error(described_class::UpgradeError, /#{Regexp.escape(dump_path)}/)
+
+        expect(File).to exist(dump_path)
+        expect(described_class).to be_interrupted
+      end
     end
   end
 
@@ -393,5 +613,11 @@ RSpec.describe Orchestration::PostgresqlUpgrade do
       expect { call }.to raise_error(described_class::UpgradeError)
       expect(Orchestration::Runner).not_to have_received(:start)
     end
+  end
+
+  def stub_postgresql_container(running:)
+    allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(
+      instance_double(Orchestration::Container, running?: running, version: '17.5'),
+    )
   end
 end

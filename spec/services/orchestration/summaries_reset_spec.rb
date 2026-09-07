@@ -1,4 +1,40 @@
 RSpec.describe Orchestration::SummariesReset do
+  describe '#call' do
+    let(:container) do
+      instance_double(Orchestration::Container, running?: true, name: 'solectrus-postgresql-1')
+    end
+
+    before { with_config_yaml }
+
+    it 'reports success when psql accepts the statement' do
+      stub_capture2e
+
+      expect(described_class.call(container:)).to be(true)
+    end
+
+    it 'does nothing while PostgreSQL is down' do
+      allow(container).to receive(:running?).and_return(false)
+      allow(Open3).to receive(:capture2e)
+
+      expect(described_class.call(container:)).to be(false)
+      expect(Open3).not_to have_received(:capture2e)
+    end
+
+    # The reset is a cache invalidation: a failure is worth a log line, but
+    # never worth failing the import it belongs to.
+    it 'reports a failing statement without raising' do
+      stub_capture2e('permission denied', success: false)
+
+      expect(described_class.call(container:)).to be(false)
+    end
+
+    it 'reports an unreachable docker without raising' do
+      allow(Open3).to receive(:capture2e).and_raise(Errno::ENOENT, 'docker')
+
+      expect(described_class.call(container:)).to be(false)
+    end
+  end
+
   describe '#sql' do
     it 'truncates the whole table when no dates are supplied' do
       expect(build(dates: nil).send(:sql)).to eq('TRUNCATE TABLE summaries CASCADE')

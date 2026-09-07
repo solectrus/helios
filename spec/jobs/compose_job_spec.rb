@@ -34,6 +34,19 @@ RSpec.describe ComposeJob do
         expect(Orchestration::Runner).to have_received(:start).with('redis')
       end
 
+      # The container is gone or Docker is busy: the stale error is dropped
+      # anyway and the start goes ahead.
+      it 'starts the service even when removing the errored container fails' do
+        Orchestration::ErrorStore.set('redis', 'port is already allocated')
+        allow(Orchestration::Runner).to receive(:stop).and_raise(
+          Orchestration::Runner::CommandError.new('no such container', stdout: '', exit_status: 1),
+        )
+
+        described_class.perform_now(:start, 'redis')
+
+        expect(Orchestration::Runner).to have_received(:start).with('redis')
+      end
+
       it 'does not tear down a healthy service that has no stored error' do
         described_class.perform_now(:start, 'redis')
 
@@ -205,6 +218,28 @@ RSpec.describe ComposeJob do
     end
   end
 
+  describe 'the self_recreate action' do
+    before do
+      allow(Orchestration::SelfUpdate).to receive(:call)
+      allow(Orchestration::AffectedServices).to receive(:invalidate_config_hashes)
+    end
+
+    # HELIOS cannot recreate its own container from inside itself, so a helper
+    # container does it — and no per-service hash can be baselined afterwards.
+    it 'hands the recreate to the self-update helper' do
+      described_class.perform_now(:self_recreate)
+
+      expect(Orchestration::SelfUpdate).to have_received(:call)
+      expect(Orchestration::AffectedServices).to have_received(:invalidate_config_hashes).at_least(:once)
+    end
+  end
+
+  describe 'an unknown action' do
+    it 'is refused rather than silently ignored' do
+      expect { described_class.perform_now(:teleport, 'redis') }.to raise_error(ArgumentError, /teleport/)
+    end
+  end
+
   describe 'affected service extraction' do
     let(:requested_service) do
       instance_double(Compose::Service, name: 'dashboard', depends_on: {}, display_name: 'Dashboard')
@@ -297,6 +332,49 @@ RSpec.describe ComposeJob do
           attributes: { method: :morph },
           html: '<div>error</div>',
         )
+      end
+    end
+
+    # A failing batch `up` reports a pull error that names only the image,
+    # never a container, so the row that shows it is found through the image.
+    context 'when a batch up fails with an error that only names an image' do
+      before do
+        allow(requested_service).to receive(:image).and_return('ghcr.io/solectrus/solectrus:latest')
+        allow(affected_service).to receive(:image).and_return('influxdb:2-alpine')
+        allow(services_collection).to receive(:find).and_return(nil)
+        allow(services_collection).to receive(:find).with('influxdb').and_return(affected_service)
+        allow(services_collection).to receive(:each) do |&block|
+          [requested_service, affected_service].each(&block)
+        end
+      end
+
+      # Nothing in the output names a service, so the error is stored on every
+      # service — the user sees it wherever they look.
+      it 'stores the error everywhere when nothing identifies a service' do
+        error = Orchestration::Runner::CommandError.new(
+          'Command failed', stdout: 'network solectrus_default not found', stderr: '', exit_status: 1
+        )
+        allow(Orchestration::Runner).to receive(:up).and_raise(error)
+
+        described_class.perform_now(:up)
+
+        expect(Orchestration::ErrorStore.get('dashboard')).to include('network solectrus_default not found')
+        expect(Orchestration::ErrorStore.get('influxdb')).to include('network solectrus_default not found')
+      end
+
+      it 'stores the error on the service running that image' do
+        error = Orchestration::Runner::CommandError.new(
+          'Command failed',
+          stdout: 'failed to pull influxdb:2-alpine: manifest unknown',
+          stderr: '',
+          exit_status: 1,
+        )
+        allow(Orchestration::Runner).to receive(:up).and_raise(error)
+
+        described_class.perform_now(:up)
+
+        expect(Orchestration::ErrorStore.get('influxdb')).to include('manifest unknown')
+        expect(Orchestration::ErrorStore.get('dashboard')).to be_nil
       end
     end
 

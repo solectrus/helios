@@ -41,6 +41,21 @@ RSpec.describe Orchestration::DetachedContainers do
     end
   end
 
+  # Docker can refuse the removal (a container someone removed a moment ago,
+  # a daemon under pressure). The sweep logs why and leaves the rest to the
+  # compose command right after.
+  it 'logs the reason when the removal fails' do
+    allow(Orchestration::DockerCli).to receive(:force_remove_container)
+      .and_return([false, "No such container: id-dashboard\n"])
+    logger = instance_double(Loggable::PrefixedLogger, warn: nil)
+    allow(described_class).to receive(:logger).and_return(logger)
+
+    described_class.sweep
+
+    expect(logger).to have_received(:warn)
+      .with('Could not remove solectrus-dashboard-1: No such container: id-dashboard')
+  end
+
   # What the interrupted `up` actually leaves: created, never started, never
   # connected.
   context 'with a container that was created but never started' do

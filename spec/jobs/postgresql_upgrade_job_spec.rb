@@ -74,6 +74,15 @@ RSpec.describe PostgresqlUpgradeJob do
         end
       end
 
+      # Runs inside Puma's boot hook: HELIOS has to come up either way, since
+      # it is the only way to reach the stack at all.
+      it 'never takes the boot down' do
+        allow(Orchestration::PostgresqlUpgrade).to receive(:interrupted?)
+          .and_raise(StandardError, 'no data path')
+
+        expect { described_class.recover_later }.not_to raise_error
+      end
+
       # The pending flag is set synchronously so the first render after boot
       # cannot offer an upgrade for a database the recovery is taking over.
       it 'marks the service pending and enqueues the recovery' do
@@ -85,6 +94,34 @@ RSpec.describe PostgresqlUpgradeJob do
           expect(described_class).to have_received(:perform_later).with(recover: true)
           expect(Orchestration::PendingOperations.get('postgresql')).to eq(:upgrade)
         end
+      end
+    end
+
+    describe 'the row broadcast' do
+      before do
+        allow(Orchestration::PostgresqlUpgrade).to receive(:call).and_return(true)
+        allow(Orchestration::Container).to receive_messages(invalidate_cache: nil, find: nil)
+      end
+
+      it 'pushes the updated row after the upgrade' do
+        compose_service = instance_double(Compose::Service, helios?: false)
+        collection = instance_double(Compose::ServiceCollection, find: compose_service,
+                                                                 reject: [], all?: false, empty?: true)
+        allow(Compose).to receive(:load).and_return(instance_double(Compose::File, services: collection))
+        allow(Orchestration::ServiceBroadcaster).to receive(:broadcast_row)
+
+        described_class.perform_now
+
+        expect(Orchestration::ServiceBroadcaster).to have_received(:broadcast_row)
+          .with('postgresql', hash_including(compose_service:))
+      end
+
+      # The upgrade itself already finished; a broadcast that cannot reach the
+      # cable must not turn it into a failure.
+      it 'swallows a failing broadcast' do
+        allow(Compose).to receive(:load).and_raise(StandardError, 'no compose')
+
+        expect { described_class.perform_now }.not_to raise_error
       end
     end
 

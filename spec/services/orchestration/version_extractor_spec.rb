@@ -7,6 +7,51 @@ RSpec.describe Orchestration::VersionExtractor do
     )
   end
 
+  describe Orchestration::VersionExtractor::Base do
+    it 'demands both hooks from every extractor' do
+      extractor = described_class.new(build_container(image: 'alpine'))
+
+      expect { extractor.extract }.to raise_error(NotImplementedError)
+      expect { extractor.match? }.to raise_error(NotImplementedError)
+    end
+  end
+
+  # Redis 8 dropped REDIS_VERSION from the image env, so the version has to
+  # come from the running server itself.
+  describe Orchestration::VersionExtractor::Redis do
+    let(:container) do
+      instance_double(
+        Docker::Container,
+        id: 'abc123',
+        info: { 'Image' => 'redis:8-alpine' },
+        json: { 'Config' => { 'Labels' => {}, 'Env' => [] } },
+      )
+    end
+
+    before { allow(Rails).to receive(:cache).and_return(ActiveSupport::Cache::MemoryStore.new) }
+
+    it 'asks the server and caches the answer per container' do
+      allow(container).to receive(:exec).and_return([["Redis server v=8.0.1 sha=00000000\n"], [], 0])
+
+      expect(Orchestration::VersionExtractor.extract(container)).to eq('8.0.1')
+      Orchestration::VersionExtractor.extract(container)
+
+      expect(container).to have_received(:exec).once
+    end
+
+    it 'reports no version when the command fails' do
+      allow(container).to receive(:exec).and_return([[''], ['nope'], 1])
+
+      expect(Orchestration::VersionExtractor.extract(container)).to be_nil
+    end
+
+    it 'reports no version when the container cannot be reached' do
+      allow(container).to receive(:exec).and_raise(Docker::Error::NotFoundError)
+
+      expect(Orchestration::VersionExtractor.extract(container)).to be_nil
+    end
+  end
+
   describe '.extract' do
     it 'extracts SOLECTRUS version from COMMIT_VERSION' do
       container = build_container(

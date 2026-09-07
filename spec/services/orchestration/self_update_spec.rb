@@ -34,6 +34,38 @@ RSpec.describe Orchestration::SelfUpdate do
       )
     end
 
+    # Compose reads .env for the variables the helios service interpolates, so
+    # the helper container has to be pointed at it explicitly.
+    it 'passes the env file when one exists' do
+      File.write(File.join(data_path, 'compose.yaml'), helios_yaml)
+      File.write(File.join(data_path, '.env'), "TZ=Europe/Berlin\n")
+
+      described_class.call
+
+      expect(Open3).to have_received(:capture2e).with(
+        'docker', 'run', '--rm', '-d',
+        '--entrypoint', 'sh',
+        '-v', '/var/run/docker.sock:/var/run/docker.sock',
+        '-v', '/opt/solectrus:/opt/solectrus',
+        'ghcr.io/solectrus/helios:develop',
+        '-c',
+        a_string_including('--env-file /opt/solectrus/.env')
+      )
+    end
+
+    it 'raises with the docker output when the helper container cannot start' do
+      File.write(File.join(data_path, 'compose.yaml'), helios_yaml)
+      # The pull succeeded; only launching the helper fails.
+      allow(Orchestration::Runner).to receive(:pull)
+      allow(Open3).to receive(:capture2e).and_return(
+        ['no such image', instance_double(Process::Status, success?: false, exitstatus: 125)],
+      )
+
+      expect { described_class.call }.to raise_error(
+        Orchestration::Runner::CommandError, /Self-update failed: no such image/
+      )
+    end
+
     it 'passes the actual compose filename to the helper container' do
       File.write(File.join(data_path, 'compose.yml'), helios_yaml)
 

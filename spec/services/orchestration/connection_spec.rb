@@ -1,4 +1,20 @@
 RSpec.describe Orchestration::Connection do
+  describe '.connected?' do
+    before { allow(described_class).to receive(:configure!) }
+
+    it 'is true while the daemon answers the ping' do
+      allow(Docker).to receive(:ping).and_return('OK')
+
+      expect(described_class).to be_connected
+    end
+
+    it 'is false when the daemon cannot be reached' do
+      allow(Docker).to receive(:ping).and_raise(Excon::Error::Socket)
+
+      expect(described_class).not_to be_connected
+    end
+  end
+
   describe '.engine_version' do
     before { allow(described_class).to receive(:configure!) }
 

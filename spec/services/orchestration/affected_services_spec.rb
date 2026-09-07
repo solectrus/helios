@@ -319,6 +319,24 @@ RSpec.describe Orchestration::AffectedServices do
         expect(stored).to eq('redis' => 'old_redis', 'influxdb' => 'bbb222')
       end
 
+      # A restart marker that cannot be updated is a cosmetic problem; the
+      # manual restart itself already happened.
+      it 'swallows a compose command that fails' do
+        allow(Orchestration::Runner).to receive(:config_hashes)
+          .and_raise(Orchestration::Runner::CommandError, 'command failed')
+
+        expect { described_class.update_deployed_hash!('redis') }.not_to raise_error
+
+        stored = JSON.parse(File.read(deployed_hashes_path))
+        expect(stored['redis']).to eq('old_redis')
+      end
+
+      it 'swallows a baseline file that cannot be written' do
+        allow(described_class).to receive(:write_deployed_hashes_file!).and_raise(Errno::EACCES)
+
+        expect { described_class.new.send(:write_deployed_hashes, {}) }.not_to raise_error
+      end
+
       it 'prunes entries for services no longer in compose.yaml' do
         write_deployed_hashes(
           'redis' => 'old_redis',

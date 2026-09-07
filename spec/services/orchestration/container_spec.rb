@@ -27,20 +27,6 @@ RSpec.describe Orchestration::Container do
   let(:container) { described_class.new(mock_container) }
 
   describe '.all' do
-    context 'when Docker is available' do
-      before { skip_without_docker }
-
-      it 'returns an array of Container objects' do
-        containers = described_class.all(project: 'nonexistent-project')
-        expect(containers).to be_an(Array)
-      end
-
-      it 'filters by project name' do
-        containers = described_class.all(project: 'nonexistent-project-xyz')
-        expect(containers).to be_empty
-      end
-    end
-
     context 'when Docker is not available' do
       before do
         allow(Docker::Container).to receive(:all).and_raise(
@@ -57,16 +43,120 @@ RSpec.describe Orchestration::Container do
   end
 
   describe '.find' do
-    context 'when Docker is available' do
-      before { skip_without_docker }
+    before { allow(described_class).to receive(:fetch_all_containers).and_return([mock_container]) }
 
-      it 'returns nil for non-existent service' do
-        container = described_class.find(
-          'nonexistent-service',
-          project: 'nonexistent-project',
-        )
-        expect(container).to be_nil
+    it 'picks the container carrying the compose service label' do
+      expect(described_class.find('dashboard', project: 'solectrus')&.id).to eq('abc123def456')
+    end
+
+    it 'returns nil when no container carries the label' do
+      expect(described_class.find('influxdb', project: 'solectrus')).to be_nil
+    end
+  end
+
+  describe '#config_hash' do
+    it 'reads the compose config hash off the labels, and is nil without one' do
+      expect(container.config_hash).to be_nil
+
+      allow(mock_container).to receive(:info).and_return(
+        mock_container.info.deep_merge('Labels' => { 'com.docker.compose.config-hash' => 'deadbeef' }),
+      )
+      expect(container.config_hash).to eq('deadbeef')
+    end
+  end
+
+  # Docker leaves the tag off when the image was pulled by digest or is
+  # implicitly :latest.
+  describe '#image_tag' do
+    { 'ghcr.io/solectrus/solectrus:develop' => 'develop', 'alpine' => 'latest', nil => nil }
+      .each do |image, tag|
+      it "reads #{tag.inspect} from #{image.inspect}" do
+        allow(mock_container).to receive(:info).and_return(mock_container.info.merge('Image' => image))
+
+        expect(container.image_tag).to eq(tag)
       end
+    end
+  end
+
+  describe '#version' do
+    # An unreachable daemon must not take the service row down; the row then
+    # simply shows no version.
+    it 'is nil when the daemon cannot be asked' do
+      allow(Orchestration::VersionExtractor).to receive(:extract)
+        .and_raise(Excon::Error::Socket.new(StandardError.new('gone')))
+
+      expect(container.version).to be_nil
+    end
+  end
+
+  describe '#healthcheck_configured?' do
+    # The inspect data is read once per container, so each case needs its own.
+    it 'follows what the container declares' do
+      expect(container).to be_healthcheck_configured
+    end
+
+    it 'is false without a healthcheck' do
+      allow(mock_container).to receive(:json).and_return('State' => {})
+
+      expect(container).not_to be_healthcheck_configured
+    end
+
+    # One container going away must not cascade into a failing service list.
+    it 'is false when the container cannot be inspected at all' do
+      allow(mock_container).to receive(:json).and_raise(Docker::Error::NotFoundError)
+
+      expect(container).not_to be_healthcheck_configured
+      expect(container.mount_source('/data')).to be_nil
+    end
+  end
+
+  describe '#exec, #kill and #created_at' do
+    # Despite its name, #kill only sends a signal — the power-splitter uses
+    # USR1 to recalculate, and stays up.
+    it 'passes them through to Docker' do
+      allow(mock_container).to receive_messages(exec: [['out'], [], 0], kill!: nil)
+
+      expect(container.exec(%w[echo hi])).to eq([['out'], [], 0])
+      container.kill(signal: :USR1)
+
+      expect(mock_container).to have_received(:exec).with(%w[echo hi])
+      expect(mock_container).to have_received(:kill!).with('signal' => 'USR1')
+      expect(container.created_at).to eq(Time.utc(2024, 1, 15, 10, 0, 0))
+    end
+  end
+
+  describe '#mount_source' do
+    it 'returns the host path behind a destination, and nil for an unmounted one' do
+      allow(mock_container).to receive(:json).and_return(
+        'Mounts' => [{ 'Destination' => '/data', 'Source' => '/opt/solectrus' }],
+      )
+
+      expect(container.mount_source('/data')).to eq('/opt/solectrus')
+      expect(container.mount_source('/nowhere')).to be_nil
+    end
+  end
+
+  describe '#stop_and_remove!' do
+    it 'stops the container before removing it' do
+      allow(mock_container).to receive(:stop)
+      allow(mock_container).to receive(:remove)
+
+      container.stop_and_remove!
+
+      expect(mock_container).to have_received(:stop).ordered
+      expect(mock_container).to have_received(:remove).ordered
+    end
+  end
+
+  describe '#inspect' do
+    it 'names the service, its status and its health' do
+      expect(container.inspect).to eq('#<Orchestration::Container dashboard: running (healthy)>')
+    end
+
+    it 'leaves the health out when the container declares none' do
+      allow(mock_container).to receive(:json).and_return('State' => {})
+
+      expect(container.inspect).to eq('#<Orchestration::Container dashboard: running>')
     end
   end
 
@@ -132,6 +222,19 @@ RSpec.describe Orchestration::Container do
         expect(subject.restart_count).to eq(7)
         expect(subject).to be_crash_looping
       end
+    end
+
+    # A time HELIOS cannot parse must never flag a container — it says
+    # nothing about whether it just died.
+    it 'does not report a container whose exit time is unreadable' do
+      raw = instance_double(
+        Docker::Container,
+        id: 'abc123def456',
+        info: mock_container.info.merge('State' => 'running'),
+        json: { 'RestartCount' => 7, 'State' => { 'FinishedAt' => 'not a time' } },
+      )
+
+      expect(described_class.new(raw)).not_to be_crash_looping
     end
 
     # The first restarts after a crash are indistinguishable from a slow
