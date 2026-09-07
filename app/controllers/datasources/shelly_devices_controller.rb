@@ -1,5 +1,6 @@
 module Datasources
   class ShellyDevicesController < ApplicationController
+    include SurveyData
     include TurboFrameOnly
     include InfluxNameValidation
 
@@ -20,7 +21,7 @@ module Datasources
     end
 
     def create
-      data = device_params
+      data = survey_data
       return unless data
       return if invalid_influx_name?(data, datasources_shelly_devices_path)
 
@@ -30,7 +31,7 @@ module Datasources
     end
 
     def update
-      data = device_params
+      data = survey_data
       return unless data
       return if invalid_influx_name?(data, datasources_shelly_devices_path)
 
@@ -58,13 +59,6 @@ module Datasources
 
     def require_turbo_frame
       redirect_unless_turbo_frame(datasources_shelly_devices_path)
-    end
-
-    def device_params
-      JSON.parse(params.require(:data))
-    rescue JSON::ParserError
-      head(:bad_request)
-      nil
     end
   end
 end

@@ -1,5 +1,6 @@
 module Configurations
   class SettingsController < ApplicationController
+    include SurveyData
     include TurboFrameOnly
     include InfluxNameValidation
 
@@ -119,7 +120,7 @@ module Configurations
     # Every path that saves nothing has already responded, so the caller checks
     # `performed?` rather than a return value of its own.
     def save_setting
-      data = setting_params
+      data = survey_data
       return unless data
 
       if sensor_setting?
@@ -260,13 +261,6 @@ module Configurations
 
       persisted = @configuration.setting_data(setting)['image']
       data['image'] = persisted if persisted.present?
-    end
-
-    def setting_params
-      JSON.parse(params.require(:data))
-    rescue JSON::ParserError
-      head(:bad_request)
-      nil
     end
 
     # Ensure measurement/field match the collector config for fixed sources

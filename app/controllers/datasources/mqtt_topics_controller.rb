@@ -1,5 +1,6 @@
 module Datasources
   class MqttTopicsController < ApplicationController
+    include SurveyData
     include TurboFrameOnly
     include SensorReadings
 
@@ -24,7 +25,7 @@ module Datasources
     end
 
     def create
-      data = topic_params
+      data = survey_data
       return unless data
 
       @configuration.add_mqtt_topic(data)
@@ -33,7 +34,7 @@ module Datasources
     end
 
     def update
-      data = topic_params
+      data = survey_data
       return unless data
 
       @configuration.update_mqtt_topic(params[:id], data)
@@ -69,13 +70,6 @@ module Datasources
 
     def require_turbo_frame
       redirect_unless_turbo_frame(datasources_mqtt_topics_path)
-    end
-
-    def topic_params
-      JSON.parse(params.require(:data))
-    rescue JSON::ParserError
-      head(:bad_request)
-      nil
     end
   end
 end
