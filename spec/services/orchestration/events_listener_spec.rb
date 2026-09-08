@@ -173,6 +173,56 @@ RSpec.describe Orchestration::EventsListener do
     end
   end
 
+  # `#start` runs synchronously, but only the ApplicationCable connection spec
+  # ever reached it, and that spec is about the connection. Both loops have
+  # their own examples, so stub them here and let the threads finish at once.
+  describe '#start' do
+    before do
+      allow(described_class).to receive(:new).and_call_original
+      allow(listener).to receive(:listen_loop)
+      allow(listener).to receive(:scheduler_loop)
+    end
+
+    after { listener.stop }
+
+    it 'starts two named threads and stops them again' do
+      listener.start
+      threads = [listener.send(:listener_thread), listener.send(:scheduler_thread)]
+
+      expect(threads.map(&:name)).to eq(
+        ["docker-events-#{listener.id}", "docker-scheduler-#{listener.id}"],
+      )
+
+      listener.stop
+
+      aggregate_failures do
+        expect(listener).not_to be_running
+        expect(threads.map(&:alive?)).to eq([false, false])
+      end
+    end
+  end
+
+  # The sweep runs on the scheduler thread, right after the refresh that fills
+  # the container list. Only a spec that starts a real listener reaches it, and
+  # then only when the thread wins a race against the example ending, so drive
+  # the method directly.
+  describe 'the initial refresh' do
+    before do
+      allow(described_class).to receive(:new).and_call_original
+      allow(Orchestration::StackStatus).to receive(:refresh!)
+      allow(Orchestration::OrphanedServices).to receive(:prune!)
+    end
+
+    it 'sweeps the containers the refresh just listed' do
+      containers = [instance_double(Orchestration::Container)]
+      allow(Orchestration::Container).to receive(:all).and_return(containers)
+
+      listener.send(:initial_refresh)
+
+      expect(Orchestration::OrphanedServices).to have_received(:prune!).with(containers:)
+    end
+  end
+
   describe 'the event stream' do
     let(:broadcaster) { instance_double(Orchestration::ServiceBroadcaster, broadcast: true) }
 
