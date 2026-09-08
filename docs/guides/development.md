@@ -49,6 +49,16 @@ The app is served at https://helios.localhost (via Caddy reverse proxy). On the 
 
 Both modes use the same hybrid Docker access (docker-api gem + `docker compose` CLI + events listener). Stack detection via `com.docker.compose.project=solectrus` labels works identically in both.
 
+### README Screenshots
+
+The three screenshots in the README are generated, not taken by hand:
+
+```bash
+HELIOS_ADMIN_PASSWORD=… bun run screenshots [url]
+```
+
+The URL is optional and defaults to the production instance. The script drives a headless Chromium through Playwright, logs in, and writes `screenshot-configuration.png`, `screenshot-services.png` and `screenshot-backup.png` into the repository root. The locale is forced to English, and the viewport is 1280x900 at scale 2. Each PNG is requantized to a 256-color palette through ImageMagick, which halves the file size. Change any of that in [`script/screenshots.mjs`](../../script/screenshots.mjs).
+
 ---
 
 ## Testing

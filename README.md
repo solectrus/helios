@@ -6,7 +6,7 @@ Web-based control panel for [SOLECTRUS](https://solectrus.de). HELIOS installs t
 
 |                                  Configuration                                  |                               Services                                |                              Backup                               |
 | :-----------------------------------------------------------------------------: | :-------------------------------------------------------------------: | :---------------------------------------------------------------: |
-| <img src="screenshot-configuration.jpg" alt="HELIOS configuration" width="300"> | <img src="screenshot-services.jpg" alt="HELIOS services" width="300"> | <img src="screenshot-backup.jpg" alt="HELIOS backup" width="300"> |
+| <img src="screenshot-configuration.png" alt="HELIOS configuration" width="300"> | <img src="screenshot-services.png" alt="HELIOS services" width="300"> | <img src="screenshot-backup.png" alt="HELIOS backup" width="300"> |
 
 ## Features
 

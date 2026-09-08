@@ -7,6 +7,7 @@
     "erb:check": "herb-format --check .",
     "lint": "eslint --cache .",
     "format": "prettier . --write --plugin=prettier-plugin-tailwindcss",
+    "screenshots": "bun script/screenshots.mjs",
     "tsc": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest"

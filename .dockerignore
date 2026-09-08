@@ -46,7 +46,7 @@ log/*
 node_modules
 Procfile*
 README.md
-screenshot-*.jpg
+screenshot-*.png
 spec
 stack
 storage/development*

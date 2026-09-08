@@ -9,6 +9,13 @@ export default [
   pluginPrettierRecommended,
 
   {
+    files: ['script/**/*.mjs'],
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly' },
+    },
+  },
+
+  {
     ignores: [
       '.ruby-lsp/',
       'config/',
