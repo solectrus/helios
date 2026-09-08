@@ -43,10 +43,11 @@
 /stack/postgresql
 /stack/redis
 /stack/influxdb
-/stack/redis
+/stack/influx-backup-staging
 /stack/helios
 /stack/compose.yaml
 /stack/compose.yaml.bak
+/stack/.env
 /stack/.env.bak
 
 # Ignore ESLint cache
