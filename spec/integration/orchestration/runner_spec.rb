@@ -1,3 +1,9 @@
+# Every service here carries `stop_grace_period: 0s`. The containers run
+# `sleep` as PID 1, and PID 1 discards a signal for which no handler exists.
+# SIGTERM therefore does nothing, so Docker waits out the full stop timeout
+# and then sends SIGKILL. The wait costs 10 seconds per stop on CI, and each
+# example stops twice. These examples assert container identity, networks and
+# images, never a clean shutdown, so an immediate kill changes no result.
 RSpec.describe Orchestration::Runner do
   # Unique per parallel worker so concurrent specs don't clobber each other.
   let(:data_path) { Rails.root.join("tmp/stack#{ENV.fetch('TEST_ENV_NUMBER', nil)}").to_s }
@@ -21,6 +27,7 @@ RSpec.describe Orchestration::Runner do
           test:
             image: alpine:latest
             command: sleep 10
+            stop_grace_period: 0s
       YAML
 
       after { compose_down }
@@ -40,6 +47,7 @@ RSpec.describe Orchestration::Runner do
             old:
               image: alpine:latest
               command: sleep 30
+              stop_grace_period: 0s
         YAML
         docker_quietly('docker compose up -d')
         File.write(File.join(data_path, 'compose.yaml'), <<~YAML)
@@ -48,6 +56,7 @@ RSpec.describe Orchestration::Runner do
             new:
               image: alpine:latest
               command: sleep 30
+              stop_grace_period: 0s
         YAML
       end
 
@@ -75,18 +84,22 @@ RSpec.describe Orchestration::Runner do
           db:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
           keeper:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
         YAML
         docker_quietly('docker compose up -d')
         write_compose(<<~YAML)
           postgresql:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
           keeper:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
         YAML
       end
 
@@ -110,9 +123,11 @@ RSpec.describe Orchestration::Runner do
           test:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
           keeper:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
         YAML
         docker_quietly('docker compose up -d')
         docker_quietly('docker compose stop test')
@@ -145,9 +160,11 @@ RSpec.describe Orchestration::Runner do
           test:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
           keeper:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
         YAML
         docker_quietly('docker compose up -d')
         docker_quietly('docker network disconnect helios-test_default helios-test-keeper-1')
@@ -177,9 +194,11 @@ RSpec.describe Orchestration::Runner do
           test:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
           keeper:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
         YAML
         docker_quietly('docker compose up -d')
         docker_quietly('docker compose stop keeper')
@@ -207,9 +226,11 @@ RSpec.describe Orchestration::Runner do
           test:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
           keeper:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
         YAML
         docker_quietly('docker compose up -d')
         docker_quietly('docker compose stop keeper')
@@ -237,6 +258,7 @@ RSpec.describe Orchestration::Runner do
             test:
               image: alpine:latest
               command: sleep 30
+              stop_grace_period: 0s
         YAML
         docker_quietly('docker compose up -d')
       end
@@ -272,6 +294,7 @@ RSpec.describe Orchestration::Runner do
               image: #{old_image}
               pull_policy: never
               command: sleep 30
+              stop_grace_period: 0s
         YAML
         described_class.up
 
@@ -282,6 +305,7 @@ RSpec.describe Orchestration::Runner do
               image: #{new_image}
               pull_policy: never
               command: sleep 30
+              stop_grace_period: 0s
         YAML
       end
 
@@ -311,9 +335,11 @@ RSpec.describe Orchestration::Runner do
           db:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
           keeper:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
         YAML
         docker_quietly('docker compose up -d')
         write_compose(<<~YAML)
@@ -321,9 +347,11 @@ RSpec.describe Orchestration::Runner do
             image: alpine:latest
             pull_policy: never
             command: sleep 30
+            stop_grace_period: 0s
           keeper:
             image: alpine:latest
             command: sleep 30
+            stop_grace_period: 0s
         YAML
       end
 

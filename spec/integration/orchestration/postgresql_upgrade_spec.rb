@@ -241,7 +241,9 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
   # the same project name) so it carries the full label set Compose uses for
   # orphan detection — a `docker run` container with only a subset is not
   # recognized as an orphan. Reuses the already-pulled starting_image, and
-  # network_mode: none avoids creating a stray project network.
+  # network_mode: none avoids creating a stray project network. `sleep` runs as
+  # PID 1, which discards a signal for which no handler exists, so without
+  # stop_grace_period the prune waits out the full 10 second stop timeout.
   def start_orphan!(service)
     Dir.mktmpdir do |dir|
       file = File.join(dir, 'orphan-compose.yaml')
@@ -252,6 +254,7 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
             image: #{starting_image}
             entrypoint: ["sleep", "300"]
             network_mode: none
+            stop_grace_period: 0s
       YAML
       system(
         'docker', 'compose', '-f', file, '--project-directory', data_path,
