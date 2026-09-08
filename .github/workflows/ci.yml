@@ -189,6 +189,29 @@ jobs:
         with:
           bundler-cache: true
 
+      # Every image the integration specs launch, pulled before RSpec starts.
+      # The stack specs serialise on one file lock (docker_stack_helpers), so
+      # a pull inside an example blocks every other stack example. Pulling
+      # here takes that cost off the serialised path and runs it concurrently.
+      #
+      # The list is manual on purpose: the images come from three places
+      # (DockerImages defaults, service IMAGE constants, spec-local
+      # literals). A stale entry costs one pull inside the run, it does not
+      # break the job, so the step never fails the build either.
+      - name: Pre-pull Docker images
+        continue-on-error: true
+        run: |
+          printf '%s\n' \
+            alpine:latest \
+            docker:29-cli \
+            influxdb:2.9-alpine \
+            postgres:13-alpine \
+            postgres:18-alpine \
+            redis:8-alpine \
+            ghcr.io/solectrus/csv-importer:latest \
+            minio/minio:RELEASE.2025-09-07T16-13-09Z |
+            xargs -P 4 -n 1 docker pull -q
+
       # This job gets no runtime log. turbo_tests reads and writes one only
       # when it receives no path, and this run passes spec/integration. It
       # splits the files by size instead.
