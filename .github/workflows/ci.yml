@@ -221,8 +221,14 @@ jobs:
       # database of every worker, so no separate setup step is needed.
       # NO_COVERAGE skips the instrumentation: this job never reports
       # coverage, the `ruby-tests` job above does.
+      #
+      # The documentation format writes one line per example. GitHub stamps
+      # every log line with a time, so the log doubles as a per-example
+      # profile of this job. The progress format cannot do this: it writes
+      # dots without a line break, and they all reach the log at the end
+      # with one single time. The 4 workers interleave their lines.
       - name: Run integration tests
-        run: NO_COVERAGE=1 bin/turbo_tests -t integration spec/integration
+        run: NO_COVERAGE=1 bin/turbo_tests -f documentation -t integration spec/integration
 
   build:
     runs-on: ${{ matrix.runner }}
