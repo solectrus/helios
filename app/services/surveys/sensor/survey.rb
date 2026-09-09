@@ -110,6 +110,7 @@ module Surveys
 
       def customize!(data)
         inject_sensor_title!(data)
+        inject_total_generation_hint!(data) if sensor_name == 'inverter_power'
         inject_source_choices!(data)
         MqttInjector.new(sensor_name).call(data)
         MappingInjector.new(sensor_name).call(data)
@@ -142,6 +143,28 @@ module Surveys
           de: I18n.t("sensors.#{sensor_name}", locale: :de),
         )
         data['description'] = sensor_name.upcase
+      end
+
+      # The total and the single producers are alternatives, never both: a
+      # value here overrides whatever the parts report. A user who adds a
+      # second producer to an existing roof system therefore has to give this
+      # sensor up, which nothing in the form said so far.
+      def inject_total_generation_hint!(data)
+        page = find_page(data, 'p_source')
+        return unless page
+
+        page['description'] = self.class.localized(
+          en: 'Only fill this in when a measurement really covers the whole generation. An ' \
+              'inverter does not know about a balcony power plant beside it, for example, so ' \
+              'each producer then belongs in PV string 1 to 5. While this sensor stays ' \
+              'empty, SOLECTRUS adds the parts up itself. Once it is filled, the ' \
+              'delivered measurement counts, whatever the single producers report.',
+          de: 'Nur belegen, wenn ein Messwert wirklich die gesamte Erzeugung wiedergibt. Ein ' \
+              'Wechselrichter kennt zum Beispiel ein zusätzliches Steckersolargerät nicht, ' \
+              'jeder Erzeuger gehört dann als PV-String 1 bis 5 eingetragen. Bleibt dieser ' \
+              'Sensor leer, bildet SOLECTRUS die Summe aus den Teilen. Ist er belegt, ' \
+              'gilt der angelieferte Messwert, egal was die einzelnen Erzeuger melden.',
+        )
       end
 
       def inject_source_choices!(data)

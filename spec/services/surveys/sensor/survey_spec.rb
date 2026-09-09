@@ -113,6 +113,26 @@ RSpec.describe Surveys::Sensor::Survey do
       expect(result['clearInvisibleValues']).to eq('onHidden')
     end
 
+    describe 'the total generation sensor' do
+      def source_page(sensor_name)
+        survey = described_class.new(sensor_name:).call
+        survey['pages'].find { |page| page['name'] == 'p_source' }
+      end
+
+      it 'says that the total and the single producers are alternatives' do
+        expect(source_page('inverter_power')['description']).to include(
+          'default' => a_string_including('PV string 1 to 5'),
+          'de' => a_string_including('PV-String 1 bis 5'),
+        )
+      end
+
+      it 'leaves the generic description on every other sensor' do
+        expect(source_page('inverter_power_1')['description']).to eq(
+          source_page('custom_power_03')['description'],
+        )
+      end
+    end
+
     describe 'source choices in dashboard_only mode' do
       before { with_config_yaml('deployment' => { 'mode' => 'dashboard_only' }) }
 
