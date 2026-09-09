@@ -87,7 +87,19 @@ RSpec.describe Mqtt::ConnectionTest do
     end
 
     it 'reports unreachable when nothing listens on the port' do
-      expect(reachability(free_port)).to have_attributes(ok: false, reason: :mqtt_unreachable)
+      result = tester.call(
+        check: 'reachability',
+        values: { 'mqtt_host' => 'broker.invalid', 'mqtt_port' => '1883' },
+      )
+
+      expect(result).to have_attributes(ok: false, reason: :mqtt_unreachable)
+    end
+
+    # The broker runs beside HELIOS on the same machine often enough that
+    # users enter 127.0.0.1, where the collector would only find itself.
+    it 'names the loopback address when nothing listens on it' do
+      expect(reachability(free_port))
+        .to have_attributes(ok: false, reason: :loopback_host, args: { host: '127.0.0.1' })
     end
 
     it 'reports incomplete when the host is blank' do
@@ -159,7 +171,16 @@ RSpec.describe Mqtt::ConnectionTest do
     end
 
     it 'reports unreachable when the broker connection is refused' do
-      expect(credentials(free_port)).to have_attributes(ok: false, reason: :mqtt_unreachable)
+      result = tester.call(check: 'credentials', values: {
+                             'mqtt_host' => 'broker.invalid', 'mqtt_port' => '1883',
+                             'mqtt_username' => 'collector', 'mqtt_password' => 's3cret'
+                           })
+
+      expect(result).to have_attributes(ok: false, reason: :mqtt_unreachable)
+    end
+
+    it 'names the loopback address when the connection is refused there' do
+      expect(credentials(free_port)).to have_attributes(ok: false, reason: :loopback_host)
     end
 
     it 'reports incomplete when the username is blank, without connecting' do

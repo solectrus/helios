@@ -40,6 +40,12 @@ RSpec.describe Senec::ConnectionTest do
       expect(reachability).to have_attributes(ok: false, reason: :senec_unreachable)
     end
 
+    it 'names the loopback address when the host cannot be contacted' do
+      stub_request(:post, 'https://localhost/lala.cgi').to_raise(Errno::EHOSTUNREACH)
+
+      expect(reachability('host' => 'localhost')).to have_attributes(ok: false, reason: :loopback_host)
+    end
+
     it 'reports not_senec when the host resets the connection after connecting' do
       stub_request(:post, probe_url).to_raise(Errno::ECONNRESET)
 

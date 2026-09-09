@@ -420,6 +420,7 @@ en:
       s3_access_denied: 'Access denied – check permissions'
       s3_endpoint_unreachable: 'Endpoint not reachable – check URL and region'
       s3_error: 'Connection to S3 storage failed'
+      loopback_host: 'The address %{host} cannot be used'
       incomplete: 'Please fill in all fields first'
       error: 'Check failed'
     settings:

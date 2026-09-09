@@ -36,7 +36,7 @@ module Mqtt
       if probe(values).reachable?
         result(true, :mqtt_reachable)
       else
-        result(false, :mqtt_unreachable)
+        unreachable_result(values['mqtt_host'], :mqtt_unreachable)
       end
     rescue StandardError => e
       logger.warn("MQTT reachability check failed: #{e.message}")
@@ -55,7 +55,7 @@ module Mqtt
     rescue Mqtt::Probe::NotABroker
       result(false, :mqtt_not_broker)
     rescue *Mqtt::Probe::CONNECTION_ERRORS
-      result(false, :mqtt_unreachable)
+      unreachable_result(host, :mqtt_unreachable)
     rescue StandardError => e
       logger.warn("MQTT credentials check failed: #{e.message}")
       result(false, :error)

@@ -34,6 +34,14 @@ RSpec.describe InfluxDb::ConnectionTest do
       expect(reachability).to have_attributes(ok: false, reason: :unreachable)
     end
 
+    # A loopback address reaches the collector itself, never the InfluxDB
+    # beside it, so the failure gets its own reason.
+    it 'names the loopback address when the host cannot be contacted' do
+      stub_request(:get, 'http://127.0.0.1:8086/ping').to_raise(Errno::ECONNREFUSED)
+
+      expect(reachability('host' => '127.0.0.1')).to have_attributes(ok: false, reason: :loopback_host)
+    end
+
     it 'reports incomplete when a field is blank, without probing' do
       expect(reachability('host' => '')).to have_attributes(ok: false, reason: :incomplete)
       expect(a_request(:get, ping_url)).not_to have_been_made

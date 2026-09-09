@@ -45,14 +45,19 @@ module Senec
       # but it does not speak the SENEC protocol.
       warn_and_result(e, 'host is not SENEC', :senec_not_senec)
     rescue *ConnectionTesting::Http::CONNECTION_ERRORS => e
-      warn_and_result(e, 'unreachable', :senec_unreachable)
+      warn_probe(e, 'unreachable')
+      unreachable_result(host, :senec_unreachable)
     rescue StandardError => e
       warn_and_result(e, 'failed', :error)
     end
 
     def warn_and_result(error, context, reason)
-      logger.warn("SENEC reachability check — #{context} (#{error.class}): #{error.message}")
+      warn_probe(error, context)
       result(false, reason)
+    end
+
+    def warn_probe(error, context)
+      logger.warn("SENEC reachability check — #{context} (#{error.class}): #{error.message}")
     end
 
     # A SENEC device answers 2xx and echoes the `ENERGY` object back — that

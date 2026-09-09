@@ -52,7 +52,8 @@ module Shelly
     rescue *ConnectionTesting::Http::PEER_RESET_ERRORS => e
       warn_and_result(e, 'host is not Shelly', :shelly_not_shelly)
     rescue *ConnectionTesting::Http::CONNECTION_ERRORS => e
-      warn_and_result(e, 'unreachable', :shelly_unreachable)
+      warn_probe(e, 'unreachable')
+      unreachable_result(host, :shelly_unreachable)
     rescue StandardError => e
       warn_and_result(e, 'failed', :error)
     end
@@ -170,8 +171,12 @@ module Shelly
     end
 
     def warn_and_result(error, context, reason)
-      logger.warn("Shelly connection test — #{context} (#{error.class}): #{error.message}")
+      warn_probe(error, context)
       result(false, reason)
+    end
+
+    def warn_probe(error, context)
+      logger.warn("Shelly connection test — #{context} (#{error.class}): #{error.message}")
     end
   end
 end

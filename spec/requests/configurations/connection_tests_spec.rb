@@ -19,6 +19,20 @@ RSpec.describe 'Configurations::ConnectionTests', :with_admin_password do
       expect(response.parsed_body['message']).to be_present
     end
 
+    # A loopback address reaches the collector itself, never the InfluxDB
+    # beside it, so the answer names the address rather than blaming the host.
+    it 'names a loopback address it cannot use' do
+      stub_request(:get, 'http://127.0.0.1:8086/ping').to_raise(Errno::ECONNREFUSED)
+
+      post configuration_connection_test_path, params: {
+        target: 'influxdb', check: 'reachability',
+        values: { schema: 'http', host: '127.0.0.1', port: '8086' }
+      }
+
+      expect(response.parsed_body['ok']).to be false
+      expect(response.parsed_body['message']).to include('127.0.0.1')
+    end
+
     it 'reports an unreachable InfluxDB' do
       stub_request(:get, 'http://nope.test:8086/ping').to_raise(Errno::ECONNREFUSED)
 

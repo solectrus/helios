@@ -39,7 +39,7 @@ module InfluxDb
       response = http_get(schema, host, port, '/ping')
       influxdb_ping?(response) ? result(true, :reachable) : result(false, :not_influxdb)
     rescue *InfluxDb::Http::CONNECTION_ERRORS
-      result(false, :unreachable)
+      unreachable_result(host, :unreachable)
     rescue StandardError => e
       logger.warn("InfluxDB reachability check failed: #{e.message}")
       result(false, :error)
@@ -52,7 +52,7 @@ module InfluxDb
 
       credentials_result(write_probe(schema, host, port, org, bucket, token))
     rescue *InfluxDb::Http::CONNECTION_ERRORS
-      result(false, :unreachable)
+      unreachable_result(host, :unreachable)
     rescue StandardError => e
       logger.warn("InfluxDB credentials check failed: #{e.message}")
       result(false, :error)

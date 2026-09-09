@@ -40,6 +40,12 @@ RSpec.describe Shelly::ConnectionTest do
         expect(reachability).to have_attributes(ok: false, reason: :shelly_unreachable)
       end
 
+      it 'names the loopback address when the host cannot be contacted' do
+        stub_request(:get, 'http://127.0.0.1/shelly').to_raise(SocketError)
+
+        expect(reachability('host' => '127.0.0.1')).to have_attributes(ok: false, reason: :loopback_host)
+      end
+
       it 'reports not_shelly when the host resets the connection after connecting' do
         stub_request(:get, shelly_url).to_raise(Errno::ECONNRESET)
 

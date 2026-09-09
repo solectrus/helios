@@ -396,6 +396,7 @@ de:
       s3_access_denied: 'Zugriff verweigert – Berechtigungen prüfen'
       s3_endpoint_unreachable: 'Endpoint nicht erreichbar – prüfe URL und Region'
       s3_error: 'Verbindung zum S3-Speicher fehlgeschlagen'
+      loopback_host: 'Die Adresse %{host} kann nicht verwendet werden'
       incomplete: 'Bitte zuerst alle Felder ausfüllen'
       error: 'Prüfung fehlgeschlagen'
     settings:
