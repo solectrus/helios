@@ -73,17 +73,17 @@ RSpec.describe 'Import::ConfigurationImporter Ingest handling' do
       end
 
       # The stack runs Ingest but has no collector, so inverter_power_2 is
-      # imported as source: external. HELIOS routes Ingest inputs through the
-      # proxy and cannot reroute an external writer, so it would drop Ingest.
-      it 'leaves ingest_required? false because the Ingest input is external' do
+      # imported as source: external. The balcony flag alone decides now, and
+      # the external source has to write to Ingest from here on.
+      it 'keeps ingest_required? true although the Ingest input is external' do
         importer.import!
-        expect(Configuration.current.ingest_required?).to be false
+        expect(Configuration.current.ingest_required?).to be true
       end
 
-      it 'flags the external Ingest inputs as a conflict (import gets refused)' do
+      it 'names the external Ingest inputs so the start page can explain them' do
         # Both the balcony (inverter_power_2) and house_power arrive without a
         # managed collector, so both are external Ingest inputs.
-        expect(importer.ingest_conflict_sensors).to contain_exactly('inverter_power_2', 'house_power')
+        expect(importer.external_ingest_sensors).to contain_exactly('inverter_power_2', 'house_power')
       end
 
       it 'persists the ingest section' do

@@ -184,7 +184,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     'image' => DockerImages.current(:INGEST),
   }.freeze
 
-  INGEST_FIELDS = %w[retention_hours].freeze
+  INGEST_FIELDS = %w[active retention_hours].freeze
 
   INGEST_ALL = (STORAGE_FIELDS + INGEST_FIELDS + INGEST_DEFAULTS.keys).uniq.freeze
 

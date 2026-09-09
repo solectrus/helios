@@ -40,8 +40,52 @@ module SensorRow
     def source_badge
       return unless enabled? && source_badge_css
 
-      tag.span(source_badge_label,
-               class: "badge badge-sm uppercase #{source_badge_css}")
+      badge = tag.span(source_badge_label,
+                       class: "badge badge-sm uppercase #{source_badge_css}")
+      return badge unless ingest_hint?
+
+      tag.span(safe_join([badge, ingest_hint_icon]), class: 'inline-flex items-center gap-1')
+    end
+
+    # While Ingest runs, an external source has to write to Ingest instead of
+    # InfluxDB, otherwise its value never enters the house-power calculation
+    # and Ingest writes no house power at all (see Configuration#ingest_required?).
+    def ingest_hint?
+      source == 'external' &&
+        SensorRegistry::INGEST_SENSORS.include?(sensor_name) &&
+        configuration.ingest_required?
+    end
+
+    # Its own content element rather than data-tip, so the sentence reads
+    # left-aligned like the exclusion list above it.
+    def ingest_hint_icon
+      icon = tag.i(class: 'fa-solid fa-circle-info text-base-content/70 text-sm leading-none')
+
+      tag.span(safe_join([ingest_hint_content, icon]), class: 'tooltip tooltip-left flex items-center')
+    end
+
+    def ingest_hint_content
+      lead = safe_join([tag.strong(I18n.t('sensors.ingest_endpoint_hint_lead')), ' ', ingest_hint_tooltip])
+      body = safe_join(
+        [
+          tag.span(lead, class: 'block'),
+          tag.span(I18n.t('sensors.ingest_endpoint_hint_consequence'), class: 'mt-2 block'),
+        ],
+      )
+
+      tag.span(
+        tag.span(body, class: 'block max-w-3xs px-1 py-0.5 text-left text-xs font-normal normal-case'),
+        class: 'tooltip-content',
+      )
+    end
+
+    # Without a known address the hint names the port instead, so no
+    # placeholder host ends up in front of the user.
+    def ingest_hint_tooltip
+      url = Export::IngestEndpoint.url(configuration)
+      return I18n.t('sensors.ingest_endpoint_hint', url:) if url
+
+      I18n.t('sensors.ingest_endpoint_hint_port', port: Export::IngestEndpoint::PORT)
     end
 
     def unit

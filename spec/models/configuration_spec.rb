@@ -1361,13 +1361,13 @@ RSpec.describe Configuration do
       expect(described_class.current.visible_settings).not_to include('ingest_settings')
     end
 
-    it 'omits ingest_settings in dashboard_only mode (external sources own the calculation)' do
+    it 'appends ingest_settings in dashboard_only mode (no influxdb card to anchor it)' do
       with_config_yaml(
         'deployment' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY },
         'sensors' => { 'inverter_power_2' => { 'source' => 'external', 'is_balcony' => true } },
       )
       settings = described_class.current.visible_settings
-      expect(settings).not_to include('ingest_settings')
+      expect(settings.last).to eq('ingest_settings')
       expect(settings).not_to include('influxdb')
     end
   end
@@ -1439,28 +1439,49 @@ RSpec.describe Configuration do
       ).to be true
     end
 
-    it 'is false when a managed producer is paired with an external Ingest input' do
+    it 'is true when a managed producer is paired with an external Ingest input' do
       expect(
         ingest_required_for?('sensors' => {
                                'inverter_power' => { 'source' => 'external' },
                                'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true },
                              }),
-      ).to be false
+      ).to be true
     end
 
-    it 'is false when the balcony sensor itself is external' do
+    it 'is true when the balcony sensor itself is external' do
       expect(
         ingest_required_for?('sensors' => { 'inverter_power_2' => { 'source' => 'external', 'is_balcony' => true } }),
-      ).to be false
+      ).to be true
     end
 
-    it 'ignores external sensors Ingest does not consume' do
+    it 'is true for external sensors Ingest does not consume' do
       expect(
         ingest_required_for?('sensors' => {
                                'outdoor_temp' => { 'source' => 'external' },
                                'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true },
                              }),
       ).to be true
+    end
+
+    # A smart-home system can deliver a house power that is already corrected.
+    # Recalculating it would replace the user's own result, so the switch in the
+    # Ingest settings turns the service off again.
+    it 'is false when the recalculation is switched off' do
+      expect(
+        ingest_required_for?(
+          'ingest' => { 'active' => false },
+          'sensors' => { 'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true } },
+        ),
+      ).to be false
+    end
+
+    it 'still offers the setting while the recalculation is off' do
+      with_config_yaml(
+        'ingest' => { 'active' => false },
+        'sensors' => { 'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true } },
+      )
+
+      expect(described_class.current.visible_settings).to include('ingest_settings')
     end
 
     it 'is false in collectors_only mode regardless of sensors' do

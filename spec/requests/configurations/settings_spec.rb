@@ -194,6 +194,34 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
   end
 
+  # The switch only reaches config.yaml when its field is part of the setting
+  # group; without that it is sliced off on save and the service stays on.
+  describe 'POST /configuration/settings for the Ingest correction' do
+    before do
+      Configuration.current.update_sensor('inverter_power_2', {
+                                            'source' => 'shelly', 'is_balcony' => true,
+                                            'shelly_host' => 'shelly.local',
+                                            'measurement' => 'balcony', 'field' => 'power'
+                                          })
+    end
+
+    it 'stores a switched-off correction' do
+      post configuration_settings_path,
+           params: { setting: 'ingest_settings', data: { active: false }.to_json }
+
+      expect(Configuration.current.ingest.active).to be false
+      expect(Configuration.current.ingest_required?).to be false
+    end
+
+    it 'keeps the buffer duration while the correction runs' do
+      post configuration_settings_path,
+           params: { setting: 'ingest_settings', data: { active: true, retention_hours: '24' }.to_json }
+
+      expect(Configuration.current.ingest.retention_hours).to eq('24')
+      expect(Configuration.current.ingest_required?).to be true
+    end
+  end
+
   describe 'POST /configuration/settings for the reverse_proxy mode' do
     it 'stores app_domain for the internal Traefik mode' do
       post configuration_settings_path,

@@ -72,4 +72,80 @@ RSpec.describe SensorRow::Component, type: :component do
       expect(rendered.css('.tooltip-content li').map(&:text)).to eq(['Backofen'])
     end
   end
+
+  # An external source only reaches the house-power calculation when it writes
+  # to Ingest, and nothing but this hint says so on the sensor list.
+  describe 'the Ingest address hint' do
+    let(:sensor_name) { 'house_power' }
+
+    before do
+      Configuration.current.update('system', { 'app_host' => 'solectrus.fritz.box' })
+      Configuration.current.update_sensor('house_power', {
+                                            'source' => 'external', 'measurement' => 'house', 'field' => 'power'
+                                          })
+    end
+
+    context 'with a balcony power plant that runs Ingest' do
+      before do
+        Configuration.current.update_sensor('inverter_power_2', {
+                                              'source' => 'shelly', 'is_balcony' => true,
+                                              'shelly_host' => 'shelly.local',
+                                              'measurement' => 'balcony', 'field' => 'power'
+                                            })
+      end
+
+      it 'names the address next to the source badge' do
+        expect(rendered.css('.tooltip-content').text).to include('http://solectrus.fritz.box:4567')
+      end
+
+      it 'names the port alone while no address is configured' do
+        Configuration.current.update('system', { 'app_host' => '' })
+
+        text = rendered.css('.tooltip-content').text
+        expect(text).to include(Export::IngestEndpoint::PORT.to_s)
+        expect(text).not_to include('http')
+      end
+
+      it 'leads with a bold marker' do
+        expect(rendered.css('.tooltip-content strong').first.text).to eq(I18n.t('sensors.ingest_endpoint_hint_lead'))
+      end
+
+      # Every input of the house-power formula counts, not just the balcony one:
+      # a single value missing from Ingest stops the calculation entirely.
+      it 'sits on every Ingest input that comes from an external source' do
+        # inverter_power_2 stays the Shelly balcony sensor: turning it external
+        # too would drop the flag and switch Ingest off mid-loop.
+        without_hint =
+          (SensorRegistry::INGEST_SENSORS - %w[inverter_power_2]).reject do |name|
+            Configuration.current.update_sensor(
+              name, { 'source' => 'external', 'measurement' => name, 'field' => 'power' }
+            )
+            row = described_class.new(sensor_name: name, configuration: Configuration.current, reading: nil)
+            render_inline(row).css('.tooltip-content').any?
+          end
+
+        expect(without_hint).to be_empty
+      end
+    end
+
+    it 'stays away while no Ingest runs' do
+      expect(rendered.css('.tooltip-content')).to be_empty
+    end
+
+    it 'stays away on a sensor Ingest does not consume' do
+      Configuration.current.update_sensor('inverter_power_2', {
+                                            'source' => 'shelly', 'is_balcony' => true,
+                                            'shelly_host' => 'shelly.local',
+                                            'measurement' => 'balcony', 'field' => 'power'
+                                          })
+      Configuration.current.update_sensor('outdoor_temp', {
+                                            'source' => 'external', 'measurement' => 'outdoor', 'field' => 'temp'
+                                          })
+
+      rendered = render_inline(
+        described_class.new(sensor_name: 'outdoor_temp', configuration: Configuration.current, reading: nil),
+      )
+      expect(rendered.css('.tooltip-content')).to be_empty
+    end
+  end
 end

@@ -27,7 +27,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'dashboard_co2' => { singleton: 'dashboard', keys: %w[co2_emission_factor] },
     'dashboard_theme' => { singleton: 'dashboard', keys: %w[ui_theme] },
     'dashboard_network' => { singleton: 'dashboard', keys: %w[frame_ancestors host_port] },
-    'ingest_settings' => { singleton: 'ingest', keys: %w[retention_hours] },
+    'ingest_settings' => { singleton: 'ingest', keys: %w[active retention_hours] },
   }.freeze
 
   # The charger fields the prices survey collects on behalf of the
@@ -733,18 +733,30 @@ class Configuration # rubocop:disable Metrics/ClassLength
   #
   # SOLECTRUS routes ALL producers through Ingest so it can recompute
   # house_power from the complete picture (roof + balcony + grid + battery −
-  # wallbox − heatpump …). HELIOS cannot route a source it does not manage, so
-  # as soon as one Ingest input arrives via `source: external`, Ingest would
-  # only ever see partial data. Rather than recalculate on an incomplete set,
-  # HELIOS leaves a correct house_power to the external side and skips Ingest
-  # entirely — an external source must deliver already-correct values.
+  # wallbox − heatpump …). An input HELIOS does not manage is part of that
+  # picture too: Ingest speaks the InfluxDB write API, so an external source
+  # reaches it by writing to its address instead of the database. HELIOS names
+  # that address wherever such a source is configured (Export::IngestEndpoint,
+  # SensorRow::Component) — a source that keeps writing to InfluxDB
+  # leaves the recalculation without one of its terms, and Ingest then writes
+  # no house_power at all.
   def ingest_required?
-    !collectors_only? && balcony_sensors.any? && external_ingest_inputs.empty?
+    ingest_offered? && ingest.active != false
   end
 
-  # Enabled Ingest inputs (INGEST_SENSORS) fed by an external source. Their
-  # data reaches InfluxDB without passing through the Ingest write proxy, so
-  # their presence disables Ingest (see #ingest_required?).
+  # A balcony power plant is the one reason to run Ingest, so its flag decides
+  # whether the service is on offer at all. Whether it then runs is the user's
+  # call (the switch in the Ingest settings): a smart-home system can deliver a
+  # house power that is already correct, and recalculating it would replace the
+  # user's own result with ours.
+  def ingest_offered?
+    !collectors_only? && balcony_sensors.any?
+  end
+
+  # Enabled Ingest inputs (INGEST_SENSORS) fed by an external source. They only
+  # reach the house_power recalculation when that source writes to Ingest
+  # instead of InfluxDB, so every place that explains the endpoint asks for
+  # this list.
   def external_ingest_inputs
     @external_ingest_inputs ||= enabled_sensors.select do |name|
       SensorRegistry::INGEST_SENSORS.include?(name) &&
@@ -787,18 +799,17 @@ class Configuration # rubocop:disable Metrics/ClassLength
   end
 
   # Settings visible in the configuration UI for the current mode. Ingest is
-  # inserted right after influxdb whenever a balcony sensor activates it — the
+  # inserted right after influxdb whenever a balcony sensor offers it — the
   # two services sit next to each other in the data path and read more naturally
-  # as neighbors on the card grid. Ingest only activates when all its inputs are
-  # HELIOS-managed (see #ingest_required?), which today is full mode only, so the
-  # influxdb anchor is always present; the append fallback is purely defensive.
+  # as neighbors on the card grid. In dashboard_only mode the influxdb card is
+  # hidden (its only toggle is forced on there), so Ingest lands at the end.
   def visible_settings
     base = case mode
            when ConfigSchema::MODE_COLLECTORS_ONLY then COLLECTORS_ONLY_SETTINGS
            when ConfigSchema::MODE_DASHBOARD_ONLY then DASHBOARD_ONLY_SETTINGS
            else SETTINGS
            end
-    return base unless ingest_required?
+    return base unless ingest_offered?
 
     insert_at = base.index('influxdb')
     insert_at ? base.dup.insert(insert_at + 1, 'ingest_settings') : base + %w[ingest_settings]

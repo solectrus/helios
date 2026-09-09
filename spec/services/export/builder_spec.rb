@@ -2291,6 +2291,52 @@ RSpec.describe Export::Builder do
         )
       end
     end
+
+    # The house power can arrive already corrected, from a smart-home system for
+    # example. The service then has nothing to do and stays out of the stack.
+    context 'when the recalculation is switched off' do
+      before do
+        Configuration.current.update('ingest', { 'active' => false })
+        described_class.new(Configuration.current).write!
+      end
+
+      it 'drops the ingest service' do
+        compose = Compose.load
+        expect(compose.services.names).not_to include('ingest')
+      end
+
+      it 'sends the collectors to InfluxDB again' do
+        compose = Compose.load
+        senec = compose.services.find('senec-collector')
+        expect(senec.environment).to include('INFLUX_HOST=influxdb')
+      end
+    end
+
+    # An external source reaches Ingest the same way a collector does: it
+    # writes to the Ingest address instead of the InfluxDB one. So the balcony
+    # value being external is no reason to leave the correction out.
+    context 'when the balcony power plant is delivered externally' do
+      before do
+        Configuration.current.update_sensor('inverter_power_2', {
+                                              'source' => 'external',
+                                              'is_balcony' => true,
+                                              'measurement' => 'balcony',
+                                              'field' => 'power',
+                                            })
+        described_class.new(Configuration.current).write!
+      end
+
+      it 'still includes ingest' do
+        compose = Compose.load
+        expect(compose.services.names).to include('ingest')
+      end
+
+      it 'forwards the external balcony sensor to ingest' do
+        compose = Compose.load
+        ingest = compose.services.find('ingest')
+        expect(ingest.environment).to include('INFLUX_SENSOR_INVERTER_POWER_2')
+      end
+    end
   end
 
   describe 'without Ingest' do

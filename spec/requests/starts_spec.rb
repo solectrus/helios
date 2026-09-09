@@ -83,7 +83,7 @@ RSpec.describe 'Starts' do
 
       before do
         # Ingest service present, no collector → inverter_power_2 (the balcony)
-        # imports as source: external, which HELIOS can't route through Ingest.
+        # imports as source: external, so that source has to write to Ingest.
         File.write(File.join(dir, 'compose.yaml'), <<~YAML)
           services:
             dashboard:
@@ -98,11 +98,12 @@ RSpec.describe 'Starts' do
         File.write(File.join(dir, '.env'), "TZ=Europe/Berlin\n")
       end
 
-      it 'explains the conflict and does not offer the import button' do
+      it 'names the sensors that have to be redirected, and still offers the import' do
         get start_path
 
-        expect(response.body).to include(I18n.t('starts.show.ingest_conflict_reason'))
-        expect(response.body).not_to include(I18n.t('starts.show.agree'))
+        expect(response.body).to include(I18n.t('starts.show.external_ingest_reason'))
+        expect(response.body).to include(I18n.t('sensors.inverter_power_2'))
+        expect(response.body).to include(I18n.t('starts.show.agree'))
       end
     end
 
@@ -193,7 +194,7 @@ RSpec.describe 'Starts' do
         )
         allow(Import::ConfigurationImporter).to receive(:new).with(stack_reader).and_return(importer)
         allow(importer).to receive(:import!)
-        allow(importer).to receive(:ingest_conflict_sensors).and_return([])
+        allow(importer).to receive(:external_ingest_sensors).and_return([])
         allow(Export::Builder).to receive(:new).and_return(builder)
         # Keep the baseline seeding (issue #291) from shelling out to
         # `docker compose config --hash` in tests that don't care about it.
@@ -269,8 +270,8 @@ RSpec.describe 'Starts' do
       end
     end
 
-    # The same conflict the start page explains: a POST that slips past it
-    # (a stale page, a direct request) must refuse just as clearly.
+    # An external Ingest input is a hint on the start page, not a refusal: the
+    # import runs, and Ingest comes with it.
     context 'when an Ingest input arrives from an external source' do
       let(:dir) { with_config_yaml }
 
@@ -289,19 +290,17 @@ RSpec.describe 'Starts' do
         File.write(File.join(dir, '.env'), "TZ=Europe/Berlin\n")
       end
 
-      it 'refuses the import and names the offending sensor' do
+      it 'imports the stack and sets Ingest up' do
         post start_path
 
-        expect(response).to have_http_status(:unprocessable_content)
-        expect(response.body).to include(I18n.t('starts.show.ingest_conflict_reason'))
-        expect(response.body).to include('inverter_power_2')
+        expect(response).to redirect_to(services_path)
+        expect(Configuration.current.ingest_required?).to be true
       end
 
-      it 'does not back up or import the stack' do
+      it 'writes Ingest into the generated compose file' do
         post start_path
 
-        expect(File.exist?(File.join(dir, 'compose.yaml.bak'))).to be false
-        expect(File.exist?(Configuration.path)).to be false
+        expect(File.read(File.join(dir, 'compose.yaml'))).to include('ingest:')
       end
     end
 

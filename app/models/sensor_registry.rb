@@ -17,8 +17,9 @@ class SensorRegistry
   # (mirrors INFLUX_SENSOR_* passed to the container, see
   # https://docs.solectrus.de/referenz/ingest/konfiguration/). A value written
   # straight to InfluxDB instead of through Ingest never enters this
-  # recalculation, so the canonical list also decides when an external source
-  # disables Ingest (see Configuration#external_ingest_inputs).
+  # recalculation, so the canonical list also decides where HELIOS explains the
+  # Ingest endpoint to an external source (see
+  # Configuration#external_ingest_inputs).
   INGEST_SENSORS = %w[
     inverter_power
     inverter_power_1 inverter_power_2 inverter_power_3 inverter_power_4 inverter_power_5

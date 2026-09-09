@@ -314,11 +314,17 @@ module Surveys
       def balcony_description
         self.class.localized(
           en: 'Balcony power plants feed directly into the home grid and distort the ' \
-              'house_power reported by the inverter. This enables the Ingest service, ' \
-              'which recalculates house_power correctly.',
-          de: 'Balkonkraftwerke speisen direkt ins Hausnetz ein und verfälschen den vom ' \
+              'house power reported by the inverter. This enables the Ingest service, ' \
+              'which corrects the house power. Every value of that correction then has to ' \
+              'reach Ingest, an externally delivered one included. Under Advanced, the Ingest ' \
+              'service can turn the correction off again, for a house power that already ' \
+              'arrives corrected.',
+          de: 'Steckersolargeräte speisen direkt ins Hausnetz ein und verfälschen den vom ' \
               'Wechselrichter gemeldeten Hausverbrauch. Mit dieser Option wird der Ingest-Dienst ' \
-              'aktiviert, der den Hausverbrauch korrekt neu berechnet.',
+              'aktiviert, der den Hausverbrauch korrigiert. Alle Werte dieser Korrektur müssen ' \
+              'dann bei Ingest ankommen, auch extern gelieferte. Unter Erweitert lässt sich die ' \
+              'Korrektur beim Dienst Ingest wieder abschalten, falls der Hausverbrauch bereits ' \
+              'korrigiert angeliefert wird.',
         )
       end
     end

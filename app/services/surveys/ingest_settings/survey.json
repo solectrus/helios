@@ -5,12 +5,35 @@
     "default": "Ingest"
   },
   "description": {
-    "de": "Wie lange Messdaten zwischengespeichert werden",
-    "default": "How long measurement data is buffered"
+    "de": "Korrektur des Hausverbrauchs bei einem Steckersolargerät",
+    "default": "Correction of the house consumption for a balcony power plant"
   },
   "pages": [
     {
       "name": "p_settings",
+      "elements": [
+        {
+          "type": "boolean",
+          "name": "active",
+          "title": {
+            "de": "Hausverbrauch korrigieren?",
+            "default": "Correct the house consumption?"
+          },
+          "description": {
+            "de": "Ein Steckersolargerät speist direkt ins Hausnetz ein, der vom Wechselrichter gemeldete Hausverbrauch ist dann zu niedrig. Ingest korrigiert ihn. Abschalten, wenn der Hausverbrauch bereits korrigiert angeliefert wird, etwa aus einem Smart-Home-System.",
+            "default": "A balcony power plant feeds directly into the home grid, so the house consumption reported by the inverter is too low. Ingest corrects it. Switch it off when the house consumption already arrives corrected, from a smart home system for example."
+          },
+          "defaultValue": true
+        }
+      ]
+    },
+    {
+      "name": "p_buffer",
+      "visibleIf": "{active} = true",
+      "title": {
+        "de": "Zwischenspeicher",
+        "default": "Buffer"
+      },
       "elements": [
         {
           "type": "text",

@@ -5,7 +5,7 @@
     <%= render LanguageSelect::Component.new %>
   </div>
 
-  <% refusal = @compose_error.present? || @unsupported_services.present? || @ingest_conflict_sensors.present? %>
+  <% refusal = @compose_error.present? || @unsupported_services.present? %>
 
   <div class="hero-content z-10 w-full flex-col px-0 md:px-4 <%= refusal ? 'max-w-2xl' : 'max-w-lg' %>">
     <div class="mb-6 text-center">
@@ -20,17 +20,13 @@
             <div class="flex items-start gap-3">
               <i aria-hidden="true" class="fa-solid fa-triangle-exclamation text-error mt-1 text-lg"></i>
 
-              <p class="leading-snug font-semibold">
-                <%= @ingest_conflict_sensors.present? ? t('.ingest_conflict_heading') : t('.unsupported_heading') %>
-              </p>
+              <p class="leading-snug font-semibold"><%= t('.unsupported_heading') %></p>
             </div>
 
             <div class="flex flex-col gap-2">
               <p class="text-base-content/60 text-sm">
                 <% if @compose_error.present? %>
                   <%= t('.invalid_reason_html') %>
-                <% elsif @ingest_conflict_sensors.present? %>
-                  <%= t('.ingest_conflict_reason') %>
                 <% else %>
                   <%= t('.unsupported_reason') %>
                 <% end %>
@@ -43,20 +39,6 @@
                     font-mono text-xs whitespace-pre-wrap
                   "
                 ><%= @compose_error %></pre>
-              <% elsif @ingest_conflict_sensors.present? %>
-                <ul
-                  class="
-                    border-base-content/10 divide-base-content/10 bg-base-100 divide-y overflow-hidden rounded-lg
-                    border
-                  "
-                >
-                  <% @ingest_conflict_sensors.each do |sensor| %>
-                    <li class="flex flex-col gap-0.5 px-3.5 py-2.5">
-                      <span class="text-sm font-medium"><%= t("sensors.#{sensor}") %></span>
-                      <span class="text-base-content/50 font-mono text-xs"><%= sensor %></span>
-                    </li>
-                  <% end %>
-                </ul>
               <% else %>
                 <ul
                   class="
@@ -78,16 +60,31 @@
             </div>
 
             <p class="text-base-content/70 text-sm leading-relaxed">
-              <% if @compose_error.present? %>
-                <%= t('.invalid_hint') %>
-              <% elsif @ingest_conflict_sensors.present? %>
-                <%= t('.ingest_conflict_hint_html') %>
-              <% else %>
-                <%= t('.unsupported_hint_html') %>
-              <% end %>
+              <%= @compose_error.present? ? t('.invalid_hint') : t('.unsupported_hint_html') %>
             </p>
           </div>
         <% else %>
+          <% if @external_ingest_sensors.present? %>
+            <div class="border-warning/40 bg-warning/10 flex flex-col gap-3 rounded-xl border p-5" role="status">
+              <div class="flex items-start gap-3">
+                <i aria-hidden="true" class="fa-solid fa-circle-info text-warning mt-0.5"></i>
+                <p class="text-sm leading-snug font-semibold"><%= t('.external_ingest_heading') %></p>
+              </div>
+
+              <p class="text-base-content/70 text-sm leading-relaxed"><%= t('.external_ingest_reason') %></p>
+
+              <ul class="flex flex-wrap gap-2">
+                <% @external_ingest_sensors.each do |sensor| %>
+                  <li class="bg-base-100 border-base-content/10 rounded-lg border px-2.5 py-1">
+                    <span class="text-xs font-medium"><%= t("sensors.#{sensor}") %></span>
+                  </li>
+                <% end %>
+              </ul>
+
+              <p class="text-base-content/70 text-sm leading-relaxed"><%= t('.external_ingest_hint') %></p>
+            </div>
+          <% end %>
+
           <h2 class="text-2xl leading-tight font-semibold tracking-tight"><%= t('.heading') %></h2>
           <ul class="text-base-content/85 space-y-4 text-sm leading-relaxed">
             <li class="flex gap-3">
