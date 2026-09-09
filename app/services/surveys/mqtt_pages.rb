@@ -75,9 +75,11 @@ module Surveys
     end
 
     # The data type applies to both kinds, so it closes the page below the
-    # inputs that belong to one kind alone.
+    # inputs that belong to one kind alone. A survey whose type is fixed
+    # contributes nothing here, and the page then holds the extraction inputs
+    # alone.
     def extraction_value_elements
-      [*fields.computed_inputs(referencable), *fields.extraction_value_inputs, fields.type_dropdown]
+      [*fields.computed_inputs(referencable), *fields.extraction_value_inputs, fields.type_dropdown].compact
     end
 
     def name_elements

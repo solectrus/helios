@@ -360,7 +360,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   def update_sensor(name, data, prune: true) # rubocop:disable Naming/PredicateMethod
     @data['sensors'] ||= {}
     raw = data.is_a?(Data) ? data.to_h : data
-    sanitized = sanitize_sensor_data(raw)
+    sanitized = sanitize_sensor_data(raw, name)
     return false if @data['sensors'][name.to_s] == sanitized
 
     rename_mapping_name!(sensor_mqtt_name(name), sanitized['mqtt_name'])
@@ -1352,24 +1352,36 @@ class Configuration # rubocop:disable Metrics/ClassLength
     end
   end
 
-  def sanitize_sensor_data(data)
+  def sanitize_sensor_data(data, name)
     return data unless data.is_a?(Hash)
 
     source = data['source']
     allowed = SENSOR_FIELDS_BY_SOURCE[source]
     return data unless allowed
 
-    fold_computed_formula(data, 'mqtt_').slice(*allowed).compact_blank
+    fold_computed_formula(with_payload_type(data, name), 'mqtt_').slice(*allowed).compact_blank
+  end
+
+  # The data type of an MQTT sensor is no longer asked for: the sensor decides
+  # it (see SensorRegistry.payload_type_for), so the survey does not send one.
+  # A stored type stays as it is, even where it deviates, because InfluxDB
+  # binds a field to the type first written to it and a changed type stops the
+  # collector. Merged before the slice, so the key keeps its place in the file.
+  def with_payload_type(data, name)
+    return data unless data['source'] == 'mqtt' && data['mqtt_payload_type'].blank?
+
+    type = SensorRegistry.payload_type_for(name)
+    type ? data.merge('mqtt_payload_type' => type) : data
   end
 
   def sanitize_all_sensors!(result)
     raw = result['sensors']
     canonical_order = SensorRegistry::GROUPS.values.flatten
     ordered = canonical_order.each_with_object({}) do |name, hash|
-      hash[name] = sanitize_sensor_data(raw[name]) if raw.key?(name)
+      hash[name] = sanitize_sensor_data(raw[name], name) if raw.key?(name)
     end
     # Append any sensors not in GROUPS (shouldn't happen, but safe)
-    raw.each { |name, v| ordered[name] ||= sanitize_sensor_data(v) }
+    raw.each { |name, v| ordered[name] ||= sanitize_sensor_data(v, name) }
     result['sensors'] = ordered
   end
 

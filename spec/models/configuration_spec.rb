@@ -821,6 +821,36 @@ RSpec.describe Configuration do
         expect(config.sensor_enabled?('inverter_power')).to be true
         expect(config.sensor_config('inverter_power').source).to eq('senec')
       end
+
+      # The survey does not ask for the data type any more, so the sensor
+      # decides it on the way in.
+      it 'derives the data type of an MQTT sensor' do
+        config = described_class.current
+        config.update_sensor('inverter_power', { 'source' => 'mqtt', 'mqtt_topic' => 'pv/power' })
+        config.update_sensor('wallbox_car_connected', { 'source' => 'mqtt', 'mqtt_topic' => 'evcc/connected' })
+
+        expect(config.sensor_config('inverter_power').mqtt_payload_type).to eq('float')
+        expect(config.sensor_config('wallbox_car_connected').mqtt_payload_type).to eq('boolean')
+      end
+
+      # InfluxDB binds a field to the type first written to it, so a type
+      # stored before HELIOS derived it must survive the next save.
+      it 'keeps a stored type that deviates from the derived one' do
+        config = described_class.current
+        config.update_sensor('inverter_power',
+                             { 'source' => 'mqtt', 'mqtt_topic' => 'pv/power', 'mqtt_payload_type' => 'integer' })
+        config.update_sensor('inverter_power',
+                             { 'source' => 'mqtt', 'mqtt_topic' => 'pv/watts', 'mqtt_payload_type' => 'integer' })
+
+        expect(config.sensor_config('inverter_power').mqtt_payload_type).to eq('integer')
+      end
+
+      it 'leaves a sensor of another source without a data type' do
+        config = described_class.current
+        config.update_sensor('inverter_power', { 'source' => 'senec' })
+
+        expect(config.sensor_config('inverter_power')).not_to have_key('mqtt_payload_type')
+      end
     end
 
     describe '#remove_sensor' do

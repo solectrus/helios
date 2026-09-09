@@ -31,14 +31,26 @@ module Surveys
       attr_reader :sensor_name
 
       # The sensor survey named two of its questions before the prefix
-      # convention settled, so both keep their own names.
+      # convention settled, so both keep their own names. The data type is not
+      # among the questions: the sensor decides it, and only an entry stored
+      # before that carries a type of its own.
       def fields
         MqttFields.new(
           prefix: 'mqtt_',
           guard: SOURCE,
           type_field: 'mqtt_payload_type',
           method_field: 'mqtt_extraction_mode',
+          fixed_type: stored_type.presence || expected_type,
+          expected_type:,
         )
+      end
+
+      def expected_type
+        @expected_type ||= SensorRegistry.payload_type_for(sensor_name)
+      end
+
+      def stored_type
+        Configuration.current.sensor_config(sensor_name).mqtt_payload_type.to_s
       end
     end
   end

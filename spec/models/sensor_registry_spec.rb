@@ -13,6 +13,25 @@ RSpec.describe SensorRegistry do
     end
   end
 
+  describe '.payload_type_for' do
+    it 'returns a number for a sensor with a unit' do
+      expect(described_class.payload_type_for('inverter_power')).to eq('float')
+      expect(described_class.payload_type_for('battery_soc')).to eq('float')
+    end
+
+    it 'returns a yes/no answer for a boolean sensor' do
+      expect(described_class.payload_type_for('wallbox_car_connected')).to eq('boolean')
+    end
+
+    it 'returns text for a unit-less sensor that is not boolean' do
+      expect(described_class.payload_type_for('system_status')).to eq('string')
+    end
+
+    it 'returns nothing for an unknown sensor, so a stored type stands' do
+      expect(described_class.payload_type_for('unknown')).to be_nil
+    end
+  end
+
   describe '.sources_for' do
     it 'returns sources for known sensor' do
       expect(described_class.sources_for('inverter_power')).to include('senec', 'mqtt')

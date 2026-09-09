@@ -179,6 +179,18 @@ class SensorRegistry
     BOOLEAN_SENSORS.include?(sensor_name)
   end
 
+  # The data type a sensor is written to InfluxDB as. Every sensor carries
+  # either a measurement, a yes/no answer or a status text, so nobody has to
+  # decide this: a unit means a number, and BOOLEAN_SENSORS names the yes/no
+  # ones among the unit-less rest. nil for a sensor this registry does not
+  # know, which leaves a stored type untouched.
+  def self.payload_type_for(sensor_name)
+    return unless valid?(sensor_name)
+    return 'boolean' if boolean?(sensor_name)
+
+    unit_for(sensor_name).present? ? 'float' : 'string'
+  end
+
   def self.sources_for(sensor_name)
     SENSORS.dig(sensor_name, :sources) || []
   end

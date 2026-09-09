@@ -13,20 +13,25 @@ RSpec.describe Surveys::Sensor::Survey do
 
     describe 'MQTT filter page' do
       let(:filter_page) { result['pages'].find { |p| p['name'] == 'p_mqtt_filter' } }
-      let(:condition) { "{source} = 'mqtt' and ({mqtt_payload_type} = 'float' or {mqtt_payload_type} = 'integer')" }
 
       it 'offers the numeric filters plus the NULL-to-zero switch' do
         expect(filter_page['elements'].pluck('name')).to eq(%w[mqtt_min mqtt_max mqtt_null_to_zero])
       end
 
       # The gate sits on the inputs, not on the page: clearInvisibleValues
-      # clears a question only when its own visibility flips, so a page-level
-      # condition left a stale MAPPING_N_NULL_TO_ZERO=true in the export after
-      # the payload type changed from float to string. SurveyJS hides a page
-      # whose questions are all invisible on its own.
-      it 'gates each input on an MQTT sensor with a numeric payload' do
+      # clears a question only when its own visibility flips, and SurveyJS
+      # hides a page whose questions are all invisible on its own.
+      it 'gates each input on an MQTT sensor' do
         expect(filter_page).not_to have_key('visibleIf')
-        expect(filter_page['elements'].pluck('visibleIf')).to all(eq(condition))
+        expect(filter_page['elements'].pluck('visibleIf')).to all(eq("{source} = 'mqtt'"))
+      end
+
+      # A yes/no sensor has no numbers to filter, and the type is known while
+      # the survey is built, so the inputs are left out instead of hidden.
+      it 'drops the filters for a sensor that carries no number' do
+        survey = described_class.new(sensor_name: 'wallbox_car_connected').call
+
+        expect(survey['pages'].find { |p| p['name'] == 'p_mqtt_filter' }['elements']).to be_empty
       end
 
       it 'defaults the NULL-to-zero switch to off' do
@@ -49,11 +54,17 @@ RSpec.describe Surveys::Sensor::Survey do
       # external clears the write options along with the rest of the MQTT page.
       it 'gates each input on an MQTT sensor and on what the collector requires' do
         expect(write_page).not_to have_key('visibleIf')
-        expect(elements['mqtt_aggregate_interval']['visibleIf']).to eq(
-          "{source} = 'mqtt' and ({mqtt_payload_type} = 'float' or {mqtt_payload_type} = 'integer')",
-        )
+        expect(elements['mqtt_aggregate_interval']['visibleIf']).to eq("{source} = 'mqtt'")
         expect(elements['mqtt_dedup']['visibleIf']).to eq("{source} = 'mqtt'")
         expect(elements['mqtt_heartbeat_interval']['visibleIf']).to eq("{source} = 'mqtt' and {mqtt_dedup} = true")
+      end
+
+      # Averaging needs numbers to average, so a yes/no sensor never offers it.
+      it 'drops the averaging interval for a sensor that carries no number' do
+        survey = described_class.new(sensor_name: 'wallbox_car_connected').call
+        page = survey['pages'].find { |p| p['name'] == 'p_mqtt_write' }
+
+        expect(page['elements'].pluck('name')).to eq(%w[mqtt_dedup mqtt_heartbeat_interval])
       end
 
       it 'defaults deduplication to off' do
@@ -111,6 +122,39 @@ RSpec.describe Surveys::Sensor::Survey do
 
     it 'clears invisible values so filters of an abandoned source do not leak into config' do
       expect(result['clearInvisibleValues']).to eq('onHidden')
+    end
+
+    describe 'the data type of an MQTT sensor' do
+      let(:extraction_page) { result['pages'].find { |p| p['name'] == 'p_mqtt_extraction_value' } }
+
+      # Every sensor carries either a measurement, a yes/no answer or a status
+      # text, so the type is derived instead of asked for. A wrong answer used
+      # to be unfixable, because InfluxDB binds a field to its first type.
+      it 'is not asked for' do
+        expect(extraction_page['elements'].pluck('name')).not_to include('mqtt_payload_type')
+      end
+
+      it 'explains a stored type the sensor would not pick' do
+        with_config_yaml(
+          'sensors' => {
+            'custom_power_03' => { 'source' => 'mqtt', 'mqtt_topic' => 'oven', 'mqtt_payload_type' => 'integer' },
+          },
+        )
+        note = extraction_page['elements'].find { |element| element['name'] == 'mqtt_type_note' }
+
+        expect(note['html']).to include('default' => a_string_including('Integer'),
+                                        'de' => a_string_including('Ganzzahl'))
+      end
+
+      it 'says nothing while the stored type matches the sensor' do
+        with_config_yaml(
+          'sensors' => {
+            'custom_power_03' => { 'source' => 'mqtt', 'mqtt_topic' => 'oven', 'mqtt_payload_type' => 'float' },
+          },
+        )
+
+        expect(extraction_page['elements'].pluck('name')).not_to include('mqtt_type_note')
+      end
     end
 
     describe 'the total generation sensor' do

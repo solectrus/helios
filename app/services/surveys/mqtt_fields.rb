@@ -66,12 +66,20 @@ module Surveys
     # calls differently than the prefix would suggest. `skip_write` says whether
     # this survey offers the option at all: only a standalone entry may skip
     # writing, a sensor names an InfluxDB target by definition.
-    def initialize(prefix: '', guard: nil, type_field: nil, method_field: nil, skip_write: false)
+    # `fixed_type` names the data type when the survey does not ask for it,
+    # because the sensor already decides it (see
+    # SensorRegistry.payload_type_for). `expected_type` is what that sensor
+    # would pick: the two differ only for an entry stored before the type was
+    # derived, and the form then says so instead of silently keeping it.
+    def initialize(prefix: '', guard: nil, type_field: nil, method_field: nil, skip_write: false, # rubocop:disable Metrics/ParameterLists
+                   fixed_type: nil, expected_type: nil)
       @prefix = prefix
       @guard = guard
       @type_field = type_field || field('type')
       @method_field = method_field || field('extraction_method')
       @skip_write = skip_write
+      @fixed_type = fixed_type
+      @expected_type = expected_type || fixed_type
     end
 
     # Where a mapping gets its value from. A calculated one has no topic and
@@ -96,7 +104,11 @@ module Surveys
     end
 
     # The data type applies to both kinds, so it carries no kind condition.
+    # A fixed type is not asked at all: nothing is shown while it matches the
+    # sensor, and a deviating stored type is explained instead.
     def type_dropdown
+      return deviating_type_note if fixed_type
+
       {
         'type' => 'dropdown',
         'name' => type_field,
@@ -150,7 +162,9 @@ module Surveys
     # page condition costs nothing.
     #
     def filter_inputs
-      [min_input, max_input, null_to_zero_input].map { |input| input.merge('visibleIf' => numeric_condition) }
+      return [] unless numeric?
+
+      [min_input, max_input, null_to_zero_input].map { |input| visible_if(input, numeric_condition) }
     end
 
     # How often a mapping is written, rather than what is written. Averaging
@@ -184,7 +198,7 @@ module Surveys
 
     private
 
-    attr_reader :prefix, :guard, :type_field, :method_field, :skip_write
+    attr_reader :prefix, :guard, :type_field, :method_field, :skip_write, :fixed_type, :expected_type
 
     def field(key)
       "#{prefix}#{key}"
@@ -214,8 +228,17 @@ module Surveys
       @computed_condition ||= and_guard("{#{field('kind')}} = 'computed'")
     end
 
+    # Without a fixed type the answer only exists at runtime, so the inputs
+    # carry the condition. With one it is already known here, and the inputs
+    # that survive are shown ungated.
     def numeric_condition
+      return guard if fixed_type
+
       @numeric_condition ||= and_guard("(#{NUMERIC_TYPES.map { |type| "{#{type_field}} = '#{type}'" }.join(' or ')})")
+    end
+
+    def numeric?
+      fixed_type.nil? || NUMERIC_TYPES.include?(fixed_type)
     end
 
     def dedup_condition
@@ -240,10 +263,10 @@ module Surveys
       written = written_condition
 
       [
-        visible_if(aggregate_interval_input, join(numeric_condition, written)),
+        (visible_if(aggregate_interval_input, join(numeric_condition, written)) if numeric?),
         visible_if(dedup_input, join(guard, written)),
         visible_if(heartbeat_interval_input, join(dedup_condition, written)),
-      ]
+      ].compact
     end
 
     def name_input(used_by_others, dependents)
@@ -394,6 +417,34 @@ module Surveys
         ),
         'defaultValue' => false,
       }
+    end
+
+    # A type the sensor would not pick was stored before HELIOS derived it.
+    # InfluxDB binds a field to the type first written to it, so keeping the
+    # stored one is the only safe answer, and the form says why it stands.
+    def deviating_type_note
+      return if fixed_type == expected_type
+
+      {
+        'type' => 'html',
+        'name' => field('type_note'),
+        'html' => Base.localized(
+          en: "<p>Data type: <strong>#{type_label(fixed_type, :en)}</strong>. This sensor would " \
+              "normally use #{type_label(expected_type, :en)}. The stored type stands, because " \
+              'InfluxDB binds a field to the type first written to it.</p>',
+          de: "<p>Datentyp: <strong>#{type_label(fixed_type, :de)}</strong>. Üblich wäre für " \
+              "diesen Sensor #{type_label(expected_type, :de)}. Der gespeicherte Typ bleibt, weil " \
+              'InfluxDB ein Field an den zuerst geschriebenen Typ bindet.</p>',
+        ),
+      }
+    end
+
+    # A stored type that no choice covers can only come from a hand-edited
+    # file, and is then shown as it stands.
+    def type_label(type, locale)
+      text = type_choices.find { |choice| choice['value'] == type }&.fetch('text') || Base.localized(en: type, de: type)
+
+      text[locale == :de ? 'de' : 'default']
     end
 
     def type_choices
