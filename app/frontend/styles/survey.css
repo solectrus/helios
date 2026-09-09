@@ -318,6 +318,13 @@
   }
 }
 
+/* Closing a dropdown resets its search filter, so the list grows back to full
+   height while it fades out — the list appears to flare open once more. It has
+   been chosen at that point, so drop it right away instead. */
+.sv-popup--leave .sv-popup__container {
+  display: none;
+}
+
 /* View transition target lives at document root, outside .sd-root-modern */
 ::view-transition-group(helios-survey-body) {
   animation-duration: 240ms;
