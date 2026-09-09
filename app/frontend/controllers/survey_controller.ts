@@ -4,6 +4,7 @@ import { loadSurveyRuntime } from '../utils/survey_loader';
 import { readLocale } from '../utils/preferences_cookie';
 import { prefersReducedMotion } from '../utils/prefers_reduced_motion';
 import { loadingSpinner } from '../utils/loading_spinner';
+import { SurveyDropdowns } from '../utils/survey_dropdowns';
 
 // Connection-test labels shown before the server replies (the result message
 // itself comes back localized from the server). Kept here because they belong
@@ -39,6 +40,7 @@ export default class extends Controller<HTMLElement> {
   private inViewTransition = false;
   private lastProgress = -1;
   private readonly resetTestsOnInput = () => this.resetConnectionTests();
+  private dropdowns: SurveyDropdowns | null = null;
 
   async connect() {
     await this.initSurvey();
@@ -46,6 +48,8 @@ export default class extends Controller<HTMLElement> {
 
   disconnect() {
     this.containerTarget.removeEventListener('input', this.resetTestsOnInput);
+    this.dropdowns?.release();
+    this.dropdowns = null;
     this.survey?.dispose();
     this.survey = null;
   }
@@ -175,9 +179,16 @@ export default class extends Controller<HTMLElement> {
       this.handleComplete(sender.data);
     });
 
-    // Wire any "test connection" buttons (html elements) in the survey.
+    this.dropdowns = new SurveyDropdowns(
+      this.containerTarget,
+      this.element.closest('dialog'),
+    );
+
+    // Wire any "test connection" buttons (html elements) in the survey, and
+    // move dropdown lists out of the scrolling modal box.
     this.survey.onAfterRenderQuestion.add((_sender, options) => {
       this.wireConnectionTest(options.htmlElement);
+      this.dropdowns?.lift(options.question, options.htmlElement);
     });
 
     // Render the survey, replacing the loading spinner.
