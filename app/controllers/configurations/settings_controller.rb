@@ -68,6 +68,7 @@ module Configurations
       save_setting
       return if performed?
 
+      @configuration.adopt_request_host!(request.host)
       Orchestration::StackStatus.mark_config_changed!
       redirect_to redirect_target
     end

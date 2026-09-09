@@ -30,7 +30,7 @@ module ConnectionTesting
     # on. Classified after the attempt, not before it, so a host that does
     # answer is never refused.
     def unreachable_result(host, reason)
-      return result(false, reason) unless ConnectionTesting.loopback_host?(host)
+      return result(false, reason) unless Loopback.host?(host)
 
       result(false, :loopback_host, host:)
     end
@@ -44,18 +44,6 @@ module ConnectionTesting
     'mqtt' => Mqtt::ConnectionTest,
     'backup' => Backups::ConnectionTest,
   }.freeze
-
-  # Addresses that reach the calling service itself (see `unreachable_result`).
-  LOOPBACK_HOSTS = ['localhost', '::1', '0.0.0.0'].freeze
-
-  # The whole 127.0.0.0/8 range is loopback, not just 127.0.0.1.
-  LOOPBACK_IPV4 = /\A127\./
-
-  def self.loopback_host?(host)
-    normalized = host.to_s.strip.downcase.delete_prefix('[').delete_suffix(']')
-
-    LOOPBACK_HOSTS.include?(normalized) || normalized.match?(LOOPBACK_IPV4)
-  end
 
   def self.run(target:, check:, values:)
     tester = REGISTRY[target]

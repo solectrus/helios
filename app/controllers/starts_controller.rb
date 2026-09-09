@@ -42,6 +42,9 @@ class StartsController < ApplicationController
     # "restart required" instead of lazily adopting the rewritten config.
     Orchestration::AffectedServices.seed_baseline_if_missing!
     importer.import!
+    # The adopted stack may carry no APP_HOST at all, and the export below
+    # needs one for the dashboard and for the Ingest address.
+    Configuration.current.adopt_request_host!(request.host)
     Export::Builder.new(Configuration.current).write!
     Orchestration::AffectedServices.invalidate_config_hashes
   end

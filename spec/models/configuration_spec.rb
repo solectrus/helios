@@ -1420,6 +1420,39 @@ RSpec.describe Configuration do
     end
   end
 
+  describe '#adopt_request_host!' do
+    before { with_config_yaml }
+
+    # Nothing sets app_host on a fresh install, so the first save fills it from
+    # the host the browser is using.
+    it 'stores the request host while the field is empty' do
+      described_class.current.adopt_request_host!('solectrus.fritz.box')
+
+      expect(described_class.current.system.app_host).to eq('solectrus.fritz.box')
+    end
+
+    it 'keeps a configured host' do
+      described_class.current.update('system_network', { 'app_host' => 'chosen.example.com' })
+
+      expect(described_class.current.adopt_request_host!('solectrus.fritz.box')).to be false
+      expect(described_class.current.system.app_host).to eq('chosen.example.com')
+    end
+
+    # A loopback name only names the machine to itself, so it would send an
+    # external source to its own host.
+    it 'refuses a loopback host' do
+      %w[localhost 127.0.0.1 ::1 0.0.0.0 helios.localhost].each do |host|
+        expect(described_class.current.adopt_request_host!(host)).to be false
+      end
+
+      expect(described_class.current.system.app_host).to be_blank
+    end
+
+    it 'refuses a blank host' do
+      expect(described_class.current.adopt_request_host!(nil)).to be false
+    end
+  end
+
   describe '#ingest_required?' do
     def ingest_required_for?(data)
       with_config_yaml(data)

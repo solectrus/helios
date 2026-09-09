@@ -290,6 +290,12 @@ RSpec.describe 'Starts' do
         File.write(File.join(dir, '.env'), "TZ=Europe/Berlin\n")
       end
 
+      it 'adopts the request host so the Ingest address has a name' do
+        post start_path, headers: { 'HOST' => 'solectrus.fritz.box' }
+
+        expect(Configuration.current.system.app_host).to eq('solectrus.fritz.box')
+      end
+
       it 'imports the stack and sets Ingest up' do
         post start_path
 

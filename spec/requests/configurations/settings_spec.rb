@@ -194,6 +194,27 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
   end
 
+  # bootstrap/install.sh writes no APP_HOST, so a fresh installation has none
+  # until someone opens the host form. The first save of any setting takes the
+  # host the browser is using instead.
+  describe 'POST /configuration/settings and the missing app_host' do
+    it 'adopts the request host' do
+      post configuration_settings_path,
+           params: { setting: 'sensor', name: 'inverter_power', data: { 'source' => 'senec' }.to_json },
+           headers: { 'HOST' => 'solectrus.fritz.box' }
+
+      expect(Configuration.current.system.app_host).to eq('solectrus.fritz.box')
+    end
+
+    it 'keeps the field empty for a loopback host' do
+      post configuration_settings_path,
+           params: { setting: 'sensor', name: 'inverter_power', data: { 'source' => 'senec' }.to_json },
+           headers: { 'HOST' => 'localhost' }
+
+      expect(Configuration.current.system.app_host).to be_blank
+    end
+  end
+
   # The switch only reaches config.yaml when its field is part of the setting
   # group; without that it is sliced off on save and the service stays on.
   describe 'POST /configuration/settings for the Ingest correction' do

@@ -764,6 +764,22 @@ class Configuration # rubocop:disable Metrics/ClassLength
     end
   end
 
+  # Fills app_host from the host the browser used, if the field is still empty.
+  # Nothing sets it on a fresh install (bootstrap/install.sh writes no
+  # APP_HOST), and an imported stack without APP_HOST keeps it empty, yet
+  # HELIOS needs the address for the dashboard and for the Ingest endpoint it
+  # asks external sources to write to.
+  #
+  # A loopback name is skipped: it only names the machine to itself, so it
+  # would send another machine to itself. The field then stays empty, and
+  # every caller falls back to the port alone.
+  def adopt_request_host!(host)
+    return false if system.app_host.present?
+    return false if host.blank? || Loopback.host?(host)
+
+    update('system_network', { 'app_host' => host })
+  end
+
   # --- Deployment mode ---
 
   def mode
