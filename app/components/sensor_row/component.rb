@@ -114,9 +114,12 @@ module SensorRow
       end
     end
 
-    def house_power_exclusion_tooltip
-      names = excluded_power_sensors.map(&:upcase).join(', ')
-      I18n.t('sensors.house_power_exclusion_hint', sensors: names)
+    # The tooltip names consumers the way the list does, so a custom sensor
+    # appears under the label its owner gave it.
+    def excluded_power_sensor_labels
+      excluded_power_sensors.map do |name|
+        configuration.sensor_config(name).name.presence || I18n.t("sensors.#{name}")
+      end
     end
   end
 end

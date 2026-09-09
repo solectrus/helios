@@ -14,11 +14,21 @@
         <%= display_label %>
 
         <% if house_power_exclusions? %>
-          <span
-            class="tooltip tooltip-right before:text-xs before:normal-case"
-            data-tip="<%= house_power_exclusion_tooltip %>"
-          >
-            <i class="fa-solid fa-calculator text-info text-xs"></i>
+          <%# A list needs markup, so the tooltip carries its own content element instead of data-tip. %>
+          <span class="tooltip tooltip-right inline-flex items-center">
+            <span class="tooltip-content">
+              <span class="block px-1 py-0.5 text-left text-xs font-normal normal-case">
+                <%= t('sensors.house_power_exclusion_hint') %>
+
+                <ul class="mt-1 list-disc ps-4">
+                  <% excluded_power_sensor_labels.each do |label| %>
+                    <li><%= label %></li>
+                  <% end %>
+                </ul>
+              </span>
+            </span>
+
+            <i class="fa-solid fa-calculator text-base-content/70 text-sm leading-none"></i>
           </span>
         <% end %>
       </span>

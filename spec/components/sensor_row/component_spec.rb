@@ -46,8 +46,30 @@ RSpec.describe SensorRow::Component, type: :component do
                                           })
     end
 
-    it 'names the excluded sensors in the tooltip' do
-      expect(rendered.css('[data-tip]').first['data-tip']).to include('CUSTOM_POWER_01')
+    it 'names the excluded sensors by their label, not by their internal name' do
+      items = rendered.css('.tooltip-content li').map(&:text)
+
+      expect(items).to eq([I18n.t('sensors.custom_power_01')])
+      expect(rendered.to_html).not_to include('CUSTOM_POWER_01')
+    end
+
+    it 'lists several excluded sensors as their own items' do
+      Configuration.current.update_sensor('custom_power_02', {
+                                            'source' => 'mqtt', 'measurement' => 'Fridge',
+                                            'field' => 'power', 'exclude_from_house_power' => true
+                                          })
+
+      expect(rendered.css('.tooltip-content li').size).to eq(2)
+    end
+
+    it 'prefers the name the owner gave a custom sensor' do
+      Configuration.current.update_sensor('custom_power_01', {
+                                            'source' => 'mqtt', 'measurement' => 'Oven',
+                                            'field' => 'power', 'exclude_from_house_power' => true,
+                                            'name' => 'Backofen'
+                                          })
+
+      expect(rendered.css('.tooltip-content li').map(&:text)).to eq(['Backofen'])
     end
   end
 end
