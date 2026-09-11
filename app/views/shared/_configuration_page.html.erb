@@ -7,9 +7,16 @@
 
 <%= turbo_frame_tag "tab-content" do %>
   <div class="mx-auto max-w-6xl lg:flex lg:items-start">
+    <%#
+      7.5rem is what the frame around this column takes: the 4rem spacer under
+      the fixed header plus the 3.5rem the body keeps free for the status bar.
+      Anything less and the column reaches past the viewport, which is a page
+      that scrolls by a few pixels for no reason.
+    %>
+
     <aside
       class="
-        border-base-content/10 hidden lg:sticky lg:top-16 lg:z-10 lg:block lg:h-[calc(100vh-7rem)] lg:w-72
+        border-base-content/10 hidden lg:sticky lg:top-16 lg:z-10 lg:block lg:h-[calc(100dvh-7.5rem)] lg:w-72
         lg:shrink-0 lg:border-r
       "
     >
