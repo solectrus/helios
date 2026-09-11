@@ -29,6 +29,10 @@ After changing code, run the matching linter and fix what it reports:
 
 Run them before you call the change done. `bin/brakeman` occasionally for security scans, not per change.
 
+## Changelog
+
+If a user can see or feel a change, add a line to `.changelog/unreleased.md` in the same commit. The file carries the rules for the wording. The release skill turns it into the GitHub release notes and empties it.
+
 ## Conventions
 
 - Controllers: plural names (`SetupsController`). Routes: only the 7 RESTful actions — model custom actions as nested resources (`Services::StartsController#create`, not `post :start`)
