@@ -116,9 +116,10 @@ PS
 
 @test "adopt_running_stack aborts unattended with guidance" {
   HELIOS_ASSUME_YES=1
-  run adopt_running_stack "/opt/solectrus"
+  mkdir -p stack
+  run adopt_running_stack "$PWD/stack"
   [ "$status" -ne 0 ]
-  [[ "$output" == *"/opt/solectrus"* ]]
+  [[ "$output" == *"$PWD/stack"* ]]
   [[ "$output" == *"unattended"* ]]
 }
 
@@ -140,19 +141,21 @@ PS
   # stack that already has it. It must never fire on this path.
   prompted=0
   prompt_yn() { prompted=1; return 0; }
-  adopt_running_stack "/opt/solectrus"
-  [ "$TARGET_DIR" = "/opt/solectrus" ]
+  mkdir -p stack
+  adopt_running_stack "$PWD/stack"
+  [ "$TARGET_DIR" = "$PWD/stack" ]
   [ "$prompted" -eq 0 ]
 }
 
 @test "choose_target_dir adopts a running stack found elsewhere (non-interactive aborts)" {
   HELIOS_ASSUME_YES=1
-  detect_running_solectrus_dir() { printf '%s\n' "/opt/solectrus"; }
+  mkdir -p stack
+  detect_running_solectrus_dir() { printf '%s\n' "$PWD/stack"; }
   # Stack has no HELIOS yet, so adoption (not a short-circuit) is the path.
   helios_running_in_dir() { return 1; }
   run choose_target_dir
   [ "$status" -ne 0 ]
-  [[ "$output" == *"/opt/solectrus"* ]]
+  [[ "$output" == *"$PWD/stack"* ]]
 }
 
 # --- dir_menu_line -----------------------------------------------------------
@@ -171,4 +174,40 @@ PS
   run dir_menu_line 1 "$ro/sub" recommended
   chmod u+w "$ro"
   [[ "$output" == *"unavailable"* ]]
+}
+
+# --- validate_adopted_dir ----------------------------------------------------
+
+@test "validate_adopted_dir accepts an existing writable directory" {
+  mkdir -p stack
+  validate_adopted_dir "$PWD/stack"
+}
+
+@test "validate_adopted_dir rejects a relative path from a container label" {
+  run validate_adopted_dir "../elsewhere"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"absolute path"* ]]
+}
+
+@test "validate_adopted_dir rejects a directory that does not exist" {
+  run validate_adopted_dir "$PWD/nowhere"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"existing, writable"* ]]
+}
+
+@test "validate_adopted_dir rejects a path that is a file" {
+  printf 'x\n' > not-a-dir
+  run validate_adopted_dir "$PWD/not-a-dir"
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"existing, writable"* ]]
+}
+
+@test "validate_adopted_dir rejects a directory it cannot write" {
+  [ "$(id -u)" -ne 0 ] || skip "root bypasses directory write permissions"
+  mkdir -p locked
+  chmod 500 locked
+  run validate_adopted_dir "$PWD/locked"
+  chmod 700 locked
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"existing, writable"* ]]
 }

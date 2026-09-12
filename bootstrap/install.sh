@@ -640,6 +640,19 @@ helios_running_in_dir() {
         '$1 ~ /(^|\/)solectrus\/helios(:|@|$)/ && $2 == d { found = 1 } END { exit !found }'
 }
 
+# Check a stack directory before we act on it. The path comes from a container
+# label that any container on this host can set, and we are about to cd there
+# and write compose.yaml and .env.
+validate_adopted_dir() {
+  case "$1" in
+    /*) ;;
+    *) die "Detected stack directory is not an absolute path: '$1'. cd into the intended stack directory and re-run." ;;
+  esac
+  if [ ! -d "$1" ] || [ ! -w "$1" ]; then
+    die "Detected stack directory is not an existing, writable directory: $1"
+  fi
+}
+
 # A SOLECTRUS stack is already running on this host (in the given working dir(s),
 # newline-separated). Because the project name ('solectrus') and HELIOS port
 # (3999) are fixed, a second parallel stack would collide on both — so the only
@@ -658,6 +671,7 @@ adopt_running_stack() {
   fi
 
   dir="$dirs"
+  validate_adopted_dir "$dir"
 
   # Already standing in it → just continue here (no relocation needed).
   [ "$dir" = "$PWD" ] && { TARGET_DIR="$PWD"; return; }
