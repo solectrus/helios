@@ -819,10 +819,14 @@ ENV
 # same value. Reproducible across re-runs (no churn in .env) and keeps the
 # password unpredictable to anyone who doesn't already have read access to
 # the SECRET_KEY_BASE.
+#
+# Hashing with openssl (already a hard dependency, see `need openssl`) rather
+# than shasum, which lives in the `perl` package and is absent on the minimal
+# Debian images this installer targets.
 derive_admin_password() {
   local secret hash
   secret="$(grep -E '^SECRET_KEY_BASE=' "$ENV_FILE" | head -n1 | cut -d= -f2-)"
-  hash="$(printf '%s' "$secret" | shasum -a 256 | awk '{print $1}')"
+  hash="$(printf '%s' "$secret" | openssl dgst -sha256 | awk '{print $NF}')"
   printf '%s\n' "${hash:0:32}"
 }
 
