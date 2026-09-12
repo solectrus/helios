@@ -22,6 +22,7 @@ Keep every section, an empty one included.
 - Connection test: a test that fails on a loopback address says so, because such an address points a service at itself (solectrus/solectrus#5828)
 - Time zone: the list now holds 137 zones with their offset, instead of 11
 - Sensors: the list now arrives with the page itself, so the configuration opens without an empty moment
+- Configuration menu: the marker moves to the selected entry the moment it is clicked
 
 ## Fixes
 

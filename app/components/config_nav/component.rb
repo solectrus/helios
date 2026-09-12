@@ -6,6 +6,13 @@ module ConfigNav
       { id: :advanced, path_helper: :advanced_path, icon: 'fa-solid fa-sliders' },
     ].freeze
 
+    # Kept as constants so the nav-highlight Stimulus controller can swap them
+    # on click, before the new page arrives (see Header::Component).
+    ACTIVE_CLASSES = 'bg-base-content/10 text-base-content font-semibold'.freeze
+    INACTIVE_CLASSES = 'text-base-content/60 hover:bg-base-content/5 hover:text-base-content'.freeze
+    ACTIVE_MARKER_CLASSES = 'before:bg-base-content'.freeze
+    INACTIVE_MARKER_CLASSES = 'before:bg-transparent'.freeze
+
     def initialize(active_tab: nil, compact: false, only: nil)
       super()
       @active_tab = active_tab
@@ -73,21 +80,19 @@ module ConfigNav
     # wordmark, so both navigations mark the current entry with brightness
     # alone (see Header::Component#tab_classes).
     def item_classes(tab)
-      active = active?(tab)
+      class_names(
+        item_base_classes,
+        active_classes => active?(tab),
+        inactive_classes => !active?(tab),
+      )
+    end
 
-      if compact?
-        class_names(
-          item_base_classes,
-          'bg-base-content/10 text-base-content font-semibold': active,
-          'text-base-content/60 hover:bg-base-content/5 hover:text-base-content': !active,
-        )
-      else
-        class_names(
-          item_base_classes,
-          'bg-base-content/10 text-base-content font-semibold before:bg-base-content': active,
-          'text-base-content/60 hover:bg-base-content/5 hover:text-base-content before:bg-transparent': !active,
-        )
-      end
+    def active_classes
+      compact? ? ACTIVE_CLASSES : "#{ACTIVE_CLASSES} #{ACTIVE_MARKER_CLASSES}"
+    end
+
+    def inactive_classes
+      compact? ? INACTIVE_CLASSES : "#{INACTIVE_CLASSES} #{INACTIVE_MARKER_CLASSES}"
     end
 
     def item_base_classes
@@ -100,14 +105,14 @@ module ConfigNav
       end
     end
 
-    def icon_box_classes(tab)
+    # Driven by aria-current rather than by the Ruby-side active check: the
+    # nav-highlight controller moves that attribute on click, so the icon
+    # brightens with the entry instead of a frame later.
+    def icon_box_classes
       return 'w-5 text-center text-base' if compact?
 
-      class_names(
-        'w-5 shrink-0 text-center text-base',
-        'text-base-content': active?(tab),
-        'text-base-content/55 group-hover:text-base-content': !active?(tab),
-      )
+      'w-5 shrink-0 text-center text-base text-base-content/55 ' \
+        'group-hover:text-base-content group-aria-[current=page]:text-base-content'
     end
 
     def file_link_classes
