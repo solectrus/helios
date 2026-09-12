@@ -27,3 +27,12 @@ setup() { in_tmpdir; }
   [ "$status" -ne 0 ]
   [ -z "$output" ]
 }
+
+@test "ignores a directory that carries a candidate name" {
+  mkdir compose.yaml
+  touch docker-compose.yml
+
+  run detect_compose_file
+
+  [ "$output" = "docker-compose.yml" ]
+}

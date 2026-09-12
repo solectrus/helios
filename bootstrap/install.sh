@@ -75,7 +75,10 @@ COMPOSE_CANDIDATES=(compose.yaml compose.yml docker-compose.yaml docker-compose.
 detect_compose_file() {
   local candidate
   for candidate in "${COMPOSE_CANDIDATES[@]}"; do
-    if [ -e "$candidate" ]; then
+    # `-f`, not `-e`: a directory named compose.yaml would otherwise count as
+    # a stack and send the installer down the "extend it" branch, where every
+    # read of the file fails.
+    if [ -f "$candidate" ]; then
       printf '%s\n' "$candidate"
       return 0
     fi
