@@ -12,7 +12,7 @@ Keep every section, an empty one included.
 
 ## New features
 
-- Ingest: an external source can now deliver its values to Ingest, so a balcony power plant behind a smart home is covered as well. The address the source has to write to is shown in the Ingest settings and next to every affected sensor, and a switch there decides whether Ingest runs at all
+- Ingest: an external source can now deliver its values to Ingest, so a balcony power plant behind a smart home is covered as well. The address the source has to write to is shown in the Ingest settings and next to every affected sensor, and a switch there decides whether Ingest runs at all. An existing configuration that has such a source keeps the correction switched off, so the values reach the database as before until the source is redirected
 
 ## Improvements
 
