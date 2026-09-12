@@ -31,6 +31,7 @@ Keep every section, an empty one included.
 - House power: the hint names the excluded consumers by the label of the sensor list, one per line
 - Dropdown lists: a long list inside a dialog stays complete and reacts to the keyboard, and a list no longer flares open once more while it closes (solectrus/solectrus#5828)
 - Installation: an existing configuration file keeps all of its values, the admin password is unique to the installation, and the file stays readable only by its owner
+- Installation: a stack that is taken over keeps its files readable the same way a new installation writes them
 
 ## Maintenance
 

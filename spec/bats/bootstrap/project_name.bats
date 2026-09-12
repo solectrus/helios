@@ -49,3 +49,34 @@ setup() {
   run head -n1 "$COMPOSE_FILE"
   [ "$output" = "name: solectrus" ]
 }
+
+# --- compose.yaml rewrites ---------------------------------------------------
+
+# Field 1 of `ls -l` is the mode string on both GNU and BSD.
+file_mode() {
+  # shellcheck disable=SC2012
+  ls -l "$1" | awk 'NR==1 {print substr($1,1,10)}'
+}
+
+@test "a rewritten compose.yaml has the mode a fresh install writes" {
+  printf 'services:\n  dashboard:\n    image: x\n' > "$COMPOSE_FILE"
+  chmod 644 "$COMPOSE_FILE"
+  docker() { printf 'name: solectrus\n'; }
+
+  ensure_project_name
+  adopted_mode="$(file_mode "$COMPOSE_FILE")"
+
+  rm -f "$COMPOSE_FILE"
+  write_compose_fresh
+
+  [ "$adopted_mode" = "$(file_mode "$COMPOSE_FILE")" ]
+}
+
+@test "a rewrite leaves no temp file behind" {
+  printf 'services:\n  dashboard:\n    image: x\n' > "$COMPOSE_FILE"
+  docker() { printf 'name: solectrus\n'; }
+
+  ensure_project_name
+
+  [ ! -e "${COMPOSE_FILE}.tmp" ]
+}

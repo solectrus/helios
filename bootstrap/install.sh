@@ -911,8 +911,12 @@ ensure_project_name() {
   fi
 
   # Prepend `name:` so the project name no longer depends on CWD.
-  local tmp
-  tmp="$(mktemp "./${COMPOSE_FILE}.XXXXXX")"
+  #
+  # A plain redirect into a fixed `.tmp` name, then an atomic rename — the way
+  # HELIOS writes the same file. The redirect applies the umask, so the file
+  # arrives with the mode a fresh install writes, where `mktemp` would hand the
+  # rename its own 0600. The fixed name leaves at most one stale file behind.
+  local tmp="${COMPOSE_FILE}.tmp"
   {
     printf 'name: %s\n\n' "$PROJECT_NAME"
     cat "$COMPOSE_FILE"
@@ -949,12 +953,11 @@ ensure_helios_started() {
 append_helios_service() {
   # Splice the helios block in right after the `services:` line. Using
   # head/tail sidesteps awk's portability issues with multi-line -v values.
-  local tmp line
+  local line tmp="${COMPOSE_FILE}.tmp"
   # `|| line=""` so a missing services: block reaches the die below with its
   # message, instead of aborting silently on grep's exit status under `set -e`.
   line="$(grep -m1 -nE '^services:[[:space:]]*$' "$COMPOSE_FILE" | cut -d: -f1)" || line=""
   [ -n "$line" ] || die "Could not find a 'services:' block in $COMPOSE_FILE."
-  tmp="$(mktemp "./${COMPOSE_FILE}.XXXXXX")"
   {
     head -n "$line" "$COMPOSE_FILE"
     helios_service_yaml
