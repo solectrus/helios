@@ -850,6 +850,15 @@ derive_admin_password() {
 ensure_helios_secrets() {
   GENERATED_ADMIN_PASSWORD=""
 
+  # The file is about to hold a plaintext admin password and SECRET_KEY_BASE.
+  # An adopted .env is typically 0644, so restrict it to its owner first,
+  # matching the 0600 that write_env_fresh sets: a chmod after the writes
+  # would leave the fresh secrets readable by every user on the host in
+  # between. Say so when that fails, rather than leaving the secrets readable
+  # in silence.
+  chmod 600 "$ENV_FILE" \
+    || warn "  Could not restrict $ENV_FILE to its owner; the admin password stored there stays readable by other users."
+
   # Appending to a file whose last line has no newline would glue the new
   # assignment onto it and break both variables. Command substitution strips
   # trailing newlines, so a non-empty last byte means the newline is missing.

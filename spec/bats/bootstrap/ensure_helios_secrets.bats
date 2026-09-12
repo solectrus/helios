@@ -139,3 +139,29 @@ EOF
   [[ "$output" == *"Could not read SECRET_KEY_BASE"* ]]
 }
 
+@test "restricts .env to its owner before the secrets are written" {
+  printf 'TZ=Europe/Berlin\n' > "$ENV_FILE"
+  chmod 644 "$ENV_FILE"
+  # Capture the mode at the moment the first secret is produced, right before
+  # it lands in the file. A chmod that ran afterwards would fail this.
+  generate_secret() {
+    # shellcheck disable=SC2012
+    ls -l "$ENV_FILE" | awk 'NR==1 {print substr($1,1,10)}' > mode_at_write
+    openssl rand -hex 64
+  }
+
+  ensure_helios_secrets
+
+  [ "$(cat mode_at_write)" = "-rw-------" ]
+}
+
+@test "restricts .env to 0600 after adding secrets" {
+  printf 'TZ=Europe/Berlin\n' > "$ENV_FILE"
+  chmod 644 "$ENV_FILE"
+
+  ensure_helios_secrets
+
+  # Field 1 of `ls -l` is the mode string on both GNU and BSD.
+  # shellcheck disable=SC2012
+  [ "$(ls -l "$ENV_FILE" | awk 'NR==1 {print substr($1,1,10)}')" = "-rw-------" ]
+}
