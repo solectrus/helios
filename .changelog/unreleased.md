@@ -12,7 +12,7 @@ Keep every section, an empty one included.
 
 ## New features
 
-- Ingest: a balcony power plant behind a smart home is now corrected by HELIOS, whatever the source of the value. The address to write to is shown next to every affected sensor, and a switch on the Ingest card hands the correction back to the smart home
+- Ingest: an external source can now deliver its values to Ingest, so a balcony power plant behind a smart home is covered as well. The address the source has to write to is shown in the Ingest settings and next to every affected sensor, and a switch there decides whether Ingest runs at all
 
 ## Improvements
 
