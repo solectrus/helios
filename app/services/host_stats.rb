@@ -18,6 +18,9 @@ module HostStats # rubocop:disable Metrics/ModuleLength
   # Linux process/memory pseudo-filesystem.
   PROC_ROOT = '/proc'.freeze
 
+  # CPU sampler for macOS dev, where /proc and the host cgroup are absent.
+  IOSTAT_COMMAND = %w[iostat -c 2 -w 1].freeze
+
   @cache_mutex = Mutex.new
 
   def self.snapshot
@@ -60,7 +63,7 @@ module HostStats # rubocop:disable Metrics/ModuleLength
     # compute the delta. nil on the first call → :percent is nil.
     def read_cpu_metrics(prev:, now:, limits:)
       cpu_from_host_cgroup(prev, now, limits) || cpu_from_proc_stat(prev) ||
-        cpu_from_top || { percent: nil, cores: nil, sample: nil }
+        cpu_from_iostat || { percent: nil, cores: nil, sample: nil }
     end
 
     # CPU usage of the Docker host from its cgroup's cpu.stat. `usage_usec` is
@@ -121,23 +124,29 @@ module HostStats # rubocop:disable Metrics/ModuleLength
       { total: parsed.sum, idle: parsed[3].to_i + parsed[4].to_i }
     end
 
-    # macOS dev fallback (no /proc/stat). `top -l 2` samples cumulative CPU
-    # ticks twice and prints the busy/idle split of the second sample as a
-    # percentage already normalised across all cores — matching the Linux
-    # path's semantics. Replaces the old load-average proxy, which badly
-    # overstated usage on many-core Macs (load 16 on 20 cores ≠ 80 % busy).
-    # Blocks ~1 s on the shell-out, but only ever runs in dev.
-    def cpu_from_top
-      raw, status = Open3.capture2e('top', '-l', '2', '-n', '0', '-s', '0')
+    # macOS dev fallback (no /proc/stat). Two samples a second apart; the
+    # second one is a user/system/idle split, already normalised across all
+    # cores — matching the Linux path's semantics. `top -l 2` gives the same
+    # split, but walks the whole process table twice and burns close to a
+    # second of kernel CPU doing it, while iostat only sleeps. Dev only.
+    def cpu_from_iostat
+      raw, status = Open3.capture2e(*IOSTAT_COMMAND)
       return nil unless status.success?
 
-      idle = raw.scan(/([\d.]+)%\s+idle/i).last&.first&.to_f
+      idle = iostat_idle_percent(raw)
       cores = Etc.nprocessors
       return nil if idle.nil? || cores.zero?
 
       { percent: (100 - idle).round.clamp(0, 100), cores: cores, sample: nil }
     rescue SystemCallError
       nil
+    end
+
+    # The disk columns vary with the number of disks, so count from the right:
+    # every data line ends with `us sy id` and the three load averages.
+    def iostat_idle_percent(raw)
+      fields = raw.lines.reverse.map(&:split).find { |f| f.size >= 6 && f.all? { |v| v.match?(/\A[\d.]+\z/) } }
+      fields&.fetch(-4)&.to_f
     end
 
     def read_ram_metrics(limits:)

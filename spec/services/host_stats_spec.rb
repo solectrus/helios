@@ -112,23 +112,24 @@ RSpec.describe HostStats do
       end
     end
 
-    context 'when only the macOS top fallback is available' do
+    context 'when only the macOS iostat fallback is available' do
       before do
         # No /proc fixtures (empty tmpdir) and the host cgroup is not mounted,
-        # so CPU sampling falls through to `top -l 2`.
+        # so CPU sampling falls through to `iostat`.
         allow(Etc).to receive(:nprocessors).and_return(20)
         allow(Open3).to receive(:capture2e).and_call_original
-        allow(Open3).to receive(:capture2e).with('top', '-l', '2', '-n', '0', '-s', '0')
-                                           .and_return([<<~TOP, instance_double(Process::Status, success?: true)])
-                                             Processes: 700 total
-                                             CPU usage: 40.00% user, 35.00% sys, 95.00% idle
-                                             CPU usage: 13.87% user, 9.32% sys, 76.80% idle
-                                           TOP
+        allow(Open3).to receive(:capture2e).with(*described_class::IOSTAT_COMMAND)
+                                           .and_return([<<~IOSTAT, instance_double(Process::Status, success?: true)])
+                                                        disk0               disk4       cpu    load average
+                                              KB/t  tps  MB/s     KB/t  tps  MB/s  us sy id   1m   5m   15m
+                                             16.29 1414 22.49     4.01    8  0.03   3  2 95 3.69 4.12 4.86
+                                             15.07  581  8.54     0.00    0  0.00  14  9 77 3.69 4.12 4.86
+                                           IOSTAT
       end
 
       it 'reports busy CPU as 100 minus the idle percentage of the second sample' do
-        # Second sample idle = 76.80 % → busy = round(23.20) = 23 %. The first
-        # (since-boot) sample is ignored.
+        # Second sample idle = 77 % → busy = 23 %. The first (since-boot)
+        # sample is ignored.
         expect(described_class.snapshot.cpu_percent).to eq(23)
         expect(described_class.snapshot.cpu_cores).to eq(20)
       end
