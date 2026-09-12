@@ -21,6 +21,7 @@ Keep every section, an empty one included.
 - Total generation: the source page of inverter_power states when the single producers are added up and when the sensor replaces them (solectrus/solectrus#5828)
 - Connection test: a test that fails on a loopback address says so, because such an address points a service at itself (solectrus/solectrus#5828)
 - Time zone: the list now holds 137 zones with their offset, instead of 11
+- Sensors: the list now arrives with the page itself, so the configuration opens without an empty moment
 
 ## Fixes
 

@@ -11,26 +11,23 @@ RSpec.describe 'Sensors', :with_admin_password do
       expect(response).to have_http_status(:ok)
     end
 
-    # On the initial (shell) request the body is deferred to a lazy turbo
-    # frame so navigation paints instantly; the readings query only runs on
-    # the follow-up content-frame request.
-    it 'renders a lazy content frame on the shell request and defers the table' do
+    # The table renders in the same response as the page, so a hover-prefetched
+    # navigation paints the full page without a second round trip.
+    it 'renders the sensor table in the page response' do
       Configuration.current.update_sensor('inverter_power', { 'source' => 'senec' })
 
       get sensors_path
 
       aggregate_failures do
-        expect(response.body).to include('id="configuration-content"')
-        expect(response.body).to include('loading="lazy"')
-        expect(response.body).to include("src=\"#{sensors_path}\"")
-        expect(response.body).not_to include('inverter_power')
+        expect(response.body).not_to include('loading="lazy"')
+        expect(response.body).to include('inverter_power')
       end
     end
 
     it 'displays sensor group headers' do
       cookies[:preferences] = { hide_unused: false }.to_json
 
-      get sensors_path, headers: turbo_frame_headers('configuration-content')
+      get sensors_path
 
       SensorRegistry::GROUPS.each_key do |group|
         title = I18n.t("sensor_groups.#{group}")
@@ -42,7 +39,7 @@ RSpec.describe 'Sensors', :with_admin_password do
       config = Configuration.current
       config.update_sensor('inverter_power', { 'source' => 'senec' })
 
-      get sensors_path, headers: turbo_frame_headers('configuration-content')
+      get sensors_path
 
       expect(response.body).to include('inverter_power')
     end
