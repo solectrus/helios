@@ -34,8 +34,18 @@ RSpec.describe Surveys::IngestSettings::Survey do
       end
 
       # A switched-off recalculation runs no service, so no address exists.
-      it 'is left out while the recalculation is off' do
+      # The condition travels with the element so the switch hides it at once,
+      # rather than only on the next render.
+      it 'follows the switch without a reload' do
         with_balcony('ingest' => { 'active' => false })
+
+        expect(find_survey_element(result, 'ingest_endpoint')).to include(
+          'visibleIf' => '{active} = true',
+        )
+      end
+
+      it 'is left out while no balcony power plant offers Ingest' do
+        with_config_yaml('sensors' => { 'inverter_power_2' => { 'source' => 'shelly' } })
 
         expect(find_survey_element(result, 'ingest_endpoint')).to be_nil
       end

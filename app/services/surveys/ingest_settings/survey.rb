@@ -8,11 +8,12 @@ module Surveys
       private
 
       # The address only means something while the service runs, so a switched
-      # off recalculation shows the switch alone. It follows the switch, which
-      # is the decision the card is about.
+      # off recalculation shows the switch alone. SurveyJS decides that, not
+      # the server: the switch changes without a reload, and a server-side gate
+      # would leave the address standing until the survey is opened again.
       def customize!(data)
         page = find_page(data, 'p_settings')
-        return unless page && configuration.ingest_required?
+        return unless page && configuration.ingest_offered?
 
         page['elements'].insert(1, endpoint_element)
       end
@@ -21,6 +22,7 @@ module Surveys
         {
           'type' => 'html',
           'name' => 'ingest_endpoint',
+          'visibleIf' => '{active} = true',
           'html' => endpoint_html,
         }
       end
