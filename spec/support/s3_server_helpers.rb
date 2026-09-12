@@ -5,10 +5,11 @@ require 'aws-sdk-s3'
 # a throwaway, real S3-compatible server (MinIO).
 #
 # MinIO is used as a deliberately **pinned** test fixture. MinIO stopped
-# publishing pre-built container images to Docker Hub in October 2025, so
-# `minio/minio:RELEASE.2025-09-07` is the last officially published image
-# there — which suits a test fixture fine: a frozen, durably tag-pinnable
-# image is exactly what reproducible CI wants. MinIO validates SigV4, so it
+# publishing pre-built container images in October 2025, and the Docker Hub
+# repository is gone since then, so the image comes from quay.io, where
+# `RELEASE.2025-09-07T16-13-09Z` is the last officially published tag —
+# which suits a test fixture fine: a frozen, durably tag-pinnable image is
+# exactly what reproducible CI wants. MinIO validates SigV4, so it
 # returns the real `NoSuchBucket` / `SignatureDoesNotMatch` /
 # `InvalidAccessKeyId` codes the adapter classifies — a pure mock that
 # skips auth could not test that, and it is faster per request than the
@@ -23,7 +24,7 @@ require 'aws-sdk-s3'
 # the adapter's own client cannot silently fix or mask itself by sharing
 # the seeding code path.
 module S3ServerHelpers
-  S3_SERVER_IMAGE = 'minio/minio:RELEASE.2025-09-07T16-13-09Z'.freeze
+  S3_SERVER_IMAGE = 'quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z'.freeze
   S3_ACCESS_KEY = 'helios-integration-test'.freeze
   S3_SECRET_KEY = 'helios-integration-test-secret'.freeze
 

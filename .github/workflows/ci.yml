@@ -209,7 +209,7 @@ jobs:
             postgres:18-alpine \
             redis:8-alpine \
             ghcr.io/solectrus/csv-importer:latest \
-            minio/minio:RELEASE.2025-09-07T16-13-09Z |
+            quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z |
             xargs -P 4 -n 1 docker pull -q
 
       # This job gets no runtime log. turbo_tests reads and writes one only
