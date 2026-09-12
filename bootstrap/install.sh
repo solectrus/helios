@@ -931,13 +931,27 @@ ensure_project_name() {
     die "$COMPOSE_FILE has 'name: $effective_name' — HELIOS requires '$PROJECT_NAME'. Fix manually and re-run."
   fi
 
-  # No explicit `name:`. If the current (CWD-derived) name differs, stop the
-  # old project first — otherwise the upcoming rename would orphan any
-  # running containers under the old project name.
-  if [ "$effective_name" != "$PROJECT_NAME" ] \
-     && [ -n "$(docker compose -f "$COMPOSE_FILE" ps -q 2>/dev/null)" ]; then
-    bold "Renaming project '$effective_name' → '$PROJECT_NAME'. Stopping old project..."
-    docker compose -f "$COMPOSE_FILE" down
+  # No explicit `name:`. If the current (CWD-derived) name differs, the rename
+  # must not detach data: Compose names every volume without its own `name:`
+  # `<project>_<key>` (the canonical output above spells that out), so `up`
+  # under the new name would create fresh, empty volumes. Refuse in that case.
+  # Otherwise stop the old project first — the rename would orphan any running
+  # containers under the old project name.
+  if [ "$effective_name" != "$PROJECT_NAME" ]; then
+    local derived
+    derived="$(printf '%s\n' "$config_output" | awk -v p="$effective_name" \
+      '/^volumes:/ { v = 1; next } /^[^ ]/ { v = 0 } v && index($0, "    name: " p "_") == 1 { print "      " $2 }')"
+    if [ -n "$derived" ]; then
+      error "  ✗ These volumes take their name from the project name '$effective_name':"
+      error "$derived"
+      error "    Renaming the project to '$PROJECT_NAME' would start the stack with new, empty volumes."
+      error "    Give each of them an explicit 'name:' in $COMPOSE_FILE, then re-run."
+      die "Volume names depend on the project name."
+    fi
+    if [ -n "$(docker compose -f "$COMPOSE_FILE" ps -q 2>/dev/null)" ]; then
+      bold "Renaming project '$effective_name' → '$PROJECT_NAME'. Stopping old project..."
+      docker compose -f "$COMPOSE_FILE" down
+    fi
   fi
 
   # Prepend `name:` so the project name no longer depends on CWD.

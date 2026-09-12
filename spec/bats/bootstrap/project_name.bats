@@ -50,6 +50,47 @@ setup() {
   [ "$output" = "name: solectrus" ]
 }
 
+# --- volumes across the project rename ---------------------------------------
+
+# A stack in ~/mydir without `name:`: Compose derives the project name from
+# the directory and prefixes every unnamed volume with it (and the default
+# network, which holds no data), while an external or explicitly named volume
+# keeps its name. The mock returns the canonical config the real CLI prints.
+@test "refuses the rename when a volume name derives from the project name" {
+  printf 'services:\n  db:\n    image: x\n' > "$COMPOSE_FILE"
+  docker() {
+    case "$*" in
+      *" ps "*) return 0 ;;
+      *) printf 'name: mydir\nnetworks:\n  default:\n    name: mydir_default\nvolumes:\n  ext:\n    name: keep\n    external: true\n  pg:\n    name: mydir_pg\n' ;;
+    esac
+  }
+
+  run ensure_project_name
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"mydir_pg"* ]]
+  [[ "$output" != *"keep"* ]]
+  [[ "$output" != *"mydir_default"* ]]
+  run head -n1 "$COMPOSE_FILE"
+  [ "$output" = "services:" ]
+}
+
+@test "renames when every volume is external or carries its own name" {
+  printf 'services:\n  db:\n    image: x\n' > "$COMPOSE_FILE"
+  docker() {
+    case "$*" in
+      *" ps "*) return 0 ;;
+      *) printf 'name: mydir\nnetworks:\n  default:\n    name: mydir_default\nvolumes:\n  ext:\n    name: keep\n    external: true\n' ;;
+    esac
+  }
+
+  run ensure_project_name
+
+  [ "$status" -eq 0 ]
+  run head -n1 "$COMPOSE_FILE"
+  [ "$output" = "name: solectrus" ]
+}
+
 # --- compose.yaml rewrites ---------------------------------------------------
 
 # Field 1 of `ls -l` is the mode string on both GNU and BSD.
