@@ -30,6 +30,7 @@ Keep every section, an empty one included.
 - Configuration screens: the page no longer scrolls by a few pixels while everything is already in view
 - House power: the hint names the excluded consumers by the label of the sensor list, one per line
 - Dropdown lists: a long list inside a dialog stays complete and reacts to the keyboard, and a list no longer flares open once more while it closes (solectrus/solectrus#5828)
+- Installation: an existing configuration file keeps all of its values, and the admin password is unique to the installation
 
 ## Maintenance
 

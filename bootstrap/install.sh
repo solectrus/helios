@@ -826,6 +826,13 @@ ENV
 derive_admin_password() {
   local secret hash
   secret="$(grep -m1 -E '^SECRET_KEY_BASE=' "$ENV_FILE" | cut -d= -f2-)"
+
+  # An empty secret would hash to the well-known sha256 of the empty string,
+  # handing every such install the same publicly known admin password. Refuse
+  # instead — reaching this means the .env is malformed.
+  [ -n "$secret" ] \
+    || die "Could not read SECRET_KEY_BASE from $ENV_FILE. Fix the file manually and re-run."
+
   hash="$(printf '%s' "$secret" | openssl dgst -sha256 | awk '{print $NF}')"
   printf '%s\n' "${hash:0:32}"
 }
@@ -842,6 +849,15 @@ derive_admin_password() {
 # live in .env, undiscovered).
 ensure_helios_secrets() {
   GENERATED_ADMIN_PASSWORD=""
+
+  # Appending to a file whose last line has no newline would glue the new
+  # assignment onto it and break both variables. Command substitution strips
+  # trailing newlines, so a non-empty last byte means the newline is missing.
+  # Once done, each append below ends in a newline of its own.
+  if [ -s "$ENV_FILE" ] && [ -n "$(tail -c1 "$ENV_FILE")" ]; then
+    printf '\n' >> "$ENV_FILE"
+  fi
+
   grep -qE '^SECRET_KEY_BASE=.+' "$ENV_FILE" \
     || printf 'SECRET_KEY_BASE=%s\n' "$(generate_secret)" >> "$ENV_FILE"
   if ! grep -qE '^ADMIN_PASSWORD=.+' "$ENV_FILE"; then

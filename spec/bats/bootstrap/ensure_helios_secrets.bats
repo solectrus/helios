@@ -109,3 +109,33 @@ EOF
   expected="$(printf '%s' 'first-key' | openssl dgst -sha256 | awk '{print substr($NF,1,32)}')"
   grep -qE "^ADMIN_PASSWORD=${expected}$" "$ENV_FILE"
 }
+
+@test "appends cleanly to a .env without a trailing newline" {
+  # A .env whose last line has no newline would otherwise get the new
+  # assignment glued onto it, corrupting both variables — and leaving
+  # SECRET_KEY_BASE unfindable, so the password fell back to sha256("").
+  printf 'TZ=Europe/Berlin\nINFLUX_TOKEN=abc' > "$ENV_FILE"
+
+  ensure_helios_secrets
+
+  # sha256("") truncated to 32 chars — the password a lost SECRET_KEY_BASE
+  # would produce. It must never appear.
+  if grep -qE '^ADMIN_PASSWORD=e3b0c44298fc1c149afbf4c8996fb924$' "$ENV_FILE"; then
+    echo "ADMIN_PASSWORD fell back to sha256 of the empty string" >&2
+    return 1
+  fi
+
+  grep -qE '^INFLUX_TOKEN=abc$' "$ENV_FILE"
+  grep -qE '^SECRET_KEY_BASE=.{128}$' "$ENV_FILE"
+  grep -qE '^ADMIN_PASSWORD=[0-9a-f]{32}$' "$ENV_FILE"
+}
+
+@test "refuses to derive a password from an empty SECRET_KEY_BASE" {
+  printf 'SECRET_KEY_BASE=\n' > "$ENV_FILE"
+
+  run derive_admin_password
+
+  [ "$status" -ne 0 ]
+  [[ "$output" == *"Could not read SECRET_KEY_BASE"* ]]
+}
+
