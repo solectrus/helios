@@ -979,6 +979,25 @@ helios_service_present() {
     | grep -Fxq helios
 }
 
+# This directory already has HELIOS: a Compose file is present and declares
+# the service. Two places reach that state — the chosen target directory turns
+# out to hold HELIOS, and the existing stack we were about to extend already
+# declares it — and both want the same answer, so they share this predicate
+# and report_already_installed below. main's pre-welcome shortcut uses the
+# predicate too, but adds helios_running: a declared-but-stopped stack must
+# fall through to the normal flow, which starts it.
+helios_already_installed() {
+  [ -n "$COMPOSE_FILE" ] && helios_service_present
+}
+
+# Say so, make sure it is up, and leave it to the caller to return. Requires
+# verified Docker access (ensure_docker_access) for the start.
+report_already_installed() {
+  success "  HELIOS is already installed in $(pwd)."
+  ensure_helios_started
+  printf '\n'
+}
+
 # True when the helios container is actually up for this stack. Declaring the
 # service in compose.yaml (helios_service_present) does NOT mean it is running,
 # so the "already installed" branches consult this before claiming a reachable
@@ -1133,9 +1152,8 @@ install_into_existing_stack() {
   fi
   [ -e "$ENV_FILE" ] || die "$COMPOSE_FILE exists but $ENV_FILE is missing. Refusing to guess."
 
-  if helios_service_present; then
-    bold "HELIOS is already declared in $COMPOSE_FILE — nothing to add."
-    ensure_helios_started
+  if helios_already_installed; then
+    report_already_installed
     return
   fi
 
@@ -1183,8 +1201,8 @@ main() {
   # falls through to the normal flow, where (after Docker access is verified)
   # the existing-stack branch starts it. Requires docker, so a missing-docker
   # edge case also falls through and is caught by the inner check below.
-  if [ -n "$COMPOSE_FILE" ] && command -v docker >/dev/null 2>&1 \
-     && helios_service_present && helios_running; then
+  if command -v docker >/dev/null 2>&1 \
+     && helios_already_installed && helios_running; then
     banner
     bold "  HELIOS is already installed and running."
     success "  Visit HELIOS at $(helios_url)"
@@ -1209,10 +1227,8 @@ main() {
     COMPOSE_FILE="$(detect_compose_file)" || COMPOSE_FILE=""
 
     # The chosen directory may already run HELIOS (idempotent re-run into it).
-    if [ -n "$COMPOSE_FILE" ] && helios_service_present; then
-      success "  HELIOS is already installed in $(pwd)."
-      ensure_helios_started
-      printf '\n'
+    if helios_already_installed; then
+      report_already_installed
       return
     fi
   fi
