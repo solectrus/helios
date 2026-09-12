@@ -880,6 +880,15 @@ ensure_helios_secrets() {
   chmod 600 "$ENV_FILE" \
     || warn "  Could not restrict $ENV_FILE to its owner; the admin password stored there stays readable by other users."
 
+  # A blank `KEY=` line counts as missing below, but it would sit in front of
+  # the value appended for it and shadow it on every later read. Drop such
+  # lines first; the truncating rewrite keeps owner and mode.
+  local blank='^(SECRET_KEY_BASE|ADMIN_PASSWORD)=[[:space:]]*$' kept
+  if grep -qE "$blank" "$ENV_FILE"; then
+    kept="$(grep -vE "$blank" "$ENV_FILE")" || kept=""
+    printf '%s\n' "$kept" > "$ENV_FILE"
+  fi
+
   # Appending to a file whose last line has no newline would glue the new
   # assignment onto it and break both variables. Command substitution strips
   # trailing newlines, so a non-empty last byte means the newline is missing.

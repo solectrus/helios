@@ -37,12 +37,39 @@ EOF
   [ "$(grep -cE '^ADMIN_PASSWORD=' "$ENV_FILE")" -eq 1 ]
 }
 
-@test "treats empty value as missing and appends a derived secret" {
+@test "treats empty value as missing and does not keep the key twice" {
   printf 'ADMIN_PASSWORD=\n' > "$ENV_FILE"
 
   ensure_helios_secrets
 
   grep -qE '^ADMIN_PASSWORD=[0-9a-f]{32}$' "$ENV_FILE"
+  [ "$(grep -cE '^ADMIN_PASSWORD=' "$ENV_FILE")" -eq 1 ]
+}
+
+@test "replaces a blank SECRET_KEY_BASE= instead of adding the key twice" {
+  printf 'TZ=Europe/Berlin\nSECRET_KEY_BASE=\nINFLUX_TOKEN=abc\n' > "$ENV_FILE"
+
+  ensure_helios_secrets
+
+  [ "$(grep -cE '^SECRET_KEY_BASE=' "$ENV_FILE")" -eq 1 ]
+  grep -qE '^SECRET_KEY_BASE=.{128}$' "$ENV_FILE"
+  grep -qE '^TZ=Europe/Berlin$' "$ENV_FILE"
+  grep -qE '^INFLUX_TOKEN=abc$' "$ENV_FILE"
+
+  # The password must derive from the value just written, not from the blank
+  # line (which used to stay in front of it and abort the install).
+  secret="$(grep -E '^SECRET_KEY_BASE=' "$ENV_FILE" | cut -d= -f2-)"
+  expected="$(printf '%s' "$secret" | openssl dgst -sha256 | awk '{print substr($NF,1,32)}')"
+  grep -qE "^ADMIN_PASSWORD=${expected}$" "$ENV_FILE"
+}
+
+@test "skips a blank SECRET_KEY_BASE= line in favor of the value below it" {
+  printf 'SECRET_KEY_BASE=\nSECRET_KEY_BASE=real-key\n' > "$ENV_FILE"
+
+  ensure_helios_secrets
+
+  expected="$(printf '%s' 'real-key' | openssl dgst -sha256 | awk '{print substr($NF,1,32)}')"
+  grep -qE "^ADMIN_PASSWORD=${expected}$" "$ENV_FILE"
 }
 
 @test "exposes generated ADMIN_PASSWORD via GENERATED_ADMIN_PASSWORD" {
