@@ -12,3 +12,8 @@ in_tmpdir() {
   cd "$BATS_TEST_TMPDIR"
   ENV_FILE=".env"
 }
+
+# Octal permission bits of a file. GNU stat speaks -c, BSD stat -f.
+file_mode() {
+  stat -c '%a' "$1" 2>/dev/null || stat -f '%Lp' "$1" 2>/dev/null
+}

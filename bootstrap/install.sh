@@ -123,6 +123,34 @@ need() { command -v "$1" >/dev/null 2>&1 || die "'$1' is required but not instal
 # install directory) all gate on this.
 unattended() { is_true "$HELIOS_ASSUME_YES" || [ ! -r /dev/tty ]; }
 
+# Run COMMAND and put its output in FILE, through a temporary file in the same
+# directory that is renamed into place. Two properties the plain `> file`
+# redirect lacks: the target is never truncated, so an interrupted run leaves
+# the previous content intact, and the temporary name is unpredictable, so a
+# symlink planted in a shared directory cannot redirect the write.
+#
+# The content comes from a command rather than from stdin on purpose: a failing
+# producer must abort before the rename. Piped into this function it could not,
+# because `pipefail` reports the failure only after both sides have run — and
+# the rename would already have replaced a good file with a truncated one.
+#
+# `mktemp` hands out mode 0600. An existing target keeps its own mode, a new
+# one gets the mode a plain redirect would have produced under the umask. The
+# rename makes the calling user the owner, which matters only for a target
+# owned by someone else — writing that one fails before this point anyway.
+write_atomic() {
+  local target="$1"; shift
+  local tmp mode
+  tmp="$(mktemp "$(dirname "$target")/.helios-tmp.XXXXXX")" \
+    || die "Could not create a temporary file next to $target"
+  "$@" > "$tmp" || { rm -f "$tmp"; die "Could not assemble the new content for $target. $target is unchanged."; }
+  # GNU stat speaks -c, BSD stat -f; an absent target fails both and falls
+  # through to the mode a plain redirect would have produced.
+  mode="$(stat -c '%a' "$target" 2>/dev/null || stat -f '%Lp' "$target" 2>/dev/null)" || mode=""
+  chmod "${mode:-$(printf '%o' $((0666 & ~0$(umask))))}" "$tmp"
+  mv "$tmp" "$target"
+}
+
 # stdin is the piped script, so read from the controlling terminal instead.
 # With HELIOS_ASSUME_YES set we skip the terminal entirely and auto-confirm,
 # which is what makes the operational prompts (Docker install, warn_or_abort)
@@ -888,11 +916,14 @@ ensure_helios_secrets() {
 
   # A blank `KEY=` line counts as missing below, but it would sit in front of
   # the value appended for it and shadow it on every later read. Drop such
-  # lines first; the truncating rewrite keeps owner and mode.
+  # lines first. The rewrite goes through write_atomic: this is someone's
+  # existing .env, holding the whole stack's secrets, and HELIOS writes its
+  # .env.bak only later — a truncating redirect interrupted here would take
+  # the file with it. The 0600 set above carries over to the new file.
   local blank='^(SECRET_KEY_BASE|ADMIN_PASSWORD)=[[:space:]]*$' kept
   if grep -qE "$blank" "$ENV_FILE"; then
     kept="$(grep -vE "$blank" "$ENV_FILE")" || kept=""
-    printf '%s\n' "$kept" > "$ENV_FILE"
+    write_atomic "$ENV_FILE" printf '%s\n' "$kept"
   fi
 
   # Appending to a file whose last line has no newline would glue the new
@@ -909,6 +940,12 @@ ensure_helios_secrets() {
     GENERATED_ADMIN_PASSWORD="$(derive_admin_password)"
     printf 'ADMIN_PASSWORD=%s\n' "$GENERATED_ADMIN_PASSWORD" >> "$ENV_FILE"
   fi
+}
+
+# Producer for write_atomic: the Compose file with a top-level `name:` in front.
+compose_with_project_name() {
+  printf 'name: %s\n\n' "$PROJECT_NAME"
+  cat "$COMPOSE_FILE"
 }
 
 ensure_project_name() {
@@ -960,18 +997,10 @@ ensure_project_name() {
     fi
   fi
 
-  # Prepend `name:` so the project name no longer depends on CWD.
-  #
-  # A plain redirect into a fixed `.tmp` name, then an atomic rename — the way
-  # HELIOS writes the same file. The redirect applies the umask, so the file
-  # arrives with the mode a fresh install writes, where `mktemp` would hand the
-  # rename its own 0600. The fixed name leaves at most one stale file behind.
-  local tmp="${COMPOSE_FILE}.tmp"
-  {
-    printf 'name: %s\n\n' "$PROJECT_NAME"
-    cat "$COMPOSE_FILE"
-  } > "$tmp"
-  mv "$tmp" "$COMPOSE_FILE"
+  # Prepend `name:` so the project name no longer depends on CWD. Reading the
+  # file while write_atomic fills its temporary copy is safe: the rename lands
+  # only after the producer has finished.
+  write_atomic "$COMPOSE_FILE" compose_with_project_name
 }
 
 helios_service_present() {
@@ -1019,20 +1048,23 @@ ensure_helios_started() {
   success "  Visit HELIOS at $(helios_url)"
 }
 
+# Producer for write_atomic: the Compose file with the helios block spliced in
+# after LINE (the `services:` line). Using head/tail sidesteps awk's
+# portability issues with multi-line -v values.
+compose_with_helios_service() {
+  local line="$1"
+  head -n "$line" "$COMPOSE_FILE"
+  helios_service_yaml
+  tail -n "+$((line + 1))" "$COMPOSE_FILE"
+}
+
 append_helios_service() {
-  # Splice the helios block in right after the `services:` line. Using
-  # head/tail sidesteps awk's portability issues with multi-line -v values.
-  local line tmp="${COMPOSE_FILE}.tmp"
+  local line
   # `|| line=""` so a missing services: block reaches the die below with its
   # message, instead of aborting silently on grep's exit status under `set -e`.
   line="$(grep -m1 -nE '^services:[[:space:]]*$' "$COMPOSE_FILE" | cut -d: -f1)" || line=""
   [ -n "$line" ] || die "Could not find a 'services:' block in $COMPOSE_FILE."
-  {
-    head -n "$line" "$COMPOSE_FILE"
-    helios_service_yaml
-    tail -n "+$((line + 1))" "$COMPOSE_FILE"
-  } > "$tmp"
-  mv "$tmp" "$COMPOSE_FILE"
+  write_atomic "$COMPOSE_FILE" compose_with_helios_service "$line"
 }
 
 # Run a command, silencing its output when HELIOS_QUIET is set. Used for the

@@ -34,6 +34,7 @@ Keep every section, an empty one included.
 - Installation: a stack that is taken over keeps its files readable the same way a new installation writes them
 - Installation: a stack that would lose its data through the required project rename is left untouched, and the installer explains what to change first
 - Installation: a blank secret entry in the configuration file is filled instead of being added a second time
+- Installation: an installation that stops halfway leaves the existing configuration files as they were
 
 ## Maintenance
 
