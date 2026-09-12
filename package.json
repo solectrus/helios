@@ -30,7 +30,7 @@
     "@herb-tools/linter": "^0.10.3",
     "@size-limit/file": "^13.0.3",
     "@tailwindcss/vite": "^4.3.3",
-    "daisyui": "^5.7.28",
+    "daisyui": "^5.7.32",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
