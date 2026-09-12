@@ -820,12 +820,12 @@ ENV
 # password unpredictable to anyone who doesn't already have read access to
 # the SECRET_KEY_BASE.
 #
-# Hashing with openssl (already a hard dependency, see `need openssl`) rather
-# than shasum, which lives in the `perl` package and is absent on the minimal
-# Debian images this installer targets.
+# `grep -m1` avoids the SIGPIPE that `| head -n1` can trigger under
+# `set -o pipefail`, and openssl (a hard dependency already) avoids shasum,
+# which the minimal Debian images this installer targets do not carry.
 derive_admin_password() {
   local secret hash
-  secret="$(grep -E '^SECRET_KEY_BASE=' "$ENV_FILE" | head -n1 | cut -d= -f2-)"
+  secret="$(grep -m1 -E '^SECRET_KEY_BASE=' "$ENV_FILE" | cut -d= -f2-)"
   hash="$(printf '%s' "$secret" | openssl dgst -sha256 | awk '{print $NF}')"
   printf '%s\n' "${hash:0:32}"
 }
@@ -925,7 +925,9 @@ append_helios_service() {
   # Splice the helios block in right after the `services:` line. Using
   # head/tail sidesteps awk's portability issues with multi-line -v values.
   local tmp line
-  line="$(grep -nE '^services:[[:space:]]*$' "$COMPOSE_FILE" | head -1 | cut -d: -f1)"
+  # `|| line=""` so a missing services: block reaches the die below with its
+  # message, instead of aborting silently on grep's exit status under `set -e`.
+  line="$(grep -m1 -nE '^services:[[:space:]]*$' "$COMPOSE_FILE" | cut -d: -f1)" || line=""
   [ -n "$line" ] || die "Could not find a 'services:' block in $COMPOSE_FILE."
   tmp="$(mktemp "./${COMPOSE_FILE}.XXXXXX")"
   {

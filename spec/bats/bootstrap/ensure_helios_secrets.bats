@@ -100,3 +100,12 @@ EOF
 
   [ "$first_pw" != "$second_pw" ]
 }
+
+@test "reads only the first SECRET_KEY_BASE when the file holds several" {
+  printf 'SECRET_KEY_BASE=first-key\nSECRET_KEY_BASE=second-key\n' > "$ENV_FILE"
+
+  ensure_helios_secrets
+
+  expected="$(printf '%s' 'first-key' | openssl dgst -sha256 | awk '{print substr($NF,1,32)}')"
+  grep -qE "^ADMIN_PASSWORD=${expected}$" "$ENV_FILE"
+}
