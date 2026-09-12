@@ -153,6 +153,10 @@ module Orchestration
       status == 'running'
     end
 
+    # Whether the cross-request inspect of this container is warm. Rendering a
+    # row reads the inspect, so a cold one costs a Docker call.
+    def inspect_cached? = Rails.cache.exist?(inspect_cache_key)
+
     def stoppable?
       %w[running restarting paused].include?(status)
     end

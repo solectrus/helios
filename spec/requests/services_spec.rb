@@ -32,7 +32,8 @@ RSpec.describe 'Services', :with_admin_password do
         Orchestration::Container,
         service_name: 'dashboard', running?: true, status: 'running', health_status: nil,
         version: '1.0.0', public_port: 3001, configured_image: 'dashboard:latest',
-        image: 'dashboard:latest', crash_looping?: false, stoppable?: true
+        image: 'dashboard:latest', crash_looping?: false, stoppable?: true,
+        inspect_cached?: false
       )
     end
 
@@ -71,6 +72,21 @@ RSpec.describe 'Services', :with_admin_password do
       expect(response.body).to include('dashboard')
     end
 
+    # A warm inspect costs no Docker call, so the rows render with the page
+    # instead of asking for one more request each.
+    it 'renders the rows filled in when every inspect is cached' do
+      allow(dashboard_container).to receive(:inspect_cached?).and_return(true)
+      allow(Orchestration::Container).to receive(:all).and_return([dashboard_container])
+      mock_compose_services('dashboard')
+
+      get services_path
+
+      expect(response.body).to include('dashboard')
+      expect(response.body).not_to include('loading="lazy"')
+    end
+
+    # A cold inspect would cost one Docker call per row before the first
+    # paint, in series, so the rows load lazily instead.
     it 'shows service skeleton with lazy loading' do
       allow(Orchestration::Container).to receive(:all).and_return([dashboard_container])
       mock_compose_services('dashboard')

@@ -8,12 +8,10 @@ class ServicesController < ApplicationController
     compose = Compose.load
     @compose_services = compose.services.sorted
 
-    # Preload containers on Turbo Frame requests (tab switches) to avoid skeleton flicker.
-    # On full page loads (initial visit, refresh) use lazy loading for faster first paint.
-    if turbo_frame_request?
-      all_containers = Orchestration::Container.all
-      @containers = all_containers.index_by(&:service_name)
-    end
+    # The orphan check needs the container list either way (it fetches its own
+    # when given none), so load it once and hand it to both.
+    all_containers = Orchestration::Container.all
+    @containers = all_containers.index_by(&:service_name) if render_rows_eagerly?(all_containers)
 
     @orphaned_containers = Orchestration::OrphanedServices.detect(
       compose_services: compose.services,
@@ -42,6 +40,16 @@ class ServicesController < ApplicationController
   end
 
   private
+
+  # Rows render with the page when every inspect they read is cached: the page
+  # then arrives complete, instead of painting a shell and asking for one more
+  # request per row. A cold inspect would cost one Docker call per row, in
+  # series, before the first paint — lazy rows spread those over parallel
+  # requests instead. A tab switch always renders them filled in, so the rows
+  # do not flash a skeleton on the way.
+  def render_rows_eagerly?(containers)
+    turbo_frame_request? || containers.all?(&:inspect_cached?)
+  end
 
   def service_id
     params[:id]

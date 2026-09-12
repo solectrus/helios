@@ -23,6 +23,7 @@ Keep every section, an empty one included.
 - Time zone: the list now holds 137 zones with their offset, instead of 11
 - Sensors: the list now arrives with the page itself, so the configuration opens without an empty moment
 - Configuration menu: the marker moves to the selected entry the moment it is clicked
+- Services: the rows arrive with the page, so the list no longer fills in row by row
 
 ## Fixes
 
