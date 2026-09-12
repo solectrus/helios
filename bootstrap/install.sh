@@ -620,10 +620,14 @@ try_select_dir() {
 # is CWD-derived and unreliable, whereas the image family is a hard signal. Reads
 # the working_dir label Docker Compose stamps on every container. Empty output
 # when Docker is absent/unreachable or no such stack runs.
+#
+# `^([^/]+/)?solectrus/` allows exactly one registry segment in front of the
+# repository, so `evil.io/anything/solectrus/app` does not pass. Image names
+# and labels are chosen by whoever starts the container.
 detect_running_solectrus_dir() {
   command -v docker >/dev/null 2>&1 || return 0
   docker ps --format '{{.Image}}|{{.Label "com.docker.compose.project.working_dir"}}' 2>/dev/null \
-    | awk -F'|' '$1 ~ /(^|\/)solectrus\// && $2 != "" { print $2 }' \
+    | awk -F'|' '$1 ~ /^([^\/]+\/)?solectrus\/[^\/]+$/ && $2 ~ /^\// { print $2 }' \
     | sort -u
 }
 
@@ -637,7 +641,7 @@ helios_running_in_dir() {
   command -v docker >/dev/null 2>&1 || return 1
   docker ps --format '{{.Image}}|{{.Label "com.docker.compose.project.working_dir"}}' 2>/dev/null \
     | awk -F'|' -v d="$dir" \
-        '$1 ~ /(^|\/)solectrus\/helios(:|@|$)/ && $2 == d { found = 1 } END { exit !found }'
+        '$1 ~ /^([^\/]+\/)?solectrus\/helios([:@]|$)/ && $2 == d { found = 1 } END { exit !found }'
 }
 
 # Check a stack directory before we act on it. The path comes from a container

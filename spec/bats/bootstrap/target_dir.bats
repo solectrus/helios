@@ -211,3 +211,38 @@ PS
   [ "$status" -ne 0 ]
   [[ "$output" == *"existing, writable"* ]]
 }
+
+@test "detect_running_solectrus_dir ignores a solectrus segment deeper in the path" {
+  # Image names are chosen by whoever starts the container, so a nested path
+  # must not pass as an official SOLECTRUS image.
+  docker() { printf '%s\n' "evil.io/anything/solectrus/app:latest|/srv/foo"; }
+  run detect_running_solectrus_dir
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "detect_running_solectrus_dir ignores a relative working_dir" {
+  docker() { printf '%s\n' "ghcr.io/solectrus/solectrus:latest|../elsewhere"; }
+  run detect_running_solectrus_dir
+  [ "$status" -eq 0 ]
+  [ -z "$output" ]
+}
+
+@test "detect_running_solectrus_dir accepts an image without a registry" {
+  docker() { printf '%s\n' "solectrus/solectrus:latest|/opt/solectrus"; }
+  run detect_running_solectrus_dir
+  [ "$status" -eq 0 ]
+  [ "$output" = "/opt/solectrus" ]
+}
+
+@test "helios_running_in_dir matches an image pinned by digest" {
+  docker() { printf '%s\n' "ghcr.io/solectrus/helios@sha256:abc|/opt/solectrus"; }
+  run helios_running_in_dir "/opt/solectrus"
+  [ "$status" -eq 0 ]
+}
+
+@test "helios_running_in_dir ignores a nested solectrus segment" {
+  docker() { printf '%s\n' "evil.io/anything/solectrus/helios:latest|/opt/solectrus"; }
+  run helios_running_in_dir "/opt/solectrus"
+  [ "$status" -ne 0 ]
+}
