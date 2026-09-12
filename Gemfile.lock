@@ -454,6 +454,7 @@ DEPENDENCIES
   docker-api
   foreman
   herb
+  json (< 3)
   puma
   rack-brotli
   rails (~> 8.1.3)
