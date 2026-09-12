@@ -117,6 +117,12 @@ die() { error "Error: $*"; exit 1; }
 
 need() { command -v "$1" >/dev/null 2>&1 || die "'$1' is required but not installed."; }
 
+# No human is available to answer a question: either the caller opted into an
+# unattended run, or there is no terminal to ask on. The branches that must
+# not act on their own (license consent, rewriting a running stack, picking an
+# install directory) all gate on this.
+unattended() { is_true "$HELIOS_ASSUME_YES" || [ ! -r /dev/tty ]; }
+
 # stdin is the piped script, so read from the controlling terminal instead.
 # With HELIOS_ASSUME_YES set we skip the terminal entirely and auto-confirm,
 # which is what makes the operational prompts (Docker install, warn_or_abort)
@@ -246,7 +252,7 @@ TEXT
   # legal consent implicitly would be wrong. It needs its own explicit opt-in.
   if is_true "$HELIOS_ACCEPT_LICENSE"; then
     success "  License accepted via HELIOS_ACCEPT_LICENSE."
-  elif is_true "$HELIOS_ASSUME_YES" || [ ! -r /dev/tty ]; then
+  elif unattended; then
     # Unattended run, but no explicit license opt-in — refuse rather than
     # accept on the user's behalf.
     error "  License not accepted. Re-run with HELIOS_ACCEPT_LICENSE=1 to accept"
@@ -697,7 +703,7 @@ adopt_running_stack() {
 
   # Unattended: refuse to mutate a live stack without a human present. Adoption
   # rewrites someone's running compose.yaml, so it must happen interactively.
-  if is_true "$HELIOS_ASSUME_YES" || [ ! -r /dev/tty ]; then
+  if unattended; then
     error "  Refusing to modify a running stack unattended."
     die "cd into $dir and re-run interactively to add HELIOS to it."
   fi
@@ -733,7 +739,7 @@ choose_target_dir() {
     return
   fi
 
-  if is_true "$HELIOS_ASSUME_YES" || [ ! -r /dev/tty ]; then
+  if unattended; then
     TARGET_DIR="$PWD"
     return
   fi
