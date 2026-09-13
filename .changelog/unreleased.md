@@ -14,29 +14,6 @@ Keep every section, an empty one included.
 
 ## Improvements
 
-- Ingest: the service is now set up as well when a value comes from an external source, so the house power is corrected for a balcony power plant behind a smart home. The address the source has to write to is shown in the Ingest settings and next to every affected sensor, and a switch there decides whether Ingest runs at all. An existing configuration that has such a source keeps the correction switched off, so the values reach the database as before until the source is redirected
-- Address: the address of the machine is taken from the browser as long as the field is empty, so external sources can be named an address that works
-- MQTT sensors: the data type follows from the sensor, so the survey no longer asks for it. A wrong answer used to stop the collector (solectrus/solectrus#5828)
-- Total generation: the source page of inverter_power states when the single producers are added up and when the sensor replaces them (solectrus/solectrus#5828)
-- Connection test: a test that fails on a loopback address says so, because such an address points a service at itself (solectrus/solectrus#5828)
-- Time zone: the list now holds 137 zones with their offset, instead of 11
-- Sensors: the list now arrives with the page itself, so the configuration opens without an empty moment
-- Configuration menu: the marker moves to the selected entry the moment it is clicked
-- Services: the rows arrive with the page, so the list no longer fills in row by row
-- About: the bundled components are listed in groups, and the list now also names the operating system packages HELIOS runs on
-
 ## Fixes
 
-- Configuration screens: the page no longer scrolls by a few pixels while everything is already in view
-- House power: the hint names the excluded consumers by the label of the sensor list, one per line
-- Dropdown lists: a long list inside a dialog stays complete and reacts to the keyboard, and a list no longer flares open once more while it closes (solectrus/solectrus#5828)
-- Installation: an existing configuration file keeps all of its values, the admin password is unique to the installation, and the file stays readable only by its owner
-- Installation: a stack that is taken over keeps its files readable the same way a new installation writes them
-- Installation: a stack that would lose its data through the required project rename is left untouched, and the installer explains what to change first
-- Installation: a blank secret entry in the configuration file is filled instead of being added a second time
-- Installation: an installation that stops halfway leaves the existing configuration files as they were
-- Installation: the closing message states that HELIOS uses the admin password of SOLECTRUS, and names the file it is stored in
-
 ## Maintenance
-
-- Dependencies updated
