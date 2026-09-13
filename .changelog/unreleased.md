@@ -35,6 +35,7 @@ Keep every section, an empty one included.
 - Installation: a stack that would lose its data through the required project rename is left untouched, and the installer explains what to change first
 - Installation: a blank secret entry in the configuration file is filled instead of being added a second time
 - Installation: an installation that stops halfway leaves the existing configuration files as they were
+- Installation: the closing message states that HELIOS uses the admin password of SOLECTRUS, and names the file it is stored in
 
 ## Maintenance
 

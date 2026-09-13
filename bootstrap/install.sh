@@ -1149,7 +1149,8 @@ helios_url() {
 # Final success banner shown after a fresh install or a successful adoption.
 # Pass the freshly-generated admin password as the only argument; omit the
 # argument when an existing ADMIN_PASSWORD was reused (and therefore should
-# not be echoed back to the user).
+# not be echoed back to the user). Such a run names the file that holds the
+# password instead, so the login needs no search of its own.
 print_running_banner() {
   local password="${1:-}"
   if [ -n "$password" ]; then
@@ -1168,6 +1169,8 @@ MSG
 ================================================================
   HELIOS is running at $(helios_url)
 ================================================================
+HELIOS and SOLECTRUS share the same admin password.
+It is stored in $ENV_FILE (key ADMIN_PASSWORD) on this host.
 MSG
   fi
 }
