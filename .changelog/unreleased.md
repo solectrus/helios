@@ -14,6 +14,8 @@ Keep every section, an empty one included.
 
 ## Improvements
 
+- On a phone, a tap on a value, a status dot or an info icon shows the hint that a mouse shows on hover (#480)
+
 ## Fixes
 
 ## Maintenance

@@ -28,7 +28,12 @@
         </div>
       <% else %>
         <%# Full content %>
-        <div id="<%= dom_id %>-status" class="<%= tooltip_class %>" data-tip="<%= status_label %>">
+        <div
+          id="<%= dom_id %>-status"
+          class="<%= tooltip_class %>"
+          data-tip="<%= status_label %>"
+          tabindex="-1"
+        >
           <div class="flex size-5 items-center justify-center">
             <% if crash_looping? %>
               <%#
@@ -157,6 +162,7 @@
               id="<%= dom_id %>-recalculation-progress"
               class="tooltip tooltip-info flex h-8 min-w-8 items-center justify-center"
               data-tip="<%= t('.recalculating') %>"
+              tabindex="-1"
             >
               <%#
                 Outlined rather than filled, so the number keeps the full

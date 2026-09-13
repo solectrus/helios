@@ -45,9 +45,20 @@
 .tooltip .btn:disabled {
   pointer-events: auto;
 }
+/* A touch device has no hover, so a tooltip stays hidden there unless its
+   element is focused. That makes a tooltip carrying tabindex="-1" tappable:
+   the tap focuses it, a tap elsewhere blurs it again. tabindex="-1" is what
+   keeps the keyboard rule above intact — such an element is reachable by
+   pointer only, never by tabbing. */
 @media (hover: none) {
-  .tooltip::before,
-  .tooltip::after {
+  .tooltip:not(:focus)::before,
+  .tooltip:not(:focus)::after {
     display: none !important;
+  }
+  .tooltip:focus::before,
+  .tooltip:focus::after,
+  .tooltip:focus > .tooltip-content {
+    opacity: 1;
+    --tt-pos: 0rem;
   }
 }

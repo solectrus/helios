@@ -61,7 +61,8 @@ module SensorRow
     def ingest_hint_icon
       icon = tag.i(class: 'fa-solid fa-circle-info text-base-content/70 text-sm leading-none')
 
-      tag.span(safe_join([ingest_hint_content, icon]), class: 'tooltip tooltip-left flex items-center')
+      tag.span(safe_join([ingest_hint_content, icon]),
+               class: 'tooltip tooltip-left flex items-center', tabindex: -1)
     end
 
     def ingest_hint_content
