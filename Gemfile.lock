@@ -202,7 +202,7 @@ GEM
       prism (~> 1.5)
     msgpack (1.8.4)
     multi_json (1.21.2)
-    net-imap (0.6.6)
+    net-imap (0.6.7)
       date
       net-protocol
     net-pop (0.1.2)
