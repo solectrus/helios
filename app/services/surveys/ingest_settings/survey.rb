@@ -59,14 +59,14 @@ module Surveys
         return 'Every collector HELIOS manages writes there already.' if external_sensors.empty?
 
         'These values come from an external source and have to be sent there instead of to ' \
-          "InfluxDB: #{sensor_labels(:en)}."
+          "InfluxDB: #{sensor_labels(:en)}. Token and bucket stay the same, only the address changes."
       end
 
       def external_sensors_de
         return 'Alle von HELIOS verwalteten Collectors schreiben bereits dorthin.' if external_sensors.empty?
 
         'Folgende Werte kommen aus einer externen Quelle und müssen dorthin gesendet werden statt ' \
-          "in die InfluxDB: #{sensor_labels(:de)}."
+          "in die InfluxDB: #{sensor_labels(:de)}. Token und Bucket bleiben gleich, nur die Adresse ändert sich."
       end
 
       def sensor_labels(locale)

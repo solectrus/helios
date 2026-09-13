@@ -27,6 +27,17 @@ RSpec.describe Surveys::IngestSettings::Survey do
         )
       end
 
+      # A balcony power plant HELIOS cannot reroute itself: the one case in
+      # which the endpoint has an addressee.
+      def with_external_balcony
+        with_config_yaml(
+          'system' => { 'app_host' => 'solectrus.fritz.box' },
+          'sensors' => {
+            'inverter_power_4' => { 'source' => 'external', 'is_balcony' => true },
+          },
+        )
+      end
+
       it 'names the address every source writes to' do
         with_balcony('system' => { 'app_host' => 'solectrus.fritz.box' })
 
@@ -51,14 +62,18 @@ RSpec.describe Surveys::IngestSettings::Survey do
       end
 
       it 'lists the values an external source still has to redirect' do
-        with_config_yaml(
-          'system' => { 'app_host' => 'solectrus.fritz.box' },
-          'sensors' => {
-            'inverter_power_4' => { 'source' => 'external', 'is_balcony' => true },
-          },
-        )
+        with_external_balcony
 
         expect(html['default']).to include(I18n.t('sensors.inverter_power_4', locale: :en))
+      end
+
+      # The address is the only thing that changes, so the hint says so: Ingest
+      # speaks the InfluxDB write API, and a source that keeps its credentials
+      # needs no further answer before it is redirected.
+      it 'says the credentials of such a source stay as they are' do
+        with_external_balcony
+
+        expect(html['default']).to include('Token and bucket stay the same')
       end
 
       it 'names the port alone while no address is configured' do
