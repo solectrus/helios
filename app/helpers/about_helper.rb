@@ -28,18 +28,20 @@ module AboutHelper
   end
 
   def parse_components(markdown)
-    parse_tables(markdown)
-      .flat_map { |section| flatten_section(section) }
-      .sort_by { |row| row[:name].downcase }
+    parse_tables(markdown).filter_map { |section| build_group(section) }
   end
 
   private
 
-  COMPONENT_CATEGORIES = {
-    'Ruby Gems' => 'gem',
-    'JavaScript Packages' => 'js',
+  # Markdown heading of a table in THIRD_PARTY_LICENSES.md → i18n label key and
+  # component category. A nil category means no license text ships for those
+  # packages, so their rows render as plain text instead of a link.
+  COMPONENT_GROUPS = {
+    'Base Image' => { key: :base_image, category: nil },
+    'Ruby Gems' => { key: :gems, category: 'gem' },
+    'JavaScript Packages' => { key: :js, category: 'js' },
   }.freeze
-  private_constant :COMPONENT_CATEGORIES
+  private_constant :COMPONENT_GROUPS
 
   def transform_html(html)
     fragment = Nokogiri::HTML5.fragment(html)
@@ -74,11 +76,14 @@ module AboutHelper
     node['rel'] = 'noopener noreferrer'
   end
 
-  def flatten_section(section)
-    category = COMPONENT_CATEGORIES[section[:heading]]
-    section[:rows].map do |name, license|
-      { category: category, name: name.to_s.delete('`'), license: license }
+  def build_group(section)
+    group = COMPONENT_GROUPS[section[:heading]]
+    return nil unless group
+
+    components = section[:rows].map do |name, license|
+      { category: group[:category], name: name.to_s.delete('`'), license: license }
     end
+    group.merge(components: components.sort_by { |component| component[:name].downcase })
   end
 
   def parse_tables(markdown)

@@ -60,7 +60,11 @@ en:
       show_full_license: 'Show full license'
       full_license_title: 'HELIOS license terms'
       components_heading: 'Bundled libraries'
-      components_intro: 'HELIOS bundles the following runtime components, each subject to its own license. Click any row for the full LICENSE text.'
+      components_intro: 'HELIOS bundles the following runtime components, each subject to its own license. Rows with a bundled license text can be opened.'
+      component_groups:
+        base_image: 'System packages'
+        gems: 'Ruby gems'
+        js: 'JavaScript packages'
 
   services:
     index:

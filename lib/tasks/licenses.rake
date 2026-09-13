@@ -16,14 +16,72 @@ namespace :licenses do
       It bundles or depends on third-party components that remain subject to
       their own licenses. This file is the summary; full per-package notice
       texts for JS runtime dependencies live in
-      [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Ruby gem notices ship
-      inside each gem directory in the Docker image
-      (`/usr/local/bundle/gems/<name>-<version>/{MIT-LICENSE,LICENSE,LICENSE.txt}`)
-      and are not duplicated here.
+      [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Most Ruby gems ship
+      their notice inside their gem directory in the Docker image
+      (`/usr/local/bundle/gems/<name>-<version>/{MIT-LICENSE,LICENSE,LICENSE.txt}`),
+      and these are not duplicated here. A gem that ships no such file names its
+      upstream source in the About screen of HELIOS.
 
       Regenerate with `bin/rake licenses:generate`.
 
     MD
+  end
+
+  def base_image_intro(alpine_release)
+    <<~MD
+      The official HELIOS Docker image runs on Alpine Linux #{alpine_release} and
+      contains the Ruby interpreter and the Docker CLI. The table below lists the
+      packages in that image, read from its Alpine package database. Alpine ships
+      no license text inside the image. The license text and the source code of
+      each package are available from the Alpine package index at
+      <https://pkgs.alpinelinux.org/>. For the packages under a GPL or LGPL
+      license, the copyright holder also supplies the corresponding source code
+      on request at info@solectrus.de.
+
+    MD
+  end
+
+  # `apk list -I` prints one line per installed package:
+  #   docker-cli-29.5.3-r1 aarch64 {docker} (Apache-2.0) [installed]
+  # The version starts at the first "-<digit>" group, which is how apk itself
+  # splits a package name from its version. The architecture is dropped so the
+  # generated table does not depend on the machine that ran the generator.
+  def apk_line_rx
+    /\A(?<name>\S+?)-(?<version>\d[^-\s]*(?:-r\d+)?)\s+\S+\s+\{[^}]*\}\s+\((?<license>[^)]*)\)/
+  end
+
+  # The published image the package list is read from. It only changes when the
+  # Dockerfile moves to a new base tag, so the released image is accurate for a
+  # regeneration that only bumps gems. Point LICENSES_IMAGE at a locally built
+  # image after a Dockerfile change.
+  def base_image
+    ENV.fetch('LICENSES_IMAGE', 'ghcr.io/solectrus/helios:latest')
+  end
+
+  def collect_base_image
+    out, err, status = Open3.capture3(
+      'docker', 'run', '--rm', '--entrypoint', 'sh', base_image, '-c',
+      'cat /etc/alpine-release; apk list -I'
+    )
+    abort "Cannot read #{base_image}: #{err.strip.presence || 'docker run failed'}" unless status.success?
+
+    release, *package_lines = out.lines
+    rows = package_lines.filter_map { |line| parse_apk_line(line) }
+    # Ruby is compiled into the base image, so apk knows nothing about it. Its
+    # license has been the dual Ruby / BSD-2-Clause since Ruby 2.0.
+    rows << { name: 'ruby', license: 'Ruby, BSD-2-Clause' }
+    { release: release.strip, packages: rows.sort_by { |row| row[:name] } }
+  rescue Errno::ENOENT
+    abort 'Cannot read the base image: the docker CLI is not installed.'
+  end
+
+  def parse_apk_line(line)
+    match = apk_line_rx.match(line.strip)
+    # Virtual meta-packages (".ruby-rundeps") declare no license and ship no
+    # files of their own.
+    return nil if match.nil? || match[:license].empty?
+
+    { name: match[:name], license: match[:license] }
   end
 
   def notices_header
@@ -203,17 +261,24 @@ namespace :licenses do
     lines.join("\n")
   end
 
-  def render_summary(ruby_specs, js_deps)
-    ruby_rows = ruby_specs.sort_by(&:name).map do |s|
-      { name: s.name, license: Array(s.licenses).join(', ').presence || 'See gem source' }
+  def ruby_rows(ruby_specs)
+    ruby_specs.sort_by(&:name).map do |spec|
+      { name: spec.name, license: Array(spec.licenses).join(', ').presence || 'See gem source' }
     end
-    js_rows = js_deps.map do |name, info|
+  end
+
+  def js_rows(js_deps)
+    js_deps.map do |name, info|
       { name: name, license: info[:license].to_s.presence || 'See package source' }
     end
+  end
+
+  def render_summary(base, ruby_specs, js_deps)
     [
       summary_header,
-      "## Ruby Gems\n\n#{render_table(ruby_rows)}\n",
-      "## JavaScript Packages\n\n#{render_table(js_rows)}\n",
+      "## Base Image\n\n#{base_image_intro(base[:release])}#{render_table(base[:packages])}\n",
+      "## Ruby Gems\n\n#{render_table(ruby_rows(ruby_specs))}\n",
+      "## JavaScript Packages\n\n#{render_table(js_rows(js_deps))}\n",
     ].join("\n")
   end
 
@@ -254,6 +319,7 @@ namespace :licenses do
 
   desc 'Generate docs/legal/THIRD_PARTY_LICENSES.md and THIRD_PARTY_NOTICES.md'
   task generate: :environment do
+    base = collect_base_image
     ruby_specs = Bundler.definition.specs_for(%i[default]).reject { |s| s.name == 'helios' }
     js_deps = collect_js_runtime_deps
 
@@ -261,7 +327,7 @@ namespace :licenses do
     legal_dir.mkpath
     summary_path = legal_dir.join('THIRD_PARTY_LICENSES.md')
     notices_path = legal_dir.join('THIRD_PARTY_NOTICES.md')
-    summary_path.write(render_summary(ruby_specs, js_deps))
+    summary_path.write(render_summary(base, ruby_specs, js_deps))
     notices_path.write(render_notices(js_deps))
 
     # Prettier aligns the Markdown table columns; the raw `| --- |` output is
@@ -270,7 +336,8 @@ namespace :licenses do
     sh 'bunx', 'prettier', '--write',
        '--log-level=warn', summary_path.to_s, notices_path.to_s
 
-    puts "Wrote docs/legal/THIRD_PARTY_LICENSES.md (#{ruby_specs.size} gems, #{js_deps.size} JS pkgs)"
+    puts 'Wrote docs/legal/THIRD_PARTY_LICENSES.md ' \
+         "(#{base[:packages].size} OS pkgs, #{ruby_specs.size} gems, #{js_deps.size} JS pkgs)"
     puts "Wrote docs/legal/THIRD_PARTY_NOTICES.md (#{js_deps.size} JS pkgs)"
   end
 end

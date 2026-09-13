@@ -76,14 +76,39 @@ RSpec.describe AboutHelper do
       | Package | License |
       | --- | --- |
       | `turbo` | MIT |
+
+      ## Base Image
+
+      | Package | License |
+      | --- | --- |
+      | `musl` | MIT |
     MD
 
-    it 'flattens all sections into a sorted list with categories' do
+    it 'groups the sections and sorts each group by name' do
       result = helper.parse_components(markdown)
 
-      expect(result.pluck(:name)).to eq(%w[pg rails turbo])
-      expect(result.find { |c| c[:name] == 'rails' }).to include(category: 'gem', license: 'MIT')
-      expect(result.find { |c| c[:name] == 'turbo' }).to include(category: 'js', license: 'MIT')
+      expect(result.pluck(:key)).to eq(%i[gems js base_image])
+      expect(result.first[:components].pluck(:name)).to eq(%w[pg rails])
+    end
+
+    it 'carries the category of linkable groups' do
+      gems = helper.parse_components(markdown).find { |group| group[:key] == :gems }
+
+      expect(gems[:category]).to eq('gem')
+      expect(gems[:components].first).to include(name: 'pg', license: 'PostgreSQL')
+    end
+
+    it 'leaves the base image group without a category, so its rows do not link' do
+      base = helper.parse_components(markdown).find { |group| group[:key] == :base_image }
+
+      expect(base[:category]).to be_nil
+      expect(base[:components].pluck(:name)).to eq(['musl'])
+    end
+
+    it 'ignores sections outside the catalog' do
+      result = helper.parse_components("## Something Else\n\n| Package | License |\n| --- | --- |\n| `x` | MIT |\n")
+
+      expect(result).to eq([])
     end
 
     it 'returns an empty array for blank input' do
@@ -94,7 +119,7 @@ RSpec.describe AboutHelper do
     it 'ignores the table header row' do
       result = helper.parse_components("## Ruby Gems\n\n| Package | License |\n| --- | --- |\n| `rails` | MIT |\n")
 
-      expect(result.pluck(:name)).to eq(['rails'])
+      expect(result.first[:components].pluck(:name)).to eq(['rails'])
     end
   end
 end

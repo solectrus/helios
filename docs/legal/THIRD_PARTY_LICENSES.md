@@ -4,12 +4,66 @@ HELIOS is distributed under the terms in [LICENSE.md](../../LICENSE.md).
 It bundles or depends on third-party components that remain subject to
 their own licenses. This file is the summary; full per-package notice
 texts for JS runtime dependencies live in
-[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Ruby gem notices ship
-inside each gem directory in the Docker image
-(`/usr/local/bundle/gems/<name>-<version>/{MIT-LICENSE,LICENSE,LICENSE.txt}`)
-and are not duplicated here.
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Most Ruby gems ship
+their notice inside their gem directory in the Docker image
+(`/usr/local/bundle/gems/<name>-<version>/{MIT-LICENSE,LICENSE,LICENSE.txt}`),
+and these are not duplicated here. A gem that ships no such file names its
+upstream source in the About screen of HELIOS.
 
 Regenerate with `bin/rake licenses:generate`.
+
+## Base Image
+
+The official HELIOS Docker image runs on Alpine Linux 3.24.1 and
+contains the Ruby interpreter and the Docker CLI. The table below lists the
+packages in that image, read from its Alpine package database. Alpine ships
+no license text inside the image. The license text and the source code of
+each package are available from the Alpine package index at
+<https://pkgs.alpinelinux.org/>. For the packages under a GPL or LGPL
+license, the copyright holder also supplies the corresponding source code
+on request at info@solectrus.de.
+
+| Package                  | License                                   |
+| ------------------------ | ----------------------------------------- |
+| `alpine-baselayout`      | GPL-2.0-only                              |
+| `alpine-baselayout-data` | GPL-2.0-only                              |
+| `alpine-keys`            | MIT                                       |
+| `alpine-release`         | MIT                                       |
+| `apk-tools`              | GPL-2.0-only                              |
+| `brotli-libs`            | MIT                                       |
+| `busybox`                | GPL-2.0-only                              |
+| `busybox-binsh`          | GPL-2.0-only                              |
+| `ca-certificates`        | MPL-2.0 AND MIT                           |
+| `ca-certificates-bundle` | MPL-2.0 AND MIT                           |
+| `docker-cli`             | Apache-2.0                                |
+| `docker-cli-compose`     | Apache-2.0                                |
+| `gcompat`                | NCSA                                      |
+| `gmp`                    | LGPL-3.0-or-later OR GPL-2.0-or-later     |
+| `jemalloc`               | BSD-2-Clause                              |
+| `libapk`                 | GPL-2.0-only                              |
+| `libcrypto3`             | Apache-2.0                                |
+| `libffi`                 | MIT                                       |
+| `libgcc`                 | GPL-2.0-or-later AND LGPL-2.1-or-later    |
+| `libncursesw`            | X11                                       |
+| `libpq`                  | PostgreSQL                                |
+| `libssl3`                | Apache-2.0                                |
+| `libstdc++`              | GPL-2.0-or-later AND LGPL-2.1-or-later    |
+| `libucontext`            | ISC                                       |
+| `lz4-libs`               | BSD-2-Clause AND GPL-2.0-or-later         |
+| `musl`                   | MIT                                       |
+| `musl-obstack`           | GPL-2.0-or-later                          |
+| `musl-utils`             | MIT AND BSD-2-Clause AND GPL-2.0-or-later |
+| `ncurses-terminfo-base`  | X11                                       |
+| `postgresql-common`      | MIT                                       |
+| `postgresql18-client`    | PostgreSQL                                |
+| `readline`               | GPL-3.0-or-later                          |
+| `ruby`                   | Ruby, BSD-2-Clause                        |
+| `scanelf`                | GPL-2.0-only                              |
+| `ssl_client`             | GPL-2.0-only                              |
+| `tzdata`                 | Public-Domain                             |
+| `yaml`                   | MIT                                       |
+| `zlib`                   | Zlib                                      |
+| `zstd-libs`              | BSD-3-Clause OR GPL-2.0-or-later          |
 
 ## Ruby Gems
 

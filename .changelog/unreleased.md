@@ -23,6 +23,7 @@ Keep every section, an empty one included.
 - Sensors: the list now arrives with the page itself, so the configuration opens without an empty moment
 - Configuration menu: the marker moves to the selected entry the moment it is clicked
 - Services: the rows arrive with the page, so the list no longer fills in row by row
+- About: the bundled components are listed in groups, and the list now also names the operating system packages HELIOS runs on
 
 ## Fixes
 

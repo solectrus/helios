@@ -36,7 +36,11 @@ de:
       show_full_license: 'Vollständige Lizenz anzeigen'
       full_license_title: 'Lizenzbedingungen für HELIOS'
       components_heading: 'Verwendete Bibliotheken'
-      components_intro: 'HELIOS bündelt die folgenden Komponenten zur Laufzeit, jeweils unter eigener Lizenz. Klick auf eine Zeile zeigt den vollständigen LICENSE-Text.'
+      components_intro: 'HELIOS bündelt die folgenden Komponenten zur Laufzeit, jeweils unter eigener Lizenz. Zeilen mit hinterlegtem Lizenztext lassen sich anklicken.'
+      component_groups:
+        base_image: 'Systempakete'
+        gems: 'Ruby-Gems'
+        js: 'JavaScript-Pakete'
 
   services:
     index:
