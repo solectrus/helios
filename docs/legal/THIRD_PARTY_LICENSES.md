@@ -89,6 +89,7 @@ Regenerate with `bin/rake licenses:generate`.
 | `rbs`                  | BSD-2-Clause, Ruby |
 | `rdoc`                 | Ruby, GPL-2.0-only |
 | `reline`               | Ruby               |
+| `rexml`                | BSD-2-Clause       |
 | `rubyzip`              | BSD-2-Clause       |
 | `securerandom`         | Ruby, BSD-2-Clause |
 | `solid_cable`          | MIT                |
