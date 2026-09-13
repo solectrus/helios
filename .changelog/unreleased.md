@@ -12,10 +12,9 @@ Keep every section, an empty one included.
 
 ## New features
 
-- Ingest: an external source can now deliver its values to Ingest, so a balcony power plant behind a smart home is covered as well. The address the source has to write to is shown in the Ingest settings and next to every affected sensor, and a switch there decides whether Ingest runs at all. An existing configuration that has such a source keeps the correction switched off, so the values reach the database as before until the source is redirected
-
 ## Improvements
 
+- Ingest: the service is now set up as well when a value comes from an external source, so the house power is corrected for a balcony power plant behind a smart home. The address the source has to write to is shown in the Ingest settings and next to every affected sensor, and a switch there decides whether Ingest runs at all. An existing configuration that has such a source keeps the correction switched off, so the values reach the database as before until the source is redirected
 - Address: the address of the machine is taken from the browser as long as the field is empty, so external sources can be named an address that works
 - MQTT sensors: the data type follows from the sensor, so the survey no longer asks for it. A wrong answer used to stop the collector (solectrus/solectrus#5828)
 - Total generation: the source page of inverter_power states when the single producers are added up and when the sensor replaces them (solectrus/solectrus#5828)
