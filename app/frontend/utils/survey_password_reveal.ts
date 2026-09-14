@@ -8,6 +8,22 @@ const LABELS = {
 
 const ICONS = { show: 'fa-eye', hide: 'fa-eye-slash' };
 
+// A survey asks for the credentials of a foreign service, never for the ones
+// of HELIOS itself, so every offer a password manager makes here is wrong,
+// and its inline icon covers the eye button.
+//
+// HTML has no token for this. `autocomplete` names what a field holds
+// (`current-password`, `new-password`), but the only way to decline is
+// `autocomplete="off"`, and the specification lets a password manager ignore
+// it. So each vendor reads an opt-out attribute of its own, and we set all of
+// them next to the standard one.
+const PASSWORD_MANAGER_OPT_OUT = {
+  'data-bwignore': 'true', // Bitwarden
+  'data-1p-ignore': 'true', // 1Password
+  'data-lpignore': 'true', // LastPass
+  'data-form-type': 'other', // Dashlane
+};
+
 // Every secret a survey asks for renders masked (see Surveys::Base), which
 // hides typos as well: a token is long, arrives through a clipboard that may
 // have clipped it, and a password has to be typed into a device afterwards.
@@ -30,6 +46,9 @@ export function wirePasswordReveal(htmlElement: HTMLElement) {
   if (!field) return;
 
   input.dataset.revealWired = 'true';
+  input.autocomplete = 'off';
+  for (const [name, value] of Object.entries(PASSWORD_MANAGER_OPT_OUT))
+    input.setAttribute(name, value);
   input.classList.add('password-reveal__input');
   field.classList.add('password-reveal__field');
 

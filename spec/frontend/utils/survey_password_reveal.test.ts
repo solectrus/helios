@@ -93,6 +93,18 @@ describe('wirePasswordReveal', () => {
     expect(question.querySelectorAll('.password-reveal')).toHaveLength(1);
   });
 
+  it('keeps password managers off a field asking for a foreign secret', () => {
+    const question = renderQuestion();
+
+    wirePasswordReveal(question);
+
+    expect(input(question).autocomplete).toBe('off');
+    expect(input(question).getAttribute('data-bwignore')).toBe('true');
+    expect(input(question).getAttribute('data-1p-ignore')).toBe('true');
+    expect(input(question).getAttribute('data-lpignore')).toBe('true');
+    expect(input(question).getAttribute('data-form-type')).toBe('other');
+  });
+
   it('leaves a field that holds no secret alone', () => {
     const question = renderQuestion('text');
 
