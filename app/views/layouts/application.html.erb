@@ -50,8 +50,14 @@
 
     <dialog id="turbo-confirm-dialog" class="modal modal-middle">
       <form method="dialog" class="modal-box max-w-md text-center">
-        <div class="mb-3 hidden" data-confirm-icon>
-          <i class="fa-solid fa-triangle-exclamation text-error text-5xl"></i>
+        <%#
+          Every confirm asks about something that cannot be taken back, so the
+          sign stands on all of them. Its colour says how far it goes: red
+          where data is lost, yellow where a decision is reversed.
+        %>
+
+        <div class="mb-3" data-confirm-icon>
+          <i class="fa-solid fa-triangle-exclamation text-warning text-5xl" data-confirm-icon-glyph></i>
         </div>
 
         <p class="mb-2 hidden text-lg font-bold" data-confirm-title></p>

@@ -112,8 +112,9 @@ Turbo.config.forms.confirm = (
       buttonText || acceptButton.dataset.confirmDefault;
   }
 
-  const icon = dialog.querySelector('[data-confirm-icon]');
-  icon?.classList.toggle('hidden', variant !== 'error');
+  const icon = dialog.querySelector('[data-confirm-icon-glyph]');
+  icon?.classList.toggle('text-error', variant === 'error');
+  icon?.classList.toggle('text-warning', variant !== 'error');
 
   return new Promise<boolean>((resolve) => {
     dialog.addEventListener(
