@@ -6,7 +6,7 @@
   },
   "description": {
     "de": "Wo soll HELIOS die Sicherungen ablegen?",
-    "default": "Where should HELIOS store your backups?"
+    "default": "Where should HELIOS store the backups?"
   },
   "pages": [
     {

@@ -43,8 +43,8 @@
             "default": "Port"
           },
           "description": {
-            "de": "Unter welchem Port soll InfluxDB erreichbar sein? Ändere das beispielsweise, wenn Port 8086 auf deinem Host bereits belegt ist.",
-            "default": "Which port should InfluxDB be reachable on? Change this for example when port 8086 is already in use on your host."
+            "de": "Unter welchem Port soll InfluxDB erreichbar sein? Ein anderer Port ist zum Beispiel nötig, wenn 8086 auf dem Host bereits belegt ist.",
+            "default": "Which port should InfluxDB be reachable on? Another port is needed for example when 8086 is already in use on the host."
           },
           "visibleIf": "{publish_port} = true",
           "defaultValue": "8086",
@@ -61,8 +61,8 @@
         "default": "Connection"
       },
       "description": {
-        "de": "Gib an, unter welcher Adresse SOLECTRUS deine externe InfluxDB im Netzwerk erreicht.",
-        "default": "Specify the address where SOLECTRUS reaches your external InfluxDB on the network."
+        "de": "Unter dieser Adresse erreicht SOLECTRUS die externe InfluxDB im Netzwerk.",
+        "default": "SOLECTRUS reaches the external InfluxDB at this address on the network."
       },
       "visibleIfMode": "collectors_only",
       "elements": [

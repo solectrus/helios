@@ -5,8 +5,8 @@
     "default": "Network"
   },
   "description": {
-    "de": "Host-Port und Einbettung in andere Webseiten. Lass die Felder leer, wenn du nichts davon brauchst.",
-    "default": "Host port and embedding into other websites. Leave empty if you don't need any of these."
+    "de": "Host-Port und Einbettung in andere Webseiten. Felder leer lassen, wenn nichts davon nötig ist.",
+    "default": "Host port and embedding into other websites. Leave empty if neither is needed."
   },
   "pages": [
     {

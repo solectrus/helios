@@ -16,8 +16,8 @@
           "type": "comment",
           "name": "info",
           "title": {
-            "de": "Die Sensor-Zuordnung wird automatisch aus der Gerätekonfiguration abgeleitet. Hier kannst du einzelne Zuordnungen überschreiben.",
-            "default": "Sensor mapping is automatically derived from device configuration. You can override individual mappings here."
+            "de": "Die Sensor-Zuordnung wird automatisch aus der Gerätekonfiguration abgeleitet. Einzelne Zuordnungen lassen sich hier überschreiben.",
+            "default": "Sensor mapping is automatically derived from device configuration. Individual mappings can be overridden here."
           },
           "readOnly": true
         }

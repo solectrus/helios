@@ -5,8 +5,8 @@
     "default": "Yield forecast"
   },
   "description": {
-    "de": "Prognose deines PV-Ertrags",
-    "default": "Forecast of your PV yield"
+    "de": "Prognose des PV-Ertrags",
+    "default": "Forecast of the PV yield"
   },
   "calculatedValues": [
     {
@@ -22,16 +22,16 @@
         "default": "Forecast provider"
       },
       "description": {
-        "de": "Wähle den Dienst, der die Ertragsprognose für deine Anlage berechnet.",
-        "default": "Choose the service that calculates the yield forecast for your system."
+        "de": "Der gewählte Dienst berechnet die Ertragsprognose für die Anlage.",
+        "default": "The chosen service calculates the yield forecast for the system."
       },
       "elements": [
         {
           "type": "radiogroup",
           "name": "forecast",
           "title": {
-            "de": "Welchen Prognosedienst möchtest du nutzen?",
-            "default": "Which forecast service do you want to use?"
+            "de": "Welcher Prognosedienst soll genutzt werden?",
+            "default": "Which forecast service should be used?"
           },
           "description": {
             "de": "Alle Anbieter bieten sowohl kostenfreie als auch kostenpflichtige Tarife an.",
@@ -81,8 +81,8 @@
           "type": "html",
           "name": "pvnode_apikey_link",
           "html": {
-            "de": "<p>Den API-Key bekommst du unter <a href=\"https://pvnode.com/settings/api-keys\" target=\"_blank\" rel=\"noopener\">pvnode.com/settings/api-keys</a>.</p>",
-            "default": "<p>You can get the API key at <a href=\"https://pvnode.com/settings/api-keys\" target=\"_blank\" rel=\"noopener\">pvnode.com/settings/api-keys</a>.</p>"
+            "de": "<p>Den API-Key gibt es unter <a href=\"https://pvnode.com/settings/api-keys\" target=\"_blank\" rel=\"noopener\">pvnode.com/settings/api-keys</a>.</p>",
+            "default": "<p>The API key is available at <a href=\"https://pvnode.com/settings/api-keys\" target=\"_blank\" rel=\"noopener\">pvnode.com/settings/api-keys</a>.</p>"
           }
         },
         {
@@ -147,8 +147,8 @@
         "default": "Location"
       },
       "description": {
-        "de": "Die geografischen Koordinaten deiner PV-Anlage bestimmen Sonnenstand und Einstrahlung.",
-        "default": "The geographic coordinates of your PV system determine sun position and irradiation."
+        "de": "Die geografischen Koordinaten der PV-Anlage bestimmen Sonnenstand und Einstrahlung.",
+        "default": "The geographic coordinates of the PV system determine sun position and irradiation."
       },
       "elements": [
         {
@@ -214,7 +214,7 @@
       },
       "description": {
         "de": "Bei mehreren unterschiedlich ausgerichteten Dachflächen wird jede einzeln erfasst.",
-        "default": "When you have multiple roof surfaces with different orientations, each is configured separately."
+        "default": "With multiple roof surfaces of different orientations, each is configured separately."
       },
       "elements": [
         {
@@ -603,7 +603,7 @@
           "type": "html",
           "name": "pvnode_extra_params_docs",
           "html": {
-            "de": "<p>Eine Liste der verfügbaren Parameter findest du in der <a href=\"https://www.pvnode.com/docs/de/endpoints/forecast\" target=\"_blank\" rel=\"noopener\">pvnode-API-Dokumentation</a>.</p>",
+            "de": "<p>Eine Liste der verfügbaren Parameter steht in der <a href=\"https://www.pvnode.com/docs/de/endpoints/forecast\" target=\"_blank\" rel=\"noopener\">pvnode-API-Dokumentation</a>.</p>",
             "default": "<p>For a list of available parameters, see the <a href=\"https://www.pvnode.com/docs/de/endpoints/forecast\" target=\"_blank\" rel=\"noopener\">pvnode API documentation</a>.</p>"
           }
         },
@@ -815,7 +815,7 @@
           },
           "description": {
             "de": "Der Tarif muss zum aktiv abonnierten pvnode-Konto passen. Eine falsche Angabe kann Fehler oder vorzeitiges Aufbrauchen des monatlichen Kontingents verursachen.",
-            "default": "The plan must match your active pvnode subscription. A mismatch can cause errors or exhaust the monthly quota prematurely."
+            "default": "The plan must match the active pvnode subscription. A mismatch can cause errors or exhaust the monthly quota prematurely."
           },
           "isRequired": true,
           "defaultValue": "false",

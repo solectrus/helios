@@ -115,8 +115,8 @@ de:
       restore_failed: 'Wiederherstellen der Datenbank fehlgeschlagen: %{detail}'
       verify_failed: 'Überprüfung fehlgeschlagen: Die wiederhergestellte Datenbank hat %{actual} Tabellen, erwartet wurden %{expected}.'
       auth_failed: 'Überprüfung fehlgeschlagen: Die aktualisierte Datenbank akzeptiert das konfigurierte Passwort nicht (%{detail}).'
-      rolled_back: 'Das Upgrade ist fehlgeschlagen (%{detail}). PostgreSQL wurde automatisch auf die vorherige Version %{major} zurückgesetzt – deine Daten sind unverändert erhalten.'
-      rollback_failed: 'Das Upgrade ist fehlgeschlagen (%{detail}) und die automatische Wiederherstellung war ebenfalls nicht erfolgreich (%{error}). Deine Daten sind in der Sicherung unter „%{path}“ erhalten und können von dort wiederhergestellt werden.'
+      rolled_back: 'Das Upgrade ist fehlgeschlagen (%{detail}). PostgreSQL wurde automatisch auf die vorherige Version %{major} zurückgesetzt – die Daten sind unverändert erhalten.'
+      rollback_failed: 'Das Upgrade ist fehlgeschlagen (%{detail}) und die automatische Wiederherstellung war ebenfalls nicht erfolgreich (%{error}). Die Daten sind in der Sicherung unter „%{path}“ erhalten und können von dort wiederhergestellt werden.'
       reconcile_failed: 'PostgreSQL wurde aktualisiert und die Daten sind intakt, aber der Neustart der übrigen Dienste ist fehlgeschlagen (%{detail}). Bitte alle Dienste stoppen und anschließend wieder starten, um die Änderung vollständig anzuwenden.'
       recovery_pending: 'Ein unterbrochenes PostgreSQL-Upgrade wird gerade abgeschlossen.'
       recovery_aborted: 'Das PostgreSQL-Upgrade wurde unterbrochen, bevor Daten verändert wurden. Es hat nicht stattgefunden, die Datenbank ist unverändert.'
@@ -129,7 +129,7 @@ de:
       empty:
         status: 'Wartet auf Sensoren'
         title: 'Noch keine Datenquellen in Verwendung'
-        body: 'Sobald du Sensoren aktivierst, erscheinen hier ihre Datenquellen zur Konfiguration.'
+        body: 'Sobald Sensoren aktiv sind, erscheinen hier ihre Datenquellen zur Konfiguration.'
         cta: 'Sensoren öffnen'
       csv_import:
         title: 'Historische Daten importieren'
@@ -230,7 +230,7 @@ de:
         description: 'Enthält Konfiguration, System-Infos und Protokolle der Dienste. Passwörter, Tokens, Koordinaten, Bucket-/Org-Namen, öffentliche Hostnamen und der System-Hostname werden automatisch anonymisiert.'
       step_post:
         title: 'Beitrag erstellen'
-        description: 'Hänge das ZIP-Archiv deinem Beitrag an. Wähle den passenden Kanal:'
+        description: 'Das ZIP-Archiv an den Beitrag anhängen. Dazu der passende Kanal:'
         discussion:
           label: 'Frage / Hilfe'
         issue:
@@ -272,7 +272,7 @@ de:
         restore_in_progress: 'Eine Wiederherstellung läuft gerade.'
         csv_import_in_progress: 'Ein CSV-Import läuft gerade.'
       unavailable_title: 'Sicherung noch nicht möglich'
-      unavailable_description: 'Eine Sicherung umfasst die Datenbanken von InfluxDB und PostgreSQL. Sobald beide Dienste eingerichtet sind und laufen, kannst du hier eine Sicherung erstellen.'
+      unavailable_description: 'Eine Sicherung umfasst die Datenbanken von InfluxDB und PostgreSQL. Sobald beide Dienste eingerichtet sind und laufen, lässt sich hier eine Sicherung erstellen.'
       existing_titles:
         local: 'Lokal vorhandene Sicherungen'
         external: 'Auf externem Mount vorhandene Sicherungen'
@@ -283,7 +283,7 @@ de:
       upload_unavailable_remote: 'Nur bei Sicherungsziel „Lokal“ möglich. Stelle es dafür vorübergehend um.'
       download_existing: 'Herunterladen'
       restore_existing: 'Wiederherstellen'
-      restore_confirm: 'Deine aktuellen Daten sowie die Konfiguration werden überschrieben und gehen somit verloren.<br><br>Danach ist SOLECTRUS wieder auf dem Stand vom <strong>%{date}, %{time}</strong>.'
+      restore_confirm: 'Die aktuellen Daten sowie die Konfiguration werden überschrieben und gehen somit verloren.<br><br>Danach ist SOLECTRUS wieder auf dem Stand vom <strong>%{date}, %{time}</strong>.'
       restore_confirm_button: 'Diese Sicherung wiederherstellen'
       restore_in_progress: 'Wird wiederhergestellt…'
       restore_phases:
@@ -367,24 +367,24 @@ de:
     connection_test:
       reachable: 'InfluxDB erreichbar'
       not_influxdb: 'Keine InfluxDB unter dieser Adresse'
-      unreachable: 'InfluxDB nicht erreichbar – prüfe Protokoll, Host und Port'
+      unreachable: 'InfluxDB nicht erreichbar – Protokoll, Host und Port prüfen'
       credentials_valid: 'Zugangsdaten gültig'
       unauthorized: 'Token ungültig oder ohne Schreibrecht für diesen Bucket'
       not_found: 'Organisation oder Bucket nicht gefunden'
       senec_reachable: 'SENEC-Speicher erreichbar'
       senec_not_senec: 'Kein SENEC-Speicher unter dieser Adresse'
-      senec_unreachable: 'SENEC-Speicher nicht erreichbar – prüfe Protokoll und Hostname'
+      senec_unreachable: 'SENEC-Speicher nicht erreichbar – Protokoll und Hostname prüfen'
       shelly_reachable: 'Shelly-Gerät erreichbar'
       shelly_not_shelly: 'Kein Shelly-Gerät unter dieser Adresse'
-      shelly_unreachable: 'Shelly-Gerät nicht erreichbar – prüfe Hostname oder IP-Adresse'
+      shelly_unreachable: 'Shelly-Gerät nicht erreichbar – Hostname oder IP-Adresse prüfen'
       shelly_password_required: 'Dieses Gerät erfordert ein Passwort'
       shelly_unauthorized: 'Passwort ungültig'
       shelly_cloud_reachable: 'Shelly-Cloud erreichbar, Authentifizierungsschlüssel gültig'
       shelly_cloud_unauthorized: 'Authentifizierungsschlüssel ungültig'
-      shelly_cloud_unreachable: 'Shelly-Cloud nicht erreichbar – prüfe die Server-URL'
+      shelly_cloud_unreachable: 'Shelly-Cloud nicht erreichbar – Server-URL prüfen'
       mqtt_reachable: 'MQTT-Broker erreichbar'
       mqtt_not_broker: 'Kein MQTT-Broker unter dieser Adresse'
-      mqtt_unreachable: 'MQTT-Broker nicht erreichbar – prüfe Host und Port'
+      mqtt_unreachable: 'MQTT-Broker nicht erreichbar – Host und Port prüfen'
       mqtt_credentials_valid: 'Zugangsdaten gültig'
       mqtt_unauthorized: 'Benutzername oder Passwort ungültig'
       backup_path_writable: 'Pfad ist erreichbar und beschreibbar'
@@ -395,10 +395,10 @@ de:
       backup_path_invalid_chars: 'Pfad enthält ungültige Zeichen'
       backup_path_error: 'Pfad konnte nicht geprüft werden'
       s3_reachable: 'Bucket erreichbar, Zugangsdaten gültig'
-      s3_bucket_missing: 'Bucket nicht gefunden – prüfe Namen und Region'
+      s3_bucket_missing: 'Bucket nicht gefunden – Namen und Region prüfen'
       s3_invalid_credentials: 'Access Key oder Secret ungültig'
       s3_access_denied: 'Zugriff verweigert – Berechtigungen prüfen'
-      s3_endpoint_unreachable: 'Endpoint nicht erreichbar – prüfe URL und Region'
+      s3_endpoint_unreachable: 'Endpoint nicht erreichbar – URL und Region prüfen'
       s3_error: 'Verbindung zum S3-Speicher fehlgeschlagen'
       loopback_host: 'Die Adresse %{host} kann nicht verwendet werden'
       incomplete: 'Bitte zuerst alle Felder ausfüllen'
@@ -406,7 +406,7 @@ de:
     settings:
       senec:
         title: 'SENEC-Collector'
-        description: 'Liest Messwerte von deinem SENEC-Speicher. Unterstützt SENEC.Home V2.1, V3 und Home 4.'
+        description: 'Liest Messwerte vom SENEC-Speicher. Unterstützt SENEC.Home V2.1, V3 und Home 4.'
       mqtt:
         title: 'MQTT-Collector'
         description: 'Liest Messwerte von Topics eines MQTT-Brokers.'
@@ -590,7 +590,7 @@ de:
       title: 'Willkommen'
       subtitle: 'Konfiguration von SOLECTRUS'
       heading: 'Willkommen bei HELIOS'
-      step_import_html: 'Deine bestehenden Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> werden importiert und interpretiert'
+      step_import_html: 'Die bestehenden Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> werden importiert und interpretiert'
       step_backup_html: 'Beide Dateien werden als Sicherheitskopie gespeichert (<code class="rounded bg-base-300 px-1 font-mono">.bak</code>)'
       step_manage: 'Anschließend erfolgt die gesamte Konfiguration von SOLECTRUS sowie der Betrieb aller Dienste webbasiert über HELIOS – die Kommandozeile wird nicht mehr benötigt'
       hint_exclusive_html: 'Da HELIOS die Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> zukünftig selbst schreibt und ändert, ist eine parallele Nutzung von Portainer, Dockge, Arcane oder ähnlichen Tools nicht mehr vorgesehen.'
@@ -599,12 +599,12 @@ de:
       unsupported_heading: 'HELIOS kann diese Konfiguration leider nicht verwalten'
       unsupported_reason: 'Folgende Dienste sind unbekannt:'
       unsupported_no_image: 'kein Image'
-      unsupported_hint_html: 'HELIOS verwaltet die Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> vollständig und kann dabei nur bekannte Dienste übernehmen. Du könntest versuchen, die oben genannten Dienste in eine separate Compose-Datei zu verlagern und den Import anschließend erneut zu starten.'
+      unsupported_hint_html: 'HELIOS verwaltet die Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> vollständig und kann dabei nur bekannte Dienste übernehmen. Ein Ausweg ist, die oben genannten Dienste in eine separate Compose-Datei zu verlagern und den Import anschließend erneut zu starten.'
       external_ingest_heading: 'Nach dem Import bleibt ein Schritt offen'
       external_ingest_reason: 'Diese Konfiguration enthält ein Steckersolargerät, deshalb richtet HELIOS Ingest zur Neuberechnung des Hausverbrauchs ein. Folgende Werte kommen aus einer externen Quelle und müssen künftig bei Ingest ankommen statt in der InfluxDB:'
       external_ingest_hint: 'Ingest nimmt dieselben Schreibanfragen entgegen wie die InfluxDB, es ändert sich also nur die Adresse. Sie steht nach dem Import bei jedem betroffenen Wert in den Sensor-Einstellungen. Solange einer dieser Werte weiterhin in die InfluxDB geht, wird gar kein Hausverbrauch geschrieben.'
       invalid_reason_html: 'Die Datei <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> ist fehlerhaft:'
-      invalid_hint: 'Behebe den oben genannten Fehler und starte den Import anschließend erneut.'
+      invalid_hint: 'Den oben genannten Fehler beheben und den Import anschließend erneut starten.'
 
   sessions:
     new:
@@ -612,7 +612,7 @@ de:
       subtitle: 'Konfiguration von SOLECTRUS'
       password_label: 'Passwort'
       password_placeholder: 'Passwort eingeben'
-      password_hint_html: 'Das Passwort findest Du auf dem Host in der Datei <code class="rounded bg-base-300 px-1 font-mono">.env</code> unter <code class="rounded bg-base-300 px-1 font-mono">ADMIN_PASSWORD</code>.'
+      password_hint_html: 'Das Passwort steht auf dem Host in der Datei <code class="rounded bg-base-300 px-1 font-mono">.env</code> unter <code class="rounded bg-base-300 px-1 font-mono">ADMIN_PASSWORD</code>.'
       login: 'Anmelden'
 
   flash:

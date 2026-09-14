@@ -50,7 +50,7 @@ de:
   postgresql_upgrade: 'Auf Version %{major} aktualisieren'
   postgresql_upgrade_confirm:
     title: 'PostgreSQL auf Version %{major} aktualisieren?'
-    body: 'Anders als bei einem gewöhnlichen Update wird dabei die gesamte Datenbank in das Format der neuen Version konvertiert.<br><br>Erstelle vorher eine Datensicherung!'
+    body: 'Anders als bei einem gewöhnlichen Update wird dabei die gesamte Datenbank in das Format der neuen Version konvertiert.<br><br>Vorher eine Datensicherung erstellen!'
     button: 'Ja, PostgreSQL aktualisieren'
   remove: 'Entfernen'
   remove_confirm:

@@ -34,7 +34,7 @@
             "default": "Access code for the web interface (optional)"
           },
           "description": {
-            "de": "Sperrt die gesamte Weboberfläche mit einem Codewort. Lass das Feld leer, wenn kein zusätzlicher Schutz nötig ist.",
+            "de": "Sperrt die gesamte Weboberfläche mit einem Codewort. Leer lassen, wenn kein zusätzlicher Schutz nötig ist.",
             "default": "Locks the entire web interface with a codeword. Leave empty if no additional protection is needed."
           },
           "inputType": "password"

@@ -38,7 +38,7 @@
       },
       "description": {
         "de": "Adresse des Shelly-Geräts im Heimnetz für den direkten lokalen Zugriff.",
-        "default": "Address of the Shelly device on your home network for direct local access."
+        "default": "Address of the Shelly device on the home network for direct local access."
       },
       "elements": [
         {

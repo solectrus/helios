@@ -16,8 +16,8 @@
         "default": "Shelly settings"
       },
       "description": {
-        "de": "Standardvorgaben für die Abfrage deiner Shelly-Geräte.",
-        "default": "Default settings for querying your Shelly devices."
+        "de": "Standardvorgaben für die Abfrage der Shelly-Geräte.",
+        "default": "Default settings for querying the Shelly devices."
       },
       "elements": [
         {
@@ -68,8 +68,8 @@
         "default": "Cloud access"
       },
       "description": {
-        "de": "Zugangsdaten der Shelly Cloud — nötig, wenn Geräte nicht lokal im Heimnetz erreichbar sind.",
-        "default": "Shelly Cloud credentials — required when devices are not reachable locally on your network."
+        "de": "Zugangsdaten der Shelly Cloud. Nötig für Geräte, die nicht lokal im Heimnetz erreichbar sind.",
+        "default": "Shelly Cloud credentials. Required for devices that are not reachable locally on the home network."
       },
       "elements": [
         {

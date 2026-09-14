@@ -13,8 +13,8 @@
         "default": "Label"
       },
       "description": {
-        "de": "Wähle eine Bezeichnung, an der du das Gerät in HELIOS wiedererkennst — etwa nach Verbraucher oder Einbauort.",
-        "default": "Pick a label you'll recognize the device by in HELIOS — for example by appliance or location."
+        "de": "Unter dieser Bezeichnung erscheint das Gerät in HELIOS. Gut geeignet ist der Verbraucher oder der Einbauort.",
+        "default": "The device appears under this label in HELIOS. The appliance or the installation location works well."
       },
       "elements": [
         {
@@ -55,7 +55,7 @@
           },
           "description": {
             "de": "Lokale Adresse des Shelly-Geräts im Heimnetz",
-            "default": "Local address of the Shelly device on your network"
+            "default": "Local address of the Shelly device on the home network"
           },
           "isRequired": true,
           "placeholder": {

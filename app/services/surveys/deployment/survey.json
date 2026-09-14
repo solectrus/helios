@@ -20,8 +20,8 @@
             "default": "Which services should HELIOS run on this host?"
           },
           "description": {
-            "de": "Im Regelfall läuft alles auf einem Host — wähle dann die erste Option. Die beiden anderen Optionen sind Spezialfälle für verteilte Installationen über mehrere Hosts.",
-            "default": "In most cases everything runs on a single host — pick the first option. The other two options are special cases for distributed setups across multiple hosts."
+            "de": "Im Regelfall läuft alles auf einem Host. Dann passt die erste Option. Die beiden anderen Optionen sind Spezialfälle für verteilte Installationen über mehrere Hosts.",
+            "default": "In most cases everything runs on a single host. Then the first option fits. The other two options are special cases for distributed setups across multiple hosts."
           },
           "isRequired": true,
           "defaultValue": "full",

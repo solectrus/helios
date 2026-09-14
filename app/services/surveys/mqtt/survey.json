@@ -16,8 +16,8 @@
         "default": "Connection to the MQTT broker"
       },
       "description": {
-        "de": "So erreicht SOLECTRUS deinen MQTT-Broker.",
-        "default": "How SOLECTRUS reaches your MQTT broker."
+        "de": "So erreicht SOLECTRUS den MQTT-Broker.",
+        "default": "How SOLECTRUS reaches the MQTT broker."
       },
       "elements": [
         {

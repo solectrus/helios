@@ -5,8 +5,8 @@
     "default": "SENEC-Collector"
   },
   "description": {
-    "de": "Liest Messwerte von deinem SENEC-Speicher. Unterstützt SENEC.Home V2.1, V3 und Home 4.",
-    "default": "Reads measurements from your SENEC battery. Supports SENEC.Home V2.1, V3 and Home 4."
+    "de": "Liest Messwerte vom SENEC-Speicher. Unterstützt SENEC.Home V2.1, V3 und Home 4.",
+    "default": "Reads measurements from the SENEC battery. Supports SENEC.Home V2.1, V3 and Home 4."
   },
   "pages": [
     {
@@ -24,8 +24,8 @@
           "type": "radiogroup",
           "name": "version",
           "title": {
-            "de": "Welches SENEC-System hast du?",
-            "default": "Which SENEC system do you have?"
+            "de": "Welches SENEC-System ist vorhanden?",
+            "default": "Which SENEC system is in place?"
           },
           "isRequired": true,
           "choices": [
@@ -97,8 +97,8 @@
         "default": "Local access"
       },
       "description": {
-        "de": "So erreicht der Collector dein SENEC-Gerät im Heimnetz.",
-        "default": "How the collector reaches your SENEC device on the home network."
+        "de": "So erreicht der Collector das SENEC-Gerät im Heimnetz.",
+        "default": "How the collector reaches the SENEC device on the home network."
       },
       "elements": [
         {
@@ -176,8 +176,8 @@
         "default": "Cloud access"
       },
       "description": {
-        "de": "Zugangsdaten deines mein-senec.de-Kontos, über das der Collector die Messwerte abruft.",
-        "default": "Credentials for your mein-senec.de account the collector uses to fetch measurements."
+        "de": "Zugangsdaten des mein-senec.de-Kontos, über das der Collector die Messwerte abruft.",
+        "default": "Credentials for the mein-senec.de account the collector uses to fetch measurements."
       },
       "elements": [
         {

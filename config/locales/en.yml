@@ -139,8 +139,8 @@ en:
       restore_failed: 'Restoring the database failed: %{detail}'
       verify_failed: 'Verification failed: the restored database has %{actual} tables, expected %{expected}.'
       auth_failed: 'Verification failed: the upgraded database does not accept the configured password (%{detail}).'
-      rolled_back: 'The upgrade failed (%{detail}). PostgreSQL was automatically rolled back to the previous version %{major}; your data is intact.'
-      rollback_failed: 'The upgrade failed (%{detail}) and the automatic rollback did not succeed either (%{error}). Your data is preserved in the backup at "%{path}" and can be restored from there.'
+      rolled_back: 'The upgrade failed (%{detail}). PostgreSQL was automatically rolled back to the previous version %{major}; the data is intact.'
+      rollback_failed: 'The upgrade failed (%{detail}) and the automatic rollback did not succeed either (%{error}). The data is preserved in the backup at "%{path}" and can be restored from there.'
       reconcile_failed: 'PostgreSQL was upgraded and its data is intact, but restarting the remaining services failed (%{detail}). Please stop all services and start them again to finish applying the change.'
       recovery_pending: 'An interrupted PostgreSQL upgrade is being completed right now.'
       recovery_aborted: 'The PostgreSQL upgrade was interrupted before any data was changed. It did not take place, the database is unchanged.'
@@ -153,7 +153,7 @@ en:
       empty:
         status: 'Waiting for sensors'
         title: 'No data sources in use yet'
-        body: 'Once you enable sensors, their data sources will appear here for configuration.'
+        body: 'Once sensors are enabled, their data sources appear here for configuration.'
         cta: 'Open sensors'
       csv_import:
         title: 'Import historical data'
@@ -253,7 +253,7 @@ en:
         title: 'Download support bundle'
         description: 'Includes configuration, system info and service logs. Passwords, tokens, coordinates, bucket/org names, public hostnames and the system hostname are anonymized automatically.'
       step_post:
-        title: 'Post your report'
+        title: 'Post the report'
         description: 'Attach the ZIP file. Pick the channel that fits:'
         discussion:
           label: 'Question / help'
@@ -296,7 +296,7 @@ en:
         restore_in_progress: 'A restore is currently running.'
         csv_import_in_progress: 'A CSV import is currently running.'
       unavailable_title: 'Backup not available yet'
-      unavailable_description: 'A backup includes the InfluxDB and PostgreSQL databases. Once both services are set up and running, you can create a backup here.'
+      unavailable_description: 'A backup includes the InfluxDB and PostgreSQL databases. Once both services are set up and running, a backup can be created here.'
       existing_titles:
         local: 'Backups stored locally'
         external: 'Backups stored on external mount'
@@ -307,7 +307,7 @@ en:
       upload_unavailable_remote: 'Only available when the destination is set to “Local”. Switch it temporarily.'
       download_existing: 'Download'
       restore_existing: 'Restore'
-      restore_confirm: 'Your current data and configuration will be overwritten and thus lost.<br><br>SOLECTRUS will then be back at the state from <strong>%{date}, %{time}</strong>.'
+      restore_confirm: 'The current data and configuration will be overwritten and thus lost.<br><br>SOLECTRUS will then be back at the state from <strong>%{date}, %{time}</strong>.'
       restore_confirm_button: 'Restore this backup'
       restore_in_progress: 'Restoring…'
       restore_phases:
@@ -430,7 +430,7 @@ en:
     settings:
       senec:
         title: 'SENEC-Collector'
-        description: 'Reads measurements from your SENEC battery. Supports SENEC.Home V2.1, V3 and Home 4.'
+        description: 'Reads measurements from the SENEC battery. Supports SENEC.Home V2.1, V3 and Home 4.'
       mqtt:
         title: 'MQTT-Collector'
         description: 'Reads measurements from topics on an MQTT broker.'
@@ -614,7 +614,7 @@ en:
       title: 'Welcome - HELIOS'
       subtitle: 'Configuration for SOLECTRUS'
       heading: 'Welcome to HELIOS'
-      step_import_html: 'Your existing <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> and <code class="rounded bg-base-300 px-1 font-mono">.env</code> files will be imported and interpreted'
+      step_import_html: 'The existing <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> and <code class="rounded bg-base-300 px-1 font-mono">.env</code> files will be imported and interpreted'
       step_backup_html: 'Both files will be saved as backup copies (<code class="rounded bg-base-300 px-1 font-mono">.bak</code>)'
       step_manage: 'From now on, all SOLECTRUS configuration and service management will be handled web-based through HELIOS – the command line is no longer needed'
       hint_exclusive_html: 'Since HELIOS will write and modify the <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> and <code class="rounded bg-base-300 px-1 font-mono">.env</code> files itself going forward, parallel use of Portainer, Dockge, Arcane, or similar tools is no longer intended.'
@@ -623,7 +623,7 @@ en:
       unsupported_heading: 'Unfortunately, HELIOS cannot manage this configuration'
       unsupported_reason: 'The following services are unknown:'
       unsupported_no_image: 'no image'
-      unsupported_hint_html: 'HELIOS manages the <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> and <code class="rounded bg-base-300 px-1 font-mono">.env</code> files in full and can only take over services it recognizes. You could try moving the services listed above into a separate Compose file and then starting the import again.'
+      unsupported_hint_html: 'HELIOS manages the <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> and <code class="rounded bg-base-300 px-1 font-mono">.env</code> files in full and can only take over services it recognizes. One way out is to move the services listed above into a separate Compose file and then start the import again.'
       external_ingest_heading: 'One step remains after the import'
       external_ingest_reason: 'This configuration contains a balcony power plant, so HELIOS sets up Ingest to recalculate the house consumption. The following values come from an external source and have to reach Ingest from now on, instead of InfluxDB:'
       external_ingest_hint: 'Ingest accepts the same write requests as InfluxDB, so only the address changes. It is shown for every affected value in the sensor settings after the import. As long as one of these values keeps going to InfluxDB, no house consumption is written at all.'
