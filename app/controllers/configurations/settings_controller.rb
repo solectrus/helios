@@ -116,7 +116,7 @@ module Configurations
       return datasources_path if Configuration.source?(setting)
       return backups_path if setting.in?(%w[backup backup_schedule])
 
-      advanced_path
+      settings_path
     end
 
     # Every path that saves nothing has already responded, so the caller checks

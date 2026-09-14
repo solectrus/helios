@@ -52,7 +52,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'tibber' => SENEC_CHARGER_SURVEY_FIELDS.index_with('senec_charger').freeze,
   }.freeze
 
-  # Read-only pseudo-settings: they appear in the Advanced UI like real
+  # Read-only pseudo-settings: they appear in the Settings UI like real
   # settings (chip → modal with survey) but expose derived state instead of
   # persisting anything. `Configuration#setting_data` synthesises the payload
   # the survey prefills with, and `#update` refuses writes.
@@ -87,7 +87,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   SOFTWARE_SYSTEM_FIELDS = %w[update_mode update_interval update_time].freeze
   SOFTWARE_SYSTEM_GROUP = { singleton: 'system', keys: SOFTWARE_SYSTEM_FIELDS }.freeze
 
-  # Settings shown on the Advanced page in full mode. `influxdb` exposes
+  # Settings shown on the Settings page in full mode. `influxdb` exposes
   # only a couple of host-level toggles (e.g. UI port publication) here —
   # bucket/org/tokens are auto-managed and never user-editable in full mode.
   # `backup` is intentionally absent: its survey lives on the Backups page.
@@ -100,8 +100,8 @@ class Configuration # rubocop:disable Metrics/ClassLength
     storage
   ].freeze
 
-  # On the Advanced page, settings render as compact chips clustered into
-  # thematic groups. The keys are i18n slugs (advanced.show.groups.*); the
+  # On the Settings page, settings render as compact chips clustered into
+  # thematic groups. The keys are i18n slugs (settings.show.groups.*); the
   # values list setting IDs in the order they should appear inside the group.
   # Mode filtering (`visible_settings`) and empty-group filtering happen in
   # `#advanced_groups` — this map is the static layout.
@@ -832,7 +832,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   end
 
   # Visible settings clustered into the thematic groups rendered on the
-  # Advanced page. Returns an ordered hash of `{ group_key => [settings] }`,
+  # Settings page. Returns an ordered hash of `{ group_key => [settings] }`,
   # skipping groups that have no visible setting in the current mode.
   def advanced_groups
     visible = visible_settings

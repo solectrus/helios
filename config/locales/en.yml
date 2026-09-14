@@ -235,9 +235,9 @@ en:
           other: '%{count} devices'
           zero: 'None'
 
-  advanced:
+  settings:
     show:
-      title: 'Basic Settings'
+      title: 'Settings'
       groups:
         installation: 'Installation'
         access: 'Access & Security'

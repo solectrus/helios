@@ -211,9 +211,9 @@ de:
           other: '%{count} Geräte'
           zero: 'Keine'
 
-  advanced:
+  settings:
     show:
-      title: 'Grundeinstellungen'
+      title: 'Einstellungen'
       groups:
         installation: 'Installation'
         access: 'Zugriff & Sicherheit'

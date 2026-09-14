@@ -3,7 +3,7 @@ module ConfigNav
     TAB_DEFINITIONS = [
       { id: :sensors, path_helper: :sensors_path, icon: 'fa-solid fa-gauge-high' },
       { id: :datasources, path_helper: :datasources_path, icon: 'fa-solid fa-satellite-dish' },
-      { id: :advanced, path_helper: :advanced_path, icon: 'fa-solid fa-sliders' },
+      { id: :settings, path_helper: :settings_path, icon: 'fa-solid fa-sliders' },
     ].freeze
 
     # Kept as constants so the nav-highlight Stimulus controller can swap them
@@ -53,9 +53,12 @@ module ConfigNav
       Configuration.current.reverse_proxy_external?
     end
 
+    # Derived from the controller path, not its name: the setting modals run in
+    # Configurations::SettingsController, which shares the bare name `settings`
+    # with the tab's own controller.
     def active_tab
       @active_tab ||= begin
-        controller_id = helpers.controller_name.to_sym
+        controller_id = helpers.controller_path.to_sym
         controller_id if TAB_DEFINITIONS.any? { |t| t[:id] == controller_id }
       end
     end
@@ -130,7 +133,7 @@ module ConfigNav
       when :datasources
         Configuration.current.incomplete? ||
           Configuration.current.incomplete_forecast_location?
-      when :advanced
+      when :settings
         Configuration.current.incomplete_influxdb? ||
           Configuration.current.incomplete_system_general?
       end

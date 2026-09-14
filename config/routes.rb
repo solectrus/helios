@@ -26,7 +26,7 @@
 #                                   PUT    /datasources/shelly-devices/:id(.:format)      datasources/shelly_devices#update
 #                                   DELETE /datasources/shelly-devices/:id(.:format)      datasources/shelly_devices#destroy
 #                       datasources GET    /datasources(.:format)                         datasources#show
-#                          advanced GET    /advanced(.:format)                            advanced#show
+#                          settings GET    /settings(.:format)                            settings#show
 #                        host_stats GET    /host-stats(.:format)                          host_stats#show
 #                        status_bar GET    /status-bar(.:format)                          status_bars#show
 #                backups_completion DELETE /backups/completion(.:format)                  backups/completions#destroy
@@ -103,7 +103,7 @@ Rails.application.routes.draw do
                 path: 'shelly-devices'
     end
   end
-  resource :advanced, only: :show, controller: 'advanced'
+  resource :settings, only: :show, controller: 'settings'
   resource :host_stats, only: :show, path: 'host-stats'
   resource :status_bar, only: :show, path: 'status-bar'
   scope 'backups', module: :backups, as: :backups do

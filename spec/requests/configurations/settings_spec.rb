@@ -41,10 +41,10 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(response).to redirect_to(sensors_path)
     end
 
-    it 'redirects non-frame requests to the advanced page for singleton settings' do
+    it 'redirects non-frame requests to the settings page for singleton settings' do
       get new_configuration_setting_path(setting: 'system_general')
 
-      expect(response).to redirect_to(advanced_path)
+      expect(response).to redirect_to(settings_path)
     end
   end
 
@@ -127,11 +127,11 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(config.sensor_config('battery_soc').source).to eq('senec')
     end
 
-    it 'creates a singleton and redirects to the advanced page' do
+    it 'creates a singleton and redirects to the settings page' do
       post configuration_settings_path,
            params: { setting: 'system_general', data: { timezone: 'Europe/Berlin', currency: 'CHF' }.to_json }
 
-      expect(response).to redirect_to(advanced_path)
+      expect(response).to redirect_to(settings_path)
 
       config = Configuration.current
       expect(config.system.timezone).to eq('Europe/Berlin')
@@ -465,7 +465,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
         'forecast_threshold' => '15'
       )
       expect(config.senec_charger_available?).to be(true)
-      expect(response).to redirect_to(advanced_path)
+      expect(response).to redirect_to(settings_path)
     end
 
     it 'stores the test mode when it is switched on' do
@@ -667,7 +667,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       patch configuration_setting_path(setting: 'system_network', name: 'system_network'),
             params: { data: setting_data.to_json }
 
-      expect(response).to redirect_to(advanced_path)
+      expect(response).to redirect_to(settings_path)
 
       config = Configuration.current
       expect(config.system.app_host).to eq('example.com')
@@ -677,7 +677,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       patch configuration_setting_path(setting: 'dashboard_theme', name: 'dashboard_theme'),
             params: { data: { 'ui_theme' => 'user' }.to_json }
 
-      expect(response).to redirect_to(advanced_path)
+      expect(response).to redirect_to(settings_path)
       expect(Configuration.current.dashboard.ui_theme).to eq('')
     end
 
