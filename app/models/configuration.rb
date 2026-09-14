@@ -391,6 +391,14 @@ class Configuration # rubocop:disable Metrics/ClassLength
     ALL_SOURCES
   end
 
+  # Sources a sensor can be put on: the ones that are set up, plus the
+  # external input, which has no settings of its own and is therefore always
+  # open. A sensor can no longer bring a source into being, that decision is
+  # made on the data sources screen alone (see #offered_sources).
+  def source_available?(source)
+    source == 'external' || source_droppable?(source)
+  end
+
   # A source is switched on once it has settings of its own, and it can be
   # switched off again as long as it has settings to take away. One without a
   # section is not droppable, it is simply not set up yet.

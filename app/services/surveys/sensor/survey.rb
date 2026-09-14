@@ -1,32 +1,5 @@
 module Surveys
   module Sensor
-    # Source choice texts, each a localized "label\n\ndescription" string. The
-    # survey frontend renders the part after the blank line as a muted hint.
-    SOURCE_TEXTS = {
-      'senec' => Base.localized(
-        en: "SENEC Collector\n\nRuns as its own service and reads the measurement directly from the SENEC system.",
-        de: "SENEC-Collector\n\nLäuft als eigener Dienst und liest den Messwert direkt aus dem SENEC-System.",
-      ),
-      'shelly' => Base.localized(
-        en: "Shelly Collector\n\nRuns as its own service and reads the measurement directly from the Shelly meter.",
-        de: "Shelly-Collector\n\nLäuft als eigener Dienst und liest den Messwert direkt vom Shelly-Stromzähler.",
-      ),
-      'mqtt' => Base.localized(
-        en: "MQTT Collector\n\nRuns as its own service and subscribes to a topic on an MQTT broker.",
-        de: "MQTT-Collector\n\nLäuft als eigener Dienst und abonniert ein Topic von einem MQTT-Broker.",
-      ),
-      'forecast' => Base.localized(
-        en: "Forecast Collector\n\nRuns as its own service and queries PVNode, forecast.solar, or Solcast directly.",
-        de: "Forecast-Collector\n\nLäuft als eigener Dienst und fragt pvnode, forecast.solar oder Solcast direkt ab.",
-      ),
-      'external' => Base.localized(
-        en: "External\n\nAnother software, such as Home Assistant or ioBroker, " \
-            'writes the measurement into InfluxDB externally.',
-        de: "Extern\n\nEine andere Software (z.B. Home Assistant oder ioBroker) " \
-            'schreibt den Messwert von außen in die InfluxDB.',
-      ),
-    }.freeze
-
     # The label names the sensor within HELIOS only. The SOLECTRUS dashboard
     # carries its own name for the same sensor.
     LABEL_ELEMENT = {
@@ -111,14 +84,17 @@ module Surveys
       def customize!(data)
         inject_sensor_title!(data)
         inject_total_generation_hint!(data) if sensor_name == 'inverter_power'
-        inject_source_choices!(data)
-        MqttInjector.new(sensor_name).call(data)
-        MappingInjector.new(sensor_name).call(data)
+        run_injectors!(data)
         inject_label_page!(data) if custom_power_sensor?
         inject_shelly_connection_page!(data)
         inject_shelly_invert_power!(data) if invert_power_relevant?
         inject_house_power_page!(data) if exclude_from_house_power_relevant?
         inject_balcony_page!(data) if balcony_relevant?
+      end
+
+      # The parts of the survey that are built by a class of their own.
+      def run_injectors!(data)
+        [SourceInjector, MqttInjector, MappingInjector].each { |injector| injector.new(sensor_name).call(data) }
       end
 
       def custom_power_sensor?
@@ -165,35 +141,6 @@ module Surveys
               'Sensor leer, bildet SOLECTRUS die Summe aus den Teilen. Ist er belegt, ' \
               'gilt der angelieferte Messwert, egal was die einzelnen Erzeuger melden.',
         )
-      end
-
-      def inject_source_choices!(data)
-        sources = SensorRegistry.sources_for(sensor_name)
-        sources &= Configuration::DASHBOARD_ONLY_SOURCES if Configuration.current.dashboard_only?
-        return if sources.empty?
-
-        element = find_element(data, 'source')
-        return unless element
-
-        element['choices'] = sources.map { |s| source_choice(s) }
-        element['description'] = dashboard_only_source_hint if Configuration.current.dashboard_only?
-      end
-
-      def dashboard_only_source_hint
-        self.class.localized(
-          en: 'In dashboard-only mode, device collectors (Shelly, SENEC, MQTT) run ' \
-              'on a separate HELIOS installation and are not available here.',
-          de: 'In diesem Betriebsmodus laufen Geräte-Kollektoren (Shelly, SENEC, MQTT) ' \
-              'auf einer separaten HELIOS-Installation und sind hier nicht verfügbar.',
-        )
-      end
-
-      def source_choice(source)
-        { 'value' => source, 'text' => source_text(source) }
-      end
-
-      def source_text(source)
-        SOURCE_TEXTS[source] || source
       end
 
       def inject_label_page!(data)

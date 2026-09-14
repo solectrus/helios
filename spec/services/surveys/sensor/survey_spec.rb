@@ -177,6 +177,51 @@ RSpec.describe Surveys::Sensor::Survey do
       end
     end
 
+    # A sensor reads through a source, and a source only reads once it is set
+    # up. Offering one that is off would let a sensor bring a source into
+    # being, which is a decision of the data sources screen alone.
+    describe 'the sources a sensor is offered' do
+      def offered_sources(survey)
+        find_survey_element(survey, 'source')['choices'].pluck('value')
+      end
+
+      it 'leaves out a source that is switched off' do
+        expect(offered_sources(result)).to eq(%w[external])
+      end
+
+      it 'adds a source as soon as it is switched on' do
+        with_config_yaml('shelly' => { 'connection' => 'local' })
+
+        expect(offered_sources(result)).to eq(%w[shelly external])
+      end
+
+      # Switching a source off does not reach the sensors that read through
+      # it. Dropping it from the form of such a sensor would rewrite its
+      # source on the next save, without a word.
+      it 'keeps the source the sensor already reads through' do
+        with_config_yaml('sensors' => { 'custom_power_03' => { 'source' => 'mqtt' } })
+
+        expect(offered_sources(result)).to eq(%w[mqtt external])
+      end
+
+      it 'says where the missing sources come from' do
+        expect(find_survey_element(result, 'source')['description']).to include(
+          'default' => a_string_including('Data Sources'),
+          'de' => a_string_including('Datenquellen'),
+        )
+      end
+
+      it 'says nothing while every source is on offer' do
+        with_config_yaml(
+          'shelly' => { 'connection' => 'local' },
+          'mqtt' => { 'host' => 'broker.local' },
+        )
+
+        expect(offered_sources(result)).to eq(%w[shelly mqtt external])
+        expect(find_survey_element(result, 'source')['description']).to be_nil
+      end
+    end
+
     describe 'source choices in dashboard_only mode' do
       before { with_config_yaml('deployment' => { 'mode' => 'dashboard_only' }) }
 

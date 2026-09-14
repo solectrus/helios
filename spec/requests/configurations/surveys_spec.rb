@@ -4,6 +4,19 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
     login
   end
 
+  # A sensor can only be put on a source that is set up, so a spec about the
+  # choices themselves has to switch the sources on first.
+  def set_up_all_sources
+    config = Configuration.current
+    config.update('senec', { 'version' => '4', 'host' => 'senec.local' })
+    config.update('shelly', { 'connection' => 'local' })
+    config.update('mqtt', { 'broker_managed' => true })
+  end
+
+  def source_element_of(survey)
+    survey['pages'].flat_map { |page| page['elements'] || [] }.find { |element| element['name'] == 'source' }
+  end
+
   describe 'GET /configuration/surveys/:id' do
     (Configuration::ALL - Configuration::HIDDEN).each do |setting|
       next if setting == 'system' # split into system_* mini-surveys
@@ -133,7 +146,11 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
       end
     end
 
+    # A sensor can only be put on a source that is set up, so the choices
+    # follow the data sources screen.
     it 'returns sensor survey with dynamic source choices' do
+      Configuration.current.update('senec', { 'version' => '4', 'host' => 'senec.local' })
+
       get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power' })
 
       expect(response).to have_http_status(:ok)
@@ -145,12 +162,47 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
       expect(source_element['choices'].pluck('value')).to include('senec')
     end
 
+    # A sensor can no longer bring a source into being: the source has to be
+    # switched on under Data Sources first.
+    it 'leaves out a source that is not set up' do
+      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power' })
+
+      element = source_element_of(response.parsed_body)
+
+      expect(element['choices'].pluck('value')).to eq(['external'])
+      expect(element['description']['de']).to include('Datenquellen')
+    end
+
+    it 'says nothing about missing sources once they are all set up' do
+      config = Configuration.current
+      config.update('senec', { 'version' => '4', 'host' => 'senec.local' })
+      config.update('mqtt', { 'broker_managed' => true })
+
+      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power' })
+
+      element = source_element_of(response.parsed_body)
+
+      expect(element['choices'].pluck('value')).to eq(%w[senec mqtt external])
+      expect(element['description']).to be_nil
+    end
+
+    # Opening the survey of such a sensor must not silently drop its source.
+    it 'keeps the source a sensor already reads through' do
+      Configuration.current.update_sensor('inverter_power', { 'source' => 'senec' })
+
+      get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power' })
+
+      element = source_element_of(response.parsed_body)
+
+      expect(element['choices'].pluck('value')).to eq(%w[senec external])
+    end
+
     it 'adds inline explanations to dynamic sensor source choices' do
+      set_up_all_sources
+
       get configuration_survey_path(id: 'sensor', format: :json, params: { sensor: 'inverter_power_2' })
 
-      survey = response.parsed_body
-      source_element = survey['pages'].first['elements'].find { |e| e['name'] == 'source' }
-      choices = source_element['choices'].index_by { |choice| choice['value'] }
+      choices = source_element_of(response.parsed_body)['choices'].index_by { |choice| choice['value'] }
 
       expect(choices['senec']['text']).to include(
         'default' => include("SENEC Collector\n\nRuns as its own service"),
