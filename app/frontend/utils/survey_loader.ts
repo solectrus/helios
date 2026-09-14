@@ -70,6 +70,13 @@ function buildTheme(base: ITheme): ITheme {
 
   return {
     ...base,
+    // survey-core 3.0.4 changed the default of `headerView` from "basic" to
+    // "advanced". The advanced header renders title and description in a grid
+    // of its own: capped at 540px and centred, so both sit far inside the edge
+    // the questions below them start on. The basic header puts the two into
+    // .sd-container-modern__title, where they take the inset of the page and
+    // carry the gold rule that doubles as the progress bar (see survey.css).
+    headerView: 'basic',
     cssVariables: {
       ...base.cssVariables,
       // Every component font family derives from this one.
