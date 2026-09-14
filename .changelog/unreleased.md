@@ -15,6 +15,7 @@ Keep every section, an empty one included.
 ## Improvements
 
 - On a phone, a tap on a value, a status dot or an info icon shows the hint that a mouse shows on hover (#480)
+- Configuration forms: a password, a token and an access key are covered, and an eye button in the field uncovers one for a look. Before, some forms showed the value and others hid it
 
 ## Fixes
 

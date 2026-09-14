@@ -89,7 +89,8 @@
             "de": "Authentifizierungsschlüssel",
             "default": "Authentication key"
           },
-          "isRequired": true
+          "isRequired": true,
+          "inputType": "password"
         },
         {
           "type": "html",

@@ -64,7 +64,8 @@
           "description": {
             "de": "Nur erforderlich, falls ein Passwort für den Shelly konfiguriert ist",
             "default": "Only required if a password is configured for the Shelly"
-          }
+          },
+          "inputType": "password"
         },
         {
           "type": "html",

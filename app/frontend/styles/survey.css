@@ -111,6 +111,32 @@
     & .connection-test__status--pending {
       color: var(--helios-text-muted);
     }
+
+    /* A masked field carries an eye button that uncovers its value (see
+       survey_password_reveal.ts). The button sits inside the field, so the
+       input keeps room for it and the value never runs underneath. */
+    & .password-reveal__field {
+      position: relative;
+    }
+    & .password-reveal__input {
+      padding-inline-end: 2.75rem;
+    }
+    & .password-reveal {
+      position: absolute;
+      inset-block: 0;
+      inset-inline-end: 0;
+      display: flex;
+      align-items: center;
+      padding-inline: 0.85rem;
+      color: var(--helios-text-muted);
+      cursor: pointer;
+      background: none;
+      border: none;
+      transition: color 0.15s;
+    }
+    & .password-reveal:hover {
+      color: var(--sjs2-color-text-default);
+    }
     & :is(.sd-action-bar, .sd-footer, .sd-navigation) {
       padding: 0.75rem 1.25rem;
     }

@@ -152,7 +152,8 @@
             "de": "API-Token (Schreibrechte)",
             "default": "API token (write access)"
           },
-          "isRequired": true
+          "isRequired": true,
+          "inputType": "password"
         },
         {
           "type": "html",

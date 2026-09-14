@@ -210,7 +210,8 @@
           "description": {
             "de": "Nur erforderlich bei aktivierter Zwei-Faktor-Authentifizierung",
             "default": "Only required when two-factor authentication is enabled"
-          }
+          },
+          "inputType": "password"
         },
         {
           "type": "text",

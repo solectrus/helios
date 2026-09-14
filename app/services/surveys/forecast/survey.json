@@ -92,7 +92,8 @@
             "de": "API-Key",
             "default": "API key"
           },
-          "isRequired": true
+          "isRequired": true,
+          "inputType": "password"
         }
       ]
     },
@@ -562,7 +563,8 @@
             "de": "Kostenfrei bei https://toolkit.solcast.com.au/",
             "default": "Free at https://toolkit.solcast.com.au/"
           },
-          "isRequired": true
+          "isRequired": true,
+          "inputType": "password"
         },
         {
           "type": "text",
@@ -787,7 +789,8 @@
           "description": {
             "de": "Nur erforderlich für die kostenpflichtige Variante von forecast.solar",
             "default": "Only required for the paid variant of forecast.solar"
-          }
+          },
+          "inputType": "password"
         }
       ]
     },

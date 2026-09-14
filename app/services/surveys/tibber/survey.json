@@ -67,7 +67,8 @@
             "de": "Access Token",
             "default": "Access token"
           },
-          "isRequired": true
+          "isRequired": true,
+          "inputType": "password"
         },
         {
           "type": "text",

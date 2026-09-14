@@ -5,6 +5,7 @@ import { readLocale } from '../utils/preferences_cookie';
 import { prefersReducedMotion } from '../utils/prefers_reduced_motion';
 import { loadingSpinner } from '../utils/loading_spinner';
 import { SurveyDropdowns } from '../utils/survey_dropdowns';
+import { wirePasswordReveal } from '../utils/survey_password_reveal';
 
 // Connection-test labels shown before the server replies (the result message
 // itself comes back localized from the server). Kept here because they belong
@@ -184,10 +185,12 @@ export default class extends Controller<HTMLElement> {
       this.element.closest('dialog'),
     );
 
-    // Wire any "test connection" buttons (html elements) in the survey, and
-    // move dropdown lists out of the scrolling modal box.
+    // Wire any "test connection" buttons (html elements) in the survey, put an
+    // eye button on every masked field, and move dropdown lists out of the
+    // scrolling modal box.
     this.survey.onAfterRenderQuestion.add((_sender, options) => {
       this.wireConnectionTest(options.htmlElement);
+      wirePasswordReveal(options.htmlElement);
       this.dropdowns?.lift(options.question, options.htmlElement);
     });
 
