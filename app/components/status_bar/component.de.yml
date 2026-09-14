@@ -9,7 +9,6 @@ de:
   restart_required_services: 'Neustart erforderlich: %{services}'
   restore_in_progress: 'Wiederherstellung läuft…'
   backup_in_progress: 'Backup wird erstellt…'
-  configuration_incomplete: 'Konfiguration unvollständig'
   open_dashboard: 'Dashboard öffnen'
   more_actions: 'Weitere Aktionen'
   start: 'Start'
