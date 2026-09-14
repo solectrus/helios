@@ -21,4 +21,6 @@ Keep every section, an empty one included.
 
 ## Fixes
 
+- Configuration forms: a form with several screens turns a page without a strip flashing below the buttons
+
 ## Maintenance

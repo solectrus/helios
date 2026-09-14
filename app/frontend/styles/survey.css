@@ -3,6 +3,15 @@
 /* helios-survey is declared after `survey`, so our overrides win without !important */
 @layer survey, helios-survey;
 
+/* Typed so the progress rule below can be transitioned. An untyped custom
+   property flips from one value to the next, which would make the rule jump a
+   third of the way across on every page change. */
+@property --survey-progress {
+  syntax: '<percentage>';
+  inherits: true;
+  initial-value: 100%;
+}
+
 /* SurveyJS overrides: token mapping (colors, radii) is set via applyTheme() in
    the survey controller; this layer only handles structural tweaks not exposed
    as tokens. */
@@ -135,7 +144,7 @@
       transition: color 0.15s;
     }
     & .password-reveal:hover {
-      color: var(--sjs2-color-text-default);
+      color: var(--color-base-content);
     }
     & :is(.sd-action-bar, .sd-footer, .sd-navigation) {
       padding: 0.75rem 1.25rem;
@@ -156,10 +165,13 @@
       /* Above the sticky cells of a matrix question, which sit at 12. */
       z-index: 20;
       background-color: var(--color-base-200);
-      /* The bar stops at the modal's content edge, so rows would still show
-         through its bottom padding. Carry the fill down over that strip; the
-         modal clips whatever is left over. */
-      box-shadow: 0 2rem 0 var(--color-base-200);
+      /* A sticky element stops at the scrollport, which is the modal's padding
+         box, so rows keep showing through the padding below it. Carry the fill
+         over exactly that strip: the modal pads 1rem at the bottom (sm:py-4 in
+         dialog_modal) and nothing below sm. Do not carry it further. Ink that
+         leaves the bar's own box escapes any snapshot taken of the form, where
+         no ancestor is left to clip it. */
+      box-shadow: 0 1rem 0 var(--color-base-200);
     }
 
     & .sd-page__title {
@@ -174,7 +186,8 @@
     }
 
     /* Title underline doubles as progress bar — driven by --survey-progress
-       set in survey_controller; defaults to 100% (full gold rule). */
+       set in survey_controller; the @property rule at the top of this file
+       carries the default (a full gold rule). */
     & :is(.sd-container-modern__title, .sd-title.sd-container-modern__title) {
       /* Same inset as .sd-page, so the heading starts on the card edge. The
          modal already pads above the heading, so it needs little of its own. */
@@ -183,13 +196,27 @@
       box-shadow: none;
       background-image: linear-gradient(
         to right,
-        var(--color-primary) var(--survey-progress, 100%),
+        var(--color-primary) var(--survey-progress),
         color-mix(in oklab, var(--color-base-content) 22%, transparent)
-          var(--survey-progress, 100%)
+          var(--survey-progress)
       );
       background-position: bottom;
       background-size: 100% 2px;
       background-repeat: no-repeat;
+
+      /* Animate here rather than on the form wrapper where the controller sets
+         the value. --survey-progress inherits, so a transition on the wrapper
+         rebuilds the computed style of every question in the form on each
+         frame. This element inherits the new value and transitions on it, and
+         survey-core keeps the node across a page change, so the transition has
+         a start value to run from. */
+      transition: --survey-progress 150ms var(--ease-in-out);
+
+      /* survey_controller skips the view transitions for the same reader
+         (#viewTransitionsEnabled), so the rule jumps along with the rest. */
+      @media (prefers-reduced-motion: reduce) {
+        transition: none;
+      }
     }
 
     /* Inputs — BorderlessDark hides borders; restore so fields read as active.
@@ -351,19 +378,50 @@
   display: none;
 }
 
-/* View transition target lives at document root, outside .sd-root-modern */
-::view-transition-group(helios-survey-body) {
-  animation-duration: 240ms;
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+/* View transition targets live at document root, outside .sd-root-modern.
+
+   Both named groups run the same length: the modal frame and the survey body
+   inside it describe the same movement, so a shorter frame would settle while
+   the form kept drifting inside it. That shared length is why dialog-modal-box
+   is tuned here and not in a stylesheet of its own next to the component that
+   names it. The survey is the only thing that ever starts a view transition
+   (survey_controller), so the frame only moves when the form moves. */
+::view-transition-group(helios-survey-body),
+::view-transition-group(dialog-modal-box) {
+  animation-duration: 150ms;
+  animation-timing-function: var(--ease-in-out);
+}
+
+/* The two pages hand over rather than share the stage: the old one leaves
+   first, the new one starts once it has gone. A symmetric cross-fade holds two
+   half transparent forms on top of each other, which reads as one slow move.
+   Only the timing is set here; the fade stays the browser's own. */
+::view-transition-old(helios-survey-body) {
+  animation-duration: 60ms;
+  animation-timing-function: var(--ease-in);
+}
+::view-transition-new(helios-survey-body) {
+  animation-duration: 90ms;
+  animation-delay: 60ms;
+  animation-timing-function: var(--ease-out);
+}
+
+/* Nothing outside the dialog changes when the form turns a page, so hand the
+   root over at once rather than cross-fade the whole document, and let the
+   named groups carry the move.
+
+   The root stays captured, which freezes the page behind the dialog. Drop it
+   from the capture and that page renders live instead, where the status bar
+   flickers as its barber-pole animation is re-rastered. */
+::view-transition-group(root),
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
 }
 
 /* Survey render morphs the modal box to its final size (survey_controller
    #renderSurveyAnimated). Skip the cross-fade: the loading-spinner snapshot
    must vanish the instant the box starts growing, not linger and stretch. */
-::view-transition-group(dialog-modal-box) {
-  animation-duration: 150ms;
-  animation-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-}
 ::view-transition-old(dialog-modal-box) {
   animation: none;
   opacity: 0;
