@@ -1372,11 +1372,30 @@ RSpec.describe Configuration do
     end
   end
 
-  describe '#advanced_groups' do
+  describe '#required_settings' do
+    it 'asks for the commissioning date in full mode' do
+      with_config_yaml
+      expect(described_class.current.required_settings).to eq(%w[system_general])
+    end
+
+    it 'asks for the commissioning date in dashboard_only mode' do
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY })
+      expect(described_class.current.required_settings).to eq(%w[system_general])
+    end
+
+    # The dashboard runs elsewhere, so the date is asked for there. What this
+    # host cannot do without is the address it pushes to.
+    it 'asks for the external database instead in collectors_only mode' do
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      expect(described_class.current.required_settings).to eq(%w[influxdb])
+    end
+  end
+
+  describe '#optional_groups' do
     it 'returns every group with at least one visible setting in full mode' do
       with_config_yaml('senec' => { 'adapter' => 'local' })
-      expect(described_class.current.advanced_groups).to eq(
-        'installation' => %w[deployment software system_general],
+      expect(described_class.current.optional_groups).to eq(
+        'installation' => %w[deployment software],
         'access' => %w[system_network influxdb dashboard_network reverse_proxy system_security],
         'data' => %w[storage],
         'energy_management' => %w[tibber],
@@ -1384,10 +1403,25 @@ RSpec.describe Configuration do
       )
     end
 
-    it 'keeps influxdb and system_security in the access group in collectors_only mode' do
+    it 'never repeats a setting the required tier already carries' do
+      with_config_yaml
+      config = described_class.current
+      expect(config.optional_groups.values.flatten).not_to include(*config.required_settings)
+    end
+
+    it 'keeps system_security in the access group in collectors_only mode' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
-      expect(described_class.current.advanced_groups.fetch('access')).to eq(
-        %w[influxdb system_security],
+      expect(described_class.current.optional_groups.fetch('access')).to eq(
+        %w[system_security],
+      )
+    end
+
+    # Only here is the commissioning date optional: the dashboard that needs it
+    # runs on another host.
+    it 'keeps system_general in the installation group in collectors_only mode' do
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      expect(described_class.current.optional_groups.fetch('installation')).to eq(
+        %w[deployment software system_general],
       )
     end
 
@@ -1395,19 +1429,19 @@ RSpec.describe Configuration do
       with_config_yaml(
         'sensors' => { 'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true } },
       )
-      expect(described_class.current.advanced_groups.fetch('data')).to eq(
+      expect(described_class.current.optional_groups.fetch('data')).to eq(
         %w[ingest_settings storage],
       )
     end
 
     it 'offers the prices chip without any SENEC battery — they are collected for their own sake' do
       with_config_yaml
-      expect(described_class.current.advanced_groups.fetch('energy_management')).to eq(%w[tibber])
+      expect(described_class.current.optional_groups.fetch('energy_management')).to eq(%w[tibber])
     end
 
     it 'keeps the installation, access and energy_management groups in collectors_only mode' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
-      expect(described_class.current.advanced_groups.keys).to contain_exactly(
+      expect(described_class.current.optional_groups.keys).to contain_exactly(
         'installation',
         'access',
         'energy_management',
@@ -1416,7 +1450,7 @@ RSpec.describe Configuration do
 
     it 'keeps the data group with storage in dashboard_only mode without a balcony sensor' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY })
-      expect(described_class.current.advanced_groups.fetch('data')).to eq(%w[storage])
+      expect(described_class.current.optional_groups.fetch('data')).to eq(%w[storage])
     end
   end
 

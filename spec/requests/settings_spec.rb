@@ -22,10 +22,29 @@ RSpec.describe 'Settings', :with_admin_password do
     it 'displays a heading for every active group' do
       get settings_path
 
-      Configuration.current.advanced_groups.each_key do |group|
+      Configuration.current.optional_groups.each_key do |group|
         # CGI.escapeHTML: group labels may contain "&" (e.g. "Zugriff & Sicherheit")
         expect(response.body).to include(CGI.escapeHTML(I18n.t("settings.show.groups.#{group}")))
       end
+    end
+
+    # Nothing labels the two tiers, so their order is what tells them apart:
+    # the required chip stands above the rule, the groups below it.
+    it 'leads with the required setting, ahead of the first group' do
+      get settings_path
+
+      expect(response.body.index(I18n.t('configurations.settings.system_general.title')))
+        .to be < response.body.index(I18n.t('configurations.settings.deployment.title'))
+    end
+
+    # Every mode names its own required setting, so the tier is never empty.
+    it 'leads with the external database in collectors_only mode' do
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+
+      get settings_path
+
+      expect(response.body.index(I18n.t('configurations.settings.influxdb.title')))
+        .to be < response.body.index(I18n.t('configurations.settings.deployment.title'))
     end
   end
 end

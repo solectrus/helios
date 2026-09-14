@@ -1,8 +1,8 @@
 {
   "locale": "de",
   "title": {
-    "de": "PV-Anlage",
-    "default": "PV system"
+    "de": "Grundeinstellungen",
+    "default": "Basic settings"
   },
   "description": {
     "de": "Inbetriebnahme, Zeitzone und Währung",
@@ -59,7 +59,10 @@
           "choices": [
             {
               "value": "EUR",
-              "text": { "de": "Euro (€)", "default": "Euro (€)" }
+              "text": {
+                "de": "Euro (€)",
+                "default": "Euro (€)"
+              }
             },
             {
               "value": "CHF",
@@ -70,7 +73,10 @@
             },
             {
               "value": "USD",
-              "text": { "de": "US-Dollar ($)", "default": "US dollar ($)" }
+              "text": {
+                "de": "US-Dollar ($)",
+                "default": "US dollar ($)"
+              }
             },
             {
               "value": "GBP",

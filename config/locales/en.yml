@@ -451,8 +451,8 @@ en:
           collectors_only: 'Collectors only'
           dashboard_only: 'Dashboard only'
       system_general:
-        title: 'PV system'
-        description: 'Commissioning date and timezone'
+        title: 'Basic settings'
+        description: 'Commissioning date, timezone and currency'
       system_network:
         title: 'Host'
         description: 'Which address SOLECTRUS is reachable at'

@@ -427,8 +427,8 @@ de:
           collectors_only: 'Nur Kollektoren'
           dashboard_only: 'Nur Dashboard'
       system_general:
-        title: 'PV-Anlage'
-        description: 'Inbetriebnahme und Zeitzone'
+        title: 'Grundeinstellungen'
+        description: 'Inbetriebnahme, Zeitzone und Währung'
       system_network:
         title: 'Host'
         description: 'Unter welcher Adresse ist SOLECTRUS erreichbar?'

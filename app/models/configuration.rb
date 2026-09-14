@@ -100,12 +100,13 @@ class Configuration # rubocop:disable Metrics/ClassLength
     storage
   ].freeze
 
-  # On the Settings page, settings render as compact chips clustered into
-  # thematic groups. The keys are i18n slugs (settings.show.groups.*); the
-  # values list setting IDs in the order they should appear inside the group.
-  # Mode filtering (`visible_settings`) and empty-group filtering happen in
-  # `#advanced_groups` — this map is the static layout.
-  ADVANCED_GROUPS = {
+  # Below the required tier, the optional settings render as compact chips
+  # clustered into thematic groups. The keys are i18n slugs
+  # (settings.show.groups.*); the values list setting IDs in the order they
+  # should appear inside the group. Mode filtering (`visible_settings`),
+  # required-tier filtering and empty-group filtering happen in
+  # `#optional_groups` — this map is the static layout.
+  OPTIONAL_GROUPS = {
     'installation' => %w[deployment software system_general],
     'access' => %w[system_network influxdb dashboard_network reverse_proxy system_security],
     'data' => %w[ingest_settings storage],
@@ -652,20 +653,32 @@ class Configuration # rubocop:disable Metrics/ClassLength
     incomplete_sources.any?
   end
 
-  # In collectors_only mode the collectors push to an external InfluxDB; without
-  # a host they have nowhere to write. Local-mode fields (org/bucket/token) are
-  # auto-generated and survive a mode switch, so a plain "section configured?"
-  # check would mis-report a half-empty target as ready.
+  # Settings the user has to fill in. HELIOS has neither a default for them nor
+  # anything to derive them from, and the stack stays down until they carry a
+  # value. Everything else in SETTINGS ships with a workable value, so a fresh
+  # installation can leave it alone — which is what lets the Settings page put
+  # the required ones in a tier of their own, ahead of the optional groups.
+  def required_settings
+    # In collectors_only mode the collectors push to an external InfluxDB and
+    # need its address. The commissioning date is not asked for here: it
+    # belongs to the dashboard, which runs on another host (matches the
+    # survey).
+    return %w[influxdb] if collectors_only?
+
+    %w[system_general]
+  end
+
+  # Local-mode InfluxDB fields (org/bucket/token) are auto-generated and
+  # survive a mode switch, so a plain "section configured?" check would
+  # mis-report a half-empty target as ready.
   def incomplete_influxdb?
-    collectors_only? && influxdb.host.blank?
+    required_settings.include?('influxdb') && influxdb.host.blank?
   end
 
   # system_general carries the user-supplied basics (currently the PV
-  # commissioning date). The date is mandatory before the stack starts and is
-  # never auto-filled, so a blank value marks the group incomplete. Skipped in
-  # collectors_only mode, where the dashboard runs remotely (matches the survey).
+  # commissioning date), and the date is never auto-filled.
   def incomplete_system_general?
-    !collectors_only? && system.installation_date.blank?
+    required_settings.include?('system_general') && system.installation_date.blank?
   end
 
   # Setting ids that are still incomplete and therefore block stack start.
@@ -831,12 +844,12 @@ class Configuration # rubocop:disable Metrics/ClassLength
     insert_at ? base.dup.insert(insert_at + 1, 'ingest_settings') : base + %w[ingest_settings]
   end
 
-  # Visible settings clustered into the thematic groups rendered on the
-  # Settings page. Returns an ordered hash of `{ group_key => [settings] }`,
-  # skipping groups that have no visible setting in the current mode.
-  def advanced_groups
-    visible = visible_settings
-    ADVANCED_GROUPS.each_with_object({}) do |(group, settings), result|
+  # The optional tier of the Settings page: every visible setting the required
+  # tier does not already carry, clustered by OPTIONAL_GROUPS. Groups left
+  # empty by the mode or by the required tier drop out.
+  def optional_groups
+    visible = visible_settings - required_settings
+    OPTIONAL_GROUPS.each_with_object({}) do |(group, settings), result|
       present = settings & visible
       result[group] = present if present.any?
     end

@@ -4,8 +4,8 @@
   <i aria-hidden="true" class="fa-solid text-primary text-xl <%= icon %>"></i>
   <span class="text-base-content"><%= title %></span>
 
-  <% if incomplete? %>
-    <span aria-hidden="true" class="bg-warning size-2.5 rounded-full"></span>
-    <span class="sr-only"><%= t('configurations.show.incomplete') %></span>
+  <% if required? %>
+    <i aria-hidden="true" class="fa-solid text-lg <%= state_icon %>"></i>
+    <span class="sr-only"><%= state_label %></span>
   <% end %>
 <% end %>
