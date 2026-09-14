@@ -9,10 +9,17 @@ RSpec.describe Surveys::SystemGeneral::Survey do
       expect(find_survey_element(result, 'timezone')).to include('defaultValue' => 'Europe/Berlin')
     end
 
+    it 'asks one question per page' do
+      expect(section_names(result)).to eq(%w[p_installation p_timezone p_currency])
+    end
+
+    # The marker sits on the page, so the whole page goes rather than leaving
+    # an empty one behind.
     it 'hides installation_date in collectors_only mode (no local PV)' do
       Configuration.current.update('deployment', { 'mode' => 'collectors_only' })
 
       expect(find_survey_element(result, 'installation_date')).to be_nil
+      expect(section_names(result)).to eq(%w[p_timezone p_currency])
       expect(find_survey_element(result, 'timezone')).to be_present
     end
 
@@ -45,7 +52,6 @@ RSpec.describe Surveys::SystemGeneral::Survey do
 
     describe 'currency' do
       it 'offers the preset dropdown and a single free-text field' do
-        expect(section_names(result)).to eq(%w[p_general p_currency])
         expect(find_survey_element(result, 'currency_preset')).to include('type' => 'dropdown')
         currency = find_survey_element(result, 'currency')
         expect(currency).to include('type' => 'text', 'visibleIf' => "{currency_preset} = 'other'")

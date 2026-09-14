@@ -19,6 +19,7 @@ Keep every section, an empty one included.
 - Configuration forms: a password manager stays out of these fields. Its icon no longer covers the eye button, and it no longer offers a login that belongs elsewhere
 - The interface no longer addresses the reader. Forms, dialogs and messages state the fact instead, and the wording is now the same everywhere
 - Settings: the screen leads with the one setting that has to be filled in. A check next to it confirms the value is there, a warning sign says it is still missing. Everything below the line is optional and already carries a sensible value
+- Basic settings: the form asks one question per screen, the commissioning date, then the timezone, then the currency
 - Confirmations: every question now carries the warning sign, yellow where a decision is reversed and red where data is lost
 
 ## Fixes

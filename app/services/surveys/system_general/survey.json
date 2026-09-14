@@ -10,7 +10,8 @@
   },
   "pages": [
     {
-      "name": "p_general",
+      "name": "p_installation",
+      "visibleIfMode": "not_collectors_only",
       "elements": [
         {
           "type": "text",
@@ -23,10 +24,14 @@
             "de": "Wird für die Zeitraumauswahl benötigt",
             "default": "Required for time range selection"
           },
-          "visibleIfMode": "not_collectors_only",
           "isRequired": true,
           "inputType": "date"
-        },
+        }
+      ]
+    },
+    {
+      "name": "p_timezone",
+      "elements": [
         {
           "type": "dropdown",
           "name": "timezone",
