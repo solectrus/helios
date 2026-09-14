@@ -35,6 +35,7 @@ Keep every section, an empty one included.
 
 ### Services
 
+- **The services list appears earlier.** It fills as soon as there is something to run. A broker that HELIOS runs is enough, and it can start before the first device sends anything. The dashboard and its databases appear with the first sensor (#466)
 - **A blocked start says what blocks it.** The start stays visible. The reason appears in the status bar and on every service
 
 ### Import

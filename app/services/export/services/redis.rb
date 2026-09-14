@@ -18,7 +18,7 @@ module Export
       end
 
       def self.enabled?(configuration)
-        !configuration.collectors_only?
+        configuration.dashboard_required?
       end
 
       def data_directories

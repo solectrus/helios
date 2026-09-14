@@ -38,7 +38,7 @@ module Export
       end
 
       def self.enabled?(configuration)
-        !configuration.collectors_only?
+        configuration.influxdb_required?
       end
 
       # True when InfluxDB should be reachable from outside the Docker

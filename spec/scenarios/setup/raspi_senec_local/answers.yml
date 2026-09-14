@@ -4,20 +4,21 @@
 browser_host: helios.local
 
 answers:
-  # The Sensors page comes first. Picking SENEC for one sensor enables every
-  # other sensor the collector delivers (Configuration#auto_enable_senec_sensors!).
-  - setting: sensor
-    name: inverter_power
-    answers:
-      source: senec
-
-  # The SENEC card appears once a sensor reads from it.
+  # The source comes first: a sensor offers the sources that are switched on
+  # under Data Sources, and the switch opens this survey.
   - setting: senec
     answers:
       version: v3
       adapter: local
       host: 192.168.178.42
       interval: '5'
+
+  # Picking SENEC for one sensor enables every other sensor the collector
+  # delivers (Configuration#auto_enable_senec_sensors!).
+  - setting: sensor
+    name: inverter_power
+    answers:
+      source: senec
 
   - setting: system_general
     answers:

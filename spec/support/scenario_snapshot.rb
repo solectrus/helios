@@ -41,6 +41,10 @@ module ScenarioSnapshot
       expect(load_config(Configuration.path)).to eq(load_config(snapshot_path.join('helios/config.yaml')))
       expect_same_text(Compose.path, snapshot_path.join('compose.yaml'))
       expect_same_text(Env.path, snapshot_path.join('.env'))
+
+      # A snapshot can match and still be unusable: `docker compose` refuses a
+      # project whose `depends_on` names a service the export left out.
+      expect(dangling_service_dependencies(Compose.path)).to be_empty
     end
   end
 

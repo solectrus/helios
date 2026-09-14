@@ -4,11 +4,6 @@
 browser_host: helios.local
 
 answers:
-  - setting: sensor
-    name: inverter_power
-    answers:
-      source: senec
-
   - setting: senec
     answers:
       version: v3
@@ -16,6 +11,11 @@ answers:
       host: 192.168.178.42
       interval: '5'
       measurement: MY_SENEC
+
+  - setting: sensor
+    name: inverter_power
+    answers:
+      source: senec
 
   - setting: system_general
     answers:

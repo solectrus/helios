@@ -3,14 +3,20 @@ module Export
     # Sections whose defaults are only generated on demand. The lambda decides
     # whether defaults should be written for this section given the current
     # configuration. Sections not listed here are always populated with defaults.
-    LOCAL_STACK_ONLY = ->(config) { !config.collectors_only? }
+    #
+    # The four sections of the dashboard stack are written for the services
+    # that run, and the services read the sections back (see
+    # Configuration#dashboard_required?). So the first sensor writes them, and
+    # from then on they stay: no export takes a running dashboard, database or
+    # cache away again.
+    DASHBOARD_STACK = ->(config) { config.dashboard_required? }
     OPTIONAL_SECTIONS = {
       'backup' => ->(config) { config.configured?('backup') },
       'ingest' => ->(config) { config.ingest_required? },
-      'dashboard' => LOCAL_STACK_ONLY,
-      'postgresql' => LOCAL_STACK_ONLY,
-      'influxdb' => LOCAL_STACK_ONLY,
-      'redis' => LOCAL_STACK_ONLY,
+      'dashboard' => DASHBOARD_STACK,
+      'postgresql' => DASHBOARD_STACK,
+      'influxdb' => ->(config) { config.influxdb_required? },
+      'redis' => DASHBOARD_STACK,
     }.freeze
 
     def initialize(configuration)

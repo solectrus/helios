@@ -8,6 +8,10 @@ RSpec.describe Export::Builder do
   let(:configuration) do
     config = Configuration.current
     config.update('system', { 'installation_date' => '2024-01-15', 'timezone' => 'Europe/Berlin' })
+    # The dashboard and the databases behind it run for sensors to be seen and
+    # kept (see Configuration#dashboard_required?), so a stack that exports
+    # them has one.
+    config.update_sensor('house_power', { 'source' => 'external', 'measurement' => 'm', 'field' => 'f' })
     config
   end
 
@@ -168,6 +172,27 @@ RSpec.describe Export::Builder do
         'watchtower',
         'helios',
       )
+    end
+
+    # A broker runs so that devices can publish into it, which has to be
+    # possible before the first sensor exists. Nothing else of the stack has
+    # anything to do at that point.
+    it 'runs the broker and nothing else on an installation without a sensor' do
+      with_config_yaml('mqtt' => { 'broker_managed' => true })
+      described_class.new(Configuration.current).write!
+
+      expect(Compose.load.services.names).to contain_exactly('mosquitto', 'watchtower', 'helios')
+    end
+
+    # The sections the first sensor writes are what keeps the three running
+    # afterwards. Deleting the last sensor must not take a running dashboard
+    # and its two databases with it (see Configuration#dashboard_required?).
+    it 'keeps the dashboard stack once it has run' do
+      config = Configuration.current
+      config.update('sensors', {})
+      described_class.new(config).write!
+
+      expect(Compose.load.services.names).to include('dashboard', 'postgresql', 'redis', 'influxdb')
     end
 
     it 'omits power-splitter when its mandatory sensor mappings are missing' do

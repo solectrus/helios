@@ -59,8 +59,12 @@ RSpec.describe RestoreRunner, :docker_stack do
   # Export::Builder.ensure_defaults! materializes postgresql, influxdb,
   # redis, dashboard (passwords, tokens, images). No publish_port, so
   # the stack does not clash with other dev containers.
+  # The sensor is what the databases exist for: without one, Export::Builder
+  # leaves postgresql, influxdb, redis and the dashboard out of the stack (see
+  # Configuration#dashboard_required?).
   def write_config!
-    data = { 'backup' => { 'destination' => 'local' } }
+    data = { 'backup' => { 'destination' => 'local' },
+             'sensors' => { 'house_power' => { 'source' => 'external', 'measurement' => 'm', 'field' => 'f' } } }
     FileUtils.mkdir_p(File.dirname(Configuration.path))
     File.write(Configuration.path, YAML.dump(data))
     Current.reset

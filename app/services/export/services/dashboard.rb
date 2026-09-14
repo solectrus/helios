@@ -17,7 +17,7 @@ module Export
       end
 
       def self.enabled?(configuration)
-        !configuration.collectors_only?
+        configuration.dashboard_required?
       end
 
       def to_h

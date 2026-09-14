@@ -1252,6 +1252,53 @@ RSpec.describe Configuration do
     end
   end
 
+  describe '#dashboard_required?' do
+    it 'is false while no sensor exists' do
+      expect(described_class.current.dashboard_required?).to be false
+    end
+
+    it 'is true once a sensor exists' do
+      config = described_class.current
+      config.update_sensor('inverter_power', { 'source' => 'external', 'measurement' => 'm', 'field' => 'f' })
+
+      expect(config.dashboard_required?).to be true
+    end
+
+    it 'is false in collectors_only mode, where the dashboard runs elsewhere' do
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+                       'sensors' => { 'inverter_power' => { 'source' => 'senec' } })
+
+      expect(described_class.current.dashboard_required?).to be false
+    end
+  end
+
+  describe '#influxdb_required?' do
+    # A standalone topic writes measurements without a sensor of its own, so
+    # the database has to be there although the dashboard has nothing to show.
+    it 'is true for a standalone topic without a sensor' do
+      config = described_class.current
+      config.add_mqtt_topic('measurement' => 'm', 'field' => 'f', 'type' => 'float', 'topic' => 'a/b', 'name' => 'x')
+
+      expect(config.influxdb_required?).to be true
+      expect(config.dashboard_required?).to be false
+    end
+
+    # The Tibber collector runs on its token alone and writes its prices
+    # without a sensor. Its compose service declares `depends_on: influxdb`, so
+    # a missing database leaves the whole project invalid.
+    it 'is true for the Tibber collector without a sensor' do
+      with_config_yaml('tibber' => { 'token' => 'abc' })
+
+      config = described_class.current
+      expect(config.influxdb_required?).to be true
+      expect(config.dashboard_required?).to be false
+    end
+
+    it 'is false while nothing writes into it' do
+      expect(described_class.current.influxdb_required?).to be false
+    end
+  end
+
   describe '#setup_completed?' do
     it 'returns false when no sensors are configured' do
       config = described_class.current
@@ -1276,6 +1323,21 @@ RSpec.describe Configuration do
     it 'returns false in collectors_only mode without any active source' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
       expect(described_class.current.setup_completed?).to be false
+    end
+
+    # A device can publish only once a broker is reachable, so the broker has
+    # to run before the first MQTT sensor can exist.
+    it 'returns true while HELIOS runs the broker and nothing reads yet' do
+      with_config_yaml('mqtt' => { 'broker_managed' => true })
+
+      expect(described_class.current.setup_completed?).to be true
+    end
+
+    it 'returns true for a standalone topic without a sensor' do
+      config = described_class.current
+      config.add_mqtt_topic('measurement' => 'm', 'field' => 'f', 'type' => 'float', 'topic' => 'a/b', 'name' => 'x')
+
+      expect(config.setup_completed?).to be true
     end
   end
 

@@ -79,9 +79,14 @@ RSpec.describe CsvImportRunner, :docker_stack do
   # materializes postgresql, influxdb, redis, dashboard with passwords,
   # tokens and images. No publish_port, so the stack does not clash
   # with other dev containers.
+  # The sensor is what the databases exist for: without one, Export::Builder
+  # leaves postgresql, influxdb, redis and the dashboard out of the stack (see
+  # Configuration#dashboard_required?).
   def write_config!
     FileUtils.mkdir_p(File.dirname(Configuration.path))
-    File.write(Configuration.path, YAML.dump({}))
+    File.write(Configuration.path,
+               YAML.dump({ 'sensors' => { 'house_power' => { 'source' => 'external', 'measurement' => 'm',
+                                                             'field' => 'f' } } }))
     Current.reset
   end
 

@@ -104,8 +104,12 @@ RSpec.describe BackupRunner, :docker_stack do
   # is set, so no service publishes a host port and the stack coexists with
   # other dev containers on 8086. The backup script reaches both databases
   # via `docker exec` over the compose network, so host ports are not needed.
+  # The sensor is what the databases exist for: without one, Export::Builder
+  # leaves postgresql, influxdb, redis and the dashboard out of the stack (see
+  # Configuration#dashboard_required?).
   def write_config!
-    data = { 'backup' => backup_config }
+    data = { 'backup' => backup_config,
+             'sensors' => { 'house_power' => { 'source' => 'external', 'measurement' => 'm', 'field' => 'f' } } }
     FileUtils.mkdir_p(File.dirname(Configuration.path))
     File.write(Configuration.path, YAML.dump(data))
     Current.reset

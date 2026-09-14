@@ -5,13 +5,9 @@
 browser_host: 203.0.113.10
 
 answers:
-  # Picking SENEC for one sensor enables every other sensor the collector
-  # delivers (Configuration#auto_enable_senec_sensors!).
-  - setting: sensor
-    name: inverter_power
-    answers:
-      source: senec
-
+  # The source comes first: a sensor offers the sources that are switched on
+  # under Data Sources, and the switch opens this survey.
+  #
   # A SENEC.Home 4 has no local access, so the screen never asks for the
   # access type and sets it to cloud itself. No host and no password for the
   # device either: the collector signs in to the SENEC account. The interval
@@ -21,6 +17,13 @@ answers:
       version: v4
       username: dummy@example.com
       password: dummy-senec-cloud-password
+
+  # Picking SENEC for one sensor enables every other sensor the collector
+  # delivers (Configuration#auto_enable_senec_sensors!).
+  - setting: sensor
+    name: inverter_power
+    answers:
+      source: senec
 
   # The domain replaces the address HELIOS adopted from the browser on the
   # first save. Traefik obtains the certificate for it.

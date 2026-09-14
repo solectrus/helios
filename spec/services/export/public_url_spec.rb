@@ -95,6 +95,10 @@ RSpec.describe Export::PublicUrl do
 
     context 'with the dashboard' do
       let(:service_name) { 'dashboard' }
+      # The dashboard runs for sensors to be seen (see
+      # Configuration#dashboard_required?), and only a service that runs is
+      # routed.
+      let(:data) { super().merge('sensors' => { 'house_power' => { 'source' => 'external' } }) }
 
       it 'links to the bare host' do
         expect(build).to eq('https://solectrus.example.com')

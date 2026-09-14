@@ -8,6 +8,10 @@ RSpec.describe Export::TraefikConfig do
     config.update('system', { 'app_host' => 'demo.example.com', 'timezone' => 'Europe/Berlin' })
     config.update('deployment', { 'mode' => 'dashboard_only' })
     config.update('reverse_proxy', { 'mode' => 'external', 'bind_ip' => '10.0.0.5' })
+    # The dashboard runs for sensors to be seen (see
+    # Configuration#dashboard_required?), and only a service that runs is
+    # routed.
+    config.update_sensor('house_power', { 'source' => 'external', 'measurement' => 'm', 'field' => 'f' })
     config
   end
   let(:document) { YAML.safe_load(output) }
@@ -90,6 +94,10 @@ RSpec.describe Export::TraefikConfig do
         config = Configuration.current
         config.update('deployment', { 'mode' => 'dashboard_only' })
         config.update('reverse_proxy', { 'mode' => 'external' })
+        # The dashboard runs for sensors to be seen (see
+        # Configuration#dashboard_required?), and only a service that runs is
+        # routed.
+        config.update_sensor('house_power', { 'source' => 'external', 'measurement' => 'm', 'field' => 'f' })
         config
       end
 

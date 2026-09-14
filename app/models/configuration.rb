@@ -1109,13 +1109,49 @@ class Configuration # rubocop:disable Metrics/ClassLength
     setting_data(setting).present?
   end
 
-  # In collectors_only mode no logical sensors are imported (canonicalization
-  # lives on the remote dashboard host) — accept any active source/raw mapping
-  # as "set up" so the Services screen is reachable.
+  # The dashboard displays sensors, and Postgres and Redis exist for the
+  # dashboard alone. The first sensor is what brings the three into being.
+  #
+  # From then on the section in config.yaml keeps them: Export::Builder writes
+  # it once the answer below is yes, and reads the same answer to decide
+  # whether to write it (see OPTIONAL_SECTIONS). What the two make together is
+  # a one-way switch. Without it, deleting the last sensor would take a
+  # running dashboard and the two databases behind it down, minutes before the
+  # next sensor brings them back, and an adopted stack that carries no sensor
+  # mapping would lose them on the first export.
+  def dashboard_required?
+    !collectors_only? && (enabled_sensors.any? || configured?('dashboard'))
+  end
+
+  # Something writes measurements into the local InfluxDB: a sensor, a
+  # standalone topic or Shelly device that feeds it without a sensor of its
+  # own, or the Tibber collector, which writes its prices on the token alone
+  # and has no sensor to hang on. Every other collector needs a sensor, so
+  # `enabled_sensors` covers it. In collectors_only mode the target is a
+  # database elsewhere.
+  #
+  # The stored section holds the database in the same one-way way as the
+  # dashboard above, and for a stronger reason: it carries the measurements.
+  def influxdb_required?
+    return false if collectors_only?
+
+    enabled_sensors.any? || mqtt_topics.any? || shelly_devices.any? || tibber_enabled? ||
+      configured?('influxdb')
+  end
+
+  # Whether the installation has anything to run. A sensor is the usual
+  # answer, but not the only one. HELIOS runs the broker before a single
+  # device publishes into it, which is the whole point of running it: a device
+  # can publish only once a broker is reachable. A standalone topic or Shelly
+  # device writes to InfluxDB without a sensor of its own, and in
+  # collectors_only mode no logical sensors are imported at all
+  # (canonicalization lives on the remote dashboard host). #active_sources
+  # covers the latter two.
   def setup_completed?
     return true if enabled_sensors.any?
+    return true if mqtt_broker_managed?
 
-    collectors_only? && active_sources.any?
+    active_sources.any?
   end
 
   # Access unmanaged services and env vars
