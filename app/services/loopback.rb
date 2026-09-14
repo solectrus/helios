@@ -10,6 +10,14 @@ class Loopback
   NAMES = %w[localhost ::1 0.0.0.0].freeze
   IPV4 = /\A127\./
 
+  # The rule of .host? as a pattern a survey validates against: an address
+  # that is none of these. Written out instead of derived from the constants
+  # above, because a JavaScript regex takes neither \A nor Ruby's escaping.
+  # The brackets around an IPv6 address are optional here, because #host?
+  # strips them before it judges and the field sees what was typed.
+  # A spec holds the two to the same answers.
+  SURVEY_PATTERN = '^(?!localhost$|\[?::1\]?$|0\.0\.0\.0$|127\.|.*\.localhost$).+$'.freeze
+
   def self.host?(host)
     normalized = host.to_s.strip.downcase.delete_prefix('[').delete_suffix(']')
     return false if normalized.blank?

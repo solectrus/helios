@@ -473,6 +473,8 @@ de:
       discard_discard: 'Verwerfen'
       configure: 'Konfigurieren'
       not_configured: 'Nicht konfiguriert'
+    errors:
+      loopback_host: 'Die Adresse %{host} benennt nur diesen Rechner sich selbst gegenüber und kann hier nicht verwendet werden.'
     resets:
       create:
         success: 'Import wurde erfolgreich zurückgesetzt.'

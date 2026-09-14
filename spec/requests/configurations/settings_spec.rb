@@ -217,6 +217,53 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
   # The switch only reaches config.yaml when its field is part of the setting
   # group; without that it is sliced off on save and the service stays on.
+  describe 'POST /configuration/settings and a loopback address' do
+    # Such an address names the machine to whoever asks, so every address
+    # derived from it would send a device or a browser back to itself.
+    it 'refuses it' do
+      post configuration_settings_path,
+           params: { setting: 'system_network', data: { 'app_host' => 'localhost' }.to_json }
+
+      expect(flash[:alert]).to include('localhost')
+      expect(Configuration.current.system.app_host).to be_blank
+    end
+
+    it 'refuses a name below .localhost as well' do
+      post configuration_settings_path,
+           params: { setting: 'system_network', data: { 'app_host' => 'helios.localhost' }.to_json }
+
+      expect(Configuration.current.system.app_host).to be_blank
+    end
+
+    it 'takes an address that names the machine to others' do
+      post configuration_settings_path,
+           params: { setting: 'system_network', data: { 'app_host' => 'solectrus.fritz.box' }.to_json }
+
+      expect(Configuration.current.system.app_host).to eq('solectrus.fritz.box')
+    end
+
+    # Clearing the field hands the question back to the browser: the same save
+    # adopts the host it was reached at, and where that is a loopback name the
+    # field stays empty and every caller falls back to the port alone.
+    it 'takes an empty address and adopts the host of the browser' do
+      Configuration.current.update('system_network', { 'app_host' => 'solectrus.fritz.box' })
+
+      post configuration_settings_path,
+           params: { setting: 'system_network', data: { 'app_host' => '' }.to_json }
+
+      expect(Configuration.current.system.app_host).to eq('www.example.com')
+    end
+
+    it 'stays empty where the browser reached it by a loopback name' do
+      host! 'helios.localhost'
+
+      post configuration_settings_path,
+           params: { setting: 'system_network', data: { 'app_host' => '' }.to_json }
+
+      expect(Configuration.current.system.app_host).to be_blank
+    end
+  end
+
   describe 'POST /configuration/settings for the Ingest correction' do
     before do
       Configuration.current.update_sensor('inverter_power_2', {

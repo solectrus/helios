@@ -1,5 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
-import type { Model } from 'survey-core';
+import type { Model, Question } from 'survey-core';
 import { loadSurveyRuntime } from '../utils/survey_loader';
 import { readLocale } from '../utils/preferences_cookie';
 import { prefersReducedMotion } from '../utils/prefers_reduced_motion';
@@ -160,9 +160,16 @@ export default class extends Controller<HTMLElement> {
       this.survey.mergeData(this.initialDataValue);
     }
 
-    // Auto-fill app_host from browser's address bar if not already set
-    if (!this.survey.getValue('app_host')) {
-      this.survey.setValue('app_host', window.location.hostname);
+    // Auto-fill app_host from the browser's address bar if not already set.
+    // The field refuses an address that names the machine to itself alone
+    // (see Surveys::SystemNetwork::Survey), and the address bar carries such a
+    // name whenever HELIOS is reached at one. Its rule is asked beforehand:
+    // filling the field and validating afterwards would mark a value the user
+    // never typed as an error.
+    const appHost = this.survey.getQuestionByName('app_host');
+    const browserHost = window.location.hostname;
+    if (appHost && !appHost.value && accepts(appHost, browserHost)) {
+      appHost.value = browserHost;
     }
 
     // Handle survey completing (fires before DOM changes)
@@ -409,4 +416,18 @@ export default class extends Controller<HTMLElement> {
         ?.getAttribute('content') ?? ''
     );
   }
+}
+
+// Whether a question would take a value, judged by the regex rules it carries
+// and without assigning anything. Used where a value is offered rather than
+// typed, so an offer the question refuses is simply not made.
+function accepts(question: Question, value: string): boolean {
+  return question.validators.every((validator) => {
+    const { regex, caseInsensitive } = validator as {
+      regex?: string;
+      caseInsensitive?: boolean;
+    };
+
+    return !regex || new RegExp(regex, caseInsensitive ? 'i' : '').test(value);
+  });
 }

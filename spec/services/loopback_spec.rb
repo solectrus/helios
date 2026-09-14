@@ -1,16 +1,32 @@
 RSpec.describe Loopback do
+  let(:loopback) { %w[localhost LOCALHOST helios.localhost 127.0.0.1 127.1.2.3 ::1 [::1] 0.0.0.0] }
+  let(:routable) { %w[solectrus.fritz.box 192.168.1.10 example.com mylocalhost 10.0.0.5] }
+
   describe '.host?' do
-    ['localhost', 'LocalHost', ' 127.0.0.1 ', '127.1.2.3', '::1', '[::1]', '0.0.0.0',
-     'helios.localhost'].each do |host|
-      it "recognizes #{host.inspect}" do
-        expect(described_class).to be_host(host)
-      end
+    it 'knows an address that reaches only whoever asks' do
+      expect(loopback).to all(satisfy { |host| described_class.host?(host) })
     end
 
-    ['192.168.178.43', 'raspberrypi.fritz.box', 'localhost.example.com', '', nil].each do |host|
-      it "passes #{host.inspect}, which can reach the network" do
-        expect(described_class).not_to be_host(host)
-      end
+    it 'passes an address that names the machine to others' do
+      expect(routable).to all(satisfy { |host| !described_class.host?(host) })
+    end
+
+    it 'passes a blank address, which names nothing at all' do
+      expect(described_class.host?(nil)).to be false
+      expect(described_class.host?(' ')).to be false
+    end
+  end
+
+  # The pattern travels to the browser, where the same addresses have to fail.
+  describe 'SURVEY_PATTERN' do
+    subject(:pattern) { Regexp.new(described_class::SURVEY_PATTERN, Regexp::IGNORECASE) }
+
+    it 'refuses every address .host? knows' do
+      expect(loopback).to all(satisfy { |host| !host.match?(pattern) })
+    end
+
+    it 'takes every address .host? passes' do
+      expect(routable).to all(match(pattern))
     end
   end
 end

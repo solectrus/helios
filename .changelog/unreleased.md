@@ -24,5 +24,6 @@ Keep every section, an empty one included.
 
 - Configuration forms: a form with several screens turns a page without a strip flashing below the buttons
 - Navigation: a link that leads to another tab moves the mark in the main navigation with it. Before, a link such as the one from the Services screen to the sensors left the mark on the tab it started from
+- Address of the machine: a loopback address such as localhost is refused while it is typed. Everything derived from it sent a device or a browser back to itself, from the link to the dashboard to the address devices publish to. The field may be left empty instead, and the published port is then used
 
 ## Maintenance

@@ -18,8 +18,7 @@
           "title": {
             "de": "IP-Adresse oder Hostname",
             "default": "IP address or host name"
-          },
-          "isRequired": true
+          }
         }
       ]
     }

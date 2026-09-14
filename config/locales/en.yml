@@ -497,6 +497,8 @@ en:
       discard_discard: 'Discard'
       configure: 'Configure'
       not_configured: 'Not configured'
+    errors:
+      loopback_host: 'The address %{host} names this machine to itself alone and cannot be used here.'
     resets:
       create:
         success: 'Import was successfully reset.'

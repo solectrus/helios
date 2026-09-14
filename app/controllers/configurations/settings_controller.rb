@@ -125,24 +125,49 @@ module Configurations
       data = survey_data
       return unless data
 
-      if sensor_setting?
-        return if mqtt_name_still_needed?(data['mqtt_name'])
-
-        # After normalization: a fixed source overwrites whatever names the
-        # payload carried, so only what actually gets stored is judged.
-        normalize_fixed_source_mapping!(data)
-        return if invalid_influx_name?(data, redirect_target)
-
-        @configuration.update_sensor(sensor_name, data)
-        @configuration.auto_enable_senec_sensors! if data['source'] == 'senec'
-      else
-        persist_setting(data)
-      end
+      sensor_setting? ? save_sensor(data) : save_section(data)
+      return if performed?
 
       # Re-anchor the schedule so the next run is the next occurrence of the
       # chosen time (today if still ahead, tomorrow if already passed) rather
       # than an immediate catch-up.
       BackupScheduler.reschedule! if setting == 'backup_schedule'
+    end
+
+    def save_sensor(data)
+      return if mqtt_name_still_needed?(data['mqtt_name'])
+
+      # After normalization: a fixed source overwrites whatever names the
+      # payload carried, so only what actually gets stored is judged.
+      normalize_fixed_source_mapping!(data)
+      return if invalid_influx_name?(data, redirect_target)
+
+      @configuration.update_sensor(sensor_name, data)
+      @configuration.auto_enable_senec_sensors! if data['source'] == 'senec'
+    end
+
+    def save_section(data)
+      return if loopback_app_host?(data)
+
+      persist_setting(data)
+    end
+
+    # An address that names the machine to whoever asks would send a device or
+    # a browser somewhere else back to itself. HELIOS refuses to adopt such a
+    # host from the browser (see Configuration#adopt_request_host!) and the
+    # connection test rejects one, but typed by hand it went through. Every
+    # address derived from it was then wrong: the link to the dashboard, the
+    # endpoint external sources write to, the address devices publish to.
+    #
+    # Leaving the field empty stays allowed. Every caller falls back to the
+    # port alone, which at least works from the machine itself.
+    def loopback_app_host?(data)
+      host = data['app_host']
+      return false unless host.present? && Loopback.host?(host)
+
+      flash[:alert] = t('configurations.errors.loopback_host', host:)
+      redirect_to redirect_target
+      true
     end
 
     # A formula reads an MQTT mapping by its MAPPING_X_NAME. Dropping that name
