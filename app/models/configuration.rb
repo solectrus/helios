@@ -681,6 +681,19 @@ class Configuration # rubocop:disable Metrics/ClassLength
     required_settings.include?('system_general') && system.installation_date.blank?
   end
 
+  # True while a required setting is still empty. The Settings screen carries
+  # the warning sign in that state, so both navigations point at it.
+  def incomplete_required_settings?
+    incomplete_influxdb? || incomplete_system_general?
+  end
+
+  # True while a data source is still open, either because one of its own
+  # fields is empty or because a pvnode v1 forecast misses its location. The
+  # Data Sources screen carries the warning sign in that state.
+  def incomplete_datasources?
+    incomplete? || incomplete_forecast_location?
+  end
+
   # Setting ids that are still incomplete and therefore block stack start.
   # Single source of truth for both the per-setting warning badges and the
   # overall #configuration_complete? gate.

@@ -37,14 +37,8 @@ module Header
         .map { |tab| tab.merge(path: tab_path(tab), label: t(".#{tab[:id]}")) }
     end
 
-    # In collectors_only mode the Sensors page is unreachable; route the
-    # Configuration top-level tab straight to Datasources.
     def tab_path(tab)
-      if tab[:id] == :configuration && Configuration.current.collectors_only?
-        datasources_path
-      else
-        send(tab[:path_helper])
-      end
+      tab[:id] == :configuration ? helpers.configuration_entry_path : send(tab[:path_helper])
     end
 
     # Neutral rather than primary: the primary amber is the color of the

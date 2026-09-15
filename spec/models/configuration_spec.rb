@@ -1391,6 +1391,21 @@ RSpec.describe Configuration do
     end
   end
 
+  describe '#incomplete_datasources?' do
+    it 'is false while every active source carries its required field' do
+      with_startable_config_yaml
+      expect(described_class.current).not_to be_incomplete_datasources
+    end
+
+    it 'is true while an active source misses its required field' do
+      with_config_yaml(
+        'system' => { 'installation_date' => '2024-01-15' },
+        'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
+      )
+      expect(described_class.current).to be_incomplete_datasources
+    end
+  end
+
   describe '#optional_groups' do
     it 'returns every group with at least one visible setting in full mode' do
       with_config_yaml('senec' => { 'adapter' => 'local' })

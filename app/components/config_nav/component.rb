@@ -128,14 +128,13 @@ module ConfigNav
       end
     end
 
+    # The same two checks that move the entry point of the Configuration tab,
+    # so the tab opens the screen its own sign marks (see
+    # ApplicationHelper#configuration_entry_path).
     def show_warning?(tab)
       case tab[:id]
-      when :datasources
-        Configuration.current.incomplete? ||
-          Configuration.current.incomplete_forecast_location?
-      when :settings
-        Configuration.current.incomplete_influxdb? ||
-          Configuration.current.incomplete_system_general?
+      when :datasources then Configuration.current.incomplete_datasources?
+      when :settings then Configuration.current.incomplete_required_settings?
       end
     end
 
