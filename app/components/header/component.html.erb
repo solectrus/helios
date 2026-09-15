@@ -31,6 +31,16 @@
                       data: { turbo_frame: "_top", nav_highlight_target: "item" } do %>
             <i class="<%= tab[:icon] %>"></i>
             <%= tab[:label] %>
+
+            <% if show_warning?(tab) %>
+              <span
+                class="tooltip tooltip-bottom tooltip-warning normal-case"
+                data-tip="<%= t('configurations.show.incomplete') %>"
+              >
+                <i class="fa-solid fa-triangle-exclamation <%= warning_classes(tab) %>" aria-hidden="true"></i>
+                <span class="sr-only"><%= t('configurations.show.incomplete') %></span>
+              </span>
+            <% end %>
           <% end %>
         <% end %>
       </div>

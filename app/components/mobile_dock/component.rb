@@ -34,5 +34,33 @@ module MobileDock
     def active?(item)
       item[:id] == active_tab
     end
+
+    # Mirrors the warning sign of the top navigation, and its rule: the sign
+    # stays on the level the reader has opened, but the color moves on with
+    # them (see Header::Component#warning_classes).
+    def show_warning?(item)
+      item[:id] == :configuration && Configuration.current.incomplete_settings.any?
+    end
+
+    def dot_classes(item)
+      active?(item) ? 'bg-base-content/30' : 'bg-warning'
+    end
+
+    # The dock has room for a dot, not for a sign next to the label.
+    def icon_tag(item)
+      icon = tag.i(class: "text-lg #{item[:icon]}", aria: { hidden: true })
+      return icon unless show_warning?(item)
+
+      tag.span(
+        safe_join(
+          [
+            icon,
+            tag.span(class: "absolute -top-1 -right-2 size-2 rounded-full #{dot_classes(item)}"),
+            tag.span(t('configurations.show.incomplete'), class: 'sr-only'),
+          ],
+        ),
+        class: 'relative',
+      )
+    end
   end
 end

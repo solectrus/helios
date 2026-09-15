@@ -1,6 +1,32 @@
 RSpec.describe ConfigNav::Component, type: :component do
   let(:dir) { config_yaml_dir }
 
+  describe 'the warning sign' do
+    before { with_config_yaml }
+
+    def signs(rendered)
+      rendered
+        .css('a')
+        .select { |a| a.css('i.fa-triangle-exclamation').any? }
+        .to_h { |a| [a['href'], a.css('i.fa-triangle-exclamation').attr('class').value] }
+    end
+
+    # The commissioning date is missing, so the Settings entry is the one that
+    # leads on, and the only one in the warning color.
+    it 'marks the entry that carries an open setting' do
+      rendered = render_inline(described_class.new(active_tab: :sensors))
+
+      expect(signs(rendered).transform_values { |css| css.include?('text-warning') })
+        .to eq({ '/settings' => true })
+    end
+
+    it 'holds the sign back on the entry that is already open' do
+      rendered = render_inline(described_class.new(active_tab: :settings))
+
+      expect(signs(rendered)['/settings']).to include(Header::Component::MUTED_WARNING_CLASSES)
+    end
+  end
+
   describe 'the reset block' do
     it 'is hidden while no backup exists' do
       rendered = render_inline(described_class.new)

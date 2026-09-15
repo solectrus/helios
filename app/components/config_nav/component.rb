@@ -138,6 +138,13 @@ module ConfigNav
       end
     end
 
+    # The entry the reader already opened keeps the sign but loses the color:
+    # the screen itself marks the setting that is still open (same rule as in
+    # the top navigation, see Header::Component#warning_classes).
+    def warning_classes(tab)
+      active?(tab) ? Header::Component::MUTED_WARNING_CLASSES : 'text-warning'
+    end
+
     def show_reset?
       only != :tabs && StackBackup.exist?
     end

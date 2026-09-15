@@ -17,7 +17,7 @@
         data-modal-opener-id-param="<%= SHEET_ID %>"
         data-nav-highlight-target="item"
       >
-        <i class="text-lg <%= item[:icon] %>" aria-hidden="true"></i>
+        <%= icon_tag(item) %>
         <span class="dock-label"><%= item[:label] %></span>
       </button>
     <% else %>
@@ -25,7 +25,7 @@
                   class: ('dock-active' if active?(item)),
                   aria: { current: ("page" if active?(item)) },
                   data: { turbo_frame: "_top", nav_highlight_target: "item" } do %>
-        <i class="text-lg <%= item[:icon] %>" aria-hidden="true"></i>
+        <%= icon_tag(item) %>
         <span class="dock-label"><%= item[:label] %></span>
       <% end %>
     <% end %>

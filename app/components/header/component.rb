@@ -21,6 +21,11 @@ module Header
     TAB_ACTIVE_CLASSES = 'text-base-content bg-base-content/10'.freeze
     TAB_INACTIVE_CLASSES = 'text-base-content/60 hover:bg-base-content/5 hover:text-base-content'.freeze
 
+    # The warning sign on a level the reader has already opened. Shared with
+    # the configuration side column, so one level hands over to the next
+    # without a change of shape.
+    MUTED_WARNING_CLASSES = 'text-base-content/30'.freeze
+
     def initialize(active_tab:)
       super()
       @active_tab = active_tab
@@ -55,6 +60,22 @@ module Header
       tab[:id] == active_tab
     end
 
+    # Points at an open setting. The sign stands on every level, so the path to
+    # it reads from anywhere, but the color belongs to the level that still
+    # leads somewhere. Where the reader already stands, the sign steps back:
+    # the more specific one is on the screen (see ConfigNav::Component).
+    def show_warning?(tab)
+      tab[:id] == :configuration && configuration_incomplete?
+    end
+
+    def warning_classes(tab)
+      active?(tab) ? MUTED_WARNING_CLASSES : 'text-warning'
+    end
+
+    def configuration_incomplete?
+      Configuration.current.incomplete_settings.any?
+    end
+
     # Cache keys for the two fragment-cached regions in the template. The
     # right-side dropdown (HostStats, locale switcher, CSRF logout) stays
     # uncached.
@@ -67,7 +88,19 @@ module Header
     # outlive a deploy. In development with caching enabled, restart the
     # server (or switch locale) after editing the cached templates.
     def tabs_cache_key
-      [:header_tabs, active_tab, I18n.locale, Configuration.current.collectors_only?]
+      [
+        :header_tabs,
+        active_tab,
+        I18n.locale,
+        # Hides the Backup tab.
+        Configuration.current.collectors_only?,
+        # Puts the sign on the Configuration tab.
+        configuration_incomplete?,
+        # Aims that tab, and moves on its own: with a required setting and a
+        # data source both open, filling in the setting moves the target while
+        # the sign stays where it is.
+        helpers.configuration_entry_path,
+      ]
     end
 
     def drawer_cache_key

@@ -26,7 +26,7 @@
             class="tooltip tooltip-right tooltip-warning ml-auto shrink-0"
             data-tip="<%= t('configurations.show.incomplete') %>"
           >
-            <i class="fa-solid fa-triangle-exclamation text-warning"></i>
+            <i class="fa-solid fa-triangle-exclamation <%= warning_classes(tab) %>"></i>
           </span>
         <% end %>
       <% end %>
