@@ -22,5 +22,6 @@ Keep every section, an empty one included.
 ## Fixes
 
 - Configuration forms: a form with several screens turns a page without a strip flashing below the buttons
+- Navigation: a link that leads to another tab moves the mark in the main navigation with it. Before, a link such as the one from the Services screen to the sensors left the mark on the tab it started from
 
 ## Maintenance

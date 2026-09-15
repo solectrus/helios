@@ -168,7 +168,8 @@
                   <p class="text-warning text-sm">
                     <% if @csv_import_running %>
                       <%= t('.unavailable_csv_import_html',
-                          link: link_to(t('.csv_import_link_text'), csv_imports_path, class: 'underline')) %>
+                          link: link_to(t('.csv_import_link_text'), csv_imports_path, class: 'underline',
+                                         data: { turbo_frame: '_top' })) %>
                     <% else %>
                       <%= t('.unavailable', message: @backup_unavailable_reason) %>
                     <% end %>

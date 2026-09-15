@@ -13,6 +13,11 @@
   <p class="text-base-content/65 max-w-lg text-base leading-relaxed"><%= description %></p>
 
   <% if cta.present? %>
-    <%= link_to cta[:label], cta[:path], class: "btn btn-primary mt-2" %>
+    <%#
+      The card sits inside the "tab-content" frame, and a CTA always leads out
+      of the empty page, often into another tab. Without _top only the frame
+      would swap, leaving the URL and the nav highlight behind.
+    %>
+    <%= link_to cta[:label], cta[:path], class: "btn btn-primary mt-2", data: { turbo_frame: "_top" } %>
   <% end %>
 </div>
