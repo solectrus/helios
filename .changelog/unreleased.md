@@ -32,3 +32,5 @@ Keep every section, an empty one included.
 - Address of the machine: a loopback address such as localhost is refused while it is typed. Everything derived from it sent a device or a browser back to itself, from the link to the dashboard to the address devices publish to. The field may be left empty instead, and the published port is then used
 
 ## Maintenance
+
+- Support bundle: the logs reach much further back. Every service now contributes its last 2000 lines instead of 500

@@ -4,7 +4,12 @@ module SupportBundle
   # bypasses the Docker multiplex stream protocol and works for stopped
   # containers too.
   module ContainerLogs
-    TAIL_LINES = 500
+    # Docker keeps 30 MB per service on disk (10 MB over three files, set in
+    # the generated compose.yaml), so the limit here is what the bundle stays
+    # small enough to attach, not what Docker can deliver. At 2000 lines the
+    # nine services of a full stack come to roughly 1.4 MB of text, which the
+    # zip takes down to a few hundred KB.
+    TAIL_LINES = 2000
 
     module_function
 
