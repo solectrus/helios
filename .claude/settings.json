@@ -1,25 +1,35 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
   "permissions": {
     "allow": [
-      "Bash(bats:*)",
       "Bash(bin/brakeman:*)",
       "Bash(bin/bundler-audit:*)",
       "Bash(bin/ci:*)",
+      "Bash(bin/coverage:*)",
       "Bash(bin/herb:*)",
       "Bash(bin/rails:*)",
       "Bash(bin/rake:*)",
       "Bash(bin/rspec:*)",
       "Bash(bin/rubocop:*)",
-      "Bash(bun:*)",
-      "Bash(bunx:*)",
-      "Bash(bundle install:*)",
-      "Bash(bundle show:*)",
-      "Bash(docker compose:*)",
-      "Bash(gh issue view:*)",
-      "Bash(gh pr list:*)",
-      "Bash(gh pr view:*)",
-      "Bash(gh repo view:*)",
-      "Bash(gh search issues:*)"
+      "Bash(bin/turbo_tests:*)",
+      "Bash(bun run erb:check:*)",
+      "Bash(bun run erb:format:*)",
+      "Bash(bun run format:*)",
+      "Bash(bun run lint:*)",
+      "Bash(bun run test:*)",
+      "Bash(bun run tsc:*)",
+      "Bash(docker compose:*)"
+    ],
+    "ask": [
+      "Bash(bin/dev:*)",
+      "Bash(bin/rails db*)",
+      "Bash(bin/rails runner:*)",
+      "Bash(bin/rake db*)",
+      "Bash(bin/setup:*)",
+      "Bash(docker compose down:*)",
+      "Bash(docker compose kill:*)",
+      "Bash(docker compose rm:*)",
+      "Bash(docker compose stop:*)"
     ]
   }
 }
