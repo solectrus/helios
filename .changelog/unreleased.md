@@ -34,3 +34,4 @@ Keep every section, an empty one included.
 ## Maintenance
 
 - Support bundle: the logs reach much further back. Every service now contributes its last 2000 lines instead of 500
+- Updated to Ruby 4.0.7
