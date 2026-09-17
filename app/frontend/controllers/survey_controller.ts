@@ -38,7 +38,7 @@ export default class extends Controller<HTMLElement> {
   declare connectionTestUrlValue: string;
 
   private survey: Model | null = null;
-  private inViewTransition = false;
+  private applyingPageChange = false;
   private lastProgress = -1;
   private readonly resetTestsOnInput = () => this.resetConnectionTests();
   private dropdowns: SurveyDropdowns | null = null;
@@ -131,15 +131,25 @@ export default class extends Controller<HTMLElement> {
 
     // Animate height changes between pages instead of snapping.
     this.survey.onCurrentPageChanging.add((sender, options) => {
-      if (this.inViewTransition || !this.viewTransitionsEnabled) return;
+      // The assignment below turns the page for real and fires this event a
+      // second time. Let that one through, it is already inside a transition.
+      if (this.applyingPageChange || !this.viewTransitionsEnabled) return;
 
       options.allowChanging = false;
-      this.inViewTransition = true;
-      const transition = document.startViewTransition(() => {
-        sender.currentPage = options.newCurrentPage;
-      });
-      transition.finished.finally(() => {
-        this.inViewTransition = false;
+
+      // A page turn that arrives while the previous one still animates gets
+      // its own transition. The browser drops the running one, which snaps the
+      // modal to the page that transition was heading for, and the new one
+      // starts from there. Turning the page outside a transition instead would
+      // leave the old snapshot on screen, and the modal would flicker once the
+      // browser drops that snapshot.
+      document.startViewTransition(() => {
+        this.applyingPageChange = true;
+        try {
+          sender.currentPage = options.newCurrentPage;
+        } finally {
+          this.applyingPageChange = false;
+        }
       });
     });
 
