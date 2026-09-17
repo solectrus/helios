@@ -123,8 +123,13 @@
 
     /* A masked field carries an eye button that uncovers its value (see
        survey_password_reveal.ts). The button sits inside the field, so the
-       input keeps room for it and the value never runs underneath. */
-    & .password-reveal__field {
+       input keeps room for it and the value never runs underneath.
+
+       Matched through the button rather than through a class of our own:
+       SurveyJS rewrites the class list of the field whenever the question
+       renders again, for instance when a validation error arrives, and a
+       class we added there does not survive it. The button does. */
+    & :has(> .password-reveal) {
       position: relative;
     }
     & .password-reveal__input {

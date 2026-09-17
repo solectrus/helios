@@ -50,7 +50,6 @@ export function wirePasswordReveal(htmlElement: HTMLElement) {
   for (const [name, value] of Object.entries(PASSWORD_MANAGER_OPT_OUT))
     input.setAttribute(name, value);
   input.classList.add('password-reveal__input');
-  field.classList.add('password-reveal__field');
 
   const button = document.createElement('button');
   button.type = 'button';
