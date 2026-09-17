@@ -41,6 +41,31 @@ RSpec.describe ServiceRow::Component, type: :component do
     end
   end
 
+  # A foreign broker of the same name keeps its compose entry verbatim, so the
+  # image upgrade would write into a section the export never renders and the
+  # hint would come back on every render.
+  context 'with an unmanaged service carrying a known legacy image' do
+    let(:service_name) { 'mosquitto' }
+    let(:image) { 'eclipse-mosquitto:2' }
+
+    before do
+      with_config_yaml('_unmanaged' => { 'services' => { 'mosquitto' => { 'image' => image } } })
+    end
+
+    it 'offers no image upgrade' do
+      expect(rendered.to_html).not_to include('Upgrade recommended')
+    end
+  end
+
+  context 'with a managed service carrying a known legacy image' do
+    let(:service_name) { 'mosquitto' }
+    let(:image) { 'eclipse-mosquitto:2' }
+
+    it 'offers the image upgrade' do
+      expect(rendered.to_html).to include('Upgrade recommended')
+    end
+  end
+
   # The update button does the same thing either way, but the reason tells the
   # user whether the image moved or only the configuration did.
   context 'when only the configuration changed' do

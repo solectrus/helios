@@ -1055,8 +1055,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # installation (under `_unmanaged.services`) — HELIOS exports it but does
   # not manage its definition, so it can only be removed, never re-added.
   def unmanaged_service?(name)
-    services = unmanaged.services
-    services.is_a?(Hash) && services.key?(name.to_s)
+    unmanaged_services.key?(name.to_s)
   end
 
   # Permanently drop an unmanaged service from the configuration. Its
@@ -1064,15 +1063,13 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # top-level `_unmanaged.env_vars` (orphan .env lines) are left untouched.
   # Returns false when no such unmanaged service exists.
   def remove_unmanaged_service(name) # rubocop:disable Naming/PredicateMethod
-    # Operate on the raw (plain-Hash) data, not the Data-wrapped reader, so the
-    # value written back stays free of Configuration::Data objects in the YAML.
-    data = @data[UNMANAGED_KEY]
-    services = data && data['services']
-    return false unless services.is_a?(Hash) && services.key?(name.to_s)
+    return false unless unmanaged_service?(name)
 
+    section = @data[UNMANAGED_KEY]
+    services = section['services']
     services.delete(name.to_s)
-    data.delete('services') if services.blank?
-    update_unmanaged(data)
+    section.delete('services') if services.blank?
+    update_unmanaged(section)
     true
   end
 
@@ -1150,6 +1147,16 @@ class Configuration # rubocop:disable Metrics/ClassLength
   }.freeze
 
   private
+
+  # `_unmanaged.services` as it sits in the YAML, empty when the stack
+  # preserves none. Deliberately not routed through #unmanaged: that wraps
+  # every preserved compose entry in a Data reader, which #unmanaged_service?
+  # would pay for on every rendered service row, and which
+  # #remove_unmanaged_service must not write back into config.yaml.
+  def unmanaged_services
+    services = @data[UNMANAGED_KEY]&.dig('services')
+    services.is_a?(Hash) ? services : {}
+  end
 
   # Synthesises the payload a read-only pseudo-setting's survey prefills
   # with. Routed via `setting_data` so the SettingForm component picks it up

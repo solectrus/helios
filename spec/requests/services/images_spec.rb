@@ -53,6 +53,21 @@ RSpec.describe 'Services::Images', :with_admin_password do
       expect(response).to have_http_status(:forbidden)
     end
 
+    # A foreign broker keeps its compose entry verbatim, so writing the image
+    # into the managed section would change nothing the export renders.
+    it 'rejects an update for an unmanaged service' do
+      with_startable_config_yaml(
+        '_unmanaged' => { 'services' => { 'mosquitto' => { 'image' => 'eclipse-mosquitto:2' } } },
+      )
+      install_compose_with('mosquitto', 'eclipse-mosquitto:2')
+
+      patch service_image_path(service_id: 'mosquitto'), as: :turbo_stream
+
+      expect(Configuration.current.mosquitto.image).to be_nil
+      expect(ComposeJob).not_to have_received(:perform_later)
+      expect(response).to have_http_status(:unprocessable_content)
+    end
+
     it 'returns 422 for an unknown service' do
       with_startable_config_yaml
       install_compose_with('foobar', 'foobar:1.0')

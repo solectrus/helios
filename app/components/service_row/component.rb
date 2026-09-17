@@ -253,8 +253,13 @@ module ServiceRow
       !pending && running? && (health.nil? || health == 'healthy')
     end
 
+    # An unmanaged service keeps its compose entry verbatim, so its image is
+    # not HELIOS's to change (a Traefik it did not adopt, for example): the
+    # upgrade would write into the section of the managed service of the same
+    # name, which the export never renders. The hint would come back on every
+    # render.
     def legacy_image?
-      return false if helios?
+      return false if helios? || unmanaged?
 
       DockerImages.legacy?(service_name, compose_service.image)
     end

@@ -7,6 +7,10 @@ module Services
       config_keys = Export::Compose.find_service(service_name)&.config_keys
       recommended = DockerImages.recommended_for(service_name)
       return head :unprocessable_content unless config_keys && recommended
+      # An unmanaged service of the same name (a Traefik HELIOS did not adopt,
+      # for example) keeps its compose entry verbatim. Writing the image into
+      # the managed section would change nothing the export renders.
+      return head :unprocessable_content if Configuration.current.unmanaged_service?(service_name)
 
       apply_image!(config_keys, recommended)
 
