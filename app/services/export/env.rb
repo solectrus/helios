@@ -36,6 +36,7 @@ module Export
       [Forecast,     ->(c) { Services::ForecastCollector.enabled?(c) }],
       [Tibber,       ->(c) { Services::TibberCollector.enabled?(c) }],
       [SenecCharger, ->(c) { Services::SenecCharger.enabled?(c) }],
+      [Mosquitto,    ->(c) { Services::Mosquitto.enabled?(c) }],
       [Mqtt,         ->(c) { Services::MqttCollector.enabled?(c) }],
       [Shelly,       ->(c) { Services::ShellyCollector.enabled?(c) }],
       [Ingest,       ->(c) { c.ingest_required? }],

@@ -4,7 +4,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # Singletons exist at most once per configuration
   SINGLETONS = %w[
     deployment system dashboard postgresql influxdb redis
-    watchtower forecast senec mqtt tibber senec_charger shelly reverse_proxy
+    watchtower forecast senec mqtt mosquitto tibber senec_charger shelly reverse_proxy
     backup backup_schedule sensors ingest power_splitter
     helios
   ].freeze
@@ -14,7 +14,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # via #visible_settings whenever a balcony sensor activates it.
   # `senec_charger` has no survey of its own: the prices survey configures it
   # alongside the Tibber collector (see BORROWED_FIELDS).
-  HIDDEN = %w[postgresql redis watchtower power_splitter senec_charger helios].freeze
+  HIDDEN = %w[postgresql redis watchtower power_splitter senec_charger mosquitto helios].freeze
 
   # Mini-surveys persist into a slice of one singleton section in config.yaml.
   # On save the listed keys overwrite, missing ones are cleared, and any
@@ -32,6 +32,11 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # `senec_charger` section. `image` is not among them: the Software survey owns
   # it and it is never part of this survey's payload.
   SENEC_CHARGER_SURVEY_FIELDS = (ConfigSchema::SENEC_CHARGER_FIELDS - %w[image]).freeze
+
+  # The broker fields the MQTT survey collects on behalf of the `mosquitto`
+  # section. `image` is not among them: the section keeps whatever an import
+  # brought along, and the survey never speaks about it.
+  MOSQUITTO_SURVEY_FIELDS = (ConfigSchema::MOSQUITTO_FIELDS - %w[image]).freeze
 
   # Survey fields persisted in a section other than the survey's own.
   # lockup_codeword, frame_ancestors, trusted_proxy_ranges, force_ssl and
@@ -64,6 +69,11 @@ class Configuration # rubocop:disable Metrics/ClassLength
     # section, so both stay clean per-service collector configs — and the
     # charger section disappears once the survey blanks its fields.
     'tibber' => SENEC_CHARGER_SURVEY_FIELDS.index_with('senec_charger').freeze,
+    # The MQTT survey configures the collector plus, where the broker runs
+    # under HELIOS, the broker itself. Its settings go into the `mosquitto`
+    # section so both stay clean per-service configs, and the section
+    # disappears once the survey blanks its fields.
+    'mqtt' => MOSQUITTO_SURVEY_FIELDS.index_with('mosquitto').freeze,
   }.freeze
 
   # Read-only pseudo-settings: they appear in the Settings UI like real
@@ -392,10 +402,22 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # sensor that reads through the source goes too, because it would have
   # nothing left to read (the card warns and asks first). The SENEC charger
   # steers the battery over the same local API, so it goes with SENEC.
+  #
+  # For MQTT the broker HELIOS runs goes as well, down to its storage path.
+  # That path is the one field no survey can enter again, and a broker
+  # switched back on has to find its retained messages.
   def drop_source!(source)
     remove_sensors(sensors_with_source(source).keys)
     update('senec_charger', {}) if source == 'senec'
+    drop_mosquitto! if source == 'mqtt'
     update(source, {})
+  end
+
+  # The broker section goes, except for the storage path. That path is the one
+  # field no survey can enter again: only an import brings it in, and a broker
+  # switched back on has to find its retained messages where it left them.
+  def drop_mosquitto!
+    update('mosquitto', mosquitto.slice(*ConfigSchema::STORAGE_FIELDS))
   end
 
   # Enable/update a sensor. Returns true if data changed.
@@ -618,6 +640,16 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   def mqtt_required?
     sensors_with_source('mqtt').any?
+  end
+
+  # HELIOS runs the broker itself. The collector then reaches it over the
+  # internal network, so host, port and SSL of a foreign broker are neither
+  # asked for nor emitted (see Export::Services::Mosquitto).
+  #
+  # Read off the raw data: the export asks several times per run, and the
+  # `mqtt` reader would rebuild every mapping sub-hash for one boolean.
+  def mqtt_broker_managed?
+    @data.dig('mqtt', 'broker_managed') == true
   end
 
   def shelly_required?
@@ -1493,6 +1525,9 @@ class Configuration # rubocop:disable Metrics/ClassLength
   end
 
   def source_complete?(source)
+    # A managed broker has no host to fill in — HELIOS knows where it runs.
+    return true if source == 'mqtt' && mqtt_broker_managed?
+
     setting_data(source)[SOURCE_REQUIRED_FIELDS.fetch(source)].present?
   end
 
@@ -1518,7 +1553,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
       # API, so it belongs wherever that hardware is reachable. `tibber` stays,
       # like `forecast` — both only fetch from a public API and keep running
       # alongside the dashboard.
-      %w[shelly senec senec_charger mqtt].each { |key| @data.delete(key) }
+      %w[shelly senec senec_charger mqtt mosquitto].each { |key| @data.delete(key) }
       rewrite_sensors_to_external!
       strip_influxdb_fields!(ConfigSchema::INFLUXDB_EXTERNAL_FIELDS)
     when ConfigSchema::MODE_COLLECTORS_ONLY

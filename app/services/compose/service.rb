@@ -7,6 +7,7 @@ module Compose
       'influxdb' => 'InfluxDB',
       'influxdb-backup' => 'InfluxDB-Backup',
       'ingest' => 'Ingest',
+      'mosquitto' => 'Mosquitto',
       'mqtt-collector' => 'MQTT-Collector',
       'postgresql' => 'PostgreSQL',
       'postgresql-backup' => 'PostgreSQL-Backup',

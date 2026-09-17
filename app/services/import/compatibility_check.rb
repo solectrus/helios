@@ -22,12 +22,41 @@ module Import
   # Either way the whole import is refused, with an actionable error naming
   # what stands in the way.
   class CompatibilityCheck
+    include ConfigurationImporter::Helpers
+
     # SOLECTRUS-universe images HELIOS round-trips today. All fully-modeled
     # services live in StackReader::ALL_IMAGE_PREFIXES — including
     # tibber-collector (Phase 2a) and senec-charger (Phase 2b), both promoted to
     # first-class managed services that match via their StackReader prefixes and
     # are never treated as `_unmanaged`.
     SOLECTRUS_IMAGE_PREFIXES = StackReader::ALL_IMAGE_PREFIXES
+
+    # Images of the services HELIOS can only run, never take over. Each service
+    # class says so itself (Export::Services::Base.adoptable?), so the reason
+    # stands with the service and this gate does not repeat it.
+    UNADOPTABLE_IMAGE_PREFIXES =
+      StackReader::SERVICE_IMAGE_PREFIXES
+      .values_at(*Export::Compose::SERVICE_ORDER.reject(&:adoptable?).map(&:service_name))
+      .flatten
+      .compact
+      .freeze
+
+    # Traefik argument that opens an MQTT entrypoint, so the proxy fronts a
+    # broker. HELIOS writes two of them, one plain and one for TLS, and a
+    # user who routes a broker through Traefik writes the same thing (see
+    # #supported?). Traefik reads its flags case-insensitively and its own
+    # documentation spells them camelCase, so the match ignores case. It also
+    # scans the whole argument, because Compose accepts `command` as a single
+    # string that holds every flag.
+    BROKER_ENTRYPOINT_PATTERN = /--entrypoints\.mqtts?\./i
+
+    # Host ports a proxy holds only to front a broker. A proxy can also take
+    # its entrypoints from a configuration file, which HELIOS never reads, so
+    # the published ports are the second trace to look for.
+    BROKER_HOST_PORTS = [
+      Export::Services::Mosquitto::CONTAINER_PORT,
+      Export::Services::Mosquitto::TLS_HOST_PORT,
+    ].freeze
 
     # Curated third-party companion images HELIOS tolerates but never
     # configures. dozzle was recommended in earlier SOLECTRUS hosting guides,
@@ -69,9 +98,9 @@ module Import
     # Offending services as [{ 'service' => name, 'image' => image }, ...];
     # empty when every service is recognized.
     def unsupported_services
-      service_images
-        .reject { |_name, image| supported?(image) }
-        .map { |name, image| { 'service' => name, 'image' => image } }
+      service_configs
+        .reject { |_name, config| supported?(config) }
+        .map { |name, config| { 'service' => name, 'image' => config['image'] } }
     end
 
     # Networks a service joins that the export would not write again. The
@@ -111,16 +140,38 @@ module Import
 
     private
 
-    # Each service as the user authored it, paired with its resolved image
-    # so `${VAR}`-based image references are expanded before matching.
-    def service_images
+    # Each service as the user authored it, paired with its resolved compose
+    # entry so `${VAR}`-based image references are expanded before matching.
+    def service_configs
       (@reader.raw_compose['services'] || {}).keys.index_with do |name|
-        @reader.service(name)&.fetch('image', nil)
+        @reader.service(name) || {}
       end
     end
 
-    def supported?(image)
-      image.present? && StackReader.image_matches?(image, ALLOWED_IMAGE_PREFIXES)
+    # A service HELIOS only runs is the exception to matching on the image: it
+    # is refused however well HELIOS knows it, even where HELIOS wrote it
+    # itself (see Export::Services::Mosquitto.adoptable?).
+    def supported?(config)
+      image = config['image']
+      return false if image.blank?
+      return false if StackReader.image_matches?(image, UNADOPTABLE_IMAGE_PREFIXES)
+      return false if routes_a_broker?(config)
+
+      StackReader.image_matches?(image, ALLOWED_IMAGE_PREFIXES)
+    end
+
+    # A reverse proxy that fronts a broker is the second trace of one, and it
+    # stays behind when the user removes the broker service alone. HELIOS
+    # would then publish the broker port that the proxy still holds, and
+    # Docker refuses the stack with "port is already allocated". So the proxy
+    # has to lose that trace before the import, and the broker keeps one
+    # single shape on export.
+    #
+    # The entrypoint can come from the command line or from a configuration
+    # file HELIOS never reads, so the published ports count as well.
+    def routes_a_broker?(config)
+      Array(config['command']).any? { |arg| arg.to_s.match?(BROKER_ENTRYPOINT_PATTERN) } ||
+        Array(config['ports']).any? { |entry| BROKER_HOST_PORTS.include?(published_host_port(entry).to_i) }
     end
 
     # Traefik labels per managed service, read from the resolved view so a

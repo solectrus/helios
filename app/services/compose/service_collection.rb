@@ -2,24 +2,9 @@ module Compose
   class ServiceCollection
     include Enumerable
 
-    # Keep in sync with Export::Compose::SERVICE_ORDER (compose.yaml order).
+    # UI order, derived from the compose order so the two cannot drift.
     # HELIOS is handled separately by #sort_key and always appears last in the UI.
-    PRIORITY_ORDER = %w[
-      dashboard
-      influxdb
-      ingest
-      postgresql
-      redis
-      senec-collector
-      shelly-collector
-      mqtt-collector
-      forecast-collector
-      tibber-collector
-      senec-charger
-      power-splitter
-      traefik
-      watchtower
-    ].freeze
+    PRIORITY_ORDER = Export::Compose::SERVICE_ORDER.map(&:service_name).freeze
 
     def initialize(services_hash)
       @services_hash = services_hash || {}

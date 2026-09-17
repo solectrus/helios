@@ -15,7 +15,8 @@ module Export
       'INFLUX_SCHEMA' => 'http',
     }.freeze
 
-    # Keep in sync with Compose::ServiceCollection::PRIORITY_ORDER (UI order).
+    # Order of the services in compose.yaml. Compose::ServiceCollection derives
+    # the UI order from it.
     SERVICE_ORDER = [
       Services::Dashboard,
       Services::Influxdb,
@@ -24,6 +25,7 @@ module Export
       Services::Redis,
       Services::SenecCollector,
       Services::ShellyCollector,
+      Services::Mosquitto,
       Services::MqttCollector,
       Services::ForecastCollector,
       Services::TibberCollector,

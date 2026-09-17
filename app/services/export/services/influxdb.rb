@@ -109,14 +109,6 @@ module Export
         self.class.exposed?(configuration)
       end
 
-      def host_port
-        self.class.host_port(configuration)
-      end
-
-      def traefik_managed_routing?
-        self.class.traefik_managed_routing?(configuration)
-      end
-
       # The second mount is the shared influx-backup staging directory.
       # `influx backup` writes its (already-gzipped) output there, and the
       # backup/restore sidecars see the same path under the same name —

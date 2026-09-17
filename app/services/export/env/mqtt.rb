@@ -10,7 +10,22 @@ module Export
       # mqtt-collector reads MQTT_PORT via `env.fetch('MQTT_PORT')` — without a
       # fallback, so an omitted variable crash-loops it. The survey field is
       # mandatory for exactly that reason; MQTT_PORT is exported unconditionally.
+      #
+      # A managed broker contributes neither: the collector reaches it inside
+      # the compose network, with host and port baked into compose.yaml and
+      # the credentials emitted by Export::Env::Mosquitto.
       def call
+        if configuration.mqtt_broker_managed?
+          env.add_section('MQTT mappings')
+        else
+          broker_entries
+        end
+        mapping_entries
+      end
+
+      private
+
+      def broker_entries
         mqtt = configuration.mqtt
         env.add_section('MQTT broker')
         entry('MQTT_HOST', mqtt.mqtt_host, 'MQTT broker hostname')
@@ -19,10 +34,7 @@ module Export
           value = mqtt.send(field)
           entry(key, value, comment) if value.present?
         end
-        mapping_entries
       end
-
-      private
 
       def mapping_entries
         return raw_mapping_entries if configuration.collectors_only?

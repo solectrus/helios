@@ -440,4 +440,15 @@ RSpec.describe Import::ConfigurationImporter::MqttExtractor do
       expect(extractor.raw_mappings.pluck('null_to_zero')).to eq([true, false, 'yes'])
     end
   end
+
+  # A broker lives on the collector alone, so without the collector
+  # there is nothing to read.
+  describe '#broker_data without a collector' do
+    let(:reader) { instance_double(Import::StackReader, services: {}, service: nil) }
+    let(:env) { {} }
+
+    it 'names no broker' do
+      expect(extractor.broker_data).to be_nil
+    end
+  end
 end

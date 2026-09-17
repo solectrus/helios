@@ -1,6 +1,9 @@
 module Export
   module Services
     class Dashboard < Base
+      # Port the dashboard always listens on inside the compose network.
+      CONTAINER_PORT = 3000
+
       def self.service_name
         'dashboard'
       end
@@ -23,27 +26,29 @@ module Export
           environment: dashboard_environment,
           depends_on: healthy_depends_on(%i[postgresql redis influxdb]),
           restart: 'unless-stopped',
-          healthcheck: healthcheck('CMD-SHELL', 'nc -z 127.0.0.1 3000 || exit 1', start_period: '60s'),
+          healthcheck: healthcheck('CMD-SHELL', "nc -z 127.0.0.1 #{CONTAINER_PORT} || exit 1", start_period: '60s'),
         }
 
         if Traefik.enabled?(configuration)
-          config[:labels] = traefik_router_labels(entrypoint: 'websecure', port: 3000)
+          config[:labels] = traefik_router_labels(entrypoint: 'websecure', port: CONTAINER_PORT)
         elsif shared_network_routing?
           # An external proxy on the shared network reaches the dashboard by
           # name, so no host port is published.
-          config[:labels] = shared_network_router_labels(port: 3000)
+          config[:labels] = shared_network_router_labels(port: CONTAINER_PORT)
         else
-          config[:ports] = ["#{host_port}:3000"]
+          config[:ports] = ["#{host_port}:#{CONTAINER_PORT}"]
         end
 
         config
       end
 
-      private
-
-      def host_port
-        configuration.dashboard.host_port.presence || 3000
+      # Host-side port the dashboard is reachable on where Traefik does not
+      # front it.
+      def self.host_port(configuration)
+        configuration.dashboard.host_port.presence || CONTAINER_PORT
       end
+
+      private
 
       def dashboard_environment
         passthrough_vars + explicit_vars + optional_vars + sensor_environment

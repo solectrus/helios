@@ -94,6 +94,7 @@ module SupportBundle
       'postgresql' => %w[password],
       'influxdb' => %w[password token token_admin token_readwrite token_write token_read],
       'mqtt' => %w[mqtt_username mqtt_password],
+      'mosquitto' => %w[username password],
       'tibber' => %w[token],
       'senec' => %w[username password totp_uri system_id],
       'shelly' => %w[password auth_key],

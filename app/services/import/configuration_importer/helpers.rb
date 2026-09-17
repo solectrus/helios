@@ -20,7 +20,49 @@ module Import
       # HELIOS sensors from one measurement.
       SHELLY_POWER_FIELDS = %w[power power_a power_b power_c].freeze
 
+      # Wildcard bind addresses are equivalent to "no explicit bind" — HELIOS
+      # already defaults to all interfaces, so they name no host IP.
+      WILDCARD_IPS = %w[0.0.0.0 ::].freeze
+
       private
+
+      # --- Port mappings ---
+      #
+      # `docker compose config --format json` normalizes short-form ports to
+      # long-form hashes (target/published/protocol). Every reader below
+      # handles both, so a raw-YAML fallback path stays compatible too.
+
+      # Container side of a port mapping, protocol suffix stripped.
+      def container_port(entry)
+        return entry['target'].to_i if entry.is_a?(Hash)
+
+        entry.to_s.split('/').first.to_s.split(':').last.to_i
+      end
+
+      # Host side of a port mapping, nil where the mapping publishes none
+      # (a bare `1883`). A bind IP is not part of it, so a caller that cares
+      # which interface the port sits on has to read #host_ip as well.
+      def published_host_port(entry)
+        return entry['published'].presence&.to_s if entry.is_a?(Hash)
+
+        parts = entry.to_s.split('/').first.to_s.split(':')
+        parts[-2] if parts.size >= 2
+      end
+
+      # The single host interface a port mapping binds to. Nil for a wildcard
+      # bind and for a mapping that names no interface at all: both publish on
+      # every interface and carry no information HELIOS needs to persist.
+      def host_ip(entry)
+        ip =
+          if entry.is_a?(Hash)
+            entry['host_ip']
+          else
+            parts = entry.to_s.split(':', 3)
+            parts.first if parts.size == 3
+          end
+
+        ip if ip.present? && WILDCARD_IPS.exclude?(ip)
+      end
 
       # Environment of a specific service (memoized per service name).
       #

@@ -102,6 +102,14 @@
         <% if status_value.present? %>
           <span class="text-base-content block truncate font-mono" title="<%= status_value %>"><%= status_value %></span>
         <% end %>
+
+        <% if status_tls.present? %>
+          <span class="text-base-content flex items-center gap-1.5 font-mono" title="<%= status_tls %>">
+            <span class="truncate"><%= status_tls %></span>
+            <i aria-hidden="true" class="fa-solid fa-lock shrink-0 text-[0.625rem]"></i>
+            <span class="sr-only"><%= t('configurations.show.broker_tls_hint') %></span>
+          </span>
+        <% end %>
       </div>
     <% end %>
   <% end %>

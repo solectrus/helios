@@ -679,6 +679,158 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
   end
 
+  describe 'POST /configuration/settings for MQTT' do
+    def post_survey(**data)
+      post configuration_settings_path, params: { setting: 'mqtt', data: data.to_json }
+    end
+
+    def with_managed_broker
+      with_config_yaml
+      post_survey(broker_external: false, port: 1884, username: 'solectrus', password: 'geheim')
+    end
+
+    it 'splits the survey into the collector connection and the broker HELIOS runs' do
+      with_managed_broker
+
+      config = Configuration.current
+      expect(config.mqtt.to_h).to eq('broker_managed' => true)
+      expect(config.mosquitto.to_h).to eq('port' => 1884, 'username' => 'solectrus', 'password' => 'geheim')
+      expect(config.mqtt_broker_managed?).to be(true)
+    end
+
+    # SurveyJS drops an emptied answer from the payload instead of sending an
+    # empty one, so a cleared credential arrives as a missing key.
+    it 'clears a credential the payload no longer carries' do
+      with_managed_broker
+
+      post_survey(broker_external: false, port: 1884)
+
+      expect(Configuration.current.mosquitto.to_h).to eq('port' => 1884)
+    end
+
+    # A password without a user name cannot become a login, and a stored one
+    # would show a protected broker while the broker takes messages from
+    # anyone. The survey shows the password field only with a user name, and
+    # a payload from anywhere else meets the same rule.
+    it 'drops a password that comes without a user name' do
+      with_config_yaml
+      post_survey(broker_external: false, port: 1884, password: 'geheim')
+
+      expect(Configuration.current.mosquitto.to_h).to eq('port' => 1884)
+    end
+
+    # The survey hides the foreign broker while HELIOS runs its own, but
+    # SurveyJS keeps its prefilled answers in the payload.
+    it 'drops the foreign broker the payload still carries' do
+      with_config_yaml
+      post_survey(broker_external: true, mqtt_host: 'mqtt.fritz.box', mqtt_port: 1883,
+                  mqtt_username: 'user', mqtt_password: 'geheim')
+
+      post_survey(broker_external: false, mqtt_host: 'mqtt.fritz.box', mqtt_port: 1883,
+                  mqtt_username: 'user', mqtt_password: 'geheim', port: 1884)
+
+      expect(Configuration.current.mqtt.to_h).to eq('broker_managed' => true)
+    end
+
+    # Only an explicit answer hands the broker to HELIOS. A payload without
+    # the question means a broker of the user, the same as an absent
+    # `broker_managed` in config.yaml.
+    it 'keeps the foreign broker when the payload names no answer' do
+      with_config_yaml
+
+      post_survey(mqtt_host: 'mqtt.fritz.box', mqtt_port: 1883)
+
+      config = Configuration.current
+      expect(config.mqtt_broker_managed?).to be(false)
+      expect(config.mqtt.mqtt_host).to eq('mqtt.fritz.box')
+    end
+
+    # No answer is not an answer: dropping the broker on a payload that never
+    # asked the question would take a running broker and its login with it.
+    it 'keeps the managed broker when the payload names no answer' do
+      with_managed_broker
+
+      post_survey(mqtt_host: 'mqtt.fritz.box', mqtt_port: 1883)
+
+      config = Configuration.current
+      expect(config.mqtt_broker_managed?).to be(true)
+      expect(config.mosquitto.to_h).to include('port' => 1884, 'username' => 'solectrus')
+    end
+
+    it 'drops the broker when the box is unticked' do
+      with_managed_broker
+
+      post_survey(broker_external: true, mqtt_host: 'mqtt.fritz.box', mqtt_port: 1883)
+
+      config = Configuration.current
+      expect(config.mqtt_broker_managed?).to be(false)
+      expect(config.mosquitto.to_h).to be_empty
+      expect(config.mqtt.mqtt_host).to eq('mqtt.fritz.box')
+    end
+
+    # SurveyJS returns prefilled values whose question it does not render, so
+    # the flag of the previous run comes back in the payload.
+    it 'drops the broker although the payload still carries the flag' do
+      with_managed_broker
+
+      post_survey(broker_external: true, broker_managed: true, mqtt_host: 'mqtt.fritz.box', mqtt_port: 1883)
+
+      config = Configuration.current
+      expect(config.mqtt_broker_managed?).to be(false)
+      expect(config.mosquitto.to_h).to be_empty
+    end
+
+    # `image` belongs to the broker section but to no question of this
+    # survey, so blanking the survey fields leaves it behind. A stale image
+    # would then come back on the next managed run.
+    it 'drops the broker keys no survey speaks for' do
+      with_config_yaml('mosquitto' => { 'image' => 'eclipse-mosquitto:2.0' })
+      post_survey(broker_external: false, port: 1884, username: 'solectrus', password: 'geheim')
+
+      post_survey(broker_external: true, mqtt_host: 'mqtt.fritz.box', mqtt_port: 1883)
+
+      expect(Configuration.current.mosquitto.to_h).to be_empty
+    end
+
+    # The storage path names where the retained messages live. Only an import
+    # brings it in, and no survey can enter it again, so it must outlast a
+    # broker that is switched off.
+    it 'keeps the storage path of a broker that is switched off' do
+      with_config_yaml('mosquitto' => { 'volume_path' => '/mnt/mqtt' })
+      post_survey(broker_external: false, port: 1884, username: 'solectrus', password: 'geheim')
+
+      post_survey(broker_external: true, mqtt_host: 'mqtt.fritz.box', mqtt_port: 1883)
+
+      expect(Configuration.current.mosquitto.to_h).to eq('volume_path' => '/mnt/mqtt')
+    end
+
+    # So a broker that comes back finds its own directory with the retained
+    # messages in it, and not an empty default one.
+    it 'gives the storage path back to a broker that returns' do
+      with_config_yaml('mosquitto' => { 'volume_path' => '/mnt/mqtt' })
+      post_survey(broker_external: false, port: 1884, username: 'solectrus', password: 'geheim')
+      post_survey(broker_external: true, mqtt_host: 'mqtt.fritz.box', mqtt_port: 1883)
+
+      post_survey(broker_external: false, port: 1884)
+
+      expect(Configuration.current.mosquitto.to_h).to eq('port' => 1884, 'volume_path' => '/mnt/mqtt')
+    end
+
+    # Standalone topics live in the same section as the broker settings, and
+    # the survey knows nothing about them.
+    it 'keeps the standalone mappings the survey never carries' do
+      with_config_yaml
+      Configuration.current.add_mqtt_topic('measurement' => 'Wallbox', 'field' => 'power', 'type' => 'integer',
+                                           'topic' => 'wallbox/power')
+
+      post_survey(broker_external: false, port: 1883, username: 'solectrus')
+
+      expect(Configuration.current.mqtt_topics).to contain_exactly(
+        hash_including('topic' => 'wallbox/power'),
+      )
+    end
+  end
+
   describe 'POST /configuration/settings for the dynamic electricity prices' do
     # The survey drives two services: the Tibber collector (its own section) and,
     # where a local battery and a forecast collector exist, the SENEC charger
@@ -1005,6 +1157,20 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
       expect(response).to redirect_to(datasources_path)
       expect(Configuration.current.setting_data('senec')).to be_blank
+    end
+
+    # The broker goes with the collector, but not the path its messages are
+    # kept in: no survey can enter that again.
+    it 'takes the broker of HELIOS with the MQTT section' do
+      config = Configuration.current
+      config.update('mqtt', { 'broker_managed' => true })
+      config.update('mosquitto', { 'volume_path' => '/data/mosquitto', 'username' => 'solectrus' })
+
+      delete configuration_setting_path(setting: 'mqtt', name: 'mqtt')
+
+      config = Configuration.current
+      expect(config.setting_data('mqtt')).to be_blank
+      expect(config.mosquitto.to_h).to eq({ 'volume_path' => '/data/mosquitto' })
     end
 
     # A sensor that reads through the source has nothing left to read once the

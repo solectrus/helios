@@ -24,6 +24,66 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
       expect(response).to have_http_status(:not_found)
     end
 
+    describe 'the MQTT survey' do
+      def broker_settings_elements
+        get configuration_survey_path(id: 'mqtt')
+        page = response.parsed_body['pages'].find { |p| p['name'] == 'p_mqtt_broker_settings' }
+        page['elements']
+      end
+
+      def broker_page_elements
+        broker_settings_elements.pluck('name')
+      end
+
+      # The page asks for the broker and nothing else. Where devices reach it
+      # is answered by the card on the datasources screen.
+      it 'asks for the broker itself, without hints around it' do
+        expect(broker_page_elements).to eq(%w[port username password])
+      end
+
+      # A broker HELIOS runs never takes messages from anyone. The survey is
+      # where that is settled, so neither half of the login can be skipped
+      # (see Export::Services::Mosquitto#config_lines).
+      it 'demands both halves of the broker login' do
+        required = broker_settings_elements.select { |element| element['isRequired'] }
+
+        expect(required.pluck('name')).to include('username', 'password')
+      end
+
+      def broker_external_default
+        get configuration_survey_path(id: 'mqtt')
+        page = response.parsed_body['pages'].find { |p| p['name'] == 'p_mqtt_broker' }
+        page['elements'].find { |element| element['name'] == 'broker_external' }['defaultValue']
+      end
+
+      it 'assumes a broker of the user by default' do
+        expect(broker_external_default).to be(true)
+      end
+
+      it 'reopens on the managed broker once HELIOS runs one' do
+        with_config_yaml('mqtt' => { 'broker_managed' => true })
+
+        expect(broker_external_default).to be(false)
+      end
+    end
+
+    describe 'the storage survey' do
+      def storage_rows
+        get configuration_survey_path(id: 'storage')
+        response.parsed_body['pages'].first['elements'].pluck('name')
+      end
+
+      it 'lists the broker folder once HELIOS runs the broker' do
+        with_config_yaml('mqtt' => { 'broker_managed' => true })
+
+        expect(storage_rows).to include('mosquitto')
+      end
+
+      it 'leaves it out for a foreign broker' do
+        expect(storage_rows).not_to include('mosquitto')
+      end
+    end
+
     describe 'the dynamic-prices survey' do
       it 'asks for the prices alone without a locally-queried SENEC battery' do
         get configuration_survey_path(id: 'tibber')

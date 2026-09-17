@@ -138,4 +138,23 @@ RSpec.describe Import::ConfigurationImporter::UnmanagedDetector do
     end
   end
 
+  # Only a broker HELIOS wrote itself reaches the import at all (see
+  # Import::CompatibilityCheck), so the broker is always a managed service.
+  context 'with the broker of HELIOS' do
+    let(:services) do
+      {
+        'mosquitto' => {
+          'image' => 'eclipse-mosquitto:2',
+          'volumes' => ['${MOSQUITTO_VOLUME_PATH}:/mosquitto/data'],
+        },
+      }
+    end
+    let(:env_vars) { { 'MOSQUITTO_VOLUME_PATH' => './mosquitto' } }
+
+    # Nothing survives the import at all: the broker is managed, and the
+    # export writes its volume path itself.
+    it 'drops the variable it regenerates itself' do
+      expect(detected).to be_nil
+    end
+  end
 end

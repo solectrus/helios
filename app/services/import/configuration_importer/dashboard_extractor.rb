@@ -3,9 +3,6 @@ module Import
     class DashboardExtractor
       include Helpers
 
-      # Container port the Rails dashboard always listens on.
-      DASHBOARD_CONTAINER_PORT = 3000
-
       def initialize(reader, traefik_managed: false)
         @reader = reader
         @traefik_managed = traefik_managed
@@ -50,26 +47,11 @@ module Import
         return nil unless mapping
 
         host = published_host_port(mapping)
-        host if host && host != DASHBOARD_CONTAINER_PORT.to_s
+        host if host && host != Export::Services::Dashboard::CONTAINER_PORT.to_s
       end
 
-      # `docker compose config --format json` normalizes short-form ports
-      # to long-form hashes (target/published/protocol). Handle both so a
-      # raw-YAML fallback path stays compatible too.
       def targets_dashboard?(entry)
-        case entry
-        when Hash then entry['target'].to_i == DASHBOARD_CONTAINER_PORT
-        else entry.to_s.split(':').last == DASHBOARD_CONTAINER_PORT.to_s
-        end
-      end
-
-      def published_host_port(entry)
-        case entry
-        when Hash then entry['published']&.to_s
-        else
-          host, container = entry.to_s.split(':', 2)
-          container ? host : nil
-        end
+        container_port(entry) == Export::Services::Dashboard::CONTAINER_PORT
       end
     end
   end

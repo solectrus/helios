@@ -2082,6 +2082,119 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'with a broker managed by HELIOS' do
+    before do
+      configuration.update('mqtt', { 'broker_managed' => true })
+      configuration.update('mosquitto', { 'port' => 1884, 'username' => 'solectrus', 'password' => 'geheim' })
+      configuration.update_sensor('inverter_power', {
+                                    'source' => 'mqtt',
+                                    'mqtt_topic' => 'solar/inverter',
+                                    'measurement' => 'PV',
+                                    'field' => 'power',
+                                    'mqtt_payload_type' => 'float',
+                                  })
+      described_class.new(Configuration.current).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'runs the broker alongside the collector' do
+      expect(Compose.load.services.names).to include('mosquitto', 'mqtt-collector')
+    end
+
+    it 'points the collector at the broker inside the compose network' do
+      mqtt = Compose.load.services.find('mqtt-collector')
+
+      expect(mqtt.environment).to include('MQTT_HOST=mosquitto', 'MQTT_PORT=1883')
+      expect(mqtt.environment).to include('MQTT_USERNAME', 'MQTT_PASSWORD')
+      expect(mqtt.environment).not_to include('MQTT_SSL')
+      expect(mqtt.depends_on).to include('mosquitto')
+    end
+
+    it 'keeps host and port out of .env, where only the credentials belong' do
+      env = Env.load
+      expect(env['MQTT_HOST']).to be_nil
+      expect(env['MQTT_PORT']).to be_nil
+      expect(env['MQTT_USERNAME']).to eq('solectrus')
+      expect(env['MQTT_PASSWORD']).to eq('geheim')
+      expect(env['MOSQUITTO_VOLUME_PATH']).to eq('./mosquitto')
+    end
+
+    it 'creates the data directory for the retained messages' do
+      expect(File.directory?(File.join(Rails.configuration.data_path, 'mosquitto'))).to be(true)
+    end
+
+    context 'without a password' do
+      before do
+        configuration.update('mosquitto', { 'port' => 1884, 'username' => 'solectrus' })
+        described_class.new(Configuration.current).write!
+      end
+
+      it 'emits no credentials at all, so the broker stays anonymous' do
+        env = Env.load
+        expect(env['MQTT_USERNAME']).to be_nil
+        expect(env['MQTT_PASSWORD']).to be_nil
+        expect(env['MOSQUITTO_VOLUME_PATH']).to eq('./mosquitto')
+      end
+
+      it 'lets the collector connect without a login' do
+        mqtt = Compose.load.services.find('mqtt-collector')
+        expect(mqtt.environment).not_to include('MQTT_USERNAME', 'MQTT_PASSWORD')
+      end
+    end
+
+    # Devices publish from outside the house too, so the broker gets the same
+    # treatment as the web services: Traefik owns the ports and routes them.
+    # Two entrypoints, because MQTT names no host of its own and only a TLS
+    # router can read one out of the SNI handshake.
+    context 'with a Traefik of HELIOS' do
+      before do
+        configuration.update('reverse_proxy', { 'mode' => 'internal', 'app_host' => 'solar.example.com' })
+        described_class.new(Configuration.current).write!
+      end
+
+      it_behaves_like 'valid Docker Compose configuration'
+
+      it 'routes the broker through Traefik instead of publishing a host port' do
+        mosquitto = Compose.load.services.find('mosquitto')
+
+        expect(mosquitto.ports).to be_blank
+        expect(mosquitto.config['labels']).to include(
+          'traefik.tcp.routers.mqtt.rule=HostSNI(`*`)',
+          'traefik.tcp.routers.mqtts.rule=HostSNI(`solar.example.com`)',
+          'traefik.tcp.routers.mqtts.tls.certresolver=letsencrypt',
+          'traefik.tcp.services.mqtt.loadbalancer.server.port=1883',
+        )
+      end
+
+      it 'adds both broker entrypoints and published ports to Traefik' do
+        traefik = Compose.load.services.find('traefik')
+
+        expect(traefik.config['command']).to include(
+          '--entrypoints.mqtt.address=:1884',
+          '--entrypoints.mqtts.address=:8883',
+        )
+        expect(traefik.ports).to include('1884:1884', '8883:8883')
+      end
+    end
+
+    # A bind IP names the one interface the stack answers on, and the broker
+    # is no exception. Without it an anonymous broker would sit on every
+    # interface of a host that has a public address.
+    context 'with an external-Traefik bind IP configured' do
+      before do
+        configuration.update('reverse_proxy', { 'bind_ip' => '10.0.0.5' })
+        described_class.new(Configuration.current).write!
+      end
+
+      it 'binds the broker port like every other port' do
+        compose = Compose.load
+        expect(compose.services.find('mosquitto').ports).to eq(['10.0.0.5:1884:1883'])
+        expect(compose.services.find('dashboard').ports).to include('10.0.0.5:3000:3000')
+      end
+    end
+  end
+
   describe 'with MQTT advanced mapping features' do
     before do
       configuration.update('mqtt', { 'mqtt_host' => '192.168.1.50' })

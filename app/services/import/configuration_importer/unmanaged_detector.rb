@@ -44,7 +44,7 @@ module Import
         MQTT_HOST MQTT_PORT MQTT_SSL MQTT_USERNAME MQTT_PASSWORD
         PGDATA INFLUXD_USE_HASHED_TOKENS
         DB_VOLUME_PATH INFLUX_VOLUME_PATH REDIS_VOLUME_PATH
-        INGEST_VOLUME_PATH
+        INGEST_VOLUME_PATH MOSQUITTO_VOLUME_PATH
       ].freeze
 
       # Infrastructure .env keys that HELIOS doesn't generate but are well-known

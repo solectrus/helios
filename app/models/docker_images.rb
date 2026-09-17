@@ -55,6 +55,21 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
     ],
   }.freeze
 
+  # MQTT broker HELIOS can run for the stack, so devices publish without a
+  # broker of their own. HELIOS generates the configuration file at container
+  # start, so the plain image is enough.
+  MOSQUITTO = {
+    current: 'eclipse-mosquitto:2.1-alpine',
+
+    # Floating tags of the same Alpine build. They hide which minor version
+    # runs, so an imported stack is nudged to the pinned tag.
+    legacy: %w[
+      eclipse-mosquitto:2
+      eclipse-mosquitto:latest
+      eclipse-mosquitto:alpine
+    ],
+  }.freeze
+
   DASHBOARD = {
     current: %w[
       ghcr.io/solectrus/solectrus:latest

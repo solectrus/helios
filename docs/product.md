@@ -42,6 +42,15 @@ Scenarios A and B can coexist (e.g. SENEC collector for the inverter + ioBroker 
 - `compose.yaml` and `.env` are regenerated automatically after every change.
 - Services are **not** restarted automatically — the user triggers restarts explicitly. The UI shows which services are affected by pending config changes.
 
+### MQTT Broker
+
+- A device that publishes measurements over MQTT needs a broker. HELIOS can run one (Mosquitto), so a separate broker is unnecessary.
+- The MQTT survey asks for it. When the broker runs under HELIOS, the questions about host, port, SSL and login of a foreign broker disappear, because HELIOS sets those values itself.
+- The published port is configurable and defaults to 1883. A host that already runs a broker gets a different port.
+- A login is mandatory. The MQTT survey asks for a user name and a password and accepts neither as empty. The broker demands the login from every device, and the collector receives the same credentials.
+- Retained messages are kept in a bind mount, so they survive a restart.
+- The import never takes over a Mosquitto, not even one HELIOS wrote itself. HELIOS builds the whole broker configuration on every export, and reading a broker back would mean covering every shape one can have. The import refuses a stack that carries any trace of a broker (see [`Import::CompatibilityCheck`](../app/services/import/compatibility_check.rb)): the broker service itself, and a reverse proxy that opens an MQTT entrypoint for it. The user removes both, runs the import, and then switches the broker on in the UI. The survey stays the only way to get a broker.
+
 ### Sensor Mapping
 
 - Registry of ~50 SOLECTRUS sensors (inverter / grid / battery / wallbox / car / heat pump / system / forecasts / 20 custom consumer slots) — see [`SensorRegistry::SENSORS`](../app/models/sensor_registry.rb).

@@ -206,14 +206,16 @@ RSpec.describe ConfigSchema do
         # UI-only toggles that drive visibility but are not persisted: the
         # boolean `enabled` flag, system_general's `currency_preset` dropdown
         # (drives the `currency` freetext field, only `currency` is stored),
-        # tibber's `charging` flag (re-derived from the senec_charger section)
-        # and reverse_proxy's `proxy_transport` radio (re-derived from whether
-        # a shared network is named).
+        # tibber's `charging` flag (re-derived from the senec_charger section),
+        # reverse_proxy's `proxy_transport` radio (re-derived from whether a
+        # shared network is named) and mqtt's `broker_external` choice (the
+        # stored `broker_managed` is its opposite).
         ui_only =
           case setting
           when 'system_general' then %w[enabled currency_preset]
           when 'tibber' then %w[enabled charging]
           when 'reverse_proxy' then %w[enabled proxy_transport]
+          when 'mqtt' then %w[enabled broker_external]
           else %w[enabled]
           end
 

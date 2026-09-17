@@ -8,8 +8,9 @@ module Export
   # Shared by the per-service "Open" button (ServiceRow) and the status bar's
   # prominent "Open dashboard" shortcut.
   #
-  # Traefik is excluded: it is the reverse proxy, its published 80/443 ports are
-  # not a destination of their own.
+  # A service whose published port is no web address gets no link. Each
+  # service class says so itself (Services::Base.browsable?); a name HELIOS
+  # does not manage keeps the link it has always had.
   class OpenEndpoint
     def self.resolve(service_name:, public_port:, configuration: Configuration.current)
       new(service_name:, public_port:, configuration:).resolve
@@ -22,7 +23,7 @@ module Export
     end
 
     def resolve
-      return if service_name == 'traefik'
+      return unless browsable?
 
       url = PublicUrl.build(configuration, service_name)
       if url
@@ -35,5 +36,10 @@ module Export
     private
 
     attr_reader :service_name, :public_port, :configuration
+
+    def browsable?
+      service_class = Compose.find_service(service_name)
+      service_class.nil? || service_class.browsable?
+    end
   end
 end

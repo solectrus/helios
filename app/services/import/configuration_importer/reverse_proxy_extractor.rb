@@ -18,10 +18,6 @@ module Import
       # HELIOS binds them all to the same IP, so reading it from any one is enough.
       PORT_PUBLISHERS = %w[dashboard influxdb ingest helios].freeze
 
-      # Wildcard bind addresses are equivalent to "no explicit bind" — HELIOS
-      # already defaults to all interfaces, so they don't set a bind_ip.
-      WILDCARD_IPS = %w[0.0.0.0 ::].freeze
-
       def initialize(reader, volume_resolver)
         @reader = reader
         @volume_resolver = volume_resolver
@@ -218,18 +214,6 @@ module Import
           .flat_map { |name| Array(@reader.service(name)&.dig('ports')) }
           .filter_map { |entry| host_ip(entry) }
           .first
-      end
-
-      def host_ip(entry)
-        ip =
-          if entry.is_a?(Hash)
-            entry['host_ip']
-          else
-            parts = entry.to_s.split(':', 3)
-            parts.first if parts.size == 3
-          end
-
-        ip if ip.present? && WILDCARD_IPS.exclude?(ip)
       end
 
       def passthrough_data

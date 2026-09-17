@@ -65,6 +65,7 @@ module SettingSection
     # First line of the status: what the value below it is. Every card that
     # has something to say names it the same way, so the row reads as one.
     def status_label
+      return broker_label if setting == 'mqtt'
       return I18n.t('configurations.show.access') if access
       return I18n.t('configurations.show.provider') if forecast_provider_known?
 
@@ -124,9 +125,24 @@ module SettingSection
       return unless addressable?
 
       case setting
+      when 'mqtt' then broker_address
       when 'shelly', 'senec' then I18n.t("configurations.show.access_#{access}") if access
       when 'forecast' then FORECAST_PROVIDERS[singleton_data.forecast]
       end
+    end
+
+    # Third line: behind the managed Traefik the broker answers on a second,
+    # encrypted port as well. No survey names it any more, so the card is the
+    # only place it can stand. It repeats the whole address rather than the
+    # port alone, because only the name reaches that port: Traefik reads it
+    # out of the TLS handshake (HostSNI, see Mosquitto#traefik_labels). A
+    # padlock marks the line instead of the word TLS, which costs twice the
+    # width.
+    def status_tls
+      return unless addressable? && setting == 'mqtt' && managed_broker?
+      return unless Export::Services::Mosquitto.traefik_managed_routing?(configuration)
+
+      "#{configuration.public_host}:#{Export::Services::Mosquitto::TLS_HOST_PORT}"
     end
 
     def addressable?
@@ -142,6 +158,34 @@ module SettingSection
 
     def forecast_provider_known?
       setting == 'forecast' && FORECAST_PROVIDERS.key?(singleton_data.forecast)
+    end
+
+    # The broker is the part of the MQTT card a user looks for and would not
+    # expect behind a collector, so the card names whose broker it is and
+    # where it answers. That is also the screen both can be changed on.
+    def managed_broker?
+      configuration.mqtt_broker_managed?
+    end
+
+    def broker_label
+      I18n.t("configurations.show.#{managed_broker? ? 'broker_managed' : 'broker_external'}")
+    end
+
+    # `host:port`, the way a device is pointed at a broker. HELIOS knows the
+    # port of its own broker, but the address of its host only where the
+    # configuration names one, so the port stands alone until it does.
+    def broker_address
+      if managed_broker?
+        address(configuration.public_host, Export::Services::Mosquitto.host_port(configuration))
+      else
+        address(configuration.mqtt.mqtt_host, configuration.mqtt.mqtt_port)
+      end
+    end
+
+    def address(host, port)
+      return I18n.t('configurations.show.broker_port', port:) if host.blank?
+
+      [host, port].compact_blank.join(':')
     end
 
     def incomplete?

@@ -43,6 +43,7 @@
 /stack/postgresql
 /stack/redis
 /stack/influxdb
+/stack/mosquitto
 /stack/influx-backup-staging
 /stack/helios
 /stack/compose.yaml

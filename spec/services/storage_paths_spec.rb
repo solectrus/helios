@@ -10,6 +10,7 @@ RSpec.describe StoragePaths do
         'influxdb' => "#{dir}/influxdb",
         'redis' => "#{dir}/redis",
         'ingest' => "#{dir}/ingest",
+        'mosquitto' => "#{dir}/mosquitto",
         'reverse_proxy' => "#{dir}/traefik",
       )
     end

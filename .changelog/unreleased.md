@@ -13,6 +13,7 @@ Keep every section, an empty one included.
 
 ## New features
 
+- **HELIOS runs the MQTT broker.** A broker is the server that passes MQTT messages between devices. Until now every installation needed its own. HELIOS can run Mosquitto now. The MQTT settings switch it on, and its card shows the address that devices send to (#466)
 - **A reverse proxy can use a shared network.** An external reverse proxy then reaches the installation over a Docker network that both sides use, instead of over published ports. No port of the installation stays open on the host
 
 ## Improvements
@@ -33,6 +34,10 @@ Keep every section, an empty one included.
 ### Services
 
 - **A blocked start says what blocks it.** The start stays visible. The reason appears in the status bar and on every service
+
+### Import
+
+- **An import stops on anything HELIOS cannot take over.** The message names what is in the way, a Traefik label or a Docker network. An installation with its own MQTT broker stops as well, because HELIOS runs the broker itself. The MQTT settings switch it on after the import (#466)
 
 ### Phone and screen reader
 

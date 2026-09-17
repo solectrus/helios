@@ -38,6 +38,7 @@ module Import
       'influxdb-backup' => %w[ghcr.io/solectrus/influxdb2-s3-backup ghcr.io/solectrus/influxdb-backup],
       'postgresql' => %w[postgres],
       'redis' => %w[redis],
+      'mosquitto' => %w[eclipse-mosquitto],
       'influxdb' => %w[influxdb],
       # containrrr/watchtower is the historical image; nickfedor/watchtower is
       # the community-maintained fork that many users (and fixtures) have moved to.

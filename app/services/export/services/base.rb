@@ -54,6 +54,20 @@ module Export
         nil
       end
 
+      # Whether the "Open" button may link to this service's published port
+      # (see Export::OpenEndpoint). False where that port speaks no HTTP.
+      def self.browsable?
+        true
+      end
+
+      # Whether an import may take a running service of this kind over (see
+      # Import::CompatibilityCheck). False where HELIOS generates the whole
+      # service out of its own answers, so reading one back would mean
+      # covering every shape it can have.
+      def self.adoptable?
+        true
+      end
+
       # Host path backing this service's data volume: the user's configured
       # volume_path, or the default ./<service_name>. Single source of truth
       # for Export::Env::Section#volume_path_entry (emits it to .env) and
@@ -92,6 +106,19 @@ module Export
       private
 
       attr_reader :configuration
+
+      # The class-level answers every exporter needs against its own
+      # configuration. Defined here so each service declares the rule once, as
+      # a class method, and renders with it without a delegator of its own.
+      # They resolve only for the services that declare the class method,
+      # which is exactly the set that calls them.
+      def host_port
+        self.class.host_port(configuration)
+      end
+
+      def traefik_managed_routing?
+        self.class.traefik_managed_routing?(configuration)
+      end
 
       def healthcheck(*test_cmd, **)
         defaults = HEALTHCHECK_DEFAULTS

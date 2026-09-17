@@ -1,23 +1,120 @@
 {
   "locale": "de",
   "title": {
-    "de": "MQTT-Collector",
-    "default": "MQTT Collector"
+    "de": "MQTT",
+    "default": "MQTT"
   },
   "description": {
-    "de": "Liest Messwerte von Topics eines MQTT-Brokers.",
-    "default": "Reads measurements from topics on an MQTT broker."
+    "de": "Liest Messwerte, die Geräte über einen Broker veröffentlichen.",
+    "default": "Reads measurements that devices publish over a broker."
   },
   "pages": [
     {
-      "name": "p_mqtt_connection",
+      "name": "p_mqtt_broker",
       "title": {
-        "de": "Verbindung zum MQTT-Broker",
-        "default": "Connection to the MQTT broker"
+        "de": "MQTT-Broker",
+        "default": "MQTT broker"
       },
       "description": {
-        "de": "So erreicht SOLECTRUS den MQTT-Broker.",
-        "default": "How SOLECTRUS reaches the MQTT broker."
+        "de": "Ein Broker nimmt die Nachrichten der Geräte entgegen. Home Assistant und ioBroker bringen meist schon einen mit, andernfalls stellt HELIOS einen bereit.",
+        "default": "A broker receives the messages sent by the devices. Home Assistant and ioBroker usually bring one along, otherwise HELIOS provides one."
+      },
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "broker_external",
+          "titleLocation": "hidden",
+          "choices": [
+            {
+              "value": false,
+              "text": {
+                "de": "Interner Broker (Mosquitto, von HELIOS betrieben)",
+                "default": "Internal broker (Mosquitto, run by HELIOS)"
+              }
+            },
+            {
+              "value": true,
+              "text": {
+                "de": "Externer Broker (bereits vorhanden)",
+                "default": "External broker (already in place)"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "p_mqtt_broker_settings",
+      "title": {
+        "de": "Internen Broker einrichten",
+        "default": "Set up the internal broker"
+      },
+      "description": {
+        "de": "Diese Zugangsdaten werden hier neu festgelegt. Die Geräte brauchen sie, um Nachrichten an SOLECTRUS zu senden.",
+        "default": "These credentials are defined here. The devices need them to send messages to SOLECTRUS."
+      },
+      "visibleIf": "{broker_external} <> true",
+      "elements": [
+        {
+          "type": "text",
+          "name": "port",
+          "title": {
+            "de": "Port",
+            "default": "Port"
+          },
+          "inputType": "number",
+          "isRequired": true,
+          "defaultValue": 1883,
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "type": "text",
+          "name": "username",
+          "title": {
+            "de": "Benutzername",
+            "default": "Username"
+          },
+          "defaultValue": "solectrus",
+          "validators": [
+            {
+              "type": "regex",
+              "regex": "^[^:]*$",
+              "text": {
+                "de": "Ein Doppelpunkt ist im Benutzernamen nicht erlaubt.",
+                "default": "A colon is not allowed in the username."
+              }
+            }
+          ],
+          "isRequired": true
+        },
+        {
+          "type": "text",
+          "name": "password",
+          "title": {
+            "de": "Passwort",
+            "default": "Password"
+          },
+          "visibleIf": "{username} notempty",
+          "clearIfInvisible": "onHidden",
+          "inputType": "password",
+          "description": {
+            "de": "Schützt den Broker davor, Nachrichten von jedem anzunehmen, der ihn erreicht. Manche Geräte erwarten es als Teil der Broker-Adresse und scheitern dort an Sonderzeichen, Buchstaben und Ziffern gehen überall.",
+            "default": "Keeps the broker from accepting messages from anyone who can reach it. Some devices expect it as part of the broker address and fail on special characters there, so letters and digits work everywhere."
+          },
+          "isRequired": true
+        }
+      ]
+    },
+    {
+      "name": "p_mqtt_connection",
+      "title": {
+        "de": "Verbindung zum externen Broker",
+        "default": "Connection to the external broker"
+      },
+      "description": {
+        "de": "So erreicht SOLECTRUS den vorhandenen MQTT-Broker.",
+        "default": "How SOLECTRUS reaches the existing MQTT broker."
       },
       "elements": [
         {
@@ -65,17 +162,18 @@
             "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"mqtt\" data-test-check=\"reachability\" data-test-fields=\"mqtt_host,mqtt_port,mqtt_ssl\">Test connection</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
           }
         }
-      ]
+      ],
+      "visibleIf": "{broker_external} = true"
     },
     {
       "name": "p_mqtt_auth",
       "title": {
-        "de": "Authentifizierung beim MQTT-Broker",
-        "default": "Authentication with the MQTT broker"
+        "de": "Anmeldung am externen Broker",
+        "default": "Login at the external broker"
       },
       "description": {
-        "de": "Zugangsdaten für den Broker. Leer lassen, wenn er ohne Anmeldung erreichbar ist.",
-        "default": "Credentials for the broker. Leave empty if it is reachable without a login."
+        "de": "Die vorhandenen Zugangsdaten des Brokers, leer lassen, wenn er ohne Anmeldung erreichbar ist.",
+        "default": "The existing credentials of the broker, leave empty if it is reachable without a login."
       },
       "elements": [
         {
@@ -103,7 +201,8 @@
             "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"mqtt\" data-test-check=\"credentials\" data-test-fields=\"mqtt_host,mqtt_port,mqtt_ssl,mqtt_username,mqtt_password\">Verify credentials</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
           }
         }
-      ]
+      ],
+      "visibleIf": "{broker_external} = true"
     }
   ],
   "showQuestionNumbers": "off",

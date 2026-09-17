@@ -3,9 +3,6 @@ module Import
     class InfluxdbExtractor
       include Helpers
 
-      # Container port the InfluxDB UI always listens on.
-      INFLUXDB_CONTAINER_PORT = 8086
-
       # The `influxdb` entrypoint of a reverse proxy, which carries the port
       # where no mapping of the service does.
       ENTRYPOINT_ADDRESS = /\A--entrypoints\.influxdb\.address=\S*?:(\d+)\z/i
@@ -107,7 +104,7 @@ module Import
         return entrypoint_port unless mapping
 
         host = published_host_port(mapping)
-        host if host && host != INFLUXDB_CONTAINER_PORT.to_s
+        host if host && host != Export::Services::Influxdb::CONTAINER_PORT.to_s
       end
 
       # Where a reverse proxy routes InfluxDB, the port lives on that proxy's
@@ -119,26 +116,11 @@ module Import
                .filter_map { |arg| arg.to_s[ENTRYPOINT_ADDRESS, 1] }
                .first
 
-        port if port && port != INFLUXDB_CONTAINER_PORT.to_s
+        port if port && port != Export::Services::Influxdb::CONTAINER_PORT.to_s
       end
 
-      # `docker compose config --format json` normalizes short-form ports to
-      # long-form hashes (target/published/protocol). Handle both so a
-      # raw-YAML fallback path stays compatible too.
       def targets_influxdb?(entry)
-        case entry
-        when Hash then entry['target'].to_i == INFLUXDB_CONTAINER_PORT
-        else entry.to_s.split(':').last == INFLUXDB_CONTAINER_PORT.to_s
-        end
-      end
-
-      def published_host_port(entry)
-        case entry
-        when Hash then entry['published']&.to_s
-        else
-          host, container = entry.to_s.split(':', 2)
-          container ? host : nil
-        end
+        container_port(entry) == Export::Services::Influxdb::CONTAINER_PORT
       end
 
       def external_data

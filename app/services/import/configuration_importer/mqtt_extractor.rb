@@ -102,6 +102,9 @@ module Import
         @reader.services.key?('mqtt-collector')
       end
 
+      # Connection data of the broker the collector talks to. Always a broker
+      # of the user: Import::CompatibilityCheck refuses a stack that carries a
+      # broker of its own, so an imported stack never has a managed one.
       def broker_data
         return unless enabled?
 

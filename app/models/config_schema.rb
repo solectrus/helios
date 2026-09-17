@@ -217,15 +217,45 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     image
   ].freeze
 
-  MQTT_FIELDS = %w[
+  # How the collector reaches a broker of the user. While the broker is
+  # managed these stay empty: SettingPersistence#persist_mqtt blanks them on
+  # every save, because the survey hides the questions but SurveyJS keeps
+  # their answers in the payload.
+  MQTT_CONNECTION_FIELDS = %w[
     mqtt_host
     mqtt_port
     mqtt_ssl
     mqtt_username
     mqtt_password
-    image
-    mappings
   ].freeze
+
+  # `broker_managed` switches the section from "reach the broker over there"
+  # to "HELIOS runs the broker itself". Absent means a broker of the user,
+  # which is what every configuration written before the broker existed says.
+  # The broker's own settings live in the `mosquitto` section (see
+  # MOSQUITTO_FIELDS), so the two kinds of broker never mix in one field.
+  MQTT_FIELDS = (
+    MQTT_CONNECTION_FIELDS +
+      %w[
+        broker_managed
+        image
+        mappings
+      ]
+  ).freeze
+
+  # --- Mosquitto (managed MQTT broker) ---
+
+  # Filled by the MQTT survey through Configuration::BORROWED_FIELDS, so the
+  # section disappears once the broker is switched off. `port` is the port
+  # published on the host, which must be free there. Inside the stack the
+  # broker always listens on 1883.
+  #
+  # No AUTO_GENERATED entry for `image`: the section only exists while the
+  # broker runs, and Export::Services::Mosquitto falls back to the registry
+  # default the same way the collectors do.
+  MOSQUITTO_FIELDS = %w[port username password image].freeze
+
+  MOSQUITTO_ALL = (STORAGE_FIELDS + MOSQUITTO_FIELDS).uniq.freeze
 
   # Tibber collector — only `token` and `measurement` are user-configurable; the
   # poll interval is left at the collector's own default (HELIOS neither emits
@@ -411,6 +441,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     'ingest' => INGEST_ALL,
     'senec' => SENEC_FIELDS,
     'mqtt' => MQTT_FIELDS,
+    'mosquitto' => MOSQUITTO_ALL,
     'tibber' => TIBBER_FIELDS,
     'senec_charger' => SENEC_CHARGER_FIELDS,
     'shelly' => SHELLY_FIELDS,

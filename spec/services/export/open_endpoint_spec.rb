@@ -48,4 +48,14 @@ RSpec.describe Export::OpenEndpoint do
       expect(endpoint).to be_nil
     end
   end
+
+  # The published port carries MQTT, not HTTP, so a browser reaches nothing.
+  describe 'the MQTT broker' do
+    let(:service_name) { 'mosquitto' }
+    let(:public_port) { 1883 }
+
+    it 'never has a browsable endpoint' do
+      expect(endpoint).to be_nil
+    end
+  end
 end

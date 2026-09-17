@@ -353,6 +353,14 @@ redis:
   reads:
     - TZ
 
+mosquitto:
+  upstream: docker.io/eclipse-mosquitto (read by the generated command, not by the broker itself)
+  third_party: true
+  reads:
+    - TZ
+    - MQTT_PASSWORD
+    - MQTT_USERNAME
+
 traefik:
   upstream: docker.io/traefik (configured via CLI flags and labels, not env)
   third_party: true

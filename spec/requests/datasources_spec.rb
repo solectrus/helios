@@ -127,6 +127,15 @@ RSpec.describe 'Datasources', :with_admin_password do
       expect(response.body).to include(I18n.t('configurations.show.incomplete'))
     end
 
+    # A managed broker has no host to fill in, so the card must not nag for one.
+    it 'treats MQTT as complete once HELIOS runs the broker' do
+      config = Configuration.current
+      config.update_sensor('house_power', { 'source' => 'mqtt', 'mqtt_topic' => 'home/power' })
+      config.update(:mqtt, { 'broker_managed' => true })
+
+      expect(config.incomplete_sources).to be_empty
+    end
+
     it 'shows the Sensors nav tab in full mode' do
       get datasources_path
 

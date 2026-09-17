@@ -70,6 +70,12 @@ module Surveys
       nil
     end
 
+    def remove_element(data, name)
+      data['pages']&.each do |page|
+        page['elements']&.reject! { |element| element['name'] == name }
+      end
+    end
+
     # Strips pages and elements whose server-side marker doesn't hold. The
     # marker is removed from the rendered JSON either way so it never reaches
     # SurveyJS.

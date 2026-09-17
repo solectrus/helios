@@ -73,20 +73,19 @@ module Import
     end
 
     # Dashboard + InfluxDB run locally, the InfluxDB is exposed for remote
-    # writes, and no local device collectors (senec/mqtt/shelly) are present —
-    # i.e. the collectors run elsewhere and push into this stack's InfluxDB.
-    # forecast-collector and power-splitter are fine (they're not device
-    # collectors). Mutually exclusive with collectors_only? (which has no local
-    # target at all).
+    # writes, and nothing local reads a device: no device collector
+    # (senec/mqtt/shelly). So the collectors run
+    # elsewhere and push into this stack's InfluxDB. forecast-collector and
+    # power-splitter are fine (they're not device collectors). Mutually
+    # exclusive with collectors_only? (which has no local target at all).
     def dashboard_only?
       return @dashboard_only if defined?(@dashboard_only)
 
       services = @reader.services
       has_dashboard = services.key?('dashboard')
       has_influxdb = services.key?('influxdb')
-      has_device_collector = StackReader::DEVICE_COLLECTOR_SERVICES.any? { |s| services.key?(s) }
 
-      @dashboard_only = has_dashboard && has_influxdb && influxdb_exposed? && !has_device_collector
+      @dashboard_only = has_dashboard && has_influxdb && influxdb_exposed? && !local_devices?
     end
 
     # Resolved deployment mode (collectors_only and dashboard_only are mutually
@@ -103,16 +102,18 @@ module Import
 
     private
 
+    # Whether anything in the stack speaks to a device on site.
+    def local_devices?
+      StackReader::DEVICE_COLLECTOR_SERVICES.any? { |name| @reader.services.key?(name) }
+    end
+
     # True when the imported compose publishes the InfluxDB container port 8086
     # to the host (the defining trait of dashboard_only: remote collectors write
     # in across the LAN).
     def influxdb_exposed?
-      Array(@reader.service('influxdb')&.dig('ports')).any? do |entry|
-        case entry
-        when Hash then entry['target'].to_i == 8086
-        else entry.to_s.split(':').last == '8086'
-        end
-      end
+      port = Export::Services::Influxdb::CONTAINER_PORT
+
+      Array(@reader.service('influxdb')&.dig('ports')).any? { |entry| container_port(entry) == port }
     end
 
     # --- Extractors (lazy-initialized) ---

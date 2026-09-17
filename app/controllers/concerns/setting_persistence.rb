@@ -4,6 +4,9 @@
 module SettingPersistence
   extend ActiveSupport::Concern
 
+  # The broker half of the MQTT survey, which drives a section of its own.
+  include SettingPersistence::Broker
+
   # Which answers each reverse-proxy mode owns. The form shows exactly these
   # per mode (see the visibleIf / requiredIf rules in
   # Surveys::ReverseProxy's survey.json, which a spec holds against this
@@ -52,6 +55,7 @@ module SettingPersistence
 
     return persist_reverse_proxy(data) if setting == 'reverse_proxy'
     return persist_tibber(data) if setting == 'tibber'
+    return persist_mqtt(data) if setting == 'mqtt'
 
     return @configuration.update(setting, {}) if data.key?('enabled') && data.delete('enabled') == false
 

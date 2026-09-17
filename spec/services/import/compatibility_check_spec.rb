@@ -24,14 +24,77 @@ RSpec.describe Import::CompatibilityCheck do
       expect(check_for('with_tibber').unsupported_services).to be_empty
     end
 
+    # HELIOS generates the whole broker configuration on export, so no broker
+    # in an imported stack is reproducible. Every one is refused: the user
+    # takes it out of the stack and switches the managed broker on afterwards.
     it 'flags a self-hosted mosquitto broker (user2)' do
       names = check_for('real_world/user2').unsupported_services.pluck('service')
       expect(names).to contain_exactly('mosquitto')
     end
 
+    # Removing the broker service alone leaves the proxy routing a broker
+    # that is gone. HELIOS would publish the port the proxy still holds.
+    it 'flags a reverse proxy that still opens an MQTT entrypoint' do
+      reader = instance_double(
+        Import::StackReader,
+        raw_compose: {
+          'services' => {
+            'traefik' => { 'image' => 'traefik:v3.7', 'command' => ['--entrypoints.mqtt.address=:1883'] },
+          },
+        },
+      )
+      allow(reader).to receive(:service) { |name| reader.raw_compose['services'][name] }
+
+      expect(described_class.new(reader).unsupported_services)
+        .to contain_exactly('service' => 'traefik', 'image' => 'traefik:v3.7')
+    end
+
+    # Traefik reads its flags case-insensitively, its own documentation spells
+    # them camelCase, HELIOS writes a TLS entrypoint next to the plain one,
+    # and Compose accepts `command` as a single string.
+    {
+      'written in camelCase' => ['--entryPoints.mqtt.address=:1883'],
+      'that only serves TLS' => ['--entrypoints.mqtts.address=:8883'],
+      'inside a single command string' => '--providers.docker --entrypoints.mqtt.address=:1883',
+    }.each do |description, command|
+      it "flags an MQTT entrypoint #{description}" do
+        reader = instance_double(
+          Import::StackReader,
+          raw_compose: {
+            'services' => {
+              'traefik' => { 'image' => 'traefik:v3.7', 'command' => command },
+            },
+          },
+        )
+        allow(reader).to receive(:service) { |name| reader.raw_compose['services'][name] }
+
+        expect(described_class.new(reader).unsupported_services)
+          .to contain_exactly('service' => 'traefik', 'image' => 'traefik:v3.7')
+      end
+    end
+
+    # A proxy can take its entrypoints from a configuration file HELIOS never
+    # reads. The published port is the trace that stays visible.
+    it 'flags a reverse proxy that publishes a broker port' do
+      reader = instance_double(
+        Import::StackReader,
+        raw_compose: {
+          'services' => {
+            'traefik' => { 'image' => 'traefik:v3.7', 'ports' => ['80:80', '127.0.0.1:8883:8883'] },
+          },
+        },
+      )
+      allow(reader).to receive(:service) { |name| reader.raw_compose['services'][name] }
+
+      expect(described_class.new(reader).unsupported_services)
+        .to contain_exactly('service' => 'traefik', 'image' => 'traefik:v3.7')
+    end
+
+    # user6 routes its own broker through its own Traefik, so both the broker
+    # and the proxy carry a trace of it.
     it 'flags foreign services while keeping dozzle (user6)' do
       names = check_for('real_world/user6').unsupported_services.pluck('service')
-      expect(names).to contain_exactly('mosquitto', 'pgadmin')
+      expect(names).to contain_exactly('mosquitto', 'pgadmin', 'traefik')
     end
 
     it 'flags an unknown third-party image' do
@@ -179,7 +242,7 @@ RSpec.describe Import::CompatibilityCheck do
       expect { check_for('real_world/user6').call! }
         .to raise_error(Import::UnsupportedStackError) do |error|
           expect(error.services.map { |s| s['service'] })
-            .to contain_exactly('mosquitto', 'pgadmin')
+            .to contain_exactly('mosquitto', 'pgadmin', 'traefik')
         end
     end
   end

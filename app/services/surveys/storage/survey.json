@@ -30,6 +30,14 @@
         },
         {
           "type": "text",
+          "name": "mosquitto",
+          "title": {
+            "de": "MQTT-Broker (Mosquitto)",
+            "default": "MQTT broker (Mosquitto)"
+          }
+        },
+        {
+          "type": "text",
           "name": "ingest",
           "title": "Ingest"
         },

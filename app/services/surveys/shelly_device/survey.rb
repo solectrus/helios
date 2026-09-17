@@ -18,12 +18,6 @@ module Surveys
           remove_element(data, 'device_id')
         end
       end
-
-      def remove_element(data, name)
-        data['pages']&.each do |page|
-          page['elements']&.reject! { |element| element['name'] == name }
-        end
-      end
     end
   end
 end

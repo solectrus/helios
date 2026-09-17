@@ -115,7 +115,7 @@ module Export
 
     def host_port_for(name)
       case name
-      when 'dashboard' then configuration.dashboard.host_port.presence || 3000
+      when 'dashboard' then Services::Dashboard.host_port(configuration)
       when 'influxdb' then Services::Influxdb.host_port(configuration)
       when 'ingest' then Services::Ingest::PORT
       when 'helios' then 3999 # Services::Helios publishes 3999:3000

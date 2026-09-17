@@ -13,7 +13,7 @@ module Export
       # Entrypoints HELIOS keeps for services of its own. It writes the routers
       # for them, so it writes the entrypoints they name and the ports those
       # bind. Every other entrypoint of an adopted command stays verbatim.
-      OWNED_ENTRYPOINTS = %w[influxdb ingest helios].freeze
+      OWNED_ENTRYPOINTS = %w[influxdb ingest helios mqtt mqtts].freeze
 
       OWNED_ENTRYPOINT_FLAG = /\A--entrypoints\.(#{Regexp.union(OWNED_ENTRYPOINTS)})\./i
       OWNED_ENTRYPOINT_ADDRESS = /\A--entrypoints\.(#{Regexp.union(OWNED_ENTRYPOINTS)})\.address=/i
@@ -37,6 +37,12 @@ module Export
 
       def self.enabled?(configuration)
         configuration.reverse_proxy_managed?
+      end
+
+      # Traefik is the reverse proxy itself: its 80/443 route to the other
+      # services and are no destination of their own.
+      def self.browsable?
+        false
       end
 
       def self.letsencrypt_email(configuration)
@@ -170,6 +176,10 @@ module Export
           result['influxdb'] = influxdb_host_port if influxdb_routed?
           result['ingest'] = Ingest::PORT if ingest_routed?
           result['helios'] = Helios::HOST_PORT if helios_routed?
+          if mqtt_routed?
+            result['mqtt'] = mqtt_host_port
+            result['mqtts'] = Mosquitto::TLS_HOST_PORT
+          end
         end
       end
 
@@ -271,6 +281,7 @@ module Export
           *influxdb_entrypoint,
           *ingest_entrypoint,
           *helios_entrypoint,
+          *mqtt_entrypoints,
           "--certificatesresolvers.#{DEFAULT_CERTRESOLVER}.acme.tlschallenge=true",
           "--certificatesresolvers.#{DEFAULT_CERTRESOLVER}.acme.email=#{self.class.letsencrypt_email(configuration)}",
           "--certificatesresolvers.#{DEFAULT_CERTRESOLVER}.acme.storage=/letsencrypt/acme.json",
@@ -285,6 +296,7 @@ module Export
         ports << "#{influxdb_host_port}:#{influxdb_host_port}" if influxdb_routed?
         ports << "#{Ingest::PORT}:#{Ingest::PORT}" if ingest_routed?
         ports << "#{Helios::HOST_PORT}:#{Helios::HOST_PORT}" if helios_routed?
+        ports.concat(mqtt_ports)
         ports
       end
 
@@ -294,6 +306,33 @@ module Export
         return [] unless influxdb_routed?
 
         ["--entrypoints.influxdb.address=:#{influxdb_host_port}"]
+      end
+
+      # Two dedicated entrypoints for the MQTT broker: one plain for devices
+      # that speak no TLS, one that terminates TLS on the same domain as the
+      # web services. MQTT carries no host name of its own, so the two
+      # cannot share an entrypoint (see Services::Mosquitto#traefik_labels).
+      def mqtt_entrypoints
+        return [] unless mqtt_routed?
+
+        [
+          "--entrypoints.mqtt.address=:#{mqtt_host_port}",
+          "--entrypoints.mqtts.address=:#{Mosquitto::TLS_HOST_PORT}",
+        ]
+      end
+
+      def mqtt_ports
+        return [] unless mqtt_routed?
+
+        ["#{mqtt_host_port}:#{mqtt_host_port}", "#{Mosquitto::TLS_HOST_PORT}:#{Mosquitto::TLS_HOST_PORT}"]
+      end
+
+      def mqtt_routed?
+        Mosquitto.traefik_managed_routing?(configuration)
+      end
+
+      def mqtt_host_port
+        Mosquitto.host_port(configuration)
       end
 
       def influxdb_routed?

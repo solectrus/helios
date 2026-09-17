@@ -27,6 +27,22 @@ RSpec.describe 'Import::ConfigurationImporter mode detection' do
       end
     end
 
+    # A broker is refused at import anyway (Import::CompatibilityCheck), so it
+    # says nothing about the mode.
+    context 'with a broker and no device collector' do
+      let(:services) do
+        {
+          'dashboard' => svc,
+          'influxdb' => svc('ports' => ['8086:8086']),
+          'mosquitto' => svc('image' => 'eclipse-mosquitto:2.1-alpine'),
+        }
+      end
+
+      it 'is dashboard_only' do
+        expect(importer.mode).to eq(ConfigSchema::MODE_DASHBOARD_ONLY)
+      end
+    end
+
     context 'with a local device collector (senec)' do
       let(:services) do
         { 'dashboard' => svc, 'influxdb' => svc('ports' => ['8086:8086']), 'senec-collector' => svc }
