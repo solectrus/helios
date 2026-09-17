@@ -10,13 +10,17 @@ class BackupRepository
     class AsyncWorker
       extend Loggable
 
+      # One lock for both workers; an upload and a download never run at
+      # the same time.
+      MUTEX = Mutex.new
+
       class << self
         # Starts the worker thread. No-op if one is already alive.
         # Returns true if a new thread was spawned. Extra kwargs are
         # forwarded to the subclass's `run` (e.g. Downloader uses
         # `total:` to size the progress callback).
         def start_async(filename, **, &on_complete) # rubocop:disable Naming/BlockForwarding,Metrics/MethodLength
-          mutex.synchronize do
+          MUTEX.synchronize do
             return false if @thread&.alive?
 
             @started_at = Time.current
@@ -46,7 +50,7 @@ class BackupRepository
         # Snapshot of the live transfer, or nil if no thread is running.
         # Shape matches BackupRepository::InProgress.
         def current
-          mutex.synchronize do
+          MUTEX.synchronize do
             return nil unless @thread&.alive?
 
             BackupRepository::InProgress.new(
@@ -57,7 +61,7 @@ class BackupRepository
         end
 
         def running?
-          mutex.synchronize { @thread&.alive? || false }
+          MUTEX.synchronize { @thread&.alive? || false }
         end
 
         # Subclass hook for the initial / fallback phase. Long workers can
@@ -71,14 +75,7 @@ class BackupRepository
         # Atomic update of the visible phase, picked up by the next
         # `current` call. Reset to nil by reset_state!.
         def advance_phase(value)
-          mutex.synchronize { @phase = value }
-        end
-
-        # State guarded by @mutex; the ThreadSafety cop is silenced for
-        # this single-flight singleton state.
-        # rubocop:disable-next ThreadSafety/ClassInstanceVariable
-        def mutex
-          @mutex ||= Mutex.new
+          MUTEX.synchronize { @phase = value }
         end
 
         # Captures the latest transfer-manager callback in #current.
@@ -90,13 +87,13 @@ class BackupRepository
           lambda do |done, total|
             ratio = total.to_i.positive? ? done.to_f / total : 0.0
             rounded = (ratio.clamp(0.0, 1.0) * 100).round / 100.0
-            mutex.synchronize { @progress = rounded unless @progress == rounded }
+            MUTEX.synchronize { @progress = rounded unless @progress == rounded }
           end
         end
 
         def reset_state!
           logger.info('reset_state!')
-          mutex.synchronize do
+          MUTEX.synchronize do
             @thread = nil
             @started_at = nil
             @filename = nil

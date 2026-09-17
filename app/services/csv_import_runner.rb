@@ -55,6 +55,8 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
     INFLUX_SENSOR_BATTERY_SOC
   ].freeze
 
+  MUTEX = Mutex.new
+
   class << self
     delegate :unavailable_reason, :precheck!, to: :new
     delegate :error_message, :success_message, :clear_error!, :clear_success!, to: 'CsvImportRunner::State'
@@ -76,14 +78,14 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
     # container. Process-local; killed by a HELIOS restart — the user then
     # simply re-uploads.
     def preparing?
-      mutex.synchronize { @preparing_thread&.alive? || false }
+      MUTEX.synchronize { @preparing_thread&.alive? || false }
     end
 
     # True while the completion thread (post-exit phases 3+4) is still
     # running. Same lifecycle as preparing — survives only within a
     # single HELIOS process.
     def completing?
-      mutex.synchronize { @completion_thread&.alive? || false }
+      MUTEX.synchronize { @completion_thread&.alive? || false }
     end
 
     # Hands the slow pull + launch work off to a thread so the controller
@@ -91,7 +93,7 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
     # BackupRepository::S3::AsyncWorker (single-flight, Rails-executor
     # wrapped, errors captured into the state file).
     def spawn_preparing_thread!(instance)
-      mutex.synchronize do
+      MUTEX.synchronize do
         return if @preparing_thread&.alive?
 
         @preparing_thread = Thread.new do # rubocop:disable ThreadSafety/NewThread
@@ -106,7 +108,7 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
     # polls reaching detect_completion! at the same time don't both run
     # TRUNCATE summaries + Redis FLUSHALL.
     def spawn_completion_thread!(raw)
-      mutex.synchronize do
+      MUTEX.synchronize do
         return if @completion_thread&.alive?
 
         @completion_phase = nil
@@ -119,11 +121,11 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
     # Active phase of the completion thread (:flushing or :truncating).
     # Read by `progress` so the UI can highlight the correct step.
     def completion_phase
-      mutex.synchronize { @completion_phase }
+      MUTEX.synchronize { @completion_phase }
     end
 
     def completion_phase=(phase)
-      mutex.synchronize { @completion_phase = phase }
+      MUTEX.synchronize { @completion_phase = phase }
     end
 
     def log_tail(lines)
@@ -158,12 +160,6 @@ class CsvImportRunner < DetachedRunner # rubocop:disable Metrics/ClassLength
       return if raw.dig('State', 'Running')
 
       spawn_completion_thread!(raw)
-    end
-
-    private
-
-    def mutex
-      @mutex ||= Mutex.new # rubocop:disable ThreadSafety/ClassInstanceVariable
     end
   end
 

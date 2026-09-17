@@ -85,6 +85,8 @@ class BackupRunner < DetachedRunner
     ::File.read(SCRIPT_PATH)
   end
 
+  MUTEX = Mutex.new
+
   class << self
     # Overrides DetachedRunner's plain `delegate :start, to: :new` so the
     # caller can flag a scheduler-triggered run (Issue #106). Automatic runs
@@ -119,7 +121,7 @@ class BackupRunner < DetachedRunner
     # poll then falls through to the (now-running) container, or to the
     # failure card if preparing left an error file behind.
     def preparing?
-      mutex.synchronize { @preparing_thread&.alive? || false }
+      MUTEX.synchronize { @preparing_thread&.alive? || false }
     end
 
     # Hands the slow pull + launch off to a thread so the controller can
@@ -128,7 +130,7 @@ class BackupRunner < DetachedRunner
     # captured here so the progress page can label the run before any
     # container exists.
     def spawn_preparing_thread!(instance)
-      mutex.synchronize do
+      MUTEX.synchronize do
         return if @preparing_thread&.alive?
 
         @preparing_started_at = instance.send(:timestamp)
@@ -158,7 +160,7 @@ class BackupRunner < DetachedRunner
     # An InProgress snapshot for the :preparing phase, or nil when no prep
     # thread is alive.
     def preparing_in_progress
-      mutex.synchronize do
+      MUTEX.synchronize do
         return nil unless @preparing_thread&.alive?
 
         BackupRepository::InProgress.new(
@@ -167,10 +169,6 @@ class BackupRunner < DetachedRunner
           phase: :preparing,
         )
       end
-    end
-
-    def mutex
-      @mutex ||= Mutex.new # rubocop:disable ThreadSafety/ClassInstanceVariable
     end
   end
 
