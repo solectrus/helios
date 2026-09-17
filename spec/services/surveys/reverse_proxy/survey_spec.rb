@@ -4,6 +4,22 @@ RSpec.describe Surveys::ReverseProxy::Survey do
 
     before { with_config_yaml }
 
+    # Two services on one host port stop the stack, and the ports of the
+    # other two are picked in surveys of their own, so the list has to read
+    # them. Ports 80 and 443 stay off it: where Traefik holds them the
+    # dashboard publishes no host port at all.
+    it 'keeps the dashboard off the ports of the other services' do
+      with_config_yaml(
+        'mosquitto' => { 'port' => '1884' },
+        'influxdb' => { 'host_port' => '8087' },
+      )
+
+      expect(find_survey_element(result, 'host_port')['validators'].pluck('expression')).to eq(
+        ['{host_port} <> 1884 and {host_port} <> 3999 and {host_port} <> 4567 and ' \
+         '{host_port} <> 8087 and {host_port} <> 8883'],
+      )
+    end
+
     # One field, one question, whatever the mode: the address the stack answers
     # on. The hints around it say which of the three it is.
     it 'asks for the address once' do

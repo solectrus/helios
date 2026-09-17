@@ -20,7 +20,16 @@ module Surveys
       def customize!(data)
         apply_app_host_validator!(data)
         apply_force_ssl_default!(data)
+        reserve_stack_ports!(data)
         data['offerBrowserHost'] = BROWSER_HOST_OFFER
+      end
+
+      # Ports 80 and 443 stay off the list: they belong to Traefik, and where
+      # Traefik runs the dashboard loses its host port altogether (see
+      # Export::Services::Dashboard).
+      def reserve_stack_ports!(data)
+        ports = Export::Services.claimed_host_ports(configuration, except: Export::Services::Dashboard) - [80, 443]
+        reserve_host_ports!(data, 'host_port', ports)
       end
 
       # A reverse proxy that answers the internet terminates TLS, and the

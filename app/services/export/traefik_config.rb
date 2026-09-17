@@ -118,7 +118,7 @@ module Export
       when 'dashboard' then Services::Dashboard.host_port(configuration)
       when 'influxdb' then Services::Influxdb.host_port(configuration)
       when 'ingest' then Services::Ingest::PORT
-      when 'helios' then 3999 # Services::Helios publishes 3999:3000
+      when 'helios' then Services::Helios::HOST_PORT
       end
     end
 

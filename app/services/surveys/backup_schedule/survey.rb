@@ -20,7 +20,7 @@ module Surveys
       end
 
       def timezone
-        Configuration.current.system.timezone.presence || 'Europe/Berlin'
+        configuration.system.timezone.presence || 'Europe/Berlin'
       end
     end
   end

@@ -4,7 +4,13 @@ module Surveys
       private
 
       def customize!(data)
+        reserve_stack_ports!(data)
         preselect_broker_kind!(data)
+      end
+
+      def reserve_stack_ports!(data)
+        ports = Export::Services.claimed_host_ports(configuration, except: Export::Services::Mosquitto)
+        reserve_host_ports!(data, 'port', ports)
       end
 
       # `broker_external` is a UI-only question, never stored: which kind of
@@ -17,10 +23,6 @@ module Surveys
         return unless element
 
         element['defaultValue'] = !configuration.mqtt_broker_managed?
-      end
-
-      def configuration
-        @configuration ||= Configuration.current
       end
     end
   end

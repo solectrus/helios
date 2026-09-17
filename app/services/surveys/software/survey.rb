@@ -45,7 +45,7 @@ module Surveys
       end
 
       def build_matrix_rows
-        config = Configuration.current
+        config = configuration
         PREDICATES.filter_map do |key, predicate|
           next unless predicate.call(config)
 

@@ -35,6 +35,33 @@ RSpec.describe 'Configurations::Surveys', :with_admin_password do
         broker_settings_elements.pluck('name')
       end
 
+      def broker_port_validators
+        broker_settings_elements.find { |element| element['name'] == 'port' }['validators']
+      end
+
+      # The reverse proxy can be switched on after the port is set, so the
+      # check must not ask whether it runs today.
+      it 'keeps the broker off the ports the stack claims for itself' do
+        expect(broker_port_validators.pluck('expression')).to eq(
+          ['{port} <> 80 and {port} <> 443 and {port} <> 3000 and {port} <> 3999 and ' \
+           '{port} <> 4567 and {port} <> 8086 and {port} <> 8883'],
+        )
+      end
+
+      # The dashboard and InfluxDB ports are picked by the user, in surveys
+      # of their own, so the list has to read them rather than name them.
+      it 'reads the ports the user picked for the other services' do
+        with_config_yaml(
+          'dashboard' => { 'host_port' => '3001' },
+          'influxdb' => { 'host_port' => '1884' },
+        )
+
+        expect(broker_port_validators.pluck('expression')).to eq(
+          ['{port} <> 80 and {port} <> 443 and {port} <> 1884 and {port} <> 3001 and {port} <> 3999 and ' \
+           '{port} <> 4567 and {port} <> 8883'],
+        )
+      end
+
       # The page asks for the broker and nothing else. Where devices reach it
       # is answered by the card on the datasources screen.
       it 'asks for the broker itself, without hints around it' do

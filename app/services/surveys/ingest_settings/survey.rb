@@ -76,10 +76,6 @@ module Surveys
       def external_sensors
         @external_sensors ||= configuration.external_ingest_inputs
       end
-
-      def configuration
-        @configuration ||= Configuration.current
-      end
     end
   end
 end

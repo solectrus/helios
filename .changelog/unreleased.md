@@ -26,6 +26,7 @@ Keep every section, an empty one included.
 ### Settings and forms
 
 - **Passwords, tokens and keys show as dots.** An eye button in the field shows the value. Password managers stay out of these fields
+- **A port already in use is refused.** Two services can no longer take the same port on the host
 
 ### Data sources
 

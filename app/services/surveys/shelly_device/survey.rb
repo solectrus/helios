@@ -9,7 +9,7 @@ module Surveys
       private
 
       def customize!(data)
-        if Configuration.current.shelly_cloud?
+        if configuration.shelly_cloud?
           # The connection test probes the device's local `/shelly` endpoint,
           # so it goes away together with the `host` field in cloud mode.
           remove_element(data, 'host')

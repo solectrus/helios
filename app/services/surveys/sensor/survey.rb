@@ -206,7 +206,7 @@ module Surveys
       end
 
       def inject_shelly_connection_page!(data)
-        shelly = Configuration.current.shelly
+        shelly = configuration.shelly
         remove_page = shelly&.connection == 'cloud' ? 'p_shelly_local' : 'p_shelly_cloud'
         data['pages']&.reject! { |p| p['name'] == remove_page }
       end

@@ -37,7 +37,7 @@ module Surveys
       # A configuration imported from an existing installation can carry a
       # zone outside the curated set, and the field must still show it.
       def current_zone
-        identifier = Configuration.current.system.timezone.presence
+        identifier = configuration.system.timezone.presence
         return unless identifier
         return if ActiveSupport::TimeZone.all.any? { |zone| zone.tzinfo.name == identifier }
 

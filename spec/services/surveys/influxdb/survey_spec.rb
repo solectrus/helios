@@ -23,6 +23,21 @@ RSpec.describe Surveys::Influxdb::Survey do
         )
       end
 
+      # Two services on one host port stop the stack, and the broker port is
+      # picked in a survey of its own, so the list has to read it.
+      it 'keeps InfluxDB off the ports of the other services' do
+        with_config_yaml(
+          'mosquitto' => { 'port' => '1884' },
+          'dashboard' => { 'host_port' => '3001' },
+        )
+
+        expect(find_survey_element(result, 'host_port')['validators'].pluck('expression')).to eq(
+          ['{host_port} <> 80 and {host_port} <> 443 and {host_port} <> 1884 and ' \
+           '{host_port} <> 3001 and {host_port} <> 3999 and {host_port} <> 4567 and ' \
+           '{host_port} <> 8883'],
+        )
+      end
+
       it 'strips the visibleIfMode marker from the rendered output' do
         expect(result['pages'].first).not_to have_key('visibleIfMode')
       end

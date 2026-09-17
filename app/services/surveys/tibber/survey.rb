@@ -14,7 +14,7 @@ module Surveys
       UNAVAILABLE_PAGE = 'p_charging_unavailable'.freeze
 
       def customize!(data)
-        config = Configuration.current
+        config = configuration
         return drop_pages!(data, [UNAVAILABLE_PAGE]) if config.senec_charger_configurable?
 
         # A local battery but no forecast collector: name the missing dependency

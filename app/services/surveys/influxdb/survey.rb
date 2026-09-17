@@ -3,11 +3,16 @@ module Surveys
     class Survey < Base
       private
 
+      def customize!(data)
+        reserve_host_ports!(data, 'host_port', reserved_ports)
+        describe_traefik_routing!(data)
+      end
+
       # The static JSON describes the default deployment: publishing a plain
       # host port on the LAN. Behind a reverse proxy the same toggle means
       # something else, and it leads to another address, so the copy has to say
       # what actually happens in the mode that is running.
-      def customize!(data)
+      def describe_traefik_routing!(data)
         element = find_element(data, 'publish_port')
         return unless element
 
@@ -18,6 +23,12 @@ module Surveys
           element['title'] = external_title
           element['description'] = external_description(url)
         end
+      end
+
+      # Ports 80 and 443 count here: behind a managed Traefik this port becomes
+      # an entrypoint of its own, next to the two Traefik already serves.
+      def reserved_ports
+        Export::Services.claimed_host_ports(configuration, except: Export::Services::Influxdb)
       end
 
       # Behind the HELIOS-managed Traefik the toggle routes InfluxDB through it
@@ -116,10 +127,6 @@ module Surveys
         return if configuration.public_host.blank?
 
         "https://#{Export::Services::Influxdb.proxy_subdomain}.#{configuration.public_host}"
-      end
-
-      def configuration
-        @configuration ||= Configuration.current
       end
     end
   end
