@@ -995,6 +995,49 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(Configuration.current.sensor_enabled?('house_power')).to be true
       expect(flash[:alert]).to include('rest')
     end
+
+    # The switch on the card. Switching a source off takes its settings with
+    # it, so the stack runs neither its collector nor, for MQTT, the broker.
+    it 'switches off a source nothing reads through' do
+      Configuration.current.update('senec', { 'version' => '4', 'host' => 'senec.local' })
+
+      delete configuration_setting_path(setting: 'senec', name: 'senec')
+
+      expect(response).to redirect_to(datasources_path)
+      expect(Configuration.current.setting_data('senec')).to be_blank
+    end
+
+    # A sensor that reads through the source has nothing left to read once the
+    # source is gone, so it goes with it. The card warns and asks first.
+    it 'takes the sensors of the source with it' do
+      config = Configuration.current
+      config.update('senec', { 'version' => '4', 'host' => 'senec.local' })
+      config.update_sensor('inverter_power', { 'source' => 'senec' })
+      config.update_sensor('house_power', { 'source' => 'external', 'measurement' => 'm', 'field' => 'f' })
+
+      delete configuration_setting_path(setting: 'senec', name: 'senec')
+
+      config = Configuration.current
+      expect(config.sensor_enabled?('inverter_power')).to be false
+      expect(config.sensor_enabled?('house_power')).to be true
+    end
+
+    # Without the battery it steers, the charger cannot run either.
+    it 'takes the SENEC charger with SENEC' do
+      config = Configuration.current
+      config.update('senec', { 'version' => '4', 'host' => 'senec.local' })
+      config.update('senec_charger', { 'price_max' => 20 })
+
+      delete configuration_setting_path(setting: 'senec', name: 'senec')
+
+      expect(Configuration.current.senec_charger_enabled?).to be false
+    end
+
+    it 'refuses a source that has no settings to take away' do
+      delete configuration_setting_path(setting: 'senec', name: 'senec')
+
+      expect(response).to have_http_status(:forbidden)
+    end
   end
 
   describe 'read-only settings (storage)' do

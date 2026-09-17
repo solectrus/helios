@@ -126,13 +126,10 @@ de:
       recovery_impossible: 'Das PostgreSQL-Upgrade wurde unterbrochen, nachdem die Datenbank geleert wurde, und die zugehörige Sicherung unter „%{path}“ ist nicht mehr vorhanden. Die Daten lassen sich nur noch aus einer Datensicherung wiederherstellen.'
 
   datasources:
+    inline:
+      sensors: 'Sensoren'
     show:
       title: 'Datenquellen'
-      empty:
-        status: 'Wartet auf Sensoren'
-        title: 'Noch keine Datenquellen in Verwendung'
-        body: 'Sobald Sensoren aktiv sind, erscheinen hier ihre Datenquellen zur Konfiguration.'
-        cta: 'Sensoren öffnen'
       csv_import:
         title: 'Historische Daten importieren'
         body: 'Einmaliger Import historischer Messwerte aus CSV-Dateien (SENEC, Sungrow, SolarEdge).'
@@ -180,14 +177,7 @@ de:
         skip_write_tip: 'Wird nicht gespeichert, sondern nur für Formeln bereitgehalten'
       inline:
         label: 'MQTT-Topics'
-        count:
-          one: '%{count} Topic'
-          other: '%{count} Topics'
-          zero: 'Keine'
-        additional_count:
-          one: '%{count} zusätzlicher Topic'
-          other: '%{count} zusätzliche Topics'
-          zero: 'Keine zusätzlichen'
+        additional_label: 'Zusätzliche Topics'
     shelly_devices:
       index:
         title: 'Shelly-Geräte'
@@ -208,10 +198,6 @@ de:
         delete: 'Gerät entfernen'
       inline:
         label: 'Geräte'
-        count:
-          one: '%{count} Gerät'
-          other: '%{count} Geräte'
-          zero: 'Keine'
 
   settings:
     show:
@@ -364,7 +350,10 @@ de:
   configurations:
     show:
       configured: 'Konfiguriert'
-      configured_for: 'Konfiguriert für %{provider}'
+      access: 'Abfrage'
+      access_local: 'Lokales Netzwerk'
+      access_cloud: 'Hersteller-Cloud'
+      provider: 'Anbieter'
       incomplete: 'Konfiguration unvollständig'
     connection_test:
       reachable: 'InfluxDB erreichbar'
@@ -412,20 +401,20 @@ de:
       error: 'Prüfung fehlgeschlagen'
     settings:
       senec:
-        title: 'SENEC-Collector'
-        description: 'Liest Messwerte vom SENEC-Speicher. Unterstützt SENEC.Home V2.1, V3 und Home 4.'
+        title: 'SENEC'
+        description: 'Fragt den SENEC-Speicher direkt ab, lokal oder per Hersteller-Cloud.'
       mqtt:
-        title: 'MQTT-Collector'
-        description: 'Liest Messwerte von Topics eines MQTT-Brokers.'
+        title: 'MQTT'
+        description: 'Liest Werte, die Geräte über einen Broker veröffentlichen.'
       tibber:
         title: 'Dynamische Strompreise'
         description: 'Erfasst die Tibber-Preise. Mit lokal abgefragtem SENEC-Speicher zusätzlich die preisoptimierte Beladung aus dem Netz.'
       shelly:
-        title: 'Shelly-Collector'
-        description: 'Liest Messwerte aus Shelly-Stromzählern (Plug, Pro 3EM o.ä.).'
+        title: 'Shelly'
+        description: 'Fragt Shelly-Geräte direkt ab, lokal oder per Hersteller-Cloud.'
       forecast:
-        title: 'Forecast-Collector'
-        description: 'Holt die voraussichtliche PV-Erzeugung von einem Anbieter für PV-Prognosen (pvnode, Solcast oder Forecast.Solar). Erforderlich für die Ertragsprognose im Dashboard.'
+        title: 'PV-Prognose'
+        description: 'Holt die PV-Prognose von pvnode, Solcast oder Forecast.Solar.'
       deployment:
         title: 'Betriebsmodus'
         description: 'Welche SOLECTRUS-Dienste auf diesem Host laufen'
@@ -474,6 +463,15 @@ de:
       discard_discard: 'Verwerfen'
       configure: 'Konfigurieren'
       not_configured: 'Nicht konfiguriert'
+      toggle_on: 'Datenquelle aktivieren'
+      toggle_off: 'Datenquelle abschalten'
+      toggle_confirm_title: 'Datenquelle wirklich abschalten?'
+      toggle_confirm_button: 'Abschalten bestätigen'
+      toggle_confirm: 'Die Einstellungen dieser Datenquelle werden gelöscht.'
+      toggle_confirm_sensors:
+        one: 'Ein Sensor wird deaktiviert und die Einstellungen dieser Datenquelle werden gelöscht.'
+        other: '%{count} Sensoren werden deaktiviert und die Einstellungen dieser Datenquelle werden gelöscht.'
+      still_in_use: 'Abschalten nicht möglich, es wird noch über diese Datenquelle gelesen.'
     errors:
       loopback_host: 'Die Adresse %{host} benennt nur diesen Rechner sich selbst gegenüber und kann hier nicht verwendet werden.'
       unknown_proxy_network: 'Das Netzwerk %{network} ist auf diesem Rechner nicht vorhanden. Es muss der Proxy anlegen, bevor die Dienste ihm beitreten können.'
@@ -488,10 +486,7 @@ de:
   external_input_info:
     component:
       title: 'Externe Befüllung'
-      description: 'Ein externes System schreibt Sensordaten direkt in die InfluxDB, z.B. ioBroker oder Home Assistant.'
-      sensor_count:
-        one: '%{count} Sensor verbunden'
-        other: '%{count} Sensoren verbunden'
+      description: 'Ein externes System schreibt direkt in die InfluxDB, etwa ioBroker oder Home Assistant.'
       modal:
         title: 'Externe Befüllung'
         description: 'Alternativ zu den Collectoren, die Messwerte selbst abrufen, können Sensordaten auch von außen direkt in die InfluxDB geschrieben werden. Dies kann über ioBroker oder Home Assistant erfolgen.'

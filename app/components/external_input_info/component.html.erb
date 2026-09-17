@@ -1,8 +1,12 @@
 <article
+  <%# Nothing on a dimmed card reacts, the info dialog included. %>
+  <% if dimmed? %>
+    inert
+  <% end %>
   class="
-    bg-base-100 border-base-content/10 hover:border-primary/40 group relative flex h-full flex-col border-y
-    transition-colors duration-300 md:rounded-2xl md:border
-  "
+      bg-base-100 border-base-content/10 hover:border-primary/40 group relative flex h-full flex-col border-y transition duration-300 md:rounded-2xl md:border
+      <%= "opacity-55" if dimmed? %>
+    "
 >
   <div class="flex flex-1 flex-col p-7">
     <div class="flex items-start justify-between">
@@ -35,10 +39,15 @@
     <p class="text-base-content/65 mt-2 max-w-[42ch] text-base leading-relaxed"><%= t('.description') %></p>
   </div>
 
-  <div class="border-base-content/10 text-base-content/70 flex items-center gap-2.5 border-t px-7 py-4 text-sm font-medium">
-    <span aria-hidden="true" class="bg-success size-1.5 rounded-full"></span>
-    <%= t('.sensor_count', count: sensor_count) %>
-  </div>
+  <%#
+    The footer every source card carries, down to the empty cell on the left:
+    this source is set to nothing, the sensors alone say it is in use. The
+    card dims as a whole, so the footer is not dimmed a second time.
+  %>
+
+  <%= render SourceCardFooter::Component.new(sensor_count:) do %>
+    <div class="flex-1"></div>
+  <% end %>
 </article>
 
 <dialog id="external_input_info_modal" class="modal">

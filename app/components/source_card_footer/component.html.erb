@@ -1,0 +1,21 @@
+<div
+  class="
+    border-base-content/10 bg-base-content/4 divide-base-content/10 relative z-20 flex min-h-19 items-stretch divide-x border-t
+    <%= "opacity-55" if dimmed? %>
+  "
+  <%= tag.attributes(data: wrapper_data) %>
+>
+  <%= content %>
+
+  <% if sensor_count %>
+    <%= link_to helpers.sensors_path,
+                inert: dimmed?,
+                data: link_data,
+                class: "text-base-content/70 hover:text-primary hover:bg-base-content/6 focus-visible:ring-primary/40 flex shrink-0 items-center justify-center px-4 py-3.5 text-center transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset" do %>
+      <span class="min-w-0">
+        <span class="block truncate text-xs font-medium"><%= t('datasources.inline.sensors') %></span>
+        <span class="text-base-content block text-2xl leading-tight font-semibold tabular-nums"><%= sensor_count %></span>
+      </span>
+    <% end %>
+  <% end %>
+</div>

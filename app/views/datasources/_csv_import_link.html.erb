@@ -1,8 +1,12 @@
 <article
+  <%# Dimmed means there is nothing to import into, so the card leads nowhere. %>
+  <% if dimmed %>
+    inert
+  <% end %>
   class="
-    border-base-content/25 hover:border-primary/60 group relative flex h-full flex-col border-y border-dashed
-    transition-colors duration-300 md:rounded-2xl md:border
-  "
+      border-base-content/25 hover:border-primary/60 group relative flex h-full flex-col border-y border-dashed transition duration-300 md:rounded-2xl md:border
+      <%= "opacity-55" if dimmed %>
+    "
 >
   <div class="flex flex-1 flex-col p-7">
     <div class="flex items-start justify-between">

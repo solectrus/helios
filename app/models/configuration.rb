@@ -364,6 +364,40 @@ class Configuration # rubocop:disable Metrics/ClassLength
     ALL_SOURCES.select { |source| used.include?(source) }
   end
 
+  # The cards the data sources screen puts on display: every source the mode
+  # allows, whether or not something reads through it. A source has to be set
+  # up before a sensor can read through it, and MQTT needs a running broker
+  # before a device can publish at all, so the screen shows the way in instead
+  # of waiting for one. In collectors_only mode there are no logical sensors
+  # to wait for anyway.
+  #
+  # Deliberately not folded into #active_sources: an offered source may have
+  # no section at all, and #incomplete_sources would read the missing host as
+  # a gap that stops the stack.
+  def offered_sources
+    return SOURCE_CONFIGS if collectors_only?
+    return ALL_SOURCES & DASHBOARD_ONLY_SOURCES if dashboard_only?
+
+    ALL_SOURCES
+  end
+
+  # A source is switched on once it has settings of its own, and it can be
+  # switched off again as long as it has settings to take away. One without a
+  # section is not droppable, it is simply not set up yet.
+  def source_droppable?(source)
+    SOURCE_CONFIGS.include?(source) && configured?(source)
+  end
+
+  # Switch the source off: the section goes, and with it the collector. Every
+  # sensor that reads through the source goes too, because it would have
+  # nothing left to read (the card warns and asks first). The SENEC charger
+  # steers the battery over the same local API, so it goes with SENEC.
+  def drop_source!(source)
+    remove_sensors(sensors_with_source(source).keys)
+    update('senec_charger', {}) if source == 'senec'
+    update(source, {})
+  end
+
   # Enable/update a sensor. Returns true if data changed.
   #
   # `prune: false` defers shadowed-device cleanup to the caller — the batch
@@ -417,7 +451,16 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   # Disable/remove a sensor
   def remove_sensor(name)
-    @data['sensors']&.delete(name.to_s)
+    remove_sensors([name])
+  end
+
+  # The same for a whole set, with one write. `save!` serializes and rewrites
+  # the entire config.yaml, so a sensor at a time costs one rewrite each, and
+  # switching SENEC off takes all 16 sensors the collector can deliver.
+  def remove_sensors(names)
+    return if names.empty?
+
+    names.each { |name| @data['sensors']&.delete(name.to_s) }
     save!
   end
 
@@ -1000,7 +1043,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   #
   # For real singletons (`'system'`, `'backup'`, …) the whole section is
   # replaced by the incoming hash — the survey's view of the section is the
-  # full truth.
+  # full truth. An empty hash removes the section altogether.
   #
   # For mini-survey IDs (`'system_security'`, …) only the keys the mini-survey
   # owns are touched: present keys overwrite, missing keys are deleted, and any
@@ -1240,13 +1283,23 @@ class Configuration # rubocop:disable Metrics/ClassLength
   end
 
   # Writes what is left of the payload once the borrowed fields are split off:
-  # into the slice a mini-survey owns, or over the section of its own.
+  # into the slice a mini-survey owns, or over the section of its own. An empty
+  # section is dropped rather than kept as a stub, the same way #update_grouped
+  # and #store_section_field drop theirs: `update(name, {})` then removes the
+  # section with every key it holds, including the ones no survey speaks for
+  # (`image`, the storage path), which would otherwise come back on the next run
+  # of the service.
   def write_section(setting, raw)
     group = SETTING_GROUPS[setting]
     return update_grouped(group, raw) if group
     return false if @data[setting] == raw
+    return false if raw.blank? && !@data.key?(setting)
 
-    @data[setting] = raw
+    if raw.blank?
+      @data.delete(setting)
+    else
+      @data[setting] = raw
+    end
     enforce_mode_constraints! if setting == 'deployment'
     true
   end

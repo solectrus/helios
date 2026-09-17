@@ -55,6 +55,12 @@ module Configurations
         return if mqtt_name_still_needed?
 
         @configuration.remove_sensor(sensor_name)
+      elsif Configuration.source?(setting)
+        # The card offers the switch only where it can be thrown, so a request
+        # for a source something reads through is a crafted one.
+        return head(:forbidden) unless @configuration.source_droppable?(setting)
+
+        @configuration.drop_source!(setting)
       end
 
       Orchestration::StackStatus.mark_config_changed!

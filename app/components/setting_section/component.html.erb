@@ -1,69 +1,108 @@
 <article
+  data-controller="setting-section--component"
+  data-setting-section--component-on-title-value="<%= t('configurations.settings.toggle_off') %>"
+  data-setting-section--component-off-title-value="<%= t('configurations.settings.toggle_on') %>"
   class="
     bg-base-100 border-base-content/10 hover:border-primary/40 group relative flex h-full flex-col border-y
-    transition-colors duration-300 md:rounded-2xl md:border
+    transition duration-300 md:rounded-2xl md:border
   "
 >
-  <div class="flex flex-1 flex-col p-7">
-    <div class="flex items-start justify-between">
-      <i aria-hidden="true" class="fa-solid text-primary text-2xl <%= icon %>"></i>
+  <%#
+    The switch stands outside the dimmed part of the card. `opacity` caps every
+    descendant, so a switch inside it would carry a tooltip that is unreadable
+    exactly while the source is switched off and the tooltip is the one thing
+    to read. It also sits above the link that covers the whole card, so a click
+    on it switches the source instead of opening the survey. There is no pencil
+    beside it: the card is the edit button.
+  %>
 
-      <i
-        aria-hidden="true"
-        class="
-          fa-solid fa-pen-to-square text-base-content/25 group-hover:text-primary text-sm transition-colors
-          duration-200
-        "
-      ></i>
-    </div>
+  <div class="absolute top-7 right-7 z-20 flex items-center">
+    <span class="tooltip tooltip-left" data-tip="<%= toggle_title %>" data-setting-section--component-target="tip">
+      <% if toggled_on? %>
+        <%= button_to helpers.configuration_setting_path(setting:, name: setting),
+                          method: :delete,
+                          class: "cursor-pointer",
+                          aria: { label: toggle_title },
+                          form: { data: { turbo_frame: "_top",
+                                          turbo_confirm: toggle_confirm,
+                                          turbo_confirm_title: t('configurations.settings.toggle_confirm_title'),
+                                          turbo_confirm_button: t('configurations.settings.toggle_confirm_button') } } do %>
+          <input
+            type="checkbox"
+            class="toggle toggle-primary toggle-sm pointer-events-none"
+            checked
+            tabindex="-1"
+            aria-hidden="true"
+          >
+        <% end %>
+      <% else %>
+        <input
+          type="checkbox"
+          class="toggle toggle-primary toggle-sm"
+          aria-label="<%= toggle_title %>"
+          data-setting-section--component-target="switch"
+          data-action="change->setting-section--component#toggle"
+        >
+      <% end %>
+    </span>
+  </div>
+
+  <div class="flex flex-1 flex-col p-7 <%= "opacity-55" if dimmed? %>" data-setting-section--component-target="dim">
+    <i aria-hidden="true" class="fa-solid text-primary text-2xl <%= icon %>"></i>
 
     <h2 class="text-base-content mt-6 text-xl leading-tight font-semibold tracking-tight text-balance">
       <%= link_to title, link_path,
-                  data: { turbo_frame: "setting-modal-content" },
+                  inert: dimmed?,
+                  data: { turbo_frame: "setting-modal-content", setting_section__component_target: "link edit" },
                   class: "before:absolute before:inset-0 focus:outline-none focus-visible:before:ring-2 focus-visible:before:ring-primary/40 md:before:rounded-2xl" %>
     </h2>
 
     <% if description.present? %>
       <p class="text-base-content/65 mt-2 max-w-[42ch] text-base leading-relaxed"><%= description %></p>
     <% end %>
+
+    <%#
+      Topics and devices of the source itself. They sit in the body because
+      the footer carries the sensor count of every card, and above the link
+      that covers the card, so they lead to their own list.
+    %>
+
+    <% if (extra = extras) %>
+      <%= link_to extra[:path],
+                  inert: dimmed?,
+                  data: { turbo_frame: "_top", setting_section__component_target: "link" },
+                  class: "text-base-content/70 hover:text-primary relative z-20 mt-5 inline-flex items-center gap-2 self-start text-sm transition-colors" do %>
+        <span><%= extra[:label] %></span>
+        <span class="font-semibold tabular-nums"><%= extra[:count] %></span>
+
+        <i aria-hidden="true" class="fa-solid fa-chevron-right text-xs"></i>
+      <% end %>
+    <% end %>
   </div>
 
-  <% if (link = drill_down) %>
-    <div
-      class="
-        border-base-content/10 bg-base-content/4 divide-base-content/10 relative z-20 flex items-stretch divide-x
-        border-t
-      "
-    >
-      <% if incomplete? %>
-        <%= link_to link_path,
-                    data: { turbo_frame: "setting-modal-content" },
-                    class: "text-warning hover:bg-warning/10 focus-visible:ring-warning/40 flex flex-1 items-center gap-2.5 px-7 py-3.5 text-sm font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset" do %>
-          <span aria-hidden="true" class="bg-warning size-1.5 rounded-full"></span>
-          <%= status_text %>
+  <%#
+    One footer for every card: what the source is set to, and how many sensors
+    read through it. No status dot any more, a card that is switched on says
+    so by not being dimmed.
+  %>
+
+  <%= render SourceCardFooter::Component.new(sensor_count: sensor_count? ? sensor_count : nil,
+                                             dimmed: dimmed?,
+                                             stimulus_scope: "setting-section--component") do %>
+    <% if incomplete? %>
+      <%= link_to link_path,
+                  data: { turbo_frame: "setting-modal-content" },
+                  class: "text-warning hover:bg-warning/10 focus-visible:ring-warning/40 flex flex-1 items-center px-4 py-3.5 text-xs font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset" do %>
+        <span class="min-w-0 truncate"><%= status_text %></span>
+      <% end %>
+    <% else %>
+      <div class="flex min-w-0 flex-1 flex-col justify-center px-4 py-3.5 text-xs font-medium <%= status_text_class %>">
+        <span class="block truncate"><%= status_text %></span>
+
+        <% if status_value.present? %>
+          <span class="text-base-content block truncate font-mono" title="<%= status_value %>"><%= status_value %></span>
         <% end %>
-      <% else %>
-        <div class="flex flex-1 items-center gap-2.5 px-7 py-3.5 text-sm font-medium <%= status_text_class %>">
-          <span aria-hidden="true" class="size-1.5 rounded-full <%= status_dot_class %>"></span>
-          <%= status_text %>
-        </div>
-      <% end %>
-
-      <%= link_to link[:path],
-                  data: { turbo_frame: "_top" },
-                  class: "group/foot text-base-content/70 hover:text-primary hover:bg-base-content/6 focus-visible:ring-primary/40 flex items-center gap-2 px-7 py-3.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset" do %>
-        <span class="font-mono tabular-nums"><%= link[:count_text] %></span>
-
-        <i
-          aria-hidden="true"
-          class="fa-solid fa-chevron-right text-xs transition-transform duration-200 group-hover/foot:translate-x-0.5"
-        ></i>
-      <% end %>
-    </div>
-  <% else %>
-    <div class="border-base-content/10 flex items-center gap-2.5 border-t px-7 py-4 text-sm font-medium <%= status_text_class %>">
-      <span aria-hidden="true" class="size-1.5 rounded-full <%= status_dot_class %>"></span>
-      <%= status_text %>
-    </div>
+      </div>
+    <% end %>
   <% end %>
 </article>

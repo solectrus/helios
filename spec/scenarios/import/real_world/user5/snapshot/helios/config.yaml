@@ -56,7 +56,6 @@ reverse_proxy:
   proxy_certresolver: le-dns-cloudflare
   proxy_entrypoint: websecure
   proxy_network: traefik-public
-backup: {}
 sensors:
   battery_charging_power:
     field: bat_power_plus

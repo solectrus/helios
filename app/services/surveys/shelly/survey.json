@@ -1,12 +1,12 @@
 {
   "locale": "de",
   "title": {
-    "de": "Shelly-Collector",
-    "default": "Shelly-Collector"
+    "de": "Shelly",
+    "default": "Shelly"
   },
   "description": {
-    "de": "Liest Messwerte aus Shelly-Stromzählern (Plug, Pro 3EM o.ä.).",
-    "default": "Reads measurements from Shelly energy meters (Plug, Pro 3EM, etc.)."
+    "de": "Fragt Shelly-Stromzähler direkt ab, im lokalen Netz oder über die Hersteller-Cloud (Plug, Pro 3EM o.ä.).",
+    "default": "Queries Shelly energy meters directly, on the local network or through the vendor cloud (Plug, Pro 3EM, etc.)."
   },
   "pages": [
     {

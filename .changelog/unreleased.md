@@ -26,6 +26,10 @@ Keep every section, an empty one included.
 
 - **Passwords, tokens and keys show as dots.** An eye button in the field shows the value. Password managers stay out of these fields
 
+### Data sources
+
+- **Every card says where the data comes from.** The answer is the device on the local network, the vendor cloud, or what devices send. The cards now carry the name of the source alone: SENEC, Shelly, MQTT and PV forecast
+
 ### Services
 
 - **A blocked start says what blocks it.** The start stays visible. The reason appears in the status bar and on every service

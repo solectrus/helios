@@ -1,8 +1,8 @@
 {
   "locale": "de",
   "title": {
-    "de": "Ertragsvorhersage",
-    "default": "Yield forecast"
+    "de": "PV-Prognose",
+    "default": "PV forecast"
   },
   "description": {
     "de": "Prognose des PV-Ertrags",

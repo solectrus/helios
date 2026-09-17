@@ -31,6 +31,5 @@ redis:
   image: redis:6-alpine
 watchtower:
   image: containrrr/watchtower:1.7.1
-sensors: {}
 helios:
   image: ghcr.io/solectrus/helios:latest

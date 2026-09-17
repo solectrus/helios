@@ -56,7 +56,6 @@ forecast:
 reverse_proxy:
   bind_ip: 10.0.0.5
   mode: external
-backup: {}
 sensors:
   battery_charging_power:
     field: bat_power_plus

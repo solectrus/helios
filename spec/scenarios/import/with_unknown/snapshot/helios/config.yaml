@@ -30,7 +30,6 @@ redis:
   image: redis:8-alpine
 watchtower:
   image: nickfedor/watchtower:latest
-sensors: {}
 helios:
   image: ghcr.io/solectrus/helios:latest
 _unmanaged:

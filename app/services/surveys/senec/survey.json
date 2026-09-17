@@ -1,12 +1,12 @@
 {
   "locale": "de",
   "title": {
-    "de": "SENEC-Collector",
-    "default": "SENEC-Collector"
+    "de": "SENEC",
+    "default": "SENEC"
   },
   "description": {
-    "de": "Liest Messwerte vom SENEC-Speicher. Unterstützt SENEC.Home V2.1, V3 und Home 4.",
-    "default": "Reads measurements from the SENEC battery. Supports SENEC.Home V2.1, V3 and Home 4."
+    "de": "Fragt den SENEC-Speicher direkt ab, im lokalen Netz oder über die Hersteller-Cloud. Unterstützt SENEC.Home V2.1, V3 und Home 4.",
+    "default": "Queries the SENEC battery directly, on the local network or through the vendor cloud. Supports SENEC.Home V2.1, V3 and Home 4."
   },
   "pages": [
     {

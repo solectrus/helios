@@ -150,13 +150,10 @@ en:
       recovery_impossible: 'The PostgreSQL upgrade was interrupted after the database had been emptied, and its backup at "%{path}" is gone. The data can now only be restored from a backup.'
 
   datasources:
+    inline:
+      sensors: 'Sensors'
     show:
       title: 'Data Sources'
-      empty:
-        status: 'Waiting for sensors'
-        title: 'No data sources in use yet'
-        body: 'Once sensors are enabled, their data sources appear here for configuration.'
-        cta: 'Open sensors'
       csv_import:
         title: 'Import historical data'
         body: 'One-time import of historical readings from CSV files (SENEC, Sungrow, SolarEdge).'
@@ -204,14 +201,7 @@ en:
         skip_write_tip: 'Not stored, kept for formulas only'
       inline:
         label: 'MQTT topics'
-        count:
-          one: '%{count} topic'
-          other: '%{count} topics'
-          zero: 'None'
-        additional_count:
-          one: '%{count} additional topic'
-          other: '%{count} additional topics'
-          zero: 'None additional'
+        additional_label: 'Additional topics'
     shelly_devices:
       index:
         title: 'Shelly devices'
@@ -232,10 +222,6 @@ en:
         delete: 'Remove device'
       inline:
         label: 'Devices'
-        count:
-          one: '%{count} device'
-          other: '%{count} devices'
-          zero: 'None'
 
   settings:
     show:
@@ -388,7 +374,10 @@ en:
   configurations:
     show:
       configured: 'Configured'
-      configured_for: 'Configured for %{provider}'
+      access: 'Polling'
+      access_local: 'Local network'
+      access_cloud: 'Vendor cloud'
+      provider: 'Provider'
       incomplete: 'Configuration incomplete'
     connection_test:
       reachable: 'InfluxDB reachable'
@@ -436,20 +425,20 @@ en:
       error: 'Check failed'
     settings:
       senec:
-        title: 'SENEC-Collector'
-        description: 'Reads measurements from the SENEC battery. Supports SENEC.Home V2.1, V3 and Home 4.'
+        title: 'SENEC'
+        description: 'Queries the SENEC battery directly, locally or via the vendor cloud.'
       mqtt:
-        title: 'MQTT-Collector'
-        description: 'Reads measurements from topics on an MQTT broker.'
+        title: 'MQTT'
+        description: 'Reads values that devices publish over a broker.'
       tibber:
         title: 'Dynamic electricity prices'
         description: 'Collects the Tibber prices. With a locally-queried SENEC battery, also the price-optimized charging from the grid.'
       shelly:
-        title: 'Shelly-Collector'
-        description: 'Reads measurements from Shelly energy meters (Plug, Pro 3EM, etc.).'
+        title: 'Shelly'
+        description: 'Queries Shelly devices directly, locally or via the vendor cloud.'
       forecast:
-        title: 'Forecast-Collector'
-        description: 'Fetches expected PV yield from a PV forecast provider (pvnode, Solcast or Forecast.Solar). Required for the yield forecast on the dashboard.'
+        title: 'PV forecast'
+        description: 'Fetches the PV forecast from pvnode, Solcast or Forecast.Solar.'
       deployment:
         title: 'Deployment mode'
         description: 'Which SOLECTRUS services run on this host'
@@ -498,6 +487,15 @@ en:
       discard_discard: 'Discard'
       configure: 'Configure'
       not_configured: 'Not configured'
+      toggle_on: 'Activate data source'
+      toggle_off: 'Switch data source off'
+      toggle_confirm_title: 'Really switch this data source off?'
+      toggle_confirm_button: 'Confirm switching off'
+      toggle_confirm: 'The settings of this data source are deleted.'
+      toggle_confirm_sensors:
+        one: 'One sensor is deactivated and the settings of this data source are deleted.'
+        other: '%{count} sensors are deactivated and the settings of this data source are deleted.'
+      still_in_use: 'Cannot be switched off, this data source is still being read through.'
     errors:
       loopback_host: 'The address %{host} names this machine to itself alone and cannot be used here.'
       unknown_proxy_network: 'The network %{network} does not exist on this machine. The proxy has to create it before the services can join it.'
@@ -512,10 +510,7 @@ en:
   external_input_info:
     component:
       title: 'External Input'
-      description: 'An external system writes sensor data directly into InfluxDB, e.g. ioBroker or Home Assistant.'
-      sensor_count:
-        one: '%{count} sensor connected'
-        other: '%{count} sensors connected'
+      description: 'An external system writes straight into InfluxDB, ioBroker or Home Assistant for instance.'
       modal:
         title: 'External Input'
         description: 'Unlike collectors, which pull data themselves, sensor data can also be written directly into InfluxDB from outside. This can be done via ioBroker or Home Assistant.'

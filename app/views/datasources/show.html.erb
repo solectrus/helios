@@ -1,54 +1,23 @@
 <% content_for :title, t('.title') %>
 
 <%= render "shared/configuration_page", active_tab: :datasources do %>
-  <% if @configuration.collectors_only? %>
-    <%#
-      Sensor canonicalization happens on the remote dashboard host, so
-      we always show one card per collector — even unconfigured ones.
-    %>
-    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-      <% Configuration::SOURCE_CONFIGS.each do |source| %>
+  <%#
+    Every source the mode allows gets a card, in use or not, so setting one up
+    starts here instead of on the sensors screen. A card that nothing reads
+    through is dimmed (see SettingSection::Component#dimmed?).
+  %>
+  <% nothing_in_use = !@configuration.collectors_only? && @configuration.active_sources.empty? %>
+
+  <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+    <% @configuration.offered_sources.each do |source| %>
+      <% if source == "external" %>
+        <%= render ExternalInputInfo::Component.new(configuration: @configuration) %>
+      <% else %>
         <%= render SettingSection::Component.new(setting: source, configuration: @configuration) %>
       <% end %>
-
-      <%= render "csv_import_link" %>
-    </div>
-  <% else %>
-    <% sources = @configuration.active_sources %>
-    <% if sources.any? %>
-      <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
-        <% sources.each do |source| %>
-          <% if source == 'external' %>
-            <%= render ExternalInputInfo::Component.new(configuration: @configuration) %>
-          <% else %>
-            <%= render SettingSection::Component.new(setting: source, configuration: @configuration) %>
-          <% end %>
-        <% end %>
-
-        <%= render "csv_import_link" %>
-      </div>
-    <% else %>
-      <div class="max-w-2xl py-8 md:py-12">
-        <div class="text-base-content/50 inline-flex items-center gap-2 text-xs font-medium tracking-widest uppercase">
-          <span class="bg-primary inline-block h-2 w-2 rounded-full"></span>
-          <%= t('datasources.show.empty.status') %>
-        </div>
-
-        <h2 class="mt-4 text-3xl leading-tight font-semibold tracking-tight md:text-4xl">
-          <%= t('datasources.show.empty.title') %>
-        </h2>
-
-        <p class="text-base-content/70 mt-4 max-w-prose text-base leading-relaxed">
-          <%= t('datasources.show.empty.body') %>
-        </p>
-
-        <%= link_to sensors_path,
-                    class: "btn btn-primary mt-6",
-                    data: { turbo_frame: "_top" } do %>
-          <%= t('datasources.show.empty.cta') %>
-          <i aria-hidden="true" class="fa-solid fa-arrow-right text-sm"></i>
-        <% end %>
-      </div>
     <% end %>
-  <% end %>
+
+    <%# A CSV import fills sensors that exist, so it is dimmed until some do. %>
+    <%= render "csv_import_link", dimmed: nothing_in_use %>
+  </div>
 <% end %>

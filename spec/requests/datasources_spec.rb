@@ -21,6 +21,90 @@ RSpec.describe 'Datasources', :with_admin_password do
       expect(response.body).to include(title)
     end
 
+    # A source has to be set up before a sensor can read through it, so every
+    # source stands on the screen from the start.
+    it 'offers every source although nothing reads through them' do
+      get datasources_path
+
+      Configuration::SOURCE_CONFIGS.each do |source|
+        expect(response.body).to include(I18n.t("configurations.settings.#{source}.title"))
+      end
+    end
+
+    # The cards are an offer, not a gap: a source nothing reads through must
+    # never hold the stack back.
+    it 'counts the offered sources as neither active nor incomplete' do
+      config = Configuration.current
+
+      expect(config.offered_sources).to eq(Configuration::ALL_SOURCES)
+      expect(config.active_sources).to be_empty
+      expect(config.incomplete_sources).to be_empty
+    end
+
+    # It has no settings to make, so it is not switched on here: a sensor is
+    # put on this source on the sensors screen.
+    it 'offers the external input although no sensor is fed that way' do
+      get datasources_path
+
+      expect(response.body).to include(I18n.t('external_input_info.component.title'))
+    end
+
+    # A CSV import fills sensors that exist, so it waits, dimmed, until some do.
+    it 'offers the CSV import before a sensor can be filled' do
+      get datasources_path
+
+      expect(response.body).to include(I18n.t('datasources.show.csv_import.title'))
+    end
+
+    it 'dims a source that is not set up' do
+      get datasources_path
+
+      expect(response.body).to include('opacity-55')
+    end
+
+    it 'shows a source that is set up at full strength' do
+      config = Configuration.current
+      config.update('senec', { 'version' => '4', 'host' => 'senec.local' })
+      config.update('shelly', { 'connection' => 'local' })
+      config.update('forecast', { 'forecast' => 'pvnode' })
+      config.update('mqtt', { 'mqtt_host' => 'broker.local' })
+      config.update_sensor('inverter_power_4', { 'source' => 'external', 'measurement' => 'm', 'field' => 'f' })
+
+      get datasources_path
+
+      expect(response.body).not_to include('opacity-55')
+    end
+
+    # Switching a source off takes the sensors that read through it along, so
+    # the question on the card says how many.
+    it 'names the sensors that a switch off would take along' do
+      config = Configuration.current
+      config.update('senec', { 'version' => '4', 'host' => 'senec.local' })
+      config.update_sensor('inverter_power', { 'source' => 'senec' })
+
+      get datasources_path
+
+      expect(response.body).to include(
+        ERB::Util.html_escape(I18n.t('configurations.settings.toggle_confirm_sensors', count: 1)),
+      )
+    end
+
+    # A sensor is what puts these sources to work, and that step lives on the
+    # sensors screen.
+    it 'leads from a sensor-driven source to the sensors' do
+      get datasources_path
+
+      expect(response.body).to include(I18n.t('datasources.inline.sensors'))
+      expect(response.body).to include("href=\"#{sensors_path}\"")
+    end
+
+    # In dashboard_only mode the device collectors run on a remote host.
+    it 'offers only the sources the mode allows' do
+      with_config_yaml('deployment' => { 'mode' => 'dashboard_only' })
+
+      expect(Configuration.current.offered_sources).to eq(%w[forecast external])
+    end
+
     it 'flags an unconfigured source with sensors as incomplete' do
       Configuration.current.update_sensor('inverter_power_forecast', { 'source' => 'forecast' })
 

@@ -19,6 +19,11 @@ module SettingSection
       'storage' => 'fa-hard-drive',
     }.freeze
 
+    # Settings whose card says how the collector reaches its device: over the
+    # local network or through the vendor cloud. That decides what the
+    # collector can read, so the card names it instead of only "configured".
+    ACCESS_FIELDS = { 'shelly' => :connection, 'senec' => :adapter }.freeze
+
     FORECAST_PROVIDERS = {
       'pvnode' => 'pvnode',
       'solcast' => 'Solcast',
@@ -46,61 +51,91 @@ module SettingSection
     end
 
     def link_path
-      if singleton_configured?
+      if toggled_on?
         helpers.edit_configuration_setting_path(setting:, name: setting)
       else
         helpers.new_configuration_setting_path(setting:)
       end
     end
 
-    # The deployment card always reflects an effective mode (full is the
-    # implicit default), so it is treated as configured even when the section
-    # is empty in config.yaml. Other cards remain "not configured" until the
-    # user opens them.
     def singleton_data
       @singleton_data ||= configuration.setting_data(setting)
     end
 
-    # Ingest, like deployment, has an effective state even when the section is
-    # empty in config.yaml — defaults (image, retention_hours) kick in and the
-    # service is running. Treat it as configured so the card stays green.
-    #
-    # The prices data carries the borrowed charger tuning, and a leftover
-    # `image` alone says nothing either — only an API token means prices are
-    # actually being collected.
-    def singleton_configured?
-      return true if %w[deployment ingest].include?(setting)
-      return configuration.tibber_enabled? if setting == 'tibber'
-
-      singleton_data.present?
-    end
-
+    # First line of the status: what the value below it is. Every card that
+    # has something to say names it the same way, so the row reads as one.
     def status_label
-      return I18n.t("configurations.settings.deployment.modes.#{configuration.mode}") if setting == 'deployment'
-      if forecast_provider_known?
-        return I18n.t('configurations.show.configured_for', provider: FORECAST_PROVIDERS.fetch(singleton_data.forecast))
-      end
+      return I18n.t('configurations.show.access') if access
+      return I18n.t('configurations.show.provider') if forecast_provider_known?
 
       I18n.t('configurations.show.configured')
     end
 
+    # Local or cloud, for the cards that reach a device. Nil where the section
+    # names neither, and the card then falls back to the plain label.
+    def access
+      field = ACCESS_FIELDS[setting]
+      return unless field
+
+      value = singleton_data.public_send(field)
+      value if %w[local cloud].include?(value)
+    end
+
     def status_text
       return I18n.t('configurations.show.incomplete') if incomplete?
-      return status_label if singleton_configured?
+      return status_label if toggled_on?
 
       I18n.t('configurations.settings.not_configured')
     end
 
-    def status_dot_class
-      return 'bg-warning' if incomplete?
-      return 'bg-success' if singleton_configured?
+    # Source cards stand on the data sources screen whether or not they are in
+    # use (see Configuration#offered_sources). A card that is only on offer is
+    # dimmed, and its switch is the one thing on it that reacts: the rest
+    # opens once the source is switched on.
+    def dimmed?
+      !toggled_on?
+    end
 
-      'bg-base-content/30'
+    # The switch that puts a source on the installation, right on its card.
+    # On means the source has settings of its own, which is the same rule that
+    # lets it be switched off again (Configuration#source_droppable?).
+    # Switching it on opens the survey, because a source that names no host
+    # and no provider cannot read anything. Switching it off needs no question
+    # and takes the settings away.
+    def toggled_on?
+      configuration.source_droppable?(setting)
+    end
+
+    def toggle_title
+      I18n.t("configurations.settings.toggle_#{toggled_on? ? 'off' : 'on'}")
+    end
+
+    # Switching off deletes the settings of the source, and deactivates the
+    # sensors that read through it: they would have nothing left to read. That
+    # is the part worth a warning, so the question names how many.
+    def toggle_confirm
+      return I18n.t('configurations.settings.toggle_confirm') if sensor_count.zero?
+
+      I18n.t('configurations.settings.toggle_confirm_sensors', count: sensor_count)
+    end
+
+    # Second line of the status, the value its first line names.
+    def status_value
+      return unless addressable?
+
+      case setting
+      when 'shelly', 'senec' then I18n.t("configurations.show.access_#{access}") if access
+      when 'forecast' then FORECAST_PROVIDERS[singleton_data.forecast]
+      end
+    end
+
+    def addressable?
+      toggled_on? && !incomplete?
     end
 
     def status_text_class
       return 'text-warning' if incomplete?
-      return 'text-base-content/70' if singleton_configured?
+      return 'text-base-content/70' if toggled_on?
 
       'text-base-content/55'
     end
@@ -117,37 +152,54 @@ module SettingSection
       ICONS[setting] || 'fa-circle-question'
     end
 
-    # Returns drill-down link metadata, or nil when the card has no follow-up
-    # screen. The Shelly device CRUD is reachable in collectors_only mode and,
-    # in full mode, for multi-device setups where `shelly.devices` is a
-    # standalone array — single-device full-mode setups derive the device from
-    # the `source: shelly` sensor and are edited on the Sensors screen instead.
-    def drill_down
+    # Every source card ends on the same figure: how many sensors read through
+    # it. That is what a source is there for, so it is the one number the
+    # cards can be compared by. Skipped in collectors_only mode, which imports
+    # no logical sensors and sends the sensors screen back here.
+    def sensor_count?
+      !configuration.collectors_only?
+    end
+
+    def sensor_count
+      configuration.sensors_with_source(setting).size
+    end
+
+    # Topics and devices that stand on their own, beside the sensors. They
+    # belong to the source itself, so the body of the card names them and the
+    # footer keeps the one figure every card carries.
+    #
+    # The Shelly device CRUD is reachable in collectors_only mode and, in full
+    # mode, for multi-device setups where `shelly.devices` is a standalone
+    # array — single-device full-mode setups derive the device from the
+    # `source: shelly` sensor and are edited on the Sensors screen instead.
+    def extras
       case setting
-      when 'mqtt' then mqtt_drill_down
-      when 'shelly' then shelly_drill_down
+      when 'mqtt' then mqtt_extras
+      when 'shelly' then shelly_extras
       end
     end
 
     private
 
-    def mqtt_drill_down
+    def mqtt_extras
       # In full mode, sensors set on MQTT define their own topics. The ones
       # listed here are extras the user adds explicitly — surface that.
-      count_key = configuration.collectors_only? ? 'count' : 'additional_count'
+      label_key = configuration.collectors_only? ? 'label' : 'additional_label'
       {
         path: helpers.datasources_mqtt_topics_path,
-        count_text: I18n.t("datasources.mqtt_topics.inline.#{count_key}", count: configuration.mqtt_topics.size),
+        label: I18n.t("datasources.mqtt_topics.inline.#{label_key}"),
+        count: configuration.mqtt_topics.size,
       }
     end
 
-    def shelly_drill_down
+    def shelly_extras
       devices = configuration.shelly_devices
       return unless configuration.collectors_only? || devices.any?
 
       {
         path: helpers.datasources_shelly_devices_path,
-        count_text: I18n.t('datasources.shelly_devices.inline.count', count: devices.size),
+        label: I18n.t('datasources.shelly_devices.inline.label'),
+        count: devices.size,
       }
     end
   end
