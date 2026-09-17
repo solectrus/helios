@@ -96,9 +96,9 @@ module Header
         Configuration.current.collectors_only?,
         # Puts the sign on the Configuration tab.
         configuration_incomplete?,
-        # Aims that tab, and moves on its own: with a required setting and a
-        # data source both open, filling in the setting moves the target while
-        # the sign stays where it is.
+        # Where that tab leads. Keyed on the rendered target rather than on
+        # what it is derived from, so a cached strip can never point at a
+        # screen the configuration has moved away from.
         helpers.configuration_entry_path,
       ]
     end

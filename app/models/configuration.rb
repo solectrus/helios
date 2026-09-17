@@ -33,6 +33,16 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # it and it is never part of this survey's payload.
   SENEC_CHARGER_SURVEY_FIELDS = (ConfigSchema::SENEC_CHARGER_FIELDS - %w[image]).freeze
 
+  # The InfluxDB fields the deployment survey collects on behalf of the
+  # `influxdb` section. Choosing collectors_only means the collectors write to
+  # an InfluxDB elsewhere, and HELIOS has no address to fall back on, so the
+  # survey asks for the target together with the mode that needs one. `image`
+  # and the local-container fields are not among them: they belong to the
+  # InfluxDB this host runs, which collectors_only mode has none of.
+  DEPLOYMENT_INFLUXDB_FIELDS = (
+    ConfigSchema::INFLUXDB_EXTERNAL_FIELDS + %w[org bucket token_write]
+  ).freeze
+
   # The broker fields the MQTT survey collects on behalf of the `mosquitto`
   # section. `image` is not among them: the section keeps whatever an import
   # brought along, and the survey never speaks about it.
@@ -74,6 +84,11 @@ class Configuration # rubocop:disable Metrics/ClassLength
     # section so both stay clean per-service configs, and the section
     # disappears once the survey blanks its fields.
     'mqtt' => MOSQUITTO_SURVEY_FIELDS.index_with('mosquitto').freeze,
+    # The deployment survey names the external InfluxDB along with the mode
+    # that writes to one. The fields stay in the `influxdb` section, where the
+    # export reads them, so no mode switch moves a value from one section to
+    # another.
+    'deployment' => DEPLOYMENT_INFLUXDB_FIELDS.index_with('influxdb').freeze,
   }.freeze
 
   # Read-only pseudo-settings: they appear in the Settings UI like real
@@ -124,14 +139,18 @@ class Configuration # rubocop:disable Metrics/ClassLength
     storage
   ].freeze
 
-  # Below the required tier, the optional settings render as compact chips
-  # clustered into thematic groups. The keys are i18n slugs
-  # (settings.show.groups.*); the values list setting IDs in the order they
-  # should appear inside the group. Mode filtering (`visible_settings`),
-  # required-tier filtering and empty-group filtering happen in
-  # `#optional_groups` — this map is the static layout.
-  OPTIONAL_GROUPS = {
-    'installation' => %w[deployment software system_general],
+  # The Settings page renders its settings as compact chips clustered into
+  # thematic groups. The keys are i18n slugs (settings.show.groups.*); the
+  # values list setting IDs in the order they should appear inside the group.
+  # Mode filtering (`visible_settings`) and empty-group filtering happen in
+  # `#grouped_settings` — this map is the static layout.
+  #
+  # No group leads the page: every setting here ships with a workable value or
+  # is asked for before the screen is reachable at all (the basics on first
+  # start, the external database with the mode that needs one). So the screen
+  # has nothing to single out, and the groups carry the whole order.
+  SETTINGS_BY_GROUP = {
+    'installation' => %w[deployment system_general software],
     'access' => %w[reverse_proxy influxdb system_security],
     'data' => %w[ingest_settings storage],
     'energy_management' => %w[tibber],
@@ -141,11 +160,12 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # Settings shown in the configuration UI in collectors_only mode. The host
   # has no public surface: reverse_proxy/backup target the local dashboard and
   # postgres, which don't exist here, and the address the reverse-proxy form
-  # asks for only matters when the dashboard runs locally.
+  # asks for only matters when the dashboard runs locally. The InfluxDB card is
+  # hidden because the deployment survey asks for the external database, and
+  # the local one this card configures does not run here.
   COLLECTORS_ONLY_SETTINGS = %w[
     deployment software
     system_general system_security
-    influxdb
     tibber
   ].freeze
 
@@ -750,38 +770,33 @@ class Configuration # rubocop:disable Metrics/ClassLength
     incomplete_sources.any?
   end
 
-  # Settings the user has to fill in. HELIOS has neither a default for them nor
-  # anything to derive them from, and the stack stays down until they carry a
-  # value. Everything else in SETTINGS ships with a workable value, so a fresh
-  # installation can leave it alone — which is what lets the Settings page put
-  # the required ones in a tier of their own, ahead of the optional groups.
-  def required_settings
-    # In collectors_only mode the collectors push to an external InfluxDB and
-    # need its address. The commissioning date is not asked for here: it
-    # belongs to the dashboard, which runs on another host (matches the
-    # survey).
-    return %w[influxdb] if collectors_only?
-
-    %w[system_general]
-  end
-
   # Local-mode InfluxDB fields (org/bucket/token) are auto-generated and
   # survive a mode switch, so a plain "section configured?" check would
-  # mis-report a half-empty target as ready.
-  def incomplete_influxdb?
-    required_settings.include?('influxdb') && influxdb.host.blank?
+  # mis-report a half-empty target as ready. The deployment survey asks for the
+  # address along with the mode, so a gap here comes from an import, and the
+  # warning goes on the chip that owns the question.
+  def incomplete_external_influxdb?
+    collectors_only? && influxdb.host.blank?
   end
 
   # system_general carries the user-supplied basics (currently the PV
-  # commissioning date), and the date is never auto-filled.
+  # commissioning date), and the date is never auto-filled. The commissioning
+  # screen asks for it before any other screen opens, so a gap here comes from
+  # an import. In collectors_only mode the date is not asked for at all: it
+  # belongs to the dashboard, which runs on another host.
   def incomplete_system_general?
-    required_settings.include?('system_general') && system.installation_date.blank?
+    !collectors_only? && system.installation_date.blank?
   end
 
-  # True while a required setting is still empty. The Settings screen carries
-  # the warning sign in that state, so both navigations point at it.
-  def incomplete_required_settings?
-    incomplete_influxdb? || incomplete_system_general?
+  # True while the one answer the mode needs is still missing. The
+  # commissioning screen asks for it before any other screen opens (see
+  # ApplicationController#require_commissioning), which is what keeps every
+  # setting behind that gate free of a sign saying it is still empty.
+  #
+  # Exactly one of the two applies per mode, so the commissioning screen
+  # always has one survey to render.
+  def commissioning_incomplete?
+    incomplete_external_influxdb? || incomplete_system_general?
   end
 
   # True while a data source is still open, either because one of its own
@@ -800,7 +815,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     # is blank; incomplete_forecast_location? applies only when it is present.
     # The two target disjoint states and never flag 'forecast' together.
     ids << 'forecast' if incomplete_forecast_location?
-    ids << 'influxdb' if incomplete_influxdb?
+    ids << 'deployment' if incomplete_external_influxdb?
     ids << 'system_general' if incomplete_system_general?
     ids
   end
@@ -1022,12 +1037,11 @@ class Configuration # rubocop:disable Metrics/ClassLength
     insert_at ? base.dup.insert(insert_at + 1, 'ingest_settings') : base + %w[ingest_settings]
   end
 
-  # The optional tier of the Settings page: every visible setting the required
-  # tier does not already carry, clustered by OPTIONAL_GROUPS. Groups left
-  # empty by the mode or by the required tier drop out.
-  def optional_groups
-    visible = visible_settings - required_settings
-    OPTIONAL_GROUPS.each_with_object({}) do |(group, settings), result|
+  # The Settings page, group by group: every setting the mode makes visible,
+  # clustered by SETTINGS_BY_GROUP. A group the mode leaves empty drops out.
+  def grouped_settings
+    visible = visible_settings
+    SETTINGS_BY_GROUP.each_with_object({}) do |(group, settings), result|
       present = settings & visible
       result[group] = present if present.any?
     end

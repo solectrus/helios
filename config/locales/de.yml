@@ -614,6 +614,11 @@ de:
       invalid_reason_html: 'Die Datei <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> ist fehlerhaft:'
       invalid_hint: 'Den oben genannten Fehler beheben und den Import anschließend erneut starten.'
 
+  commissioning:
+    show:
+      title: 'Willkommen'
+      subtitle: 'Konfiguration von SOLECTRUS'
+
   sessions:
     new:
       title: 'Anmeldung'

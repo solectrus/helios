@@ -29,13 +29,10 @@ RSpec.describe StatusBar::Component, type: :component do
   describe 'the start action with an incomplete configuration' do
     subject(:rendered) { render_inline(described_class.new(status: :stopped)) }
 
-    # A sensor reads through a complete source, so there is something to
-    # start. Only the commissioning date is still missing.
+    # A sensor reads through a source that is not set up, so there is
+    # something to start and the source is what holds it back.
     before do
-      with_config_yaml(
-        'senec' => { 'version' => '4' },
-        'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
-      )
+      with_config_yaml('sensors' => { 'inverter_power' => { 'source' => 'senec' } })
     end
 
     it 'keeps the button on the bar' do

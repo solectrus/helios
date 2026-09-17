@@ -158,20 +158,18 @@ RSpec.describe Surveys::Influxdb::Survey do
     context 'when running in collectors_only mode (external InfluxDB)' do
       before { Configuration.current.update('deployment', { 'mode' => 'collectors_only' }) }
 
-      it 'shows the connection + credentials pages and hides the local Network page' do
-        expect(section_names(result)).to contain_exactly('p_connection', 'p_credentials')
-      end
-
-      it 'strips the visibleIfMode marker from every surviving page' do
-        result['pages'].each { |page| expect(page).not_to have_key('visibleIfMode') }
+      # The external database is named in the deployment survey, along with
+      # the mode that writes to one, and no InfluxDB runs on this host.
+      it 'hides every section (nothing for the user to configure)' do
+        expect(section_names(result)).to be_empty
       end
     end
 
     context 'when running in dashboard_only mode' do
       before { Configuration.current.update('deployment', { 'mode' => 'dashboard_only' }) }
 
-      # The port is force-published anyway, so asking the user is misleading.
-      # Both the local and the external pages are mode-gated away.
+      # The port is force-published anyway, so asking the user is misleading,
+      # and the one page this survey has left is gated to full mode.
       it 'hides every section (nothing for the user to configure)' do
         expect(section_names(result)).to be_empty
       end

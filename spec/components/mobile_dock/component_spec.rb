@@ -5,8 +5,8 @@ RSpec.describe MobileDock::Component, type: :component do
 
   # The dock has room for a dot only, but it reports the same state as the
   # warning sign in the top navigation.
-  context 'with a setting still open' do
-    before { with_config_yaml }
+  context 'with an open data source' do
+    before { with_config_yaml('sensors' => { 'inverter_power' => { 'source' => 'senec' } }) }
 
     it 'marks the configuration item in the warning color' do
       expect(dot.attr('class').value).to include('bg-warning')
@@ -30,7 +30,7 @@ RSpec.describe MobileDock::Component, type: :component do
   context 'when the configuration is open' do
     subject(:rendered) { render_inline(described_class.new(active_tab: :configuration)) }
 
-    before { with_config_yaml }
+    before { with_config_yaml('sensors' => { 'inverter_power' => { 'source' => 'senec' } }) }
 
     it 'holds the dot back' do
       expect(dot.attr('class').value).not_to include('bg-warning')

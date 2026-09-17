@@ -155,6 +155,7 @@ RSpec.describe 'Services', :with_admin_password do
       before do
         with_config_yaml(
           'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+          'influxdb' => { 'host' => 'influx.example.com' },
           'senec' => { 'version' => '4', 'host' => '10.0.0.10' },
         )
         allow(Orchestration::Container).to receive(:all).and_return([])

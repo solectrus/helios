@@ -1,6 +1,7 @@
 class StartsController < ApplicationController
   skip_before_action :require_authentication
   skip_before_action :require_consent
+  skip_before_action :require_commissioning
   before_action :redirect_if_already_imported
 
   def show

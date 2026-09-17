@@ -6,6 +6,7 @@ class ApplicationController < ActionController::Base
 
   before_action :require_authentication
   before_action :require_consent
+  before_action :require_commissioning
   before_action :set_locale
 
   helper_method :authorized?, :password_required?, :show_app_chrome?, :preferences, :rendering_content_frame?
@@ -31,11 +32,12 @@ class ApplicationController < ActionController::Base
   end
 
   # Whether to render the app chrome (header, mobile dock, status bar). Shown on
-  # every authenticated page — including the setup flow — so navigation and stack
-  # status stay reachable. Login and the /start import-consent page are
-  # deliberate full-screen gates and stay bare.
+  # every authenticated page — including the configuration screens — so
+  # navigation and stack status stay reachable. Login, the /start import
+  # consent and the /commissioning basics are deliberate full-screen gates
+  # and stay bare.
   def show_app_chrome?
-    authorized? && !is_a?(SessionsController) && !is_a?(StartsController)
+    authorized? && !is_a?(SessionsController) && !is_a?(StartsController) && !is_a?(CommissioningController)
   end
 
   def require_consent
@@ -43,6 +45,20 @@ class ApplicationController < ActionController::Base
     return unless existing_stack_files?
 
     redirect_to start_path
+  end
+
+  # The basics come first: no screen opens while the one answer the mode
+  # needs is missing (see CommissioningController). A fresh installation has
+  # none of them, and an import can arrive without one, so the gate reads the
+  # state rather than the file. It is what lets every screen behind it show a setting
+  # without a sign saying the setting is still empty.
+  #
+  # Runs after #require_consent, so an existing stack is still offered for
+  # import before anything is asked.
+  def require_commissioning
+    return if config_yaml_exists? && !Configuration.current.commissioning_incomplete?
+
+    redirect_to commissioning_path
   end
 
   def config_yaml_exists?

@@ -38,7 +38,7 @@ module ScenarioSnapshot
     # recorded config.yaml carries its nested keys sorted (see below), which
     # the exporter has no reason to reproduce.
     aggregate_failures do
-      expect(load_config(Configuration.path)).to eq(load_config(snapshot_path.join('helios/config.yaml')))
+      expect_same_config(snapshot_path.join('helios/config.yaml'))
       expect_same_text(Compose.path, snapshot_path.join('compose.yaml'))
       expect_same_text(Env.path, snapshot_path.join('.env'))
 
@@ -49,6 +49,10 @@ module ScenarioSnapshot
   end
 
   private
+
+  def expect_same_config(recorded)
+    expect(load_config(Configuration.path)).to eq(load_config(recorded))
+  end
 
   def expect_same_text(produced, recorded)
     expect(File.read(produced)).to eq(File.read(recorded))

@@ -55,7 +55,7 @@ RSpec.describe Orchestration::PowerSplitter::Progress do
     end
 
     it 'reports the day without a percentage when no installation date is configured' do
-      with_config_yaml
+      with_raw_config_yaml
 
       expect(progress).to have_attributes(day: Date.new(2026, 7, 25), percent: nil)
     end

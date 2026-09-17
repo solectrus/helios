@@ -143,7 +143,8 @@ RSpec.describe 'Datasources', :with_admin_password do
     end
 
     it 'hides the Sensors nav tab in collectors_only mode' do
-      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+                       'influxdb' => { 'host' => 'influx.example.com' })
 
       get datasources_path
 
@@ -151,7 +152,10 @@ RSpec.describe 'Datasources', :with_admin_password do
     end
 
     context 'when in collectors_only mode' do
-      before { with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY }) }
+      before do
+        with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+                         'influxdb' => { 'host' => 'influx.example.com' })
+      end
 
       it 'shows all four collector cards regardless of active_sources' do
         expect(Configuration.current.active_sources).to be_empty

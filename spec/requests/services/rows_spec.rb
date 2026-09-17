@@ -241,6 +241,10 @@ RSpec.describe 'Services::Rows', :with_admin_password do
         with_config_yaml(
           'system' => { 'timezone' => 'Europe/Berlin', 'app_host' => 'solectrus.example.com' },
           'reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' },
+          # The dashboard runs for sensors to be seen (see
+          # Configuration#dashboard_required?), and only a service that runs is
+          # routed.
+          'sensors' => { 'house_power' => { 'source' => 'external' } },
         )
         # External mode still publishes a host port; the button should prefer
         # the proxy URL over the raw http://host:port.

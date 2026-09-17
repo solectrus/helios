@@ -2,7 +2,11 @@ RSpec.describe ConfigNav::Component, type: :component do
   let(:dir) { config_yaml_dir }
 
   describe 'the warning sign' do
-    before { with_config_yaml }
+    # A sensor reads through SENEC, which names no host yet. The data sources
+    # are the only entry that can carry a sign: what the Settings screen holds
+    # is either defaulted or asked for before any screen opens (see
+    # CommissioningController).
+    before { with_config_yaml('sensors' => { 'inverter_power' => { 'source' => 'senec' } }) }
 
     def signs(rendered)
       rendered
@@ -11,19 +15,17 @@ RSpec.describe ConfigNav::Component, type: :component do
         .to_h { |a| [a['href'], a.css('i.fa-triangle-exclamation').attr('class').value] }
     end
 
-    # The commissioning date is missing, so the Settings entry is the one that
-    # leads on, and the only one in the warning color.
     it 'marks the entry that carries an open setting' do
       rendered = render_inline(described_class.new(active_tab: :sensors))
 
       expect(signs(rendered).transform_values { |css| css.include?('text-warning') })
-        .to eq({ '/settings' => true })
+        .to eq({ '/datasources' => true })
     end
 
     it 'holds the sign back on the entry that is already open' do
-      rendered = render_inline(described_class.new(active_tab: :settings))
+      rendered = render_inline(described_class.new(active_tab: :datasources))
 
-      expect(signs(rendered)['/settings']).to include(Header::Component::MUTED_WARNING_CLASSES)
+      expect(signs(rendered)['/datasources']).to include(Header::Component::MUTED_WARNING_CLASSES)
     end
 
     # The sign is an icon, and its tooltip lives in an attribute a screen

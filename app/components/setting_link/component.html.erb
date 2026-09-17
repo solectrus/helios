@@ -3,9 +3,4 @@
             class: "group border-base-content/10 hover:border-primary/40 hover:bg-base-content/4 focus-visible:ring-primary/40 inline-flex items-center gap-3.5 rounded-full border bg-base-100 px-7 py-3.5 text-lg font-medium transition-colors focus:outline-none focus-visible:ring-2" do %>
   <i aria-hidden="true" class="fa-solid text-primary text-xl <%= icon %>"></i>
   <span class="text-base-content"><%= title %></span>
-
-  <% if required? %>
-    <i aria-hidden="true" class="fa-solid text-lg <%= state_icon %>"></i>
-    <span class="sr-only"><%= state_label %></span>
-  <% end %>
 <% end %>

@@ -135,14 +135,13 @@ module ConfigNav
       end
     end
 
-    # The same two checks that move the entry point of the Configuration tab,
-    # so the tab opens the screen its own sign marks (see
-    # ApplicationHelper#configuration_entry_path).
+    # The same check that moves the entry point of the Configuration tab, so
+    # the tab opens the screen its own sign marks (see
+    # ApplicationHelper#configuration_entry_path). Only the data sources can be
+    # open: what the Settings screen carries is either defaulted or asked for
+    # before any screen opens (see CommissioningController).
     def show_warning?(tab)
-      case tab[:id]
-      when :datasources then Configuration.current.incomplete_datasources?
-      when :settings then Configuration.current.incomplete_required_settings?
-      end
+      Configuration.current.incomplete_datasources? if tab[:id] == :datasources
     end
 
     # The entry the reader already opened keeps the sign but loses the color:

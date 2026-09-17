@@ -12,6 +12,18 @@ RSpec.describe 'Restarting', :with_admin_password do
       expect(response.body).to include(I18n.t('restarting.show.title'))
     end
 
+    # An adopted stack restarts HELIOS before the commissioning date is
+    # answered, so the gate in front of every other screen must not lead
+    # away from the waiting page.
+    it 'renders while the commissioning date is still missing' do
+      with_config_yaml('system' => { 'installation_date' => nil })
+
+      get restarting_path(boot_id: 'abc123')
+
+      expect(response).to have_http_status(:ok)
+      expect(response.body).to include('abc123')
+    end
+
     # The screen waits for HELIOS to answer where it stands, which only works
     # while the address stays the same.
     it 'polls for the new boot id' do

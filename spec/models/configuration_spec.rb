@@ -35,14 +35,16 @@ RSpec.describe Configuration do
     end
 
     it 'reads from config.yaml if it exists' do
-      with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
+      with_raw_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
       config = described_class.current
 
       expect(config.system).to eq({ 'timezone' => 'Europe/Berlin' })
     end
 
     it 'returns empty config when file does not exist' do
+      without_config_yaml
       config = described_class.current
+
       expect(config.system).to eq({})
     end
   end
@@ -76,7 +78,9 @@ RSpec.describe Configuration do
 
   describe 'singleton accessors' do
     it 'returns empty hash for non-existent singleton' do
+      with_raw_config_yaml
       config = described_class.current
+
       expect(config.system).to eq({})
     end
 
@@ -562,6 +566,7 @@ RSpec.describe Configuration do
     end
 
     it 'removes the singleton entirely once the last mini-survey key is cleared' do
+      with_raw_config_yaml
       config = described_class.current
       config.update('system_security', { 'admin_password' => 'pw' })
       config.update('system_security', {})
@@ -570,6 +575,7 @@ RSpec.describe Configuration do
     end
 
     it 'routes a borrowed field into its foreign section, not the survey section' do
+      with_raw_config_yaml
       config = described_class.current
       config.update('dashboard', { 'ui_theme' => 'dark' })
       config.update('system_security', { 'admin_password' => 'pw', 'lockup_codeword' => 'open-sesame' })
@@ -593,7 +599,7 @@ RSpec.describe Configuration do
                     { 'mode' => 'internal', 'app_host' => 'example.com', 'trusted_proxy_ranges' => '10.0.0.0/8' })
 
       expect(config.reverse_proxy).to eq({ 'mode' => 'internal' })
-      expect(config.system).to eq({ 'app_host' => 'example.com' })
+      expect(config.system).to include({ 'app_host' => 'example.com' })
       expect(config.dashboard).to eq({ 'trusted_proxy_ranges' => '10.0.0.0/8' })
       expect(config.setting_data('reverse_proxy')).to eq(
         { 'mode' => 'internal', 'app_host' => 'example.com', 'trusted_proxy_ranges' => '10.0.0.0/8' },
@@ -824,7 +830,9 @@ RSpec.describe Configuration do
 
   describe '#configured?' do
     it 'returns false for non-existent setting' do
+      with_raw_config_yaml
       config = described_class.current
+
       expect(config.configured?('system')).to be false
     end
 
@@ -1122,18 +1130,20 @@ RSpec.describe Configuration do
     end
   end
 
-  describe '#incomplete_influxdb?' do
+  describe '#incomplete_external_influxdb?' do
     it 'returns false in full mode regardless of host' do
       with_config_yaml('influxdb' => { 'org' => 'solectrus' })
-      expect(described_class.current.incomplete_influxdb?).to be false
+      expect(described_class.current.incomplete_external_influxdb?).to be false
     end
 
+    # The deployment survey asks for the host, so only an import can leave it
+    # blank in this mode.
     it 'returns true in collectors_only mode without a host' do
       with_config_yaml(
         'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
         'influxdb' => { 'org' => 'solectrus', 'bucket' => 'solectrus' },
       )
-      expect(described_class.current.incomplete_influxdb?).to be true
+      expect(described_class.current.incomplete_external_influxdb?).to be true
     end
 
     it 'returns false in collectors_only mode once a host is set' do
@@ -1141,32 +1151,66 @@ RSpec.describe Configuration do
         'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
         'influxdb' => { 'host' => 'influx.example.com', 'org' => 'solectrus' },
       )
-      expect(described_class.current.incomplete_influxdb?).to be false
+      expect(described_class.current.incomplete_external_influxdb?).to be false
     end
   end
 
+  # The commissioning screen asks for the date before any screen opens, so
+  # only an import arrives without one (see #commissioning_incomplete?).
   describe '#incomplete_system_general?' do
     it 'returns true in full mode without an installation date' do
+      with_config_yaml('system' => { 'installation_date' => nil })
       expect(described_class.current.incomplete_system_general?).to be true
     end
 
     it 'returns false once an installation date is set' do
-      with_config_yaml('system' => { 'installation_date' => '2024-01-15' })
       expect(described_class.current.incomplete_system_general?).to be false
     end
 
     it 'returns false in collectors_only mode even without a date' do
-      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      with_config_yaml(
+        'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+        'system' => { 'installation_date' => nil },
+      )
       expect(described_class.current.incomplete_system_general?).to be false
     end
 
     it 'surfaces via setting_incomplete?(system_general) when the date is missing' do
+      with_config_yaml('system' => { 'installation_date' => nil })
       expect(described_class.current.setting_incomplete?('system_general')).to be true
     end
 
     it 'clears setting_incomplete?(system_general) once the date is set' do
-      with_config_yaml('system' => { 'installation_date' => '2024-01-15' })
       expect(described_class.current.setting_incomplete?('system_general')).to be false
+    end
+  end
+
+  # One survey always answers it, because the two states are mutually
+  # exclusive: the date belongs to the modes that run a dashboard, the address
+  # of the external database to the one that does not.
+  describe '#commissioning_incomplete?' do
+    it 'is true while the commissioning date is missing' do
+      with_config_yaml('system' => { 'installation_date' => nil })
+      expect(described_class.current).to be_commissioning_incomplete
+    end
+
+    it 'is true while a collectors-only installation names no database' do
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      expect(described_class.current).to be_commissioning_incomplete
+    end
+
+    it 'is false once the mode has what it needs' do
+      expect(described_class.current).not_to be_commissioning_incomplete
+    end
+
+    it 'never asks for both at once' do
+      with_config_yaml(
+        'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+        'system' => { 'installation_date' => nil },
+      )
+      config = described_class.current
+      expect([config.incomplete_system_general?, config.incomplete_external_influxdb?])
+        .to contain_exactly(false, true)
     end
   end
 
@@ -1230,12 +1274,12 @@ RSpec.describe Configuration do
 
   describe '#configuration_complete?' do
     it 'returns false when setup is not completed yet' do
-      with_config_yaml('system' => { 'installation_date' => '2024-01-15' })
       expect(described_class.current.configuration_complete?).to be false
     end
 
     it 'returns false when a sensor is configured but the installation date is missing' do
       with_config_yaml(
+        'system' => { 'installation_date' => nil },
         'senec' => { 'version' => '4' },
         'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
       )
@@ -1244,7 +1288,6 @@ RSpec.describe Configuration do
 
     it 'returns true once setup is done and no setting is incomplete' do
       with_config_yaml(
-        'system' => { 'installation_date' => '2024-01-15' },
         'senec' => { 'version' => '4' },
         'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
       )
@@ -1458,42 +1501,6 @@ RSpec.describe Configuration do
     end
   end
 
-  describe '#required_settings' do
-    it 'asks for the commissioning date in full mode' do
-      with_config_yaml
-      expect(described_class.current.required_settings).to eq(%w[system_general])
-    end
-
-    it 'asks for the commissioning date in dashboard_only mode' do
-      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY })
-      expect(described_class.current.required_settings).to eq(%w[system_general])
-    end
-
-    # The dashboard runs elsewhere, so the date is asked for there. What this
-    # host cannot do without is the address it pushes to.
-    it 'asks for the external database instead in collectors_only mode' do
-      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
-      expect(described_class.current.required_settings).to eq(%w[influxdb])
-    end
-
-    # The address is never among them, not even behind an external reverse
-    # proxy, where it holds the domain that proxy routes. The form that chooses
-    # that mode asks for it, so a start is never held up by a screen the reader
-    # was never sent to.
-    it 'asks for no address behind an external reverse proxy' do
-      with_config_yaml('reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' })
-      expect(described_class.current.required_settings).to eq(%w[system_general])
-    end
-
-    it 'does not ask for the address behind a managed reverse proxy' do
-      with_config_yaml(
-        'reverse_proxy' => { 'mode' => 'internal' },
-        'system' => { 'app_host' => 'solectrus.example.com' },
-      )
-      expect(described_class.current.required_settings).to eq(%w[system_general])
-    end
-  end
-
   # Behind an external reverse proxy the address is the domain that proxy
   # routes, so the reverse-proxy form asks for it. It stays in the `system`
   # section either way, so both forms name the same machine.
@@ -1544,11 +1551,11 @@ RSpec.describe Configuration do
     end
   end
 
-  describe '#optional_groups' do
+  describe '#grouped_settings' do
     it 'returns every group with at least one visible setting in full mode' do
       with_config_yaml('senec' => { 'adapter' => 'local' })
-      expect(described_class.current.optional_groups).to eq(
-        'installation' => %w[deployment software],
+      expect(described_class.current.grouped_settings).to eq(
+        'installation' => %w[deployment system_general software],
         'access' => %w[reverse_proxy influxdb system_security],
         'data' => %w[storage],
         'energy_management' => %w[tibber],
@@ -1556,25 +1563,25 @@ RSpec.describe Configuration do
       )
     end
 
-    it 'never repeats a setting the required tier already carries' do
+    # Nothing on the screen has to be visited, so no chip is lifted out of its
+    # group and every visible setting stands in exactly one.
+    it 'carries every visible setting' do
       with_config_yaml
       config = described_class.current
-      expect(config.optional_groups.values.flatten).not_to include(*config.required_settings)
+      expect(config.grouped_settings.values.flatten).to match_array(config.visible_settings)
     end
 
     it 'keeps system_security in the access group in collectors_only mode' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
-      expect(described_class.current.optional_groups.fetch('access')).to eq(
+      expect(described_class.current.grouped_settings.fetch('access')).to eq(
         %w[system_security],
       )
     end
 
-    # Only here is the commissioning date optional: the dashboard that needs it
-    # runs on another host.
-    it 'keeps system_general in the installation group in collectors_only mode' do
+    it 'keeps the deployment mode at the head of the installation group' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
-      expect(described_class.current.optional_groups.fetch('installation')).to eq(
-        %w[deployment software system_general],
+      expect(described_class.current.grouped_settings.fetch('installation')).to eq(
+        %w[deployment system_general software],
       )
     end
 
@@ -1582,19 +1589,19 @@ RSpec.describe Configuration do
       with_config_yaml(
         'sensors' => { 'inverter_power_2' => { 'source' => 'shelly', 'is_balcony' => true } },
       )
-      expect(described_class.current.optional_groups.fetch('data')).to eq(
+      expect(described_class.current.grouped_settings.fetch('data')).to eq(
         %w[ingest_settings storage],
       )
     end
 
     it 'offers the prices chip without any SENEC battery — they are collected for their own sake' do
       with_config_yaml
-      expect(described_class.current.optional_groups.fetch('energy_management')).to eq(%w[tibber])
+      expect(described_class.current.grouped_settings.fetch('energy_management')).to eq(%w[tibber])
     end
 
     it 'keeps the installation, access and energy_management groups in collectors_only mode' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
-      expect(described_class.current.optional_groups.keys).to contain_exactly(
+      expect(described_class.current.grouped_settings.keys).to contain_exactly(
         'installation',
         'access',
         'energy_management',
@@ -1603,7 +1610,7 @@ RSpec.describe Configuration do
 
     it 'keeps the data group with storage in dashboard_only mode without a balcony sensor' do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_DASHBOARD_ONLY })
-      expect(described_class.current.optional_groups.fetch('data')).to eq(%w[storage])
+      expect(described_class.current.grouped_settings.fetch('data')).to eq(%w[storage])
     end
   end
 

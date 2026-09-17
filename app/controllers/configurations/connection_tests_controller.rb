@@ -4,6 +4,12 @@ module Configurations
   # configuration controllers — it is not a Turbo navigation. The actual probe
   # is dispatched by `target` to a registered service (see ConnectionTesting).
   class ConnectionTestsController < ApplicationController
+    # The first-start page asks for the address of an external InfluxDB before
+    # any other screen opens, and that survey carries the test buttons (see
+    # CommissioningController). Behind the gate the fetch would follow a redirect to
+    # /commissioning and parse HTML as JSON.
+    skip_before_action :require_commissioning
+
     def create
       result = ConnectionTesting.run(
         target: params.expect(:target),

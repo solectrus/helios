@@ -10,7 +10,7 @@ RSpec.describe 'Starts' do
     end
 
     context 'when config.yaml does not exist' do
-      before { with_config_yaml }
+      before { without_config_yaml }
 
       it 'shows the consent page' do
         get start_path
@@ -20,7 +20,7 @@ RSpec.describe 'Starts' do
     end
 
     context 'when the stack only contains supported services' do
-      let(:dir) { with_config_yaml }
+      let(:dir) { without_config_yaml }
 
       before do
         File.write(File.join(dir, 'compose.yaml'),
@@ -40,7 +40,7 @@ RSpec.describe 'Starts' do
     # umlaut in a comment used to raise Encoding::CompatibilityError here.
     # docker compose reads such a file fine, so HELIOS has to as well.
     context 'when the .env file is not UTF-8' do
-      let(:dir) { with_config_yaml }
+      let(:dir) { without_config_yaml }
 
       before do
         File.write(File.join(dir, 'compose.yaml'),
@@ -57,7 +57,7 @@ RSpec.describe 'Starts' do
     end
 
     context 'when the stack contains an unsupported service' do
-      let(:dir) { with_config_yaml }
+      let(:dir) { without_config_yaml }
 
       before do
         File.write(File.join(dir, 'compose.yaml'),
@@ -79,7 +79,7 @@ RSpec.describe 'Starts' do
     end
 
     context 'when the stack carries a Traefik label HELIOS cannot write again' do
-      let(:dir) { with_config_yaml }
+      let(:dir) { without_config_yaml }
 
       before do
         File.write(File.join(dir, 'compose.yaml'), <<~YAML)
@@ -106,7 +106,7 @@ RSpec.describe 'Starts' do
     end
 
     context 'when the stack runs Ingest but an Ingest input is external' do
-      let(:dir) { with_config_yaml }
+      let(:dir) { without_config_yaml }
 
       before do
         # Ingest service present, no collector → inverter_power_2 (the balcony)
@@ -135,7 +135,7 @@ RSpec.describe 'Starts' do
     end
 
     context 'when the compose file is invalid' do
-      let(:dir) { with_config_yaml }
+      let(:dir) { without_config_yaml }
 
       before do
         # depends_on an undefined service makes `docker compose config` fail.
@@ -161,7 +161,7 @@ RSpec.describe 'Starts' do
   end
 
   describe 'fresh-install detection on protected routes' do
-    let(:dir) { with_config_yaml }
+    let(:dir) { without_config_yaml }
 
     before do
       File.write(File.join(dir, '.env'), "ADMIN_PASSWORD=x\nSECRET_KEY_BASE=y\n")
@@ -204,7 +204,7 @@ RSpec.describe 'Starts' do
     end
 
     context 'when config.yaml does not exist' do # rubocop:disable RSpec/MultipleMemoizedHelpers
-      let(:dir) { with_config_yaml }
+      let(:dir) { without_config_yaml }
       let(:compose_content) { "services:\n  dashboard:\n    image: test:latest\n" }
       let(:env_content) { "TZ=Europe/Berlin\n" }
       let(:stack_reader) { instance_double(Import::StackReader) }
@@ -269,7 +269,7 @@ RSpec.describe 'Starts' do
     end
 
     context 'when the stack contains an unsupported service' do
-      let(:dir) { with_config_yaml }
+      let(:dir) { without_config_yaml }
 
       before do
         File.write(File.join(dir, 'compose.yaml'),
@@ -300,7 +300,7 @@ RSpec.describe 'Starts' do
     # An external Ingest input is a hint on the start page, not a refusal: the
     # import runs, and Ingest comes with it.
     context 'when an Ingest input arrives from an external source' do
-      let(:dir) { with_config_yaml }
+      let(:dir) { without_config_yaml }
 
       before do
         File.write(File.join(dir, 'compose.yaml'), <<~YAML)
@@ -338,7 +338,7 @@ RSpec.describe 'Starts' do
     end
 
     context 'when the compose file is invalid' do
-      let(:dir) { with_config_yaml }
+      let(:dir) { without_config_yaml }
 
       before do
         File.write(File.join(dir, 'compose.yaml'),

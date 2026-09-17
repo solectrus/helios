@@ -9,6 +9,7 @@ RSpec.describe 'Datasources::ShellyDevices', :with_admin_password do
   before do
     with_config_yaml(
       'deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+      'influxdb' => { 'host' => 'influx.example.com' },
       'shelly' => { 'connection' => 'local' },
     )
     login

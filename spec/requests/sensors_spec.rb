@@ -101,7 +101,8 @@ RSpec.describe 'Sensors', :with_admin_password do
     # Sensor canonicalization happens on the remote dashboard host in
     # collectors_only mode, so /sensors has no meaning locally.
     it 'redirects to datasources in collectors_only mode' do
-      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+                       'influxdb' => { 'host' => 'influx.example.com' })
 
       get sensors_path
 

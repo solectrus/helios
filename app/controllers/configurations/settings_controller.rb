@@ -75,18 +75,8 @@ module Configurations
       save_setting
       return if performed?
 
-      adopt_request_host!
-      Orchestration::StackStatus.mark_config_changed!
+      finish_setting_save!
       redirect_to redirect_target
-    end
-
-    # Never after a save through the form that asks for the address itself. The
-    # payload is the answer there, an empty one included, and an address taken
-    # from the browser behind it would put back what the user just cleared.
-    def adopt_request_host!
-      return if Configuration.asks_for_app_host?(setting)
-
-      @configuration.adopt_request_host!(request.host)
     end
 
     def setting
@@ -287,12 +277,6 @@ module Configurations
       return unless setting == 'dashboard_theme'
 
       data['ui_theme'] = 'user' if data['ui_theme'].blank?
-    end
-
-    def strip_theme_sentinel!(data)
-      return unless setting == 'dashboard_theme'
-
-      data['ui_theme'] = '' if data['ui_theme'] == 'user'
     end
 
     # Derive UI-only state (kind, extraction mode, formula of a calculated

@@ -638,6 +638,11 @@ en:
       invalid_reason_html: 'The <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> file is invalid:'
       invalid_hint: 'Fix the error shown above, then start the import again.'
 
+  commissioning:
+    show:
+      title: 'Welcome'
+      subtitle: 'Configuration for SOLECTRUS'
+
   sessions:
     new:
       title: 'Login - HELIOS'

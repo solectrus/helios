@@ -1,0 +1,24 @@
+<% content_for(:title) { t('.title') } %>
+
+<div class="flex min-h-dvh flex-col items-center px-4 py-10 sm:py-14">
+  <div class="absolute top-4 right-4 z-20 flex items-center gap-1">
+    <%= render LanguageSelect::Component.new %>
+  </div>
+
+  <div class="mb-8 text-center">
+    <img src="/logo.svg" class="mx-auto mb-3 h-9" alt="HELIOS">
+    <p class="text-base-content/65 text-lg"><%= t('.subtitle') %></p>
+  </div>
+
+  <%#
+    No card around the survey: survey-core paints its body in base-200 and its
+    question boxes in base-100, so the page colour already is the backdrop the
+    form expects. The modal on the Settings page carries the same pair.
+  %>
+
+  <div class="w-full max-w-3xl">
+    <%= form_with url: commissioning_path, method: :post, id: "commissioning-form" do %>
+      <%= render SurveyField::Component.new(setting:, data: setting_data, form_id: "commissioning-form") %>
+    <% end %>
+  </div>
+</div>

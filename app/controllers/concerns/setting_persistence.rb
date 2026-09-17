@@ -45,6 +45,26 @@ module SettingPersistence
 
   private
 
+  # What a saved survey triggers besides the write itself. Both screens that
+  # render a survey run it, so a step added here reaches the commissioning
+  # screen and the settings modal alike.
+  #
+  # The dashboard link and the address external sources write to both need a
+  # host, and the browser is the only one here that can name it.
+  def finish_setting_save!
+    adopt_request_host!
+    Orchestration::StackStatus.mark_config_changed!
+  end
+
+  # Never after a save through the form that asks for the address itself. The
+  # payload is the answer there, an empty one included, and an address taken
+  # from the browser behind it would put back what the user just cleared.
+  def adopt_request_host!
+    return if Configuration.asks_for_app_host?(setting)
+
+    @configuration.adopt_request_host!(request.host)
+  end
+
   # Handle the `enabled` UI flag: when false, clear the section entirely;
   # when true, strip the flag and save the remaining data. Borrowed fields
   # (e.g. reverse_proxy's trusted_proxy_ranges) live in a different section,
@@ -53,6 +73,7 @@ module SettingPersistence
   def persist_setting(data)
     strip_theme_sentinel!(data)
 
+    return persist_deployment(data) if setting == 'deployment'
     return persist_reverse_proxy(data) if setting == 'reverse_proxy'
     return persist_tibber(data) if setting == 'tibber'
     return persist_mqtt(data) if setting == 'mqtt'
@@ -61,6 +82,20 @@ module SettingPersistence
 
     preserve_software_owned_image!(data)
     @configuration.update(setting, data)
+  end
+
+  # The deployment survey asks for the external InfluxDB along with the mode
+  # that writes to one, and BORROWED_FIELDS routes those answers into the
+  # `influxdb` section. In every other mode the questions are off screen, and
+  # the values SurveyJS echoes back must not reach that section: org, bucket
+  # and token are generated for the InfluxDB this host runs, and a blank from
+  # a hidden question would delete them.
+  def persist_deployment(data)
+    unless data['mode'] == ConfigSchema::MODE_COLLECTORS_ONLY
+      data.except!(*Configuration::DEPLOYMENT_INFLUXDB_FIELDS)
+    end
+
+    @configuration.update('deployment', data)
   end
 
   # The prices survey drives two services through two UI-only flags. `enabled`
@@ -102,6 +137,17 @@ module SettingPersistence
   # payload configure what the survey refused to render.
   def ignore_senec_charger!(data)
     data.except!(*Configuration::SENEC_CHARGER_SURVEY_FIELDS)
+  end
+
+  # The "user-selectable" theme is stored as an empty string (the dashboard's
+  # UI_THEME convention). The survey carries a `user` sentinel instead, because
+  # SurveyJS cannot preselect a radio option with an empty value, so translate
+  # it back on the way in (see SettingsController#inject_theme_sentinel! for
+  # the way out).
+  def strip_theme_sentinel!(data)
+    return unless setting == 'dashboard_theme'
+
+    data['ui_theme'] = '' if data['ui_theme'] == 'user'
   end
 
   # reverse_proxy uses a tri-state `mode` (none/internal/external) instead of

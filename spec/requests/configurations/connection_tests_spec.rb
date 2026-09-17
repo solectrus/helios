@@ -117,6 +117,25 @@ RSpec.describe 'Configurations::ConnectionTests', :with_admin_password do
       expect(response.parsed_body['message']).to be_present
     end
 
+    # The commissioning page renders the deployment survey with its two test
+    # buttons, so the probe has to answer before the survey is saved. Behind
+    # the gate it would redirect to /commissioning and hand the fetch HTML
+    # instead of JSON.
+    it 'answers while the commissioning screen is still open' do
+      with_raw_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      stub_request(:get, 'http://influxdb.test:8086/ping')
+        .to_return(status: 204, headers: { 'X-Influxdb-Version' => '2.7.5' })
+
+      post configuration_connection_test_path, params: {
+        target: 'influxdb', check: 'reachability',
+        values: { schema: 'http', host: 'influxdb.test', port: '8086' }
+      }
+
+      expect(response).to have_http_status(:ok)
+      expect(response.media_type).to eq('application/json')
+      expect(response.parsed_body['ok']).to be true
+    end
+
     it 'reports an error for an unknown target without probing' do
       post configuration_connection_test_path, params: {
         target: 'spaceship', check: 'reachability', values: { host: 'x' }

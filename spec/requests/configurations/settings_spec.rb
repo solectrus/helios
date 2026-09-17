@@ -7,12 +7,17 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
   end
 
   describe 'GET /configuration/settings/new' do
+    # The sensor name has to travel with the survey URL: the sensor survey is
+    # built per sensor, and without the name it would arrive with the choices
+    # and the sources of no sensor at all.
     it 'renders the survey form for a sensor' do
       get new_configuration_setting_path(setting: 'sensor', name: 'inverter_power'),
           headers: turbo_frame_headers
 
       expect(response).to have_http_status(:ok)
-      expect(response.body).to include('survey')
+      expect(response.body).to include(
+        configuration_survey_path('sensor', format: :json, sensor: 'inverter_power'),
+      )
     end
 
     it 'renders the survey form for a singleton' do
@@ -202,7 +207,9 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
 
     it 'merges a mini-survey into its parent singleton without dropping siblings' do
-      Configuration.current.update('system', { 'admin_password' => 'secret', 'timezone' => 'UTC' })
+      Configuration.current.update('system',
+                                   { 'admin_password' => 'secret', 'timezone' => 'UTC',
+                                     'installation_date' => '2024-01-15' })
 
       post configuration_settings_path,
            params: { setting: 'system_security', data: { admin_password: 'new-secret' }.to_json }
@@ -1005,7 +1012,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
     it 'renders the survey form for an existing singleton' do
       config = Configuration.current
-      config.update('system', { 'timezone' => 'UTC' })
+      config.update('system', { 'timezone' => 'UTC', 'installation_date' => '2024-01-15' })
 
       get edit_configuration_setting_path(setting: 'system_general', name: 'system_general'),
           headers: turbo_frame_headers
@@ -1233,6 +1240,46 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       delete configuration_setting_path(setting: 'storage', name: 'storage')
 
       expect(response).to have_http_status(:forbidden)
+    end
+  end
+
+  # The deployment survey asks for the external InfluxDB along with the mode
+  # that writes to one, so the two arrive in the same payload and land in the
+  # section the export reads.
+  describe 'the deployment survey' do
+    it 'stores the external database along with the mode' do
+      patch configuration_setting_path(setting: 'deployment', name: 'deployment'),
+            params: {
+              data: {
+                'mode' => ConfigSchema::MODE_COLLECTORS_ONLY,
+                'host' => 'influx.example.com', 'schema' => 'https', 'port' => '443',
+                'org' => 'acme', 'bucket' => 'solar', 'token_write' => 'secret'
+              }.to_json,
+            }
+
+      config = Configuration.current
+      expect(config.mode).to eq(ConfigSchema::MODE_COLLECTORS_ONLY)
+      expect(config.influxdb.host).to eq('influx.example.com')
+      expect(config.influxdb.org).to eq('acme')
+      expect(config.influxdb.token_write).to eq('secret')
+    end
+
+    # SurveyJS sends back the answers of a question it does not render, and
+    # org, bucket and token belong to the InfluxDB this host runs.
+    it 'keeps the generated credentials when the mode needs no external database' do
+      Configuration.current.update('influxdb', { 'org' => 'solectrus', 'token_write' => 'generated' })
+
+      patch configuration_setting_path(setting: 'deployment', name: 'deployment'),
+            params: {
+              data: {
+                'mode' => ConfigSchema::MODE_FULL,
+                'host' => '', 'org' => '', 'bucket' => '', 'token_write' => ''
+              }.to_json,
+            }
+
+      config = Configuration.current
+      expect(config.influxdb.org).to eq('solectrus')
+      expect(config.influxdb.token_write).to eq('generated')
     end
   end
 end

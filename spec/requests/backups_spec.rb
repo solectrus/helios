@@ -3,11 +3,14 @@ require 'rubygems/package'
 RSpec.describe 'Backups', :with_admin_password do
   include ActiveSupport::Testing::TimeHelpers
 
-  let(:data_path) { Dir.mktmpdir }
+  # The data directory carries a configuration HELIOS could have written: the
+  # gate in front of every screen reads it (see
+  # ApplicationController#require_commissioning).
+  let(:data_path) { with_config_yaml }
 
   before do
+    data_path
     login
-    allow(Rails.configuration).to receive(:data_path).and_return(data_path)
     allow(RestoreRunner).to receive(:in_progress).and_return(nil)
     allow(CsvImportRunner).to receive(:in_progress?).and_return(false)
     # Default to "backup available" so the create section renders; the
@@ -759,7 +762,8 @@ RSpec.describe 'Backups', :with_admin_password do
 
   def write_status_bar_config!
     FileUtils.mkdir_p(File.dirname(Configuration.path))
-    File.write(Configuration.path, YAML.dump('system' => { 'admin_password' => 'test' }))
+    File.write(Configuration.path,
+               YAML.dump('system' => { 'admin_password' => 'test', 'installation_date' => '2024-01-15' }))
   end
 
   def persist_backup(filename, influxdb_image: nil, postgresql_image: nil)

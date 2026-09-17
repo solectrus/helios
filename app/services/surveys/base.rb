@@ -14,7 +14,6 @@ module Surveys
     # so mode (which lives in its own section) needs server-side resolution.
     MODE_PREDICATES = {
       'full' => ->(mode) { mode == ConfigSchema::MODE_FULL },
-      'collectors_only' => ->(mode) { mode == ConfigSchema::MODE_COLLECTORS_ONLY },
       'not_collectors_only' => ->(mode) { mode != ConfigSchema::MODE_COLLECTORS_ONLY },
     }.freeze
 

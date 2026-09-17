@@ -42,7 +42,7 @@ RSpec.describe 'Datasources::MqttTopics', :with_admin_password do
       get datasources_mqtt_topics_path
 
       expect(response.body).not_to include('delete_blocked')
-      expect(response.body).not_to include('disabled')
+      expect(response.parsed_body.css('table .btn-disabled')).to be_empty
     end
 
     # A mapping imported before HELIOS cast the flags still holds the env
@@ -110,7 +110,8 @@ RSpec.describe 'Datasources::MqttTopics', :with_admin_password do
     end
 
     it 'omits the polling controller wiring in collectors_only mode' do
-      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
+      with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY },
+                       'influxdb' => { 'host' => 'influx.example.com' })
       Configuration.current.add_mqtt_topic(basic_topic)
 
       get datasources_mqtt_topics_path

@@ -1,5 +1,9 @@
 class RestartingController < ApplicationController
   skip_before_action :require_authentication
+  # A pure status page, so no gate may lead away from it. An adopted stack
+  # restarts HELIOS while the commissioning date is still missing, and the
+  # waiting page has to stay on screen until the new boot id arrives.
+  skip_before_action :require_commissioning
   layout false
 
   # `moved` says the restart takes the address with it, so the screen cannot

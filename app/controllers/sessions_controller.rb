@@ -1,5 +1,6 @@
 class SessionsController < ApplicationController
   skip_before_action :require_authentication
+  skip_before_action :require_commissioning
   before_action :require_password
 
   def new

@@ -32,19 +32,5 @@ module SettingForm
     def form_method
       new_record? ? :post : :patch
     end
-
-    def survey_url
-      if sensor_setting?
-        helpers.configuration_survey_path('sensor', format: :json, sensor: sensor_name)
-      else
-        helpers.configuration_survey_path(setting, format: :json)
-      end
-    end
-
-    def setting_data_json
-      return '{}' if new_record? || data.blank?
-
-      data.to_json
-    end
   end
 end

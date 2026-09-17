@@ -1,17 +1,17 @@
 module SettingLink
-  # Chip-style entry for the Settings page: icon + label. Used for every
-  # setting in every group; SettingSection (the full card) is reserved for the
-  # Datasources page where status and counts carry more meaning per item.
+  # Chip-style entry for the Settings page: icon + label, and nothing else.
+  # Used for every setting in every group; SettingSection (the full card) is
+  # reserved for the Datasources page where status and counts carry more
+  # meaning per item.
   #
-  # A chip in the required tier carries its state as well, a check once the
-  # setting holds a value and a warning while it does not. Optional chips stay
-  # plain: they ship with a workable value and have no state worth reporting.
+  # No chip reports a state. Every setting on this page either ships with a
+  # workable value or is asked for before the page is reachable at all (see
+  # CommissioningController), so there is no state left to report.
   class Component < ViewComponent::Base
-    def initialize(setting:, configuration:, required: false)
+    def initialize(setting:, configuration:)
       super()
       @setting = setting
       @configuration = configuration
-      @required = required
     end
 
     def icon
@@ -32,22 +32,6 @@ module SettingLink
 
     def configured?
       @configuration.setting_data(@setting).present?
-    end
-
-    def required?
-      @required
-    end
-
-    def incomplete?
-      @configuration.setting_incomplete?(@setting)
-    end
-
-    def state_icon
-      incomplete? ? 'fa-triangle-exclamation text-warning' : 'fa-check text-success'
-    end
-
-    def state_label
-      incomplete? ? t('.incomplete') : t('.complete')
     end
   end
 end

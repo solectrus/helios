@@ -14,6 +14,7 @@ Keep every section, an empty one included.
 ## New features
 
 - **HELIOS runs the MQTT broker.** A broker is the server that passes MQTT messages between devices. Until now every installation needed its own. HELIOS can run Mosquitto now. The MQTT settings switch it on, and its card shows the address that devices send to (#466)
+- **A welcome screen comes first.** A new installation starts with three questions, one per screen: the commissioning date of the PV system, the timezone and the currency. Data Sources opens once the answers are saved
 - **A reverse proxy can use a shared network.** An external reverse proxy then reaches the installation over a Docker network that both sides use, instead of over published ports. No port of the installation stays open on the host
 
 ## Improvements
@@ -25,8 +26,11 @@ Keep every section, an empty one included.
 
 ### Settings and forms
 
+- **Settings asks one question per screen.** Nothing on the screen has to be filled in. Every setting has a workable value, or the welcome screen asks for it. The card Network is gone: the port of the dashboard now sits under Address & Domain, the permission to embed the interface under Access protection. The screen Basic Settings is now called Settings
 - **Passwords, tokens and keys show as dots.** An eye button in the field shows the value. Password managers stay out of these fields
+- **A warning sign marks an unfinished data source.** The sign runs from the Configuration tab down to the source. A click on the tab opens the screen that the sign marks
 - **A port already in use is refused.** Two services can no longer take the same port on the host
+- **Collectors-only mode asks for its InfluxDB.** The address of the external database is asked for together with the mode, so it can no longer stay empty
 
 ### Data sources
 

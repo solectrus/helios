@@ -171,15 +171,19 @@ module Export
       end
 
       # Name to port for every owned entrypoint this configuration routes.
+      # #with_owned_entrypoints writes them into the command, a generated one
+      # and an adopted one alike.
+      #
+      # The broker takes two of them: one plain for devices that speak no TLS,
+      # one that terminates TLS on the same domain as the web services. MQTT
+      # carries no host name of its own, so the two cannot share an entrypoint
+      # (see Services::Mosquitto#traefik_labels).
       def owned_entrypoints
         {}.tap do |result|
           result['influxdb'] = influxdb_host_port if influxdb_routed?
           result['ingest'] = Ingest::PORT if ingest_routed?
           result['helios'] = Helios::HOST_PORT if helios_routed?
-          if mqtt_routed?
-            result['mqtt'] = mqtt_host_port
-            result['mqtts'] = Mosquitto::TLS_HOST_PORT
-          end
+          result.merge!('mqtt' => mqtt_host_port, 'mqtts' => Mosquitto::TLS_HOST_PORT) if mqtt_routed?
         end
       end
 
@@ -281,7 +285,6 @@ module Export
           *influxdb_entrypoint,
           *ingest_entrypoint,
           *helios_entrypoint,
-          *mqtt_entrypoints,
           "--certificatesresolvers.#{DEFAULT_CERTRESOLVER}.acme.tlschallenge=true",
           "--certificatesresolvers.#{DEFAULT_CERTRESOLVER}.acme.email=#{self.class.letsencrypt_email(configuration)}",
           "--certificatesresolvers.#{DEFAULT_CERTRESOLVER}.acme.storage=/letsencrypt/acme.json",
@@ -296,7 +299,6 @@ module Export
         ports << "#{influxdb_host_port}:#{influxdb_host_port}" if influxdb_routed?
         ports << "#{Ingest::PORT}:#{Ingest::PORT}" if ingest_routed?
         ports << "#{Helios::HOST_PORT}:#{Helios::HOST_PORT}" if helios_routed?
-        ports.concat(mqtt_ports)
         ports
       end
 
@@ -306,25 +308,6 @@ module Export
         return [] unless influxdb_routed?
 
         ["--entrypoints.influxdb.address=:#{influxdb_host_port}"]
-      end
-
-      # Two dedicated entrypoints for the MQTT broker: one plain for devices
-      # that speak no TLS, one that terminates TLS on the same domain as the
-      # web services. MQTT carries no host name of its own, so the two
-      # cannot share an entrypoint (see Services::Mosquitto#traefik_labels).
-      def mqtt_entrypoints
-        return [] unless mqtt_routed?
-
-        [
-          "--entrypoints.mqtt.address=:#{mqtt_host_port}",
-          "--entrypoints.mqtts.address=:#{Mosquitto::TLS_HOST_PORT}",
-        ]
-      end
-
-      def mqtt_ports
-        return [] unless mqtt_routed?
-
-        ["#{mqtt_host_port}:#{mqtt_host_port}", "#{Mosquitto::TLS_HOST_PORT}:#{Mosquitto::TLS_HOST_PORT}"]
       end
 
       def mqtt_routed?

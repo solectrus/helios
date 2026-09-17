@@ -68,7 +68,7 @@ RSpec.describe 'Services::Tasks', :with_admin_password do
     end
 
     it 'is blocked while the configuration is incomplete' do
-      with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' }) # no sensor, no installation date
+      with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' }) # no sensor, so nothing to run
       mock_compose_service('influxdb')
       allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(nil)
 

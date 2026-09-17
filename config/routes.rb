@@ -8,6 +8,8 @@
 #                                   POST   /session(.:format)                             sessions#create
 #                             start GET    /start(.:format)                               starts#show
 #                                   POST   /start(.:format)                               starts#create
+#                     commissioning GET    /commissioning(.:format)                       commissioning#show
+#                                   POST   /commissioning(.:format)                       commissioning#create
 #                  sensors_readings GET    /sensors/readings(.:format)                    sensors/readings#show
 #                           sensors GET    /sensors(.:format)                             sensors#show
 #  datasources_mqtt_topics_readings GET    /datasources/mqtt-topics/readings(.:format)    datasources/mqtt_topics/readings#show
@@ -58,7 +60,7 @@
 #                                   DELETE /services/:service_id/task(.:format)           services/tasks#destroy
 #                                   POST   /services/:service_id/task(.:format)           services/tasks#create
 #                     service_cache DELETE /services/:service_id/cache(.:format)          services/caches#destroy
-#            service_recalculation POST   /services/:service_id/recalculation(.:format)  services/recalculations#create
+#             service_recalculation POST   /services/:service_id/recalculation(.:format)  services/recalculations#create
 #                   service_upgrade POST   /services/:service_id/upgrade(.:format)        services/upgrades#create
 #                     service_image PATCH  /services/:service_id/image(.:format)          services/images#update
 #                                   PUT    /services/:service_id/image(.:format)          services/images#update
@@ -87,6 +89,9 @@ Rails.application.routes.draw do
 
   # First-start consent
   resource :start, only: %i[show create]
+
+  # First-start basics (see CommissioningController)
+  resource :commissioning, only: %i[show create], controller: 'commissioning'
 
   resource :sensors, only: :show do
     resource :readings, only: :show, module: :sensors
