@@ -44,7 +44,7 @@ module Import
         MQTT_HOST MQTT_PORT MQTT_SSL MQTT_USERNAME MQTT_PASSWORD
         PGDATA INFLUXD_USE_HASHED_TOKENS
         DB_VOLUME_PATH INFLUX_VOLUME_PATH REDIS_VOLUME_PATH
-        INGEST_VOLUME_PATH TRAEFIK_VOLUME_PATH
+        INGEST_VOLUME_PATH
       ].freeze
 
       # Infrastructure .env keys that HELIOS doesn't generate but are well-known
@@ -512,8 +512,15 @@ module Import
         key.start_with?('SHELLY_DEVICE_ID_', 'INFLUX_MEASUREMENT_SHELLY_', 'SHELLY_HOST_')
       end
 
+      # TRAEFIK_VOLUME_PATH counts as managed only while HELIOS adopts Traefik.
+      # A Traefik that stays in `_unmanaged.services` keeps its compose entry
+      # verbatim, and the `${TRAEFIK_VOLUME_PATH}` in its `volumes:` has no env
+      # slot the value could travel in. Dropping the variable would break the
+      # bind mount.
       def managed_env_keys_set
-        @managed_env_keys_set ||= MANAGED_ENV_KEYS.to_set + regenerated_env_keys_set
+        @managed_env_keys_set ||=
+          MANAGED_ENV_KEYS.to_set + regenerated_env_keys_set +
+          (@traefik_adopted ? Set['TRAEFIK_VOLUME_PATH'] : Set.new)
       end
 
       # Keys HELIOS unconditionally regenerates or replaces on export. Unlike

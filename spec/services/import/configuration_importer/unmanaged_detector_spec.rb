@@ -117,4 +117,25 @@ RSpec.describe Import::ConfigurationImporter::UnmanagedDetector do
         .to eq(%w[TZ INFLUX_ORG MAPPING_2_TOPIC MAPPING_10_TOPIC LEGACY_INTERVAL])
     end
   end
+
+  # A Traefik HELIOS does not adopt keeps its compose entry verbatim, and the
+  # `${TRAEFIK_VOLUME_PATH}` in it has no env slot the value could travel in.
+  context 'with a Traefik that HELIOS does not adopt' do
+    subject(:detected) { described_class.new(reader, traefik_adopted: false).detect }
+
+    let(:services) do
+      {
+        'traefik' => {
+          'image' => 'traefik:v3.7',
+          'volumes' => ['${TRAEFIK_VOLUME_PATH}:/letsencrypt'],
+        },
+      }
+    end
+    let(:env_vars) { { 'TRAEFIK_VOLUME_PATH' => './traefik' } }
+
+    it 'keeps the variable its bind mount reads' do
+      expect(detected['env_vars']).to eq('TRAEFIK_VOLUME_PATH' => './traefik')
+    end
+  end
+
 end
