@@ -233,15 +233,6 @@ class BackupRepository
         )
       end
 
-      # Writes a runner-style error file into the local staging dir so
-      # detect_completion! surfaces the failure to the user. Used by the
-      # Uploader (backup error) and Downloader (restore error) on top of
-      # what backup.sh / restore.sh themselves write into the same dir.
-      def write_error_file!(filename, message)
-        FileUtils.mkdir_p(directory)
-        ::File.write(::File.join(directory, filename), message)
-      end
-
       private
 
       def object_key(filename)

@@ -342,15 +342,25 @@ RSpec.describe BackupRepository::S3 do
 
     it 'inserts the Backup row when the expected tar is available in S3' do
       described_class.mark_pending!(filename)
-      # error files live in the local staging dir now (backup.sh writes
-      # them there); no S3 fetches happen for them. Only the tar download
-      # by record_backup! hits S3.
+      # error files live in the local runtime dir (backup.sh writes them
+      # there); no S3 fetches happen for them. Only the tar download by
+      # record_backup! hits S3.
       s3_client.stub_responses(:get_object, body: sample_tar)
 
       described_class.detect_completion!
 
       expect(Backup.find_by(filename: filename)).to be_present
       expect(File).not_to exist(described_class.pending_marker_path)
+    end
+
+    it 'captures an error the facade wrote for this adapter' do
+      BackupRepository.write_error_file!('Image pull failed')
+      described_class.mark_pending!(filename)
+
+      described_class.detect_completion!
+
+      expect(RunnerLog.message_for(:backup)).to eq('Image pull failed')
+      expect(Backup.count).to eq(0)
     end
 
     it 'captures a runtime error.txt into RunnerLog when the run failed' do

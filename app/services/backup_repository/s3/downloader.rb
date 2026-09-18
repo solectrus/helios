@@ -24,7 +24,7 @@ class BackupRepository
             yield
           rescue StandardError => e
             logger.error("after-download #{e.class}: #{e.message}")
-            BackupRepository::S3.write_error_file!(RestoreRunner::ERROR_FILENAME, e.message)
+            BackupRepository::S3.write_error_file!(e.message, RestoreRunner::ERROR_FILENAME)
           end
         ensure
           reset_state!
@@ -49,7 +49,7 @@ class BackupRepository
 
         def handle_download_failure(filename, message)
           BackupRepository::S3.write_error_file!(
-            RestoreRunner::ERROR_FILENAME, "S3 download failed: #{message}"
+            "S3 download failed: #{message}", RestoreRunner::ERROR_FILENAME
           )
           FileUtils.rm_f(BackupRepository::S3.staging_path(filename))
         end

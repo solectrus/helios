@@ -2,7 +2,10 @@ RSpec.describe BackupRepository::S3::Downloader do
   let(:filename) { 'solectrus-backup-20260508-100000.tar' }
   let(:staging_dir) { BackupRepository::S3.directory }
   let(:staged_tar) { File.join(staging_dir, filename) }
-  let(:error_file) { File.join(staging_dir, RestoreRunner::ERROR_FILENAME) }
+  # restore.sh and the downloader both write restore-error.txt into the
+  # runtime dir, the only mount that stays writable when the destination
+  # itself fails.
+  let(:error_file) { File.join(DetachedRunner.runtime_directory, RestoreRunner::ERROR_FILENAME) }
 
   before do
     with_config_yaml('backup' => {
@@ -11,6 +14,7 @@ RSpec.describe BackupRepository::S3::Downloader do
                        'aws_region' => 'eu-central-1'
                      })
     FileUtils.mkdir_p(staging_dir)
+    FileUtils.mkdir_p(DetachedRunner.runtime_directory)
     reset_class_state
   end
 

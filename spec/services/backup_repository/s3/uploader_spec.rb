@@ -2,7 +2,9 @@ RSpec.describe BackupRepository::S3::Uploader do
   let(:filename) { 'solectrus-backup-20260508-100000.tar' }
   let(:staging_dir) { BackupRepository::S3.directory }
   let(:staged_tar) { File.join(staging_dir, filename) }
-  let(:error_file) { File.join(staging_dir, 'error.txt') }
+  # backup.sh and the uploader both write error.txt into the runtime dir,
+  # the only mount that stays writable when the destination itself fails.
+  let(:error_file) { File.join(DetachedRunner.runtime_directory, 'error.txt') }
 
   before do
     with_config_yaml('backup' => {
@@ -11,6 +13,7 @@ RSpec.describe BackupRepository::S3::Uploader do
                        'aws_region' => 'eu-central-1'
                      })
     FileUtils.mkdir_p(staging_dir)
+    FileUtils.mkdir_p(DetachedRunner.runtime_directory)
 
     # Detached BackupRunner is "done" by default — the upload thread's
     # first wait_for_container_exit poll observes a non-running container.

@@ -45,9 +45,7 @@ class BackupRepository
         end
 
         def handle_failure(filename, message)
-          BackupRepository::S3.write_error_file!(
-            BackupRepository::ERROR_FILENAME, "S3 upload failed: #{message}"
-          )
+          BackupRepository::S3.write_error_file!("S3 upload failed: #{message}")
           FileUtils.rm_f(BackupRepository::S3.staging_path(filename))
         end
 
@@ -64,7 +62,7 @@ class BackupRepository
         end
 
         def error_file_present?
-          ::File.exist?(::File.join(BackupRepository::S3.directory, BackupRepository::ERROR_FILENAME))
+          BackupRepository::S3.read_error_file.present?
         end
       end
     end
