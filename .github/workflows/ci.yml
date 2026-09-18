@@ -7,7 +7,7 @@ concurrency:
 
 jobs:
   lint:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
 
     env:
@@ -60,7 +60,7 @@ jobs:
         run: shellcheck $(git ls-files '*.sh')
 
   js-tests:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
 
     steps:
@@ -78,7 +78,7 @@ jobs:
         run: bun run test
 
   shell-tests:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 3
 
     steps:
@@ -96,7 +96,7 @@ jobs:
         run: bats --recursive spec/bats/
 
   ruby-tests:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 10
 
     env:
@@ -174,7 +174,7 @@ jobs:
           if-no-files-found: ignore
 
   integration-tests:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 15
 
     env:
@@ -240,9 +240,9 @@ jobs:
       matrix:
         include:
           - platform: linux/amd64
-            runner: ubuntu-24.04
+            runner: ubuntu-26.04
           - platform: linux/arm64
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-26.04-arm
 
     steps:
       - uses: actions/checkout@v7
@@ -309,7 +309,7 @@ jobs:
           retention-days: 1
 
   ci-success:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
 
     needs: [lint, js-tests, shell-tests, ruby-tests, integration-tests, build]
@@ -324,7 +324,7 @@ jobs:
           fi
 
   merge:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 5
 
     if: github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/tags')
