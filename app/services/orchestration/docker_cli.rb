@@ -64,9 +64,27 @@ module Orchestration
       ''
     end
 
+    # A pull can lose its content lease when another process removes an image
+    # at the same moment ("unable to lease content: lease does not exist").
+    # The containerd image store, the default since Docker 29, collects the
+    # garbage of the whole namespace, and HELIOS removes the replaced image
+    # of a service while a runner may be pulling its own. The second attempt
+    # gets a fresh lease. A pull that fails for a real reason (unknown tag,
+    # no registry) fails again and costs one more attempt.
+    PULL_ATTEMPTS = 2
+    PULL_RETRY_DELAY = 2
+
     def pull_image(image)
-      output, status = Open3.capture2e('docker', 'pull', image)
-      [status.success?, output]
+      result = nil
+
+      PULL_ATTEMPTS.times do |attempt|
+        sleep(PULL_RETRY_DELAY) if attempt.positive?
+        output, status = Open3.capture2e('docker', 'pull', image)
+        result = [status.success?, output]
+        break if status.success?
+      end
+
+      result
     end
 
     # Force-removes a single container by name or id (`docker rm -f`). Used to

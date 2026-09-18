@@ -69,11 +69,33 @@ RSpec.describe Orchestration::DockerCli do
   end
 
   describe '.pull_image' do
+    before { stub_const("#{described_class}::PULL_RETRY_DELAY", 0) }
+
     it 'reports success and output' do
       stub_capture2e("Status: Downloaded\n")
 
       expect(described_class.pull_image('influxdb:2-alpine')).to eq([true, "Status: Downloaded\n"])
-      expect(Open3).to have_received(:capture2e).with('docker', 'pull', 'influxdb:2-alpine')
+      expect(Open3).to have_received(:capture2e).with('docker', 'pull', 'influxdb:2-alpine').once
+    end
+
+    # A concurrent image removal can take the content lease away from a
+    # running pull. The image itself is fine, so the next attempt succeeds.
+    it 'reports the success of a second attempt' do
+      replies = [
+        ['unable to lease content: lease does not exist: not found', process_status(success: false)],
+        ["Status: Downloaded\n", process_status],
+      ]
+      allow(Open3).to receive(:capture2e) { replies.shift }
+
+      expect(described_class.pull_image('docker:29-cli')).to eq([true, "Status: Downloaded\n"])
+      expect(Open3).to have_received(:capture2e).twice
+    end
+
+    it 'reports the output of the last attempt when every attempt fails' do
+      stub_capture2e("manifest unknown\n", success: false)
+
+      expect(described_class.pull_image('influxdb:nope')).to eq([false, "manifest unknown\n"])
+      expect(Open3).to have_received(:capture2e).twice
     end
   end
 
