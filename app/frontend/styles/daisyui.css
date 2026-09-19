@@ -37,6 +37,13 @@
   --noise: 0;
 }
 
+/* Focus ring: daisyUI paints it in the colour of the button variant, which
+   sits close to the page colours and is easy to miss. The accent colour gives
+   every button the same ring, clearly visible on every surface. */
+.btn:focus-visible {
+  outline-color: var(--color-accent);
+}
+
 /* Tooltips: hover-only (not on keyboard focus), suppressed on touch */
 .tooltip:has(:focus-visible)::before,
 .tooltip:has(:focus-visible)::after {

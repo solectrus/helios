@@ -22,15 +22,19 @@
   </form>
 
   <dialog class="modal" data-dialog-modal-target="confirm">
-    <div class="modal-box max-w-sm">
+    <div class="modal-box max-w-sm text-center">
+      <div class="mb-3">
+        <i class="fa-solid fa-triangle-exclamation text-warning text-5xl" aria-hidden="true"></i>
+      </div>
+
       <p class="text-base"><%= t('configurations.settings.discard_confirm') %></p>
 
-      <div class="modal-action">
+      <div class="modal-action flex-wrap justify-center gap-4">
         <button class="btn" data-action="dialog-modal#confirmCancel">
           <%= t('configurations.settings.discard_cancel') %>
         </button>
 
-        <button class="btn btn-error" data-action="dialog-modal#confirmDiscard">
+        <button class="btn btn-warning" data-action="dialog-modal#confirmDiscard">
           <%= t('configurations.settings.discard_discard') %>
         </button>
       </div>
