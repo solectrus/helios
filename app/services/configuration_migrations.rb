@@ -12,12 +12,17 @@
 #
 # Because the numeric prefix breaks Zeitwerk's filename-to-constant mapping,
 # the directory is removed from autoload (see config/application.rb) and the
-# files are required explicitly here.
+# files are loaded explicitly here.
 module ConfigurationMigrations
   MIGRATION_DIR = File.expand_path('configuration_migrations', __dir__).freeze
 
-  require File.join(MIGRATION_DIR, 'base')
-  Dir.glob(File.join(MIGRATION_DIR, '[0-9]*.rb')).each { |path| require path }
+  # `load`, not `require`: this file is managed by Zeitwerk, so a reload in
+  # development drops the ConfigurationMigrations namespace and every constant
+  # under it, Base included. A second `require` of a file Ruby already read
+  # does nothing, and the body would leave the namespace half built. `load`
+  # reads the files again.
+  load File.join(MIGRATION_DIR, 'base.rb')
+  Dir.glob(File.join(MIGRATION_DIR, '[0-9]*.rb')).each { |path| load path }
 
   REGISTRY = constants
              .map { |c| const_get(c) }
