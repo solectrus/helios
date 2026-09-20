@@ -826,6 +826,18 @@ class Configuration # rubocop:disable Metrics/ClassLength
     update('system_network', { 'app_host' => host })
   end
 
+  # Whether the form of `setting` asks for app_host itself: the network
+  # settings hold the field, the reverse-proxy settings borrow it. A save
+  # through either carries the user's own answer, an empty one included, so
+  # nothing may fill the field in behind it (see
+  # Configurations::SettingsController#adopt_request_host!).
+  def self.asks_for_app_host?(setting)
+    setting = setting.to_s
+
+    Array(SETTING_GROUPS.dig(setting, :keys)).include?('app_host') ||
+      BORROWED_FIELDS.dig(setting, 'app_host').present?
+  end
+
   # --- Deployment mode ---
 
   def mode

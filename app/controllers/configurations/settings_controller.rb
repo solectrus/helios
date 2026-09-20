@@ -69,9 +69,18 @@ module Configurations
       save_setting
       return if performed?
 
-      @configuration.adopt_request_host!(request.host)
+      adopt_request_host!
       Orchestration::StackStatus.mark_config_changed!
       redirect_to redirect_target
+    end
+
+    # Never after a save through a form that asks for the address itself. The
+    # payload is the answer there, an empty one included, and an address taken
+    # from the browser behind it would put back what the user just cleared.
+    def adopt_request_host!
+      return if Configuration.asks_for_app_host?(setting)
+
+      @configuration.adopt_request_host!(request.host)
     end
 
     def setting

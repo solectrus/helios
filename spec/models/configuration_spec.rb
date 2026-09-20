@@ -1607,6 +1607,28 @@ RSpec.describe Configuration do
     end
   end
 
+  describe '.asks_for_app_host?' do
+    it 'is true for the form that holds the field' do
+      expect(described_class.asks_for_app_host?('system_network')).to be true
+    end
+
+    it 'is true for the form that borrows it' do
+      expect(described_class.asks_for_app_host?('reverse_proxy')).to be true
+    end
+
+    it 'is false for a form that shares the same section' do
+      expect(described_class.asks_for_app_host?('system_general')).to be false
+    end
+
+    it 'is false for a form that borrows other fields' do
+      expect(described_class.asks_for_app_host?('tibber')).to be false
+    end
+
+    it 'is false for a setting with no group of its own' do
+      expect(described_class.asks_for_app_host?('sensor')).to be false
+    end
+  end
+
   describe '#ingest_required?' do
     def ingest_required_for?(data)
       with_config_yaml(data)

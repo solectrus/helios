@@ -242,23 +242,25 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(Configuration.current.system.app_host).to eq('solectrus.fritz.box')
     end
 
-    # Clearing the field hands the question back to the browser: the same save
-    # adopts the host it was reached at, and where that is a loopback name the
-    # field stays empty and every caller falls back to the port alone.
-    it 'takes an empty address and adopts the host of the browser' do
+    # An empty field is an answer of its own, so it stands. The form owns the
+    # address, and the host the browser was reached at is not offered behind
+    # it: every caller falls back to the published port instead.
+    it 'takes an empty address and leaves the field empty' do
       Configuration.current.update('system_network', { 'app_host' => 'solectrus.fritz.box' })
 
       post configuration_settings_path,
-           params: { setting: 'system_network', data: { 'app_host' => '' }.to_json }
+           params: { setting: 'system_network', data: { 'app_host' => '' }.to_json },
+           headers: { 'HOST' => 'solectrus.fritz.box' }
 
-      expect(Configuration.current.system.app_host).to eq('www.example.com')
+      expect(Configuration.current.system.app_host).to be_blank
     end
 
-    it 'stays empty where the browser reached it by a loopback name' do
-      host! 'helios.localhost'
-
+    # The reverse-proxy form borrows the same field (see
+    # Configuration::BORROWED_FIELDS), so it owns the answer the same way.
+    it 'leaves the field empty after a save through the reverse-proxy form' do
       post configuration_settings_path,
-           params: { setting: 'system_network', data: { 'app_host' => '' }.to_json }
+           params: { setting: 'reverse_proxy', data: { 'mode' => 'none' }.to_json },
+           headers: { 'HOST' => 'solectrus.fritz.box' }
 
       expect(Configuration.current.system.app_host).to be_blank
     end
