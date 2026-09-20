@@ -39,36 +39,41 @@ RSpec.describe StatusBar::Component, type: :component do
     end
 
     it 'keeps the button on the bar' do
-      expect(rendered.css('button[disabled] .fa-play')).to be_present
+      expect(rendered.css('.btn-disabled .fa-play')).to be_present
     end
 
-    it 'names what blocks it, in the colour of the warning sign' do
-      tooltip = rendered.css('.tooltip-warning .tooltip-content')
-
-      expect(tooltip.text).to include(I18n.t('configurations.show.incomplete'))
+    it 'names what blocks it' do
+      expect(rendered.css('.hint .dropdown-content').text).to include(I18n.t('configurations.show.incomplete'))
     end
 
-    # The bar is broadcast once for clients of either language, so the
-    # tooltip carries both and the stylesheet picks one.
+    it 'paints it in the colour of the warning sign' do
+      expect(rendered.css('.hint .dropdown-content').attr('class').value).to include('bg-warning')
+    end
+
+    # The bar is broadcast once for clients of either language, so the hint
+    # carries both and the stylesheet picks one.
     it 'carries the text in every locale' do
-      texts = rendered.css('.tooltip-content .status-bar-label').pluck('data-locale')
+      texts = rendered.css('.dropdown-content .status-bar-label').pluck('data-locale')
 
       expect(texts).to match_array(I18n.available_locales.map(&:to_s))
     end
 
-    # A touch device has no hover, so the stylesheet opens a tooltip there on
-    # focus alone. The disabled button takes no focus, so the wrapper has to.
-    it 'can take the focus a tap gives it' do
-      expect(rendered.css('.tooltip-warning').attr('tabindex').value).to eq('-1')
+    # A disabled button takes neither focus nor tap, so it could not carry the
+    # reason to anyone without a pointer. The hint takes the focus instead.
+    it 'offers the reason on a focusable trigger' do
+      expect(rendered.css('.hint > button[aria-disabled="true"]')).to be_present
     end
 
-    # In the dropdown the wrapper takes the place of the button, and the menu
+    # A screen reader never reaches the bubble: a closed dropdown is hidden.
+    it 'repeats the reason where a screen reader finds it' do
+      expect(rendered.css('.hint > button .sr-only').text).to include(I18n.t('configurations.show.incomplete'))
+    end
+
+    # In the dropdown the hint takes the place of the button, and the menu
     # styles that place. Without these two the button keeps a quarter of the
     # row while every other entry fills it.
     it 'hands the width of the row on to the button' do
-      classes = rendered.css('.tooltip-warning').attr('class').value
-
-      expect(classes).to include('block', 'p-0')
+      expect(rendered.css('.hint').attr('class').value).to include('block', 'p-0')
     end
   end
 
@@ -77,9 +82,9 @@ RSpec.describe StatusBar::Component, type: :component do
 
     before { with_startable_config_yaml }
 
-    it 'offers the button without a tooltip' do
+    it 'offers the button without a hint' do
       expect(rendered.css('button[disabled] .fa-play')).to be_empty
-      expect(rendered.css('.tooltip-warning')).to be_empty
+      expect(rendered.css('.hint')).to be_empty
     end
   end
 

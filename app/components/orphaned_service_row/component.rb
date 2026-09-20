@@ -30,6 +30,12 @@ module OrphanedServiceRow
       end
     end
 
+    # The status of an orphan is a sentence, not a word: it wraps and is set
+    # left, like the error text of a managed row.
+    def status_hint_text
+      tag.span(status_label, class: 'block text-left text-xs')
+    end
+
     def status_label
       pending ? t('.processing') : t('.orphaned')
     end

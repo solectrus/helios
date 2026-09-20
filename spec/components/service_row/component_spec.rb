@@ -52,24 +52,42 @@ RSpec.describe ServiceRow::Component, type: :component do
   end
 
   # An incomplete configuration blocks every start, and it belongs to the
-  # installation rather than to one service, so no row marks it. The tooltip
-  # of the button it disables is where the row can still say it.
-  describe 'the tooltip of the start button' do
+  # installation rather than to one service, so no row marks it. The start
+  # button it refuses is where the row can still say it.
+  describe 'the start button' do
     subject(:tooltip) { rendered.css('[id$="-start"]') }
 
     context 'with an incomplete configuration and a stopped service' do
+      # The row carries a second hint on its status dot, so scope to the
+      # button group.
+      subject(:hint) { rendered.css('.join .hint') }
+
       let(:container) { build_container(state: 'exited', health: nil) }
 
       before { with_config_yaml }
 
       # The same wording and the same colour the warning sign in the
       # navigation carries.
-      it 'names the reason the button refuses' do
-        expect(tooltip.attr('data-tip').value).to eq(I18n.t('configurations.show.incomplete'))
+      it 'names the reason it refuses' do
+        expect(hint.css('.dropdown-content').text.strip).to eq(I18n.t('configurations.show.incomplete'))
       end
 
       it 'marks it as a warning' do
-        expect(tooltip.attr('class').value).to include('tooltip-warning')
+        expect(hint.css('.dropdown-content').attr('class').value).to include('bg-warning')
+      end
+
+      # A disabled button takes neither focus nor tap, so the reason would
+      # reach nobody without a pointer. A span that only looks disabled lets
+      # the hint own the focus.
+      it 'keeps the reason on a focusable trigger' do
+        expect(hint.css('button[aria-disabled="true"] .fa-play')).to be_present
+        expect(rendered.css('[id$="-start"][disabled]')).to be_empty
+      end
+
+      # A closed dropdown is hidden, so a screen reader never reaches the
+      # bubble. The trigger repeats the words.
+      it 'repeats the reason where a screen reader finds it' do
+        expect(hint.css('button .sr-only').text).to include(I18n.t('configurations.show.incomplete'))
       end
     end
 
@@ -89,19 +107,14 @@ RSpec.describe ServiceRow::Component, type: :component do
       end
     end
 
-    # A touch device has no hover, so the stylesheet opens a tooltip there on
-    # focus alone. The disabled button takes no focus, so the wrapper has to.
-    it 'can take the focus a tap gives it' do
-      with_config_yaml
-
-      expect(tooltip.attr('tabindex').value).to eq('-1')
-    end
-
     context 'with a configuration that can start' do
       before { with_startable_config_yaml }
 
+      # Nothing refuses here, so the label is a plain hover tooltip again, and
+      # the button carries the name a screen reader reads.
       it 'names the action' do
         expect(tooltip.attr('data-tip').value).to eq('Start')
+        expect(tooltip.css('button').attr('aria-label').value).to eq('Start')
       end
 
       it 'leaves the tooltip as it is' do

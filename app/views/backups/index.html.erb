@@ -128,7 +128,11 @@
                       <%= t('.create_title') %>
                     </h2>
 
-                    <%= render InfoTooltip::Component.new(text: t('.duration_hint')) %>
+                    <%= render Hint::Component.new(
+                          text: tag.span(t('.duration_hint'), class: "block max-w-xs p-1 text-left text-base wrap-break-word"),
+                          wrapper_class: "dropdown-bottom",
+                          trigger_class: "mt-1",
+                        ) %>
                   </div>
 
                   <p class="text-base-content/70 max-w-prose text-base leading-relaxed"><%= t('.note') %></p>
@@ -192,7 +196,12 @@
                   <%= t(".existing_titles.#{@backup_destination}") %>
                 </h2>
 
-                <%= render InfoTooltip::Component.new(text: t('.retention_hint', limit: BackupRepository::MAX_BACKUPS)) %>
+                <%= render Hint::Component.new(
+                      text: tag.span(t('.retention_hint', limit: BackupRepository::MAX_BACKUPS),
+                                     class: "block max-w-xs p-1 text-left text-base wrap-break-word"),
+                      wrapper_class: "dropdown-bottom",
+                      trigger_class: "mt-1",
+                    ) %>
               </div>
 
               <% upload_disabled = @backup_in_progress || @restore_in_progress || @backup_destination_remote %>
@@ -207,16 +216,23 @@
                            data: { backup_upload_target: "input", action: "change->backup-upload#submit" } %>
 
                 <% if @backup_destination_remote %>
-                  <div
-                    class="tooltip tooltip-left before:max-w-2xs before:text-left before:text-xs before:wrap-break-word"
-                    data-tip="<%= t('.upload_unavailable_remote') %>"
-                    tabindex="-1"
-                  >
-                    <button type="button" class="btn btn-outline btn-sm" disabled>
+                  <%#
+                    The hint is the control. A disabled button takes neither
+                    focus nor tap, so the reason it refuses would reach nobody
+                    without a pointer. A span wearing btn-disabled looks the
+                    same and lets the hint own the focus.
+                  %>
+                  <%= render Hint::Component.new(
+                        text: tag.span(t('.upload_unavailable_remote'),
+                                       class: "block max-w-2xs text-left text-xs wrap-break-word"),
+                        wrapper_class: "dropdown-left",
+                        refused: true,
+                      ) do %>
+                    <span class="btn btn-outline btn-sm btn-disabled">
                       <i class="fa-solid fa-plus"></i>
                       <%= t('.upload') %>
-                    </button>
-                  </div>
+                    </span>
+                  <% end %>
                 <% elsif upload_disabled %>
                   <button type="button" class="btn btn-outline btn-sm" disabled>
                     <i class="fa-solid fa-plus"></i>

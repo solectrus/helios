@@ -21,14 +21,20 @@
 
         <span class="min-w-0 truncate"><%= tab[:label] %></span>
 
+        <%#
+          The bubble is hidden and the words stand beside it, so they are
+          said once (see daisyui.css).
+        %>
+
         <% if show_warning?(tab) %>
           <span
             class="tooltip tooltip-right tooltip-warning ml-auto shrink-0"
             data-tip="<%= t('configurations.show.incomplete') %>"
+            aria-hidden="true"
           >
-            <i class="fa-solid fa-triangle-exclamation <%= warning_classes(tab) %>" aria-hidden="true"></i>
-            <span class="sr-only"><%= t('configurations.show.incomplete') %></span>
+            <i class="fa-solid fa-triangle-exclamation <%= warning_classes(tab) %>"></i>
           </span>
+          <span class="sr-only"><%= t('configurations.show.incomplete') %></span>
         <% end %>
       <% end %>
     <% end %>

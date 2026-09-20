@@ -197,28 +197,24 @@ module StatusBar
 
     private
 
-    # Disabled, and carrying what blocks it in the words and the colour of the
-    # warning sign in the navigation. The text sits in a `tooltip-content`
-    # element rather than in `data-tip`: an attribute holds one language, and
-    # a broadcast bar is rendered once for clients of both.
+    # A refused start, carrying what blocks it in the words and the colour of
+    # the warning sign in the navigation.
+    #
+    # The hint is the control, and the control is a span: a disabled button
+    # takes neither focus nor tap, so its reason would reach nobody without a
+    # pointer. A span wearing `btn-disabled` looks the same and lets the hint
+    # own the focus. The words are markup, because a broadcast bar is rendered
+    # once for clients of both languages and carries both.
+    #
+    # To the left, not above: the bar is the last strip of the screen. block
+    # and p-0: in the dropdown the hint sits where the button sat, and the
+    # menu styles that place hold a grid plus the padding of a row.
     def blocked_start_button(css, long:, icon_only_mobile:)
-      button = button_to(batch_path, method: :post, class: css, form_class: 'contents', disabled: true) do
-        action_inner(:start, long:, icon_only_mobile:)
-      end
-      hint = tag.div(locale_label_tags(incomplete_labels), class: 'tooltip-content')
+      hint = Hint::Component.new(text: tag.span(locale_label_tags(incomplete_labels)),
+                                 wrapper_class: 'dropdown-left block p-0',
+                                 variant: :warning, refused: true, trigger_class: 'block w-full')
 
-      # To the left, not above: the bar is the last strip of the screen, and a
-      # tooltip over it would sit half on the page behind it.
-      #
-      # tabindex: a disabled button takes no focus, so a tap lands on this
-      # wrapper and opens the tooltip on a touch device, where there is no
-      # hover to open it with.
-      #
-      # block and p-0: in the dropdown the wrapper sits where the button sat,
-      # and the menu styles that place hold a grid plus the padding of a row.
-      # The button would keep a quarter of the row. The two classes hand both
-      # back to it, and leave the split button beside the bar untouched.
-      tag.div(safe_join([hint, button]), class: 'tooltip tooltip-left tooltip-warning block p-0', tabindex: -1)
+      render(hint) { tag.span(action_inner(:start, long:, icon_only_mobile:), class: "#{css} btn-disabled") }
     end
 
     def incomplete_labels

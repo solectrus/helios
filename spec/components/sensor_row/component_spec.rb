@@ -47,7 +47,7 @@ RSpec.describe SensorRow::Component, type: :component do
     end
 
     it 'names the excluded sensors by their label, not by their internal name' do
-      items = rendered.css('.tooltip-content li').map(&:text)
+      items = rendered.css('.dropdown-content li').map(&:text)
 
       expect(items).to eq([I18n.t('sensors.custom_power_01')])
       expect(rendered.to_html).not_to include('CUSTOM_POWER_01')
@@ -59,7 +59,7 @@ RSpec.describe SensorRow::Component, type: :component do
                                             'field' => 'power', 'exclude_from_house_power' => true
                                           })
 
-      expect(rendered.css('.tooltip-content li').size).to eq(2)
+      expect(rendered.css('.dropdown-content li').size).to eq(2)
     end
 
     it 'prefers the name the owner gave a custom sensor' do
@@ -69,7 +69,7 @@ RSpec.describe SensorRow::Component, type: :component do
                                             'name' => 'Backofen'
                                           })
 
-      expect(rendered.css('.tooltip-content li').map(&:text)).to eq(['Backofen'])
+      expect(rendered.css('.dropdown-content li').map(&:text)).to eq(['Backofen'])
     end
   end
 
@@ -95,19 +95,19 @@ RSpec.describe SensorRow::Component, type: :component do
       end
 
       it 'names the address next to the source badge' do
-        expect(rendered.css('.tooltip-content').text).to include('http://solectrus.fritz.box:4567')
+        expect(rendered.css('.dropdown-content').text).to include('http://solectrus.fritz.box:4567')
       end
 
       it 'names the port alone while no address is configured' do
         Configuration.current.update('system', { 'app_host' => '' })
 
-        text = rendered.css('.tooltip-content').text
+        text = rendered.css('.dropdown-content').text
         expect(text).to include(Export::IngestEndpoint::PORT.to_s)
         expect(text).not_to include('http')
       end
 
       it 'leads with a bold marker' do
-        expect(rendered.css('.tooltip-content strong').first.text).to eq(I18n.t('sensors.ingest_endpoint_hint_lead'))
+        expect(rendered.css('.dropdown-content strong').first.text).to eq(I18n.t('sensors.ingest_endpoint_hint_lead'))
       end
 
       # Every input of the house-power formula counts, not just the balcony one:
@@ -121,7 +121,7 @@ RSpec.describe SensorRow::Component, type: :component do
               name, { 'source' => 'external', 'measurement' => name, 'field' => 'power' }
             )
             row = described_class.new(sensor_name: name, configuration: Configuration.current, reading: nil)
-            render_inline(row).css('.tooltip-content').any?
+            render_inline(row).css('.dropdown-content').any?
           end
 
         expect(without_hint).to be_empty
@@ -129,7 +129,7 @@ RSpec.describe SensorRow::Component, type: :component do
     end
 
     it 'stays away while no Ingest runs' do
-      expect(rendered.css('.tooltip-content')).to be_empty
+      expect(rendered.css('.dropdown-content')).to be_empty
     end
 
     it 'stays away on a sensor Ingest does not consume' do
@@ -145,7 +145,7 @@ RSpec.describe SensorRow::Component, type: :component do
       rendered = render_inline(
         described_class.new(sensor_name: 'outdoor_temp', configuration: Configuration.current, reading: nil),
       )
-      expect(rendered.css('.tooltip-content')).to be_empty
+      expect(rendered.css('.dropdown-content')).to be_empty
     end
   end
 end

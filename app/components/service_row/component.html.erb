@@ -28,13 +28,19 @@
         </div>
       <% else %>
         <%# Full content %>
-        <div
-          id="<%= dom_id %>-status"
-          class="<%= tooltip_class %>"
-          data-tip="<%= status_label %>"
-          tabindex="-1"
-        >
-          <div class="flex size-5 items-center justify-center">
+        <%#
+          A hint, not a tooltip: on a phone the dot is the only thing that
+          carries the state, and a tooltip there has no way to open.
+
+          To the right, because the dot sits at the left edge of the card and
+          a hint opening to the left would leave the window.
+        %>
+        <%= render Hint::Component.new(
+              text: status_hint_text,
+              wrapper_class: "dropdown-right",
+              variant: status_hint_variant,
+            ) do %>
+          <div id="<%= dom_id %>-status" class="flex size-5 items-center justify-center">
             <% if crash_looping? %>
               <%#
                 A service caught in a restart loop is not simply broken and
@@ -57,7 +63,7 @@
               <span class="<%= status_indicator_class %>"></span>
             <% end %>
           </div>
-        </div>
+        <% end %>
       <% end %>
 
       <div class="min-w-0 flex-1">
@@ -166,14 +172,18 @@
             percentage is enough here, what it counts is in the tooltip.
           %>
           <% if recalculating? %>
+            <%#
+              The bubble is hidden and the words stand beside it, so they are
+              said once (see daisyui.css).
+            %>
+            <span class="sr-only"><%= t('.recalculating') %></span>
+
             <span
               id="<%= dom_id %>-recalculation-progress"
               class="tooltip tooltip-info flex h-8 min-w-8 items-center justify-center"
               data-tip="<%= t('.recalculating') %>"
-              tabindex="-1"
+              aria-hidden="true"
             >
-              <span class="sr-only"><%= t('.recalculating') %></span>
-
               <%#
                 Outlined rather than filled, so the number keeps the full
                 contrast of the row's own text color. Only the dot pulses:
@@ -272,20 +282,32 @@
           <% end %>
         </div>
         <div class="join">
-          <%# tabindex: a disabled button takes no focus, so a tap lands on %>
-          <%# this wrapper and opens the tooltip on a touch device, where %>
-          <%# there is no hover to open it with. An enabled button takes the %>
-          <%# focus itself, so the tap starts the service as before. %>
-          <div
-            id="<%= dom_id %>-start"
-            class="tooltip join-item <%= start_tooltip_variant %>"
-            data-tip="<%= start_tooltip %>"
-            tabindex="-1"
-          >
-            <%= button_to service_task_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square", aria: { label: t('.start') }, data: { service_row__component_target: "startButton" } do %>
-              <i class="fa-solid fa-play"></i>
+          <% if start_blocked_by_configuration? %>
+            <%#
+              The hint is the control here. A disabled button takes neither
+              focus nor tap, so the reason it refuses would reach nobody
+              without a pointer. A span wearing btn-disabled looks the same
+              and lets the hint own the focus. The wording and the colour are
+              the ones the warning sign in the navigation carries, so the two
+              read as one statement.
+            %>
+            <%= render Hint::Component.new(
+                  text: t("configurations.show.incomplete"),
+                  wrapper_class: "dropdown-top join-item",
+                  variant: :warning,
+                  refused: true,
+                ) do %>
+              <span id="<%= dom_id %>-start" class="btn btn-ghost btn-sm btn-square btn-disabled">
+                <i class="fa-solid fa-play"></i>
+              </span>
             <% end %>
-          </div>
+          <% else %>
+            <div id="<%= dom_id %>-start" class="tooltip tooltip-info join-item" data-tip="<%= t('.start') %>">
+              <%= button_to service_task_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square", aria: { label: t('.start') }, data: { service_row__component_target: "startButton" } do %>
+                <i class="fa-solid fa-play"></i>
+              <% end %>
+            </div>
+          <% end %>
 
           <div id="<%= dom_id %>-stop" class="tooltip tooltip-info join-item" data-tip="<%= t('.stop') %>">
             <%= button_to service_task_path(service_name), method: :delete, disabled: stop_disabled?, class: "btn btn-ghost btn-sm btn-square", aria: { label: t('.stop') }, data: { service_row__component_target: "stopButton" } do %>

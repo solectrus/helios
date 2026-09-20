@@ -56,17 +56,17 @@ module SensorRow
         configuration.ingest_required?
     end
 
-    # Its own content element rather than data-tip, so the sentence reads
-    # left-aligned like the exclusion list above it.
     def ingest_hint_icon
-      icon = tag.i(class: 'fa-solid fa-circle-info text-base-content/70 text-sm leading-none')
+      hint = Hint::Component.new(text: ingest_hint_content, wrapper_class: 'dropdown-left',
+                                 trigger_class: 'flex items-center')
 
-      tag.span(safe_join([ingest_hint_content, icon]),
-               class: 'tooltip tooltip-left flex items-center', tabindex: -1)
+      render(hint) { tag.i(class: 'fa-solid fa-circle-info text-base-content/70 text-sm leading-none') }
     end
 
+    # Markup rather than a string, so the sentence reads left-aligned like the
+    # exclusion list above it.
     def ingest_hint_content
-      lead = safe_join([tag.strong(I18n.t('sensors.ingest_endpoint_hint_lead')), ' ', ingest_hint_tooltip])
+      lead = safe_join([tag.strong(I18n.t('sensors.ingest_endpoint_hint_lead')), ' ', ingest_hint_endpoint])
       body = safe_join(
         [
           tag.span(lead, class: 'block'),
@@ -74,15 +74,22 @@ module SensorRow
         ],
       )
 
+      tag.span(body, class: 'block max-w-3xs px-1 py-0.5 text-left text-xs')
+    end
+
+    # A list needs markup, so the hint is built here and not in the template.
+    def house_power_exclusion_hint
+      items = safe_join(excluded_power_sensor_labels.map { |label| tag.li(label) })
+
       tag.span(
-        tag.span(body, class: 'block max-w-3xs px-1 py-0.5 text-left text-xs font-normal normal-case'),
-        class: 'tooltip-content',
+        safe_join([I18n.t('sensors.house_power_exclusion_hint'), tag.ul(items, class: 'mt-1 list-disc ps-4')]),
+        class: 'block px-1 py-0.5 text-left text-xs',
       )
     end
 
     # Without a known address the hint names the port instead, so no
     # placeholder host ends up in front of the user.
-    def ingest_hint_tooltip
+    def ingest_hint_endpoint
       url = Export::IngestEndpoint.url(configuration)
       return I18n.t('sensors.ingest_endpoint_hint', url:) if url
 

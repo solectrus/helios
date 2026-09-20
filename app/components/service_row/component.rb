@@ -5,7 +5,7 @@ module ServiceRow
     # Literal class names so the Tailwind v4 content scanner emits every
     # variant; `bg-#{status_color}` interpolation would drop them from the
     # build. Both maps are keyed by #status_color, the single source of truth
-    # for the status color — so the dot and its tooltip always agree.
+    # for the status color — so the dot and its hint always agree.
     DOT_FILL_CLASSES = {
       success: 'bg-success',
       warning: 'bg-warning',
@@ -14,13 +14,13 @@ module ServiceRow
       error: 'bg-error',
     }.freeze
 
-    TOOLTIP_COLORS = {
-      success: 'tooltip-success',
-      warning: 'tooltip-warning',
-      info: 'tooltip-info',
-      neutral: 'tooltip-neutral',
-      muted: 'tooltip-neutral',
-      error: 'tooltip-error',
+    HINT_VARIANTS = {
+      success: :success,
+      warning: :warning,
+      info: :info,
+      neutral: :neutral,
+      muted: :neutral,
+      error: :error,
     }.freeze
 
     attr_reader :compose_service, :container, :error_message, :lazy
@@ -186,21 +186,21 @@ module ServiceRow
       container&.crash_looping?
     end
 
-    def tooltip_class
-      # The status dot sits at the left edge of the card, so below 2xl a
-      # tooltip opening to the left would run past the window edge. From 2xl
-      # the centered layout leaves room beside the card — but only 241px at
-      # exactly 1536px, less than a long label needs (a restart loop names
-      # its count). So the left variant caps the width and wraps instead.
-      base = 'tooltip tooltip-right 2xl:tooltip-left 2xl:before:max-w-56'
-      # Long error messages need to wrap and stay readable; short status
-      # labels keep the default tooltip size to match the other tooltips.
-      base += ' before:max-w-2xs before:text-left before:text-xs before:break-words' if error?
-      "#{base} #{TOOLTIP_COLORS.fetch(status_color)}"
+    def status_hint_variant
+      HINT_VARIANTS.fetch(status_color)
+    end
+
+    # A short status label takes the plain bubble, like the other hints. An
+    # error message is a sentence: it wraps, and it stays inside the 241px
+    # the centered layout leaves beside the card at exactly 1536px.
+    def status_hint_text
+      return status_label unless error?
+
+      tag.span(status_label, class: 'block max-w-56 text-left text-xs wrap-break-word')
     end
 
     # Single source of truth for the status color, shared by the dot and its
-    # tooltip. Precedence mirrors how the dot is rendered in the template.
+    # hint. Precedence mirrors how the dot is rendered in the template.
     def status_color
       return start_pending? ? :success : :muted if pending
       return :error if error? || crash_looping?
@@ -324,18 +324,6 @@ module ServiceRow
     # bar, which carry it at the same time.
     def start_blocked_by_configuration?
       !other_start_blocker? && !Configuration.current.configuration_complete?
-    end
-
-    # The wording and the colour are the ones the warning sign in the
-    # navigation carries, so the button and the sign that sent the reader
-    # here read as one statement. The wording also keeps the tooltip to the
-    # single line the neighbouring ones occupy.
-    def start_tooltip
-      start_blocked_by_configuration? ? t('configurations.show.incomplete') : t('.start')
-    end
-
-    def start_tooltip_variant
-      start_blocked_by_configuration? ? 'tooltip-warning' : 'tooltip-info'
     end
 
     # Per-row source warning (links to /datasources). Narrower than

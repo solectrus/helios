@@ -1,12 +1,22 @@
 <div id="host-stats" class="contents">
   <% metrics.each do |value, icon, tooltip| %>
+    <%#
+      A hover label for the pointer: the reading itself is on the screen, and
+      the tooltip only says what it counts. The sr-only element carries the
+      reading and the words together, because a reading without them says
+      nothing on its own. The chip is hidden from a screen reader so that the
+      two are said once (see daisyui.css).
+    %>
+
     <span
       class="tooltip tooltip-bottom tooltip-info inline-flex items-center gap-1 whitespace-nowrap before:font-sans <%= value_class(value) %>"
       data-tip="<%= tooltip %>"
-      tabindex="-1"
+      aria-hidden="true"
     >
-      <i class="<%= icon %>" aria-hidden="true"></i>
+      <i class="<%= icon %>"></i>
       <%= value_text(value) %>
     </span>
+
+    <span class="sr-only"><%= value_text(value) %> <%= tooltip %></span>
   <% end %>
 </div>

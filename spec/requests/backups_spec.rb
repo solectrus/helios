@@ -686,14 +686,18 @@ RSpec.describe 'Backups', :with_admin_password do
       expect(response.body).not_to include(I18n.t('backups.index.upload'))
     end
 
-    it 'disables the upload button with a tooltip for a remote destination' do
+    # A disabled button takes neither focus nor tap, so it could not carry
+    # its reason to anyone without a pointer. The hint takes the focus and
+    # the button only wears the disabled look.
+    it 'refuses the upload for a remote destination and says why' do
       with_config_yaml('backup' => { 'destination' => 'external', 'external_path' => '/mnt/nas' })
 
       get backups_path, headers: turbo_frame_headers('backups-content')
 
       document = Capybara.string(response.body)
       aggregate_failures do
-        expect(document).to have_button(I18n.t('backups.index.upload'), disabled: true)
+        expect(document).to have_css('.hint > button[aria-disabled="true"] .btn-disabled',
+                                     text: I18n.t('backups.index.upload'))
         expect(response.body).to include(I18n.t('backups.index.upload_unavailable_remote'))
       end
     end

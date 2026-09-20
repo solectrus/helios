@@ -11,9 +11,13 @@
       "
     >
       <div class="hidden font-mono text-xs tracking-tight whitespace-nowrap sm:block">
+        <%#
+          A hover label for the pointer, and nothing more: the commit time is
+          a nicety beside the version, which the bar already prints.
+        %>
+
         <span
           class="tooltip tooltip-top cursor-default before:font-sans"
-          tabindex="-1"
           data-controller="relative-time"
           data-relative-time-datetime-value="<%= Rails.configuration.x.git.commit_time %>"
         >

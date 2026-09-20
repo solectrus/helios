@@ -48,16 +48,23 @@
         <i class="fa-solid fa-download"></i>
       <% end %>
       <% if actions_disabled? %>
-        <div class="tooltip tooltip-left" data-tip="<%= actions_disabled_reason %>" tabindex="-1">
-          <button
-            type="button"
-            class="btn btn-outline btn-square"
-            disabled
-            aria-label="<%= t('backups.index.actions') %>"
-          >
+        <%#
+          The hint is the control. A disabled button takes neither focus nor
+          tap, so the reason it refuses would reach nobody without a pointer.
+          A span wearing btn-disabled looks the same and lets the hint own
+          the focus.
+        %>
+        <%= render Hint::Component.new(
+              text: actions_disabled_reason,
+              wrapper_class: "dropdown-left",
+              refused: true,
+            ) do %>
+          <span class="btn btn-outline btn-square btn-disabled">
             <i class="fa-solid fa-ellipsis-vertical"></i>
-          </button>
-        </div>
+          </span>
+
+          <span class="sr-only"><%= t('backups.index.actions') %></span>
+        <% end %>
       <% else %>
         <div class="dropdown dropdown-end">
           <div

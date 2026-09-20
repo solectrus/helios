@@ -1,0 +1,34 @@
+<div class="<%= wrapper_class %>">
+  <%#
+    No tabindex, although daisyUI writes one on its dropdown triggers. It uses
+    the attribute to address the trigger in a rule that closes a dropdown again
+    while the trigger holds a focus that is not :focus-visible. A tap leaves
+    exactly such a focus, and a touch device has no hover to hold the hint open
+    instead, so the hint would shut the moment it was asked for. A button is
+    focusable without the attribute.
+  %>
+
+  <button
+    type="button"
+    class="<%= trigger_class %>"
+    <% if refused %>
+      aria-disabled="true"
+    <% end %>
+  >
+    <% if content? %>
+      <%= content %>
+    <% else %>
+      <i class="fa-solid fa-circle-info text-base-content/40" aria-hidden="true"></i>
+    <% end %>
+
+    <%#
+      The same text a second time. A closed dropdown is display:none and thus
+      out of the accessibility tree, so the bubble alone would reach nobody who
+      does not see it. The bubble is therefore aria-hidden, and the trigger
+      carries the words.
+    %>
+    <span class="sr-only"><%= text %></span>
+  </button>
+
+  <div class="<%= content_class %>" aria-hidden="true"><%= text %></div>
+</div>

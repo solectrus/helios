@@ -32,14 +32,25 @@
             <i class="<%= tab[:icon] %>"></i>
             <%= tab[:label] %>
 
+            <%#
+              The bubble is hidden and the words stand beside it, so they are
+              said once (see daisyui.css).
+            %>
+
             <% if show_warning?(tab) %>
               <span
                 class="tooltip tooltip-bottom tooltip-warning normal-case"
                 data-tip="<%= t('configurations.show.incomplete') %>"
+                aria-hidden="true"
               >
-                <i class="fa-solid fa-triangle-exclamation <%= warning_classes(tab) %>" aria-hidden="true"></i>
-                <span class="sr-only"><%= t('configurations.show.incomplete') %></span>
+                <i class="fa-solid fa-triangle-exclamation <%= warning_classes(tab) %>"></i>
               </span>
+              <%#
+                normal-case: the tab uppercases its label through CSS, and a
+                screen reader can take an uppercased sentence for an
+                abbreviation and spell it out.
+              %>
+              <span class="sr-only normal-case"><%= t('configurations.show.incomplete') %></span>
             <% end %>
           <% end %>
         <% end %>

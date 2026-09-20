@@ -44,11 +44,38 @@
   outline-color: var(--color-accent);
 }
 
-/* Tooltips: hover-only (not on keyboard focus), suppressed on touch */
-.tooltip:has(:focus-visible)::before,
-.tooltip:has(:focus-visible)::after {
-  opacity: 0 !important;
+/* .tooltip is left for what the pointer alone may have: words that label or
+   annotate something the screen already carries. daisyUI's own triggers are
+   enough there - the pointer gets the text on hover, the keyboard gets it on
+   focus, and an aria-label or an sr-only element beside it carries the same
+   words to a screen reader.
+
+   The bubble is a pseudo element that takes its text from data-tip, and a
+   browser puts such generated text into the accessibility tree. Beside an
+   aria-label or an sr-only element of the same words, a screen reader then
+   says them twice. Where the bubble hangs on decoration alone, the element
+   that carries data-tip carries aria-hidden="true" as well, and the words
+   for everyone else stand outside it. The bubble cannot carry them on its
+   own: the rule below takes it off a touch device altogether, and the words
+   would go with it. Where it wraps the control itself, hiding it would hide
+   the control, so there the words stay on the control and the bubble repeats
+   them.
+
+   A touch device has no hover. Mobile browsers still emulate one on tap, so
+   the text would stand over the very control the tap just used. It stays
+   closed there, and the tap runs the control, which is what the tap was for.
+
+   Words nobody can guess from the screen - the reason a control refuses, a
+   paragraph of guidance - are a Hint::Component instead. That one opens on
+   hover, on tap and on Tab, and needs no rule here. */
+@media (hover: none) {
+  .tooltip::before,
+  .tooltip::after,
+  .tooltip > .tooltip-content {
+    display: none !important;
+  }
 }
+
 /* A disabled button keeps the pointer cursor of .btn, which invites a click
    that does nothing.
 
@@ -69,21 +96,4 @@
 span.btn.btn-disabled {
   cursor: not-allowed;
   pointer-events: auto;
-}
-/* A touch device has no hover, so a tooltip stays hidden there unless its
-   element is focused. That makes a tooltip carrying tabindex="-1" tappable:
-   the tap focuses it, a tap elsewhere blurs it again. tabindex="-1" is what
-   keeps the keyboard rule above intact — such an element is reachable by
-   pointer only, never by tabbing. */
-@media (hover: none) {
-  .tooltip:not(:focus)::before,
-  .tooltip:not(:focus)::after {
-    display: none !important;
-  }
-  .tooltip:focus::before,
-  .tooltip:focus::after,
-  .tooltip:focus > .tooltip-content {
-    opacity: 1;
-    --tt-pos: 0rem;
-  }
 }

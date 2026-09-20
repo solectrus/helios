@@ -14,7 +14,8 @@ Keep every section, an empty one included.
 
 ## Improvements
 
-- On a phone, a tap now shows the hint that a mouse shows on hover (#480)
+- On a phone, an explanation now opens on a tap: the state of a service, the reason an action is blocked, and the notes on the backup and sensor screens (#480)
+- Keyboard and screen reader: a button now shows its label when the focus reaches it, and a button that carries only an icon now says its name (#480)
 - Configuration forms: every password, token and access key now appears as dots, and an eye button in the field shows the value
 - Configuration forms: a password manager now stays out of these fields
 - The wording no longer addresses the reader, and it is the same everywhere

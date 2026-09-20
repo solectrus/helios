@@ -90,7 +90,7 @@ RSpec.describe 'Services::Rows', :with_admin_password do
 
     # A failed compose run leaves an error on the service. While its
     # container is between two restart attempts, the row read that state as
-    # a normal start and showed the error text in a green tooltip.
+    # a normal start and showed the error text in a green hint.
     it 'marks a service with a stored error as broken while it restarts' do
       mock_compose_service('postgresql')
       container = mock_container('postgresql', running: false, status: 'restarting')
@@ -102,7 +102,7 @@ RSpec.describe 'Services::Rows', :with_admin_password do
       aggregate_failures do
         expect(response.body).to include('dependency failed to start')
         expect(response.body).to include('bg-error')
-        expect(response.body).to include('tooltip-error')
+        expect(response.body).to include('bg-error text-error-content')
         expect(response.body).not_to include('loading-spinner')
         expect(response.body).not_to include('animate-ping')
       end
@@ -356,7 +356,7 @@ RSpec.describe 'Services::Rows', :with_admin_password do
         get service_row_path(service_id: 'watchtower'), headers: turbo_frame_headers
 
         aggregate_failures do
-          expect(response.body).to include('data-tip="Paused"')
+          expect(response.body).to include('Paused')
           expect(response.body).to include('bg-info')
           expect(response.body).not_to include('Not created')
         end

@@ -1,0 +1,58 @@
+/*
+ * The tail that daisyUI gives a tooltip but not a dropdown. A square turned by
+ * 45 degrees, with the background inherited from the bubble, so it follows
+ * whatever colour the hint carries without a rule per variant.
+ *
+ * The margin is the gap daisyUI keeps between a tooltip and its element, and
+ * it leaves the room the tail needs to stand outside the bubble. One side per
+ * placement: the bubble hangs off a single edge, and a margin on any other
+ * side would push it out of the centre.
+ */
+.hint > .dropdown-content::after {
+  content: '';
+  position: absolute;
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: inherit;
+  rotate: 45deg;
+}
+
+.hint.dropdown-top > .dropdown-content {
+  margin-bottom: 0.5rem;
+
+  &::after {
+    top: 100%;
+    left: 50%;
+    translate: -50% -50%;
+  }
+}
+
+.hint.dropdown-bottom > .dropdown-content {
+  margin-top: 0.5rem;
+
+  &::after {
+    bottom: 100%;
+    left: 50%;
+    translate: -50% 50%;
+  }
+}
+
+.hint.dropdown-left > .dropdown-content {
+  margin-right: 0.5rem;
+
+  &::after {
+    left: 100%;
+    top: 50%;
+    translate: -50% -50%;
+  }
+}
+
+.hint.dropdown-right > .dropdown-content {
+  margin-left: 0.5rem;
+
+  &::after {
+    right: 100%;
+    top: 50%;
+    translate: 50% -50%;
+  }
+}

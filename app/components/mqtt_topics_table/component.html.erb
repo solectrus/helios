@@ -54,22 +54,35 @@
 
               <%#
                 A name another formula reads cannot go away, so the removal is
-                refused before it is attempted, with the reason in the tooltip.
+                refused before it is attempted. The hint is then the control
+                itself: a disabled button takes neither focus nor tap, so the
+                reason would reach nobody without a pointer.
               %>
 
-              <div
-                class="tooltip tooltip-left <%= delete_tooltip_class(blockers) %>"
-                data-tip="<%= delete_tip(blockers) %>"
-              >
-                <%= button_to helpers.datasources_mqtt_topic_path(index),
-                              method: :delete,
-                              disabled: blockers.any?,
-                              class: "btn btn-ghost btn-xs btn-square hover:text-error",
-                              aria: { label: t('datasources.mqtt_topics.table.delete') },
-                              data: { turbo_confirm: t('datasources.mqtt_topics.index.delete_confirm'), turbo_frame: "_top" } do %>
-                  <i aria-hidden="true" class="fa-solid fa-trash-can"></i>
+              <% if blockers.any? %>
+                <%= render Hint::Component.new(
+                      text: tag.span(delete_tip(blockers), class: "block max-w-56 text-left text-xs"),
+                      wrapper_class: "dropdown-left",
+                      variant: :warning,
+                      refused: true,
+                    ) do %>
+                  <span class="btn btn-ghost btn-xs btn-square btn-disabled">
+                    <i aria-hidden="true" class="fa-solid fa-trash-can"></i>
+                  </span>
+
+                  <span class="sr-only"><%= t('datasources.mqtt_topics.table.delete') %></span>
                 <% end %>
-              </div>
+              <% else %>
+                <div class="tooltip tooltip-left tooltip-info" data-tip="<%= delete_tip(blockers) %>">
+                  <%= button_to helpers.datasources_mqtt_topic_path(index),
+                                method: :delete,
+                                class: "btn btn-ghost btn-xs btn-square hover:text-error",
+                                aria: { label: t('datasources.mqtt_topics.table.delete') },
+                                data: { turbo_confirm: t('datasources.mqtt_topics.index.delete_confirm'), turbo_frame: "_top" } do %>
+                    <i aria-hidden="true" class="fa-solid fa-trash-can"></i>
+                  <% end %>
+                </div>
+              <% end %>
             </div>
           </div>
 

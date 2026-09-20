@@ -18,10 +18,6 @@ module MqttTopicsTable
       graph.dependents_of(topic['name'])
     end
 
-    def delete_tooltip_class(blockers)
-      blockers.any? ? 'tooltip-warning before:text-left before:text-xs' : 'tooltip-info'
-    end
-
     def delete_tip(blockers)
       return t('datasources.mqtt_topics.table.delete') if blockers.empty?
 
