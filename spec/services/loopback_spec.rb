@@ -1,6 +1,14 @@
 RSpec.describe Loopback do
-  let(:loopback) { %w[localhost LOCALHOST helios.localhost 127.0.0.1 127.1.2.3 ::1 [::1] 0.0.0.0] }
-  let(:routable) { %w[solectrus.fritz.box 192.168.1.10 example.com mylocalhost 10.0.0.5] }
+  # The second group carries the brackets and the space that #host? strips
+  # before it judges, and that the field passes on as typed.
+  let(:loopback) do
+    %w[localhost LOCALHOST helios.localhost 127.0.0.1 127.1.2.3 ::1 0.0.0.0] +
+      ['[::1]', '[localhost]', '  localhost  ', " 127.0.0.1\t"]
+  end
+  let(:routable) do
+    %w[solectrus.fritz.box 192.168.1.10 example.com mylocalhost 10.0.0.5 x.localhost.example.com] +
+      ['  example.com  ']
+  end
 
   describe '.host?' do
     it 'knows an address that reaches only whoever asks' do
