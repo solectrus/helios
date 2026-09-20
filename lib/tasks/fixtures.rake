@@ -16,6 +16,21 @@ namespace :fixtures do
     dump_expected_fixtures(config, scenario_path)
   end
 
+  # An export scenario starts at a config.yaml taken from a running HELIOS
+  # instance instead of a foreign stack, so it replaces the import step with
+  # the migration chain. Everything after that is the same.
+  def regenerate_export_scenario(scenario_path)
+    Current.configuration = nil
+    [Configuration.path, Compose.path, Env.path].each { |p| FileUtils.rm_f(p) }
+
+    FileUtils.mkdir_p(File.dirname(Configuration.path))
+    FileUtils.cp(scenario_path.join('helios/config.yaml.bak'), Configuration.path)
+    ConfigurationMigrator.run!
+    Current.configuration = nil
+
+    dump_expected_fixtures(Configuration.current, scenario_path)
+  end
+
   def import_scenario(scenario_path)
     stack_reader = Import::StackReader.new(
       compose_path: compose_backup_path(scenario_path) || abort(missing_compose_backup_message(scenario_path)),
@@ -68,21 +83,36 @@ namespace :fixtures do
     Dir.mktmpdir do |tmp|
       Rails.configuration.data_path = tmp
       FileUtils.mkdir_p(File.dirname(Configuration.path))
-      yield Rails.root.join('spec/fixtures/import_scenarios')
+      yield
     end
+  end
+
+  def import_scenarios_dir
+    Rails.root.join('spec/fixtures/import_scenarios')
+  end
+
+  def export_scenarios_dir
+    Rails.root.join('spec/fixtures/export_scenarios')
+  end
+
+  def scenario_names(dir, pattern)
+    Pathname
+      .glob(dir.join(pattern))
+      .map { |p| p.dirname.parent.relative_path_from(dir).to_s }
+      .sort
   end
 
   desc 'Regenerate config.yaml + compose.yaml + .env for every existing scenario'
   task regenerate: :environment do
-    with_scenario_sandbox do |scenarios_dir|
-      names = Pathname
-              .glob(scenarios_dir.join('**/helios/config.yaml'))
-              .map { |p| p.dirname.parent.relative_path_from(scenarios_dir).to_s }
-              .sort
+    with_scenario_sandbox do
+      scenario_names(import_scenarios_dir, '**/helios/config.yaml').each do |name|
+        regenerate_scenario(import_scenarios_dir.join(name))
+        puts "Regenerated import_scenarios/#{name}/ (config.yaml, compose.yaml, .env)"
+      end
 
-      names.each do |name|
-        regenerate_scenario(scenarios_dir.join(name))
-        puts "Regenerated #{name}/ (config.yaml, compose.yaml, .env)"
+      scenario_names(export_scenarios_dir, '*/helios/config.yaml.bak').each do |name|
+        regenerate_export_scenario(export_scenarios_dir.join(name))
+        puts "Regenerated export_scenarios/#{name}/ (config.yaml, compose.yaml, .env)"
       end
     end
   end
@@ -92,8 +122,8 @@ namespace :fixtures do
     name = args[:name].to_s
     abort "Usage: RAILS_ENV=test bin/rake 'fixtures:bootstrap[name]'" if name.empty?
 
-    with_scenario_sandbox do |scenarios_dir|
-      scenario_path = scenarios_dir.join(name)
+    with_scenario_sandbox do
+      scenario_path = import_scenarios_dir.join(name)
       abort "Scenario '#{name}' not found at #{scenario_path}" unless scenario_path.directory?
       abort missing_compose_backup_message(scenario_path) unless compose_backup_path(scenario_path)
 

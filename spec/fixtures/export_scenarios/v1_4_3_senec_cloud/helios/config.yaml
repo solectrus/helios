@@ -1,0 +1,243 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 6
+system:
+  admin_password: AAAAA
+  app_host: solectrus.example.com
+  installation_date: '2024-10-18'
+  secret_key_base: BBBBB
+  timezone: Europe/Berlin
+  update_mode: time
+  update_time: '04:00'
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+  lockup_codeword: DDDDD
+postgresql:
+  image: postgres:18-alpine
+  password: EEEEE
+influxdb:
+  bucket: solectrus
+  image: influxdb:2.9-alpine
+  org: solectrus
+  password: FFFFF
+  token_admin: GGGGG
+  token_read: GGGGG
+  token_readwrite: GGGGG
+  token_write: GGGGG
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: pvnode
+  forecast_declination1: '45'
+  forecast_declination2: '38'
+  forecast_declination3: '38'
+  forecast_declination4: '38'
+  forecast_kwp1: '6'
+  forecast_kwp2: '3.08'
+  forecast_kwp3: '3.85'
+  forecast_kwp4: '3.85'
+  forecast_latitude: '51.000000'
+  forecast_longitude: '12.000000'
+  forecast_pvnode_apikey: JJJJJ
+  forecast_pvnode_azimuth1: '180'
+  forecast_pvnode_azimuth2: '180'
+  forecast_pvnode_azimuth3: '90'
+  forecast_pvnode_azimuth4: '270'
+  forecast_pvnode_extra_params: diffuse_radiation_model=perez
+  forecast_pvnode_paid: 'true'
+  forecast_roofs: '4'
+  image: ghcr.io/solectrus/forecast-collector:latest
+  measurement: forecast
+senec:
+  adapter: cloud
+  image: ghcr.io/solectrus/senec-collector:latest
+  interval: '60'
+  password: IIIII
+  request_mode: full
+  username: HHHHH
+  version: v4
+shelly:
+  auth_key: KKKKK
+  cloud_server: https://shelly-1-eu.shelly.cloud
+  connection: cloud
+  image: ghcr.io/solectrus/shelly-collector:latest
+  interval: '20'
+  mode: essential
+reverse_proxy:
+  app_domain: solectrus.example.com
+  command:
+  - "--providers.docker=true"
+  - "--providers.docker.exposedbydefault=false"
+  - "--entrypoints.web.address=:80"
+  - "--entrypoints.websecure.address=:443"
+  - "--entrypoints.influxdb.address=:8086"
+  - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+  - "--certificatesresolvers.myresolver.acme.email=${LETSENCRYPT_EMAIL}"
+  - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+  environment:
+  - TZ
+  image: traefik:v3.7
+  labels:
+  - com.centurylinklabs.watchtower.scope=solectrus
+  letsencrypt_email: admin@example.com
+  ports:
+  - 80:80
+  - 443:443
+  - 8086:8086
+  restart: unless-stopped
+  volumes:
+  - "${TRAEFIK_VOLUME_PATH}:/letsencrypt"
+  - "/var/run/docker.sock:/var/run/docker.sock:ro"
+backup_schedule:
+  schedule_enabled: true
+  schedule_time: '05:00'
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  custom_power_01:
+    field: power
+    measurement: Fridge
+    name: Fridge
+    shelly_device_id: '08b2c3d4e5f1'
+    source: shelly
+  custom_power_02:
+    field: power
+    measurement: Dishwasher
+    name: Dishwasher
+    shelly_device_id: a1b2c3d4e5f0
+    source: shelly
+  custom_power_03:
+    field: power
+    measurement: Washer
+    name: Washer
+    shelly_device_id: '333333'
+    source: shelly
+  custom_power_04:
+    field: power
+    measurement: Oven
+    name: Oven
+    shelly_device_id: 222222
+    source: shelly
+  custom_power_05:
+    field: power
+    measurement: Dryer
+    name: Dryer
+    shelly_device_id: '111111'
+    source: shelly
+  custom_power_06:
+    field: power
+    measurement: Hob
+    name: Hob
+    shelly_device_id: a1b2c3d4e5f4
+    source: shelly
+  custom_power_07:
+    field: power
+    measurement: Sauna
+    name: Sauna
+    shelly_device_id: a1b2c3d4e5fa
+    source: shelly
+  custom_power_08:
+    field: power
+    measurement: Pump22
+    name: Pump22
+    shelly_device_id: a1b2c3d4e5f9
+    source: shelly
+  custom_power_09:
+    field: power
+    measurement: Pump17
+    name: Pump17
+    shelly_device_id: a1b2c3d4e5f8
+    source: shelly
+  custom_power_10:
+    field: power
+    measurement: HeatingWC
+    name: HeatingWC
+    shelly_device_id: a1b2c3d4e5f3
+    source: shelly
+  custom_power_11:
+    field: power
+    measurement: Outdoor
+    name: Outdoor
+    shelly_device_id: a1b2c3d4e5f7
+    source: shelly
+  custom_power_12:
+    field: power
+    measurement: Froster
+    name: Froster
+    shelly_device_id: a1b2c3d4e5f2
+    source: shelly
+  custom_power_13:
+    field: power
+    measurement: TvBose
+    name: TvBose
+    shelly_device_id: a1b2c3d4e5fc
+    source: shelly
+  custom_power_14:
+    field: power
+    measurement: TroTec
+    name: TroTec
+    shelly_device_id: a1b2c3d4e5fb
+    source: shelly
+  custom_power_15:
+    field: power
+    measurement: Office
+    name: Office
+    shelly_device_id: a1b2c3d4e5f6
+    source: shelly
+  custom_power_16:
+    field: power
+    measurement: Lighting
+    name: Lighting
+    shelly_device_id: a1b2c3d4e5f5
+    source: shelly
+  custom_power_17:
+    field: power
+    measurement: Utility
+    name: Utility
+    shelly_device_id: a1b2c3d4e5fd
+    source: shelly
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  house_power:
+    source: senec
+  inverter_power:
+    field: inverter_power
+    measurement: SENEC
+    source: senec
+  inverter_power_forecast:
+    source: forecast
+  inverter_power_forecast_clearsky:
+    source: forecast
+  outdoor_temp_forecast:
+    field: temp
+    measurement: forecast
+    source: forecast
+  wallbox_car_connected:
+    source: senec
+  wallbox_power:
+    source: senec
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:latest
+helios:
+  image: ghcr.io/solectrus/helios:latest
+service_overrides:
+  dashboard:
+    labels:
+    - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+    - traefik.http.routers.redirs.middlewares=redirect-to-https

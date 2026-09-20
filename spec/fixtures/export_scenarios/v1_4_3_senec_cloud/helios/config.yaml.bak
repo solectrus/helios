@@ -1,0 +1,236 @@
+---
+_schema_version: 5
+system:
+  timezone: Europe/Berlin
+  installation_date: '2024-10-18'
+  app_host: solectrus.example.com
+  admin_password: AAAAA
+  update_mode: time
+  update_time: '04:00'
+  secret_key_base: BBBBB
+dashboard:
+  lockup_codeword: DDDDD
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: EEEEE
+influxdb:
+  image: influxdb:2.9-alpine
+  org: solectrus
+  bucket: solectrus
+  password: FFFFF
+  token_admin: GGGGG
+  token_readwrite: GGGGG
+  token_write: GGGGG
+  token_read: GGGGG
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: pvnode
+  forecast_roofs: '4'
+  forecast_latitude: '51.000000'
+  forecast_longitude: '12.000000'
+  forecast_declination1: '45'
+  forecast_kwp1: '6'
+  forecast_declination2: '38'
+  forecast_kwp2: '3.08'
+  forecast_declination3: '38'
+  forecast_kwp3: '3.85'
+  forecast_declination4: '38'
+  forecast_kwp4: '3.85'
+  forecast_pvnode_apikey: JJJJJ
+  forecast_pvnode_paid: 'true'
+  forecast_pvnode_extra_params: diffuse_radiation_model=perez
+  forecast_pvnode_azimuth1: '180'
+  forecast_pvnode_azimuth2: '180'
+  forecast_pvnode_azimuth3: '90'
+  forecast_pvnode_azimuth4: '270'
+  measurement: forecast
+  image: ghcr.io/solectrus/forecast-collector:latest
+senec:
+  interval: '60'
+  username: HHHHH
+  password: IIIII
+  request_mode: full
+  adapter: cloud
+  version: v4
+  image: ghcr.io/solectrus/senec-collector:latest
+shelly:
+  connection: cloud
+  interval: '20'
+  cloud_server: https://shelly-1-eu.shelly.cloud
+  auth_key: KKKKK
+  image: ghcr.io/solectrus/shelly-collector:latest
+  mode: essential
+reverse_proxy:
+  app_domain: solectrus.example.com
+  letsencrypt_email: admin@example.com
+  image: traefik:v3.7
+  command:
+  - "--providers.docker=true"
+  - "--providers.docker.exposedbydefault=false"
+  - "--entrypoints.web.address=:80"
+  - "--entrypoints.websecure.address=:443"
+  - "--entrypoints.influxdb.address=:8086"
+  - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+  - "--certificatesresolvers.myresolver.acme.email=${LETSENCRYPT_EMAIL}"
+  - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+  ports:
+  - 80:80
+  - 443:443
+  - 8086:8086
+  volumes:
+  - "${TRAEFIK_VOLUME_PATH}:/letsencrypt"
+  - "/var/run/docker.sock:/var/run/docker.sock:ro"
+  restart: unless-stopped
+  labels:
+  - com.centurylinklabs.watchtower.scope=solectrus
+  environment:
+  - TZ
+backup_schedule:
+  schedule_enabled: true
+  schedule_time: '05:00'
+sensors:
+  inverter_power:
+    source: senec
+    measurement: SENEC
+    field: inverter_power
+  case_temp:
+    source: senec
+  grid_import_power:
+    source: senec
+  grid_export_power:
+    source: senec
+  house_power:
+    source: senec
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  wallbox_power:
+    source: senec
+  wallbox_car_connected:
+    source: senec
+  inverter_power_forecast:
+    source: forecast
+  inverter_power_forecast_clearsky:
+    source: forecast
+  outdoor_temp_forecast:
+    source: forecast
+    measurement: forecast
+    field: temp
+  custom_power_01:
+    source: shelly
+    measurement: Fridge
+    field: power
+    name: Fridge
+    shelly_device_id: '08b2c3d4e5f1'
+  custom_power_02:
+    source: shelly
+    measurement: Dishwasher
+    field: power
+    name: Dishwasher
+    shelly_device_id: a1b2c3d4e5f0
+  custom_power_03:
+    source: shelly
+    measurement: Washer
+    field: power
+    name: Washer
+    shelly_device_id: '333333'
+  custom_power_04:
+    source: shelly
+    measurement: Oven
+    field: power
+    name: Oven
+    shelly_device_id: 222222
+  custom_power_05:
+    source: shelly
+    measurement: Dryer
+    field: power
+    name: Dryer
+    shelly_device_id: '111111'
+  custom_power_06:
+    source: shelly
+    measurement: Hob
+    field: power
+    name: Hob
+    shelly_device_id: a1b2c3d4e5f4
+  custom_power_07:
+    source: shelly
+    measurement: Sauna
+    field: power
+    name: Sauna
+    shelly_device_id: a1b2c3d4e5fa
+  custom_power_08:
+    source: shelly
+    measurement: Pump22
+    field: power
+    name: Pump22
+    shelly_device_id: a1b2c3d4e5f9
+  custom_power_09:
+    source: shelly
+    measurement: Pump17
+    field: power
+    name: Pump17
+    shelly_device_id: a1b2c3d4e5f8
+  custom_power_10:
+    source: shelly
+    measurement: HeatingWC
+    field: power
+    name: HeatingWC
+    shelly_device_id: a1b2c3d4e5f3
+  custom_power_11:
+    source: shelly
+    measurement: Outdoor
+    field: power
+    name: Outdoor
+    shelly_device_id: a1b2c3d4e5f7
+  custom_power_12:
+    source: shelly
+    measurement: Froster
+    field: power
+    name: Froster
+    shelly_device_id: a1b2c3d4e5f2
+  custom_power_13:
+    source: shelly
+    measurement: TvBose
+    field: power
+    name: TvBose
+    shelly_device_id: a1b2c3d4e5fc
+  custom_power_14:
+    source: shelly
+    measurement: TroTec
+    field: power
+    name: TroTec
+    shelly_device_id: a1b2c3d4e5fb
+  custom_power_15:
+    source: shelly
+    measurement: Office
+    field: power
+    name: Office
+    shelly_device_id: a1b2c3d4e5f6
+  custom_power_16:
+    source: shelly
+    measurement: Lighting
+    field: power
+    name: Lighting
+    shelly_device_id: a1b2c3d4e5f5
+  custom_power_17:
+    source: shelly
+    measurement: Utility
+    field: power
+    name: Utility
+    shelly_device_id: a1b2c3d4e5fd
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:latest
+helios:
+  image: ghcr.io/solectrus/helios:latest
+service_overrides:
+  dashboard:
+    labels:
+    - traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https
+    - traefik.http.routers.redirs.middlewares=redirect-to-https

@@ -5,18 +5,18 @@
 # under names csv-importer ignores, a missing MQTT_PORT) were all invisible
 # drift: nothing failed loudly, the services just fell back to their defaults.
 #
-# So check the exported compose.yaml of every import scenario against
+# So check the exported compose.yaml of every scenario against
 # spec/fixtures/service_env_contract.yml, which records the variables each
 # service actually reads — taken from its source, not its documentation.
 RSpec.describe 'Service env contract' do
   # The exporter's own output, one compose.yaml per scenario — a far wider set
   # of configurations than a hand-built one would cover.
   def self.scenarios
-    Pathname.glob(Rails.root.join('spec/fixtures/import_scenarios/**/compose.yaml')).sort
+    Pathname.glob(Rails.root.join('spec/fixtures/*_scenarios/**/compose.yaml')).sort
   end
 
   def self.scenario_name(compose_path)
-    compose_path.dirname.relative_path_from(Rails.root.join('spec/fixtures/import_scenarios'))
+    compose_path.dirname.relative_path_from(Rails.root.join('spec/fixtures'))
   end
 
   let(:contract) { YAML.safe_load_file(Rails.root.join('spec/fixtures/service_env_contract.yml')) }

@@ -95,6 +95,7 @@ The gate applies to the fast suite alone. CI runs the integration specs in a sep
 - `spec/frontend/` — Vitest specs for Stimulus controllers and frontend utils
 - `spec/bats/` — Bats specs for shell scripts (e.g. `spec/bats/bootstrap/` for the bootstrap installer)
 - `spec/fixtures/import_scenarios/` — real `compose.yaml` / `.env` samples driving the Scenario C auto-import tests
+- `spec/fixtures/export_scenarios/` — `config.yaml` donated by running instances, driving the migrate-and-export tests
 - `spec/support/` — RSpec helpers and shared setup
 
 ### Writing Good Tests
