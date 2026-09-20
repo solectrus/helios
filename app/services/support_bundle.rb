@@ -26,9 +26,11 @@ module SupportBundle
     end
   end
 
+  # One log at a time: each one goes into the zip and is let go of again, so
+  # the bundle never holds every service's log at once.
   def write_log_entries(zip)
     redactions = log_redactions
-    ContainerLogs.collect.each do |entry_name, content|
+    ContainerLogs.each_log do |entry_name, content|
       zip.put_next_entry(entry_name)
       zip.write(Anonymizer.anonymize_text(content, redactions))
     end

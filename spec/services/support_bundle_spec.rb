@@ -25,11 +25,17 @@ RSpec.describe SupportBundle do
       zip.to_h { |e| [e.name, e.get_input_stream.read] }
     end
 
+    # ContainerLogs yields one log at a time so the bundle never holds them
+    # all; the stub hands out a prepared set the same way.
+    def stub_container_logs(logs = {})
+      allow(SupportBundle::ContainerLogs).to receive(:each_log) { |&block| logs.each(&block) }
+    end
+
     context 'with the default fixture' do
       # `build` runs SystemInfo.collect (shells out to df/free/uptime/…) and
       # zips the archive. These read-only assertions all share the same input,
       # so we build the bundle once with aggregate_failures.
-      before { allow(SupportBundle::ContainerLogs).to receive(:collect).and_return({}) }
+      before { stub_container_logs }
 
       it 'produces a bundle with the expected entries and content', :aggregate_failures do # rubocop:disable RSpec/ExampleLength
         result = entries
@@ -72,7 +78,7 @@ RSpec.describe SupportBundle do
     end
 
     it 'includes per-container log files under logs/' do
-      allow(SupportBundle::ContainerLogs).to receive(:collect).and_return(
+      stub_container_logs(
         'logs/dashboard.log' => "2026-04-23T10:00:00Z booting\n",
         'logs/postgresql.log' => "2026-04-23T10:00:00Z ready\n",
       )
@@ -86,7 +92,7 @@ RSpec.describe SupportBundle do
         File.join(data_path, '.env'),
         "FORECAST_LATITUDE=52.51627\nFORECAST_LONGITUDE=13.37774\nINFLUX_TOKEN=example-influx-token\n",
       )
-      allow(SupportBundle::ContainerLogs).to receive(:collect).and_return(
+      stub_container_logs(
         'logs/forecast-collector.log' =>
           "fetching https://api.forecast.solar/estimate/52.51627/13.37774/29\n" \
           "Authorization=Token example-influx-token\n",
@@ -102,7 +108,7 @@ RSpec.describe SupportBundle do
 
     it 'builds a bundle from files that are not UTF-8' do
       File.binwrite(File.join(data_path, '.env'), "# Sch\xF6nes Wetter\nSENEC_PASSWORD=secret\n")
-      allow(SupportBundle::ContainerLogs).to receive(:collect).and_return({})
+      stub_container_logs
 
       # Zip entries come back tagged BINARY; the bytes themselves are UTF-8.
       env = entries['.env'].force_encoding(Encoding::UTF_8)
