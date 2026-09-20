@@ -867,7 +867,7 @@
         "default": "InfluxDB measurement"
       },
       "description": {
-        "de": "Lege fest, wohin die Prognosewerte in InfluxDB geschrieben werden.",
+        "de": "Diese Angaben bestimmen, wohin die Prognosewerte in InfluxDB geschrieben werden.",
         "default": "Define where the forecast values are written in InfluxDB."
       },
       "elements": [

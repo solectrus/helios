@@ -71,8 +71,8 @@ module Surveys
 
       def matrix_title
         self.class.localized(
-          de: 'Auf welchem Kanal möchtest du pro Dienst sein?',
-          en: 'Which channel do you want each service to follow?',
+          de: 'Welcher Kanal soll pro Dienst gelten?',
+          en: 'Which channel should each service follow?',
         )
       end
 

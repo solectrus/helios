@@ -46,7 +46,7 @@ de:
     index:
       title: 'Dienste'
       empty_title: 'Noch keine Dienste'
-      empty_description: 'SOLECTRUS ist noch nicht eingerichtet. Lege in der Konfiguration fest, welche Messwerte erfasst werden sollen – danach erscheinen hier die dafür benötigten Dienste.'
+      empty_description: 'SOLECTRUS ist noch nicht eingerichtet. Die Konfiguration legt fest, welche Messwerte erfasst werden sollen – danach erscheinen hier die dafür benötigten Dienste.'
       empty_cta: 'Zur Konfiguration'
     errors:
       blocked_by_dependency: 'Blockiert: %{dependency} konnte nicht gestartet werden'
@@ -280,7 +280,7 @@ de:
       existing_empty: 'Noch keine Sicherungen vorhanden.'
       retention_hint: 'Es werden höchstens %{limit} Sicherungen aufbewahrt, manuelle und automatische zusammen. Beim Erstellen einer weiteren wird die älteste automatisch entfernt.'
       upload: 'Hochladen'
-      upload_unavailable_remote: 'Nur bei Sicherungsziel „Lokal“ möglich. Stelle es dafür vorübergehend um.'
+      upload_unavailable_remote: 'Nur bei Sicherungsziel „Lokal“ möglich. Dafür das Ziel vorübergehend umstellen.'
       download_existing: 'Herunterladen'
       restore_existing: 'Wiederherstellen'
       restore_confirm: 'Die aktuellen Daten sowie die Konfiguration werden überschrieben und gehen somit verloren.<br><br>Danach ist SOLECTRUS wieder auf dem Stand vom <strong>%{date}, %{time}</strong>.'
@@ -315,7 +315,7 @@ de:
       errors:
         backup_in_progress: 'Eine Sicherung läuft bereits.'
         restore_in_progress: 'Eine Wiederherstellung läuft bereits.'
-        remote_destination: 'Upload ist nur bei lokalem Sicherungsziel möglich. Lege die Datei direkt am Ziel ab oder stelle das Ziel vorübergehend auf „Lokal“ um.'
+        remote_destination: 'Upload ist nur bei lokalem Sicherungsziel möglich. Die Datei direkt am Ziel ablegen oder das Ziel vorübergehend auf „Lokal“ umstellen.'
         missing: 'Keine Datei ausgewählt.'
         not_tar: 'Datei ist keine .tar-Datei.'
         too_large: 'Datei ist größer als das erlaubte Maximum.'

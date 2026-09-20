@@ -13,7 +13,7 @@
         "default": "Data source"
       },
       "description": {
-        "de": "Lege fest, aus welchem System dieser Sensor seine Messwerte bezieht.",
+        "de": "Diese Angabe bestimmt, aus welchem System dieser Sensor seine Messwerte bezieht.",
         "default": "Choose which system this sensor draws its measurements from."
       },
       "elements": [

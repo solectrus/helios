@@ -129,7 +129,7 @@
         "default": "InfluxDB"
       },
       "description": {
-        "de": "Lege fest, in welches Measurement der Collector die Messwerte dieses Geräts schreibt.",
+        "de": "Diese Angabe bestimmt, in welches Measurement der Collector die Messwerte dieses Geräts schreibt.",
         "default": "Define which measurement the collector writes this device's readings to."
       },
       "elements": [
