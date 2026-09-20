@@ -52,6 +52,13 @@
 .tooltip .btn:disabled {
   pointer-events: auto;
 }
+/* A disabled button keeps the pointer cursor of .btn, which invites a click
+   that does nothing. The rule above lets such a button keep its tooltip, so
+   the cursor is what still has to say that the button refuses. */
+.btn:disabled,
+.btn.btn-disabled {
+  cursor: not-allowed;
+}
 /* A touch device has no hover, so a tooltip stays hidden there unless its
    element is focused. That makes a tooltip carrying tabindex="-1" tappable:
    the tap focuses it, a tap elsewhere blurs it again. tabindex="-1" is what

@@ -24,6 +24,7 @@ Keep every section, an empty one included.
 - Settings: the screen now leads with the one setting that has to be filled in, and the form asks one question per screen. Everything else is optional and already carries a sensible value
 - Confirmations: every question now carries a warning sign, yellow where a decision is reversed and red where data is lost
 - Keyboard use: the focus mark on a button now stands out clearly
+- Buttons: one that cannot be used no longer shows the hand cursor
 
 ## Fixes
 
