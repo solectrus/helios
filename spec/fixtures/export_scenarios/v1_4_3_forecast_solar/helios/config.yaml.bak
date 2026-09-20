@@ -1,0 +1,101 @@
+---
+_schema_version: 5
+system:
+  timezone: Europe/Berlin
+  installation_date: '2020-11-27'
+  admin_password: AAAAA
+  update_mode: time
+  update_time: '04:00'
+  secret_key_base: BBBBB
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: CCCCC
+influxdb:
+  publish_port: true
+  host_port: 8086
+  image: influxdb:2.9-alpine
+  org: solectrus
+  bucket: solectrus
+  password: DDDDD
+  token_admin: EEEEE
+  token_readwrite: EEEEE
+  token_write: EEEEE
+  token_read: EEEEE
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: forecast.solar
+  forecast_roofs: '1'
+  forecast_latitude: '50.00000'
+  forecast_longitude: '6.000'
+  forecast_azimuth1: 29
+  forecast_declination1: 30
+  forecast_kwp1: 9.24
+  forecast_interval: 600
+  forecast_pvnode_paid: 'false'
+  measurement: forecast
+  image: ghcr.io/solectrus/forecast-collector:latest
+senec:
+  schema: https
+  interval: 600
+  language: de
+  username: FFFFF
+  password: GGGGG
+  request_mode: full
+  adapter: cloud
+  version: v3
+  measurement: SENEC
+  image: ghcr.io/solectrus/senec-collector:latest
+tibber: {}
+shelly:
+  connection: local
+  interval: 5
+  image: ghcr.io/solectrus/shelly-collector:latest
+backup_schedule:
+  schedule_enabled: true
+  schedule_time: '05:20'
+sensors:
+  inverter_power:
+    source: senec
+    measurement: SENEC
+    field: inverter_power
+  case_temp:
+    source: senec
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  grid_import_power:
+    source: senec
+  grid_export_power:
+    source: senec
+  house_power:
+    source: senec
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  wallbox_power:
+    source: senec
+  wallbox_car_connected:
+    source: senec
+  heatpump_power:
+    source: shelly
+    measurement: heatpump
+    field: power
+    shelly_host: shelly-heatpump.fritz.box
+    exclude_from_house_power: true
+  inverter_power_forecast:
+    source: forecast
+    measurement: forecast
+    field: watt
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:latest
+helios:
+  image: ghcr.io/solectrus/helios:latest

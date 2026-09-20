@@ -1,0 +1,108 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 6
+system:
+  admin_password: AAAAA
+  installation_date: '2020-11-27'
+  secret_key_base: BBBBB
+  timezone: Europe/Berlin
+  update_mode: time
+  update_time: '04:00'
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: CCCCC
+influxdb:
+  bucket: solectrus
+  host_port: 8086
+  image: influxdb:2.9-alpine
+  org: solectrus
+  password: DDDDD
+  publish_port: true
+  token_admin: EEEEE
+  token_read: EEEEE
+  token_readwrite: EEEEE
+  token_write: EEEEE
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+forecast:
+  forecast: forecast.solar
+  forecast_azimuth1: 29
+  forecast_declination1: 30
+  forecast_interval: 600
+  forecast_kwp1: 9.24
+  forecast_latitude: '50.00000'
+  forecast_longitude: '6.000'
+  forecast_pvnode_paid: 'false'
+  forecast_roofs: '1'
+  image: ghcr.io/solectrus/forecast-collector:latest
+  measurement: forecast
+senec:
+  adapter: cloud
+  image: ghcr.io/solectrus/senec-collector:latest
+  interval: 600
+  language: de
+  measurement: SENEC
+  password: GGGGG
+  request_mode: full
+  schema: https
+  username: FFFFF
+  version: v3
+tibber: {}
+shelly:
+  connection: local
+  image: ghcr.io/solectrus/shelly-collector:latest
+  interval: 5
+backup_schedule:
+  schedule_enabled: true
+  schedule_time: '05:20'
+sensors:
+  battery_charging_power:
+    source: senec
+  battery_discharging_power:
+    source: senec
+  battery_soc:
+    source: senec
+  case_temp:
+    source: senec
+  grid_export_power:
+    source: senec
+  grid_import_power:
+    source: senec
+  heatpump_power:
+    exclude_from_house_power: true
+    field: power
+    measurement: heatpump
+    shelly_host: shelly-heatpump.fritz.box
+    source: shelly
+  house_power:
+    source: senec
+  inverter_power:
+    field: inverter_power
+    measurement: SENEC
+    source: senec
+  inverter_power_forecast:
+    field: watt
+    measurement: forecast
+    source: forecast
+  system_status:
+    source: senec
+  system_status_ok:
+    source: senec
+  wallbox_car_connected:
+    source: senec
+  wallbox_power:
+    source: senec
+power_splitter:
+  image: ghcr.io/solectrus/power-splitter:latest
+helios:
+  image: ghcr.io/solectrus/helios:latest
