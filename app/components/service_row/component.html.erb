@@ -75,7 +75,12 @@
               class="tooltip tooltip-right tooltip-warning font-normal"
               data-tip="<%= t('configurations.show.incomplete') %>"
             >
-              <a href="<%= datasources_path %>" class="hover:underline" data-turbo-frame="_top">
+              <a
+                href="<%= datasources_path %>"
+                class="hover:underline"
+                aria-label="<%= t('configurations.show.incomplete') %>"
+                data-turbo-frame="_top"
+              >
                 <i class="fa-solid fa-triangle-exclamation text-warning"></i>
               </a>
             </span>
@@ -94,6 +99,7 @@
                             method: :patch,
                             disabled: pending,
                             class: "btn btn-ghost btn-xs btn-circle text-warning",
+                            aria: { label: t('.legacy_image', image: recommended_image) },
                             form: { class: "inline-block align-middle", data: { turbo_confirm: t('.legacy_image_confirm', image: recommended_image) } } do %>
                 <i class="fa-solid fa-circle-up"></i>
               <% end %>
@@ -109,6 +115,7 @@
                             method: :post,
                             disabled: pending,
                             class: "btn btn-ghost btn-xs btn-circle text-warning",
+                            aria: { label: t('.postgresql_upgrade', major: postgresql_target_major) },
                             form: {
                               class: "inline-block align-middle",
                               data: {
@@ -137,6 +144,7 @@
                           method: :delete,
                           disabled: lazy || pending,
                           class: "btn btn-ghost btn-sm btn-square",
+                          aria: { label: t('.remove') },
                           data: {
                             turbo_confirm: t('.remove_confirm.body', service: compose_service.display_name),
                             turbo_confirm_title: t('.remove_confirm.title', service: compose_service.display_name),
@@ -164,6 +172,8 @@
               data-tip="<%= t('.recalculating') %>"
               tabindex="-1"
             >
+              <span class="sr-only"><%= t('.recalculating') %></span>
+
               <%#
                 Outlined rather than filled, so the number keeps the full
                 contrast of the row's own text color. Only the dot pulses:
@@ -186,6 +196,7 @@
                             method: :post,
                             disabled: !recalculation_enabled?,
                             class: "btn btn-ghost btn-sm btn-square",
+                            aria: { label: t('.recalculate') },
                             data: {
                               turbo_confirm: t('.recalculate_confirm.body'),
                               turbo_confirm_title: t('.recalculate_confirm.title'),
@@ -207,6 +218,7 @@
                           method: :delete,
                           disabled: !clear_cache_enabled?,
                           class: "btn btn-ghost btn-sm btn-square",
+                          aria: { label: t('.clear_cache') },
                           data: {
                             turbo_confirm: t('.clear_cache_confirm.body'),
                             turbo_confirm_title: t('.clear_cache_confirm.title'),
@@ -244,11 +256,17 @@
               href="<%= service_log_path(service_name) %>"
               data-turbo-frame="log-modal-content"
               class="btn btn-ghost btn-sm btn-square"
+              aria-label="<%= t('.logs') %>"
             >
               <i class="fa-solid fa-file-lines"></i>
             </a>
           <% else %>
-            <span class="btn btn-ghost btn-sm btn-square btn-disabled" aria-disabled="true" tabindex="-1">
+            <span
+              class="btn btn-ghost btn-sm btn-square btn-disabled"
+              aria-disabled="true"
+              aria-label="<%= t('.logs') %>"
+              tabindex="-1"
+            >
               <i class="fa-solid fa-file-lines"></i>
             </span>
           <% end %>
@@ -264,13 +282,13 @@
             data-tip="<%= start_tooltip %>"
             tabindex="-1"
           >
-            <%= button_to service_task_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "startButton" } do %>
+            <%= button_to service_task_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square", aria: { label: t('.start') }, data: { service_row__component_target: "startButton" } do %>
               <i class="fa-solid fa-play"></i>
             <% end %>
           </div>
 
           <div id="<%= dom_id %>-stop" class="tooltip tooltip-info join-item" data-tip="<%= t('.stop') %>">
-            <%= button_to service_task_path(service_name), method: :delete, disabled: stop_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "stopButton" } do %>
+            <%= button_to service_task_path(service_name), method: :delete, disabled: stop_disabled?, class: "btn btn-ghost btn-sm btn-square", aria: { label: t('.stop') }, data: { service_row__component_target: "stopButton" } do %>
               <i class="fa-solid fa-stop"></i>
             <% end %>
           </div>
@@ -280,14 +298,14 @@
             class="tooltip join-item <%= recreate_warning? ? 'tooltip-warning' : 'tooltip-info' %>"
             data-tip="<%= recreate_tooltip %>"
           >
-            <%= button_to service_task_path(service_name), method: :patch, disabled: recreate_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "recreateButton" } do %>
+            <%= button_to service_task_path(service_name), method: :patch, disabled: recreate_disabled?, class: "btn btn-ghost btn-sm btn-square", aria: { label: recreate_tooltip }, data: { service_row__component_target: "recreateButton" } do %>
               <i class="fa-solid fa-arrows-rotate <%= 'text-warning' if recreate_warning? %>"></i>
             <% end %>
           </div>
         </div>
       <% else %>
         <div id="<%= dom_id %>-recreate" class="tooltip tooltip-info" data-tip="<%= t('.recreate') %>">
-          <%= button_to service_task_path(service_name), method: :patch, disabled: recreate_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { turbo_confirm: t('.self_recreate_confirm'), turbo_frame: "_top", service_row__component_target: "recreateButton" } do %>
+          <%= button_to service_task_path(service_name), method: :patch, disabled: recreate_disabled?, class: "btn btn-ghost btn-sm btn-square", aria: { label: t('.recreate') }, data: { turbo_confirm: t('.self_recreate_confirm'), turbo_frame: "_top", service_row__component_target: "recreateButton" } do %>
             <i class="fa-solid fa-arrows-rotate"></i>
           <% end %>
         </div>

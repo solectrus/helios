@@ -29,6 +29,7 @@
         <%= helpers.button_to helpers.service_path(service_name),
               method: :delete,
               disabled: stop_disabled?,
+              aria: { label: t('.stop') },
               class: "btn btn-ghost btn-sm btn-square text-warning" do %>
           <i class="fa-solid fa-stop"></i>
         <% end %>
