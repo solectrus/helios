@@ -96,7 +96,8 @@
             "de": "Access Key ID",
             "default": "Access Key ID"
           },
-          "isRequired": true
+          "isRequired": true,
+          "inputType": "password"
         },
         {
           "type": "text",
