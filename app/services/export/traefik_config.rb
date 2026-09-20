@@ -5,8 +5,16 @@ module Export
   # hosts (from app_host), the target IP (bind_ip) and the published ports, but
   # not the user's certResolver/middleware names — those are emitted as CHANGE_ME
   # placeholders (which fail closed) and explained in the header comment.
+  #
+  # app_host and bind_ip carry a placeholder of their own when the configuration
+  # leaves them empty, which it may: neither is required, and app_host stays
+  # empty wherever HELIOS is only ever reached at a loopback address. The
+  # header explains those two the same way, so the reader is not left with a
+  # word in a host rule that looks like a domain.
   class TraefikConfig
     PLACEHOLDER = 'CHANGE_ME'.freeze
+    DOMAIN_PLACEHOLDER = 'YOUR_DOMAIN'.freeze
+    IP_PLACEHOLDER = 'HOST_IP'.freeze
 
     # Routable services: published host port + the host the external Traefik
     # routes (dashboard on the bare app_host, the rest on a subdomain).
@@ -17,30 +25,63 @@ module Export
       { klass: Services::Helios, subdomain: 'helios' },
     ].freeze
 
-    HEADER = <<~COMMENT.freeze
+    INTRO = <<~COMMENT.freeze
       # Traefik dynamic configuration (file provider) for the SOLECTRUS stack.
       #
-      # The stack runs behind an EXTERNAL Traefik. Merge this into your Traefik
-      # file-provider configuration and reload Traefik (if your file provider
-      # has no `watch: true`, restart Traefik to apply changes).
-      #
-      # Replace every #{PLACEHOLDER} before use:
-      #   - tls.certResolver  ->  your ACME resolver name (e.g. letsencrypt)
-      #   - middlewares       ->  your middlewares (e.g. security headers, IP allow-list)
-      # Also confirm the `websecure` entryPoint name matches your Traefik.
+      # The stack runs behind an external Traefik. Merge this file into the
+      # file-provider configuration of that Traefik, then reload Traefik. If the
+      # file provider has no `watch: true`, restart Traefik instead.
     COMMENT
+
+    OUTRO = "# Make sure that the `websecure` entryPoint name matches your Traefik.\n".freeze
+
+    # What each placeholder stands for. Only the ones the file actually carries
+    # are explained: a value the configuration fills in leaves no placeholder
+    # behind, and a note about it would send the reader looking for a word that
+    # is not there.
+    PLACEHOLDER_NOTES = {
+      PLACEHOLDER => [
+        'The name of your ACME resolver and the names of your middlewares.',
+        'For example letsencrypt, and a middleware for security headers.',
+      ],
+      DOMAIN_PLACEHOLDER => [
+        'The domain that leads to this machine. HELIOS writes it here as',
+        'soon as its network settings carry an address.',
+      ],
+      IP_PLACEHOLDER => [
+        'The address that Traefik connects to. HELIOS writes it here as',
+        'soon as its reverse-proxy settings carry one.',
+      ],
+    }.freeze
 
     def initialize(configuration)
       @configuration = configuration
     end
 
     def to_s
-      "#{HEADER}\n#{YAML.dump(document)}"
+      body = YAML.dump(document)
+      "#{INTRO}#{placeholder_section(body)}#{OUTRO}\n#{body}"
     end
 
     private
 
     attr_reader :configuration
+
+    # The placeholder list, or nothing at all when the configuration left no
+    # placeholder in the file.
+    def placeholder_section(body)
+      present = PLACEHOLDER_NOTES.keys.select { |placeholder| body.include?(placeholder) }
+      return '' if present.empty?
+
+      width = present.map(&:length).max + 2
+      lines = present.flat_map do |placeholder|
+        PLACEHOLDER_NOTES[placeholder].each_with_index.map do |note, index|
+          "#   #{(index.zero? ? placeholder : '').ljust(width)}#{note}"
+        end
+      end
+
+      "#\n# Replace every placeholder before you use the file:\n#{lines.join("\n")}\n#\n"
+    end
 
     def document
       { 'http' => { 'routers' => routers, 'services' => services } }
@@ -88,11 +129,11 @@ module Export
     end
 
     def base_domain
-      configuration.system.app_host.presence || 'YOUR_DOMAIN'
+      configuration.system.app_host.presence || DOMAIN_PLACEHOLDER
     end
 
     def target_ip
-      configuration.reverse_proxy.bind_ip.presence || 'HOST_IP'
+      configuration.reverse_proxy.bind_ip.presence || IP_PLACEHOLDER
     end
   end
 end

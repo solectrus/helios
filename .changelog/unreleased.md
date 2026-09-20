@@ -25,6 +25,7 @@ Keep every section, an empty one included.
 - Keyboard use: the focus mark on a button now stands out clearly
 - Services: a start that cannot run now stays visible and names what blocks it, in the status bar and on every service
 - Buttons: one that cannot be used no longer shows the hand cursor
+- Generated for Traefik: the header now explains every placeholder the file carries
 
 ## Fixes
 

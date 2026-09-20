@@ -55,4 +55,30 @@ RSpec.describe Export::TraefikConfig do
   it 'starts with an explanatory header comment' do
     expect(output).to start_with('# Traefik dynamic configuration')
   end
+
+  # A placeholder in a host rule looks like a domain, so the header has to name
+  # it. It names only the ones the file carries: everything else would send the
+  # reader looking for a word that is not there.
+  describe 'the placeholder section of the header' do
+    it 'explains the placeholder a filled-in configuration leaves behind' do
+      expect(output).to include('#   CHANGE_ME  The name of your ACME resolver')
+      expect(output).not_to include('YOUR_DOMAIN')
+      expect(output).not_to include('HOST_IP')
+    end
+
+    context 'without an address and without a bind IP' do
+      let(:configuration) do
+        config = Configuration.current
+        config.update('deployment', { 'mode' => 'dashboard_only' })
+        config.update('reverse_proxy', { 'mode' => 'external' })
+        config
+      end
+
+      it 'explains all three, and the host rule carries the domain placeholder' do
+        expect(document.dig('http', 'routers', 'solectrus-dashboard', 'rule')).to eq('Host(`YOUR_DOMAIN`)')
+        expect(output).to include('#   YOUR_DOMAIN  The domain that leads to this machine.')
+        expect(output).to include('#   HOST_IP      The address that Traefik connects to.')
+      end
+    end
+  end
 end
