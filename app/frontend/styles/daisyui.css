@@ -49,15 +49,26 @@
 .tooltip:has(:focus-visible)::after {
   opacity: 0 !important;
 }
-.tooltip .btn:disabled {
-  pointer-events: auto;
-}
 /* A disabled button keeps the pointer cursor of .btn, which invites a click
-   that does nothing. The rule above lets such a button keep its tooltip, so
-   the cursor is what still has to say that the button refuses. */
+   that does nothing.
+
+   The cursor comes from whatever the pointer hits, and daisyUI takes the
+   pointer away from a disabled button, so the cursor of its parent showed
+   instead. The element has to take the pointer back, and only where that is
+   safe. A browser drops the click on a button that carries the `disabled`
+   attribute, so it takes the pointer back on its own terms.
+
+   .btn-disabled is the class form of the same look and stops nothing: on an
+   `a` or a `button` daisyUI's `pointer-events: none` is the only thing that
+   keeps the link from being followed or the form from being submitted.
+   Taking the pointer back there would make the control work again. So the
+   rule names the span, the one element that has no action to restore, and a
+   .btn-disabled put on anything else keeps the wrong cursor rather than a
+   live action. */
 .btn:disabled,
-.btn.btn-disabled {
+span.btn.btn-disabled {
   cursor: not-allowed;
+  pointer-events: auto;
 }
 /* A touch device has no hover, so a tooltip stays hidden there unless its
    element is focused. That makes a tooltip carrying tabindex="-1" tappable:
