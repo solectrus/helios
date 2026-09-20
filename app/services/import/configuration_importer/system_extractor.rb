@@ -15,23 +15,21 @@ module Import
 
       private
 
-      # APP_HOST is the bare hostname or IP; the dashboard adds the scheme at
-      # runtime. Some users paste a full URL (`http://solar.example.com`)
-      # into .env — strip the scheme so config.yaml stays clean and the
-      # dashboard's URL construction doesn't end up with a double prefix.
+      # APP_HOST holds the host alone in config.yaml, the same as after a save
+      # through the form. A hand-written .env carries whatever its author put
+      # there, a full URL (`http://solar.example.com`) among it, so the value
+      # goes through the one normalizer every write path uses.
       #
       # A loopback address is dropped, the same way
-      # ConfigurationMigrations::ClearLoopbackAppHost drops one an earlier
-      # HELIOS stored: it names the machine to itself alone, the field refuses
-      # it, and an imported stack would carry a value its own form rejects.
-      # `section_data` compacts the nil away, so the field stays empty and
-      # every caller names the published port instead.
+      # ConfigurationMigrations::NormalizeAppHost drops one an earlier HELIOS
+      # stored: it names the machine to itself alone, the field refuses it, and
+      # an imported stack would carry a value its own form rejects.
+      # `section_data` compacts the nil away, so the field stays empty and every
+      # caller names the published port instead.
       def normalized_app_host
-        value = service_env('dashboard')['APP_HOST']
-        return value if value.blank?
+        host = HostAddress.normalize(service_env('dashboard')['APP_HOST'])
 
-        host = value.sub(%r{\Ahttps?://}, '')
-        host unless Loopback.host?(host)
+        host unless host.nil? || HostAddress.loopback?(host)
       end
 
       def core_data

@@ -1469,6 +1469,43 @@ RSpec.describe Configuration do
     end
   end
 
+  # Nobody types the address SOLECTRUS is reached at, they paste what the
+  # browser showed them. Storage holds the host alone, so no reader has to take
+  # the value apart a second time.
+  describe '#update with a pasted address' do
+    before { with_config_yaml }
+
+    {
+      'https://solar.example.com:3000/services' => 'solar.example.com',
+      '192.168.1.10:8086' => '192.168.1.10',
+      '  Solar.Example.COM  ' => 'solar.example.com',
+    }.each do |typed, host|
+      it "stores #{host.inspect} for #{typed.inspect}" do
+        described_class.current.update('system_network', { 'app_host' => typed })
+
+        expect(described_class.current.system.app_host).to eq(host)
+      end
+    end
+
+    # A managed Traefik answers on this domain, and it reaches every reader the
+    # same way: the link to a service, the label Traefik reads, APP_DOMAIN.
+    it 'stores the domain of a managed Traefik the same way' do
+      described_class.current.update(
+        'reverse_proxy',
+        { 'mode' => 'internal', 'app_domain' => 'https://Solectrus.Example.com/' },
+      )
+
+      expect(described_class.current.reverse_proxy.app_domain).to eq('solectrus.example.com')
+    end
+
+    it 'clears the field for a value that leaves no host behind' do
+      described_class.current.update('system_network', { 'app_host' => 'solar.example.com' })
+      described_class.current.update('system_network', { 'app_host' => '  ' })
+
+      expect(described_class.current.system.app_host).to be_nil
+    end
+  end
+
   describe '#adopt_request_host!' do
     before { with_config_yaml }
 

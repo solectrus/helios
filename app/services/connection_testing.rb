@@ -30,7 +30,7 @@ module ConnectionTesting
     # on. Classified after the attempt, not before it, so a host that does
     # answer is never refused.
     def unreachable_result(host, reason)
-      return result(false, reason) unless Loopback.host?(host)
+      return result(false, reason) unless HostAddress.loopback?(host)
 
       result(false, :loopback_host, host:)
     end

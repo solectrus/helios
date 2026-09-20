@@ -13,6 +13,9 @@ module Export
   # required nowhere, and it stays empty wherever HELIOS is only ever reached at
   # a loopback address, which the field refuses. A caller then names the port
   # alone instead of showing an address with a placeholder in it.
+  #
+  # The address arrives as HostAddress stored it, the host alone, so this class
+  # only has to put brackets around an IPv6 address before the port.
   class IngestEndpoint
     PORT = Services::Ingest::PORT
 
@@ -27,7 +30,7 @@ module Export
     def url
       return "https://ingest.#{host}" if configuration.reverse_proxy_external? && host
 
-      "http://#{host}:#{PORT}" if host
+      "http://#{HostAddress.for_url(host)}:#{PORT}" if host
     end
 
     private

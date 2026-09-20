@@ -52,6 +52,10 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'tibber' => SENEC_CHARGER_SURVEY_FIELDS.index_with('senec_charger').freeze,
   }.freeze
 
+  # Fields that hold the name of a machine and nothing else (see
+  # #normalize_host_fields).
+  HOST_FIELDS = %w[app_host app_domain].freeze
+
   # Read-only pseudo-settings: they appear in the Settings UI like real
   # settings (chip → modal with survey) but expose derived state instead of
   # persisting anything. `Configuration#setting_data` synthesises the payload
@@ -801,7 +805,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # every caller falls back to the port alone.
   def adopt_request_host!(host)
     return false if system.app_host.present?
-    return false if host.blank? || Loopback.host?(host)
+    return false if host.blank? || HostAddress.loopback?(host)
 
     update('system_network', { 'app_host' => host })
   end
@@ -924,7 +928,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     return update_software(data) if setting == 'software'
     raise ArgumentError, "Setting '#{setting}' is read-only" if READ_ONLY_SETTINGS.include?(setting)
 
-    raw = deep_unwrap(data)
+    raw = normalize_host_fields(deep_unwrap(data))
     borrowed_changed = store_borrowed_fields!(setting, raw)
 
     group = SETTING_GROUPS[setting]
@@ -1100,6 +1104,24 @@ class Configuration # rubocop:disable Metrics/ClassLength
       base[field] = value if value.present?
     end
     base
+  end
+
+  # Both fields name a machine: app_host the address other devices reach
+  # SOLECTRUS at, app_domain the domain a managed Traefik answers on. Each
+  # arrives as the user pasted it, with the scheme, the port or the path the
+  # browser bar carries. Storage holds the host alone, so every reader can put
+  # the value into a URL or into a host rule without taking it apart again. A
+  # value that leaves no host behind drops out of the payload, which clears the
+  # field.
+  def normalize_host_fields(raw)
+    return raw unless raw.is_a?(Hash)
+
+    HOST_FIELDS.reduce(raw) do |data, field|
+      next data unless data.key?(field)
+
+      host = HostAddress.normalize(data[field])
+      host ? data.merge(field => host) : data.except(field)
+    end
   end
 
   # Extracts a survey's borrowed fields from `raw` (mutating it) and writes

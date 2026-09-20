@@ -8,6 +8,14 @@ RSpec.describe Export::IngestEndpoint do
       expect(url).to eq('http://solectrus.fritz.box:4567')
     end
 
+    # A URL tells the colons of an IPv6 address from the one in front of the
+    # port by the brackets, which the stored address does not carry.
+    it 'brackets an IPv6 address in front of the port' do
+      with_config_yaml('system' => { 'app_host' => '2001:db8::1' })
+
+      expect(url).to eq('http://[2001:db8::1]:4567')
+    end
+
     # An external Traefik routes Ingest on its own subdomain
     # (TraefikConfig::ROUTABLE), so the host port is not the address there.
     it 'uses the Ingest subdomain behind an external Traefik' do

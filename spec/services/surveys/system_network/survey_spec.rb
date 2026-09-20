@@ -16,7 +16,7 @@ RSpec.describe Surveys::SystemNetwork::Survey do
       validator = find_survey_element(result, 'app_host')['validators'].first
 
       expect(validator).to include('type' => 'regex', 'caseInsensitive' => true)
-      expect(validator['regex']).to eq(Loopback::SURVEY_PATTERN)
+      expect(validator['regex']).to eq(HostAddress::SURVEY_PATTERN)
     end
   end
 end

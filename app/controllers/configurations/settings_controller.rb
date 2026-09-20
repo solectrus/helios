@@ -163,7 +163,7 @@ module Configurations
     # port alone, which at least works from the machine itself.
     def loopback_app_host?(data)
       host = data['app_host']
-      return false unless host.present? && Loopback.host?(host)
+      return false unless host.present? && HostAddress.loopback?(host)
 
       flash[:alert] = t('configurations.errors.loopback_host', host:)
       redirect_to redirect_target
