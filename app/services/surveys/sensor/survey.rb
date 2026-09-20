@@ -316,13 +316,13 @@ module Surveys
           en: 'Balcony power plants feed directly into the home grid and distort the ' \
               'house power reported by the inverter. This enables the Ingest service, ' \
               'which corrects the house power. Every value of that correction then has to ' \
-              'reach Ingest, an externally delivered one included. Under Advanced, the Ingest ' \
+              'reach Ingest, an externally delivered one included. Under Settings, the Ingest ' \
               'service can turn the correction off again, for a house power that already ' \
               'arrives corrected.',
           de: 'Steckersolargeräte speisen direkt ins Hausnetz ein und verfälschen den vom ' \
               'Wechselrichter gemeldeten Hausverbrauch. Mit dieser Option wird der Ingest-Dienst ' \
               'aktiviert, der den Hausverbrauch korrigiert. Alle Werte dieser Korrektur müssen ' \
-              'dann bei Ingest ankommen, auch extern gelieferte. Unter Erweitert lässt sich die ' \
+              'dann bei Ingest ankommen, auch extern gelieferte. Unter Einstellungen lässt sich die ' \
               'Korrektur beim Dienst Ingest wieder abschalten, falls der Hausverbrauch bereits ' \
               'korrigiert angeliefert wird.',
         )
