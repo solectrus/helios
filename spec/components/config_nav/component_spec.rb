@@ -25,6 +25,15 @@ RSpec.describe ConfigNav::Component, type: :component do
 
       expect(signs(rendered)['/settings']).to include(Header::Component::MUTED_WARNING_CLASSES)
     end
+
+    # The sign is an icon, and its tooltip lives in an attribute a screen
+    # reader does not read. So the entry carries the words as well (the top
+    # navigation and the dock do the same).
+    it 'names what it marks, for a screen reader' do
+      rendered = render_inline(described_class.new(active_tab: :sensors))
+
+      expect(rendered.css('a .sr-only').text).to include(I18n.t('configurations.show.incomplete'))
+    end
   end
 
   describe 'the reset block' do
