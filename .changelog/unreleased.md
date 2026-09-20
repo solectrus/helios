@@ -34,6 +34,7 @@ Keep every section, an empty one included.
 - Address of the machine: a loopback address such as localhost is now refused while it is typed, because every link derived from it sends a device back to itself. An address of that kind is dropped on update, and dropped from an imported installation as well. The generated files no longer fall back to localhost either. The field can stay empty, and the published port is then used
 - Backup to S3: a backup or a restore that fails now reports the reason, for example a rejected access key or a bucket that cannot be reached
 - Backup, restore and CSV import: the preparation no longer fails when a service is renewed at the same moment
+- Support bundle: the custom domain, the address of the machine and the email address for the certificates now appear as placeholders, in every file of the bundle. A bundle attached to a public forum post no longer carries them
 
 ## Maintenance
 

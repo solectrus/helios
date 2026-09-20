@@ -18,40 +18,51 @@ module SupportBundle
   end
 
   def write_config_entries(zip)
+    redactions = value_redactions
+
     sources.each do |entry_name, path|
       next unless File.exist?(path)
 
       zip.put_next_entry(entry_name)
-      zip.write(anonymize(entry_name, TextEncoding.utf8(File.read(path))))
+      zip.write(anonymize(entry_name, TextEncoding.utf8(File.read(path)), redactions))
     end
   end
 
   # One log at a time: each one goes into the zip and is let go of again, so
   # the bundle never holds every service's log at once.
   def write_log_entries(zip)
-    redactions = log_redactions
+    redactions = value_redactions
     ContainerLogs.each_log do |entry_name, content|
       zip.put_next_entry(entry_name)
       zip.write(Anonymizer.anonymize_text(content, redactions))
     end
   end
 
-  def anonymize(entry_name, content)
-    if entry_name == 'config.yaml'
-      Anonymizer.anonymize_yaml(content)
-    else
-      Anonymizer.anonymize_env_style(content)
-    end
+  # Two passes. The structural one knows the file format and masks by key,
+  # which is what catches a secret the first time it is seen. The literal
+  # one then sweeps the same text for values already masked elsewhere —
+  # a compose.yaml carries the domain inside a Traefik rule
+  # (`Host(`solectrus.example.com`)`), where no `KEY=value` line exists for
+  # the key-based pass to recognize.
+  def anonymize(entry_name, content, redactions)
+    structural =
+      if entry_name == 'config.yaml'
+        Anonymizer.anonymize_yaml(content)
+      else
+        Anonymizer.anonymize_env_style(content)
+      end
+
+    Anonymizer.anonymize_text(structural, redactions)
   end
 
-  # Container logs run through the live .env so any secret a service
-  # echoes (forecast collector logging the URL with lat/lng, MQTT clients
-  # logging credentials on connect failures, …) gets masked with the same
-  # placeholders used in the .env entry.
-  def log_redactions
+  # Values taken from the live .env, so anything echoed elsewhere (a
+  # forecast collector URL with lat/lng in a log, MQTT credentials on a
+  # failed connect, the domain inside a Traefik label) gets masked with the
+  # same placeholders used in the .env entry.
+  def value_redactions
     return [] unless File.exist?(Env.path)
 
-    Anonymizer.log_redactions(TextEncoding.utf8(File.read(Env.path)))
+    Anonymizer.value_redactions(TextEncoding.utf8(File.read(Env.path)))
   end
 
   def filename

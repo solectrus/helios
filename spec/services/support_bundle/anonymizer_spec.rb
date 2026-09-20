@@ -188,6 +188,24 @@ RSpec.describe SupportBundle::Anonymizer do
       expect(described_class.anonymize_env_style(content)).to eq(content)
     end
 
+    it 'masks the reverse proxy domain and Let\'s Encrypt address' do
+      content = <<~ENV
+        APP_DOMAIN=solectrus.example.com
+        LETSENCRYPT_EMAIL=owner@example.com
+      ENV
+
+      expect(described_class.anonymize_env_style(content)).to eq(<<~ENV)
+        APP_DOMAIN=AAAAA
+        LETSENCRYPT_EMAIL=BBBBB
+      ENV
+    end
+
+    it 'leaves a LAN-only APP_DOMAIN alone' do
+      content = "APP_DOMAIN=solectrus.fritz.box\n"
+
+      expect(described_class.anonymize_env_style(content)).to eq(content)
+    end
+
     it 'masks the whole SHELLY_HOST list when any entry is a public FQDN' do
       content = "SHELLY_HOST=192.168.1.10,solar.example.com,192.168.1.11\n"
 
@@ -274,6 +292,37 @@ RSpec.describe SupportBundle::Anonymizer do
         'totp_uri' => 'CCCCC',
         'system_id' => '0',
       )
+    end
+
+    it 'masks the reverse proxy section and the app host it mirrors' do
+      yaml = <<~YAML
+        system:
+          app_host: solectrus.example.com
+          timezone: Europe/Berlin
+        reverse_proxy:
+          app_domain: solectrus.example.com
+          letsencrypt_email: owner@example.com
+          image: traefik:v3.7
+      YAML
+
+      parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
+
+      # app_host and app_domain hold the same domain, so the registry gives
+      # them the same mask — support can still see they match.
+      expect(parsed['system']).to eq('app_host' => 'BBBBB', 'timezone' => 'Europe/Berlin')
+      expect(parsed['reverse_proxy']).to eq(
+        'app_domain' => 'BBBBB',
+        'letsencrypt_email' => 'AAAAA',
+        'image' => 'traefik:v3.7',
+      )
+    end
+
+    it 'leaves a LAN-only app_host alone' do
+      yaml = "system:\n  app_host: helios.fritz.box\n"
+
+      parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
+
+      expect(parsed['system']).to eq('app_host' => 'helios.fritz.box')
     end
 
     it 'replaces forecast coordinates with parseable placeholders and leaves other forecast fields alone' do
@@ -490,7 +539,7 @@ RSpec.describe SupportBundle::Anonymizer do
         SHELLY_PASSWORD=${SHELLY_PASSWORD}
       ENV
     end
-    let(:redactions) { described_class.log_redactions(env) }
+    let(:redactions) { described_class.value_redactions(env) }
 
     it 'replaces coordinates inside a forecast collector URL with zeroed decimals' do
       log = <<~LOG
@@ -506,7 +555,7 @@ RSpec.describe SupportBundle::Anonymizer do
     end
 
     it 'leaves the rest of the log alone when a coordinate has no decimals' do
-      env_redactions = described_class.log_redactions("FORECAST_LATITUDE=-90\nFORECAST_LONGITUDE=0\n")
+      env_redactions = described_class.value_redactions("FORECAST_LATITUDE=-90\nFORECAST_LONGITUDE=0\n")
       log = <<~LOG
         2026-08-05T03:49:01.352Z Forecast collector v0.11.0, Ruby 4.0.6
           0: https://api.forecast.solar/estimate/-90/0/45/0/8.51 ... Error HTTP 404
@@ -516,7 +565,7 @@ RSpec.describe SupportBundle::Anonymizer do
     end
 
     it 'scrubs southern/western coordinates that start with a minus sign' do
-      env_redactions = described_class.log_redactions(
+      env_redactions = described_class.value_redactions(
         "FORECAST_LATITUDE=-33.86785\nFORECAST_LONGITUDE=-151.20732\n",
       )
       log = "  0: https://api.forecast.solar/estimate/-33.86785/-151.20732/45/0/8.51 ... OK\n"
@@ -543,7 +592,7 @@ RSpec.describe SupportBundle::Anonymizer do
     end
 
     it 'masks a Solcast site ID that leaks into a forecast collector URL' do
-      env_redactions = described_class.log_redactions("SOLCAST_0_SITE=1111-2222-3333-4444\n")
+      env_redactions = described_class.value_redactions("SOLCAST_0_SITE=1111-2222-3333-4444\n")
       log = "  0: https://api.solcast.com.au/rooftop_sites/1111-2222-3333-4444/forecasts ... OK\n"
 
       result = described_class.anonymize_text(log, env_redactions)
@@ -553,7 +602,7 @@ RSpec.describe SupportBundle::Anonymizer do
     end
 
     it 'masks opaque tokens that leak into log lines, consistent with the .env mask' do
-      env_redactions = described_class.log_redactions("INFLUX_TOKEN=example-influx-token\n")
+      env_redactions = described_class.value_redactions("INFLUX_TOKEN=example-influx-token\n")
       env_mask = described_class.mask('example-influx-token')
       log = "POST /api/v2/write Authorization=Token example-influx-token failed\n"
 
@@ -583,7 +632,7 @@ RSpec.describe SupportBundle::Anonymizer do
         INFLUX_BUCKET=my-solectrus-bucket
         INFLUX_ORG=my-org-name
       ENV
-      redactions = described_class.log_redactions(env)
+      redactions = described_class.value_redactions(env)
       log = "writing to bucket my-solectrus-bucket org my-org-name failed\n"
 
       bucket_mask = described_class.mask('my-solectrus-bucket')
@@ -594,7 +643,7 @@ RSpec.describe SupportBundle::Anonymizer do
 
     it 'masks only the public FQDN entries of a SHELLY_HOST list in logs' do
       env = "SHELLY_HOST=192.168.1.10,solar.example.com\n"
-      redactions = described_class.log_redactions(env)
+      redactions = described_class.value_redactions(env)
       log = "probing 192.168.1.10 and solar.example.com\n"
 
       host_mask = described_class.mask('solar.example.com')
@@ -605,7 +654,30 @@ RSpec.describe SupportBundle::Anonymizer do
     it 'does not add log redactions for *_HOST values that are private IPs' do
       env = "INFLUX_HOST=192.168.1.10\nMQTT_HOST=broker\n"
 
-      expect(described_class.log_redactions(env)).to be_empty
+      expect(described_class.value_redactions(env)).to be_empty
+    end
+
+    it 'builds no redaction for a secret that is nothing but a well-known word' do
+      expect(described_class.value_redactions("ADMIN_PASSWORD=solectrus\n")).to be_empty
+    end
+
+    it 'keeps a compose.yaml readable when the admin password is a well-known word' do
+      redactions = described_class.value_redactions("ADMIN_PASSWORD=Solectrus\n")
+      compose = "    image: ghcr.io/solectrus/solectrus:latest\n"
+
+      expect(described_class.anonymize_text(compose, redactions)).to eq(compose)
+    end
+
+    it 'still masks that password where the .env names it' do
+      expect(described_class.anonymize_env_style("ADMIN_PASSWORD=solectrus\n"))
+        .to eq("ADMIN_PASSWORD=#{described_class.mask('solectrus')}\n")
+    end
+
+    it 'masks a secret that merely contains a well-known word' do
+      redactions = described_class.value_redactions("ADMIN_PASSWORD=solectrus-123\n")
+
+      expect(described_class.anonymize_text("pw=solectrus-123\n", redactions))
+        .to eq("pw=#{described_class.mask('solectrus-123')}\n")
     end
   end
 

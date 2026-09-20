@@ -37,6 +37,7 @@ module SupportBundle
       INFLUX_TOKEN_READ
       INFLUX_TOKEN_READWRITE
       INFLUX_TOKEN_WRITE
+      LETSENCRYPT_EMAIL
       LOCKUP_CODEWORD
       MQTT_PASSWORD
       MQTT_USERNAME
@@ -64,17 +65,22 @@ module SupportBundle
     # Well-known, non-identifying org/bucket names kept visible: the SOLECTRUS
     # default name ("solectrus", the default org/bucket) and the vendor name
     # ("SENEC"). These reveal nothing about who or where the user is, and
-    # keeping them lets support see the stock naming at a glance. Applied only
-    # to the non-secret identifier paths (BUCKET_KEYS / YAML_BUCKET_KEYS), so
-    # it can never expose a secret. Matched case-insensitively against the
-    # *whole* value, so a custom name like "my-solectrus-bucket" or
-    # "berlin-pv" is still masked.
+    # keeping them lets support see the stock naming at a glance. Matched
+    # case-insensitively against the *whole* value, so a custom name like
+    # "my-solectrus-bucket" or "berlin-pv" is still masked.
+    #
+    # Read on two paths, and on neither can it expose a secret. The identifier
+    # paths (BUCKET_KEYS / YAML_BUCKET_KEYS) hold no secret to begin with. On
+    # the literal sweep (see #build_redactions) the structural pass has already
+    # masked the value wherever a file names it as a secret, so all the sweep
+    # gives up is the same word elsewhere, where the whole stack carries it
+    # anyway.
     SAFE_VALUES = %w[solectrus senec].to_set.freeze
 
     # Hostnames are only redacted when the value is a public FQDN. Private
     # IPs (RFC 1918), loopback and Docker container names stay as-is — they
     # are useful for diagnostics and don't leak location.
-    HOST_KEYS = %w[APP_HOST INFLUX_HOST MQTT_HOST SENEC_HOST SHELLY_HOST].to_set.freeze
+    HOST_KEYS = %w[APP_DOMAIN APP_HOST INFLUX_HOST MQTT_HOST SENEC_HOST SHELLY_HOST].to_set.freeze
 
     # Local/reserved zones that look like an FQDN but never leave the LAN.
     # `.fritz.box` (AVM router default), `.local` (mDNS), `.lan/.home/.intern*`
@@ -91,6 +97,7 @@ module SupportBundle
       'tibber' => %w[token],
       'senec' => %w[username password totp_uri system_id],
       'shelly' => %w[password auth_key],
+      'reverse_proxy' => %w[letsencrypt_email],
       'backup' => %w[aws_access_key_id aws_secret_access_key],
       'forecast' => %w[
         forecast_latitude forecast_longitude
@@ -105,10 +112,12 @@ module SupportBundle
 
     # YAML host fields redacted only when the value is a public FQDN.
     YAML_HOST_KEYS = {
+      'system' => %w[app_host],
       'influxdb' => %w[host],
       'mqtt' => %w[host],
       'senec' => %w[host],
       'shelly' => %w[host],
+      'reverse_proxy' => %w[app_domain],
     }.freeze
 
     # Per-sensor fields to redact inside the dynamic `sensors:` section.
@@ -334,7 +343,7 @@ module SupportBundle
     # the integer part of each match is preserved; opaque secrets use literal
     # substring matches; SHELLY_HOST lists fan out into one pair per public
     # entry so each gets its own mask.
-    def log_redactions(env_content)
+    def value_redactions(env_content)
       env_content.each_line.flat_map { |line| line_redactions(line) }
     end
 
@@ -360,10 +369,17 @@ module SupportBundle
       build_redactions(match[:key].upcase, match[:value])
     end
 
+    # A value that is nothing but a well-known word builds no pair either. The
+    # sweep would replace the word wherever it stands, and in a compose.yaml or
+    # a config.yaml it stands everywhere: in the image names, in the network
+    # name, in the org and the bucket. The file would arrive unreadable, and it
+    # would hide nothing. The word is in the bundle in any case, a hundred
+    # times over, so a reader learns from `ADMIN_PASSWORD=XXXXX` exactly as
+    # little either way.
     def build_redactions(key, value)
       return coord_redactions(value) if COORD_KEYS.include?(key)
       return host_redactions(value) if HOST_KEYS.include?(key)
-      return [] if value.length < LOG_REDACTION_MIN_LENGTH
+      return [] if value.length < LOG_REDACTION_MIN_LENGTH || safe_value?(value)
 
       [[value, mask(value)]]
     end
