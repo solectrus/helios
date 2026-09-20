@@ -90,12 +90,18 @@ module StatusBar
       I18n.available_locales.index_with { |locale| t('.backup_in_progress', locale:) }
     end
 
+    # The action stays on the bar while a setting is still open. An empty
+    # place says nothing about why, so it is shown and refuses instead.
+    # Before the first sensor there is nothing to start at all, and the
+    # screens say so themselves, so the action stays away until then.
     def show_start?
       return false if operation_in_progress?
 
-      @status.in?(%i[stopped partial error]) &&
-        Configuration.current.configuration_complete?
+      Configuration.current.setup_completed? && @status.in?(%i[stopped partial error])
     end
+
+    # Refused again by ApplicationController#require_configuration_complete.
+    def start_blocked? = !Configuration.current.configuration_complete?
 
     def show_stop?
       return false if operation_in_progress?
@@ -151,12 +157,11 @@ module StatusBar
     # lifecycle form button, with the given CSS classes — used for both the
     # primary button and the dropdown menu items.
     def action_button(key, css, long: false, icon_only_mobile: false)
-      if key == :open
-        open_button(css, icon_only_mobile:)
-      else
-        button_to(batch_path, method: action_method(key), class: css, form_class: 'contents') do
-          action_inner(key, long:, icon_only_mobile:)
-        end
+      return open_button(css, icon_only_mobile:) if key == :open
+      return blocked_start_button(css, long:, icon_only_mobile:) if key == :start && start_blocked?
+
+      button_to(batch_path, method: action_method(key), class: css, form_class: 'contents') do
+        action_inner(key, long:, icon_only_mobile:)
       end
     end
 
@@ -191,6 +196,34 @@ module StatusBar
     end
 
     private
+
+    # Disabled, and carrying what blocks it in the words and the colour of the
+    # warning sign in the navigation. The text sits in a `tooltip-content`
+    # element rather than in `data-tip`: an attribute holds one language, and
+    # a broadcast bar is rendered once for clients of both.
+    def blocked_start_button(css, long:, icon_only_mobile:)
+      button = button_to(batch_path, method: :post, class: css, form_class: 'contents', disabled: true) do
+        action_inner(:start, long:, icon_only_mobile:)
+      end
+      hint = tag.div(locale_label_tags(incomplete_labels), class: 'tooltip-content')
+
+      # To the left, not above: the bar is the last strip of the screen, and a
+      # tooltip over it would sit half on the page behind it.
+      #
+      # tabindex: a disabled button takes no focus, so a tap lands on this
+      # wrapper and opens the tooltip on a touch device, where there is no
+      # hover to open it with.
+      #
+      # block and p-0: in the dropdown the wrapper sits where the button sat,
+      # and the menu styles that place hold a grid plus the padding of a row.
+      # The button would keep a quarter of the row. The two classes hand both
+      # back to it, and leave the split button beside the bar untouched.
+      tag.div(safe_join([hint, button]), class: 'tooltip tooltip-left tooltip-warning block p-0', tabindex: -1)
+    end
+
+    def incomplete_labels
+      I18n.available_locales.index_with { |locale| t('configurations.show.incomplete', locale:) }
+    end
 
     def open_button(css, icon_only_mobile: false)
       tag.button(

@@ -304,8 +304,38 @@ module ServiceRow
     # the global start button and the server-side require_configuration_complete
     # guard, so the UI never offers a start that the server would reject.
     def start_disabled?
-      lazy || pending || running? || updates_paused? ||
-        !Configuration.current.configuration_complete?
+      other_start_blocker? || !Configuration.current.configuration_complete?
+    end
+
+    # Everything that stops a start on its own, before the configuration is
+    # asked. Each of these the row already shows: a running service by its
+    # state dot, a pending one by its spinner.
+    def other_start_blocker?
+      lazy || pending || running? || updates_paused?
+    end
+
+    # An incomplete configuration is the one reason the row cannot show
+    # anywhere else: it belongs to the installation, not to a single service,
+    # so no row marks it (see #incomplete_source? for the ones that do).
+    #
+    # Only when nothing nearer blocks the start. A running service keeps the
+    # plain tooltip, because "it already runs" answers the button, and the
+    # warning about the installation belongs to the navigation and the status
+    # bar, which carry it at the same time.
+    def start_blocked_by_configuration?
+      !other_start_blocker? && !Configuration.current.configuration_complete?
+    end
+
+    # The wording and the colour are the ones the warning sign in the
+    # navigation carries, so the button and the sign that sent the reader
+    # here read as one statement. The wording also keeps the tooltip to the
+    # single line the neighbouring ones occupy.
+    def start_tooltip
+      start_blocked_by_configuration? ? t('configurations.show.incomplete') : t('.start')
+    end
+
+    def start_tooltip_variant
+      start_blocked_by_configuration? ? 'tooltip-warning' : 'tooltip-info'
     end
 
     # Per-row source warning (links to /datasources). Narrower than

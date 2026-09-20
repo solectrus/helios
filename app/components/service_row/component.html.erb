@@ -254,7 +254,16 @@
           <% end %>
         </div>
         <div class="join">
-          <div id="<%= dom_id %>-start" class="tooltip tooltip-info join-item" data-tip="<%= t('.start') %>">
+          <%# tabindex: a disabled button takes no focus, so a tap lands on %>
+          <%# this wrapper and opens the tooltip on a touch device, where %>
+          <%# there is no hover to open it with. An enabled button takes the %>
+          <%# focus itself, so the tap starts the service as before. %>
+          <div
+            id="<%= dom_id %>-start"
+            class="tooltip join-item <%= start_tooltip_variant %>"
+            data-tip="<%= start_tooltip %>"
+            tabindex="-1"
+          >
             <%= button_to service_task_path(service_name), method: :post, disabled: start_disabled?, class: "btn btn-ghost btn-sm btn-square", data: { service_row__component_target: "startButton" } do %>
               <i class="fa-solid fa-play"></i>
             <% end %>

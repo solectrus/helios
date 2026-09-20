@@ -50,4 +50,63 @@ RSpec.describe ServiceRow::Component, type: :component do
       expect(rendered.to_html).to include('Configuration changed')
     end
   end
+
+  # An incomplete configuration blocks every start, and it belongs to the
+  # installation rather than to one service, so no row marks it. The tooltip
+  # of the button it disables is where the row can still say it.
+  describe 'the tooltip of the start button' do
+    subject(:tooltip) { rendered.css('[id$="-start"]') }
+
+    context 'with an incomplete configuration and a stopped service' do
+      let(:container) { build_container(state: 'exited', health: nil) }
+
+      before { with_config_yaml }
+
+      # The same wording and the same colour the warning sign in the
+      # navigation carries.
+      it 'names the reason the button refuses' do
+        expect(tooltip.attr('data-tip').value).to eq(I18n.t('configurations.show.incomplete'))
+      end
+
+      it 'marks it as a warning' do
+        expect(tooltip.attr('class').value).to include('tooltip-warning')
+      end
+    end
+
+    # The installation-wide warning belongs on the button only while nothing
+    # nearer blocks the start. A running service is blocked by its own state,
+    # which the row shows anyway, and the navigation and the status bar carry
+    # the warning at the same time.
+    context 'with an incomplete configuration and a running service' do
+      before { with_config_yaml }
+
+      it 'names the action' do
+        expect(tooltip.attr('data-tip').value).to eq('Start')
+      end
+
+      it 'leaves the tooltip as it is' do
+        expect(tooltip.attr('class').value).to include('tooltip-info')
+      end
+    end
+
+    # A touch device has no hover, so the stylesheet opens a tooltip there on
+    # focus alone. The disabled button takes no focus, so the wrapper has to.
+    it 'can take the focus a tap gives it' do
+      with_config_yaml
+
+      expect(tooltip.attr('tabindex').value).to eq('-1')
+    end
+
+    context 'with a configuration that can start' do
+      before { with_startable_config_yaml }
+
+      it 'names the action' do
+        expect(tooltip.attr('data-tip').value).to eq('Start')
+      end
+
+      it 'leaves the tooltip as it is' do
+        expect(tooltip.attr('class').value).to include('tooltip-info')
+      end
+    end
+  end
 end

@@ -19,11 +19,11 @@ Keep every section, an empty one included.
 - Configuration forms: a password manager now stays out of these fields
 - The wording no longer addresses the reader, and it is the same everywhere
 - Navigation: a warning sign now points at a setting that is still open, from the Configuration tab down to the setting itself. The tab opens the screen it marks
-- Status bar: the note about an incomplete configuration is gone, because the configuration screens now mark what is missing
 - Configuration: the Basic Settings screen is now named Settings
 - Settings: the screen now leads with the one setting that has to be filled in, and the form asks one question per screen. Everything else is optional and already carries a sensible value
 - Confirmations: every question now carries a warning sign, yellow where a decision is reversed and red where data is lost
 - Keyboard use: the focus mark on a button now stands out clearly
+- Services: a start that cannot run now stays visible and names what blocks it, in the status bar and on every service
 - Buttons: one that cannot be used no longer shows the hand cursor
 
 ## Fixes
