@@ -47,4 +47,14 @@ RSpec.describe 'Settings', :with_admin_password do
         .to be < response.body.index(I18n.t('configurations.settings.deployment.title'))
     end
   end
+
+  # The screen was reached at /advanced up to v1.4.3.
+  describe 'GET /advanced' do
+    it 'sends a bookmark of the old address to the settings page' do
+      get '/advanced'
+
+      expect(response).to redirect_to(settings_path)
+      expect(response).to have_http_status(:moved_permanently)
+    end
+  end
 end

@@ -27,6 +27,7 @@
 #                                   DELETE /datasources/shelly-devices/:id(.:format)      datasources/shelly_devices#destroy
 #                       datasources GET    /datasources(.:format)                         datasources#show
 #                          settings GET    /settings(.:format)                            settings#show
+#                          advanced GET    /advanced(.:format)                            redirect(301, /settings)
 #                        host_stats GET    /host-stats(.:format)                          host_stats#show
 #                        status_bar GET    /status-bar(.:format)                          status_bars#show
 #                backups_completion DELETE /backups/completion(.:format)                  backups/completions#destroy
@@ -104,6 +105,9 @@ Rails.application.routes.draw do
     end
   end
   resource :settings, only: :show, controller: 'settings'
+  # The screen was reached at /advanced up to v1.4.3, so a bookmark from then
+  # still lands on it.
+  get 'advanced', to: redirect('/settings')
   resource :host_stats, only: :show, path: 'host-stats'
   resource :status_bar, only: :show, path: 'status-bar'
   scope 'backups', module: :backups, as: :backups do
