@@ -2,8 +2,8 @@ import { readLocale } from './preferences_cookie';
 
 // The button says what a click does next, so it swaps along with the field.
 const LABELS = {
-  de: { show: 'Passwort anzeigen', hide: 'Passwort verbergen' },
-  default: { show: 'Show password', hide: 'Hide password' },
+  de: { show: 'Text anzeigen', hide: 'Text verbergen' },
+  default: { show: 'Show text', hide: 'Hide text' },
 };
 
 const ICONS = { show: 'fa-eye', hide: 'fa-eye-slash' };

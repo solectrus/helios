@@ -56,11 +56,11 @@ describe('wirePasswordReveal', () => {
     const question = renderQuestion();
     wirePasswordReveal(question);
 
-    expect(button(question)!.getAttribute('aria-label')).toBe('Show password');
+    expect(button(question)!.getAttribute('aria-label')).toBe('Show text');
     expect(question.querySelector('i')!.className).toContain('fa-eye');
 
     button(question)!.click();
-    expect(button(question)!.getAttribute('aria-label')).toBe('Hide password');
+    expect(button(question)!.getAttribute('aria-label')).toBe('Hide text');
     expect(question.querySelector('i')!.className).toContain('fa-eye-slash');
   });
 
@@ -70,9 +70,7 @@ describe('wirePasswordReveal', () => {
 
     wirePasswordReveal(question);
 
-    expect(button(question)!.getAttribute('aria-label')).toBe(
-      'Passwort anzeigen',
-    );
+    expect(button(question)!.getAttribute('aria-label')).toBe('Text anzeigen');
   });
 
   it('keeps the caret at the end, so the field can be typed on', () => {
