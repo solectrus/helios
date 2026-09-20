@@ -5,11 +5,12 @@
   data-value-flash-timestamp-value="<%= timestamp_iso %>"
 >
   <% if value? %>
-    <span
-      class="tooltip tooltip-left inline-block cursor-default"
-      data-controller="relative-time"
-      data-relative-time-datetime-value="<%= timestamp_iso %>"
-    >
+    <%#
+      A hint, not a tooltip: the age of the reading stands nowhere else on the
+      screen, and a phone is where it is asked for most.
+    %>
+
+    <%= render Hint::Component.new(text: age_hint, wrapper_class: "dropdown-left", trigger_class: "cursor-default") do %>
       <% if boolean_value? %>
         <span class="badge badge-sm badge-outline"><%= boolean_label %></span>
       <% else %>
@@ -18,7 +19,7 @@
           <span class="text-base-content/50"><%= unit %></span>
         <% end %>
       <% end %>
-    </span>
+    <% end %>
   <% elsif unit_label.present? %>
     <%# No live value yet: show the expected input unit as a hint. %>
     <span class="text-base-content/40"><%= unit_label %></span>

@@ -9,13 +9,14 @@ module Hint
   # finger and the Tab key all reach, so every such hint is built from one here.
   #
   # Use it where the words are the whole point and nobody can guess them from
-  # the screen: the reason a control refuses, or a paragraph of guidance.
+  # the screen: the reason a control refuses, the age of a reading, or a
+  # paragraph of guidance.
   #
-  # `.tooltip` stays where the words label or annotate something the screen
-  # already carries - an icon-only control, a status dot, the age of a
-  # reading. There the bubble is a convenience for the pointer, an `aria-label`
-  # or an `sr-only` element carries the same words for everyone else, and the
-  # hint is not worth a tab stop on a page that holds dozens of them.
+  # `.tooltip` stays where the words label something the screen already carries
+  # - an icon-only control, a warning sign, a number that is named beside it.
+  # There the bubble is a convenience for the pointer, an `aria-label` or an
+  # `sr-only` element carries the same words for everyone else, and the hint is
+  # not worth a tab stop.
   class Component < ViewComponent::Base
     # The colours daisyUI gives `tooltip-*`, so a hint that used to be a
     # tooltip keeps its colour.
