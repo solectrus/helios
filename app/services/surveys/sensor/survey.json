@@ -33,8 +33,8 @@
       "name": "p_shelly_local",
       "visibleIf": "{source} = 'shelly'",
       "title": {
-        "de": "Shelly — Lokaler Zugriff",
-        "default": "Shelly — Local Access"
+        "de": "Shelly: Lokaler Zugriff",
+        "default": "Shelly: Local Access"
       },
       "description": {
         "de": "Adresse des Shelly-Geräts im Heimnetz für den direkten lokalen Zugriff.",
@@ -81,8 +81,8 @@
       "name": "p_shelly_cloud",
       "visibleIf": "{source} = 'shelly'",
       "title": {
-        "de": "Shelly — Cloud-Zugriff",
-        "default": "Shelly — Cloud Access"
+        "de": "Shelly: Cloud-Zugriff",
+        "default": "Shelly: Cloud Access"
       },
       "description": {
         "de": "Geräte-ID, unter der die Shelly Cloud dieses Gerät führt.",
@@ -145,8 +145,8 @@
       "name": "p_mqtt_extraction",
       "visibleIf": "{source} = 'mqtt'",
       "title": {
-        "de": "MQTT — Wertgewinnung",
-        "default": "MQTT — Value Extraction"
+        "de": "MQTT: Wertgewinnung",
+        "default": "MQTT: Value Extraction"
       },
       "elements": []
     },
@@ -154,16 +154,16 @@
       "name": "p_mqtt_extraction_value",
       "visibleIf": "{source} = 'mqtt'",
       "title": {
-        "de": "MQTT — Wertgewinnung — Details",
-        "default": "MQTT — Value Extraction — Details"
+        "de": "MQTT: Details der Wertgewinnung",
+        "default": "MQTT: Value Extraction Details"
       },
       "elements": []
     },
     {
       "name": "p_mqtt_filter",
       "title": {
-        "de": "MQTT — Filter (optional)",
-        "default": "MQTT — Filters (optional)"
+        "de": "MQTT: Filter (optional)",
+        "default": "MQTT: Filters (optional)"
       },
       "elements": []
     },
@@ -248,8 +248,8 @@
       "name": "p_shelly_phase",
       "visibleIf": "{source} = 'shelly'",
       "title": {
-        "de": "Shelly — Phase",
-        "default": "Shelly — Phase"
+        "de": "Shelly: Phase",
+        "default": "Shelly: Phase"
       },
       "description": {
         "de": "Bitte beachten: Einige Shelly-Modelle messen nur die Summe",

@@ -74,8 +74,8 @@
         "default": "Authentication with the MQTT broker"
       },
       "description": {
-        "de": "Zugangsdaten für den Broker — leer lassen, wenn er ohne Anmeldung erreichbar ist.",
-        "default": "Credentials for the broker — leave empty if it is reachable without a login."
+        "de": "Zugangsdaten für den Broker. Leer lassen, wenn er ohne Anmeldung erreichbar ist.",
+        "default": "Credentials for the broker. Leave empty if it is reachable without a login."
       },
       "elements": [
         {

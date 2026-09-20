@@ -80,9 +80,9 @@ module Surveys
         self.class.localized(
           de: 'Stabil: nur stabile Versionen, Updates kommen in größeren zeitlichen ' \
               'Abständen. Entwicklung: Entwickler-Versionen, Updates kommen täglich ' \
-              'mehrfach — nur in begründeten Fällen wählen.',
+              'mehrfach, nur in begründeten Fällen wählen.',
           en: 'Stable: only stable releases, updates ship at longer intervals. ' \
-              'Development: developer builds, updates land multiple times per day — ' \
+              'Development: developer builds, updates land multiple times per day, ' \
               'pick only for a specific reason.',
         )
       end

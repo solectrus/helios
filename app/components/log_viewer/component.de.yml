@@ -1,5 +1,5 @@
 de:
-  title: '%{name} — Protokoll'
+  title: '%{name}: Protokoll'
   connecting: 'Verbinden…'
   live: 'Live'
   disconnected: 'Getrennt'

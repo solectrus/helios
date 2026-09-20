@@ -114,8 +114,8 @@
             "default": "Invert power"
           },
           "description": {
-            "de": "Vorzeichen umkehren — z.B. wenn das Gerät Einspeisung als positiv meldet.",
-            "default": "Flip the sign — e.g. when the device reports feed-in as positive."
+            "de": "Vorzeichen umkehren, z.B. wenn das Gerät Einspeisung als positiv meldet.",
+            "default": "Flip the sign, e.g. when the device reports feed-in as positive."
           },
           "renderAs": "checkbox",
           "defaultValue": false

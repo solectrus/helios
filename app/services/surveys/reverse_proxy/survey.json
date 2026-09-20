@@ -59,8 +59,8 @@
             "default": "Domain or subdomain"
           },
           "description": {
-            "de": "z.B. solectrus.meine-domain.de — muss auf diesen Server zeigen",
-            "default": "e.g. solectrus.my-domain.com — must point to this server"
+            "de": "z.B. solectrus.meine-domain.de, muss auf diesen Server zeigen",
+            "default": "e.g. solectrus.my-domain.com, must point to this server"
           },
           "isRequired": true
         },

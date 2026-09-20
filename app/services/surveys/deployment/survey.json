@@ -29,22 +29,22 @@
             {
               "value": "full",
               "text": {
-                "de": "Dashboard, Datenbanken, Zusatzdienste und Kollektoren (empfohlen)\n\nVollständige Installation auf einem Host — Messwerte werden lokal erfasst, gespeichert und angezeigt.",
-                "default": "Dashboard, databases, supporting services and collectors (recommended)\n\nFull single-host installation — measurements are collected, stored, and displayed locally."
+                "de": "Dashboard, Datenbanken, Zusatzdienste und Kollektoren (empfohlen)\n\nVollständige Installation auf einem Host. Messwerte werden lokal erfasst, gespeichert und angezeigt.",
+                "default": "Dashboard, databases, supporting services and collectors (recommended)\n\nFull single-host installation. Measurements are collected, stored, and displayed locally."
               }
             },
             {
               "value": "collectors_only",
               "text": {
-                "de": "Nur Kollektoren — Spezialfall\n\nVerteilte Installation: Kollektoren laufen hier und pushen ihre Messwerte an eine externe InfluxDB auf einem anderen Host.",
-                "default": "Collectors only — special case\n\nDistributed setup: collectors run here and push measurements to an external InfluxDB on another host."
+                "de": "Nur Kollektoren (Spezialfall)\n\nVerteilte Installation: Kollektoren laufen hier und pushen ihre Messwerte an eine externe InfluxDB auf einem anderen Host.",
+                "default": "Collectors only (special case)\n\nDistributed setup: collectors run here and push measurements to an external InfluxDB on another host."
               }
             },
             {
               "value": "dashboard_only",
               "text": {
-                "de": "Nur Dashboard, Datenbanken und Zusatzdienste — Spezialfall\n\nVerteilte Installation: Messwerte kommen von Kollektoren auf einem anderen Host und werden hier gespeichert und angezeigt.",
-                "default": "Dashboard, databases and supporting services only — special case\n\nDistributed setup: measurements arrive from collectors on another host and are stored and displayed here."
+                "de": "Nur Dashboard, Datenbanken und Zusatzdienste (Spezialfall)\n\nVerteilte Installation: Messwerte kommen von Kollektoren auf einem anderen Host und werden hier gespeichert und angezeigt.",
+                "default": "Dashboard, databases and supporting services only (special case)\n\nDistributed setup: measurements arrive from collectors on another host and are stored and displayed here."
               }
             }
           ]

@@ -1,5 +1,5 @@
 en:
-  title: '%{name} — Logs'
+  title: '%{name}: Logs'
   connecting: 'Connecting…'
   live: 'Live'
   disconnected: 'Disconnected'

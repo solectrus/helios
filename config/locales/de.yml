@@ -478,7 +478,7 @@ de:
     resets:
       create:
         success: 'Import wurde erfolgreich zurückgesetzt.'
-        unavailable: 'Reset nicht verfügbar — keine Sicherungsdateien gefunden.'
+        unavailable: 'Reset nicht verfügbar, keine Sicherungsdateien gefunden.'
         postgresql_downgrade: 'Zurücksetzen nicht möglich, da PostgreSQL inzwischen auf eine neuere Hauptversion aktualisiert wurde.'
       destroy:
         success: 'Sicherungsdateien wurden gelöscht.'
@@ -486,7 +486,7 @@ de:
   external_input_info:
     component:
       title: 'Externe Befüllung'
-      description: 'Ein externes System schreibt Sensordaten direkt in die InfluxDB — z.B. ioBroker oder Home Assistant.'
+      description: 'Ein externes System schreibt Sensordaten direkt in die InfluxDB, z.B. ioBroker oder Home Assistant.'
       sensor_count:
         one: '%{count} Sensor verbunden'
         other: '%{count} Sensoren verbunden'

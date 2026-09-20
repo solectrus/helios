@@ -70,7 +70,7 @@ en:
     index:
       title: 'Services'
       empty_title: 'No services yet'
-      empty_description: 'SOLECTRUS is not set up yet. Choose which readings to collect in the configuration — the services needed for that will then appear here.'
+      empty_description: 'SOLECTRUS is not set up yet. Choose which readings to collect in the configuration, the services needed for that will then appear here.'
       empty_cta: 'Go to configuration'
     errors:
       blocked_by_dependency: 'Blocked: %{dependency} failed to start'
@@ -502,7 +502,7 @@ en:
     resets:
       create:
         success: 'Import was successfully reset.'
-        unavailable: 'Reset unavailable — no backup files found.'
+        unavailable: 'Reset unavailable, no backup files found.'
         postgresql_downgrade: 'Reset not possible because PostgreSQL has since been upgraded to a newer major version.'
       destroy:
         success: 'Backup files have been deleted.'
@@ -510,7 +510,7 @@ en:
   external_input_info:
     component:
       title: 'External Input'
-      description: 'An external system writes sensor data directly into InfluxDB — e.g. ioBroker or Home Assistant.'
+      description: 'An external system writes sensor data directly into InfluxDB, e.g. ioBroker or Home Assistant.'
       sensor_count:
         one: '%{count} sensor connected'
         other: '%{count} sensors connected'
