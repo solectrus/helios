@@ -417,10 +417,14 @@
 
    The root stays captured, which freezes the page behind the dialog. Drop it
    from the capture and that page renders live instead, where the status bar
-   flickers as its barber-pole animation is re-rastered. */
-::view-transition-group(root),
-::view-transition-old(root),
-::view-transition-new(root) {
+   flickers as its barber-pole animation is re-rastered.
+
+   The root group belongs to every view transition in the document, not only
+   to the survey's, so the mark survey_controller puts on <html> for the
+   length of its own ones keeps this off anybody else's. */
+html.survey-view-transition::view-transition-group(root),
+html.survey-view-transition::view-transition-old(root),
+html.survey-view-transition::view-transition-new(root) {
   animation: none;
 }
 

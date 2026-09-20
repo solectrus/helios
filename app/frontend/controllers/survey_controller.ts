@@ -92,7 +92,7 @@ export default class extends Controller<HTMLElement> {
   // The form is hidden during the resize and faded in once the box has
   // settled, so the frame grows first and the content appears second.
   private async renderSurveyAnimated() {
-    const transition = document.startViewTransition(() => {
+    const transition = startSurveyTransition(() => {
       this.containerTarget.style.opacity = '0';
       this.renderSurvey();
     });
@@ -143,7 +143,7 @@ export default class extends Controller<HTMLElement> {
       // starts from there. Turning the page outside a transition instead would
       // leave the old snapshot on screen, and the modal would flicker once the
       // browser drops that snapshot.
-      document.startViewTransition(() => {
+      startSurveyTransition(() => {
         this.applyingPageChange = true;
         try {
           sender.currentPage = options.newCurrentPage;
@@ -426,6 +426,32 @@ export default class extends Controller<HTMLElement> {
         ?.getAttribute('content') ?? ''
     );
   }
+}
+
+// Marks the document while a transition the survey started is running, so the
+// stylesheet can hold the root snapshot still for these transitions alone and
+// leave every other one to the browser (see survey.css).
+//
+// A class rather than a transition type: `types` arrived later than
+// startViewTransition itself, so a browser that has the one need not have the
+// other. Counted, because a page turn can start while the previous transition
+// still runs, and the mark has to outlive both — the pseudo-elements take
+// their style from the live document, frame by frame.
+const TRANSITION_CLASS = 'survey-view-transition';
+let openTransitions = 0;
+
+function startSurveyTransition(update: () => void) {
+  openTransitions++;
+  document.documentElement.classList.add(TRANSITION_CLASS);
+
+  const transition = document.startViewTransition(update);
+  void transition.finished.finally(() => {
+    openTransitions--;
+    if (openTransitions === 0)
+      document.documentElement.classList.remove(TRANSITION_CLASS);
+  });
+
+  return transition;
 }
 
 // Whether a question would take a value, judged by the regex rules it carries
