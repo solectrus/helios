@@ -35,6 +35,27 @@ module Export
           "webmaster@#{configuration.reverse_proxy.app_domain}"
       end
 
+      # The .env names the generated service definition reads back, as
+      # `${NAME}`. Export::Env::ReverseProxy asks before it writes one.
+      #
+      # Which names those are depends on the configuration. HELIOS puts the
+      # Let's Encrypt address straight into the command it builds, while an
+      # imported command may hold `${LETSENCRYPT_EMAIL}` instead, and an
+      # imported `volumes` may hold the certificate path where HELIOS would put
+      # `${TRAEFIK_VOLUME_PATH}`. A name the stack never reads is worse than no
+      # name: it invites a change that does nothing, and its value can say
+      # something the stack contradicts.
+      ENV_REFERENCE = /\$\{(\w+)\}/
+
+      def self.env_references(configuration)
+        new(configuration)
+          .to_h
+          .values
+          .flatten
+          .flat_map { |value| value.to_s.scan(ENV_REFERENCE).flatten }
+          .to_set
+      end
+
       # ACME resolver name the HELIOS-generated service routers
       # (dashboard/influxdb/helios) should reference in their `tls.certresolver`
       # labels. For HELIOS's own managed Traefik this is DEFAULT_CERTRESOLVER;

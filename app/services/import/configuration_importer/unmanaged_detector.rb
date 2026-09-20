@@ -1,7 +1,14 @@
 module Import
   class ConfigurationImporter
     class UnmanagedDetector # rubocop:disable Metrics/ClassLength
-      # All .env variable keys that HELIOS manages (generates in .env)
+      # All .env variable keys that HELIOS manages (generates in .env).
+      #
+      # A few are listed although HELIOS writes them no more: APP_DOMAIN, and
+      # LETSENCRYPT_EMAIL or TRAEFIK_VOLUME_PATH wherever the Traefik service
+      # carries the value itself (see Export::Env::ReverseProxy). An imported
+      # stack still holds them, and dropping them from this list would carry
+      # them over as a variable of the user's own, back into the file HELIOS
+      # writes.
       MANAGED_ENV_KEYS = %w[
         TZ INSTALLATION_DATE CURRENCY ADMIN_PASSWORD SECRET_KEY_BASE
         APP_HOST CO2_EMISSION_FACTOR

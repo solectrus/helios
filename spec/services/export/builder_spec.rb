@@ -604,14 +604,23 @@ RSpec.describe Export::Builder do
       expect(helios.environment).to include('FORCE_SSL=true')
     end
 
-    it 'includes APP_DOMAIN in .env' do
+    # The routers carry the domain in the host rule itself, and the import
+    # reads it back from there, so nothing ever read the variable.
+    it 'writes no APP_DOMAIN to .env' do
       env = Env.load
-      expect(env['APP_DOMAIN']).to eq('solar.example.com')
+      expect(env['APP_DOMAIN']).to be_nil
     end
 
-    it 'includes LETSENCRYPT_EMAIL in .env' do
-      env = Env.load
-      expect(env['LETSENCRYPT_EMAIL']).to eq('webmaster@solar.example.com')
+    # HELIOS puts the address straight into the command it builds, so a
+    # variable in .env would carry a value the stack never reads.
+    it "writes the Let's Encrypt address into the command and not to .env" do
+      compose = Compose.load
+      traefik = compose.services.find('traefik')
+
+      expect(traefik.config['command']).to include(
+        '--certificatesresolvers.letsencrypt.acme.email=webmaster@solar.example.com',
+      )
+      expect(Env.load['LETSENCRYPT_EMAIL']).to be_nil
     end
 
     it 'creates traefik data directory' do
