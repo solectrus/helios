@@ -33,8 +33,13 @@
  * 0.65 keeps the label above 3:1 against the bar (3.28:1 on the stopped
  * bar) while the enabled button reads at 7.29:1, so the button is legible
  * and still plainly inactive.
+ *
+ * Both forms, like daisyUI's own rule. The refused start on this bar is a
+ * span wearing .btn-disabled, because the hint around it needs a focusable
+ * trigger (see StatusBar::Component#blocked_start_button), and a span never
+ * matches :disabled.
  */
-#status-bar .btn-outline:disabled {
+#status-bar .btn-outline:is(:disabled, .btn-disabled) {
   color: inherit;
   border-color: currentColor;
   background-color: transparent;
