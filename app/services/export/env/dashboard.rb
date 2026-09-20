@@ -19,7 +19,11 @@ module Export
         # calls the dashboard at, while a missing one drops a rule that had
         # nothing to do anyway. The form that asks for the address refuses a
         # loopback name for the same reason.
-        optional_entry('APP_HOST', configuration.system.app_host.presence,
+        #
+        # Configuration#public_host, not app_host: behind the managed Traefik
+        # the dashboard answers on the domain, while app_host holds the address
+        # of the machine on the local network.
+        optional_entry('APP_HOST', configuration.public_host,
                        'Hostname for the SOLECTRUS web interface')
         entry('FORCE_SSL', force_ssl?,
               'Must be TRUE only when a reverse proxy terminates TLS in front of the dashboard')

@@ -59,7 +59,7 @@ module Export
       # request from, so an unset value costs nothing. A name compose passes
       # through but .env never defines would reach the container empty.
       def optional_app_host_var
-        configuration.system.app_host.present? ? %w[APP_HOST] : []
+        configuration.public_host.present? ? %w[APP_HOST] : []
       end
 
       # Variables with service-specific values (internal Docker references, remappings).

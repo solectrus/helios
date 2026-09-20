@@ -16,6 +16,28 @@ RSpec.describe Export::Env::Dashboard do
 
       expect(env).not_to include('APP_HOST')
     end
+
+    # The dashboard answers on the domain there, while app_host holds the
+    # address of the machine on the local network: it is adopted from the
+    # browser at the first start, before any domain exists.
+    it 'carries the domain of the managed Traefik instead of the machine address' do
+      with_config_yaml(
+        'system' => { 'app_host' => '192.168.1.5' },
+        'reverse_proxy' => { 'mode' => 'internal', 'app_domain' => 'demo.example.com' },
+      )
+
+      expect(env).to include('APP_HOST=demo.example.com')
+      expect(env).not_to include('APP_HOST=192.168.1.5')
+    end
+
+    it 'carries the domain an external proxy routes' do
+      with_config_yaml(
+        'system' => { 'app_host' => 'solar.example.com' },
+        'reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' },
+      )
+
+      expect(env).to include('APP_HOST=solar.example.com')
+    end
   end
 
   # FORCE_SSL tells the dashboard that TLS ends in front of it: it then sets

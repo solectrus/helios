@@ -838,6 +838,23 @@ class Configuration # rubocop:disable Metrics/ClassLength
       BORROWED_FIELDS.dig(setting, 'app_host').present?
   end
 
+  # The address the dashboard answers on from outside, which is the one thing
+  # the dashboard needs APP_HOST for: the CORS origin it accepts a request
+  # from.
+  #
+  # Behind the managed Traefik that address is the domain Traefik answers on.
+  # app_host cannot serve there. It is adopted from the browser at the first
+  # start, before any domain exists, so it holds the address of the machine on
+  # the local network, and the dashboard answers on that address nowhere.
+  #
+  # In every other mode app_host is the address itself: the domain an external
+  # proxy routes, or the address of the machine where no proxy runs.
+  def public_host
+    return reverse_proxy.app_domain.presence if reverse_proxy_managed?
+
+    system.app_host.presence
+  end
+
   # --- Deployment mode ---
 
   def mode

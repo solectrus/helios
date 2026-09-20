@@ -1629,6 +1629,44 @@ RSpec.describe Configuration do
     end
   end
 
+  describe '#public_host' do
+    subject(:public_host) { described_class.current.public_host }
+
+    it 'is the configured address' do
+      with_config_yaml('system' => { 'app_host' => 'solar.example.com' })
+
+      expect(public_host).to eq('solar.example.com')
+    end
+
+    it 'is nil while no address is configured' do
+      with_config_yaml
+
+      expect(public_host).to be_nil
+    end
+
+    # The dashboard answers on the domain there. app_host holds the address of
+    # the machine on the local network, because it is adopted at the first
+    # start, before any domain exists.
+    it 'is the domain of the managed Traefik' do
+      with_config_yaml(
+        'system' => { 'app_host' => '192.168.1.5' },
+        'reverse_proxy' => { 'mode' => 'internal', 'app_domain' => 'demo.example.com' },
+      )
+
+      expect(public_host).to eq('demo.example.com')
+    end
+
+    # There app_host is the domain itself, and app_domain stays empty.
+    it 'is the address behind an external reverse proxy' do
+      with_config_yaml(
+        'system' => { 'app_host' => 'solar.example.com' },
+        'reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' },
+      )
+
+      expect(public_host).to eq('solar.example.com')
+    end
+  end
+
   describe '#ingest_required?' do
     def ingest_required_for?(data)
       with_config_yaml(data)
