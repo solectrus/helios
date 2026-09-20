@@ -1,6 +1,23 @@
 RSpec.describe Export::Env::Dashboard do
   subject(:env) { Export::Env.new(Configuration.current).to_s }
 
+  # The dashboard reads APP_HOST with `.presence` and uses it for the CORS
+  # origin alone, so a missing value costs nothing. A guessed one would allow
+  # an origin nobody calls the dashboard at.
+  describe 'APP_HOST' do
+    it 'carries the configured address' do
+      with_config_yaml('system' => { 'app_host' => 'solar.example.com' })
+
+      expect(env).to include('APP_HOST=solar.example.com')
+    end
+
+    it 'is left out entirely when no address is configured' do
+      with_config_yaml
+
+      expect(env).not_to include('APP_HOST')
+    end
+  end
+
   # FORCE_SSL tells the dashboard that TLS ends in front of it: it then sets
   # secure cookies and emits https URLs. Without it, a login through a
   # TLS-terminating proxy fails (issue #416).

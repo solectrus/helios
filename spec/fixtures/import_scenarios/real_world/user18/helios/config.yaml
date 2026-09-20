@@ -6,10 +6,9 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 5
+_schema_version: 6
 system:
   admin_password: CCCCC
-  app_host: localhost
   installation_date: '2022-01-01'
   secret_key_base: AAAAA
 dashboard:

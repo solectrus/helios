@@ -19,11 +19,19 @@ module Import
       # runtime. Some users paste a full URL (`http://solar.example.com`)
       # into .env — strip the scheme so config.yaml stays clean and the
       # dashboard's URL construction doesn't end up with a double prefix.
+      #
+      # A loopback address is dropped, the same way
+      # ConfigurationMigrations::ClearLoopbackAppHost drops one an earlier
+      # HELIOS stored: it names the machine to itself alone, the field refuses
+      # it, and an imported stack would carry a value its own form rejects.
+      # `section_data` compacts the nil away, so the field stays empty and
+      # every caller names the published port instead.
       def normalized_app_host
         value = service_env('dashboard')['APP_HOST']
         return value if value.blank?
 
-        value.sub(%r{\Ahttps?://}, '')
+        host = value.sub(%r{\Ahttps?://}, '')
+        host unless Loopback.host?(host)
       end
 
       def core_data

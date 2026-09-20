@@ -54,6 +54,14 @@ RSpec.describe 'Import::ConfigurationImporter app_host handling' do
     end
   end
 
+  context 'when APP_HOST names the machine to itself alone' do
+    let(:dashboard_env) { { 'APP_HOST' => 'http://LOCALHOST' } }
+
+    it 'drops it, so the imported stack carries no address its own form refuses' do
+      expect(importer.result[:system]).not_to have_key('app_host')
+    end
+  end
+
   context 'when APP_HOST is missing entirely' do
     let(:dashboard_env) { {} }
 

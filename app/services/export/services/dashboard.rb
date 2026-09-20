@@ -47,10 +47,19 @@ module Export
 
       # Variables passed through from .env (name only)
       def passthrough_vars
-        %w[
-          TZ INSTALLATION_DATE CURRENCY INFLUX_ORG INFLUX_BUCKET SECRET_KEY_BASE ADMIN_PASSWORD
-          APP_HOST FORCE_SSL WEB_CONCURRENCY
-        ]
+        %w[TZ INSTALLATION_DATE CURRENCY INFLUX_ORG INFLUX_BUCKET SECRET_KEY_BASE ADMIN_PASSWORD] +
+          optional_app_host_var +
+          %w[FORCE_SSL WEB_CONCURRENCY]
+      end
+
+      # Dropped when the configuration names no address, which it may: the
+      # field is not required, and it stays empty wherever HELIOS is only ever
+      # reached at a loopback address. The dashboard reads APP_HOST with
+      # `.presence` and uses it for one thing, the CORS origin it accepts a
+      # request from, so an unset value costs nothing. A name compose passes
+      # through but .env never defines would reach the container empty.
+      def optional_app_host_var
+        configuration.system.app_host.present? ? %w[APP_HOST] : []
       end
 
       # Variables with service-specific values (internal Docker references, remappings).

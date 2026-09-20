@@ -30,7 +30,6 @@ services:
     environment:
     - TZ
     - ADMIN_PASSWORD
-    - APP_HOST
     - CURRENCY
     - DB_HOST=postgresql
     - DB_PASSWORD=${POSTGRES_PASSWORD}

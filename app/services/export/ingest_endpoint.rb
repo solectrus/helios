@@ -10,9 +10,9 @@ module Export
   # port is the address in every mode but that one.
   #
   # Returns nil when nothing in the configuration names the machine: app_host is
-  # required in its own form but in no completeness check, and an imported stack
-  # without APP_HOST keeps it empty. A caller then names the port alone instead
-  # of showing an address with a placeholder in it.
+  # required nowhere, and it stays empty wherever HELIOS is only ever reached at
+  # a loopback address, which the field refuses. A caller then names the port
+  # alone instead of showing an address with a placeholder in it.
   class IngestEndpoint
     PORT = Services::Ingest::PORT
 

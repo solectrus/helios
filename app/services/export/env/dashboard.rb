@@ -3,8 +3,24 @@ module Export
     class Dashboard < Section
       def call
         env.add_section('Dashboard')
-        entry('APP_HOST', configuration.system.app_host.presence || 'localhost',
-              'Hostname for the SOLECTRUS web interface')
+        # Omitted rather than filled in when the address is unknown. The
+        # dashboard reads the value with `.presence` and uses it for one thing,
+        # the CORS origin it accepts a request from.
+        #
+        # That rule is narrower than it looks. Rack::Cors compiles a bare
+        # hostname into `^[a-z][a-z0-9.+-]*://<host>$`, which carries no port,
+        # so the origin matches only a dashboard served on 80 or 443, meaning
+        # one behind a reverse proxy. A loopback name therefore never matches:
+        # the dashboard carries a host port of its own there, and even on 80
+        # the rule would allow the page the origin it is already served from,
+        # which no same-origin request consults.
+        #
+        # So a guessed name is worse than none. It allows an origin nobody
+        # calls the dashboard at, while a missing one drops a rule that had
+        # nothing to do anyway. The form that asks for the address refuses a
+        # loopback name for the same reason.
+        optional_entry('APP_HOST', configuration.system.app_host.presence,
+                       'Hostname for the SOLECTRUS web interface')
         entry('FORCE_SSL', force_ssl?,
               'Must be TRUE only when a reverse proxy terminates TLS in front of the dashboard')
         entry('WEB_CONCURRENCY', 0,

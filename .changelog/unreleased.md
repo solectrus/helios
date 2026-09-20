@@ -31,7 +31,7 @@ Keep every section, an empty one included.
 
 - Configuration forms: a form with several screens now turns a page without flicker, also on quick clicks
 - Navigation: a link that leads to another tab now moves the mark in the main navigation with it
-- Address of the machine: a loopback address such as localhost is now refused while it is typed, because every link derived from it sends a device back to itself. The field can stay empty instead, and the published port is then used
+- Address of the machine: a loopback address such as localhost is now refused while it is typed, because every link derived from it sends a device back to itself. An address of that kind is dropped on update, and dropped from an imported installation as well. The generated files no longer fall back to localhost either. The field can stay empty, and the published port is then used
 - Backup to S3: a backup or a restore that fails now reports the reason, for example a rejected access key or a bucket that cannot be reached
 - Backup, restore and CSV import: the preparation no longer fails when a service is renewed at the same moment
 
