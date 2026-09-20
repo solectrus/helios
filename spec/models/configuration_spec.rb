@@ -1389,6 +1389,56 @@ RSpec.describe Configuration do
       with_config_yaml('deployment' => { 'mode' => ConfigSchema::MODE_COLLECTORS_ONLY })
       expect(described_class.current.required_settings).to eq(%w[influxdb])
     end
+
+    # The address is never among them, not even behind an external reverse
+    # proxy, where it holds the domain that proxy routes. The form that chooses
+    # that mode asks for it, so a start is never held up by a screen the reader
+    # was never sent to.
+    it 'asks for no address behind an external reverse proxy' do
+      with_config_yaml('reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' })
+      expect(described_class.current.required_settings).to eq(%w[system_general])
+    end
+
+    # A managed Traefik asks for its domain in app_domain, its own field.
+    it 'does not ask for the address behind a managed reverse proxy' do
+      with_config_yaml('reverse_proxy' => { 'app_domain' => 'solectrus.example.com' })
+      expect(described_class.current.required_settings).to eq(%w[system_general])
+    end
+  end
+
+  # Behind an external reverse proxy the address is the domain that proxy
+  # routes, so the reverse-proxy form asks for it. It stays in the `system`
+  # section either way, so both forms name the same machine.
+  describe 'app_host through the reverse-proxy survey' do
+    before do
+      with_config_yaml(
+        'reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' },
+        'system' => { 'app_host' => 'solectrus.example.de' },
+      )
+    end
+
+    it 'prefills the form from the system section' do
+      expect(described_class.current.setting_data('reverse_proxy').app_host).to eq('solectrus.example.de')
+    end
+
+    it 'writes an answer back into the system section, normalized' do
+      described_class.current.update(
+        'reverse_proxy',
+        { 'mode' => 'external', 'bind_ip' => '10.0.0.5', 'app_host' => 'https://Neu.Example.de:443/' },
+      )
+      config = described_class.current
+
+      expect(config.system.app_host).to eq('neu.example.de')
+      expect(config.reverse_proxy.app_host).to be_nil
+    end
+
+    # The field drops out of the payload with the page it sits on, and the
+    # address on the local network is none of that form's business.
+    it 'keeps the address when the payload carries none' do
+      described_class.current.update('reverse_proxy', { 'mode' => 'none' })
+
+      expect(described_class.current.system.app_host).to eq('solectrus.example.de')
+    end
   end
 
   describe '#incomplete_datasources?' do
@@ -1536,6 +1586,24 @@ RSpec.describe Configuration do
 
     it 'refuses a blank host' do
       expect(described_class.current.adopt_request_host!(nil)).to be false
+    end
+
+    # There the field holds the domain the external proxy routes. The address
+    # bar names neither way HELIOS is reached: directly it carries the host
+    # address, through the proxy the subdomain HELIOS runs on. The field is
+    # required in that mode, so a guess would settle the requirement wrongly.
+    it 'adopts nothing behind an external reverse proxy' do
+      with_config_yaml('reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' })
+
+      expect(described_class.current.adopt_request_host!('solectrus.fritz.box')).to be false
+      expect(described_class.current.system.app_host).to be_blank
+    end
+
+    it 'adopts behind a managed reverse proxy' do
+      with_config_yaml('reverse_proxy' => { 'app_domain' => 'solectrus.example.com' })
+      described_class.current.adopt_request_host!('solectrus.fritz.box')
+
+      expect(described_class.current.system.app_host).to eq('solectrus.fritz.box')
     end
   end
 

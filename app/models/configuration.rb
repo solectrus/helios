@@ -43,7 +43,14 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # their `dashboard` keys.
   BORROWED_FIELDS = {
     'system_security' => { 'lockup_codeword' => 'dashboard' },
-    'reverse_proxy' => { 'trusted_proxy_ranges' => 'dashboard', 'force_ssl' => 'dashboard' },
+    # app_host is the address SOLECTRUS is reached at and stays in `system`
+    # wherever it is asked for. Behind an external reverse proxy that address is
+    # the domain the proxy routes, and nothing else supplies it, so the form
+    # that chooses the mode asks for it there instead of sending the reader to
+    # another screen for the one answer that mode needs.
+    'reverse_proxy' => {
+      'app_host' => 'system', 'trusted_proxy_ranges' => 'dashboard', 'force_ssl' => 'dashboard'
+    },
     # The prices survey configures two services at once: the Tibber collector
     # (its own section) plus, where the preconditions hold, the SENEC charger
     # that consumes the prices. The charger's tuning is routed into its own
@@ -803,8 +810,17 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # A loopback name is skipped: it only names the machine to itself, so it
   # would send another machine to itself. The field then stays empty, and
   # every caller falls back to the port alone.
+  #
+  # Behind an external reverse proxy nothing is adopted at all. The field
+  # holds the domain that proxy routes, and the address bar names neither of
+  # the two ways HELIOS is reached there: directly, it carries the host
+  # address, and through the proxy it carries the subdomain HELIOS itself
+  # runs on, which Export::TraefikConfig would then extend by another one. The
+  # form that chooses that mode asks for the domain itself (see
+  # BORROWED_FIELDS), so a guess would answer a question already asked, with
+  # the one value it must not hold.
   def adopt_request_host!(host)
-    return false if system.app_host.present?
+    return false if system.app_host.present? || reverse_proxy_external?
     return false if host.blank? || HostAddress.loopback?(host)
 
     update('system_network', { 'app_host' => host })

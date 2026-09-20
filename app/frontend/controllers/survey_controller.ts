@@ -117,6 +117,11 @@ export default class extends Controller<HTMLElement> {
     ]);
     if (!this.element.isConnected) return;
 
+    // Read and remove before the model is built, so the marker never reaches
+    // SurveyJS as a property it does not know.
+    const offerBrowserHost = surveyJson.offerBrowserHost === true;
+    delete surveyJson.offerBrowserHost;
+
     this.survey = new Model(surveyJson);
     this.survey.applyTheme(theme);
 
@@ -171,15 +176,24 @@ export default class extends Controller<HTMLElement> {
     }
 
     // Auto-fill app_host from the browser's address bar if not already set.
-    // The field refuses an address that names the machine to itself alone
+    // Only where the survey asks for it: two surveys carry the field, and the
+    // address bar answers one of the two questions. The network settings ask
+    // for the address of this machine, which is what the bar holds. The
+    // reverse-proxy settings ask for the domain an external proxy routes, and
+    // the bar names that domain nowhere, so an offer there would fill a
+    // required field with the one value it must not hold.
+    //
+    // The field also refuses an address that names the machine to itself alone
     // (see Surveys::SystemNetwork::Survey), and the address bar carries such a
     // name whenever HELIOS is reached at one. Its rule is asked beforehand:
     // filling the field and validating afterwards would mark a value the user
     // never typed as an error.
-    const appHost = this.survey.getQuestionByName('app_host');
-    const browserHost = window.location.hostname;
-    if (appHost && !appHost.value && accepts(appHost, browserHost)) {
-      appHost.value = browserHost;
+    if (offerBrowserHost) {
+      const appHost = this.survey.getQuestionByName('app_host');
+      const browserHost = window.location.hostname;
+      if (appHost && !appHost.value && accepts(appHost, browserHost)) {
+        appHost.value = browserHost;
+      }
     }
 
     // Handle survey completing (fires before DOM changes)

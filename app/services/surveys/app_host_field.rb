@@ -1,10 +1,14 @@
 module Surveys
-  # The field that takes the address SOLECTRUS is reached at.
+  # The field that takes the address SOLECTRUS is reached at. Two surveys ask
+  # for it, because the address means a different thing in each: the network
+  # settings ask for the address on the local network, the reverse-proxy
+  # settings ask for the domain an external proxy routes. One field behind
+  # both, so the two can never name the machine differently.
   #
-  # The address has to name the machine to others, so the field refuses the
-  # address that names it to itself. The rule lives in HostAddress, the field
-  # validates it while it is typed, and the controller refuses it again for a
-  # request that bypasses the form.
+  # Whatever the question, the answer has to name the machine to others, so
+  # both refuse the address that names it to itself. The rule lives in
+  # HostAddress, the field validates it while it is typed, and the controller
+  # refuses it again for a request that bypasses the form.
   module AppHostField
     private
 

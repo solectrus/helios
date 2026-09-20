@@ -27,6 +27,7 @@ Keep every section, an empty one included.
 - Services: a start that cannot run now stays visible and names what blocks it, in the status bar and on every service
 - Buttons: one that cannot be used no longer shows the hand cursor
 - Generated for Traefik: the header now explains every placeholder the file carries
+- Custom domain: the form that selects an external reverse proxy now asks for the domain that proxy routes. The file generated for Traefik carries that domain at once, in place of a placeholder
 
 ## Fixes
 

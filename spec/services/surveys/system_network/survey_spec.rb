@@ -18,5 +18,20 @@ RSpec.describe Surveys::SystemNetwork::Survey do
       expect(validator).to include('type' => 'regex', 'caseInsensitive' => true)
       expect(validator['regex']).to eq(HostAddress::SURVEY_PATTERN)
     end
+
+    # This form asks for the address of this machine, which is what the address
+    # bar of the browser holds, so the field may be offered that address.
+    it 'lets the browser offer the address it was reached at' do
+      expect(result).to include('offerBrowserHost' => true)
+    end
+
+    # Behind an external reverse proxy the address is the domain that proxy
+    # routes, and the form choosing that mode asks for it there. This screen
+    # keeps asking the same question it always did, and keeps taking no answer.
+    it 'demands no answer behind an external reverse proxy either' do
+      with_config_yaml('reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' })
+
+      expect(find_survey_element(result, 'app_host')).not_to have_key('isRequired')
+    end
   end
 end

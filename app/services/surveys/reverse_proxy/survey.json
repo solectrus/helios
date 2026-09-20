@@ -93,6 +93,19 @@
         },
         {
           "type": "text",
+          "name": "app_host",
+          "title": {
+            "de": "Domain, die der Proxy weiterleitet",
+            "default": "Domain the proxy routes"
+          },
+          "description": {
+            "de": "z.B. solectrus.meine-domain.de. Die übrigen Dienste bekommen Subdomains davon.",
+            "default": "e.g. solectrus.my-domain.com. The other services get subdomains of it."
+          },
+          "isRequired": true
+        },
+        {
+          "type": "text",
           "name": "bind_ip",
           "title": {
             "de": "Host-IP für die veröffentlichten Ports (optional)",
