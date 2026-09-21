@@ -1,0 +1,49 @@
+# A rented virtual machine, reached under its own domain. Nothing of the
+# stack sits on a home network: the SENEC is read from its cloud, a managed
+# Traefik answers the domain, and the backup goes to S3 storage. The browser
+# first opens HELIOS at the bare address of the machine.
+browser_host: 203.0.113.10
+
+answers:
+  # Picking SENEC for one sensor enables every other sensor the collector
+  # delivers (Configuration#auto_enable_senec_sensors!).
+  - setting: sensor
+    name: inverter_power
+    answers:
+      source: senec
+
+  # A SENEC.Home 4 has no local access, so the screen never asks for the
+  # access type and sets it to cloud itself. No host and no password for the
+  # device either: the collector signs in to the SENEC account. The interval
+  # follows from the model, so the answers leave it to the survey (60s).
+  - setting: senec
+    answers:
+      version: v4
+      username: dummy@example.com
+      password: dummy-senec-cloud-password
+
+  # The domain replaces the address HELIOS adopted from the browser on the
+  # first save. Traefik obtains the certificate for it.
+  - setting: reverse_proxy
+    answers:
+      mode: internal
+      app_host: solectrus.example.com
+      letsencrypt_email: dummy@example.com
+
+  - setting: backup
+    answers:
+      destination: s3
+      aws_access_key_id: DUMMYACCESSKEYID
+      aws_secret_access_key: dummy-secret-access-key
+      s3_endpoint_url: https://s3.example.com
+      aws_region: eu-central-1
+      aws_bucket: dummy-backup-bucket
+
+  - setting: backup_schedule
+    answers:
+      schedule_enabled: true
+
+  - setting: system_general
+    answers:
+      installation_date: '2025-04-01'
+      currency_preset: EUR
