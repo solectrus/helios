@@ -424,6 +424,54 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(response.body).to include('&quot;mode&quot;:&quot;external&quot;')
     end
 
+    # The port the dashboard is published on is asked for on the address form
+    # and stored in the `dashboard` section it has always lived in.
+    it 'stores the dashboard host port for mode none' do
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'none', app_host: '192.168.1.5', host_port: '3010' }.to_json }
+
+      config = Configuration.current
+      expect(config.dashboard.host_port).to eq('3010')
+      expect(config.reverse_proxy.host_port).to be_blank
+    end
+
+    # A port already taken on the host stays taken while a proxy routes the
+    # dashboard, so the modes that publish no port leave the answer alone
+    # instead of clearing it the way they clear the fields a proxy owns.
+    it 'keeps the host port through a mode that publishes none' do
+      Configuration.current.update('dashboard', { 'host_port' => '3010' })
+
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'internal', app_host: 'demo.example.com' }.to_json }
+
+      expect(Configuration.current.dashboard.host_port).to eq('3010')
+    end
+
+    it 'keeps the host port for an external proxy on a shared network' do
+      Configuration.current.update('dashboard', { 'host_port' => '3010' })
+
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'external', app_host: 'solar.example.com',
+                             proxy_network: 'edge' }.to_json }
+
+      expect(Configuration.current.dashboard.host_port).to eq('3010')
+    end
+
+    # The modes that do publish the port own the answer, an emptied one
+    # included: the export then falls back to 3000.
+    it 'clears the host port when the answer is emptied' do
+      Configuration.current.update('dashboard', { 'host_port' => '3010' })
+
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'none', app_host: '192.168.1.5', host_port: '' }.to_json }
+
+      expect(Configuration.current.dashboard.host_port).to be_blank
+    end
+
     # FORCE_SSL is a dashboard variable, so the survey borrows the field into
     # the `dashboard` section (issue #416).
     it 'stores force_ssl for the external mode' do

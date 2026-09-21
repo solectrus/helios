@@ -1487,7 +1487,7 @@ RSpec.describe Configuration do
       with_config_yaml('senec' => { 'adapter' => 'local' })
       expect(described_class.current.optional_groups).to eq(
         'installation' => %w[deployment software],
-        'access' => %w[reverse_proxy influxdb dashboard_network system_security],
+        'access' => %w[reverse_proxy influxdb system_security],
         'data' => %w[storage],
         'energy_management' => %w[tibber],
         'dashboard' => %w[dashboard_co2 dashboard_theme],

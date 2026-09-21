@@ -5,12 +5,12 @@
     "default": "Access protection"
   },
   "description": {
-    "de": "Admin-Passwort und Zugangscode für die Weboberfläche",
-    "default": "Admin password and access code for the web interface"
+    "de": "Anmeldung, Codewort-Sperre und Einbettung des Dashboards",
+    "default": "Sign-in, codeword lock and embedding of the dashboard"
   },
   "pages": [
     {
-      "name": "p_security",
+      "name": "p_admin",
       "elements": [
         {
           "type": "text",
@@ -20,24 +20,46 @@
             "default": "Administrator password"
           },
           "description": {
-            "de": "Nur der Admin kann Einstellungen und Strompreise bearbeiten.",
-            "default": "Only the admin can edit settings and electricity prices."
+            "de": "Passwort für die Anmeldung am Dashboard. Ohne Anmeldung lassen sich die Werte nur ansehen, Einstellungen und Strompreise ändert allein der Admin.",
+            "default": "Password for signing in to the dashboard. Without a sign-in the values can only be viewed. Settings and electricity prices are for the admin alone."
           },
           "isRequired": true,
           "inputType": "password"
-        },
+        }
+      ]
+    },
+    {
+      "name": "p_lockup",
+      "elements": [
         {
           "type": "text",
           "name": "lockup_codeword",
           "title": {
-            "de": "Zugangscode für die Weboberfläche (optional)",
-            "default": "Access code for the web interface (optional)"
+            "de": "Zugangscode für das Dashboard (optional)",
+            "default": "Access code for the dashboard (optional)"
           },
           "description": {
-            "de": "Sperrt die gesamte Weboberfläche mit einem Codewort. Leer lassen, wenn kein zusätzlicher Schutz nötig ist.",
-            "default": "Locks the entire web interface with a codeword. Leave empty if no additional protection is needed."
+            "de": "Ohne Codewort sieht jeder, der die Adresse erreicht, die Werte, auch Gäste im eigenen Netzwerk. Mit Codewort fragt das Dashboard zuerst danach und zeigt vorher nichts an. Dasselbe Codewort für alle Besucher, zusätzlich zum Administrator-Passwort.",
+            "default": "Without a codeword everyone who reaches the address sees the values, guests on the home network included. With a codeword the dashboard asks for it first and shows nothing before. The same codeword for every visitor, on top of the administrator password."
           },
           "inputType": "password"
+        }
+      ]
+    },
+    {
+      "name": "p_embedding",
+      "elements": [
+        {
+          "type": "text",
+          "name": "frame_ancestors",
+          "title": {
+            "de": "Einbettung in andere Webseiten erlauben (optional)",
+            "default": "Allow embedding into other websites (optional)"
+          },
+          "description": {
+            "de": "Nötig, wenn das Dashboard in einer anderen Webseite erscheinen soll, etwa in einem Smart-Home-Panel. Ohne Eintrag lehnt der Browser jede Einbettung ab. Mehrere Adressen durch Komma trennen, z.B. https://example.com",
+            "default": "Needed when the dashboard has to appear inside another website, for example in a smart home panel. Without an entry the browser refuses every embedding. Separate several addresses with a comma, for example https://example.com"
+          }
         }
       ]
     }

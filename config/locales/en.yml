@@ -462,7 +462,7 @@ en:
         description: 'Commissioning date, timezone and currency'
       system_security:
         title: 'Access protection'
-        description: 'Admin password and access code for the web interface'
+        description: 'Admin password, access code and permitted embedding into other websites'
       software:
         title: 'Release channel'
         description: 'Stable or develop per service, plus when to check for updates'
@@ -472,9 +472,6 @@ en:
       dashboard_theme:
         title: 'Color theme'
         description: 'Light or dark color theme for the dashboard'
-      dashboard_network:
-        title: 'Network'
-        description: 'Host port and embedding into other websites'
       reverse_proxy:
         title: 'Address & domain'
         description: 'The address SOLECTRUS is reachable at, optionally via a custom domain with HTTPS'

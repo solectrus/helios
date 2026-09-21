@@ -51,6 +51,18 @@ RSpec.describe Surveys::ReverseProxy::Survey do
       expect(find_survey_element(result, 'app_host')['requiredIf']).to eq("{mode} <> 'none'")
     end
 
+    # The dashboard publishes a host port in two of the three modes: a proxy
+    # that routes it reaches it by name and leaves the port unpublished (see
+    # Export::Services::Dashboard). The question follows that, so nobody is
+    # asked for a port nothing binds.
+    it 'asks for the dashboard port in the modes that publish one' do
+      element = find_survey_element(result, 'host_port')
+
+      expect(element['visibleIf'])
+        .to eq("{mode} = 'none' or ({mode} = 'external' and {proxy_transport} = 'ports')")
+      expect(element).to include('defaultValue' => '3000', 'inputType' => 'number')
+    end
+
     it 'refuses an address that names the machine to itself' do
       validator = find_survey_element(result, 'app_host')['validators'].first
 
@@ -109,12 +121,20 @@ RSpec.describe Surveys::ReverseProxy::Survey do
     # Configurations::SettingsController#inject_reverse_proxy_ui_state!).
     let(:ui_only_fields) { %w[mode proxy_transport] }
 
+    # The port the dashboard is published on belongs to the host, not to a
+    # mode, so no row of the table names it and a mode that hides it keeps the
+    # stored value (see SettingPersistence#carry_host_port!). Its own rule is
+    # held to the export by the example below.
+    let(:mode_independent_fields) { %w[host_port] }
+
     # The answers the form stores: the html blocks around them explain, they
     # carry no value.
     def visible_fields(mode)
+      skipped = ui_only_fields + mode_independent_fields
+
       Array(survey['pages'])
         .flat_map { |page| Array(page['elements']) }
-        .reject { |element| element['type'] == 'html' || ui_only_fields.include?(element['name']) }
+        .reject { |element| element['type'] == 'html' || skipped.include?(element['name']) }
         .select { |element| visible_in?(element, mode) }
         .pluck('name')
     end

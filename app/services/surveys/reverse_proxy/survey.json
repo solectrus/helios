@@ -150,6 +150,23 @@
         },
         {
           "type": "text",
+          "name": "host_port",
+          "visibleIf": "{mode} = 'none' or ({mode} = 'external' and {proxy_transport} = 'ports')",
+          "title": {
+            "de": "Port des Dashboards",
+            "default": "Port of the dashboard"
+          },
+          "description": {
+            "de": "Port auf dem Host, unter dem das Dashboard erreichbar ist. Nur ändern, wenn 3000 bereits belegt ist.",
+            "default": "Port on the host the dashboard is reachable at. Only change it if 3000 is already in use."
+          },
+          "defaultValue": "3000",
+          "inputType": "number",
+          "min": 1,
+          "max": 65535
+        },
+        {
+          "type": "text",
           "name": "proxy_network",
           "visibleIf": "{mode} = 'external' and {proxy_transport} = 'network'",
           "requiredIf": "{mode} = 'external' and {proxy_transport} = 'network'",

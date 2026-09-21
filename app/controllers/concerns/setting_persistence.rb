@@ -110,7 +110,8 @@ module SettingPersistence
   # reaches a field the payload names, so all three are named here, the empty
   # ones included. survey-core drops a cleared field from the payload, and this
   # form owns all three, so an answer it does not carry is one the user
-  # cleared.
+  # cleared. host_port is borrowed as well but belongs to no mode, so it is
+  # handled on its own (see #carry_host_port!).
   def persist_reverse_proxy(data)
     mode = reverse_proxy_mode(data)
     owned = REVERSE_PROXY_MODE_FIELDS.fetch(mode)
@@ -119,10 +120,29 @@ module SettingPersistence
     payload = data.slice(*owned).compact_blank.reverse_merge(borrowed.index_with(nil))
     payload['mode'] = mode if owned.include?('mode')
     drop_unused_transport!(payload)
+    carry_host_port!(payload, data, mode)
     preserve_adopted_network!(payload) unless mode == 'external'
     preserve_adopted_traefik!(payload) if mode == 'internal'
 
     @configuration.update('reverse_proxy', payload)
+  end
+
+  # The port the dashboard is published on describes the host, not the proxy in
+  # front of it: a port already taken on that machine stays taken when the
+  # routing changes. So the field is not one a mode owns. A mode that publishes
+  # no port (see Export::Services::Dashboard) hides the question and leaves the
+  # stored answer alone, and the modes that do publish one take the answer of
+  # the form, a cleared one included.
+  #
+  # The call sits before #preserve_adopted_network!, so the network name in the
+  # payload is still the one the external mode asked for rather than one
+  # carried over from another mode.
+  def carry_host_port!(payload, data, mode)
+    if mode != 'internal' && payload['proxy_network'].blank?
+      payload['host_port'] = data['host_port'].presence
+    else
+      payload.delete('host_port')
+    end
   end
 
   # A network the stack was adopted on, kept across a save that never asked

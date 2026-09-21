@@ -8,7 +8,6 @@ module SettingSection
       'system_security' => 'fa-key',
       'dashboard_co2' => 'fa-leaf',
       'dashboard_theme' => 'fa-palette',
-      'dashboard_network' => 'fa-globe',
       'reverse_proxy' => 'fa-network-wired',
       'backup' => 'fa-cloud-arrow-up',
       'senec' => 'fa-bolt',

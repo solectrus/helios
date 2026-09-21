@@ -36,6 +36,7 @@ Keep every section, an empty one included.
 - Generated for Traefik: the header now explains every placeholder the file carries
 - Settings: the Host card and the Custom Domain card are now one card, named Address & Domain. The address is entered once, and the form says what it stands for: the machine on the local network, the domain the built-in Traefik answers on, or the domain an external reverse proxy routes
 - Settings: a field now explains itself in the mode that is running. Making InfluxDB reachable names the address it leads to, the host port of the dashboard says when it has no effect, and the IP ranges of a proxy say when they are needed
+- Settings: the card Network is gone, and its two questions moved to the cards they belong to. The port of the dashboard is asked under Address & Domain, and only in the modes that publish one. The permission to embed the interface into another website is asked under Access protection
 
 ## Fixes
 

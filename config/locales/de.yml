@@ -438,7 +438,7 @@ de:
         description: 'Inbetriebnahme, Zeitzone und Währung'
       system_security:
         title: 'Zugriffsschutz'
-        description: 'Admin-Passwort und Zugangscode für die Weboberfläche'
+        description: 'Admin-Passwort, Zugangscode und erlaubte Einbettung in andere Webseiten'
       software:
         title: 'Software-Stand'
         description: 'Stable oder Develop pro Dienst, dazu der Zeitpunkt der Update-Prüfung'
@@ -448,9 +448,6 @@ de:
       dashboard_theme:
         title: 'Farbschema'
         description: 'Helles oder dunkles Farbschema für das Dashboard'
-      dashboard_network:
-        title: 'Netzwerk'
-        description: 'Host-Port und Einbettung in andere Webseiten'
       reverse_proxy:
         title: 'Adresse & Domain'
         description: 'Unter welcher Adresse SOLECTRUS erreichbar ist, auf Wunsch über eine eigene Domain mit HTTPS'

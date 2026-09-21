@@ -25,7 +25,6 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'system_security' => { singleton: 'system', keys: %w[admin_password] },
     'dashboard_co2' => { singleton: 'dashboard', keys: %w[co2_emission_factor] },
     'dashboard_theme' => { singleton: 'dashboard', keys: %w[ui_theme] },
-    'dashboard_network' => { singleton: 'dashboard', keys: %w[frame_ancestors host_port] },
     'ingest_settings' => { singleton: 'ingest', keys: %w[active retention_hours] },
   }.freeze
 
@@ -35,21 +34,29 @@ class Configuration # rubocop:disable Metrics/ClassLength
   SENEC_CHARGER_SURVEY_FIELDS = (ConfigSchema::SENEC_CHARGER_FIELDS - %w[image]).freeze
 
   # Survey fields persisted in a section other than the survey's own.
-  # lockup_codeword, trusted_proxy_ranges and force_ssl are Dashboard
-  # environment variables and keep living in the `dashboard` section, but
-  # surface in the security and reverse-proxy surveys for UX grouping.
-  # `#setting_data` merges them in for prefill; `#update` writes them back to
-  # their `dashboard` keys.
+  # lockup_codeword, frame_ancestors, trusted_proxy_ranges, force_ssl and
+  # host_port are Dashboard environment variables or compose settings and keep
+  # living in the `dashboard` section, but surface in the security and
+  # reverse-proxy surveys for UX grouping. `#setting_data` merges them in for
+  # prefill; `#update` writes them back to their `dashboard` keys.
   BORROWED_FIELDS = {
-    'system_security' => { 'lockup_codeword' => 'dashboard' },
+    # frame_ancestors names the site allowed to embed the dashboard, which is
+    # a question about who may reach the interface, so it is asked next to the
+    # passwords rather than on a network form of its own.
+    'system_security' => { 'lockup_codeword' => 'dashboard', 'frame_ancestors' => 'dashboard' },
     # app_host is the address SOLECTRUS is reached at, and it belongs to the
     # installation rather than to the proxy in front of it, so it stays in
     # `system`. The reverse-proxy form asks for it because that form already
     # poses the question: with a managed Traefik the address is the domain
     # Traefik answers on, behind an external proxy the domain that proxy
     # routes, and without either the address of the machine itself.
+    #
+    # host_port is the port the dashboard is published on where no proxy takes
+    # over the routing. That is the same question this form answers, so the
+    # field sits here and the form hides it in the modes that publish no port.
     'reverse_proxy' => {
-      'app_host' => 'system', 'trusted_proxy_ranges' => 'dashboard', 'force_ssl' => 'dashboard'
+      'app_host' => 'system', 'trusted_proxy_ranges' => 'dashboard', 'force_ssl' => 'dashboard',
+      'host_port' => 'dashboard'
     },
     # The prices survey configures two services at once: the Tibber collector
     # (its own section) plus, where the preconditions hold, the SENEC charger
@@ -101,7 +108,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   SETTINGS = %w[
     deployment software
     system_general system_security
-    dashboard_co2 dashboard_theme dashboard_network
+    dashboard_co2 dashboard_theme
     influxdb reverse_proxy
     tibber
     storage
@@ -115,7 +122,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # `#optional_groups` — this map is the static layout.
   OPTIONAL_GROUPS = {
     'installation' => %w[deployment software system_general],
-    'access' => %w[reverse_proxy influxdb dashboard_network system_security],
+    'access' => %w[reverse_proxy influxdb system_security],
     'data' => %w[ingest_settings storage],
     'energy_management' => %w[tibber],
     'dashboard' => %w[dashboard_co2 dashboard_theme],
@@ -142,7 +149,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   DASHBOARD_ONLY_SETTINGS = %w[
     deployment software
     system_general system_security
-    dashboard_co2 dashboard_theme dashboard_network
+    dashboard_co2 dashboard_theme
     reverse_proxy
     tibber
     storage
