@@ -344,7 +344,6 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
 
   REVERSE_PROXY_FIELDS = (STORAGE_FIELDS + %w[
     mode
-    app_domain
     letsencrypt_email
     bind_ip
     image

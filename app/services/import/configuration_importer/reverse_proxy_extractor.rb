@@ -29,21 +29,74 @@ module Import
 
       def section_data
         data = traefik_data || {}
-        ip = bind_ip
-        data['bind_ip'] = ip if ip.present?
+        data['bind_ip'] = bind_ip if bind_ip.present?
+        data['mode'] = mode if mode
         data.presence
+      end
+
+      # The host the imported stack is routed at, read from the dashboard's
+      # Traefik router rule. It belongs to the `system` section, the same as it
+      # would after a save through the form, so the importer hands it to
+      # SystemExtractor instead of storing it here — see
+      # ConfigurationMigrations::MergeAppDomain for why one field holds the
+      # address in every mode.
+      def domain
+        return @domain if defined?(@domain)
+
+        @domain = find_traefik_rule_label.to_s[/Host\(`([^`]+)`\)/, 1]
+      end
+
+      # A Traefik of the stack's own that routes the dashboard. HELIOS adopts
+      # such a Traefik and generates it from then on, which is what the managed
+      # mode means.
+      #
+      # The host the router names has to survive the field that stores it:
+      # SystemExtractor keeps an address that names the machine to others and
+      # drops the rest, and a Traefik adopted for a host nothing stored would
+      # route nothing. Such a Traefik therefore stays where it is, as an
+      # unmanaged service, and the stack keeps running it unchanged.
+      def managed?
+        HostAddress.public_host(domain).present? && @reader.services.key?('traefik')
+      end
+
+      # Which of the two reverse-proxy modes the imported stack runs, or nil
+      # for a stack that runs neither.
+      #
+      # Router labels without a Traefik of the stack's own name an external
+      # one: it reads the labels over a Docker network the two stacks share,
+      # which is how Traefik is usually run for more than one stack. Published
+      # ports bound to a single host IP say an external proxy reaches them
+      # there instead.
+      def mode
+        return 'internal' if managed?
+        return 'external' if domain.present? || bind_ip.present? || force_ssl?
+
+        nil
       end
 
       private
 
-      def traefik_data
-        return nil unless @reader.services.key?('traefik')
+      # The one mark an nginx or an Apache in front of the stack leaves in the
+      # compose file: the dashboard redirects HTTP to HTTPS because something
+      # else terminates TLS. Such a proxy writes no label and binds no port of
+      # its own.
+      #
+      # Without this the imported stack keeps no mode, and the form shows the
+      # flag in the external mode alone, so the first save of the address empties
+      # it and every login through the proxy fails.
+      # ConfigurationMigrations::MergeAppDomain reads the same mark for a
+      # configuration written before the mode was stored. An import never reaches
+      # that migration, because it stamps the current schema version itself.
+      def force_ssl?
+        ActiveModel::Type::Boolean.new.cast(service_env('dashboard')['FORCE_SSL'])
+      end
 
-        domain = extract_domain_from_dashboard_labels
-        return nil unless domain
+      # Only a Traefik HELIOS takes over carries settings of its own. An
+      # external one is configured where it runs, not here.
+      def traefik_data
+        return nil unless managed?
 
         {
-          'app_domain' => domain,
           'letsencrypt_email' => @reader.raw_env['LETSENCRYPT_EMAIL'],
           'image' => @reader.service('traefik')&.dig('image'),
         }
@@ -56,6 +109,12 @@ module Import
       # from any managed publisher's port mapping. Returns nil for wildcard
       # binds, which carry no information HELIOS needs to persist.
       def bind_ip
+        return @bind_ip if defined?(@bind_ip)
+
+        @bind_ip = find_bind_ip
+      end
+
+      def find_bind_ip
         PORT_PUBLISHERS
           .flat_map { |name| Array(@reader.service(name)&.dig('ports')) }
           .filter_map { |entry| host_ip(entry) }
@@ -94,14 +153,19 @@ module Import
         end
       end
 
-      def extract_domain_from_dashboard_labels
-        rule_value = find_traefik_rule_label
-        match = rule_value&.match(/Host\(`([^`]+)`\)/)
-        match && match[1]
+      # Both places a compose file can carry them: `labels` on the service, and
+      # `deploy.labels` where the stack was written for Swarm. HELIOS emits the
+      # first and reads both, so a Swarm stack names its proxy the same way.
+      def find_traefik_rule_label
+        dashboard = @reader.service('dashboard') || {}
+
+        [dashboard['labels'], dashboard.dig('deploy', 'labels')]
+          .filter_map { |labels| rule_label(labels) }
+          .first
       end
 
-      def find_traefik_rule_label
-        labels = @reader.service('dashboard')&.dig('labels') || {}
+      def rule_label(labels)
+        return nil if labels.blank?
 
         if labels.is_a?(Hash)
           labels.find { |k, _| k.match?(ROUTER_RULE_KEY) }&.last

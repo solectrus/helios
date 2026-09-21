@@ -3,10 +3,11 @@ module Import
     class SystemExtractor
       include Helpers
 
-      def initialize(reader, watchtower_interval:, watchtower_schedule:)
+      def initialize(reader, watchtower_interval:, watchtower_schedule:, proxy_domain: nil)
         @reader = reader
         @watchtower_interval = watchtower_interval
         @watchtower_schedule = watchtower_schedule
+        @proxy_domain = proxy_domain
       end
 
       def section_data
@@ -20,16 +21,24 @@ module Import
       # there, a full URL (`http://solar.example.com`) among it, so the value
       # goes through the one normalizer every write path uses.
       #
+      # The domain a Traefik of the stack routes the dashboard at wins over
+      # APP_HOST. That is the address the stack answers on, while APP_HOST may
+      # hold anything its author left there, the address of the machine on the
+      # local network among it. One field carries the address in every mode
+      # (see ConfigurationMigrations::MergeAppDomain), so the two cannot both
+      # be kept.
+      #
       # A loopback address is dropped, the same way
       # ConfigurationMigrations::NormalizeAppHost drops one an earlier HELIOS
       # stored: it names the machine to itself alone, the field refuses it, and
-      # an imported stack would carry a value its own form rejects.
-      # `section_data` compacts the nil away, so the field stays empty and every
-      # caller names the published port instead.
+      # an imported stack would carry a value its own form rejects. Each address
+      # is judged on its own, so a router rule that names the machine to itself
+      # drops out and leaves APP_HOST its turn. `section_data` compacts the nil
+      # away where neither survives, and every caller then names the published
+      # port instead.
       def normalized_app_host
-        host = HostAddress.normalize(service_env('dashboard')['APP_HOST'])
-
-        host unless host.nil? || HostAddress.loopback?(host)
+        HostAddress.public_host(@proxy_domain) ||
+          HostAddress.public_host(service_env('dashboard')['APP_HOST'])
       end
 
       def core_data

@@ -182,8 +182,8 @@ RSpec.describe 'Services::Rows', :with_admin_password do
 
       it 'opens the public HTTPS domain for the dashboard behind a managed Traefik' do
         with_config_yaml(
-          'system' => { 'timezone' => 'Europe/Berlin' },
-          'reverse_proxy' => { 'app_domain' => 'solectrus.example.com' },
+          'system' => { 'timezone' => 'Europe/Berlin', 'app_host' => 'solectrus.example.com' },
+          'reverse_proxy' => { 'mode' => 'internal' },
         )
         # Behind a managed Traefik the dashboard publishes no host port.
         mock_compose_service('dashboard')
@@ -198,8 +198,8 @@ RSpec.describe 'Services::Rows', :with_admin_password do
 
       it 'opens the public HTTPS domain with the InfluxDB port when exposed behind a managed Traefik' do
         with_config_yaml(
-          'system' => { 'timezone' => 'Europe/Berlin' },
-          'reverse_proxy' => { 'app_domain' => 'solectrus.example.com' },
+          'system' => { 'timezone' => 'Europe/Berlin', 'app_host' => 'solectrus.example.com' },
+          'reverse_proxy' => { 'mode' => 'internal' },
           'influxdb' => { 'publish_port' => true, 'host_port' => '18086' },
         )
         # Routed via Traefik's influxdb entrypoint, so influxdb publishes no
@@ -215,8 +215,8 @@ RSpec.describe 'Services::Rows', :with_admin_password do
 
       it 'shows no button for InfluxDB behind a managed Traefik when it is not exposed' do
         with_config_yaml(
-          'system' => { 'timezone' => 'Europe/Berlin' },
-          'reverse_proxy' => { 'app_domain' => 'solectrus.example.com' },
+          'system' => { 'timezone' => 'Europe/Berlin', 'app_host' => 'solectrus.example.com' },
+          'reverse_proxy' => { 'mode' => 'internal' },
         )
         mock_compose_service('influxdb')
         container = mock_container('influxdb', running: true)
@@ -240,7 +240,7 @@ RSpec.describe 'Services::Rows', :with_admin_password do
       it 'opens the proxy domain instead of the host port behind an external Traefik' do
         with_config_yaml(
           'system' => { 'timezone' => 'Europe/Berlin', 'app_host' => 'solectrus.example.com' },
-          'reverse_proxy' => { 'bind_ip' => '10.0.0.5' },
+          'reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' },
         )
         # External mode still publishes a host port; the button should prefer
         # the proxy URL over the raw http://host:port.
@@ -257,7 +257,7 @@ RSpec.describe 'Services::Rows', :with_admin_password do
       it 'falls back to the host port behind an external Traefik without app_host' do
         with_config_yaml(
           'system' => { 'timezone' => 'Europe/Berlin' },
-          'reverse_proxy' => { 'bind_ip' => '10.0.0.5' },
+          'reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' },
         )
         mock_compose_service('dashboard', public_port: 3000)
         container = mock_container('dashboard', running: true, public_port: 3000)

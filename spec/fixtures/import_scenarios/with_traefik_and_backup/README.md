@@ -8,8 +8,9 @@ InfluxDB. Verifies that these three are mapped to dedicated config blocks
 
 - **Traefik labels on the dashboard service** (`traefik.http.routers.dashboard.rule`,
   `certresolver=letsencrypt`, …) are the sole source for the
-  `reverse_proxy.app_domain` (`solar.example.com`) and `letsencrypt_email` —
-  the Traefik service itself carries no explicit domain config.
+  `system.app_host` (`solar.example.com`), the `reverse_proxy.mode` it implies
+  and `letsencrypt_email` — the Traefik service itself carries no explicit
+  domain config.
 - **`postgresql-backup` → `backup.postgresql`** and **`influxdb-backup` →
   `backup.influxdb`**, with a shared AWS credential block
   (`aws_access_key_id`, `aws_secret_access_key`, `aws_region`, `aws_bucket`)

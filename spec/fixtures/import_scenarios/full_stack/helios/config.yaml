@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 6
+_schema_version: 7
 system:
   admin_password: secret_admin_password
   installation_date: '2026-03-18'

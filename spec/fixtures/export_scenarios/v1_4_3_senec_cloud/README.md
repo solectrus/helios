@@ -21,4 +21,6 @@ the donor runs. The `.env` differs in one entry: HELIOS no longer writes
 domain as a literal.
 
 The migration from schema 5 to schema 6 changes the version number only.
-`system.app_host` stays, because it holds a public domain name.
+`system.app_host` stays, because it holds a public domain name. The migration
+to schema 7 folds `reverse_proxy.app_domain` onto it: both named the same
+machine, and the domain wins. `reverse_proxy` keeps `mode: internal` alone.

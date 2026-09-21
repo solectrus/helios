@@ -19,7 +19,8 @@ RSpec.describe Export::PublicUrl do
   describe 'behind a managed Traefik' do
     let(:data) do
       {
-        'reverse_proxy' => { 'app_domain' => 'solectrus.example.com' },
+        'system' => { 'app_host' => 'solectrus.example.com' },
+        'reverse_proxy' => { 'mode' => 'internal' },
         'influxdb' => influxdb,
       }
     end
@@ -61,7 +62,7 @@ RSpec.describe Export::PublicUrl do
   describe 'behind an external Traefik' do
     let(:data) do
       {
-        'reverse_proxy' => { 'bind_ip' => '10.0.0.5' },
+        'reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' },
         'system' => { 'app_host' => 'solectrus.example.com' },
       }
     end
@@ -98,7 +99,7 @@ RSpec.describe Export::PublicUrl do
     end
 
     context 'without a configured app_host' do
-      let(:data) { { 'reverse_proxy' => { 'bind_ip' => '10.0.0.5' } } }
+      let(:data) { { 'reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' } } }
       let(:service_name) { 'dashboard' }
 
       it { is_expected.to be_nil }

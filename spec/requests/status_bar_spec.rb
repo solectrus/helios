@@ -61,8 +61,8 @@ RSpec.describe 'StatusBar', :with_admin_password do
       it 'links to the public URL behind a managed Traefik' do
         login
         with_config_yaml(
-          'system' => { 'timezone' => 'Europe/Berlin' },
-          'reverse_proxy' => { 'app_domain' => 'solectrus.example.com' },
+          'system' => { 'timezone' => 'Europe/Berlin', 'app_host' => 'solectrus.example.com' },
+          'reverse_proxy' => { 'mode' => 'internal' },
         )
         stub_dashboard(status: :ok, public_port: nil)
 

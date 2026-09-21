@@ -32,7 +32,7 @@ module Export
     # root, an exposed InfluxDB on a dedicated entrypoint (its own port). Other
     # services keep their published host ports and get no domain URL here.
     def managed(service_name)
-      domain = configuration.reverse_proxy.app_domain
+      domain = configuration.public_host
 
       case service_name
       when 'dashboard'
@@ -49,7 +49,7 @@ module Export
     # TraefikConfig::ROUTABLE. Without a configured app_host there is no real
     # domain to link to.
     def external(service_name)
-      host = configuration.system.app_host.presence
+      host = configuration.public_host
       return unless host
 
       entry = TraefikConfig::ROUTABLE.find { |e| e[:klass].service_name == service_name }

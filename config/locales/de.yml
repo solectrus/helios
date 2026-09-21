@@ -429,9 +429,6 @@ de:
       system_general:
         title: 'Grundeinstellungen'
         description: 'Inbetriebnahme, Zeitzone und Währung'
-      system_network:
-        title: 'Host'
-        description: 'Unter welcher Adresse ist SOLECTRUS erreichbar?'
       system_security:
         title: 'Zugriffsschutz'
         description: 'Admin-Passwort und Zugangscode für die Weboberfläche'
@@ -448,8 +445,8 @@ de:
         title: 'Netzwerk'
         description: 'Host-Port und Einbettung in andere Webseiten'
       reverse_proxy:
-        title: 'Eigene Domain'
-        description: 'Domain & HTTPS über internen oder externen Traefik. Nur sinnvoll, wenn dieser Host über das Internet erreichbar ist.'
+        title: 'Adresse & Domain'
+        description: 'Unter welcher Adresse SOLECTRUS erreichbar ist, auf Wunsch über eine eigene Domain mit HTTPS'
       backup:
         title: 'Backup'
         description: 'Ziel für Sicherungen (lokal, externer Mount oder S3)'

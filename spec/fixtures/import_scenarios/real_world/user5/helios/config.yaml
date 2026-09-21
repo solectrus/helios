@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 6
+_schema_version: 7
 system:
   admin_password: AAAAA
   app_host: bbbbb
@@ -50,6 +50,8 @@ forecast:
   forecast_roofs: '1'
   image: ghcr.io/solectrus/forecast-collector:develop
   measurement: Forecast
+reverse_proxy:
+  mode: external
 backup: {}
 sensors:
   battery_charging_power:

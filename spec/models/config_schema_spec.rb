@@ -204,14 +204,12 @@ RSpec.describe ConfigSchema do
         borrowed = Configuration::BORROWED_FIELDS.fetch(setting, {})
 
         # UI-only toggles that drive visibility but are not persisted: the
-        # boolean `enabled` flag, reverse_proxy's tri-state `mode` selector
-        # (re-derived from app_domain/bind_ip on load, see SettingsController),
-        # system_general's `currency_preset` dropdown (drives the `currency`
-        # freetext field, only `currency` is stored), and tibber's `charging`
-        # flag (re-derived from the senec_charger section).
+        # boolean `enabled` flag, system_general's `currency_preset` dropdown
+        # (drives the `currency` freetext field, only `currency` is stored),
+        # and tibber's `charging` flag (re-derived from the senec_charger
+        # section).
         ui_only =
           case setting
-          when 'reverse_proxy' then %w[enabled mode]
           when 'system_general' then %w[enabled currency_preset]
           when 'tibber' then %w[enabled charging]
           else %w[enabled]

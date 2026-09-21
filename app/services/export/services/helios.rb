@@ -56,7 +56,7 @@ module Export
           # dedicated :3999 entrypoint) instead of a plain-HTTP host port. Any
           # `helios` router labels carried in via service_overrides (a re-import
           # of HELIOS's own output) dedupe against these generated ones.
-          config[:labels] = traefik_labels
+          config[:labels] = traefik_router_labels(entrypoint: 'helios', port: CONTAINER_PORT)
         else
           config[:ports] = ["#{HOST_PORT}:#{CONTAINER_PORT}"]
         end
@@ -77,17 +77,6 @@ module Export
         env = ENVIRONMENT.dup
         env << 'FORCE_SSL=true' if traefik_managed_routing?
         env
-      end
-
-      def traefik_labels
-        domain = configuration.reverse_proxy.app_domain
-        [
-          'traefik.enable=true',
-          "traefik.http.routers.helios.rule=Host(`#{domain}`)",
-          'traefik.http.routers.helios.entrypoints=helios',
-          "traefik.http.routers.helios.tls.certresolver=#{Traefik.certresolver(configuration)}",
-          "traefik.http.services.helios.loadbalancer.server.port=#{CONTAINER_PORT}",
-        ]
       end
     end
   end

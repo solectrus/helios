@@ -215,14 +215,12 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
   end
 
-  # The switch only reaches config.yaml when its field is part of the setting
-  # group; without that it is sliced off on save and the service stays on.
   describe 'POST /configuration/settings and a loopback address' do
     # Such an address names the machine to whoever asks, so every address
     # derived from it would send a device or a browser back to itself.
     it 'refuses it' do
       post configuration_settings_path,
-           params: { setting: 'system_network', data: { 'app_host' => 'localhost' }.to_json }
+           params: { setting: 'reverse_proxy', data: { 'app_host' => 'localhost' }.to_json }
 
       expect(flash[:alert]).to include('localhost')
       expect(Configuration.current.system.app_host).to be_blank
@@ -230,14 +228,14 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
     it 'refuses a name below .localhost as well' do
       post configuration_settings_path,
-           params: { setting: 'system_network', data: { 'app_host' => 'helios.localhost' }.to_json }
+           params: { setting: 'reverse_proxy', data: { 'app_host' => 'helios.localhost' }.to_json }
 
       expect(Configuration.current.system.app_host).to be_blank
     end
 
     it 'takes an address that names the machine to others' do
       post configuration_settings_path,
-           params: { setting: 'system_network', data: { 'app_host' => 'solectrus.fritz.box' }.to_json }
+           params: { setting: 'reverse_proxy', data: { 'app_host' => 'solectrus.fritz.box' }.to_json }
 
       expect(Configuration.current.system.app_host).to eq('solectrus.fritz.box')
     end
@@ -246,18 +244,8 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     # address, and the host the browser was reached at is not offered behind
     # it: every caller falls back to the published port instead.
     it 'takes an empty address and leaves the field empty' do
-      Configuration.current.update('system_network', { 'app_host' => 'solectrus.fritz.box' })
+      Configuration.current.update('reverse_proxy', { 'app_host' => 'solectrus.fritz.box' })
 
-      post configuration_settings_path,
-           params: { setting: 'system_network', data: { 'app_host' => '' }.to_json },
-           headers: { 'HOST' => 'solectrus.fritz.box' }
-
-      expect(Configuration.current.system.app_host).to be_blank
-    end
-
-    # The reverse-proxy form borrows the same field (see
-    # Configuration::BORROWED_FIELDS), so it owns the answer the same way.
-    it 'leaves the field empty after a save through the reverse-proxy form' do
       post configuration_settings_path,
            params: { setting: 'reverse_proxy', data: { 'mode' => 'none' }.to_json },
            headers: { 'HOST' => 'solectrus.fritz.box' }
@@ -293,35 +281,47 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
   end
 
   describe 'POST /configuration/settings for the reverse_proxy mode' do
-    it 'stores app_domain for the internal Traefik mode' do
+    it 'stores the address for the internal Traefik mode' do
       post configuration_settings_path,
            params: { setting: 'reverse_proxy',
-                     data: { mode: 'internal', app_domain: 'demo.example.com' }.to_json }
+                     data: { mode: 'internal', app_host: 'demo.example.com' }.to_json }
 
       config = Configuration.current
-      expect(config.reverse_proxy.app_domain).to eq('demo.example.com')
+      expect(config.system.app_host).to eq('demo.example.com')
       expect(config.reverse_proxy.bind_ip).to be_blank
     end
 
-    it 'stores bind_ip for the external Traefik mode and drops app_domain' do
-      Configuration.current.update('reverse_proxy', { 'app_domain' => 'old.example.com' })
-
+    it 'stores bind_ip for the external Traefik mode' do
       post configuration_settings_path,
            params: { setting: 'reverse_proxy',
-                     data: { mode: 'external', bind_ip: '10.0.0.5', app_domain: 'old.example.com' }.to_json }
+                     data: { mode: 'external', bind_ip: '10.0.0.5', app_host: 'solar.example.com' }.to_json }
 
       config = Configuration.current
       expect(config.reverse_proxy.bind_ip).to eq('10.0.0.5')
-      expect(config.reverse_proxy.app_domain).to be_blank
+      expect(config.system.app_host).to eq('solar.example.com')
     end
 
     it 'clears the section for mode none' do
-      Configuration.current.update('reverse_proxy', { 'app_domain' => 'old.example.com' })
+      Configuration.current.update('reverse_proxy',
+                                   { 'mode' => 'internal', 'app_host' => 'old.example.com' })
+
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy', data: { mode: 'none', app_host: '192.168.1.5' }.to_json }
+
+      expect(Configuration.current.reverse_proxy).to be_empty
+      expect(Configuration.current.system.app_host).to eq('192.168.1.5')
+    end
+
+    # survey-core sends no key for a field the user emptied, so the form has to
+    # speak for the address either way.
+    it 'clears the address when the form sends none' do
+      Configuration.current.update('reverse_proxy',
+                                   { 'mode' => 'internal', 'app_host' => 'old.example.com' })
 
       post configuration_settings_path,
            params: { setting: 'reverse_proxy', data: { mode: 'none' }.to_json }
 
-      expect(Configuration.current.reverse_proxy.app_domain).to be_blank
+      expect(Configuration.current.system.app_host).to be_blank
     end
 
     it 'keeps the external Traefik mode even without a bind_ip' do
@@ -356,15 +356,115 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(config.reverse_proxy.force_ssl).to be_blank
     end
 
-    # A proxy can terminate TLS without HELIOS knowing a domain, so the flag
-    # outlives the section it is edited in.
-    it 'keeps force_ssl for mode none' do
+    # Without a proxy nothing terminates TLS in front of the stack, and the
+    # flag would make the dashboard redirect to an HTTPS port nothing serves.
+    it 'drops force_ssl for mode none' do
+      Configuration.current.update('dashboard', { 'force_ssl' => true })
+
       post configuration_settings_path,
            params: { setting: 'reverse_proxy', data: { mode: 'none', force_ssl: true }.to_json }
 
       config = Configuration.current
-      expect(config.dashboard.force_ssl).to be true
-      expect(config.reverse_proxy.app_domain).to be_blank
+      expect(config.dashboard.force_ssl).to be_blank
+      expect(config.reverse_proxy).to be_empty
+    end
+
+    # The ranges belong to a proxy in front of the stack, and the form shows
+    # them in the two modes that name one. Left behind, they would keep
+    # reaching the dashboard as TRUSTED_PROXY_RANGES, and a request from such a
+    # range would still be believed about who sent it.
+    it 'drops the trusted proxy ranges for mode none' do
+      Configuration.current.update('dashboard', { 'trusted_proxy_ranges' => '10.0.0.0/8' })
+
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy', data: { mode: 'none', app_host: '192.168.1.5' }.to_json }
+
+      expect(Configuration.current.dashboard.trusted_proxy_ranges).to be_blank
+    end
+
+    it 'keeps the trusted proxy ranges for a mode that names a proxy' do
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'external', app_host: 'solar.example.com',
+                             trusted_proxy_ranges: '10.0.0.0/8' }.to_json }
+
+      expect(Configuration.current.dashboard.trusted_proxy_ranges).to eq('10.0.0.0/8')
+    end
+
+    # The managed Traefik routes by host rule, and a rule with nothing in it
+    # matches nothing: the stack would publish its ports and run no proxy,
+    # while the form kept saying it runs one. The form asks for the address in
+    # that mode, so only a request bypassing it arrives this way.
+    it 'stores no managed proxy without an address' do
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy', data: { mode: 'internal' }.to_json }
+
+      config = Configuration.current
+      expect(config.reverse_proxy).to be_empty
+      expect(config.app_host_must_be_a_domain?).to be false
+    end
+
+    it 'stores no proxy for a mode it does not know' do
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'nonsense', app_host: '192.168.1.5' }.to_json }
+
+      config = Configuration.current
+      expect(config.reverse_proxy).to be_empty
+      expect(config.system.app_host).to eq('192.168.1.5')
+    end
+
+    # Every setting the section carries beyond the form is kept by nobody: the
+    # section is written as the form answers it.
+    it 'drops the certificate address when the mode no longer runs a Traefik' do
+      Configuration.current.update('reverse_proxy',
+                                   { 'mode' => 'internal', 'letsencrypt_email' => 'me@example.com' })
+
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'external', app_host: 'solar.example.com' }.to_json }
+
+      expect(Configuration.current.reverse_proxy.letsencrypt_email).to be_blank
+    end
+
+    # The section also carries the Traefik HELIOS adopted on import: its compose
+    # keys, its image and the path its certificates live at. No question asks
+    # for any of them, and a service regenerated from HELIOS defaults names
+    # another resolver, mounts another path and requests every certificate anew.
+    it 'keeps the adopted Traefik no question asks about' do
+      Configuration.current.update('reverse_proxy',
+                                   { 'mode' => 'internal', 'image' => 'traefik:v3.7',
+                                     'command' => ['--certificatesresolvers.myresolver.acme.tlschallenge=true'],
+                                     'ports' => %w[80:80 443:443 8086:8086],
+                                     'labels' => ['com.centurylinklabs.watchtower.scope=solectrus'],
+                                     'environment' => ['TZ'], 'volume_path' => '/opt/certs' })
+
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'internal', app_host: 'solar.example.com' }.to_json }
+
+      expect(Configuration.current.reverse_proxy.to_h).to include(
+        'image' => 'traefik:v3.7',
+        'command' => ['--certificatesresolvers.myresolver.acme.tlschallenge=true'],
+        'ports' => %w[80:80 443:443 8086:8086],
+        'labels' => ['com.centurylinklabs.watchtower.scope=solectrus'],
+        'environment' => ['TZ'],
+        'volume_path' => '/opt/certs',
+      )
+    end
+
+    it 'drops the adopted Traefik when the mode no longer runs one' do
+      Configuration.current.update('reverse_proxy',
+                                   { 'mode' => 'internal', 'image' => 'traefik:v3.7',
+                                     'volume_path' => '/opt/certs' })
+
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'external', app_host: 'solar.example.com' }.to_json }
+
+      section = Configuration.current.reverse_proxy
+      expect(section.image).to be_blank
+      expect(section.volume_path).to be_blank
     end
 
     it 'drops force_ssl for the internal mode, which implies HTTPS' do
@@ -372,13 +472,13 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
 
       post configuration_settings_path,
            params: { setting: 'reverse_proxy',
-                     data: { mode: 'internal', app_domain: 'demo.example.com', force_ssl: true }.to_json }
+                     data: { mode: 'internal', app_host: 'demo.example.com', force_ssl: true }.to_json }
 
       expect(Configuration.current.dashboard.force_ssl).to be_blank
     end
 
-    it 'derives mode=external from a stored bind_ip when editing' do
-      Configuration.current.update('reverse_proxy', { 'bind_ip' => '10.0.0.5' })
+    it 'carries the stored bind_ip into the form when editing' do
+      Configuration.current.update('reverse_proxy', { 'mode' => 'external', 'bind_ip' => '10.0.0.5' })
 
       get edit_configuration_setting_path(setting: 'reverse_proxy', name: 'reverse_proxy'),
           headers: turbo_frame_headers
@@ -387,9 +487,9 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(response.body).to include('&quot;10.0.0.5&quot;')
     end
 
-    # A section left over from an earlier configuration that names neither a
-    # domain nor a bind IP has no reverse proxy: the radio preselects "none".
-    it 'preselects mode none for a section without domain or bind IP' do
+    # A section left over from an earlier configuration that names no mode has
+    # no reverse proxy: the radio preselects "none".
+    it 'preselects mode none for a section without a stored mode' do
       Configuration.current.update('reverse_proxy', { 'letsencrypt_email' => 'me@example.com' })
 
       get edit_configuration_setting_path(setting: 'reverse_proxy', name: 'reverse_proxy'),
@@ -664,15 +764,15 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
 
     it 'updates a singleton without changing name' do
-      setting_data = { 'app_host' => 'example.com' }
+      setting_data = { 'timezone' => 'Europe/Berlin' }
 
-      patch configuration_setting_path(setting: 'system_network', name: 'system_network'),
+      patch configuration_setting_path(setting: 'system_general', name: 'system_general'),
             params: { data: setting_data.to_json }
 
       expect(response).to redirect_to(settings_path)
 
       config = Configuration.current
-      expect(config.system.app_host).to eq('example.com')
+      expect(config.system.timezone).to eq('Europe/Berlin')
     end
 
     it 'stores the dashboard theme `user` sentinel as an empty string' do

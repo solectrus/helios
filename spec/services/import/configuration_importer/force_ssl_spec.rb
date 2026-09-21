@@ -32,6 +32,13 @@ RSpec.describe 'Import::ConfigurationImporter dashboard force_ssl' do
     it 'persists the flag' do
       expect(importer.result[:dashboard]).to include('force_ssl' => true)
     end
+
+    # Nothing else in the compose file names that proxy: it writes no router
+    # label and binds no port of its own. Without a mode the flag belongs to no
+    # mode the form shows it in, and the first save of the address empties it.
+    it 'names the external proxy the flag implies' do
+      expect(importer.result[:reverse_proxy]).to include('mode' => 'external')
+    end
   end
 
   context 'with FORCE_SSL=false' do
@@ -60,8 +67,35 @@ RSpec.describe 'Import::ConfigurationImporter dashboard force_ssl' do
     end
 
     it 'does not persist the flag' do
-      expect(importer.result[:reverse_proxy]).to include('app_domain' => 'solectrus.example.de')
+      expect(importer.result[:reverse_proxy]).to include('mode' => 'internal')
+      expect(importer.result[:system]).to include('app_host' => 'solectrus.example.de')
       expect(importer.result[:dashboard]).not_to have_key('force_ssl')
+    end
+  end
+
+  # Such a host names the machine to itself alone, so the address is dropped
+  # and no host rule can be built from it. HELIOS therefore takes over no
+  # Traefik here: the imported one stays as it is, among the services HELIOS
+  # does not generate, and the stack keeps running it. The flag is kept with
+  # it, because that Traefik still terminates the TLS.
+  context 'with FORCE_SSL=true and a Traefik routing a host that reaches only whoever asks' do
+    let(:force_ssl) { 'true' }
+    let(:labels) { { 'traefik.http.routers.dashboard.rule' => 'Host(`solectrus.localhost`)' } }
+    let(:services) do
+      { 'dashboard' => dashboard_service, 'traefik' => { 'image' => 'traefik:v3.6' } }
+    end
+
+    it 'takes over no Traefik of its own' do
+      expect(importer.result[:reverse_proxy]).not_to include('mode' => 'internal')
+      expect(importer.result[:system]).not_to have_key('app_host')
+    end
+
+    it 'keeps the Traefik among the services it does not generate' do
+      expect(importer.result[:unmanaged]['services']).to have_key('traefik')
+    end
+
+    it 'persists the flag' do
+      expect(importer.result[:dashboard]).to include('force_ssl' => true)
     end
   end
 end

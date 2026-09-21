@@ -69,6 +69,16 @@ class HostAddress
     host.present? && host.match?(LOOPBACK_MATCHER)
   end
 
+  # The host alone, but only where it names the machine to others: the two
+  # questions above asked as one. Callers that store an address someone else
+  # has to reach ask it this way, because such an address is either usable or
+  # not there at all.
+  def self.public_host(value)
+    host = normalize(value)
+
+    host unless host.nil? || loopback?(host)
+  end
+
   # The host as a URL takes it. An address that carries colons of its own needs
   # brackets there, so that a reader can tell those colons from the one in
   # front of a port.

@@ -6,9 +6,10 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 6
+_schema_version: 7
 system:
   admin_password: test-admin
+  app_host: solar.example.com
   installation_date: '2023-06-15'
   secret_key_base: test-secret-key
   timezone: Europe/Berlin
@@ -31,9 +32,9 @@ redis:
 watchtower:
   image: nickfedor/watchtower:latest
 reverse_proxy:
-  app_domain: solar.example.com
   image: traefik:v3
   letsencrypt_email: webmaster@solar.example.com
+  mode: internal
 backup:
   aws_access_key_id: AKIAEXAMPLE
   aws_bucket: my-backup-bucket

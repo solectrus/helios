@@ -439,7 +439,7 @@ RSpec.describe Export::Builder do
 
     context 'with a full configuration covering most sections' do
       before do
-        configuration.update('reverse_proxy', { 'app_domain' => 'solar.example.com' })
+        configuration.update('reverse_proxy', { 'mode' => 'internal', 'app_host' => 'solar.example.com' })
         configuration.update('backup', {
                                'aws_access_key_id' => 'AKIAEXAMPLE',
                                'aws_secret_access_key' => 'secret123',
@@ -517,7 +517,8 @@ RSpec.describe Export::Builder do
   describe 'with reverse_proxy configured' do
     before do
       configuration.update('reverse_proxy', {
-                             'app_domain' => 'solar.example.com',
+                             'mode' => 'internal',
+                             'app_host' => 'solar.example.com',
                            })
       described_class.new(configuration).write!
     end
@@ -639,7 +640,8 @@ RSpec.describe Export::Builder do
   describe 'with reverse_proxy and custom volume path' do
     before do
       configuration.update('reverse_proxy', {
-                             'app_domain' => 'solar.example.com',
+                             'mode' => 'internal',
+                             'app_host' => 'solar.example.com',
                              'volume_path' => '/volume1/docker/solectrus/traefik',
                            })
       described_class.new(configuration).write!
@@ -703,7 +705,7 @@ RSpec.describe Export::Builder do
 
   describe 'with an external-Traefik bind IP configured' do
     before do
-      configuration.update('reverse_proxy', { 'bind_ip' => '10.0.0.5' })
+      configuration.update('reverse_proxy', { 'mode' => 'external', 'bind_ip' => '10.0.0.5' })
       described_class.new(configuration).write!
     end
 
@@ -778,7 +780,7 @@ RSpec.describe Export::Builder do
 
   describe 'with reverse_proxy and an exposed InfluxDB' do
     before do
-      configuration.update('reverse_proxy', { 'app_domain' => 'solar.example.com' })
+      configuration.update('reverse_proxy', { 'mode' => 'internal', 'app_host' => 'solar.example.com' })
       configuration.update('influxdb', configuration.influxdb.merge('publish_port' => true))
       described_class.new(configuration).write!
     end
@@ -841,7 +843,8 @@ RSpec.describe Export::Builder do
     context 'with an imported Traefik that routes influxdb itself' do
       before do
         configuration.update('reverse_proxy', {
-                               'app_domain' => 'solar.example.com',
+                               'mode' => 'internal',
+                               'app_host' => 'solar.example.com',
                                'command' => [
                                  '--providers.docker=true',
                                  '--entrypoints.web.address=:80',
@@ -885,7 +888,8 @@ RSpec.describe Export::Builder do
     context 'with an imported Traefik that routes helios itself' do
       before do
         configuration.update('reverse_proxy', {
-                               'app_domain' => 'solar.example.com',
+                               'mode' => 'internal',
+                               'app_host' => 'solar.example.com',
                                'command' => [
                                  '--providers.docker=true',
                                  '--entrypoints.web.address=:80',
@@ -909,7 +913,8 @@ RSpec.describe Export::Builder do
     context 'with an imported Traefik that does not route influxdb' do
       before do
         configuration.update('reverse_proxy', {
-                               'app_domain' => 'solar.example.com',
+                               'mode' => 'internal',
+                               'app_host' => 'solar.example.com',
                                'command' => [
                                  '--providers.docker=true',
                                  '--entrypoints.web.address=:80',
@@ -933,7 +938,8 @@ RSpec.describe Export::Builder do
     context 'with an imported Traefik that declares no log level' do
       before do
         configuration.update('reverse_proxy', {
-                               'app_domain' => 'solar.example.com',
+                               'mode' => 'internal',
+                               'app_host' => 'solar.example.com',
                                'command' => [
                                  '--providers.docker=true',
                                  '--entrypoints.web.address=:80',
@@ -955,7 +961,8 @@ RSpec.describe Export::Builder do
     context 'with an imported Traefik that declares its own log level' do
       before do
         configuration.update('reverse_proxy', {
-                               'app_domain' => 'solar.example.com',
+                               'mode' => 'internal',
+                               'app_host' => 'solar.example.com',
                                'command' => [
                                  '--log.level=DEBUG',
                                  '--providers.docker=true',
@@ -979,7 +986,8 @@ RSpec.describe Export::Builder do
     context 'with an imported Traefik using custom entrypoint names' do
       before do
         configuration.update('reverse_proxy', {
-                               'app_domain' => 'solar.example.com',
+                               'mode' => 'internal',
+                               'app_host' => 'solar.example.com',
                                'command' => [
                                  '--providers.docker=true',
                                  '--entrypoints.http.address=:80',
@@ -1005,7 +1013,8 @@ RSpec.describe Export::Builder do
     context 'with a Traefik older than 3.7' do
       before do
         configuration.update('reverse_proxy', {
-                               'app_domain' => 'solar.example.com',
+                               'mode' => 'internal',
+                               'app_host' => 'solar.example.com',
                                'image' => 'traefik:v3.6',
                              })
         described_class.new(configuration).write!
@@ -1022,7 +1031,8 @@ RSpec.describe Export::Builder do
     context 'with a Traefik pinned to a rolling tag' do
       before do
         configuration.update('reverse_proxy', {
-                               'app_domain' => 'solar.example.com',
+                               'mode' => 'internal',
+                               'app_host' => 'solar.example.com',
                                'image' => 'traefik:v3',
                              })
         described_class.new(configuration).write!
@@ -1040,7 +1050,8 @@ RSpec.describe Export::Builder do
     context 'with a downgraded Traefik whose imported command carries the flag' do
       before do
         configuration.update('reverse_proxy', {
-                               'app_domain' => 'solar.example.com',
+                               'mode' => 'internal',
+                               'app_host' => 'solar.example.com',
                                'image' => 'traefik:v3.6',
                                'command' => [
                                  '--providers.docker=true',
@@ -1064,7 +1075,8 @@ RSpec.describe Export::Builder do
     context 'with an imported Traefik that declares the alias headers strategy' do
       before do
         configuration.update('reverse_proxy', {
-                               'app_domain' => 'solar.example.com',
+                               'mode' => 'internal',
+                               'app_host' => 'solar.example.com',
                                'command' => [
                                  '--providers.docker=true',
                                  '--entrypoints.web.address=:80',
@@ -1093,7 +1105,8 @@ RSpec.describe Export::Builder do
     context 'with an imported Traefik using a custom certresolver name' do
       before do
         configuration.update('reverse_proxy', {
-                               'app_domain' => 'solar.example.com',
+                               'mode' => 'internal',
+                               'app_host' => 'solar.example.com',
                                'command' => [
                                  '--providers.docker=true',
                                  '--entrypoints.web.address=:80',
@@ -1126,7 +1139,7 @@ RSpec.describe Export::Builder do
 
   describe 'with reverse_proxy but InfluxDB not exposed' do
     before do
-      configuration.update('reverse_proxy', { 'app_domain' => 'solar.example.com' })
+      configuration.update('reverse_proxy', { 'mode' => 'internal', 'app_host' => 'solar.example.com' })
       described_class.new(configuration).write!
     end
 

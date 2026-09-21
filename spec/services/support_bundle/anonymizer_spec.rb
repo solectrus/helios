@@ -294,24 +294,22 @@ RSpec.describe SupportBundle::Anonymizer do
       )
     end
 
-    it 'masks the reverse proxy section and the app host it mirrors' do
+    it 'masks the app host and the address in the reverse proxy section' do
       yaml = <<~YAML
         system:
           app_host: solectrus.example.com
           timezone: Europe/Berlin
         reverse_proxy:
-          app_domain: solectrus.example.com
+          mode: internal
           letsencrypt_email: owner@example.com
           image: traefik:v3.7
       YAML
 
       parsed = YAML.safe_load(described_class.anonymize_yaml(yaml))
 
-      # app_host and app_domain hold the same domain, so the registry gives
-      # them the same mask — support can still see they match.
       expect(parsed['system']).to eq('app_host' => 'BBBBB', 'timezone' => 'Europe/Berlin')
       expect(parsed['reverse_proxy']).to eq(
-        'app_domain' => 'BBBBB',
+        'mode' => 'internal',
         'letsencrypt_email' => 'AAAAA',
         'image' => 'traefik:v3.7',
       )

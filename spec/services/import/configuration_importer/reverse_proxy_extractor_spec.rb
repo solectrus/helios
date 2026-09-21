@@ -110,4 +110,52 @@ RSpec.describe 'Import::ConfigurationImporter reverse_proxy bind_ip' do
       end
     end
   end
+
+  # Router labels without a Traefik of the stack's own name an external one: it
+  # reads them over a Docker network the two stacks share. real_world/user5
+  # runs that way, and its labels sit under `deploy` because the stack was
+  # written for Swarm.
+  describe 'an external Traefik that reads the labels of this stack' do
+    let(:rule) { { 'traefik.http.routers.solectrus.rule' => 'Host(`solar.example.com`)' } }
+
+    context 'with the labels on the service' do
+      let(:dashboard_service) do
+        { 'image' => 'ghcr.io/solectrus/solectrus:latest', 'labels' => rule }
+      end
+
+      it 'names the external mode' do
+        expect(importer.result[:reverse_proxy]).to eq('mode' => 'external')
+      end
+
+      it 'stores the routed host as the address of the installation' do
+        expect(importer.result[:system]).to include('app_host' => 'solar.example.com')
+      end
+    end
+
+    context 'with the labels under deploy' do
+      let(:dashboard_service) do
+        { 'image' => 'ghcr.io/solectrus/solectrus:latest', 'deploy' => { 'labels' => rule } }
+      end
+
+      it 'names the external mode' do
+        expect(importer.result[:reverse_proxy]).to eq('mode' => 'external')
+      end
+    end
+
+    # A Traefik HELIOS takes over carries settings of its own. An external one
+    # is configured where it runs, so nothing but the mode is recovered.
+    context 'with a Traefik of the stack own' do
+      let(:services) do
+        { 'dashboard' => dashboard_service, 'traefik' => { 'image' => 'traefik:v3.7' } }
+      end
+      let(:dashboard_service) do
+        { 'image' => 'ghcr.io/solectrus/solectrus:latest', 'labels' => rule }
+      end
+
+      it 'names the managed mode and keeps the Traefik image' do
+        expect(importer.result[:reverse_proxy])
+          .to include('mode' => 'internal', 'image' => 'traefik:v3.7')
+      end
+    end
+  end
 end

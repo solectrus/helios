@@ -453,9 +453,6 @@ en:
       system_general:
         title: 'Basic settings'
         description: 'Commissioning date, timezone and currency'
-      system_network:
-        title: 'Host'
-        description: 'Which address SOLECTRUS is reachable at'
       system_security:
         title: 'Access protection'
         description: 'Admin password and access code for the web interface'
@@ -472,8 +469,8 @@ en:
         title: 'Network'
         description: 'Host port and embedding into other websites'
       reverse_proxy:
-        title: 'Custom domain'
-        description: 'Domain & HTTPS via built-in or external Traefik. Only useful if this host is reachable from the internet.'
+        title: 'Address & domain'
+        description: 'The address SOLECTRUS is reachable at, optionally via a custom domain with HTTPS'
       backup:
         title: 'Backup'
         description: 'Backup destination (local, external mount, or S3)'

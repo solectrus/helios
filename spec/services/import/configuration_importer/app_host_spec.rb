@@ -62,6 +62,26 @@ RSpec.describe 'Import::ConfigurationImporter app_host handling' do
     end
   end
 
+  # The router rule wins over APP_HOST, because it names the address the stack
+  # answers on. A rule that names the machine to itself alone answers nothing,
+  # so it drops out and leaves APP_HOST its turn.
+  context 'when a router rule names the machine to itself alone' do
+    let(:dashboard_env) { { 'APP_HOST' => 'solectrus.example.com' } }
+    let(:services) do
+      {
+        'dashboard' => {
+          'image' => 'ghcr.io/solectrus/solectrus:latest',
+          'environment' => dashboard_env,
+          'labels' => { 'traefik.http.routers.dashboard.rule' => 'Host(`localhost`)' },
+        },
+      }
+    end
+
+    it 'keeps the address APP_HOST names' do
+      expect(importer.result[:system]).to include('app_host' => 'solectrus.example.com')
+    end
+  end
+
   context 'when APP_HOST is missing entirely' do
     let(:dashboard_env) { {} }
 

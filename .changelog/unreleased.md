@@ -27,20 +27,24 @@ Keep every section, an empty one included.
 - Services: a start that cannot run now stays visible and names what blocks it, in the status bar and on every service
 - Buttons: one that cannot be used no longer shows the hand cursor
 - Generated for Traefik: the header now explains every placeholder the file carries
-- Custom domain: the form that selects an external reverse proxy now asks for the domain that proxy routes. The file generated for Traefik carries that domain at once, in place of a placeholder
+- Settings: the Host card and the Custom Domain card are now one card, named Address & Domain. The address is entered once, and the form says what it stands for: the machine on the local network, the domain the built-in Traefik answers on, or the domain an external reverse proxy routes
+- Settings: a field now explains itself in the mode that is running. Making InfluxDB reachable names the address it leads to, the host port of the dashboard says when it has no effect, and the IP ranges of a proxy say when they are needed
 
 ## Fixes
 
 - Configuration forms: a form with several screens now turns a page without flicker, also on quick clicks
 - Navigation: a link that leads to another tab now moves the mark in the main navigation with it
-- Address of the machine: an address pasted out of the browser is now stored as the name alone. HELIOS removes a scheme, a port and a path, so every link and every rule built from the address leads somewhere. A custom domain is stored the same way. The field can stay empty, and the published port is used instead
+- Address of the machine: an address pasted out of the browser is now stored as the name alone. HELIOS removes a scheme, a port and a path, so every link and every rule built from the address leads somewhere. The field can stay empty, and the published port is used instead
 - Address of the machine: a loopback address such as localhost is now refused while it is typed, because every link derived from it sends a device back to itself. An address of that kind is dropped on update, and dropped from an imported installation as well. The generated files no longer fall back to localhost either
-- Custom domain over the built-in Traefik: the dashboard now learns the domain it answers on, in place of the address of the machine on the local network. It accepts a request from that domain again
+- Import: a stack routed by a reverse proxy that runs beside it, over a shared network, is now recognized as such. Its address and its HTTPS setting reach the form instead of staying hidden
 - Generated for Docker: the .env file now lists only the settings the stack reads. It no longer names a certificate folder that the stack does not use
 - Backup to S3: a backup or a restore that fails now reports the reason, for example a rejected access key or a bucket that cannot be reached
 - Backup, restore and CSV import: the preparation no longer fails when a service is renewed at the same moment
-- Support bundle: the custom domain, the address of the machine and the email address for the certificates now appear as placeholders, in every file of the bundle. A bundle attached to a public forum post no longer carries them
 - Services: the Open button of a stopped service now uses the right port again where the published ports are bound to one host IP address
+- Support bundle: the address of the machine and the email address for the certificates now appear as placeholders, in every file of the bundle. A bundle attached to a public forum post no longer carries them
+- Address & domain: an installation behind an nginx or an Apache is recognized as one, so the form offers its settings and the HTTPS setting it needs stays in place
+- Address & domain: the IP ranges of an upstream proxy are dropped once the address is reached directly. They belong to a proxy that is no longer there, and the dashboard no longer believes a request from those ranges about who sent it
+- Generated for Traefik: the file now names only the services that are reachable. An InfluxDB kept inside the stack no longer gets a route that leads nowhere
 
 ## Maintenance
 

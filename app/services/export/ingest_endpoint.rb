@@ -10,9 +10,10 @@ module Export
   # port is the address in every mode but that one.
   #
   # Returns nil when nothing in the configuration names the machine: app_host is
-  # required nowhere, and it stays empty wherever HELIOS is only ever reached at
-  # a loopback address, which the field refuses. A caller then names the port
-  # alone instead of showing an address with a placeholder in it.
+  # required only behind a reverse proxy, and it stays empty wherever HELIOS is
+  # only ever reached at a loopback address, which the field refuses. A caller
+  # then names the port alone instead of showing an address with a placeholder
+  # in it.
   #
   # The address arrives as HostAddress stored it, the host alone, so this class
   # only has to put brackets around an IPv6 address before the port.
@@ -38,8 +39,7 @@ module Export
     attr_reader :configuration
 
     def host
-      @host ||= configuration.system.app_host.presence ||
-                configuration.reverse_proxy.app_domain.presence
+      @host ||= configuration.public_host
     end
   end
 end

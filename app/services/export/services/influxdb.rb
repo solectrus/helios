@@ -77,7 +77,7 @@ module Export
         if traefik_managed_routing?
           # HELIOS owns Traefik: route InfluxDB through it (HTTPS, same
           # domain) instead of publishing a host port directly.
-          config[:labels] = traefik_labels
+          config[:labels] = traefik_router_labels(entrypoint: 'influxdb', port: CONTAINER_PORT)
         elsif exposed? && !traefik_routes_influxdb?
           # Publish a host port directly — either Traefik is off, or an
           # imported Traefik has no `influxdb` entrypoint to route through.
@@ -115,17 +115,6 @@ module Export
         Array(configuration.reverse_proxy.command).any? do |arg|
           arg.to_s.start_with?('--entrypoints.influxdb.')
         end
-      end
-
-      def traefik_labels
-        domain = configuration.reverse_proxy.app_domain
-        [
-          'traefik.enable=true',
-          "traefik.http.routers.influxdb.rule=Host(`#{domain}`)",
-          'traefik.http.routers.influxdb.entrypoints=influxdb',
-          "traefik.http.routers.influxdb.tls.certresolver=#{Traefik.certresolver(configuration)}",
-          "traefik.http.services.influxdb.loadbalancer.server.port=#{CONTAINER_PORT}",
-        ]
       end
 
       # The second mount is the shared influx-backup staging directory.

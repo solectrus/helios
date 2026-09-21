@@ -555,10 +555,10 @@ RSpec.describe Configuration do
 
     it 'drops mini-survey keys that are not in the patch (cleared by the user)' do
       config = described_class.current
-      config.update('system', { 'admin_password' => 'secret', 'app_host' => 'old.example' })
-      config.update('system_network', {})
+      config.update('system', { 'installation_date' => '2020-01-01', 'timezone' => 'Europe/Berlin' })
+      config.update('system_general', { 'timezone' => 'Europe/Berlin' })
 
-      expect(config.system).to eq({ 'admin_password' => 'secret' })
+      expect(config.system).to eq({ 'timezone' => 'Europe/Berlin' })
     end
 
     it 'removes the singleton entirely once the last mini-survey key is cleared' do
@@ -587,15 +587,16 @@ RSpec.describe Configuration do
       expect(config.dashboard).to eq({ 'ui_theme' => 'dark' })
     end
 
-    it 'stores the reverse-proxy trusted_proxy_ranges under dashboard' do
+    it 'stores the reverse-proxy address and trusted_proxy_ranges in their own sections' do
       config = described_class.current
       config.update('reverse_proxy',
-                    { 'app_domain' => 'example.com', 'trusted_proxy_ranges' => '10.0.0.0/8' })
+                    { 'mode' => 'internal', 'app_host' => 'example.com', 'trusted_proxy_ranges' => '10.0.0.0/8' })
 
-      expect(config.reverse_proxy).to eq({ 'app_domain' => 'example.com' })
+      expect(config.reverse_proxy).to eq({ 'mode' => 'internal' })
+      expect(config.system).to eq({ 'app_host' => 'example.com' })
       expect(config.dashboard).to eq({ 'trusted_proxy_ranges' => '10.0.0.0/8' })
       expect(config.setting_data('reverse_proxy')).to eq(
-        { 'app_domain' => 'example.com', 'trusted_proxy_ranges' => '10.0.0.0/8' },
+        { 'mode' => 'internal', 'app_host' => 'example.com', 'trusted_proxy_ranges' => '10.0.0.0/8' },
       )
     end
 
@@ -607,11 +608,34 @@ RSpec.describe Configuration do
       expect(config.reverse_proxy_managed?).to be false
     end
 
-    it 'still derives external mode from a legacy bind_ip without a stored mode' do
+    # The address is half of the answer: Traefik routes by host rule, and a
+    # rule with nothing in it matches nothing.
+    it 'runs no managed Traefik while the mode names no address' do
       config = described_class.current
-      config.update('reverse_proxy', { 'bind_ip' => '10.0.0.5' })
+      config.update('reverse_proxy', { 'mode' => 'internal' })
 
-      expect(config.reverse_proxy_external?).to be true
+      expect(config.reverse_proxy_managed?).to be false
+    end
+
+    # Every save holds the address the managed mode needs (see
+    # SettingPersistence#reverse_proxy_mode), so the wider question answers
+    # like the two modes for every configuration a save can leave behind. Held
+    # together here, because a configuration that says it runs a proxy while
+    # neither mode runs one leaves the installation without an address and
+    # without a way to reach one.
+    [
+      {},
+      { 'mode' => 'internal', 'app_host' => 'solar.example.com' },
+      { 'mode' => 'external', 'app_host' => 'solar.example.com' },
+      { 'mode' => 'external' },
+    ].each do |stored|
+      it "names a proxy exactly where one of the two modes runs it: #{stored}" do
+        config = described_class.current
+        config.update('reverse_proxy', stored)
+
+        expect(config.app_host_must_be_a_domain?)
+          .to eq(config.reverse_proxy_managed? || config.reverse_proxy_external?)
+      end
     end
 
     it 'translates software channel tokens into the registry image URLs' do
@@ -729,7 +753,7 @@ RSpec.describe Configuration do
     context 'when switching to collectors_only mode' do
       before do
         with_config_yaml(
-          'reverse_proxy' => { 'app_domain' => 'example.com' },
+          'reverse_proxy' => { 'mode' => 'internal' },
           'backup' => { 'aws_bucket' => 'my-bucket' },
           'postgresql' => { 'password' => 'keep-me' },
           'shelly' => { 'connection' => 'cloud' },
@@ -1399,9 +1423,11 @@ RSpec.describe Configuration do
       expect(described_class.current.required_settings).to eq(%w[system_general])
     end
 
-    # A managed Traefik asks for its domain in app_domain, its own field.
     it 'does not ask for the address behind a managed reverse proxy' do
-      with_config_yaml('reverse_proxy' => { 'app_domain' => 'solectrus.example.com' })
+      with_config_yaml(
+        'reverse_proxy' => { 'mode' => 'internal' },
+        'system' => { 'app_host' => 'solectrus.example.com' },
+      )
       expect(described_class.current.required_settings).to eq(%w[system_general])
     end
   end
@@ -1461,7 +1487,7 @@ RSpec.describe Configuration do
       with_config_yaml('senec' => { 'adapter' => 'local' })
       expect(described_class.current.optional_groups).to eq(
         'installation' => %w[deployment software],
-        'access' => %w[system_network influxdb dashboard_network reverse_proxy system_security],
+        'access' => %w[reverse_proxy influxdb dashboard_network system_security],
         'data' => %w[storage],
         'energy_management' => %w[tibber],
         'dashboard' => %w[dashboard_co2 dashboard_theme],
@@ -1531,26 +1557,15 @@ RSpec.describe Configuration do
       '  Solar.Example.COM  ' => 'solar.example.com',
     }.each do |typed, host|
       it "stores #{host.inspect} for #{typed.inspect}" do
-        described_class.current.update('system_network', { 'app_host' => typed })
+        described_class.current.update('reverse_proxy', { 'app_host' => typed })
 
         expect(described_class.current.system.app_host).to eq(host)
       end
     end
 
-    # A managed Traefik answers on this domain, and it reaches every reader the
-    # same way: the link to a service, the label Traefik reads, APP_DOMAIN.
-    it 'stores the domain of a managed Traefik the same way' do
-      described_class.current.update(
-        'reverse_proxy',
-        { 'mode' => 'internal', 'app_domain' => 'https://Solectrus.Example.com/' },
-      )
-
-      expect(described_class.current.reverse_proxy.app_domain).to eq('solectrus.example.com')
-    end
-
     it 'clears the field for a value that leaves no host behind' do
-      described_class.current.update('system_network', { 'app_host' => 'solar.example.com' })
-      described_class.current.update('system_network', { 'app_host' => '  ' })
+      described_class.current.update('reverse_proxy', { 'app_host' => 'solar.example.com' })
+      described_class.current.update('reverse_proxy', { 'app_host' => '  ' })
 
       expect(described_class.current.system.app_host).to be_nil
     end
@@ -1568,9 +1583,9 @@ RSpec.describe Configuration do
     end
 
     it 'keeps a configured host' do
-      described_class.current.update('system_network', { 'app_host' => 'chosen.example.com' })
+      described_class.current.update('reverse_proxy', { 'app_host' => 'chosen.example.com' })
+      described_class.current.adopt_request_host!('solectrus.fritz.box')
 
-      expect(described_class.current.adopt_request_host!('solectrus.fritz.box')).to be false
       expect(described_class.current.system.app_host).to eq('chosen.example.com')
     end
 
@@ -1578,41 +1593,35 @@ RSpec.describe Configuration do
     # external source to its own host.
     it 'refuses a loopback host' do
       %w[localhost 127.0.0.1 ::1 0.0.0.0 helios.localhost].each do |host|
-        expect(described_class.current.adopt_request_host!(host)).to be false
+        described_class.current.adopt_request_host!(host)
       end
 
       expect(described_class.current.system.app_host).to be_blank
     end
 
     it 'refuses a blank host' do
-      expect(described_class.current.adopt_request_host!(nil)).to be false
-    end
+      described_class.current.adopt_request_host!(nil)
 
-    # There the field holds the domain the external proxy routes. The address
-    # bar names neither way HELIOS is reached: directly it carries the host
-    # address, through the proxy the subdomain HELIOS runs on. The field is
-    # required in that mode, so a guess would settle the requirement wrongly.
-    it 'adopts nothing behind an external reverse proxy' do
-      with_config_yaml('reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' })
-
-      expect(described_class.current.adopt_request_host!('solectrus.fritz.box')).to be false
       expect(described_class.current.system.app_host).to be_blank
     end
 
-    it 'adopts behind a managed reverse proxy' do
-      with_config_yaml('reverse_proxy' => { 'app_domain' => 'solectrus.example.com' })
-      described_class.current.adopt_request_host!('solectrus.fritz.box')
+    # Behind either proxy the field holds a domain, and the address bar names
+    # it nowhere: reached directly the bar carries the address of the machine,
+    # reached through the proxy the host HELIOS itself answers on. The field is
+    # mandatory in both modes, so a guess would settle the requirement wrongly.
+    %w[external internal].each do |mode|
+      it "adopts nothing behind a #{mode} reverse proxy" do
+        with_config_yaml('reverse_proxy' => { 'mode' => mode })
 
-      expect(described_class.current.system.app_host).to eq('solectrus.fritz.box')
+        described_class.current.adopt_request_host!('solectrus.fritz.box')
+
+        expect(described_class.current.system.app_host).to be_blank
+      end
     end
   end
 
   describe '.asks_for_app_host?' do
-    it 'is true for the form that holds the field' do
-      expect(described_class.asks_for_app_host?('system_network')).to be true
-    end
-
-    it 'is true for the form that borrows it' do
+    it 'is true for the form that asks for it' do
       expect(described_class.asks_for_app_host?('reverse_proxy')).to be true
     end
 
@@ -1644,26 +1653,18 @@ RSpec.describe Configuration do
       expect(public_host).to be_nil
     end
 
-    # The dashboard answers on the domain there. app_host holds the address of
-    # the machine on the local network, because it is adopted at the first
-    # start, before any domain exists.
-    it 'is the domain of the managed Traefik' do
-      with_config_yaml(
-        'system' => { 'app_host' => '192.168.1.5' },
-        'reverse_proxy' => { 'mode' => 'internal', 'app_domain' => 'demo.example.com' },
-      )
+    # One field holds the address in every mode: the domain the managed Traefik
+    # answers on, the domain an external proxy routes, the machine itself where
+    # no proxy runs.
+    %w[internal external].each do |mode|
+      it "is the address behind a #{mode} reverse proxy" do
+        with_config_yaml(
+          'system' => { 'app_host' => 'demo.example.com' },
+          'reverse_proxy' => { 'mode' => mode },
+        )
 
-      expect(public_host).to eq('demo.example.com')
-    end
-
-    # There app_host is the domain itself, and app_domain stays empty.
-    it 'is the address behind an external reverse proxy' do
-      with_config_yaml(
-        'system' => { 'app_host' => 'solar.example.com' },
-        'reverse_proxy' => { 'mode' => 'external', 'bind_ip' => '10.0.0.5' },
-      )
-
-      expect(public_host).to eq('solar.example.com')
+        expect(public_host).to eq('demo.example.com')
+      end
     end
   end
 

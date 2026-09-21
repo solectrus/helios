@@ -117,7 +117,6 @@ module SupportBundle
       'mqtt' => %w[host],
       'senec' => %w[host],
       'shelly' => %w[host],
-      'reverse_proxy' => %w[app_domain],
     }.freeze
 
     # Per-sensor fields to redact inside the dynamic `sensors:` section.

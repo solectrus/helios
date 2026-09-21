@@ -27,7 +27,7 @@ module Export
         }
 
         if Traefik.enabled?(configuration)
-          config[:labels] = traefik_dashboard_labels
+          config[:labels] = traefik_router_labels(entrypoint: 'websecure', port: 3000)
         else
           config[:ports] = ["#{host_port}:3000"]
         end
@@ -93,18 +93,6 @@ module Export
 
       def optional_house_power_vars
         configuration.excluded_from_house_power.any? ? %w[INFLUX_EXCLUDE_FROM_HOUSE_POWER] : []
-      end
-
-      def traefik_dashboard_labels
-        domain = configuration.reverse_proxy.app_domain
-
-        [
-          'traefik.enable=true',
-          "traefik.http.routers.dashboard.rule=Host(`#{domain}`)",
-          'traefik.http.routers.dashboard.entrypoints=websecure',
-          "traefik.http.routers.dashboard.tls.certresolver=#{Traefik.certresolver(configuration)}",
-          'traefik.http.services.dashboard.loadbalancer.server.port=3000',
-        ]
       end
     end
   end

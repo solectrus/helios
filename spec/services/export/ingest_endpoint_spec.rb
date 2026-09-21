@@ -29,8 +29,11 @@ RSpec.describe Export::IngestEndpoint do
 
     # Managed Traefik routes the dashboard and InfluxDB only, so Ingest keeps
     # its host port and the domain merely names the machine.
-    it 'falls back to the proxy domain when no host is configured' do
-      with_config_yaml('reverse_proxy' => { 'mode' => 'managed', 'app_domain' => 'solectrus.example.com' })
+    it 'names the host port behind a managed Traefik' do
+      with_config_yaml(
+        'system' => { 'app_host' => 'solectrus.example.com' },
+        'reverse_proxy' => { 'mode' => 'internal' },
+      )
 
       expect(url).to eq('http://solectrus.example.com:4567')
     end

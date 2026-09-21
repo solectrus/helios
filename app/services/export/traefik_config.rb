@@ -129,7 +129,7 @@ module Export
     end
 
     def base_domain
-      configuration.system.app_host.presence || DOMAIN_PLACEHOLDER
+      configuration.public_host || DOMAIN_PLACEHOLDER
     end
 
     def target_ip

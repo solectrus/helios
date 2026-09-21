@@ -32,7 +32,7 @@ module Export
 
       def self.letsencrypt_email(configuration)
         configuration.reverse_proxy.letsencrypt_email.presence ||
-          "webmaster@#{configuration.reverse_proxy.app_domain}"
+          "webmaster@#{configuration.public_host}"
       end
 
       # The .env names the generated service definition reads back, as
@@ -237,7 +237,7 @@ module Export
       end
 
       # Dedicated entrypoint for the HELIOS management UI, terminating TLS so it
-      # is reached over HTTPS on the same domain (https://<app_domain>:3999).
+      # is reached over HTTPS on the same domain (https://<app_host>:3999).
       def helios_entrypoint
         return [] unless helios_routed?
 

@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 6
+_schema_version: 7
 system:
   admin_password: my-admin-password
   app_host: solectrus.example.de
@@ -68,7 +68,6 @@ shelly:
   interval: '20'
   mode: essential
 reverse_proxy:
-  app_domain: solectrus.example.de
   command:
   - "--providers.docker=true"
   - "--providers.docker.exposedbydefault=false"
@@ -84,6 +83,7 @@ reverse_proxy:
   labels:
   - com.centurylinklabs.watchtower.scope=solectrus
   letsencrypt_email: mustermann@example.de
+  mode: internal
   ports:
   - 80:80
   - 443:443

@@ -15,7 +15,8 @@ RSpec.describe 'Settings', :with_admin_password do
       get settings_path
 
       Configuration.current.visible_settings.each do |setting|
-        expect(response.body).to include(I18n.t("configurations.settings.#{setting}.title"))
+        # CGI.escapeHTML: a title may contain "&" (e.g. "Address & domain")
+        expect(response.body).to include(CGI.escapeHTML(I18n.t("configurations.settings.#{setting}.title")))
       end
     end
 

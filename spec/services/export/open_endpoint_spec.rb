@@ -22,7 +22,9 @@ RSpec.describe Export::OpenEndpoint do
   end
 
   describe 'behind a managed Traefik' do
-    let(:data) { { 'reverse_proxy' => { 'app_domain' => 'solectrus.example.com' } } }
+    let(:data) do
+      { 'system' => { 'app_host' => 'solectrus.example.com' }, 'reverse_proxy' => { 'mode' => 'internal' } }
+    end
     let(:service_name) { 'dashboard' }
 
     # The managed dashboard is routed at the domain root and publishes no host

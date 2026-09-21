@@ -22,7 +22,6 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # untouched. `#setting_data` returns the slice the mini-survey owns.
   SETTING_GROUPS = {
     'system_general' => { singleton: 'system', keys: %w[installation_date timezone currency] },
-    'system_network' => { singleton: 'system', keys: %w[app_host] },
     'system_security' => { singleton: 'system', keys: %w[admin_password] },
     'dashboard_co2' => { singleton: 'dashboard', keys: %w[co2_emission_factor] },
     'dashboard_theme' => { singleton: 'dashboard', keys: %w[ui_theme] },
@@ -43,11 +42,12 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # their `dashboard` keys.
   BORROWED_FIELDS = {
     'system_security' => { 'lockup_codeword' => 'dashboard' },
-    # app_host is the address SOLECTRUS is reached at and stays in `system`
-    # wherever it is asked for. Behind an external reverse proxy that address is
-    # the domain the proxy routes, and nothing else supplies it, so the form
-    # that chooses the mode asks for it there instead of sending the reader to
-    # another screen for the one answer that mode needs.
+    # app_host is the address SOLECTRUS is reached at, and it belongs to the
+    # installation rather than to the proxy in front of it, so it stays in
+    # `system`. The reverse-proxy form asks for it because that form already
+    # poses the question: with a managed Traefik the address is the domain
+    # Traefik answers on, behind an external proxy the domain that proxy
+    # routes, and without either the address of the machine itself.
     'reverse_proxy' => {
       'app_host' => 'system', 'trusted_proxy_ranges' => 'dashboard', 'force_ssl' => 'dashboard'
     },
@@ -58,10 +58,6 @@ class Configuration # rubocop:disable Metrics/ClassLength
     # charger section disappears once the survey blanks its fields.
     'tibber' => SENEC_CHARGER_SURVEY_FIELDS.index_with('senec_charger').freeze,
   }.freeze
-
-  # Fields that hold the name of a machine and nothing else (see
-  # #normalize_host_fields).
-  HOST_FIELDS = %w[app_host app_domain].freeze
 
   # Read-only pseudo-settings: they appear in the Settings UI like real
   # settings (chip → modal with survey) but expose derived state instead of
@@ -104,7 +100,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # `backup` is intentionally absent: its survey lives on the Backups page.
   SETTINGS = %w[
     deployment software
-    system_general system_network system_security
+    system_general system_security
     dashboard_co2 dashboard_theme dashboard_network
     influxdb reverse_proxy
     tibber
@@ -119,16 +115,16 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # `#optional_groups` — this map is the static layout.
   OPTIONAL_GROUPS = {
     'installation' => %w[deployment software system_general],
-    'access' => %w[system_network influxdb dashboard_network reverse_proxy system_security],
+    'access' => %w[reverse_proxy influxdb dashboard_network system_security],
     'data' => %w[ingest_settings storage],
     'energy_management' => %w[tibber],
     'dashboard' => %w[dashboard_co2 dashboard_theme],
   }.freeze
 
   # Settings shown in the configuration UI in collectors_only mode. The host
-  # has no public surface (reverse_proxy/backup target the local dashboard/
-  # postgres, which don't exist here) and `system_network` configures app_host,
-  # which only matters when the dashboard runs locally.
+  # has no public surface: reverse_proxy/backup target the local dashboard and
+  # postgres, which don't exist here, and the address the reverse-proxy form
+  # asks for only matters when the dashboard runs locally.
   COLLECTORS_ONLY_SETTINGS = %w[
     deployment software
     system_general system_security
@@ -145,7 +141,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # stay editable.
   DASHBOARD_ONLY_SETTINGS = %w[
     deployment software
-    system_general system_network system_security
+    system_general system_security
     dashboard_co2 dashboard_theme dashboard_network
     reverse_proxy
     tibber
@@ -811,47 +807,34 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # would send another machine to itself. The field then stays empty, and
   # every caller falls back to the port alone.
   #
-  # Behind an external reverse proxy nothing is adopted at all. The field
-  # holds the domain that proxy routes, and the address bar names neither of
-  # the two ways HELIOS is reached there: directly, it carries the host
-  # address, and through the proxy it carries the subdomain HELIOS itself
-  # runs on, which Export::TraefikConfig would then extend by another one. The
-  # form that chooses that mode asks for the domain itself (see
-  # BORROWED_FIELDS), so a guess would answer a question already asked, with
-  # the one value it must not hold.
+  # Nothing is adopted once a reverse proxy is in play. The field then holds a
+  # domain, and the address bar names it nowhere: reached directly, the bar
+  # carries the address of the machine, and reached through the proxy it
+  # carries the host HELIOS itself answers on, which is not the host the stack
+  # is routed at. The form that chooses the mode asks for the domain itself, so
+  # a guess would answer a question already asked, with the one value it must
+  # not hold.
   def adopt_request_host!(host)
-    return false if system.app_host.present? || reverse_proxy_external?
-    return false if host.blank? || HostAddress.loopback?(host)
+    return if public_host.present? || app_host_must_be_a_domain?
 
-    update('system_network', { 'app_host' => host })
+    host = HostAddress.normalize(host)
+    return if host.blank? || HostAddress.loopback?(host)
+    return unless store_section_field('system', 'app_host', host)
+
+    save!
   end
 
-  # Whether the form of `setting` asks for app_host itself: the network
-  # settings hold the field, the reverse-proxy settings borrow it. A save
-  # through either carries the user's own answer, an empty one included, so
-  # nothing may fill the field in behind it (see
-  # Configurations::SettingsController#adopt_request_host!).
+  # Whether the form of `setting` asks for app_host. A save through it carries
+  # the user's own answer, an empty one included, so nothing may fill the field
+  # in behind it (see Configurations::SettingsController#adopt_request_host!).
   def self.asks_for_app_host?(setting)
-    setting = setting.to_s
-
-    Array(SETTING_GROUPS.dig(setting, :keys)).include?('app_host') ||
-      BORROWED_FIELDS.dig(setting, 'app_host').present?
+    BORROWED_FIELDS.dig(setting.to_s, 'app_host').present?
   end
 
-  # The address the dashboard answers on from outside, which is the one thing
-  # the dashboard needs APP_HOST for: the CORS origin it accepts a request
-  # from.
-  #
-  # Behind the managed Traefik that address is the domain Traefik answers on.
-  # app_host cannot serve there. It is adopted from the browser at the first
-  # start, before any domain exists, so it holds the address of the machine on
-  # the local network, and the dashboard answers on that address nowhere.
-  #
-  # In every other mode app_host is the address itself: the domain an external
-  # proxy routes, or the address of the machine where no proxy runs.
+  # The address the stack answers on from outside. One field holds it in every
+  # mode: the domain a managed Traefik answers on, the domain an external proxy
+  # routes, or the address of the machine where no proxy runs.
   def public_host
-    return reverse_proxy.app_domain.presence if reverse_proxy_managed?
-
     system.app_host.presence
   end
 
@@ -869,24 +852,40 @@ class Configuration # rubocop:disable Metrics/ClassLength
     mode == ConfigSchema::MODE_DASHBOARD_ONLY
   end
 
-  # Reverse-proxy "external Traefik" mode: an external Traefik routes to the
-  # stack's published host ports, so HELIOS runs no Traefik of its own (no
-  # app_domain); an optional bind_ip pins where the ports are published.
-  # The stored `mode` is authoritative; fall back to field presence for configs
-  # saved before `mode` was persisted and for imported stacks. Mirrors the
-  # tri-state in Configurations::SettingsController#reverse_proxy_mode.
+  # Reverse-proxy "external Traefik" mode: an external proxy routes to the
+  # stack's published host ports, so HELIOS runs no Traefik of its own; an
+  # optional bind_ip pins where the ports are published. The stored `mode` says
+  # so, and nothing else: this mode publishes the ports, binds them and marks
+  # the TLS the proxy terminates without an address of its own. The callers
+  # that need the address ask for it separately (see Export::PublicUrl,
+  # Export::IngestEndpoint and Export::TraefikConfig).
   def reverse_proxy_external?
-    return reverse_proxy.mode == 'external' if reverse_proxy.mode.present?
-
-    reverse_proxy.app_domain.blank? && reverse_proxy.bind_ip.present?
+    reverse_proxy.mode == 'external'
   end
 
   # Reverse-proxy "managed Traefik" mode: HELIOS runs its own Traefik for the
-  # configured app_domain and routes the dashboard/influxdb through it via
-  # labels (no published host ports). The internal counterpart to
+  # configured address and routes the dashboard/influxdb through it via labels
+  # (no published host ports). The internal counterpart to
   # reverse_proxy_external?.
+  #
+  # The address is part of the answer, not just the mode: Traefik routes by
+  # host rule, and a rule with nothing in it matches nothing. A stack that
+  # names no address keeps its published ports until the form supplies one.
   def reverse_proxy_managed?
-    !collectors_only? && reverse_proxy.app_domain.present?
+    !collectors_only? && reverse_proxy.mode == 'internal' && public_host.present?
+  end
+
+  # Whether the address field takes a domain instead of the address of the
+  # machine. Either proxy routes the stack at a host of its own, and nothing
+  # outside the form knows it, so a caller that would otherwise fill the field
+  # from the browser asks this first (see #adopt_request_host! and
+  # Surveys::ReverseProxy::Survey).
+  #
+  # The stored mode alone answers it, which is wider than
+  # reverse_proxy_managed?: a hand-edited configuration can name the managed
+  # mode before it names an address.
+  def app_host_must_be_a_domain?
+    reverse_proxy.mode.present? && reverse_proxy.mode != 'none'
   end
 
   # Settings visible in the configuration UI for the current mode. Ingest is
@@ -973,20 +972,12 @@ class Configuration # rubocop:disable Metrics/ClassLength
     return update_software(data) if setting == 'software'
     raise ArgumentError, "Setting '#{setting}' is read-only" if READ_ONLY_SETTINGS.include?(setting)
 
-    raw = normalize_host_fields(deep_unwrap(data))
+    raw = normalize_app_host(deep_unwrap(data))
     borrowed_changed = store_borrowed_fields!(setting, raw)
+    changed = write_section(setting, raw) || borrowed_changed
 
-    group = SETTING_GROUPS[setting]
-    return update_grouped(group, raw) || borrowed_changed if group
-
-    if @data[setting] == raw
-      borrowed_changed
-    else
-      @data[setting] = raw
-      enforce_mode_constraints! if setting == 'deployment'
-      save!
-      true
-    end
+    save! if changed
+    changed
   end
 
   def configured?(setting)
@@ -1151,26 +1142,25 @@ class Configuration # rubocop:disable Metrics/ClassLength
     base
   end
 
-  # Both fields name a machine: app_host the address other devices reach
-  # SOLECTRUS at, app_domain the domain a managed Traefik answers on. Each
-  # arrives as the user pasted it, with the scheme, the port or the path the
-  # browser bar carries. Storage holds the host alone, so every reader can put
-  # the value into a URL or into a host rule without taking it apart again. A
-  # value that leaves no host behind drops out of the payload, which clears the
-  # field.
-  def normalize_host_fields(raw)
-    return raw unless raw.is_a?(Hash)
+  # app_host names a machine and nothing else. It arrives as the user pasted
+  # it, with the scheme, the port or the path the browser bar carries. Storage
+  # holds the host alone, so every reader can put the value into a URL or into
+  # a host rule without taking it apart again.
+  #
+  # A value that leaves no host behind becomes nil and keeps its key. The key
+  # is what says the payload spoke for the field: a borrowed field the payload
+  # does not name is left untouched (see #store_borrowed_fields!), so a cleared
+  # address has to arrive as an answer rather than as a silence.
+  def normalize_app_host(raw)
+    return raw unless raw.is_a?(Hash) && raw.key?('app_host')
 
-    HOST_FIELDS.reduce(raw) do |data, field|
-      next data unless data.key?(field)
-
-      host = HostAddress.normalize(data[field])
-      host ? data.merge(field => host) : data.except(field)
-    end
+    raw.merge('app_host' => HostAddress.normalize(raw['app_host']))
   end
 
   # Extracts a survey's borrowed fields from `raw` (mutating it) and writes
   # each into its foreign section. Returns true if any borrowed value changed.
+  # `#update` writes the result to disk, so a save that touches both halves of
+  # the payload leaves config.yaml complete in one step.
   def store_borrowed_fields!(setting, raw)
     changed = false
     BORROWED_FIELDS.fetch(setting, {}).each do |field, section|
@@ -1178,7 +1168,6 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
       changed = true if store_section_field(section, field, raw.delete(field))
     end
-    save! if changed
     changed
   end
 
@@ -1208,10 +1197,22 @@ class Configuration # rubocop:disable Metrics/ClassLength
     current[field] != value
   end
 
+  # Writes what is left of the payload once the borrowed fields are split off:
+  # into the slice a mini-survey owns, or over the section of its own.
+  def write_section(setting, raw)
+    group = SETTING_GROUPS[setting]
+    return update_grouped(group, raw) if group
+    return false if @data[setting] == raw
+
+    @data[setting] = raw
+    enforce_mode_constraints! if setting == 'deployment'
+    true
+  end
+
   def update_grouped(group, data) # rubocop:disable Naming/PredicateMethod
     singleton = group[:singleton]
     keys = group[:keys]
-    incoming = deep_unwrap(data).slice(*keys)
+    incoming = data.slice(*keys)
 
     current = @data[singleton]&.dup || {}
     next_section = current.merge(incoming)
@@ -1224,7 +1225,6 @@ class Configuration # rubocop:disable Metrics/ClassLength
     else
       @data[singleton] = next_section
     end
-    save!
     true
   end
 

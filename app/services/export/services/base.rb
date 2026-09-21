@@ -195,6 +195,22 @@ module Export
       def volume_section
         configuration.public_send(self.class.service_name)
       end
+
+      # Router labels for a service the managed Traefik routes at the
+      # configured address. The router and the load balancer are named after
+      # the service, so the entrypoint and the container port are all a caller
+      # has to name.
+      def traefik_router_labels(entrypoint:, port:)
+        name = self.class.service_name
+
+        [
+          'traefik.enable=true',
+          "traefik.http.routers.#{name}.rule=Host(`#{configuration.public_host}`)",
+          "traefik.http.routers.#{name}.entrypoints=#{entrypoint}",
+          "traefik.http.routers.#{name}.tls.certresolver=#{Traefik.certresolver(configuration)}",
+          "traefik.http.services.#{name}.loadbalancer.server.port=#{port}",
+        ]
+      end
     end
   end
 end

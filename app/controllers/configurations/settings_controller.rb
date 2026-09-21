@@ -74,7 +74,7 @@ module Configurations
       redirect_to redirect_target
     end
 
-    # Never after a save through a form that asks for the address itself. The
+    # Never after a save through the form that asks for the address itself. The
     # payload is the answer there, an empty one included, and an address taken
     # from the browser behind it would put back what the user just cleared.
     def adopt_request_host!
@@ -217,7 +217,7 @@ module Configurations
       return if data.blank?
 
       if setting == 'reverse_proxy'
-        data['mode'] = reverse_proxy_mode(data)
+        data['mode'] = data['mode'].presence || 'none'
         return
       end
 
@@ -230,18 +230,6 @@ module Configurations
 
       gating = ENABLED_FLAG_GATING_FIELD[setting]
       data['enabled'] = gating ? data[gating].present? : true
-    end
-
-    # Resolve the reverse_proxy mode for the UI radio. A persisted `mode` is the
-    # source of truth; fall back to field presence for configs saved before
-    # `mode` was stored and for imported stacks (a stored `app_domain` means a
-    # HELIOS-managed Traefik, a stored `bind_ip` means an external one).
-    def reverse_proxy_mode(data)
-      return data['mode'] if data['mode'].present?
-      return 'internal' if data['app_domain'].present?
-      return 'external' if data['bind_ip'].present?
-
-      'none'
     end
 
     # The "user-selectable" theme is stored as an empty string (the dashboard's

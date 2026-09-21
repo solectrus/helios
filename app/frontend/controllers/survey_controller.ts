@@ -1,11 +1,15 @@
 import { Controller } from '@hotwired/stimulus';
-import type { Model, Question } from 'survey-core';
+import type { Model } from 'survey-core';
 import { loadSurveyRuntime } from '../utils/survey_loader';
 import { readLocale } from '../utils/preferences_cookie';
 import { prefersReducedMotion } from '../utils/prefers_reduced_motion';
 import { loadingSpinner } from '../utils/loading_spinner';
 import { SurveyDropdowns } from '../utils/survey_dropdowns';
 import { wirePasswordReveal } from '../utils/survey_password_reveal';
+import {
+  wireBrowserHostOffer,
+  type BrowserHostOffer,
+} from '../utils/survey_browser_host';
 
 // Connection-test labels shown before the server replies (the result message
 // itself comes back localized from the server). Kept here because they belong
@@ -119,7 +123,8 @@ export default class extends Controller<HTMLElement> {
 
     // Read and remove before the model is built, so the marker never reaches
     // SurveyJS as a property it does not know.
-    const offerBrowserHost = surveyJson.offerBrowserHost === true;
+    const browserHostOffer = surveyJson.offerBrowserHost as
+      BrowserHostOffer | undefined;
     delete surveyJson.offerBrowserHost;
 
     this.survey = new Model(surveyJson);
@@ -175,25 +180,12 @@ export default class extends Controller<HTMLElement> {
       this.survey.mergeData(this.initialDataValue);
     }
 
-    // Auto-fill app_host from the browser's address bar if not already set.
-    // Only where the survey asks for it: two surveys carry the field, and the
-    // address bar answers one of the two questions. The network settings ask
-    // for the address of this machine, which is what the bar holds. The
-    // reverse-proxy settings ask for the domain an external proxy routes, and
-    // the bar names that domain nowhere, so an offer there would fill a
-    // required field with the one value it must not hold.
-    //
-    // The field also refuses an address that names the machine to itself alone
-    // (see Surveys::SystemNetwork::Survey), and the address bar carries such a
-    // name whenever HELIOS is reached at one. Its rule is asked beforehand:
-    // filling the field and validating afterwards would mark a value the user
-    // never typed as an error.
-    if (offerBrowserHost) {
-      const appHost = this.survey.getQuestionByName('app_host');
-      const browserHost = window.location.hostname;
-      if (appHost && !appHost.value && accepts(appHost, browserHost)) {
-        appHost.value = browserHost;
-      }
+    if (browserHostOffer) {
+      wireBrowserHostOffer(
+        this.survey,
+        browserHostOffer,
+        window.location.hostname,
+      );
     }
 
     // Handle survey completing (fires before DOM changes)
@@ -466,18 +458,4 @@ function startSurveyTransition(update: () => void) {
   });
 
   return transition;
-}
-
-// Whether a question would take a value, judged by the regex rules it carries
-// and without assigning anything. Used where a value is offered rather than
-// typed, so an offer the question refuses is simply not made.
-function accepts(question: Question, value: string): boolean {
-  return question.validators.every((validator) => {
-    const { regex, caseInsensitive } = validator as {
-      regex?: string;
-      caseInsensitive?: boolean;
-    };
-
-    return !regex || new RegExp(regex, caseInsensitive ? 'i' : '').test(value);
-  });
 }

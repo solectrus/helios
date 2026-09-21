@@ -5,7 +5,10 @@ RSpec.describe Export::Env::ReverseProxy do
   # which names the stack reads back. The section follows them, so .env never
   # defines a name nothing reads.
   def with_traefik(reverse_proxy)
-    with_config_yaml('reverse_proxy' => { 'app_domain' => 'solar.example.com' }.merge(reverse_proxy))
+    with_config_yaml(
+      'system' => { 'app_host' => 'solar.example.com' },
+      'reverse_proxy' => { 'mode' => 'internal' }.merge(reverse_proxy),
+    )
   end
 
   # The routers carry the domain in the host rule itself (see

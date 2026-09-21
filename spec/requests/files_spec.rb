@@ -44,7 +44,7 @@ RSpec.describe 'Files', :with_admin_password do
       end
 
       it 'renders the file-provider config in external Traefik mode' do
-        Configuration.current.update('reverse_proxy', { 'bind_ip' => '10.0.0.5' })
+        Configuration.current.update('reverse_proxy', { 'mode' => 'external', 'bind_ip' => '10.0.0.5' })
 
         get file_path('traefik'), headers: turbo_frame_headers
 

@@ -79,6 +79,18 @@ RSpec.describe HostAddress do
     end
   end
 
+  describe '.public_host' do
+    it 'keeps a host that names the machine to others, and drops the rest' do
+      expect(answers { |typed, _, _| described_class.public_host(typed) })
+        .to eq(answers { |_, host, loopback| host unless loopback })
+    end
+
+    it 'answers nil where nothing names a host' do
+      expect(described_class.public_host(nil)).to be_nil
+      expect(described_class.public_host('  ')).to be_nil
+    end
+  end
+
   describe '.for_url' do
     it 'brackets an address that carries colons of its own' do
       expect(described_class.for_url('2001:db8::1')).to eq('[2001:db8::1]')

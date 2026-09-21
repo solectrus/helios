@@ -28,9 +28,9 @@ RSpec.describe Surveys::Influxdb::Survey do
       end
     end
 
-    context 'with a managed Traefik (app_domain configured)' do
+    context 'with a managed Traefik' do
       before do
-        Configuration.current.update('reverse_proxy', { 'app_domain' => 'solar.example.com' })
+        Configuration.current.update('reverse_proxy', { 'mode' => 'internal', 'app_host' => 'solar.example.com' })
       end
 
       it 'replaces the LAN copy with the Traefik routing copy' do
@@ -53,12 +53,43 @@ RSpec.describe Surveys::Influxdb::Survey do
       end
     end
 
+    context 'with an external reverse proxy' do
+      before do
+        Configuration.current.update('reverse_proxy', { 'mode' => 'external', 'app_host' => 'solar.example.com' })
+      end
+
+      it 'replaces the LAN copy with the proxy copy' do
+        element = find_survey_element(result, 'publish_port')
+        expect(element['title']['de']).to include('Proxy')
+        expect(element['title']['default']).to include('proxy')
+      end
+
+      it 'names the subdomain the proxy is meant to answer on' do
+        description = find_survey_element(result, 'publish_port')['description']
+        expect(description['de']).to include('https://influxdb.solar.example.com')
+        expect(description['default']).to include('https://influxdb.solar.example.com')
+      end
+    end
+
+    # The address is required in the form of that mode, but a hand-edited
+    # configuration can name the mode without one. There is no address to put
+    # into the copy then, so the default stays.
+    context 'with an external reverse proxy and no address' do
+      before { Configuration.current.update('reverse_proxy', { 'mode' => 'external' }) }
+
+      it 'keeps the default LAN copy' do
+        element = find_survey_element(result, 'publish_port')
+        expect(element['title']['de']).to include('lokalen Netzwerk')
+      end
+    end
+
     # An imported custom Traefik (captured command) keeps the direct host
     # port, so the default LAN copy stays accurate.
     context 'with an imported custom Traefik' do
       before do
         Configuration.current.update('reverse_proxy', {
-                                       'app_domain' => 'solar.example.com',
+                                       'mode' => 'internal',
+                                       'app_host' => 'solar.example.com',
                                        'command' => ['--providers.docker=true'],
                                      })
       end

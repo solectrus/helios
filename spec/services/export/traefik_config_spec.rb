@@ -7,7 +7,7 @@ RSpec.describe Export::TraefikConfig do
     config = Configuration.current
     config.update('system', { 'app_host' => 'demo.example.com', 'timezone' => 'Europe/Berlin' })
     config.update('deployment', { 'mode' => 'dashboard_only' })
-    config.update('reverse_proxy', { 'bind_ip' => '10.0.0.5' })
+    config.update('reverse_proxy', { 'mode' => 'external', 'bind_ip' => '10.0.0.5' })
     config
   end
   let(:document) { YAML.safe_load(output) }

@@ -6,9 +6,10 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 6
+_schema_version: 7
 system:
   admin_password: test-admin
+  app_host: solectrus.example.com
   installation_date: '2023-06-15'
   secret_key_base: test-secret-key
   timezone: Europe/Berlin
@@ -31,7 +32,6 @@ redis:
 watchtower:
   image: nickfedor/watchtower:latest
 reverse_proxy:
-  app_domain: solectrus.example.com
   command:
   - "--providers.docker=true"
   - "--providers.docker.exposedbydefault=false"
@@ -46,6 +46,7 @@ reverse_proxy:
   environment:
   - TZ
   image: traefik:v3
+  mode: internal
   ports:
   - 80:80
   - 443:443
