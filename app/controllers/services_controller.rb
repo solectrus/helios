@@ -4,6 +4,7 @@ class ServicesController < ApplicationController
     # renders an empty state instead of the (helios-only) service list.
     return unless (@setup_completed = Configuration.current.setup_completed?)
 
+    report_failed_self_compose
     Export::Builder.new(Configuration.current).write_if_stale!
     compose = Compose.load
     @compose_services = compose.services.sorted
@@ -40,6 +41,20 @@ class ServicesController < ApplicationController
   end
 
   private
+
+  # A self-update or a converge runs in a helper container that outlives this
+  # process, so a run that failed has no other way to reach a screen (see
+  # Orchestration::SelfComposeReport). This is the first screen after HELIOS
+  # comes back, and the one where the half-recreated stack shows.
+  #
+  # Skipped on a turbo-frame request: those are the lazy rows of this very
+  # page, and the report belongs to the render that carries the flash.
+  def report_failed_self_compose
+    return if turbo_frame_request?
+
+    reason = Orchestration::SelfComposeReport.collect!
+    flash.now[:alert] = t('services.errors.self_compose_failed', reason:) if reason
+  end
 
   # Rows render with the page when every inspect they read is cached: the page
   # then arrives complete, instead of painting a shell and asking for one more

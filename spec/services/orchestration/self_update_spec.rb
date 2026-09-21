@@ -22,7 +22,8 @@ RSpec.describe Orchestration::SelfUpdate do
       described_class.call
 
       expect(Open3).to have_received(:capture2e).with(
-        'docker', 'run', '--rm', '-d',
+        'docker', 'run', '-d',
+        '--name', 'helios-self-compose',
         '--entrypoint', 'sh',
         '-v', '/var/run/docker.sock:/var/run/docker.sock',
         '-v', '/opt/solectrus:/opt/solectrus',
@@ -43,7 +44,8 @@ RSpec.describe Orchestration::SelfUpdate do
       described_class.call
 
       expect(Open3).to have_received(:capture2e).with(
-        'docker', 'run', '--rm', '-d',
+        'docker', 'run', '-d',
+        '--name', 'helios-self-compose',
         '--entrypoint', 'sh',
         '-v', '/var/run/docker.sock:/var/run/docker.sock',
         '-v', '/opt/solectrus:/opt/solectrus',
@@ -62,7 +64,7 @@ RSpec.describe Orchestration::SelfUpdate do
       )
 
       expect { described_class.call }.to raise_error(
-        Orchestration::Runner::CommandError, /Self-update failed: no such image/
+        Orchestration::Runner::CommandError, /Detached compose failed: no such image/
       )
     end
 
@@ -72,7 +74,8 @@ RSpec.describe Orchestration::SelfUpdate do
       described_class.call
 
       expect(Open3).to have_received(:capture2e).with(
-        'docker', 'run', '--rm', '-d',
+        'docker', 'run', '-d',
+        '--name', 'helios-self-compose',
         '--entrypoint', 'sh',
         '-v', '/var/run/docker.sock:/var/run/docker.sock',
         '-v', '/opt/solectrus:/opt/solectrus',

@@ -612,6 +612,7 @@ en:
     show:
       title: 'Updating…'
       heading: 'HELIOS is updating and restarting…'
+      moved_heading: 'HELIOS is restarting and will be reachable at this address:'
 
   starts:
     show:

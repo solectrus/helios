@@ -588,6 +588,7 @@ de:
     show:
       title: 'Wird aktualisiert…'
       heading: 'HELIOS wird aktualisiert und neu gestartet…'
+      moved_heading: 'HELIOS wird neu gestartet und ist danach unter dieser Adresse erreichbar:'
 
   starts:
     show:

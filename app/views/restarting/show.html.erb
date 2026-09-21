@@ -120,31 +120,38 @@
       </header>
 
       <article>
-        <p><strong><%= t('.heading') %></strong></p>
+        <p><strong><%= @target ? t('.moved_heading') : t('.heading') %></strong></p>
+
+        <% if @target %>
+          <p><a href="<%= @target %>"><%= @target %></a></p>
+        <% end %>
+
         <p><span class="spinner"></span></p>
       </article>
     </main>
 
-    <script>
-      (function() {
-        var oldBootId = <%= raw @boot_id.to_s.to_json %>;
+    <% unless @target %>
+      <script>
+        (function() {
+          var oldBootId = <%= raw @boot_id.to_s.to_json %>;
 
-        var interval = setInterval(function() {
-          fetch("/up", { method: "HEAD", cache: "no-store" })
-            .then(function(response) {
-              if (!response.ok) return;
+          var interval = setInterval(function() {
+            fetch("/up", { method: "HEAD", cache: "no-store" })
+              .then(function(response) {
+                if (!response.ok) return;
 
-              var newBootId = response.headers.get("X-Boot-Id");
-              if (newBootId && newBootId !== oldBootId) {
-                clearInterval(interval);
-                window.location.href = "/";
-              }
-            })
-            .catch(function() {
-              // Server still down, keep trying
-            });
-        }, 2000);
-      })();
-    </script>
+                var newBootId = response.headers.get("X-Boot-Id");
+                if (newBootId && newBootId !== oldBootId) {
+                  clearInterval(interval);
+                  window.location.href = "/";
+                }
+              })
+              .catch(function() {
+                // Server still down, keep trying
+              });
+          }, 2000);
+        })();
+      </script>
+    <% end %>
   </body>
 </html>

@@ -47,6 +47,32 @@ RSpec.describe 'Services', :with_admin_password do
       expect(response.body).to include('HELIOS')
     end
 
+    # A self-update or a converge ends the process that starts it, so the run
+    # is over before anything in HELIOS could see how it went. Its helper
+    # container keeps the answer until this screen reads it.
+    context 'when a self-update or a converge failed' do
+      before do
+        allow(Orchestration::Container).to receive(:all).and_return([])
+        mock_compose_services
+        allow(Orchestration::SelfComposeReport).to receive(:collect!)
+          .and_return('Bind for 0.0.0.0:3999 failed: port is already allocated')
+      end
+
+      it 'names the reason on the screen HELIOS comes back to' do
+        get services_path
+
+        expect(flash[:alert]).to include('port is already allocated')
+      end
+
+      # The lazy rows of this very page. The report belongs to the render that
+      # carries the flash, and reading it here would clear it unseen.
+      it 'stays out of a turbo frame request' do
+        get services_path, headers: turbo_frame_headers
+
+        expect(Orchestration::SelfComposeReport).not_to have_received(:collect!)
+      end
+    end
+
     # A tab switch is a frame request: the containers are loaded up front so
     # the rows render filled in instead of flashing skeletons first.
     it 'renders the rows filled in on a turbo frame request' do

@@ -234,6 +234,52 @@ RSpec.describe ComposeJob do
     end
   end
 
+  # The broadcast is what tells the screen how the action went. A Docker call
+  # inside it can fail on its own, and the action it reports has already run,
+  # so the failure is logged and the job still ends as a success.
+  describe 'a broadcast that fails' do
+    before do
+      allow(Orchestration::Runner).to receive(:start)
+      allow(Orchestration::Container).to receive(:invalidate_cache)
+        .and_raise(StandardError, 'Docker API timeout')
+    end
+
+    it 'leaves the job standing' do
+      expect { described_class.perform_now(:start, 'redis') }.not_to raise_error
+    end
+
+    it 'logs what went wrong' do
+      allow(Rails.logger).to receive(:error)
+
+      described_class.perform_now(:start, 'redis')
+
+      expect(Rails.logger).to have_received(:error)
+        .with(/broadcast failed: StandardError: Docker API timeout/)
+    end
+  end
+
+  describe 'the self_converge action' do
+    before do
+      allow(Orchestration::SelfConverge).to receive(:call)
+      allow(Orchestration::AffectedServices).to receive(:store_deployed_hashes!)
+    end
+
+    # The run carries HELIOS, so a helper container does it. It reaches every
+    # service, the same as :up, and the compose file it applies is the one this
+    # job has just written.
+    it 'hands the run to the converge helper' do
+      described_class.perform_now(:self_converge)
+
+      expect(Orchestration::SelfConverge).to have_received(:call)
+    end
+
+    it 'baselines every service, the same as a start of all of them' do
+      described_class.perform_now(:self_converge)
+
+      expect(Orchestration::AffectedServices).to have_received(:store_deployed_hashes!)
+    end
+  end
+
   describe 'an unknown action' do
     it 'is refused rather than silently ignored' do
       expect { described_class.perform_now(:teleport, 'redis') }.to raise_error(ArgumentError, /teleport/)

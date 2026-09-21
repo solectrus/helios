@@ -34,6 +34,7 @@ Keep every section, an empty one included.
 
 ## Fixes
 
+- Address & domain: switching to the built-in Traefik now works from the start screen. HELIOS takes part in that start, so the port it holds reaches Traefik, and the screen names the address HELIOS comes back at. The same holds for the way back
 - Configuration forms: a form with several screens now turns a page without flicker, also on quick clicks
 - Navigation: a link that leads to another tab now moves the mark in the main navigation with it
 - Address of the machine: an address pasted out of the browser is now stored as the name alone. HELIOS removes a scheme, a port and a path, so every link and every rule built from the address leads somewhere. The field can stay empty, and the published port is used instead
@@ -46,6 +47,8 @@ Keep every section, an empty one included.
 - Support bundle: the address of the machine and the email address for the certificates now appear as placeholders, in every file of the bundle. A bundle attached to a public forum post no longer carries them
 - Address & domain: an installation behind an nginx or an Apache is recognized as one, so the form offers its settings and the HTTPS setting it needs stays in place
 - Address & domain: the IP ranges of an upstream proxy are dropped once the address is reached directly. They belong to a proxy that is no longer there, and the dashboard no longer believes a request from those ranges about who sent it
+- Services: the HELIOS screen now carries an Open button behind the built-in Traefik as well, leading to the same address every other place names
+- Services: an update or a start of the whole installation that fails now says so. The run keeps its log and its exit code, and the services screen names the last line of it
 - Generated for Traefik: the file now names only the services that are reachable. An InfluxDB kept inside the stack no longer gets a route that leads nowhere
 
 ## Maintenance

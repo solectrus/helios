@@ -57,6 +57,22 @@ RSpec.describe Export::PublicUrl do
 
       it { is_expected.to be_nil }
     end
+
+    # The managed Traefik routes the HELIOS screen on its own entrypoint, so
+    # the address keeps the port and gains the scheme.
+    context 'with HELIOS' do
+      let(:service_name) { 'helios' }
+
+      it { is_expected.to eq('https://solectrus.example.com:3999') }
+    end
+
+    # A service the managed Traefik does not route keeps its published host
+    # port, which the caller reaches at the address it is already using.
+    context 'with a service kept on a direct port (postgresql)' do
+      let(:service_name) { 'postgresql' }
+
+      it { is_expected.to be_nil }
+    end
   end
 
   describe 'behind an external Traefik' do

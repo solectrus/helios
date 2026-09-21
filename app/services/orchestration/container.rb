@@ -268,15 +268,18 @@ module Orchestration
       raw_container.info['Ports'] || []
     end
 
-    def public_port
-      # First try running container ports
-      port_info = ports.find { |p| p['PublicPort'] }
-      return port_info['PublicPort'] if port_info
+    def public_port = published_host_ports.first
 
-      # Fallback to configured port bindings (works for stopped containers)
-      port_bindings = inspect_data&.dig('HostConfig', 'PortBindings') || {}
-      first_binding = port_bindings.values.flatten.first
-      first_binding&.dig('HostPort')&.to_i
+    # Every host port the container holds. Docker reports them under `Ports`
+    # while the container runs, and a stopped one is read from its port
+    # bindings instead. One port arrives twice there, once for IPv4 and once
+    # for IPv6, so the list is deduplicated.
+    def published_host_ports
+      running = ports.filter_map { |p| p['PublicPort'] }
+      return running.uniq if running.any?
+
+      bindings = inspect_data&.dig('HostConfig', 'PortBindings') || {}
+      bindings.values.flatten.filter_map { |binding| binding&.dig('HostPort').presence&.to_i }.uniq
     end
 
     # Host path for a given mount destination inside the container.

@@ -48,6 +48,7 @@ class ComposeJob < ApplicationJob
     when :stop then Orchestration::Runner.stop(service_name)
     when :recreate then Orchestration::Runner.recreate(service_name)
     when :self_recreate then Orchestration::SelfUpdate.call
+    when :self_converge then Orchestration::SelfConverge.call
     else raise ArgumentError, "Unknown compose action: #{action}"
     end
   end
@@ -156,15 +157,18 @@ class ComposeJob < ApplicationJob
 
   # --- Helpers ---
 
+  # :self_converge brings up every service, the same reach as :up. It hands
+  # the run to a helper container and returns, so what follows here runs while
+  # that helper is still working and this process is about to end.
   def batch_action?(action)
-    %i[up down].include?(action)
+    %i[up down self_converge].include?(action)
   end
 
   # Actions that apply the current compose.yaml config to containers.
   # `stop`/`down` do not create or recreate containers, so storing
   # hashes after them would incorrectly mark pending changes as deployed.
   def applies_config?(action)
-    %i[up start recreate self_recreate].include?(action)
+    %i[up start recreate self_recreate self_converge].include?(action)
   end
 
   # Remove containers that previously failed, so Docker Compose creates fresh
@@ -194,7 +198,7 @@ class ComposeJob < ApplicationJob
   # non-errored state. `:recreate` shares the same dependency hazard as `:up`
   # and `:start`, since its internal `up` revives dependency containers too.
   def cleanup_action?(action)
-    %i[up start recreate].include?(action)
+    %i[up start recreate self_converge].include?(action)
   end
 
   def compose_file

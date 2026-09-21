@@ -3,6 +3,8 @@ RSpec.describe 'Services::Batches', :with_admin_password do
     login
     with_startable_config_yaml
     allow(ComposeJob).to receive(:perform_later)
+    # Reading the real answer needs Docker. Its own spec covers what it reads.
+    allow(Orchestration::SelfPorts).to receive(:drifted?).and_return(false)
   end
 
   def mock_compose_services(*names)
@@ -77,6 +79,38 @@ RSpec.describe 'Services::Batches', :with_admin_password do
 
       expect(response.body).to include('service-influxdb')
       expect(response.body).not_to include('service-helios')
+    end
+
+    # Choosing the built-in Traefik moves the host port of HELIOS to Traefik.
+    # Only a run that carries HELIOS hands that port over, and HELIOS ends with
+    # it, so the answer is the restart screen instead of a row update.
+    context 'when the host port of HELIOS moves' do
+      before do
+        allow(Orchestration::SelfPorts).to receive(:drifted?).and_return(true)
+        mock_compose_services('influxdb', 'traefik', 'helios')
+        mock_containers('influxdb' => true, 'traefik' => false, 'helios' => true)
+      end
+
+      it 'enqueues a converge that carries HELIOS' do
+        post batch_path
+
+        expect(ComposeJob).to have_received(:perform_later).with(:self_converge)
+        expect(ComposeJob).not_to have_received(:perform_later).with(:up)
+      end
+
+      it 'sends the reader to the restart screen, told the address moves' do
+        post batch_path
+
+        expect(response).to redirect_to(
+          restarting_path(boot_id: Rails.application.config.boot_id, moved: true),
+        )
+      end
+
+      it 'redirects a turbo_stream request the same way' do
+        post batch_path, as: :turbo_stream
+
+        expect(response).to have_http_status(:see_other).or have_http_status(:found)
+      end
     end
 
     it 'is blocked while the configuration is incomplete' do
