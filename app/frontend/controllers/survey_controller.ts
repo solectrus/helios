@@ -19,6 +19,17 @@ const TEST_LABELS = {
   default: { pending: 'Testing connection…', failed: 'Check failed' },
 };
 
+// What a probe answered. 'warn' is an answer the probe could not settle: the
+// configuration may still be right, so it reads as a note, not as a failure.
+type ConnectionStatusState = 'pending' | 'ok' | 'warn' | 'error';
+
+const CONNECTION_STATUS_ICONS: Record<ConnectionStatusState, string> = {
+  pending: 'fa-spinner fa-spin',
+  ok: 'fa-circle-check',
+  warn: 'fa-triangle-exclamation',
+  error: 'fa-circle-xmark',
+};
+
 // Survey.JS styles are imported in application.css for correct cascade order
 
 export default class extends Controller<HTMLElement> {
@@ -360,7 +371,7 @@ export default class extends Controller<HTMLElement> {
     this.setConnectionStatus(
       status,
       'pending',
-      'fa-spinner fa-spin',
+      CONNECTION_STATUS_ICONS.pending,
       labels.pending,
     );
 
@@ -380,19 +391,23 @@ export default class extends Controller<HTMLElement> {
       });
       const result = (await response.json()) as {
         ok: boolean;
+        state?: ConnectionStatusState;
         message: string;
       };
+      // A probe may answer that it could not settle the question. That is a
+      // note, not a failure, so it gets its own state instead of the red one.
+      const state = result.state ?? (result.ok ? 'ok' : 'error');
       this.setConnectionStatus(
         status,
-        result.ok ? 'ok' : 'error',
-        result.ok ? 'fa-circle-check' : 'fa-circle-xmark',
+        state,
+        CONNECTION_STATUS_ICONS[state],
         result.message,
       );
     } catch {
       this.setConnectionStatus(
         status,
         'error',
-        'fa-circle-xmark',
+        CONNECTION_STATUS_ICONS.error,
         labels.failed,
       );
     } finally {
@@ -402,7 +417,7 @@ export default class extends Controller<HTMLElement> {
 
   private setConnectionStatus(
     status: HTMLElement,
-    state: 'pending' | 'ok' | 'error',
+    state: ConnectionStatusState,
     icon: string,
     message: string,
   ) {

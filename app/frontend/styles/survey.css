@@ -117,6 +117,9 @@
     & .connection-test__status--error {
       color: var(--color-error);
     }
+    & .connection-test__status--warn {
+      color: var(--color-warning);
+    }
     & .connection-test__status--pending {
       color: var(--helios-text-muted);
     }

@@ -14,6 +14,8 @@ Keep every section, an empty one included.
 
 ## Improvements
 
+- Ingest: behind the built-in Traefik the write address now uses HTTPS, on the same domain as the rest of the installation. An external source sends its token over an encrypted connection, and the installation opens no plain port of its own. The Ingest screen names the new address. Every external source that already writes to Ingest needs that address, because the old one on port 4567 answers no longer
+- Address & domain: choosing the built-in Traefik now says that HELIOS itself follows the domain, on port 3999, and offers a check of that domain before the mode is saved. A domain that leads somewhere else is named at once, instead of taking the screen with it
 - On a phone, an explanation now opens on a tap: the age of a reading, the state of a service, the reason an action is blocked, and the notes on the backup and sensor screens (#480)
 - Keyboard and screen reader: a button now shows its label when the focus reaches it, and a button that carries only an icon now says its name (#480)
 - Configuration forms: every password, token and access key now appears as dots, and an eye button in the field shows the value

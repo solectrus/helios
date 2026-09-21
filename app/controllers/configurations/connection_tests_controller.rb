@@ -10,7 +10,11 @@ module Configurations
         check: params.expect(:check),
         values: probe_values,
       )
-      render json: { ok: result.ok, message: t("configurations.connection_test.#{result.reason}", **result.args) }
+      render json: {
+        ok: result.ok,
+        state: result.state,
+        message: t("configurations.connection_test.#{result.reason}", **result.args),
+      }
     end
 
     private

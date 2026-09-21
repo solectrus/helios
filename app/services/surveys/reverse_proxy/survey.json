@@ -96,6 +96,15 @@
           "requiredIf": "{mode} <> 'none'"
         },
         {
+          "type": "html",
+          "name": "domain_check",
+          "visibleIf": "{mode} = 'internal'",
+          "html": {
+            "de": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"reverse_proxy\" data-test-check=\"domain\" data-test-fields=\"app_host\">Domain prüfen</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>",
+            "default": "<div class=\"connection-test\"><button type=\"button\" class=\"connection-test__button\" data-test-target=\"reverse_proxy\" data-test-check=\"domain\" data-test-fields=\"app_host\">Check domain</button><span class=\"connection-test__status\" aria-live=\"polite\"></span></div>"
+          }
+        },
+        {
           "type": "text",
           "name": "bind_ip",
           "visibleIf": "{mode} = 'external'",

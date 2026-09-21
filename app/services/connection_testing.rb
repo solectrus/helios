@@ -8,9 +8,22 @@ module ConnectionTesting
   # (see `configurations.connection_test.*` in the locale files). `args` fills
   # the placeholders of a message that names what the probe was given, such as
   # the host it could not use.
-  Result = Data.define(:ok, :reason, :args) do
-    def initialize(ok:, reason:, args: {}) # rubocop:disable Naming/MethodParameterName
+  #
+  # `warning` marks an answer that is neither a yes nor a no: the probe could
+  # not settle the question, and the configuration it describes may still be
+  # right. Such an answer is shown as a note rather than as a failure, so a
+  # probe that cannot reach a correct setup does not talk the user out of it.
+  Result = Data.define(:ok, :reason, :args, :warning) do
+    def initialize(ok:, reason:, args: {}, warning: false) # rubocop:disable Naming/MethodParameterName
       super
+    end
+
+    # What the form shows: a confirmation, a note, or a failure.
+    def state
+      return 'ok' if ok
+      return 'warn' if warning
+
+      'error'
     end
   end
 
@@ -19,8 +32,8 @@ module ConnectionTesting
   module ResultBuilder
     private
 
-    def result(success, reason, **args)
-      Result.new(ok: success, reason:, args:)
+    def result(success, reason, warning: false, **args)
+      Result.new(ok: success, reason:, args:, warning:)
     end
 
     # A probe that could not reach its target. A collector runs in its own
@@ -43,6 +56,7 @@ module ConnectionTesting
     'shelly' => Shelly::ConnectionTest,
     'mqtt' => Mqtt::ConnectionTest,
     'backup' => Backups::ConnectionTest,
+    'reverse_proxy' => ReverseProxy::ConnectionTest,
   }.freeze
 
   def self.run(target:, check:, values:)
