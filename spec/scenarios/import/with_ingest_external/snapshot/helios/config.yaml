@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 8
+_schema_version: 9
 system:
   admin_password: password
   installation_date: '2022-01-01'
@@ -89,8 +89,6 @@ sensors:
     measurement: Garage
     source: external
   inverter_power_forecast:
-    field: watt
-    measurement: Forecast
     source: forecast
   system_status:
     source: senec

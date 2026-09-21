@@ -61,15 +61,34 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(config.sensor_config('inverter_power').source).to eq('senec')
     end
 
-    it 'normalizes measurement and field for fixed-source sensors on save' do
+    # A fixed source dictates the mapping, so the sensor stores neither name
+    # and the export derives both. Storing them froze a copy that a later
+    # change to the measurement of the collector left behind.
+    it 'stores no measurement and no field for a fixed-source sensor' do
       sensor_data = { 'source' => 'senec', 'measurement' => 'WRONG', 'field' => 'wrong' }
 
       post configuration_settings_path,
            params: { setting: 'sensor', name: 'inverter_power', data: sensor_data.to_json }
 
       config = Configuration.current
-      expect(config.sensor_config('inverter_power').measurement).to eq('SENEC')
-      expect(config.sensor_config('inverter_power').field).to eq('inverter_power')
+      aggregate_failures do
+        expect(config.sensor_config('inverter_power').measurement).to be_nil
+        expect(config.sensor_config('inverter_power').field).to be_nil
+        expect(config.effective_sensor_mappings['inverter_power']).to eq('SENEC:inverter_power')
+      end
+    end
+
+    it 'follows the measurement the SENEC collector was given' do
+      post configuration_settings_path,
+           params: { setting: 'senec', data: { 'version' => 'v3', 'measurement' => 'MY_SENEC' }.to_json }
+      post configuration_settings_path,
+           params: { setting: 'sensor', name: 'inverter_power', data: { 'source' => 'senec' }.to_json }
+
+      mappings = Configuration.current.effective_sensor_mappings
+      aggregate_failures do
+        expect(mappings['inverter_power']).to eq('MY_SENEC:inverter_power')
+        expect(mappings['battery_soc']).to eq('MY_SENEC:bat_fuel_charge')
+      end
     end
 
     it 'keeps a measurement holding a space, which line protocol escapes' do
@@ -107,15 +126,15 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(Configuration.current.sensor_config('inverter_power').field).to be_nil
     end
 
-    # A fixed source overwrites measurement and field on save, so the payload's
+    # A fixed source strips measurement and field on save, so the payload's
     # names never reach storage and must not block the save either.
-    it 'accepts an unusable measurement when the source overwrites it anyway' do
+    it 'accepts an unusable measurement when the source strips it anyway' do
       sensor_data = { 'source' => 'senec', 'measurement' => 'a,b', 'field' => 'c' }
 
       post configuration_settings_path,
            params: { setting: 'sensor', name: 'inverter_power', data: sensor_data.to_json }
 
-      expect(Configuration.current.sensor_config('inverter_power').measurement).to eq('SENEC')
+      expect(Configuration.current.sensor_config('inverter_power').measurement).to be_nil
     end
 
     it 'auto-activates other SENEC-capable sensors that are not yet configured' do

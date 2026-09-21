@@ -4,10 +4,13 @@ class SensorMappings
   # rather than chosen per-sensor.
   FIXED_SOURCES = %w[senec forecast].freeze
 
-  # Fallback measurement when a fixed-source collector has no measurement set yet.
+  # What a fixed-source collector writes into when nothing tells it otherwise.
+  # Both names are the compiled-in default of the collector itself, capital F
+  # included (see Import::ConfigurationImporter::ForecastExtractor#measurement
+  # for the source it is taken from).
   DEFAULT_MEASUREMENTS = {
     'senec' => 'SENEC',
-    'forecast' => 'forecast',
+    'forecast' => 'Forecast',
   }.freeze
 
   # Each mapping is [measurement, field].
@@ -36,9 +39,9 @@ class SensorMappings
   # Field names must match exactly what the forecast-collector writes to
   # InfluxDB: `watt`, `watt_clearsky` and `temp` (not `temperature`).
   FORECAST_DEFAULTS = {
-    'inverter_power_forecast' => %w[forecast watt],
-    'inverter_power_forecast_clearsky' => %w[forecast watt_clearsky],
-    'outdoor_temp_forecast' => %w[forecast temp],
+    'inverter_power_forecast' => %w[Forecast watt],
+    'inverter_power_forecast_clearsky' => %w[Forecast watt_clearsky],
+    'outdoor_temp_forecast' => %w[Forecast temp],
   }.freeze
 
   # Generic SOLECTRUS defaults, applied to any source that is not tied to a
@@ -99,7 +102,7 @@ class SensorMappings
   def self.default_measurement(sensor_name, source)
     case source
     when 'senec' then SENEC_DEFAULTS.dig(sensor_name, 0) || 'SENEC'
-    when 'forecast' then FORECAST_DEFAULTS.dig(sensor_name, 0) || 'forecast'
+    when 'forecast' then FORECAST_DEFAULTS.dig(sensor_name, 0) || DEFAULT_MEASUREMENTS['forecast']
     else DEFAULTS.dig(sensor_name, 0) || sensor_name
     end
   end
@@ -142,12 +145,32 @@ class SensorMappings
     field.to_s.match?(VALID_FIELD_REGEX)
   end
 
-  # Returns the InfluxDB mapping string for a given sensor and its config
-  def self.mapping_for(sensor_name, config)
+  # True when a stored mapping says no more than HELIOS derives anyway, so
+  # storing it adds nothing. A value that differs is not derivable: it says the
+  # sensor reads somewhere other than the collector writes, which is the choice
+  # of whoever built the stack and stays.
+  #
+  # Only a fixed source can be derived. Every other source carries its
+  # measurement per sensor, and there is nothing to derive it from.
+  def self.derivable_mapping?(sensor_name, source, measurement, field, source_measurement)
+    return false unless FIXED_SOURCES.include?(source.to_s)
+
+    measurement == (source_measurement.presence || DEFAULT_MEASUREMENTS[source.to_s]) &&
+      field == default_field(sensor_name, source)
+  end
+
+  # Returns the InfluxDB mapping string for a given sensor and its config.
+  #
+  # `source_measurement` is what a fixed-source collector was told to write
+  # into. It comes before the table below, because the table only knows the
+  # default of the collector, and a sensor that reads from the default while
+  # the collector writes somewhere else reads nothing.
+  def self.mapping_for(sensor_name, config, source_measurement: nil)
     source = config.source.to_s
     return nil if source.blank?
 
-    measurement = config['measurement'].presence || default_measurement(sensor_name, source)
+    measurement = config['measurement'].presence || source_measurement.presence ||
+                  default_measurement(sensor_name, source)
     field = config['field'].presence || default_field(sensor_name, source)
 
     "#{measurement}:#{field}"

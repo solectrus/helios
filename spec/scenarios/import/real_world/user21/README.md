@@ -43,8 +43,8 @@ Anonymized but otherwise untouched.
   donor predates per-sensor InfluxDB mappings: there is not a single
   `INFLUX_SENSOR_*`, `INFLUX_MEASUREMENT_*`, or `MAPPING_*` variable in
   `.env.bak`. The senec-collector and forecast-collector still write into the
-  collector's compiled-in measurement (`SENEC` / `forecast`), so HELIOS'
-  `LegacySensorAdapter` falls back to those names — without an explicit
+  collector's compiled-in measurement (`SENEC` / `Forecast`, capital F), so
+  HELIOS' `LegacySensorAdapter` falls back to those names — without an explicit
   `INFLUX_MEASUREMENT_PV/FORECAST` — and synthesizes the full SOLECTRUS
   default sensor set (12 senec sensors + `inverter_power_forecast`). Result:
   `config.yaml` retains the user's `senec:` / `forecast:` sections AND a
@@ -53,8 +53,8 @@ Anonymized but otherwise untouched.
   fallback is gated by "no `INFLUX_SENSOR_*` of any kind in the env" so it
   doesn't second-guess users who have already started per-sensor configuration.
 - **Single InfluxDB token reused across all three roles** — the donor's
-  `.env` candidly notes that "*to keep things simple, we use ONE token
-  (INFLUX_ADMIN_TOKEN) for both writing and reading*", and sets
+  `.env` candidly notes that "_to keep things simple, we use ONE token
+  (INFLUX_ADMIN_TOKEN) for both writing and reading_", and sets
   `INFLUX_TOKEN_WRITE == INFLUX_TOKEN_READ == INFLUX_ADMIN_TOKEN`. HELIOS
   preserves all three (plus the synthesized `INFLUX_TOKEN_READWRITE`) at the
   same value instead of rotating them to distinct secrets.

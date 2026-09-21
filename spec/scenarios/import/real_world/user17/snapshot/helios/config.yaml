@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 8
+_schema_version: 9
 system:
   admin_password: BBBBB
   app_host: aaaaa
@@ -109,8 +109,6 @@ sensors:
     mqtt_topic: evcc/site/pvPower
     source: mqtt
   inverter_power_forecast:
-    field: watt
-    measurement: Forecast
     source: forecast
   system_status:
     field: current_state

@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 8
+_schema_version: 9
 deployment:
   mode: dashboard_only
 system:
@@ -157,20 +157,14 @@ sensors:
     measurement: SENEC
     source: external
   inverter_power_forecast:
-    field: watt
-    measurement: Forecast
     source: forecast
   inverter_power_forecast_clearsky:
-    field: watt_clearsky
-    measurement: Forecast
     source: forecast
   outdoor_temp:
     field: r6t_outdoor_temp
     measurement: ALTHERMA
     source: external
   outdoor_temp_forecast:
-    field: temp
-    measurement: Forecast
     source: forecast
   system_status:
     field: current_state

@@ -1401,8 +1401,8 @@ RSpec.describe Export::Builder do
       expect(env['FORECAST_SOLAR_APIKEY']).to eq('abc123')
     end
 
-    it 'defaults INFLUX_MEASUREMENT_FORECAST to lowercase' do
-      expect(Env.load['INFLUX_MEASUREMENT_FORECAST']).to eq('forecast')
+    it 'defaults INFLUX_MEASUREMENT_FORECAST to what the collector writes' do
+      expect(Env.load['INFLUX_MEASUREMENT_FORECAST']).to eq('Forecast')
     end
 
     it 'configures forecast-collector with environment' do

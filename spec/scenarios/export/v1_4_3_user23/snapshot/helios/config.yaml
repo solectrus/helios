@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 8
+_schema_version: 9
 system:
   admin_password: AAAAA
   app_host: solectrus.example.com
@@ -217,16 +217,12 @@ sensors:
   house_power:
     source: senec
   inverter_power:
-    field: inverter_power
-    measurement: SENEC
     source: senec
   inverter_power_forecast:
     source: forecast
   inverter_power_forecast_clearsky:
     source: forecast
   outdoor_temp_forecast:
-    field: temp
-    measurement: forecast
     source: forecast
   wallbox_car_connected:
     source: senec

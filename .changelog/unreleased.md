@@ -58,6 +58,11 @@ Keep every section, an empty one included.
 
 ## Fixes
 
+### Sensors & measurements
+
+- **A measurement name of your own reaches the sensors.** Naming the InfluxDB measurement of the SENEC collector left every sensor reading the standard name, so the dashboard stayed empty. Collector and sensors now name the same measurement, and a later change to the name carries through
+- **The forecast collector and the dashboard agree on where the forecast lands.** Without an explicit name, HELIOS told the collector to write into `forecast` while the dashboard read from `Forecast`. Both name `Forecast` now, which is what the collector writes into on its own
+
 ### Address & domain
 
 - **Starting all services hands over the port HELIOS holds:** choosing the built-in Traefik moves port 3999 from HELIOS to Traefik, and the start now carries HELIOS itself, so Traefik gets the port. The screen then names the address HELIOS comes back at. The way back works the same

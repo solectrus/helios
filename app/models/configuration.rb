@@ -962,9 +962,17 @@ class Configuration # rubocop:disable Metrics/ClassLength
   def effective_sensor_mappings
     @effective_sensor_mappings ||= enabled_sensors.each_with_object({}) do |name, mappings|
       config = sensor_config(name)
-      mapping = SensorMappings.mapping_for(name, config)
+      mapping = SensorMappings.mapping_for(name, config, source_measurement: source_measurement(config.source))
       mappings[name] = mapping if mapping
     end
+  end
+
+  # What the collector of a fixed source writes into. Nothing else has a
+  # measurement of its own: every other source carries it per sensor.
+  def source_measurement(source)
+    return nil unless source.to_s.in?(SensorMappings::FIXED_SOURCES)
+
+    setting_data(source).measurement
   end
 
   # Sensor names excluded from house power calculation

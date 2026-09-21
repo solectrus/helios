@@ -9,13 +9,14 @@ module Import
       MQTT_MAPPING_TO_SENSOR_KEY = ConfigSchema::MQTT_MAPPING_SENSOR_KEYS.transform_keys(&:to_sym).freeze
 
       def initialize(sensors_data:, devices:, enabled_collectors:, mqtt_mappings:, # rubocop:disable Metrics/ParameterLists
-                     excluded_sensors: [], senec_measurement: nil)
+                     excluded_sensors: [], senec_measurement: nil, forecast_measurement: nil)
         @sensors_data = sensors_data
         @devices = devices
         @enabled_collectors = enabled_collectors
         @mqtt_mappings = mqtt_mappings
         @excluded_sensors = excluded_sensors
         @senec_measurement = senec_measurement
+        @forecast_measurement = forecast_measurement
       end
 
       def persist!(config)
@@ -101,8 +102,8 @@ module Import
         data = { 'source' => source }
 
         case source
-        when 'senec' then merge_sensor_overrides!(data, sensor_name, SensorMappings::SENEC_DEFAULTS)
-        when 'forecast' then merge_sensor_overrides!(data, sensor_name, SensorMappings::FORECAST_DEFAULTS)
+        when 'senec' then merge_fixed_source_overrides!(data, sensor_name, 'senec', @senec_measurement)
+        when 'forecast' then merge_fixed_source_overrides!(data, sensor_name, 'forecast', @forecast_measurement)
         when 'shelly' then merge_shelly_sensor_data!(data, sensor_name)
         when 'mqtt' then merge_mqtt_sensor_data!(data, sensor_name)
         else merge_raw_mapping!(data, sensor_name)
@@ -111,15 +112,18 @@ module Import
         data.compact
       end
 
-      def merge_sensor_overrides!(data, sensor_name, defaults_hash)
+      # A fixed source dictates the mapping, so a sensor stores it only where it
+      # reads somewhere else than the collector writes. The measurement to
+      # compare against is the one the collector was told to write into, not
+      # the default in the table: a stack that names its own measurement would
+      # otherwise store a copy on every sensor, and a later change to the name
+      # would leave every copy behind.
+      def merge_fixed_source_overrides!(data, sensor_name, source, source_measurement)
         mapping = @sensors_data[sensor_name]
         return unless mapping
 
-        defaults = defaults_hash[sensor_name]
-        return unless defaults
-
         measurement, field = mapping.split(':', 2)
-        return if mapping == defaults.join(':')
+        return if SensorMappings.derivable_mapping?(sensor_name, source, measurement, field, source_measurement)
 
         data['measurement'] = measurement
         data['field'] = field

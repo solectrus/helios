@@ -31,7 +31,7 @@ module Configurations
     def edit
       if sensor_setting?
         data = @configuration.sensor_config(sensor_name)
-        normalize_fixed_source_mapping!(data)
+        inject_fixed_source_mapping!(data)
         inject_mqtt_ui_state!(data)
         render SettingForm::Component.new(setting: 'sensor', sensor_name:, data:)
       else
@@ -146,9 +146,9 @@ module Configurations
     def save_sensor(data)
       return if mqtt_name_still_needed?(data['mqtt_name'])
 
-      # After normalization: a fixed source overwrites whatever names the
-      # payload carried, so only what actually gets stored is judged.
-      normalize_fixed_source_mapping!(data)
+      # After stripping: a fixed source stores no names at all, so only what
+      # actually gets stored is judged.
+      strip_fixed_source_mapping!(data)
       return if invalid_influx_name?(data, redirect_target)
 
       @configuration.update_sensor(sensor_name, data)
@@ -215,13 +215,32 @@ module Configurations
       true
     end
 
-    # Ensure measurement/field match the collector config for fixed sources
-    def normalize_fixed_source_mapping!(data)
-      source = data['source'].to_s
-      return unless source.in?(SensorMappings::FIXED_SOURCES)
+    # A fixed source dictates measurement and field, and its form never asks
+    # for them, so a saved sensor stores neither. Storing them froze a copy of
+    # what was right at the time of the save: a later change to the
+    # measurement of the collector left that one sensor reading the old one,
+    # while every sensor without a copy followed along.
+    #
+    # A payload can still carry the names, from an older form or from a
+    # request nothing typed, so they go before the sensor is written.
+    def strip_fixed_source_mapping!(data)
+      return unless fixed_source?(data['source'])
 
-      data['measurement'] = collector_measurement(source)
-      data['field'] = SensorMappings.default_field(sensor_name, source)
+      data.delete('measurement')
+      data.delete('field')
+    end
+
+    # The form shows what the collector dictates, which is what the sensor
+    # reads, although the sensor stores neither (see #strip_fixed_source_mapping!).
+    def inject_fixed_source_mapping!(data)
+      return unless fixed_source?(data['source'])
+
+      data['measurement'] = collector_measurement(data['source'].to_s)
+      data['field'] = SensorMappings.default_field(sensor_name, data['source'].to_s)
+    end
+
+    def fixed_source?(source)
+      source.to_s.in?(SensorMappings::FIXED_SOURCES)
     end
 
     # Re-inject the UI-only `enabled` flag for sections that use it.

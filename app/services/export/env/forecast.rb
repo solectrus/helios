@@ -13,7 +13,7 @@ module Export
           roof_entries(fcast)
           provider_entries(fcast)
         end
-        entry('INFLUX_MEASUREMENT_FORECAST', fcast.measurement.presence || 'forecast',
+        entry('INFLUX_MEASUREMENT_FORECAST', fcast.measurement.presence || SensorMappings::DEFAULT_MEASUREMENTS['forecast'],
               'InfluxDB measurement name for forecasts')
       end
 
