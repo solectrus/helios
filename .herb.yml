@@ -1,8 +1,12 @@
 # Applies to both formatter and linter (additive to Herb's defaults).
 # public/ holds the unmodified Rails error page templates.
+# coverage/ holds a generated report of several megabytes. `bin/herb analyze .`
+# reads it as HTML and stops there, which blocks a local bin/ci run after every
+# test run. CI never sees it, because the coverage step runs after the analysis.
 files:
   exclude:
     - 'public/**'
+    - 'coverage/**'
 
 formatter:
   enabled: true
