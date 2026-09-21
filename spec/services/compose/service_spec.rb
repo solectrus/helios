@@ -107,6 +107,47 @@ RSpec.describe Compose::Service do
       service = described_class.new('test', {})
       expect(service.public_port).to be_nil
     end
+
+    # A bind address in front of the host port is what the external-proxy mode
+    # writes (`bind_ip`), and reading the first field there names the first
+    # octet of that address as the port.
+    it 'skips the bind address in front of the host port' do
+      service = described_class.new('test', { 'ports' => ['10.0.0.5:3999:3000'] })
+      expect(service.public_port).to eq(3999)
+    end
+
+    it 'skips a bracketed IPv6 bind address' do
+      service = described_class.new('test', { 'ports' => ['[2001:db8::1]:3999:3000'] })
+      expect(service.public_port).to eq(3999)
+    end
+
+    it 'ignores the protocol behind the port' do
+      service = described_class.new('test', { 'ports' => ['3999:3000/udp'] })
+      expect(service.public_port).to eq(3999)
+    end
+
+    # A container port on its own publishes nothing on the host.
+    it 'returns nil for a container port without a host port' do
+      service = described_class.new('test', { 'ports' => ['3000'] })
+      expect(service.public_port).to be_nil
+    end
+  end
+
+  describe '#published_host_ports' do
+    it 'lists every host port in the order compose gives them' do
+      service = described_class.new('test', { 'ports' => ['80:80', '443:443', '10.0.0.5:3999:3000'] })
+      expect(service.published_host_ports).to eq([80, 443, 3999])
+    end
+
+    it 'leaves out an unpublished container port' do
+      service = described_class.new('test', { 'ports' => ['3000', '3999:3000'] })
+      expect(service.published_host_ports).to eq([3999])
+    end
+
+    it 'is empty without ports' do
+      service = described_class.new('test', {})
+      expect(service.published_host_ports).to eq([])
+    end
   end
 
   describe '#environment' do

@@ -54,15 +54,18 @@ module Compose
     end
 
     def public_port
-      return nil unless ports.any?
+      published_host_ports.first
+    end
 
-      first_port = ports.first
-      case first_port
-      when String
-        first_port.split(':').first.to_i
-      when Hash
-        first_port['published']&.to_i
-      end
+    # Every host port the service publishes, in the order compose lists them.
+    #
+    # A published port carries an optional bind address in front of it
+    # (`10.0.0.5:3999:3000`, `[::1]:3999:3000`), an optional protocol behind it
+    # (`3999:3000/udp`), and it can name the container port alone (`3000`),
+    # which publishes nothing on the host. So the host port is the second field
+    # from the end, and it is there only where a field follows it.
+    def published_host_ports
+      ports.filter_map { |entry| host_port_of(entry) }
     end
 
     def environment
@@ -87,6 +90,22 @@ module Compose
 
     def to_h
       config.dup
+    end
+
+    private
+
+    def host_port_of(entry)
+      case entry
+      when Hash then entry['published']&.to_i
+      else host_port_of_string(entry.to_s)
+      end
+    end
+
+    def host_port_of_string(entry)
+      fields = entry.split('/', 2).first.to_s.sub(/\A\[[^\]]*\]:/, '').split(':')
+      return if fields.size < 2
+
+      fields[-2].to_i
     end
   end
 end

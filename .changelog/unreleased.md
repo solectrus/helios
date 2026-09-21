@@ -40,6 +40,7 @@ Keep every section, an empty one included.
 - Backup to S3: a backup or a restore that fails now reports the reason, for example a rejected access key or a bucket that cannot be reached
 - Backup, restore and CSV import: the preparation no longer fails when a service is renewed at the same moment
 - Support bundle: the custom domain, the address of the machine and the email address for the certificates now appear as placeholders, in every file of the bundle. A bundle attached to a public forum post no longer carries them
+- Services: the Open button of a stopped service now uses the right port again where the published ports are bound to one host IP address
 
 ## Maintenance
 
