@@ -1,0 +1,25 @@
+# Raspberry Pi on the home network, one SENEC.Home V3 read locally. The
+# plainest install there is: no reverse proxy, no backup, no second source.
+# Every question the answers leave out keeps the default the survey offers.
+browser_host: helios.local
+
+answers:
+  # The Sensors page comes first. Picking SENEC for one sensor enables every
+  # other sensor the collector delivers (Configuration#auto_enable_senec_sensors!).
+  - setting: sensor
+    name: inverter_power
+    answers:
+      source: senec
+
+  # The SENEC card appears once a sensor reads from it.
+  - setting: senec
+    answers:
+      version: v3
+      adapter: local
+      host: 192.168.178.42
+      interval: '5'
+
+  - setting: system_general
+    answers:
+      installation_date: '2024-03-15'
+      currency_preset: EUR

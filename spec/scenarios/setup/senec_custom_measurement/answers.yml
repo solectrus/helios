@@ -1,0 +1,23 @@
+# The same Raspberry Pi as raspi_senec_local, except that the SENEC screen
+# asks for the InfluxDB measurement and this user types one of their own.
+# The scenario exists to hold a bug in place, see README.md.
+browser_host: helios.local
+
+answers:
+  - setting: sensor
+    name: inverter_power
+    answers:
+      source: senec
+
+  - setting: senec
+    answers:
+      version: v3
+      adapter: local
+      host: 192.168.178.42
+      interval: '5'
+      measurement: MY_SENEC
+
+  - setting: system_general
+    answers:
+      installation_date: '2024-03-15'
+      currency_preset: EUR

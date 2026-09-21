@@ -7,6 +7,7 @@ files, the `compose.yaml` and the `.env` that HELIOS writes.
 
 | Family    | Starts at                           | Covers                                  |
 | --------- | ----------------------------------- | --------------------------------------- |
+| `setup/`  | nothing, a new installation         | the answers a user gives in the surveys |
 | `import/` | a foreign stack                     | adopting a stack HELIOS did not write   |
 | `export/` | a `config.yaml` of an older release | the migration chain against a real file |
 
@@ -19,7 +20,7 @@ directory again:
 ├── <family>_spec.rb
 └── <name>/
     ├── README.md         what this scenario is, and why it is worth keeping
-    ├── input/            what HELIOS starts from
+    ├── input/            what HELIOS starts from, or answers.yml for a setup
     └── snapshot/         what HELIOS must produce
         ├── helios/config.yaml
         ├── compose.yaml

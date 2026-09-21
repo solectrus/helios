@@ -9,7 +9,7 @@ export default [
   pluginPrettierRecommended,
 
   {
-    files: ['script/**/*.mjs'],
+    files: ['script/**/*.mjs', 'spec/support/**/*.mjs'],
     languageOptions: {
       globals: { console: 'readonly', process: 'readonly' },
     },
