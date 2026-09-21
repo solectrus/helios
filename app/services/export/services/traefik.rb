@@ -13,7 +13,7 @@ module Export
       # Entrypoints HELIOS keeps for services of its own. It writes the routers
       # for them, so it writes the entrypoints they name and the ports those
       # bind. Every other entrypoint of an adopted command stays verbatim.
-      OWNED_ENTRYPOINTS = %w[influxdb helios].freeze
+      OWNED_ENTRYPOINTS = %w[influxdb ingest helios].freeze
 
       OWNED_ENTRYPOINT_FLAG = /\A--entrypoints\.(#{Regexp.union(OWNED_ENTRYPOINTS)})\./i
       OWNED_ENTRYPOINT_ADDRESS = /\A--entrypoints\.(#{Regexp.union(OWNED_ENTRYPOINTS)})\.address=/i
@@ -66,7 +66,7 @@ module Export
       end
 
       # ACME resolver name the HELIOS-generated service routers
-      # (dashboard/influxdb/helios) should reference in their `tls.certresolver`
+      # (dashboard/influxdb/ingest/helios) should reference in their `tls.certresolver`
       # labels. For HELIOS's own managed Traefik this is DEFAULT_CERTRESOLVER;
       # for an imported custom Traefik (captured `command`) it is read from the
       # command's `--certificatesresolvers.<name>.acme*` flag so the generated
@@ -168,6 +168,7 @@ module Export
       def owned_entrypoints
         {}.tap do |result|
           result['influxdb'] = influxdb_host_port if influxdb_routed?
+          result['ingest'] = Ingest::PORT if ingest_routed?
           result['helios'] = Helios::HOST_PORT if helios_routed?
         end
       end
@@ -268,6 +269,7 @@ module Export
           '--entrypoints.web.http.redirections.entrypoint.to=websecure',
           '--entrypoints.websecure.address=:443',
           *influxdb_entrypoint,
+          *ingest_entrypoint,
           *helios_entrypoint,
           "--certificatesresolvers.#{DEFAULT_CERTRESOLVER}.acme.tlschallenge=true",
           "--certificatesresolvers.#{DEFAULT_CERTRESOLVER}.acme.email=#{self.class.letsencrypt_email(configuration)}",
@@ -275,12 +277,13 @@ module Export
         ]
       end
 
-      # Default published ports — adds the InfluxDB and HELIOS entrypoint ports
-      # when those services are routed through Traefik (see Services::Influxdb /
-      # Services::Helios).
+      # Default published ports — adds the InfluxDB, Ingest and HELIOS entrypoint
+      # ports when those services are routed through Traefik (see
+      # Services::Influxdb / Services::Ingest / Services::Helios).
       def default_ports
         ports = %w[80:80 443:443]
         ports << "#{influxdb_host_port}:#{influxdb_host_port}" if influxdb_routed?
+        ports << "#{Ingest::PORT}:#{Ingest::PORT}" if ingest_routed?
         ports << "#{Helios::HOST_PORT}:#{Helios::HOST_PORT}" if helios_routed?
         ports
       end
@@ -299,6 +302,20 @@ module Export
 
       def influxdb_host_port
         Influxdb.host_port(configuration)
+      end
+
+      # Dedicated entrypoint for the Ingest write API, terminating TLS so an
+      # external source reaches it over HTTPS on the same domain. Ingest speaks
+      # the InfluxDB write API and takes the token in a header, which a plain
+      # host port would carry across the network in the clear.
+      def ingest_entrypoint
+        return [] unless ingest_routed?
+
+        ["--entrypoints.ingest.address=:#{Ingest::PORT}"]
+      end
+
+      def ingest_routed?
+        Ingest.traefik_managed_routing?(configuration)
       end
 
       # Dedicated entrypoint for the HELIOS management UI, terminating TLS so it

@@ -5,9 +5,10 @@ module Export
   # from the house_power recalculation, and Ingest then writes no house_power at
   # all (see Configuration#ingest_required?).
   #
-  # Ingest always publishes its host port, and managed Traefik does not route it
-  # (TraefikConfig::ROUTABLE covers the external-proxy mode only), so the host
-  # port is the address in every mode but that one.
+  # Both reverse-proxy modes put TLS in front of the address, each in the shape
+  # its proxy takes: the managed Traefik answers the domain of the stack on a
+  # dedicated entrypoint, an external one routes a subdomain of it. Without a
+  # proxy the address is the host port, in the clear.
   #
   # Returns nil when nothing in the configuration names the machine: app_host is
   # required only behind a reverse proxy, and it stays empty wherever HELIOS is
@@ -29,9 +30,12 @@ module Export
     end
 
     def url
-      return "https://ingest.#{host}" if configuration.reverse_proxy_external? && host
+      return unless host
 
-      "http://#{HostAddress.for_url(host)}:#{PORT}" if host
+      return "https://ingest.#{host}" if configuration.reverse_proxy_external?
+      return "https://#{host}:#{PORT}" if Services::Ingest.traefik_managed_routing?(configuration)
+
+      "http://#{HostAddress.for_url(host)}:#{PORT}"
     end
 
     private

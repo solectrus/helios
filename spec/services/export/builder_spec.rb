@@ -1177,6 +1177,61 @@ RSpec.describe Export::Builder do
     end
   end
 
+  describe 'with reverse_proxy and Ingest running' do
+    before do
+      configuration.update('reverse_proxy', { 'mode' => 'internal', 'app_host' => 'solar.example.com' })
+      configuration.update_sensor('inverter_power_2', { 'source' => 'external', 'is_balcony' => true })
+      described_class.new(configuration).write!
+    end
+
+    it_behaves_like 'valid Docker Compose configuration'
+
+    it 'routes Ingest through Traefik instead of publishing a host port' do
+      compose = Compose.load
+      ingest = compose.services.find('ingest')
+      expect(ingest.ports).to be_blank
+      expect(ingest.config['labels']).to include(
+        'traefik.enable=true',
+        'traefik.http.routers.ingest.rule=Host(`solar.example.com`)',
+        'traefik.http.routers.ingest.entrypoints=ingest',
+        'traefik.http.routers.ingest.tls.certresolver=letsencrypt',
+        'traefik.http.services.ingest.loadbalancer.server.port=4567',
+      )
+    end
+
+    it 'adds the ingest entrypoint and published port to Traefik' do
+      compose = Compose.load
+      traefik = compose.services.find('traefik')
+      expect(traefik.config['command']).to include('--entrypoints.ingest.address=:4567')
+      expect(traefik.ports).to include('4567:4567')
+    end
+
+    # A Traefik that HELIOS adopted on import carries no `ingest` entrypoint.
+    # HELIOS adds it and routes Ingest through it: the write carries the
+    # InfluxDB token in a header, which a plain host port would send in the
+    # clear past a proxy that ends TLS.
+    context 'with an adopted Traefik' do
+      before do
+        configuration.update('reverse_proxy', configuration.reverse_proxy.merge(
+                                                'command' => ['--providers.docker=true'],
+                                                'ports' => %w[80:80 443:443],
+                                              ))
+        described_class.new(configuration).write!
+      end
+
+      it 'adds the entrypoint and routes Ingest through it', :aggregate_failures do
+        compose = Compose.load
+        traefik = compose.services.find('traefik')
+        ingest = compose.services.find('ingest')
+
+        expect(traefik.config['command']).to include('--entrypoints.ingest.address=:4567')
+        expect(traefik.ports).to include('4567:4567')
+        expect(ingest.ports).to be_blank
+        expect(ingest.config['labels']).to include('traefik.http.routers.ingest.entrypoints=ingest')
+      end
+    end
+  end
+
   describe 'with reverse_proxy but InfluxDB not exposed' do
     before do
       configuration.update('reverse_proxy', { 'mode' => 'internal', 'app_host' => 'solar.example.com' })

@@ -30,9 +30,9 @@ module Export
     attr_reader :configuration
 
     # Managed Traefik (HELIOS-owned): the dashboard is routed at the domain
-    # root, an exposed InfluxDB and HELIOS each on a dedicated entrypoint
-    # (their own port). Other services keep their published host ports and get
-    # no domain URL here.
+    # root, an exposed InfluxDB, Ingest and HELIOS each on a dedicated
+    # entrypoint (their own port). Other services keep their published host
+    # ports and get no domain URL here.
     def managed(service_name)
       domain = configuration.public_host
 
@@ -43,6 +43,8 @@ module Export
         if Services::Influxdb.exposed?(configuration)
           "https://#{domain}:#{Services::Influxdb.host_port(configuration)}"
         end
+      when 'ingest'
+        "https://#{domain}:#{Services::Ingest::PORT}" if Services::Ingest.traefik_managed_routing?(configuration)
       when 'helios'
         "https://#{domain}:#{Services::Helios::HOST_PORT}"
       end

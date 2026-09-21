@@ -30,6 +30,14 @@ module Export
         configuration.ingest_required?
       end
 
+      # True when a managed Traefik routes Ingest, which it does whenever one
+      # runs. An external source then writes over HTTPS, on the same domain as
+      # the rest of the stack. It carries the InfluxDB token in a header, which
+      # a plain host port would send across the network in the clear.
+      def self.traefik_managed_routing?(configuration)
+        enabled?(configuration) && Traefik.enabled?(configuration)
+      end
+
       def data_directories
         managed_data_directory
       end
@@ -49,16 +57,24 @@ module Export
 
       private
 
-      # Nothing on a shared network, where the external proxy reaches Ingest by
-      # name. Every other deployment publishes the port on the host.
+      # Nothing while Traefik owns the port: HELIOS routes Ingest through it and
+      # the entrypoint binds the port, so publishing it here as well would
+      # clash. Nothing either on a shared network, where the external proxy
+      # reaches Ingest by name.
       def published_ports
-        return if shared_network_routing?
+        return if traefik_managed_routing? || shared_network_routing?
 
         ["#{PORT}:#{PORT}"]
       end
 
       def router_labels
+        return traefik_router_labels(entrypoint: 'ingest', port: PORT) if traefik_managed_routing?
+
         shared_network_router_labels(port: PORT) if shared_network_routing?
+      end
+
+      def traefik_managed_routing?
+        self.class.traefik_managed_routing?(configuration)
       end
 
       def ingest_environment

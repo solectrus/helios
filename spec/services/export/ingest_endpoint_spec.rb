@@ -27,12 +27,24 @@ RSpec.describe Export::IngestEndpoint do
       expect(url).to eq('https://ingest.solectrus.example.com')
     end
 
-    # Managed Traefik routes the dashboard and InfluxDB only, so Ingest keeps
-    # its host port and the domain merely names the machine.
-    it 'names the host port behind a managed Traefik' do
+    # The managed Traefik answers the domain of the stack on an entrypoint of
+    # its own, so the address keeps the port and gains the TLS in front of it.
+    it 'names the entrypoint of the managed Traefik' do
       with_config_yaml(
         'system' => { 'app_host' => 'solectrus.example.com' },
         'reverse_proxy' => { 'mode' => 'internal' },
+        'sensors' => { 'inverter_power_2' => { 'source' => 'external', 'is_balcony' => true } },
+      )
+
+      expect(url).to eq('https://solectrus.example.com:4567')
+    end
+
+    # A Traefik that HELIOS adopted on import keeps its own routing, so Ingest
+    # keeps the host port it publishes beside it.
+    it 'names the host port behind an adopted Traefik' do
+      with_config_yaml(
+        'system' => { 'app_host' => 'solectrus.example.com' },
+        'reverse_proxy' => { 'mode' => 'internal', 'command' => ['--providers.docker=true'] },
       )
 
       expect(url).to eq('http://solectrus.example.com:4567')

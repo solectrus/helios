@@ -51,7 +51,18 @@ RSpec.describe Export::PublicUrl do
       it { is_expected.to be_nil }
     end
 
-    context 'with a service kept on a direct port (ingest)' do
+    context 'with ingest running' do
+      let(:service_name) { 'ingest' }
+      let(:data) do
+        super().merge('sensors' => { 'inverter_power_2' => { 'source' => 'external', 'is_balcony' => true } })
+      end
+
+      it 'links to the dedicated entrypoint port' do
+        expect(build).to eq('https://solectrus.example.com:4567')
+      end
+    end
+
+    context 'without ingest' do
       let(:service_name) { 'ingest' }
 
       it { is_expected.to be_nil }
