@@ -75,6 +75,8 @@ en:
     errors:
       blocked_by_dependency: 'Blocked: %{dependency} failed to start'
       configuration_incomplete: 'The configuration is still incomplete. Complete all settings marked as open before services can start.'
+      unknown_proxy_network: 'The network %{network} does not exist on this machine. Without it no service can start, HELIOS itself included.'
+      self_compose_failed: 'The last restart of the services failed: %{reason}'
     caches:
       destroy:
         success: 'Redis cache cleared.'
@@ -501,6 +503,7 @@ en:
       not_configured: 'Not configured'
     errors:
       loopback_host: 'The address %{host} names this machine to itself alone and cannot be used here.'
+      unknown_proxy_network: 'The network %{network} does not exist on this machine. The proxy has to create it before the services can join it.'
     resets:
       create:
         success: 'Import was successfully reset.'
@@ -628,6 +631,8 @@ en:
       unsupported_heading: 'Unfortunately, HELIOS cannot manage this configuration'
       unsupported_reason: 'The following services are unknown:'
       unsupported_no_image: 'no image'
+      unsupported_networks_reason: 'The following Docker networks cannot be taken over:'
+      unsupported_networks_hint: 'HELIOS writes the network of the stack itself and one more, the one an external reverse proxy reaches the services over. A further network would be lost on export. One way out is to move the services back into the stack network before the import.'
       unsupported_hint_html: 'HELIOS manages the <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> and <code class="rounded bg-base-300 px-1 font-mono">.env</code> files in full and can only take over services it recognizes. One way out is to move the services listed above into a separate Compose file and then start the import again.'
       external_ingest_heading: 'One step remains after the import'
       external_ingest_reason: 'This configuration contains a balcony power plant, so HELIOS sets up Ingest to recalculate the house consumption. The following values come from an external source and have to reach Ingest from now on, instead of InfluxDB:'

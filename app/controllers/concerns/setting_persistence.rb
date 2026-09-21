@@ -23,7 +23,9 @@ module SettingPersistence
   REVERSE_PROXY_MODE_FIELDS = {
     'none' => %w[app_host].freeze,
     'internal' => %w[mode app_host letsencrypt_email trusted_proxy_ranges].freeze,
-    'external' => %w[mode app_host bind_ip force_ssl trusted_proxy_ranges].freeze,
+    'external' => %w[
+      mode app_host bind_ip proxy_network proxy_entrypoint proxy_certresolver force_ssl trusted_proxy_ranges
+    ].freeze,
   }.freeze
 
   # What the section holds beyond the answers above: the compose keys of a
@@ -116,9 +118,38 @@ module SettingPersistence
 
     payload = data.slice(*owned).compact_blank.reverse_merge(borrowed.index_with(nil))
     payload['mode'] = mode if owned.include?('mode')
+    drop_unused_transport!(payload)
+    preserve_adopted_network!(payload) unless mode == 'external'
     preserve_adopted_traefik!(payload) if mode == 'internal'
 
     @configuration.update('reverse_proxy', payload)
+  end
+
+  # A network the stack was adopted on, kept across a save that never asked
+  # about it. The form asks in the external mode alone, where the network is
+  # how the proxy reaches the stack; in the other two the stack merely lives on
+  # a parent stack's network (see Configuration#reverse_proxy_network), and a
+  # save of the address would otherwise cut every service off it.
+  def preserve_adopted_network!(payload)
+    network = @configuration.reverse_proxy.proxy_network.presence
+    payload['proxy_network'] = network if network
+  end
+
+  # The two ways an external proxy reaches the stack exclude each other, and
+  # the stored network name is what tells them apart (see
+  # Configuration#reverse_proxy_on_shared_network?). A bind IP left over beside
+  # it would bind ports the shared-network stack no longer publishes, and would
+  # come back the moment the user switches away from the network again.
+  #
+  # The form already hides whichever field the choice does not own, and
+  # survey-core clears a hidden answer. This says the same thing where it is
+  # enforced, for a payload that never went through the form.
+  def drop_unused_transport!(payload)
+    if payload['proxy_network'].present?
+      payload.delete('bind_ip')
+    else
+      payload.except!('proxy_entrypoint', 'proxy_certresolver')
+    end
   end
 
   # Re-inject what REVERSE_PROXY_ADOPTED_FIELDS names, so that a save through

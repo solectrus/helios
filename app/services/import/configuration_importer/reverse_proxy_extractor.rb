@@ -30,8 +30,63 @@ module Import
       def section_data
         data = traefik_data || {}
         data['bind_ip'] = bind_ip if bind_ip.present?
+        data.merge!(shared_network_data) if shared_network.present?
         data['mode'] = mode if mode
         data.presence
+      end
+
+      # The Docker network the stack lives on besides its own, and what HELIOS
+      # needs to write the routers again for a proxy that reads labels off it.
+      #
+      # Two stacks arrive this way and the labels tell them apart. One is
+      # routed by a proxy on that network, which is what the external mode
+      # describes. The other is a child of a parent compose stack and simply
+      # shares its network; it carries no router label, keeps its published
+      # ports, and the network is preserved without a proxy being claimed.
+      def shared_network_data
+        data = { 'proxy_network' => shared_network }
+        return data unless mode == 'external'
+
+        data.merge(
+          'proxy_entrypoint' => router_label_value('entrypoints'),
+          'proxy_certresolver' => router_label_value('tls.certresolver'),
+        ).compact_blank
+      end
+
+      # The one network besides the stack's own that a service joins. Only a
+      # network the source declares `external: true` counts: HELIOS writes it
+      # back that way, and a network the stack created for itself would then be
+      # expected from somewhere that never makes it.
+      #
+      # A managed Traefik has no use for one: it runs inside this stack and
+      # finds every service on the stack's own network.
+      #
+      # Import::CompatibilityCheck refuses a stack whose networks this cannot
+      # account for, so nothing reaches the export that it would drop.
+      def shared_network
+        return @shared_network if defined?(@shared_network)
+
+        @shared_network = (managed? ? nil : self.class.foreign_networks(@reader.raw_compose).first)
+      end
+
+      # Every network a service joins that is declared external at the top
+      # level, which is the only shape HELIOS writes again. Shared with
+      # CompatibilityCheck, which refuses what is left over.
+      def self.foreign_networks(raw_compose)
+        declared = raw_compose['networks'].to_h
+        joined = (raw_compose['services'] || {}).values.flat_map { |service| network_names(service) }
+
+        (joined.uniq - ['default']).select { |name| declared[name].to_h['external'] }
+      end
+
+      def self.network_names(service)
+        networks = service.is_a?(Hash) ? service['networks'] : nil
+
+        case networks
+        when Hash then networks.keys
+        when Array then networks.map(&:to_s)
+        else []
+        end
       end
 
       # The host the imported stack is routed at, read from the dashboard's
@@ -75,6 +130,50 @@ module Import
       end
 
       private
+
+      # One value off the router that names the address, e.g. the entrypoint or
+      # the resolver the external Traefik routes the dashboard on. HELIOS writes
+      # that router again from these, so the stack keeps the names that proxy
+      # knows.
+      #
+      # Scoped to that one router, because a stack routed over both entrypoints
+      # carries a second one for the plain-HTTP redirect, and its entrypoint is
+      # the one that must not end up here. Traefik reads its label names without
+      # regard to case, so a stack written `entryPoints` is read the same way.
+      def router_label_value(suffix)
+        return if router_name.blank?
+
+        pattern = /\Atraefik\.http\.routers\.#{Regexp.escape(router_name)}\.#{Regexp.escape(suffix)}=(.+)\z/i
+
+        dashboard_labels.filter_map { |label| label[pattern, 1] }.first
+      end
+
+      # The name of the router whose rule named the address. A stack routed
+      # over both entrypoints carries two, one of them only redirecting plain
+      # HTTP to the other, so the one that ends the TLS connection wins. It is
+      # the one HELIOS writes again, and its entrypoint is the one the proxy
+      # answers the address on.
+      def router_name
+        return @router_name if defined?(@router_name)
+
+        names = dashboard_labels.filter_map { |label| label[/\Atraefik\.http\.routers\.([^.]+)\.rule=/i, 1] }.uniq
+
+        @router_name = names.find { |name| tls_router?(name) } || names.first
+      end
+
+      def tls_router?(name)
+        pattern = /\Atraefik\.http\.routers\.#{Regexp.escape(name)}\.tls(\.|=)/i
+
+        dashboard_labels.any? { |label| label.match?(pattern) }
+      end
+
+      # Both places a compose file can carry labels, flattened to `key=value`.
+      def dashboard_labels
+        @dashboard_labels ||=
+          [dashboard_service['labels'], dashboard_service.dig('deploy', 'labels')].compact.flat_map do |set|
+            set.is_a?(Hash) ? set.map { |key, value| "#{key}=#{value}" } : Array(set).map(&:to_s)
+          end
+      end
 
       # The one mark an nginx or an Apache in front of the stack leaves in the
       # compose file: the dashboard redirects HTTP to HTTPS because something
@@ -157,11 +256,13 @@ module Import
       # `deploy.labels` where the stack was written for Swarm. HELIOS emits the
       # first and reads both, so a Swarm stack names its proxy the same way.
       def find_traefik_rule_label
-        dashboard = @reader.service('dashboard') || {}
-
-        [dashboard['labels'], dashboard.dig('deploy', 'labels')]
+        [dashboard_service['labels'], dashboard_service.dig('deploy', 'labels')]
           .filter_map { |labels| rule_label(labels) }
           .first
+      end
+
+      def dashboard_service
+        @dashboard_service ||= @reader.service('dashboard') || {}
       end
 
       def rule_label(labels)

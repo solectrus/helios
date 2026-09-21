@@ -18,6 +18,10 @@ module Export
         'INGEST_VOLUME_PATH'
       end
 
+      def self.proxy_subdomain
+        'ingest'
+      end
+
       def self.comment
         'Ingest — Ingestion proxy that recalculates house_power for balcony power plants'
       end
@@ -33,16 +37,29 @@ module Export
       def to_h
         {
           image: configuration.ingest.image,
-          ports: ["#{PORT}:#{PORT}"],
+          ports: published_ports,
+          labels: router_labels,
           environment: ingest_environment,
           volumes: [bind_mount('/app/data')],
           depends_on: healthy_depends_on(%i[influxdb]),
           restart: 'unless-stopped',
           healthcheck: healthcheck('CMD-SHELL', "wget -qO- http://127.0.0.1:#{PORT}/ping || exit 1"),
-        }
+        }.compact
       end
 
       private
+
+      # Nothing on a shared network, where the external proxy reaches Ingest by
+      # name. Every other deployment publishes the port on the host.
+      def published_ports
+        return if shared_network_routing?
+
+        ["#{PORT}:#{PORT}"]
+      end
+
+      def router_labels
+        shared_network_router_labels(port: PORT) if shared_network_routing?
+      end
 
       def ingest_environment
         passthrough_vars + explicit_vars + optional_vars + sensor_environment

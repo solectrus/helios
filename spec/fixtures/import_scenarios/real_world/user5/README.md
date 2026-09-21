@@ -12,6 +12,20 @@ Anonymized but otherwise untouched.
   `postgresql:` on re-export via `SERVICE_IMAGE_PREFIXES` (same as user4).
 - **`FORCE_SSL=true` → `dashboard.force_ssl`** — the Swarm Traefik ends the TLS
   connection, so the flag is captured and re-exported.
+- **The shared `traefik-public` network and the routers on it.** The donor
+  runs Traefik in a stack of its own and reaches SOLECTRUS over that
+  network, so the dashboard carries router labels and publishes no host
+  port. HELIOS captures the network as `reverse_proxy.proxy_network`, and
+  the names the routers use as `proxy_entrypoint: websecure` and
+  `proxy_certresolver: le-dns-cloudflare`. On re-export the dashboard,
+  InfluxDB, Ingest and HELIOS join `default` and `traefik-public`, each
+  with a router of its own, and none of them publishes a host port. The
+  top-level `networks:` block names `traefik-public` as external, the way
+  the donor does. First fixture that round-trips a proxy beside the stack.
+- **InfluxDB stays reachable.** The donor routes `influxdb.${APP_HOST}`
+  through Traefik without publishing port 8086, so the port mapping says
+  nothing about it. The importer reads the router labels instead and sets
+  `influxdb.publish_port: true`, which keeps the route after the export.
 - **No false-positive balcony detection** — `inverter_power_1/_2/_3` all
   share the `SENEC` measurement (a SENEC V3's three MPPTs); the importer's
   measurement-divergence heuristic recognizes this as one multi-string
@@ -84,9 +98,9 @@ Anonymized but otherwise untouched.
   (`traefik.http.routers.solectrus-websecure.rule=Host(...)`, TLS
   cert-resolvers, middleware chains, port mappings) — all dropped. HELIOS
   doesn't model Swarm. First fixture to exercise a Swarm donor.
-- **Reverse-proxy and network setup gone.** `traefik-public` external
-  network, per-service `hostname: *.${APP_HOST}`, `links:` directives, and
-  `ulimits.nofile` on the dashboard service all stripped.
+- **Per-service `hostname: *.${APP_HOST}`, `links:` directives, and
+  `ulimits.nofile` on the dashboard service all stripped.** The Swarm
+  topology below carries the rest of what goes.
 - **S3 backup credentials silently lost.** Donor has populated
   `AWS_ACCESS_KEY=my-aws-access-key`, `AWS_SECRET_KEY=my-aws-secret-key`,
   `S3_REGION=eu-central-1`, `S3_BUCKET=solectrus`, plus

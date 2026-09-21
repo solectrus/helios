@@ -3,12 +3,20 @@ module Import
   # stack before any import happens.
   #
   # HELIOS regenerates compose.yaml in full, so it can only accept a stack it
-  # can faithfully reproduce. Today the sole criterion is the set of services —
-  # every service must be reproducible, either as a managed service (typed
-  # exporter) or verbatim under `_unmanaged.services`. A service whose image
-  # HELIOS doesn't recognize would silently vanish on the next export, so the
-  # whole import is refused, with an actionable error naming the offenders.
-  # Further compatibility criteria can be added here later.
+  # can faithfully reproduce. Two criteria:
+  #
+  # * Every service must be reproducible, either as a managed service (typed
+  #   exporter) or verbatim under `_unmanaged.services`. A service whose image
+  #   HELIOS doesn't recognize would silently vanish on the next export.
+  # * Every Docker network a service joins must be one HELIOS writes again:
+  #   the stack's own `default`, and the one external network an outside proxy
+  #   reaches the stack over (see
+  #   ConfigurationImporter::ReverseProxyExtractor#shared_network). A second
+  #   network would be dropped, and the services on it would lose the way they
+  #   are reached today without anything saying so.
+  #
+  # Either way the whole import is refused, with an actionable error naming
+  # what stands in the way.
   class CompatibilityCheck
     # SOLECTRUS-universe images HELIOS round-trips today. All fully-modeled
     # services live in StackReader::ALL_IMAGE_PREFIXES — including
@@ -37,10 +45,24 @@ module Import
         .map { |name, image| { 'service' => name, 'image' => image } }
     end
 
-    # Raise UnsupportedServicesError unless the stack is compatible.
+    # Networks a service joins that the export would not write again. The
+    # compose default is always written, and so is the single external network
+    # the importer captures for an outside proxy; anything beyond that is left
+    # over.
+    def unsupported_networks
+      raw = @reader.raw_compose
+      reproduced = ['default'] + ConfigurationImporter::ReverseProxyExtractor.foreign_networks(raw).first(1)
+
+      (raw['services'] || {}).values
+                             .flat_map { |service| ConfigurationImporter::ReverseProxyExtractor.network_names(service) }
+                             .uniq - reproduced
+    end
+
+    # Raise UnsupportedStackError unless the stack is compatible.
     def call!
-      offending = unsupported_services
-      raise UnsupportedServicesError, offending if offending.any?
+      services = unsupported_services
+      networks = unsupported_networks
+      raise UnsupportedStackError.new(services, networks) if services.any? || networks.any?
     end
 
     private

@@ -58,6 +58,7 @@ module Compose
       environment
       volumes
       ports
+      networks
       labels
       depends_on
       healthcheck

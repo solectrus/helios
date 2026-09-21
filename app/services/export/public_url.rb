@@ -1,25 +1,26 @@
 module Export
   # Browsable HTTPS URL for a service when the stack runs behind a reverse
   # proxy. Returns nil when there is no reverse proxy, no configured domain, or
-  # the service is not routed — the caller then falls back to a direct host port
-  # (built client-side at the current hostname) or shows no button.
+  # the service is not routed — the caller then falls back to a direct host
+  # port (built client-side at the current hostname) or shows no button.
   #
-  # `published:` tells whether the service publishes a host port. In external
-  # mode only published services are reachable through the proxy, so the flag
-  # gates that branch.
+  # Which services are routed is asked of Compose::EXTERNALLY_ROUTABLE, not of
+  # the published ports: on a shared Docker network a routed service publishes
+  # nothing at all, and an InfluxDB kept inside the stack publishes a port for
+  # the local network without being routed.
   class PublicUrl
-    def self.build(configuration, service_name, published:)
-      new(configuration).build(service_name, published:)
+    def self.build(configuration, service_name)
+      new(configuration).build(service_name)
     end
 
     def initialize(configuration)
       @configuration = configuration
     end
 
-    def build(service_name, published:)
+    def build(service_name)
       if configuration.reverse_proxy_managed?
         managed(service_name)
-      elsif configuration.reverse_proxy_external? && published
+      elsif configuration.reverse_proxy_external?
         external(service_name)
       end
     end
@@ -47,18 +48,17 @@ module Export
       end
     end
 
-    # External Traefik: the user's proxy routes each published service on a
-    # subdomain of app_host over HTTPS (dashboard on the bare host) — see
-    # TraefikConfig::ROUTABLE. Without a configured app_host there is no real
-    # domain to link to.
+    # External proxy: it routes each service on a subdomain of app_host over
+    # HTTPS, the dashboard on the bare host. Without a configured app_host
+    # there is no real domain to link to.
     def external(service_name)
       host = configuration.public_host
       return unless host
 
-      entry = TraefikConfig::ROUTABLE.find { |e| e[:klass].service_name == service_name }
-      return unless entry
+      klass = Compose.externally_routable(configuration).find { |candidate| candidate.service_name == service_name }
+      return unless klass
 
-      subdomain = entry[:subdomain]
+      subdomain = klass.proxy_subdomain
       subdomain ? "https://#{subdomain}.#{host}" : "https://#{host}"
     end
   end

@@ -1,6 +1,7 @@
 module Services
   class BatchesController < ApplicationController
     before_action :require_configuration_complete, only: :create
+    before_action :require_proxy_network, only: :create
 
     # POST /services/batch - Start all services (also recreates containers
     # whose config has changed, since `docker compose up` is idempotent).
@@ -30,6 +31,18 @@ module Services
     end
 
     private
+
+    # The stack that owns the shared network is not this one, so the network
+    # can go between the save that named it and this start. Compose would
+    # refuse the whole run, and where that run is the one that hands port 3999
+    # over (see Orchestration::SelfPorts), it would take the interface with it.
+    def require_proxy_network
+      name = Orchestration::ProxyNetwork.missing
+      return unless name
+
+      flash[:alert] = t('services.errors.unknown_proxy_network', network: name)
+      redirect_to services_path
+    end
 
     def start_including_self
       ComposeJob.perform_later(:self_converge)

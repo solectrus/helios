@@ -37,7 +37,7 @@ RSpec.describe Export::HeliosEndpoint do
       )
 
       expect(url).to eq('https://helios.solectrus.example.com')
-      expect(url).to eq(Export::PublicUrl.build(Configuration.current, 'helios', published: true))
+      expect(url).to eq(Export::PublicUrl.build(Configuration.current, 'helios'))
     end
 
     it 'returns nothing while nothing names the machine' do

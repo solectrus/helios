@@ -52,6 +52,17 @@ RSpec.describe 'Files', :with_admin_password do
         expect(response.body).to include('traefik.yml')
         expect(response.body).to include('10.0.0.5')
       end
+
+      # On a shared network the routers are labels on the services, which the
+      # proxy reads off that network. A file to copy would be a second set of
+      # routers for the same services.
+      it 'is not found where the proxy is on a shared network' do
+        Configuration.current.update('reverse_proxy', { 'mode' => 'external', 'proxy_network' => 'edge' })
+
+        get file_path('traefik'), headers: turbo_frame_headers
+
+        expect(response).to have_http_status(:not_found)
+      end
     end
 
     it 'redirects non-frame requests to services' do

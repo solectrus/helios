@@ -69,6 +69,45 @@ RSpec.describe Surveys::Influxdb::Survey do
         expect(description['de']).to include('https://influxdb.solar.example.com')
         expect(description['default']).to include('https://influxdb.solar.example.com')
       end
+
+      it 'says the port is published on the host' do
+        description = find_survey_element(result, 'publish_port')['description']
+        expect(description['de']).to include('Port auf dem Host frei')
+      end
+    end
+
+    # On a shared network the proxy reaches InfluxDB by name, so nothing is
+    # published, and a proxy that reads labels needs no route set up by hand.
+    context 'with an external proxy on a shared Docker network' do
+      before do
+        Configuration.current.update(
+          'reverse_proxy',
+          { 'mode' => 'external', 'app_host' => 'solar.example.com',
+            'proxy_network' => 'edge', 'proxy_entrypoint' => 'websecure' },
+        )
+      end
+
+      it 'says the proxy reaches it over the network instead' do
+        description = find_survey_element(result, 'publish_port')['description']
+        expect(description['de']).to include('gemeinsame Netzwerk')
+        expect(description['de']).to include('kein Port freigegeben')
+        expect(description['de']).not_to include('Route')
+      end
+    end
+
+    # A proxy that reads no labels still needs the route entered by hand.
+    context 'with an external proxy that reads no labels' do
+      before do
+        Configuration.current.update(
+          'reverse_proxy',
+          { 'mode' => 'external', 'app_host' => 'solar.example.com', 'proxy_network' => 'edge' },
+        )
+      end
+
+      it 'still asks for the route' do
+        description = find_survey_element(result, 'publish_port')['description']
+        expect(description['de']).to include('Route muss im Proxy eingerichtet werden')
+      end
     end
 
     # The address is required in the form of that mode, but a hand-edited

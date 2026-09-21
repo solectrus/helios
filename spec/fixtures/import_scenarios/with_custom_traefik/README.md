@@ -24,6 +24,10 @@ foreign services HELIOS no longer accepts).
 - **`influxdb` Traefik routing preserved.** The per-service `traefik.*` labels
   (`influxdb-solectrus` router on the custom `influxdb` entrypoint with
   `myresolver`) round-trip via `service_overrides[influxdb].labels`.
+  The router is also what tells HELIOS that InfluxDB is reachable, so the
+  import sets `influxdb.publish_port: true`. The setting drives the copy of
+  the InfluxDB toggle in the UI; the compose output is unchanged, because
+  the custom Traefik keeps the port.
 - **Only baseline services** (`dashboard`, `influxdb`, `postgresql`, `redis`)
   behind Traefik — no collectors, no foreign services, so the stack passes
   `Import::CompatibilityCheck`.

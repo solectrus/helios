@@ -80,9 +80,16 @@ services:
     - SECRET_KEY_BASE
     - TRUSTED_PROXY_RANGES
     - WEB_CONCURRENCY
-    ports:
-    - 3000:3000
+    networks:
+    - default
+    - traefik-public
     labels:
+    - traefik.enable=true
+    - traefik.http.routers.dashboard.rule=Host(`bbbbb`)
+    - traefik.http.routers.dashboard.entrypoints=websecure
+    - traefik.http.routers.dashboard.tls.certresolver=le-dns-cloudflare
+    - traefik.http.services.dashboard.loadbalancer.server.port=3000
+    - traefik.docker.network=traefik-public
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
       postgresql:
@@ -124,7 +131,16 @@ services:
     volumes:
     - "${INFLUX_VOLUME_PATH}:/var/lib/influxdb2"
     - "./influx-backup-staging:/influx-backup-staging"
+    networks:
+    - default
+    - traefik-public
     labels:
+    - traefik.enable=true
+    - traefik.http.routers.influxdb.rule=Host(`influxdb.bbbbb`)
+    - traefik.http.routers.influxdb.entrypoints=websecure
+    - traefik.http.routers.influxdb.tls.certresolver=le-dns-cloudflare
+    - traefik.http.services.influxdb.loadbalancer.server.port=8086
+    - traefik.docker.network=traefik-public
     - com.centurylinklabs.watchtower.scope=solectrus
     healthcheck:
       interval: 10s
@@ -358,9 +374,16 @@ services:
     - ".:/data"
     - "/var/run/docker.sock:/var/run/docker.sock"
     - "/sys/fs/cgroup:/host/sys/fs/cgroup:ro"
-    ports:
-    - 3999:3000
+    networks:
+    - default
+    - traefik-public
     labels:
+    - traefik.enable=true
+    - traefik.http.routers.helios.rule=Host(`helios.bbbbb`)
+    - traefik.http.routers.helios.entrypoints=websecure
+    - traefik.http.routers.helios.tls.certresolver=le-dns-cloudflare
+    - traefik.http.services.helios.loadbalancer.server.port=3000
+    - traefik.docker.network=traefik-public
     - com.centurylinklabs.watchtower.scope=solectrus
     restart: unless-stopped
     logging:
@@ -438,3 +461,5 @@ services:
 networks:
   default:
     name: solectrus_default
+  traefik-public:
+    external: true

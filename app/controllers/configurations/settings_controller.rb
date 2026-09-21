@@ -157,8 +157,23 @@ module Configurations
 
     def save_section(data)
       return if loopback_app_host?(data)
+      return if unknown_proxy_network?(data)
 
       persist_setting(data)
+    end
+
+    # A network name nothing on this host answers to. Compose refuses to start
+    # the stack over such a network, and the services the proxy routes publish
+    # no host port to fall back on, HELIOS among them. Refused here, where the
+    # name is typed and the screen is still there to say so (see
+    # Orchestration::ProxyNetwork).
+    def unknown_proxy_network?(data)
+      name = Orchestration::ProxyNetwork.missing_name(data['proxy_network'])
+      return false unless name
+
+      flash[:alert] = t('configurations.errors.unknown_proxy_network', network: name)
+      redirect_to redirect_target
+      true
     end
 
     # An address that names the machine to whoever asks would send a device or
@@ -216,10 +231,7 @@ module Configurations
     def inject_enabled_flag!(data)
       return if data.blank?
 
-      if setting == 'reverse_proxy'
-        data['mode'] = data['mode'].presence || 'none'
-        return
-      end
+      return inject_reverse_proxy_ui_state!(data) if setting == 'reverse_proxy'
 
       # The prices survey spans two sections: `enabled` comes from the gating
       # field below (the Tibber token), but `charging` governs the separate
@@ -230,6 +242,16 @@ module Configurations
 
       gating = ENABLED_FLAG_GATING_FIELD[setting]
       data['enabled'] = gating ? data[gating].present? : true
+    end
+
+    # The address form asks two questions nothing stores: the mode, which an
+    # empty section answers with "none", and how an external proxy reaches the
+    # stack, which the stored network name answers on its own. Both are derived
+    # here and dropped again on save (see
+    # SettingPersistence#persist_reverse_proxy).
+    def inject_reverse_proxy_ui_state!(data)
+      data['mode'] = data['mode'].presence || 'none'
+      data['proxy_transport'] = data['proxy_network'].present? ? 'network' : 'ports'
     end
 
     # The "user-selectable" theme is stored as an empty string (the dashboard's

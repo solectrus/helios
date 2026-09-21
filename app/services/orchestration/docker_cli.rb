@@ -87,6 +87,17 @@ module Orchestration
       result
     end
 
+    # Names of the Docker networks on the host, or nil when the daemon does
+    # not answer. Nil is not the empty list: a caller that refuses a network
+    # name it cannot find must not refuse every name because Docker is out of
+    # reach for a moment.
+    def network_names
+      output, status = Open3.capture2e('docker', 'network', 'ls', '--format', '{{.Name}}')
+      return nil unless status.success?
+
+      output.split("\n").map(&:strip).compact_blank
+    end
+
     # Force-removes a single container by name or id (`docker rm -f`). Used to
     # clear a stale container that blocks `compose up` with a name conflict.
     # Data is unaffected: SOLECTRUS stores it in bind mounts, not the container.

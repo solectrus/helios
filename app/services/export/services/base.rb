@@ -35,6 +35,25 @@ module Export
         !volume_env_key.nil?
       end
 
+      # Whether an external proxy routes this service at all. Every enabled
+      # routable service does, except the InfluxDB the user keeps inside the
+      # stack, which overrides this.
+      def self.externally_routable?(configuration)
+        enabled?(configuration)
+      end
+
+      # The subdomain an external proxy routes this service at. The dashboard
+      # answers at the address itself and returns nil here; every other
+      # routable service takes a name of its own in front of it.
+      #
+      # One table for the three places that have to agree on it: the labels
+      # HELIOS writes onto a shared network, the file it generates for a
+      # Traefik that routes host ports (Export::TraefikConfig) and the Open
+      # button of a service (Export::PublicUrl).
+      def self.proxy_subdomain
+        nil
+      end
+
       # Host path backing this service's data volume: the user's configured
       # volume_path, or the default ./<service_name>. Single source of truth
       # for Export::Env::Section#volume_path_entry (emits it to .env) and
@@ -200,16 +219,59 @@ module Export
       # configured address. The router and the load balancer are named after
       # the service, so the entrypoint and the container port are all a caller
       # has to name.
-      def traefik_router_labels(entrypoint:, port:)
+      def traefik_router_labels(entrypoint:, port:, host: configuration.public_host,
+                                certresolver: Traefik.certresolver(configuration))
         name = self.class.service_name
 
-        [
+        labels = [
           'traefik.enable=true',
-          "traefik.http.routers.#{name}.rule=Host(`#{configuration.public_host}`)",
+          "traefik.http.routers.#{name}.rule=Host(`#{host}`)",
           "traefik.http.routers.#{name}.entrypoints=#{entrypoint}",
-          "traefik.http.routers.#{name}.tls.certresolver=#{Traefik.certresolver(configuration)}",
-          "traefik.http.services.#{name}.loadbalancer.server.port=#{port}",
         ]
+        labels << "traefik.http.routers.#{name}.tls.certresolver=#{certresolver}" if certresolver.present?
+        labels << "traefik.http.services.#{name}.loadbalancer.server.port=#{port}"
+        labels
+      end
+
+      # Router labels for a proxy that reads them off the shared network the
+      # stack joined (see Configuration#reverse_proxy_on_shared_network?), or
+      # nothing where that proxy carries its own routes. The entrypoint and the
+      # resolver are that proxy's, not ours, so both come from the
+      # configuration, and the resolver may be left out where the proxy holds
+      # its certificates some other way.
+      #
+      # The dashboard answers at the address itself, every other service at a
+      # subdomain of it, which is the same split Export::PublicUrl and
+      # Export::TraefikConfig name, so the three cannot lead apart.
+      def shared_network_router_labels(port:)
+        return unless configuration.reverse_proxy_labels?
+
+        proxy = configuration.reverse_proxy
+        subdomain = self.class.proxy_subdomain
+        host = subdomain ? "#{subdomain}.#{configuration.public_host}" : configuration.public_host
+
+        traefik_router_labels(
+          entrypoint: proxy.proxy_entrypoint,
+          port:,
+          host:,
+          certresolver: proxy.proxy_certresolver.presence,
+        ) + [network_label]
+      end
+
+      # Which of its networks the proxy connects to. A routed service is on two
+      # of them, the stack's own and the shared one, while the proxy is on the
+      # shared one alone. Where no label names the network, Traefik takes one
+      # of the two at random, and half of the time that is the address it
+      # cannot reach.
+      def network_label
+        "traefik.docker.network=#{configuration.reverse_proxy_network}"
+      end
+
+      # Whether an external proxy reaches this service over a shared network
+      # instead of a published host port. The service then publishes nothing:
+      # the proxy is on that network and reaches it by name.
+      def shared_network_routing?
+        configuration.reverse_proxy_on_shared_network?
       end
     end
   end

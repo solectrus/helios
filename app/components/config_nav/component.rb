@@ -46,11 +46,18 @@ module ConfigNav
       ]
     end
 
-    # External-Traefik mode: offer the file-provider snippet to copy into the
-    # external Traefik (HELIOS only publishes host ports, see TraefikConfig).
-    # Shown under its own "Generated for Traefik" heading.
+    # External-proxy mode: offer the file-provider snippet to copy into the
+    # external Traefik (see TraefikConfig). Shown under its own "Generated for
+    # Traefik" heading.
+    #
+    # Only where that proxy routes published host ports. On a shared network
+    # HELIOS writes the routers as labels on the services themselves, which the
+    # proxy reads off that network, so a file to copy would be a second set of
+    # routers for the same services.
     def show_traefik_file?
-      Configuration.current.reverse_proxy_external?
+      configuration = Configuration.current
+
+      configuration.reverse_proxy_external? && !configuration.reverse_proxy_on_shared_network?
     end
 
     # Derived from the controller path, not its name: the setting modals run in

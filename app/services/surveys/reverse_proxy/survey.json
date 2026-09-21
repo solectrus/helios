@@ -55,8 +55,8 @@
           "name": "address_intro_external",
           "visibleIf": "{mode} = 'external'",
           "html": {
-            "de": "<p>Ein externer Reverse Proxy (Traefik, nginx, Apache) routet auf die veröffentlichten Host-Ports dieses Stacks. HELIOS startet hier <strong>keinen</strong> eigenen Traefik; die Routen werden im externen Proxy gepflegt.</p>",
-            "default": "<p>An external reverse proxy (Traefik, nginx, Apache) routes to this stack's published host ports. HELIOS does <strong>not</strong> start its own Traefik here; the routes are maintained in the external proxy.</p>"
+            "de": "<p>Ein externer Reverse Proxy (Traefik, nginx, Apache, Caddy) routet auf diesen Stack. HELIOS startet hier <strong>keinen</strong> eigenen Traefik; die Routen werden im externen Proxy gepflegt.</p>",
+            "default": "<p>An external reverse proxy (Traefik, nginx, Apache, Caddy) routes to this stack. HELIOS does <strong>not</strong> start its own Traefik here; the routes are maintained in the external proxy.</p>"
           }
         },
         {
@@ -105,16 +105,87 @@
           }
         },
         {
+          "type": "radiogroup",
+          "name": "proxy_transport",
+          "visibleIf": "{mode} = 'external'",
+          "title": {
+            "de": "Wie erreicht der Proxy diesen Stack?",
+            "default": "How does the proxy reach this stack?"
+          },
+          "isRequired": true,
+          "defaultValue": "ports",
+          "choices": [
+            {
+              "value": "ports",
+              "text": {
+                "de": "Über veröffentlichte Ports auf dem Host",
+                "default": "Through published ports on the host"
+              }
+            },
+            {
+              "value": "network",
+              "text": {
+                "de": "Über ein gemeinsames Docker-Netzwerk",
+                "default": "Through a shared Docker network"
+              }
+            }
+          ],
+          "description": {
+            "de": "Ein Proxy, der als Dienst auf dem Host läuft, nimmt die Ports. Ein Proxy, der selbst in Docker läuft, nimmt besser das gemeinsame Netzwerk: die Dienste bleiben dann von außen unerreichbar.",
+            "default": "A proxy running as a service on the host takes the ports. A proxy running in Docker itself is better served by the shared network: the services then stay unreachable from outside."
+          }
+        },
+        {
           "type": "text",
           "name": "bind_ip",
-          "visibleIf": "{mode} = 'external'",
+          "visibleIf": "{mode} = 'external' and {proxy_transport} = 'ports'",
           "title": {
             "de": "Host-IP für die veröffentlichten Ports (optional)",
             "default": "Host IP for the published ports (optional)"
           },
           "description": {
-            "de": "Bindet alle veröffentlichten Ports an diese IP-Adresse, etwa die private IP des Hosts, damit sie nicht öffentlich erreichbar sind. Leer lassen, um auf allen Netzwerk-Schnittstellen zu lauschen.",
-            "default": "Binds all published ports to this IP address, e.g. the host's private IP, so they are not publicly reachable. Leave empty to listen on all network interfaces."
+            "de": "Bindet alle veröffentlichten Ports an diese IP-Adresse, etwa die private IP des Hosts. Bleibt das Feld leer, lauschen Dashboard, InfluxDB, Ingest und HELIOS auf allen Netzwerk-Schnittstellen und sind damit auch direkt erreichbar, am Proxy und an dessen HTTPS vorbei. Auf einem Server mit öffentlicher IP-Adresse gehört hier ein Wert hinein.",
+            "default": "Binds all published ports to this IP address, for example the private IP of the host. If the field stays empty, dashboard, InfluxDB, Ingest and HELIOS listen on all network interfaces and are therefore also reachable directly, bypassing the proxy and its HTTPS. On a server with a public IP address this field needs a value."
+          }
+        },
+        {
+          "type": "text",
+          "name": "proxy_network",
+          "visibleIf": "{mode} = 'external' and {proxy_transport} = 'network'",
+          "requiredIf": "{mode} = 'external' and {proxy_transport} = 'network'",
+          "title": {
+            "de": "Name des gemeinsamen Netzwerks",
+            "default": "Name of the shared network"
+          },
+          "description": {
+            "de": "Das Docker-Netzwerk, in dem der Proxy bereits läuft, z.B. proxy. Es muss vorhanden sein, sonst startet der Stack nicht. Die gerouteten Dienste treten diesem Netzwerk bei und veröffentlichen dann keine Ports mehr auf dem Host. Auch HELIOS selbst: es ist danach nur noch unter helios.<Domain> erreichbar, sobald der Proxy diese Route kennt.",
+            "default": "The Docker network the proxy already runs in, for example proxy. It has to exist, otherwise the stack does not start. The routed services join this network and then publish no ports on the host any more. HELIOS itself as well: it is then reachable at helios.<domain> alone, as soon as the proxy knows that route."
+          }
+        },
+        {
+          "type": "text",
+          "name": "proxy_entrypoint",
+          "visibleIf": "{mode} = 'external' and {proxy_transport} = 'network'",
+          "title": {
+            "de": "Traefik-Entrypoint (optional)",
+            "default": "Traefik entrypoint (optional)"
+          },
+          "description": {
+            "de": "Nur für einen Traefik als Proxy: der Name seines HTTPS-Entrypoints, meist websecure. Damit schreibt HELIOS die passenden Labels an die Dienste, und die Routen entstehen von selbst. Ein nginx, Apache oder Caddy liest keine Labels, dort bleibt das Feld leer und die Routen werden dort gepflegt.",
+            "default": "For a Traefik as the proxy only: the name of its HTTPS entrypoint, usually websecure. HELIOS then writes the matching labels onto the services and the routes appear on their own. An nginx, Apache or Caddy reads no labels, so the field stays empty there and the routes are maintained in that proxy."
+          }
+        },
+        {
+          "type": "text",
+          "name": "proxy_certresolver",
+          "visibleIf": "{mode} = 'external' and {proxy_transport} = 'network' and {proxy_entrypoint} notempty",
+          "title": {
+            "de": "Traefik-Cert-Resolver (optional)",
+            "default": "Traefik certificate resolver (optional)"
+          },
+          "description": {
+            "de": "Der Name des ACME-Resolvers dieses Traefik, meist letsencrypt. Leer lassen, wenn der Traefik seine Zertifikate anders bezieht.",
+            "default": "The name of that Traefik’s ACME resolver, usually letsencrypt. Leave empty when that Traefik obtains its certificates some other way."
           }
         }
       ]

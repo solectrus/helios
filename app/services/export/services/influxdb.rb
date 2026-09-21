@@ -22,6 +22,17 @@ module Export
         'INFLUX_VOLUME_PATH'
       end
 
+      def self.proxy_subdomain
+        'influxdb'
+      end
+
+      # An InfluxDB kept inside the stack gets no route: the external proxy
+      # answers the internet, and a router for it would open a database the
+      # user chose not to open.
+      def self.externally_routable?(configuration)
+        enabled?(configuration) && exposed?(configuration)
+      end
+
       def self.comment
         'InfluxDB — Time-series database for sensor measurements'
       end
@@ -74,23 +85,32 @@ module Export
           healthcheck: healthcheck('CMD', 'influx', 'ping'),
         }
 
-        if traefik_managed_routing?
-          # HELIOS owns Traefik: route InfluxDB through it (HTTPS, same
-          # domain) instead of publishing a host port directly.
-          config[:labels] = traefik_router_labels(entrypoint: 'influxdb', port: CONTAINER_PORT)
-        elsif exposed? && !traefik_routes_influxdb?
-          # Publish a host port directly — either Traefik is off, or an
-          # imported Traefik has no `influxdb` entrypoint to route through.
-          config[:ports] = ["#{host_port}:#{CONTAINER_PORT}"]
-        end
-        # Remaining case: imported Traefik already routes InfluxDB via its
-        # own `influxdb` entrypoint — its labels come in via service_overrides,
-        # and no direct port is published (avoids clashing with Traefik).
-
-        config
+        config.merge(routing)
       end
 
       private
+
+      # How InfluxDB is reached from outside, if at all.
+      #
+      # The managed Traefik routes it by label (HTTPS, same domain). An
+      # external proxy on the shared network reaches it by name, and the
+      # exposure toggle still decides whether it is routed at all: that proxy
+      # answers the internet, and an InfluxDB kept inside the stack must not
+      # get a route. Otherwise the host port is published directly.
+      #
+      # The case left over is an imported Traefik that already routes InfluxDB
+      # on an `influxdb` entrypoint of its own: its labels come in via
+      # service_overrides, and no direct port is published, which would clash
+      # with it.
+      def routing
+        return { labels: traefik_router_labels(entrypoint: 'influxdb', port: CONTAINER_PORT) } if
+          traefik_managed_routing?
+        return { labels: exposed? ? shared_network_router_labels(port: CONTAINER_PORT) : nil } if
+          shared_network_routing?
+        return { ports: ["#{host_port}:#{CONTAINER_PORT}"] } if exposed? && !traefik_routes_influxdb?
+
+        {}
+      end
 
       def exposed?
         self.class.exposed?(configuration)

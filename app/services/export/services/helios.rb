@@ -24,6 +24,10 @@ module Export
         'helios'
       end
 
+      def self.proxy_subdomain
+        'helios'
+      end
+
       def self.comment
         'HELIOS — Configuration management UI'
       end
@@ -57,6 +61,9 @@ module Export
           # `helios` router labels carried in via service_overrides (a re-import
           # of HELIOS's own output) dedupe against these generated ones.
           config[:labels] = traefik_router_labels(entrypoint: 'helios', port: CONTAINER_PORT)
+        elsif shared_network_routing?
+          # An external proxy on the shared network reaches the UI by name.
+          config[:labels] = shared_network_router_labels(port: CONTAINER_PORT)
         else
           config[:ports] = ["#{HOST_PORT}:#{CONTAINER_PORT}"]
         end

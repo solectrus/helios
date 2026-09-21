@@ -12,10 +12,15 @@ Keep every section, an empty one included.
 
 ## New features
 
+- Address & domain: an external reverse proxy can now reach the installation over a Docker network the two share, instead of over ports published on the host. The form asks for the name of that network, and for the entrypoint of a Traefik that reads routes off it. The routed services then join that network, HELIOS writes the routes for them, and no port of the installation is open on the host any more. A network name that no network on the host answers to is refused, where it is typed and again before a start
+
 ## Improvements
 
 - Ingest: behind the built-in Traefik the write address now uses HTTPS, on the same domain as the rest of the installation. An external source sends its token over an encrypted connection, and the installation opens no plain port of its own. The Ingest screen names the new address. Every external source that already writes to Ingest needs that address, because the old one on port 4567 answers no longer
 - Address & domain: choosing the built-in Traefik now says that HELIOS itself follows the domain, on port 3999, and offers a check of that domain before the mode is saved. A domain that leads somewhere else is named at once, instead of taking the screen with it
+- Address & domain: the host IP for the published ports now says what an empty field means. Dashboard, InfluxDB, Ingest and HELIOS then listen on every network interface and are reachable past the proxy, which a server with a public address must not be
+- Address & domain: an external reverse proxy now starts with HTTPS switched on, because such a proxy ends the TLS connection. An installation that already runs that mode keeps its own setting
+- Ingest: behind the built-in Traefik the write address now uses HTTPS, on the same domain as the rest of the installation. An external source sends its token over an encrypted connection, and the installation opens no plain port of its own. The Ingest screen names the new address
 - On a phone, an explanation now opens on a tap: the age of a reading, the state of a service, the reason an action is blocked, and the notes on the backup and sensor screens (#480)
 - Keyboard and screen reader: a button now shows its label when the focus reaches it, and a button that carries only an icon now says its name (#480)
 - Configuration forms: every password, token and access key now appears as dots, and an eye button in the field shows the value
@@ -39,7 +44,10 @@ Keep every section, an empty one included.
 - Navigation: a link that leads to another tab now moves the mark in the main navigation with it
 - Address of the machine: an address pasted out of the browser is now stored as the name alone. HELIOS removes a scheme, a port and a path, so every link and every rule built from the address leads somewhere. The field can stay empty, and the published port is used instead
 - Address of the machine: a loopback address such as localhost is now refused while it is typed, because every link derived from it sends a device back to itself. An address of that kind is dropped on update, and dropped from an imported installation as well. The generated files no longer fall back to localhost either
-- Import: a stack routed by a reverse proxy that runs beside it, over a shared network, is now recognized as such. Its address and its HTTPS setting reach the form instead of staying hidden
+- Import: an installation on a Docker network of a parent stack now keeps that network. Every service joins it again after the import, and the published ports stay
+- Import: an installation routed by a reverse proxy beside it now keeps the routes. The network, the entrypoint and the certificate resolver are read from the running stack and written again
+- Import: an InfluxDB that a reverse proxy routes is now recognized as reachable, so it stays reachable after the import
+- Import: an installation on a Docker network that HELIOS cannot write again is now refused, with the network named, instead of losing it without a word
 - Generated for Docker: the .env file now lists only the settings the stack reads. It no longer names a certificate folder that the stack does not use
 - Backup to S3: a backup or a restore that fails now reports the reason, for example a rejected access key or a bucket that cannot be reached
 - Backup, restore and CSV import: the preparation no longer fails when a service is renewed at the same moment

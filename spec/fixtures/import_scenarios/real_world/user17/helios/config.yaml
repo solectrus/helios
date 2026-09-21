@@ -51,6 +51,8 @@ mqtt:
   mqtt_port: '1883'
   mqtt_ssl: 'false'
   mqtt_username: HHHHH
+reverse_proxy:
+  proxy_network: containerhafen
 sensors:
   battery_charging_power:
     field: bat_power_plus

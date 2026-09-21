@@ -16,15 +16,6 @@ module Export
     DOMAIN_PLACEHOLDER = 'YOUR_DOMAIN'.freeze
     IP_PLACEHOLDER = 'HOST_IP'.freeze
 
-    # Routable services: published host port + the host the external Traefik
-    # routes (dashboard on the bare app_host, the rest on a subdomain).
-    ROUTABLE = [
-      { klass: Services::Dashboard, subdomain: nil },
-      { klass: Services::Influxdb, subdomain: 'influxdb' },
-      { klass: Services::Ingest, subdomain: 'ingest' },
-      { klass: Services::Helios, subdomain: 'helios' },
-    ].freeze
-
     INTRO = <<~COMMENT.freeze
       # Traefik dynamic configuration (file provider) for the SOLECTRUS stack.
       #
@@ -108,14 +99,17 @@ module Export
     end
 
     # [name, host, host_port] for every routable service active in this config.
+    #
+    # A service reaches the external Traefik through its published host port, so
+    # one that publishes none is left out: its router would name a host and send
+    # every request to a port that refuses the connection. InfluxDB is the only
+    # one that can withhold the port here, because this mode runs no Traefik of
+    # its own and the other three publish in every configuration.
     def routable
-      @routable ||= ROUTABLE.filter_map do |entry|
-        klass = entry[:klass]
-        next unless klass.enabled?(configuration)
-
-        name = klass.service_name
-        host = entry[:subdomain] ? "#{entry[:subdomain]}.#{base_domain}" : base_domain
-        [name, host, host_port_for(name)]
+      @routable ||= Compose.externally_routable(configuration).map do |klass|
+        subdomain = klass.proxy_subdomain
+        host = subdomain ? "#{subdomain}.#{base_domain}" : base_domain
+        [klass.service_name, host, host_port_for(klass.service_name)]
       end
     end
 

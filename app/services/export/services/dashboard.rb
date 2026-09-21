@@ -28,6 +28,10 @@ module Export
 
         if Traefik.enabled?(configuration)
           config[:labels] = traefik_router_labels(entrypoint: 'websecure', port: 3000)
+        elsif shared_network_routing?
+          # An external proxy on the shared network reaches the dashboard by
+          # name, so no host port is published.
+          config[:labels] = shared_network_router_labels(port: 3000)
         else
           config[:ports] = ["#{host_port}:3000"]
         end

@@ -863,6 +863,33 @@ class Configuration # rubocop:disable Metrics/ClassLength
     reverse_proxy.mode == 'external'
   end
 
+  # A Docker network the stack joins besides its own. Two stacks carry one,
+  # and the mode tells them apart.
+  #
+  # In the external mode it is how the proxy reaches the stack: the proxy is on
+  # that network and finds every service by name, so the stack publishes no
+  # host port at all and stays off the host's interfaces.
+  #
+  # In any other mode it is a network the stack was adopted on, usually a
+  # parent compose stack's. Nothing is routed over it, every service joins it
+  # the way the adopted stack had it, and the published ports stay.
+  def reverse_proxy_network
+    reverse_proxy.proxy_network.presence
+  end
+
+  # Whether the external proxy reaches the stack over that network instead of
+  # over published host ports.
+  def reverse_proxy_on_shared_network?
+    reverse_proxy_external? && reverse_proxy_network.present?
+  end
+
+  # Whether the proxy on that network reads Traefik labels. Only then does
+  # HELIOS write routers for it; an nginx or a Caddy carries its own routes and
+  # needs the network membership alone.
+  def reverse_proxy_labels?
+    reverse_proxy_on_shared_network? && reverse_proxy.proxy_entrypoint.present?
+  end
+
   # Reverse-proxy "managed Traefik" mode: HELIOS runs its own Traefik for the
   # configured address and routes the dashboard/influxdb through it via labels
   # (no published host ports). The internal counterpart to

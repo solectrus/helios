@@ -99,6 +99,23 @@ RSpec.describe Orchestration::DockerCli do
     end
   end
 
+  describe '.network_names' do
+    it 'reads one name per line' do
+      stub_capture2e("bridge\nhost\nedge\n")
+
+      expect(described_class.network_names).to eq(%w[bridge host edge])
+      expect(Open3).to have_received(:capture2e).with('docker', 'network', 'ls', '--format', '{{.Name}}')
+    end
+
+    # Nil, not the empty list: a caller that refuses a name it cannot find
+    # must tell "Docker has no such network" from "Docker said nothing".
+    it 'returns nil when docker reports a failure' do
+      stub_capture2e('Cannot connect to the Docker daemon', success: false)
+
+      expect(described_class.network_names).to be_nil
+    end
+  end
+
   describe '.force_remove_container' do
     it 'reports failure and output' do
       stub_capture2e("No such container\n", success: false)

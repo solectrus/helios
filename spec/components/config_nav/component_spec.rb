@@ -66,4 +66,32 @@ RSpec.describe ConfigNav::Component, type: :component do
       end
     end
   end
+
+  # The file is for a proxy that routes published host ports, so it is offered
+  # only there. On a shared network the routers are labels on the services
+  # themselves, and a file to copy would be a second set of routers for them.
+  describe 'the generated Traefik file' do
+    # The file list needs a finished setup, which a configured sensor stands for.
+    def offered_with?(reverse_proxy)
+      with_config_yaml(
+        'system' => { 'app_host' => 'solar.example.com' },
+        'reverse_proxy' => reverse_proxy,
+        'sensors' => { 'inverter_power' => { 'source' => 'external' } },
+      )
+
+      render_inline(described_class.new(active_tab: :settings)).css('a[href="/services/files/traefik"]').any?
+    end
+
+    it 'is offered where the proxy routes host ports' do
+      expect(offered_with?({ 'mode' => 'external', 'bind_ip' => '10.0.0.5' })).to be true
+    end
+
+    it 'is not offered on a shared network' do
+      expect(offered_with?({ 'mode' => 'external', 'proxy_network' => 'edge' })).to be false
+    end
+
+    it 'is not offered without an external proxy' do
+      expect(offered_with?({})).to be false
+    end
+  end
 end

@@ -1,8 +1,7 @@
 RSpec.describe Export::PublicUrl do
-  subject(:build) { described_class.build(configuration, service_name, published:) }
+  subject(:build) { described_class.build(configuration, service_name) }
 
   let(:configuration) { Configuration.from_data(data) }
-  let(:published) { true }
 
   describe 'without a reverse proxy' do
     let(:data) { {} }
@@ -91,8 +90,9 @@ RSpec.describe Export::PublicUrl do
       end
     end
 
-    context 'with InfluxDB' do
+    context 'with an exposed InfluxDB' do
       let(:service_name) { 'influxdb' }
+      let(:data) { super().merge('influxdb' => { 'publish_port' => true }) }
 
       it 'links to the influxdb subdomain' do
         expect(build).to eq('https://influxdb.solectrus.example.com')
@@ -101,15 +101,19 @@ RSpec.describe Export::PublicUrl do
 
     context 'with ingest' do
       let(:service_name) { 'ingest' }
+      let(:data) do
+        super().merge('sensors' => { 'inverter_power_2' => { 'source' => 'external', 'is_balcony' => true } })
+      end
 
       it 'links to the ingest subdomain' do
         expect(build).to eq('https://ingest.solectrus.example.com')
       end
     end
 
-    context 'when the service publishes no host port' do
+    # The proxy answers the internet, so an InfluxDB the user keeps inside the
+    # stack is not routed and has no address of its own.
+    context 'with an InfluxDB that is not exposed' do
       let(:service_name) { 'influxdb' }
-      let(:published) { false }
 
       it { is_expected.to be_nil }
     end

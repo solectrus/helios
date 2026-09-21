@@ -51,6 +51,8 @@ de:
     errors:
       blocked_by_dependency: 'Blockiert: %{dependency} konnte nicht gestartet werden'
       configuration_incomplete: 'Die Konfiguration ist noch unvollständig. Alle als offen markierten Einstellungen müssen ergänzt werden, bevor Dienste gestartet werden können.'
+      unknown_proxy_network: 'Das Netzwerk %{network} ist auf diesem Rechner nicht vorhanden. Ohne dieses Netzwerk kann kein Dienst starten, auch HELIOS selbst nicht.'
+      self_compose_failed: 'Der letzte Neustart der Dienste ist fehlgeschlagen: %{reason}'
     caches:
       destroy:
         success: 'Redis-Cache geleert.'
@@ -477,6 +479,7 @@ de:
       not_configured: 'Nicht konfiguriert'
     errors:
       loopback_host: 'Die Adresse %{host} benennt nur diesen Rechner sich selbst gegenüber und kann hier nicht verwendet werden.'
+      unknown_proxy_network: 'Das Netzwerk %{network} ist auf diesem Rechner nicht vorhanden. Es muss der Proxy anlegen, bevor die Dienste ihm beitreten können.'
     resets:
       create:
         success: 'Import wurde erfolgreich zurückgesetzt.'
@@ -604,6 +607,8 @@ de:
       unsupported_heading: 'HELIOS kann diese Konfiguration leider nicht verwalten'
       unsupported_reason: 'Folgende Dienste sind unbekannt:'
       unsupported_no_image: 'kein Image'
+      unsupported_networks_reason: 'Folgende Docker-Netzwerke lassen sich nicht übernehmen:'
+      unsupported_networks_hint: 'HELIOS schreibt das eigene Netzwerk des Stacks und ein weiteres, über das ein externer Reverse Proxy die Dienste erreicht. Ein zusätzliches Netzwerk ginge beim Export verloren. Ein Ausweg ist, die Dienste vor dem Import in das Stack-Netzwerk zurückzulegen.'
       unsupported_hint_html: 'HELIOS verwaltet die Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> vollständig und kann dabei nur bekannte Dienste übernehmen. Ein Ausweg ist, die oben genannten Dienste in eine separate Compose-Datei zu verlagern und den Import anschließend erneut zu starten.'
       external_ingest_heading: 'Nach dem Import bleibt ein Schritt offen'
       external_ingest_reason: 'Diese Konfiguration enthält ein Steckersolargerät, deshalb richtet HELIOS Ingest zur Neuberechnung des Hausverbrauchs ein. Folgende Werte kommen aus einer externen Quelle und müssen künftig bei Ingest ankommen statt in der InfluxDB:'

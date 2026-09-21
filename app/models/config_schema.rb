@@ -342,10 +342,23 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
 
   POWER_SPLITTER_FIELDS = %w[image].freeze
 
+  # `proxy_network` names a Docker network an external proxy is already on. It
+  # is the second way such a proxy reaches the stack: instead of routing to
+  # published host ports, it joins the services on a network the two stacks
+  # share and reaches them by service name. Its presence is what tells the two
+  # apart, so nothing stores the choice twice.
+  #
+  # `proxy_entrypoint` and `proxy_certresolver` are for a proxy that reads
+  # Traefik labels off that network. Named, HELIOS writes the routers itself;
+  # left empty, it only joins the network, which is what an nginx or a Caddy
+  # needs (they carry their own routes and find the service by name).
   REVERSE_PROXY_FIELDS = (STORAGE_FIELDS + %w[
     mode
     letsencrypt_email
     bind_ip
+    proxy_network
+    proxy_entrypoint
+    proxy_certresolver
     image
     command
     ports

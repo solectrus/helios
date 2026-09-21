@@ -27,6 +27,7 @@ influxdb:
   image: influxdb:2.8-alpine
   org: EEEEE
   password: FFFFF
+  publish_port: true
   token_admin: HHHHH
   token_read: GGGGG
   token_readwrite: HHHHH
@@ -52,6 +53,9 @@ forecast:
   measurement: Forecast
 reverse_proxy:
   mode: external
+  proxy_certresolver: le-dns-cloudflare
+  proxy_entrypoint: websecure
+  proxy_network: traefik-public
 backup: {}
 sensors:
   battery_charging_power:

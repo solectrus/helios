@@ -23,6 +23,7 @@ influxdb:
   image: influxdb:2-alpine
   org: solectrus
   password: test-influx-pw
+  publish_port: true
   token_admin: test-influx-token
   token_read: test-influx-token
   token_readwrite: test-influx-token

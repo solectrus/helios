@@ -19,7 +19,24 @@ module Surveys
 
       def customize!(data)
         apply_app_host_validator!(data)
+        apply_force_ssl_default!(data)
         data['offerBrowserHost'] = BROWSER_HOST_OFFER
+      end
+
+      # A reverse proxy that answers the internet terminates TLS, and the
+      # dashboard has to be told so or the login behind it fails. The field
+      # therefore starts on for anyone arriving at the external mode.
+      #
+      # Only for them. The field carries `true` or nothing (see
+      # ConfigSchema::DASHBOARD_FIELDS), so a stack already running that mode
+      # without it is one whose proxy serves plain HTTP. A default would tick
+      # the box for that stack on the next save and send every request to a
+      # port nothing serves.
+      def apply_force_ssl_default!(data)
+        return if Configuration.current.reverse_proxy_external?
+
+        element = find_element(data, 'force_ssl')
+        element['defaultValue'] = true if element
       end
 
       # The address has to name the machine to others, whatever the mode, so the

@@ -5,7 +5,7 @@
     <%= render LanguageSelect::Component.new %>
   </div>
 
-  <% refusal = @compose_error.present? || @unsupported_services.present? %>
+  <% refusal = @compose_error.present? || @unsupported_services.present? || @unsupported_networks.present? %>
 
   <div class="hero-content z-10 w-full flex-col px-0 md:px-4 <%= refusal ? 'max-w-2xl' : 'max-w-lg' %>">
     <div class="mb-6 text-center">
@@ -24,13 +24,11 @@
             </div>
 
             <div class="flex flex-col gap-2">
-              <p class="text-base-content/60 text-sm">
-                <% if @compose_error.present? %>
-                  <%= t('.invalid_reason_html') %>
-                <% else %>
-                  <%= t('.unsupported_reason') %>
-                <% end %>
-              </p>
+              <% if @compose_error.present? %>
+                <p class="text-base-content/60 text-sm"><%= t('.invalid_reason_html') %></p>
+              <% elsif @unsupported_services.present? %>
+                <p class="text-base-content/60 text-sm"><%= t('.unsupported_reason') %></p>
+              <% end %>
 
               <% if @compose_error.present? %>
                 <pre
@@ -40,28 +38,55 @@
                   "
                 ><%= @compose_error %></pre>
               <% else %>
-                <ul
-                  class="
-                    border-base-content/10 divide-base-content/10 bg-base-100 divide-y overflow-hidden rounded-lg
-                    border
-                  "
-                >
-                  <% @unsupported_services.each do |service| %>
-                    <li class="flex flex-col gap-0.5 px-3.5 py-2.5">
-                      <span class="font-mono text-sm font-medium"><%= service['service'] %></span>
+                <% if @unsupported_services.present? %>
+                  <ul
+                    class="
+                      border-base-content/10 divide-base-content/10 bg-base-100 divide-y overflow-hidden rounded-lg
+                      border
+                    "
+                  >
+                    <% @unsupported_services.each do |service| %>
+                      <li class="flex flex-col gap-0.5 px-3.5 py-2.5">
+                        <span class="font-mono text-sm font-medium"><%= service['service'] %></span>
 
-                      <span class="text-base-content/50 font-mono text-xs">
-                        <%= service['image'].presence || t('.unsupported_no_image') %>
-                      </span>
-                    </li>
-                  <% end %>
-                </ul>
+                        <span class="text-base-content/50 font-mono text-xs">
+                          <%= service['image'].presence || t('.unsupported_no_image') %>
+                        </span>
+                      </li>
+                    <% end %>
+                  </ul>
+                <% end %>
+
+                <% if @unsupported_networks.present? %>
+                  <p class="text-base-content/60 text-sm"><%= t('.unsupported_networks_reason') %></p>
+
+                  <ul
+                    class="
+                      border-base-content/10 divide-base-content/10 bg-base-100 divide-y overflow-hidden rounded-lg
+                      border
+                    "
+                  >
+                    <% @unsupported_networks.each do |network| %>
+                      <li class="px-3.5 py-2.5">
+                        <span class="font-mono text-sm font-medium"><%= network %></span>
+                      </li>
+                    <% end %>
+                  </ul>
+                <% end %>
               <% end %>
             </div>
 
-            <p class="text-base-content/70 text-sm leading-relaxed">
-              <%= @compose_error.present? ? t('.invalid_hint') : t('.unsupported_hint_html') %>
-            </p>
+            <% if @compose_error.present? %>
+              <p class="text-base-content/70 text-sm leading-relaxed"><%= t('.invalid_hint') %></p>
+            <% else %>
+              <% if @unsupported_services.present? %>
+                <p class="text-base-content/70 text-sm leading-relaxed"><%= t('.unsupported_hint_html') %></p>
+              <% end %>
+
+              <% if @unsupported_networks.present? %>
+                <p class="text-base-content/70 text-sm leading-relaxed"><%= t('.unsupported_networks_hint') %></p>
+              <% end %>
+            <% end %>
           </div>
         <% else %>
           <% if @external_ingest_sensors.present? %>

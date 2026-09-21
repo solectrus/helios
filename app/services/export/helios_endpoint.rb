@@ -26,7 +26,7 @@ module Export
     def url
       return unless host
 
-      PublicUrl.build(configuration, Services::Helios.service_name, published: true) ||
+      PublicUrl.build(configuration, Services::Helios.service_name) ||
         "http://#{HostAddress.for_url(host)}:#{PORT}"
     end
 

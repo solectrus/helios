@@ -24,6 +24,25 @@ RSpec.describe Export::TraefikConfig do
       .to eq('http://10.0.0.5:8086')
   end
 
+  # The router sends every request for the subdomain to a host port, and an
+  # InfluxDB that publishes none refuses the connection. The external Traefik
+  # would answer the subdomain with a gateway error instead of not answering it.
+  context 'with InfluxDB kept inside the stack' do
+    before do
+      configuration.update('deployment', { 'mode' => 'full' })
+      configuration.update('influxdb', { 'publish_port' => false })
+    end
+
+    it 'leaves influxdb out' do
+      expect(document.dig('http', 'routers')).not_to have_key('solectrus-influxdb')
+      expect(document.dig('http', 'services')).not_to have_key('solectrus-influxdb')
+    end
+
+    it 'keeps routing the dashboard' do
+      expect(document.dig('http', 'routers', 'solectrus-dashboard', 'rule')).to eq('Host(`demo.example.com`)')
+    end
+  end
+
   it 'emits placeholders for the user-specific certResolver and middlewares' do
     router = document.dig('http', 'routers', 'solectrus-dashboard')
     expect(router['tls']['certResolver']).to eq('CHANGE_ME')

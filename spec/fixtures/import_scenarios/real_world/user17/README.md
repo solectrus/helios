@@ -26,8 +26,7 @@ Three smaller first-of-its-kind quirks ride along: `container_name:`
 on every service (HELIOS drops these on re-export), a `solectrus-`
 prefix on every donor service name (image-prefix matching still
 resolves the canonical aliases), and a parent-network reference
-(`networks: containerhafen: external: true`) that doesn't survive
-the round-trip — HELIOS emits its own `solectrus_default` bridge.
+(`networks: containerhafen: external: true`).
 
 ## Anonymization
 
@@ -41,6 +40,16 @@ and the bootstrap rake task plus `StackReader` were taught to tolerate
 its absence as part of this fixture going in.
 
 ## Imported correctly (round-trip preserves the value)
+
+- **The `containerhafen` network of the parent stack.** The donor writes
+  a child compose file and puts every service on a network the parent
+  stack owns. No reverse proxy is in play: the dashboard publishes port
+  3000 and carries no router label. HELIOS stores the network as
+  `reverse_proxy.proxy_network` without naming a proxy mode, so on
+  re-export every service joins `default` and `containerhafen`, the
+  published ports stay, and the top-level `networks:` block names
+  `containerhafen` as external. First fixture that round-trips a stack
+  adopted on a parent network.
 
 - **All inline secrets and tokens survive** — donor inlines
   `ADMIN_PASSWORD=my-admin-password`, `SECRET_KEY_BASE=my-secret-key-base`,
@@ -129,13 +138,6 @@ its absence as part of this fixture going in.
   `postgresql`; `solectrus-mqttcollector` to `mqtt-collector`; etc.
   Image-prefix matching handles every one; no donor service is left
   unresolved.
-- **`containerhafen` external-network reference dropped.**
-  HELIOS emits a single `networks: default: name:
-  solectrus_default` block instead. Operationally the donor will
-  need to re-attach their parent-compose network manually after
-  re-export, or accept that SOLECTRUS now runs in its own bridge
-  network. The fixture does not preserve this — `config.yaml` has no
-  network-overlay configuration for this case.
 - **`INFLUX_HOST=solectrus-influxdb` / `INFLUX_SCHEMA=http` /
   `INFLUX_PORT=8086` dropped from collectors.** Donor sets these
   inline on every service that talks to InfluxDB. HELIOS bakes the

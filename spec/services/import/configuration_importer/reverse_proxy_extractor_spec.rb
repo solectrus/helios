@@ -158,4 +158,96 @@ RSpec.describe 'Import::ConfigurationImporter reverse_proxy bind_ip' do
       end
     end
   end
+
+  # The second way an external proxy reaches the stack: it is on a Docker
+  # network the two stacks share and finds every service there by name.
+  describe 'a shared Docker network' do
+    let(:stack_reader) do
+      instance_double(
+        Import::StackReader,
+        raw_env: {},
+        raw_compose: { 'services' => services, 'networks' => networks },
+        services:,
+        stack_dir: '/srv/solectrus',
+      ).tap { |double| allow(double).to receive(:service) { |name| services[name] } }
+    end
+    let(:networks) { { 'proxy' => { 'external' => true } } }
+    let(:labels) do
+      [
+        'traefik.enable=true',
+        'traefik.http.routers.solectrus.rule=Host(`solar.example.com`)',
+        'traefik.http.routers.solectrus.entrypoints=websecure',
+        'traefik.http.routers.solectrus.tls.certresolver=letsencrypt',
+      ]
+    end
+    let(:dashboard_service) do
+      { 'image' => 'ghcr.io/solectrus/solectrus:latest', 'labels' => labels, 'networks' => ['proxy'] }
+    end
+
+    it 'captures the network and the names the proxy routes it under' do
+      expect(importer.result[:reverse_proxy]).to include(
+        'mode' => 'external',
+        'proxy_network' => 'proxy',
+        'proxy_entrypoint' => 'websecure',
+        'proxy_certresolver' => 'letsencrypt',
+      )
+    end
+
+    # `docker compose config` turns the list form into a mapping.
+    context 'with the networks as a mapping' do
+      let(:dashboard_service) do
+        { 'image' => 'ghcr.io/solectrus/solectrus:latest', 'labels' => labels, 'networks' => { 'proxy' => nil } }
+      end
+
+      it 'captures the network all the same' do
+        expect(importer.result[:reverse_proxy]).to include('proxy_network' => 'proxy')
+      end
+    end
+
+    # A stack routed over both entrypoints carries a second router that only
+    # redirects plain HTTP. Its entrypoint must not be the one stored.
+    context 'with a second router for the plain-HTTP redirect' do
+      let(:labels) do
+        [
+          'traefik.http.routers.solectrus-unsecure.rule=Host(`solar.example.com`)',
+          'traefik.http.routers.solectrus-unsecure.entryPoints=web',
+          'traefik.http.routers.solectrus-websecure.rule=Host(`solar.example.com`)',
+          'traefik.http.routers.solectrus-websecure.entryPoints=websecure',
+          'traefik.http.routers.solectrus-websecure.tls.certResolver=le-dns',
+        ]
+      end
+
+      it 'takes the entrypoint of the router that ends the TLS connection' do
+        expect(importer.result[:reverse_proxy]).to include(
+          'proxy_entrypoint' => 'websecure',
+          'proxy_certresolver' => 'le-dns',
+        )
+      end
+    end
+
+    # A proxy that carries its own routes writes no label. The network is still
+    # how it reaches the stack, so it is captured; nothing claims a router.
+    context 'without router labels' do
+      let(:dashboard_service) do
+        { 'image' => 'ghcr.io/solectrus/solectrus:latest', 'networks' => ['proxy'] }
+      end
+
+      it 'captures the network alone, and names no mode' do
+        expect(importer.result[:reverse_proxy]).to eq('proxy_network' => 'proxy')
+      end
+    end
+
+    # A network the stack creates for itself would not be there after the
+    # export, so it is not captured as one to join.
+    context 'with a network the stack declares itself' do
+      let(:networks) { { 'proxy' => {} } }
+      let(:dashboard_service) do
+        { 'image' => 'ghcr.io/solectrus/solectrus:latest', 'networks' => ['proxy'] }
+      end
+
+      it 'captures nothing' do
+        expect(importer.result[:reverse_proxy]).to be_blank
+      end
+    end
+  end
 end

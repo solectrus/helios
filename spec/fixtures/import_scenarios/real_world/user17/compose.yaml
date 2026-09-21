@@ -61,6 +61,9 @@ services:
     - WEB_CONCURRENCY
     ports:
     - 3000:3000
+    networks:
+    - default
+    - containerhafen
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
@@ -103,6 +106,9 @@ services:
     volumes:
     - "${INFLUX_VOLUME_PATH}:/var/lib/influxdb2"
     - "./influx-backup-staging:/influx-backup-staging"
+    networks:
+    - default
+    - containerhafen
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     healthcheck:
@@ -139,6 +145,9 @@ services:
     - POSTGRES_PASSWORD
     volumes:
     - "${DB_VOLUME_PATH}:/var/lib/postgresql/data"
+    networks:
+    - default
+    - containerhafen
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     healthcheck:
@@ -168,6 +177,9 @@ services:
     - TZ
     volumes:
     - "${REDIS_VOLUME_PATH}:/data"
+    networks:
+    - default
+    - containerhafen
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     healthcheck:
@@ -242,6 +254,9 @@ services:
     - MQTT_PORT
     - MQTT_SSL
     - MQTT_USERNAME
+    networks:
+    - default
+    - containerhafen
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
@@ -274,6 +289,9 @@ services:
     - INFLUX_MEASUREMENT=${INFLUX_MEASUREMENT_FORECAST}
     - INFLUX_ORG
     - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+    networks:
+    - default
+    - containerhafen
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
@@ -320,6 +338,9 @@ services:
     - POSTGRES_PASSWORD
     - POWER_SPLITTER_INTERVAL
     - REDIS_URL=redis://redis:6379/1
+    networks:
+    - default
+    - containerhafen
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
@@ -350,6 +371,9 @@ services:
     - WATCHTOWER_TIMEOUT
     volumes:
     - "/var/run/docker.sock:/var/run/docker.sock"
+    networks:
+    - default
+    - containerhafen
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     healthcheck:
@@ -385,6 +409,9 @@ services:
     - "/sys/fs/cgroup:/host/sys/fs/cgroup:ro"
     ports:
     - 3999:3000
+    networks:
+    - default
+    - containerhafen
     labels:
     - com.centurylinklabs.watchtower.scope=solectrus
     restart: unless-stopped
@@ -397,6 +424,8 @@ services:
 networks:
   default:
     name: solectrus_default
+  containerhafen:
+    external: true
 
 volumes:
   solectrus-influxdb:

@@ -103,24 +103,34 @@ RSpec.describe Surveys::ReverseProxy::Survey do
 
     before { with_config_yaml }
 
+    # Answers the form asks but no section stores: `mode` names the mode rather
+    # than being one of its fields, and `proxy_transport` names which of the
+    # external mode's two shapes is meant. Both are derived again on load (see
+    # Configurations::SettingsController#inject_reverse_proxy_ui_state!).
+    let(:ui_only_fields) { %w[mode proxy_transport] }
+
     # The answers the form stores: the html blocks around them explain, they
-    # carry no value. `mode` itself names the mode rather than being one of its
-    # fields, so the table carries it separately.
+    # carry no value.
     def visible_fields(mode)
       Array(survey['pages'])
         .flat_map { |page| Array(page['elements']) }
-        .reject { |element| element['type'] == 'html' || element['name'] == 'mode' }
+        .reject { |element| element['type'] == 'html' || ui_only_fields.include?(element['name']) }
         .select { |element| visible_in?(element, mode) }
         .pluck('name')
     end
 
-    # The two shapes the form uses, both of them about the mode alone.
+    # Whether the mode shows the field. A rule may narrow further, on the
+    # transport or on another answer, but a field the mode hides is hidden
+    # whatever the rest of the rule says, and a field it shows is one the mode
+    # owns. So only the clause about the mode is read.
     def visible_in?(element, mode)
-      case element['visibleIf']
+      rule = element['visibleIf']
+
+      case rule&.split(' and ')&.first
       when nil then true
       when /\A\{mode\} = '(\w+)'\z/ then Regexp.last_match(1) == mode
       when /\A\{mode\} <> '(\w+)'\z/ then Regexp.last_match(1) != mode
-      else raise "Unknown rule #{element['visibleIf'].inspect} on #{element['name']}"
+      else raise "Unknown rule #{rule.inspect} on #{element['name']}"
       end
     end
 

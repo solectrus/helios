@@ -24,7 +24,7 @@ module Export
     def resolve
       return if service_name == 'traefik'
 
-      url = PublicUrl.build(configuration, service_name, published: public_port.present?)
+      url = PublicUrl.build(configuration, service_name)
       if url
         { url: }
       elsif public_port

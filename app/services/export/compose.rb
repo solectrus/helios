@@ -34,8 +34,25 @@ module Export
       Services::Helios,
     ].freeze
 
+    # The services an external reverse proxy routes, in the order they are
+    # written. Single source of truth for the three readers that have to agree
+    # on the set: the labels and the network membership written here, the file
+    # generated for a proxy that routes host ports (Export::TraefikConfig) and
+    # the Open button of a service (Export::PublicUrl).
+    EXTERNALLY_ROUTABLE = [
+      Services::Dashboard,
+      Services::Influxdb,
+      Services::Ingest,
+      Services::Helios,
+    ].freeze
+
     def self.find_service(name)
       SERVICE_ORDER.find { |klass| klass.service_name == name.to_s }
+    end
+
+    # The routable services this configuration actually routes.
+    def self.externally_routable(configuration)
+      EXTERNALLY_ROUTABLE.select { |klass| klass.externally_routable?(configuration) }
     end
 
     # Service classes this configuration actually renders. Single source of
@@ -72,7 +89,7 @@ module Export
         add_unmanaged_services(compose)
       end
 
-      add_default_network(compose)
+      add_networks(compose)
       add_unmanaged_volumes(compose)
 
       compose.to_yaml
@@ -100,10 +117,15 @@ module Export
       service_hash = service_class.new(configuration).to_h.compact.reverse_merge(default_logging)
       service_hash[:image] = ::Compose.normalize_image(service_hash[:image])
       ServiceOverrides.apply(configuration, service_class.service_name, service_hash)
+      finalize_service!(service_class, service_hash)
+      service_hash
+    end
+
+    def finalize_service!(service_class, service_hash)
       service_hash[:labels] = (Array(service_hash[:labels]) + [WATCHTOWER_LABEL]).uniq
+      join_proxy_network!(service_class, service_hash)
       bind_published_ports!(service_hash)
       sort_environment!(service_hash)
-      service_hash
     end
 
     # In the "external Traefik" reverse-proxy mode the stack publishes host
@@ -203,12 +225,43 @@ module Export
     # auto-name `<project>_default`). Unmanaged services only reference the
     # compose-internal `default` alias, so the actual Docker network name is
     # transparent to them.
-    def add_default_network(compose)
+    def add_networks(compose)
       compose.networks['default'] = { 'name' => network_name }
+      return unless proxy_network
+
+      # Declared as external: the network belongs to the proxy's own stack,
+      # which created it. Compose refuses to start when it is missing, which is
+      # the honest answer — HELIOS must not create a network another stack owns
+      # and then hand it different options than that stack expects.
+      compose.networks[proxy_network] = { 'external' => true }
     end
 
     def network_name
       configuration.system['network_name'].presence || ConfigSchema::DEFAULT_NETWORK_NAME
+    end
+
+    def proxy_network
+      configuration.reverse_proxy_network
+    end
+
+    # A service that names no network joins `default` alone, so a service on
+    # the second network has to name both: the stack's own, where it reaches
+    # the database and the collectors, and the second one.
+    #
+    # Which services join depends on what the network is for. Where a proxy
+    # routes the stack over it, only the services it routes join, and the
+    # database and the collectors stay off a network other stacks are on.
+    # Where the stack merely lives on a parent stack's network, every service
+    # joins, because that is how such a stack was written.
+    def join_proxy_network!(service_class, service_hash)
+      return unless proxy_network
+      return if configuration.reverse_proxy_on_shared_network? && routed_services.exclude?(service_class)
+
+      service_hash[:networks] = ['default', proxy_network]
+    end
+
+    def routed_services
+      @routed_services ||= self.class.externally_routable(configuration)
     end
 
     # Top-level `volumes:` declarations carried over from the source compose

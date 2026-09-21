@@ -71,12 +71,26 @@ module Import
         Array(@reader.service('influxdb')&.dig('ports')).find { |entry| targets_influxdb?(entry) }
       end
 
-      # True when the imported compose publishes InfluxDB's port 8086 to the
-      # host (covering UI, HTTP API, and external tooling). Returns nil
+      # True when the imported stack makes InfluxDB reachable from outside the
+      # Docker network: it publishes port 8086 to the host (covering UI, HTTP
+      # API and external tooling), or a reverse proxy routes it. Returns nil
       # otherwise so .compact drops the key and the default (don't publish)
       # takes over.
       def publish_port
-        published_port_mapping ? true : nil
+        published_port_mapping || routed_by_proxy? ? true : nil
+      end
+
+      # Whether a router of a reverse proxy names InfluxDB. A stack routed that
+      # way publishes no host port for it, so the port mapping says nothing,
+      # yet the database is reachable and has to stay so after the export
+      # (see Export::Services::Influxdb.exposed?).
+      def routed_by_proxy?
+        labels = @reader.service('influxdb').to_h.then do |service|
+          [service['labels'], service.dig('deploy', 'labels')].compact
+        end
+
+        labels.flat_map { |set| set.is_a?(Hash) ? set.keys : Array(set).map(&:to_s) }
+              .any? { |label| label.match?(/\Atraefik\.http\.routers\./i) }
       end
 
       # Host-side port the imported compose maps to the InfluxDB UI. Returns nil for the

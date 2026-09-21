@@ -281,6 +281,10 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
   end
 
   describe 'POST /configuration/settings for the reverse_proxy mode' do
+    # The shared network has to be there before the stack can join it, so the
+    # save asks Docker for it. The proxy of these examples runs on `edge`.
+    before { allow(Orchestration::DockerCli).to receive(:network_names).and_return(%w[bridge edge]) }
+
     it 'stores the address for the internal Traefik mode' do
       post configuration_settings_path,
            params: { setting: 'reverse_proxy',
@@ -331,6 +335,82 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       config = Configuration.current
       expect(config.reverse_proxy.mode).to eq('external')
       expect(config.reverse_proxy_external?).to be true
+    end
+
+    it 'stores the shared network the external proxy is on' do
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'external', app_host: 'solar.example.com', proxy_network: 'edge',
+                             proxy_entrypoint: 'websecure', proxy_certresolver: 'le' }.to_json }
+
+      expect(Configuration.current.reverse_proxy)
+        .to include('proxy_network' => 'edge', 'proxy_entrypoint' => 'websecure', 'proxy_certresolver' => 'le')
+    end
+
+    # Compose declares that network as one another stack owns, so it refuses to
+    # start the stack while the network is missing. The services the proxy
+    # routes publish no host port to fall back on, HELIOS among them, so the
+    # name is refused here rather than at the start that would go down with it.
+    it 'refuses a network that does not exist' do
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'external', app_host: 'solar.example.com',
+                             proxy_network: 'typo' }.to_json }
+
+      expect(Configuration.current.reverse_proxy.proxy_network).to be_blank
+      expect(flash[:alert]).to include('typo')
+    end
+
+    it 'stores the network while Docker does not answer' do
+      allow(Orchestration::DockerCli).to receive(:network_names).and_return(nil)
+
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'external', app_host: 'solar.example.com',
+                             proxy_network: 'edge' }.to_json }
+
+      expect(Configuration.current.reverse_proxy.proxy_network).to eq('edge')
+    end
+
+    # The two ways the proxy reaches the stack exclude each other. A bind IP
+    # left over would bind ports the shared-network stack no longer publishes.
+    it 'drops a bind_ip when the proxy is on a shared network' do
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'external', app_host: 'solar.example.com',
+                             proxy_network: 'edge', bind_ip: '10.0.0.5' }.to_json }
+
+      expect(Configuration.current.reverse_proxy.bind_ip).to be_blank
+    end
+
+    it 'drops the router names when the proxy routes host ports' do
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy',
+                     data: { mode: 'external', app_host: 'solar.example.com', bind_ip: '10.0.0.5',
+                             proxy_entrypoint: 'websecure' }.to_json }
+
+      expect(Configuration.current.reverse_proxy.proxy_entrypoint).to be_blank
+    end
+
+    # A stack adopted on a parent stack's network keeps it: the form asks about
+    # the network in the external mode alone, so a save in another mode never
+    # speaks for it.
+    it 'keeps an adopted network across a save in another mode' do
+      Configuration.current.update('reverse_proxy', { 'proxy_network' => 'containerhafen' })
+
+      post configuration_settings_path,
+           params: { setting: 'reverse_proxy', data: { mode: 'none', app_host: '192.168.1.5' }.to_json }
+
+      expect(Configuration.current.reverse_proxy.proxy_network).to eq('containerhafen')
+    end
+
+    it 'derives the transport from the stored network on reload' do
+      Configuration.current.update('reverse_proxy', { 'mode' => 'external', 'proxy_network' => 'edge' })
+
+      get edit_configuration_setting_path(setting: 'reverse_proxy', name: 'reverse_proxy'),
+          headers: turbo_frame_headers
+
+      expect(response.body).to include('&quot;proxy_transport&quot;:&quot;network&quot;')
     end
 
     it 'preselects the external mode on reload after saving it without a bind_ip' do
