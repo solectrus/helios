@@ -1,9 +1,9 @@
 RSpec.describe Import::CompatibilityCheck do
-  # Builds a check from a real import scenario fixture (donor .bak files).
+  # Builds a check from the donor stack of a real import scenario.
   def check_for(scenario)
-    base = Rails.root.join('spec/fixtures/import_scenarios', scenario)
-    compose = Compose::FILENAMES.lazy.map { |f| base.join("#{f}.bak") }.find(&:file?)
-    reader = Import::StackReader.new(compose_path: compose, env_path: base.join('.env.bak'))
+    base = Rails.root.join('spec/scenarios/import', scenario, 'input')
+    compose = Compose::FILENAMES.lazy.map { |f| base.join(f) }.find(&:file?)
+    reader = Import::StackReader.new(compose_path: compose, env_path: base.join('.env'))
     described_class.new(reader)
   end
 

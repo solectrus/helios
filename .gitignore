@@ -26,7 +26,7 @@
 # dotenv
 .env
 .env.*.local
-!spec/fixtures/**/.env
+!spec/scenarios/**/.env
 
 # Vite
 /public/vite*

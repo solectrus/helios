@@ -77,14 +77,21 @@ RSpec/MultipleExpectations:
 RSpec/ExampleLength:
   Max: 20
 
-# Fixture-driven cross-class specs and system specs use string descriptions:
-# the scenarios_spec covers the whole import/export round-trip, system specs
-# describe end-to-end UI flows, and log_silencing_spec covers middleware
-# configuration — none of them a single class.
+# Scenario-driven cross-class specs and system specs use string descriptions:
+# a scenario spec covers a whole pipeline, system specs describe end-to-end UI
+# flows, and log_silencing_spec covers middleware configuration — none of them
+# a single class.
+# A scenario spec states its expectations through ScenarioSnapshot, which
+# compares the produced stack against the recorded one or records it anew.
+RSpec/NoExpectationExample:
+  AllowedPatterns:
+    - ^expect_ # the default of the cop, which this list replaces
+    - ^assert_
+    - ^verify_snapshot!
+
 RSpec/DescribeClass:
   Exclude:
-    - spec/services/scenarios_spec.rb
-    - spec/services/export_scenarios_spec.rb
+    - spec/scenarios/**/*_spec.rb
     - spec/services/export/service_env_contract_spec.rb
     - spec/services/surveys/influx_name_validators_spec.rb
     - spec/services/import/configuration_importer/**/*_spec.rb

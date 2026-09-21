@@ -17,7 +17,7 @@ Introduce ActiveRecord-style migrations for `config.yaml`:
 - Migration files in `app/services/configuration_migrations/` use a numeric filename prefix (`001_*.rb`) for chronological ordering. The directory is excluded from Zeitwerk autoload and required explicitly. Class names express the activity (`CreateDashboardSection`, not `DashboardSection`), matching ActiveRecord conventions.
 - `ConfigurationMigrator` runs at boot via a Rails initializer, applies any pending migrations, stamps the new version, and writes a timestamped backup (`config.yaml.pre-migration-<UTC>.bak`) before any change. The backup is removed once the migration has succeeded; failures leave it behind so the original file can be recovered manually.
 - `Configuration#save!` always writes the current `_schema_version` along with the data once at least one migration is registered, so newly created files start out properly stamped. A higher existing version is preserved (no silent downgrade).
-- The migrator is skipped in the test environment; specs and fixtures already match the current schema. Fixtures are regenerated through `bin/rake fixtures:regenerate` whenever the schema advances.
+- The migrator is skipped in the test environment; specs and fixtures already match the current schema. Scenario snapshots are recorded anew through `UPDATE_SNAPSHOTS=1 bin/rspec spec/scenarios` whenever the schema advances.
 
 Testing strategy mirrors Rails: the DSL on `ConfigurationMigrations::Base` is unit-tested thoroughly, individual migrations are not. The `ConfigurationMigrator` itself is tested with a stand-in migration so its behavior stays independent of which real migrations happen to be registered.
 
@@ -37,5 +37,5 @@ The first concrete migration, `ConfigurationMigrations::CreateDashboardSection` 
 
 - One more thing to maintain: every schema change adds a migration class.
 - Down-migrations are not supported; a downgrade after a migration ran is a manual restore from the backup.
-- Test fixtures must be regenerated after each schema change so they include the new `_schema_version` stamp (the existing `bin/rake fixtures:regenerate` task does this automatically).
+- Scenario snapshots must be recorded anew after each schema change so they include the new `_schema_version` stamp (`UPDATE_SNAPSHOTS=1 bin/rspec spec/scenarios` does this).
 - Extending the DSL with new operations (e.g. `rename_section`, `delete_field`) requires adding both the helper and matching tests on the base class.

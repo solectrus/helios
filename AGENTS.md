@@ -63,7 +63,7 @@ Copy rules:
 - Preserve comments and unknown vars in `.env` (comments in `compose.yaml` are not preserved)
 - Everything the user configures lives in `config.yaml` (ADR-0009). Active Record / SQLite holds only operational records HELIOS produces at runtime (`Backup`, `RunnerLog`) plus Solid Cable
 - Changing the `config.yaml` layout requires a `ConfigurationMigrations::` migration (ADR-0014); moving or renaming a field without one silently drops existing users' values
-- After a config-schema or compose-export change, run `bin/rake fixtures:regenerate` and keep the snapshot churn minimal
+- After a config-schema or compose-export change, run `UPDATE_SNAPSHOTS=1 bin/rspec spec/scenarios` and keep the snapshot churn minimal (see `spec/scenarios/README.md`)
 
 ## Testing
 

@@ -9,14 +9,14 @@
 # spec/fixtures/service_env_contract.yml, which records the variables each
 # service actually reads — taken from its source, not its documentation.
 RSpec.describe 'Service env contract' do
-  # The exporter's own output, one compose.yaml per scenario — a far wider set
+  # The exporter's own output, one compose.yaml per scenario snapshot — a wider set
   # of configurations than a hand-built one would cover.
   def self.scenarios
-    Pathname.glob(Rails.root.join('spec/fixtures/*_scenarios/**/compose.yaml')).sort
+    Pathname.glob(Rails.root.join('spec/scenarios/*/**/snapshot/compose.yaml')).sort
   end
 
   def self.scenario_name(compose_path)
-    compose_path.dirname.relative_path_from(Rails.root.join('spec/fixtures'))
+    compose_path.dirname.parent.relative_path_from(Rails.root.join('spec/scenarios'))
   end
 
   let(:contract) { YAML.safe_load_file(Rails.root.join('spec/fixtures/service_env_contract.yml')) }

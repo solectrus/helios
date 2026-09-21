@@ -210,7 +210,7 @@ RSpec.describe Orchestration::PostgresqlUpgrade, :docker_stack do
   # Builds a known-good HELIOS configuration (a real fixture stack) pinned to
   # the older PostgreSQL major, so Export::Builder produces a valid stack.
   def write_config!
-    source = Rails.root.join('spec/fixtures/import_scenarios/with_ingest/helios/config.yaml')
+    source = Rails.root.join('spec/scenarios/import/with_ingest/snapshot/helios/config.yaml')
     data = YAML.safe_load_file(source, permitted_classes: [Date])
     data['postgresql']['image'] = starting_image
 

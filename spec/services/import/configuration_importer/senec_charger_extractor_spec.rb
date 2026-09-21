@@ -1,9 +1,9 @@
 RSpec.describe Import::ConfigurationImporter::SenecChargerExtractor do
-  # Builds an extractor from a real import scenario fixture (donor .bak files).
+  # Builds an extractor from the donor stack of a real import scenario.
   def extractor_for(scenario)
-    base = Rails.root.join('spec/fixtures/import_scenarios', scenario)
-    compose = Compose::FILENAMES.lazy.map { |f| base.join("#{f}.bak") }.find(&:file?)
-    described_class.new(Import::StackReader.new(compose_path: compose, env_path: base.join('.env.bak')))
+    base = Rails.root.join('spec/scenarios/import', scenario, 'input')
+    compose = Compose::FILENAMES.lazy.map { |f| base.join(f) }.find(&:file?)
+    described_class.new(Import::StackReader.new(compose_path: compose, env_path: base.join('.env')))
   end
 
   describe '#enabled?' do

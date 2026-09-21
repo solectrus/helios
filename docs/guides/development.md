@@ -94,8 +94,7 @@ The gate applies to the fast suite alone. CI runs the integration specs in a sep
 - `spec/integration/` — slow specs that drive real Docker stacks (auto-tagged `:integration` by location; run on CI, locally only with `--tag integration`). Among them, the backup specs guard the pinned sidecar image versions — see [ADR-0006](../adr/0006-image-versioning-strategy.md#verifying-a-bump)
 - `spec/frontend/` — Vitest specs for Stimulus controllers and frontend utils
 - `spec/bats/` — Bats specs for shell scripts (e.g. `spec/bats/bootstrap/` for the bootstrap installer)
-- `spec/fixtures/import_scenarios/` — real `compose.yaml` / `.env` samples driving the Scenario C auto-import tests
-- `spec/fixtures/export_scenarios/` — `config.yaml` donated by running instances, driving the migrate-and-export tests
+- `spec/scenarios/` — whole configurations recorded end to end, each with the input HELIOS starts from and the snapshot it must produce: `import/` (a foreign stack) and `export/` (a `config.yaml` of an older release). Record the snapshots anew with `UPDATE_SNAPSHOTS=1 bin/rspec spec/scenarios`; see `spec/scenarios/README.md`
 - `spec/support/` — RSpec helpers and shared setup
 
 ### Writing Good Tests
