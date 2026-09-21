@@ -630,6 +630,8 @@ en:
       unsupported_no_image: 'no image'
       unsupported_networks_reason: 'The following Docker networks cannot be taken over:'
       unsupported_networks_hint: 'HELIOS writes the network of the stack itself and one more, the one an external reverse proxy reaches the services over. A further network would be lost on export. One way out is to move the services back into the stack network before the import.'
+      unsupported_routing_reason: 'The following Traefik labels cannot be taken over:'
+      unsupported_routing_hint: 'HELIOS writes the Traefik routes of its own services itself, always at the address of the stack. A label with another target, or with a middleware HELIOS does not know, would be replaced by one of its own on export. One way out is to remove these labels before the import, or to set the route up in a proxy beside the stack.'
       unsupported_hint_html: 'HELIOS manages the <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> and <code class="rounded bg-base-300 px-1 font-mono">.env</code> files in full and can only take over services it recognizes. One way out is to move the services listed above into a separate Compose file and then start the import again.'
       external_ingest_heading: 'One step remains after the import'
       external_ingest_reason: 'This configuration contains a balcony power plant, so HELIOS sets up Ingest to recalculate the house consumption. The following values come from an external source and have to reach Ingest from now on, instead of InfluxDB:'

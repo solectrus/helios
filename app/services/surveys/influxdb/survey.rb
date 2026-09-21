@@ -33,11 +33,10 @@ module Surveys
       def managed_description
         self.class.localized(
           en: 'Routes InfluxDB through Traefik with HTTPS. InfluxDB is then publicly reachable at ' \
-              "#{managed_url}, for example for the built-in InfluxDB web interface or external tools. " \
-              'If needed, access can be restricted with a firewall.',
+              "#{managed_url}, for example for the built-in InfluxDB web interface or external tools.",
           de: 'Routet InfluxDB per HTTPS über Traefik. InfluxDB ist dann öffentlich unter ' \
               "#{managed_url} erreichbar, etwa für die eingebaute Weboberfläche von InfluxDB oder " \
-              'externe Tools. Falls nötig, lässt sich der Zugriff per Firewall einschränken.',
+              'externe Tools.',
         )
       end
 
@@ -94,12 +93,10 @@ module Surveys
         configuration.reverse_proxy_on_shared_network?
       end
 
-      # Mirrors the export-side condition (Export::Services::Influxdb
-      # .traefik_managed_routing?) minus the exposure flag, which is the very
-      # toggle this copy describes. An imported custom Traefik (captured
-      # `command`) keeps the direct host port, so the default LAN copy stays.
+      # The export-side condition itself, minus the exposure flag, which is the
+      # very toggle this copy describes.
       def managed_traefik?
-        configuration.reverse_proxy_managed? && configuration.reverse_proxy.command.blank?
+        configuration.reverse_proxy_managed?
       end
 
       def managed_url

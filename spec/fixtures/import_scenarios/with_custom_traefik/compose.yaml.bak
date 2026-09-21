@@ -30,8 +30,6 @@ services:
       - traefik.http.routers.app-solectrus.rule=Host(`solectrus.example.com`)
       - traefik.http.routers.app-solectrus.entrypoints=websecure
       - traefik.http.routers.app-solectrus.tls.certresolver=myresolver
-      - traefik.http.middlewares.test-ratelimit.ratelimit.average=100
-      - traefik.http.middlewares.test-ratelimit.ratelimit.burst=200
     depends_on:
       traefik:
         condition: service_started

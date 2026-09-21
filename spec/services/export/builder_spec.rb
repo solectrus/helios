@@ -837,10 +837,11 @@ RSpec.describe Export::Builder do
       end
     end
 
-    # Imported custom Traefik (captured `command`) that already declares an
-    # `influxdb` entrypoint — HELIOS leaves routing to it (service_overrides
-    # carries the labels) and publishes no host port, so 8086 isn't bound twice.
-    context 'with an imported Traefik that routes influxdb itself' do
+    # Adopted Traefik (captured `command`) that declares an `influxdb`
+    # entrypoint. The port belongs to Traefik, so InfluxDB must not bind it a
+    # second time, and the router labels are HELIOS's to write: without them
+    # the entrypoint answers nothing and the exposure toggle opens nothing.
+    context 'with an adopted Traefik that declares an influxdb entrypoint' do
       before do
         configuration.update('reverse_proxy', {
                                'mode' => 'internal',
@@ -860,6 +861,38 @@ RSpec.describe Export::Builder do
         compose = Compose.load
         influxdb = compose.services.find('influxdb')
         expect(influxdb.ports).to be_blank
+      end
+
+      it 'writes the router labels against that entrypoint' do
+        influxdb = Compose.load.services.find('influxdb')
+        expect(influxdb.config['labels']).to include(
+          'traefik.http.routers.influxdb.rule=Host(`solar.example.com`)',
+          'traefik.http.routers.influxdb.entrypoints=influxdb',
+          'traefik.http.routers.influxdb.tls.certresolver=letsencrypt',
+        )
+      end
+
+      # The resolver of that Traefik, not HELIOS's default name, so the
+      # certificate the route asks for is one the proxy can obtain.
+      it 'references the resolver the adopted command names' do
+        command = configuration.reverse_proxy.command +
+                  ['--certificatesresolvers.myresolver.acme.tlschallenge=true']
+        configuration.update('reverse_proxy', configuration.reverse_proxy.merge('command' => command))
+        described_class.new(configuration).write!
+
+        influxdb = Compose.load.services.find('influxdb')
+        expect(influxdb.config['labels']).to include('traefik.http.routers.influxdb.tls.certresolver=myresolver')
+      end
+
+      # A port the entrypoint of a service HELIOS no longer routes leaves
+      # behind goes with that entrypoint, instead of staying open on nothing.
+      it 'drops the entrypoint and the port once InfluxDB is not exposed', :aggregate_failures do
+        configuration.update('influxdb', configuration.influxdb.merge('publish_port' => nil))
+        described_class.new(configuration).write!
+
+        traefik = Compose.load.services.find('traefik')
+        expect(traefik.config['command']).not_to include('--entrypoints.influxdb.address=:8086')
+        expect(traefik.ports).not_to include('8086:8086')
       end
 
       # An imported Traefik has no `helios` entrypoint yet — HELIOS injects one
@@ -910,7 +943,7 @@ RSpec.describe Export::Builder do
     # Imported custom Traefik without an `influxdb` entrypoint — HELIOS can't
     # route through it, so an exposed InfluxDB falls back to a direct host
     # port (no clash, since Traefik doesn't publish 8086).
-    context 'with an imported Traefik that does not route influxdb' do
+    context 'with an adopted Traefik that declares no influxdb entrypoint' do
       before do
         configuration.update('reverse_proxy', {
                                'mode' => 'internal',
@@ -925,10 +958,17 @@ RSpec.describe Export::Builder do
         described_class.new(configuration).write!
       end
 
-      it 'falls back to a direct host port for InfluxDB' do
+      # HELIOS adds the entrypoint it needs and routes InfluxDB through it,
+      # rather than opening a plain host port beside a proxy that ends TLS.
+      it 'adds the entrypoint and routes InfluxDB through it', :aggregate_failures do
         compose = Compose.load
+        traefik = compose.services.find('traefik')
         influxdb = compose.services.find('influxdb')
-        expect(influxdb.ports).to include('8086:8086')
+
+        expect(traefik.config['command']).to include('--entrypoints.influxdb.address=:8086')
+        expect(traefik.ports).to include('8086:8086')
+        expect(influxdb.ports).to be_blank
+        expect(influxdb.config['labels']).to include('traefik.http.routers.influxdb.entrypoints=influxdb')
       end
     end
 

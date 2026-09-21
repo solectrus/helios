@@ -6,6 +6,10 @@ module Import
       # Container port the InfluxDB UI always listens on.
       INFLUXDB_CONTAINER_PORT = 8086
 
+      # The `influxdb` entrypoint of a reverse proxy, which carries the port
+      # where no mapping of the service does.
+      ENTRYPOINT_ADDRESS = /\A--entrypoints\.influxdb\.address=\S*?:(\d+)\z/i
+
       def initialize(reader, volume_resolver, collectors_only:)
         @reader = reader
         @volume_resolver = volume_resolver
@@ -100,10 +104,22 @@ module Import
       # port like 18086:8086 survives the round-trip.
       def host_port
         mapping = published_port_mapping
-        return nil unless mapping
+        return entrypoint_port unless mapping
 
         host = published_host_port(mapping)
         host if host && host != INFLUXDB_CONTAINER_PORT.to_s
+      end
+
+      # Where a reverse proxy routes InfluxDB, the port lives on that proxy's
+      # `influxdb` entrypoint rather than on a mapping of the service. HELIOS
+      # writes that entrypoint from this field on the next export, so a port
+      # that is not the canonical one has to arrive here.
+      def entrypoint_port
+        port = Array(@reader.service('traefik')&.dig('command'))
+               .filter_map { |arg| arg.to_s[ENTRYPOINT_ADDRESS, 1] }
+               .first
+
+        port if port && port != INFLUXDB_CONTAINER_PORT.to_s
       end
 
       # `docker compose config --format json` normalizes short-form ports to

@@ -57,9 +57,7 @@ module Export
 
         if traefik_managed_routing?
           # Behind Traefik: route the UI through it (HTTPS, same domain,
-          # dedicated :3999 entrypoint) instead of a plain-HTTP host port. Any
-          # `helios` router labels carried in via service_overrides (a re-import
-          # of HELIOS's own output) dedupe against these generated ones.
+          # dedicated :3999 entrypoint) instead of a plain-HTTP host port.
           config[:labels] = traefik_router_labels(entrypoint: 'helios', port: CONTAINER_PORT)
         elsif shared_network_routing?
           # An external proxy on the shared network reaches the UI by name.

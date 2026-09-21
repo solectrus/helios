@@ -122,9 +122,9 @@ RSpec.describe Surveys::Influxdb::Survey do
       end
     end
 
-    # An imported custom Traefik (captured command) keeps the direct host
-    # port, so the default LAN copy stays accurate.
-    context 'with an imported custom Traefik' do
+    # An adopted Traefik is a managed one, so the copy is the managed one:
+    # HELIOS writes the route for it either way.
+    context 'with an adopted Traefik' do
       before do
         Configuration.current.update('reverse_proxy', {
                                        'mode' => 'internal',
@@ -133,9 +133,10 @@ RSpec.describe Surveys::Influxdb::Survey do
                                      })
       end
 
-      it 'keeps the default LAN copy' do
+      it 'names the address Traefik answers on' do
         element = find_survey_element(result, 'publish_port')
-        expect(element['title']['de']).to include('lokalen Netzwerk')
+        expect(element['title']['de']).to include('über Traefik')
+        expect(element['description']['de']).to include('https://solar.example.com:8086')
       end
     end
 

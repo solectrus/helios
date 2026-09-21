@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 7
+_schema_version: 8
 system:
   admin_password: test-admin
   app_host: solectrus.example.com
@@ -59,15 +59,3 @@ reverse_proxy:
 sensors: {}
 helios:
   image: ghcr.io/solectrus/helios:latest
-service_overrides:
-  dashboard:
-    labels:
-    - traefik.http.middlewares.test-ratelimit.ratelimit.average=100
-    - traefik.http.middlewares.test-ratelimit.ratelimit.burst=200
-  influxdb:
-    labels:
-    - traefik.enable=true
-    - traefik.http.routers.influxdb-solectrus.rule=Host(`solectrus.example.com`)
-    - traefik.http.routers.influxdb-solectrus.entrypoints=influxdb
-    - traefik.http.routers.influxdb-solectrus.tls.certresolver=myresolver
-    - traefik.http.routers.influxdb-solectrus.tls=true

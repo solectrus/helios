@@ -6,7 +6,7 @@
 # Use the HELIOS web interface to modify your configuration.
 # ============================================================
 ---
-_schema_version: 7
+_schema_version: 8
 system:
   admin_password: my-admin-password
   app_host: raspi

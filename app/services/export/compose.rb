@@ -116,7 +116,6 @@ module Export
     def build_service_hash(service_class)
       service_hash = service_class.new(configuration).to_h.compact.reverse_merge(default_logging)
       service_hash[:image] = ::Compose.normalize_image(service_hash[:image])
-      ServiceOverrides.apply(configuration, service_class.service_name, service_hash)
       finalize_service!(service_class, service_hash)
       service_hash
     end

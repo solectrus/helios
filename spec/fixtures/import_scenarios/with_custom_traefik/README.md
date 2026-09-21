@@ -17,17 +17,15 @@ foreign services HELIOS no longer accepts).
   `solectrus.example.com`, and captures `command`, `ports`, `volumes`,
   `restart`, `environment` verbatim into `reverse_proxy.*`. `Traefik.enabled?`
   returns `true` and `FORCE_SSL=true` follows automatically.
-- **Dashboard `test-ratelimit` middleware preserved.** HELIOS owns the
-  dashboard's own router/entrypoints/tls labels, but routes the extra
-  middleware labels into `service_overrides[dashboard].labels` (ADR-0015) so
-  they re-emit after HELIOS's generated labels.
-- **`influxdb` Traefik routing preserved.** The per-service `traefik.*` labels
-  (`influxdb-solectrus` router on the custom `influxdb` entrypoint with
-  `myresolver`) round-trip via `service_overrides[influxdb].labels`.
-  The router is also what tells HELIOS that InfluxDB is reachable, so the
-  import sets `influxdb.publish_port: true`. The setting drives the copy of
-  the InfluxDB toggle in the UI; the compose output is unchanged, because
-  the custom Traefik keeps the port.
+- **`influxdb` routing rewritten by HELIOS.** The donor routes InfluxDB with
+  an `influxdb-solectrus` router on the custom `influxdb` entrypoint. HELIOS
+  owns the routers of its own services, so it writes its own `influxdb`
+  router against the same entrypoint and reads `myresolver` off the adopted
+  command. The router is also what tells the import that InfluxDB is
+  reachable, so `influxdb.publish_port: true` follows.
+- **Every Traefik label is one HELIOS writes again**, so the stack passes
+  `Import::CompatibilityCheck#unsupported_routing`. A middleware HELIOS does
+  not know, or a router at another address, is refused instead.
 - **Only baseline services** (`dashboard`, `influxdb`, `postgresql`, `redis`)
   behind Traefik — no collectors, no foreign services, so the stack passes
   `Import::CompatibilityCheck`.

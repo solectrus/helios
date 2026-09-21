@@ -1,7 +1,15 @@
-# v1_4_3_senec_cloud
+# v1_4_3_user23
 
 A single-host production stack, donated as a support bundle from HELIOS
 v1.4.3 on 2026-09-20. The `config.yaml` carries schema version 5.
+
+Same donor as
+[`import_scenarios/real_world/user23`](../../import_scenarios/real_world/user23/),
+which holds the hand-maintained `compose.yaml` the same installation ran
+before HELIOS took it over. The two together cover both directions for
+one stack: the import that adopted it, and the export that rebuilds it
+from the file HELIOS wrote. The domain is masked differently in each,
+because each bundle was anonymized on its own.
 
 What the scenario covers:
 

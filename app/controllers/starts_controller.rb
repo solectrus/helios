@@ -11,10 +11,12 @@ class StartsController < ApplicationController
     check = Import::CompatibilityCheck.new(stack_reader)
     @unsupported_services = check.unsupported_services
     @unsupported_networks = check.unsupported_networks
+    @unsupported_routing = check.unsupported_routing
     # Only meaningful once the whole stack is reproducible; skip the dry-run
     # otherwise (the refusal block is shown anyway).
     @external_ingest_sensors = importer.external_ingest_sensors if @unsupported_services.empty? &&
-                                                                   @unsupported_networks.empty?
+                                                                   @unsupported_networks.empty? &&
+                                                                   @unsupported_routing.empty?
   rescue Import::StackReader::Error => e
     @compose_error = e.detail
   end
@@ -25,6 +27,7 @@ class StartsController < ApplicationController
   rescue Import::UnsupportedStackError => e
     @unsupported_services = e.services
     @unsupported_networks = e.networks
+    @unsupported_routing = e.routing
     render :show, status: :unprocessable_content
   rescue Import::StackReader::Error => e
     @compose_error = e.detail

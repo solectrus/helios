@@ -55,14 +55,12 @@ module Export
         configuration.influxdb.host_port.presence || CONTAINER_PORT
       end
 
-      # True when HELIOS owns the Traefik definition and therefore generates
-      # the InfluxDB routing (entrypoint, published port, service labels)
-      # itself. An imported custom Traefik — identified by a captured
-      # `command` — carries its own routing verbatim instead (ADR-0015).
+      # True when a managed Traefik routes InfluxDB, which it does whenever
+      # one runs and InfluxDB is exposed at all: HELIOS owns the routers of
+      # its own services and the entrypoints they name
+      # (see Export::Services::Traefik::OWNED_ENTRYPOINTS).
       def self.traefik_managed_routing?(configuration)
-        exposed?(configuration) &&
-          Traefik.enabled?(configuration) &&
-          configuration.reverse_proxy.command.blank?
+        exposed?(configuration) && Traefik.enabled?(configuration)
       end
 
       def data_directories
@@ -97,17 +95,12 @@ module Export
       # exposure toggle still decides whether it is routed at all: that proxy
       # answers the internet, and an InfluxDB kept inside the stack must not
       # get a route. Otherwise the host port is published directly.
-      #
-      # The case left over is an imported Traefik that already routes InfluxDB
-      # on an `influxdb` entrypoint of its own: its labels come in via
-      # service_overrides, and no direct port is published, which would clash
-      # with it.
       def routing
         return { labels: traefik_router_labels(entrypoint: 'influxdb', port: CONTAINER_PORT) } if
           traefik_managed_routing?
         return { labels: exposed? ? shared_network_router_labels(port: CONTAINER_PORT) : nil } if
           shared_network_routing?
-        return { ports: ["#{host_port}:#{CONTAINER_PORT}"] } if exposed? && !traefik_routes_influxdb?
+        return { ports: ["#{host_port}:#{CONTAINER_PORT}"] } if exposed?
 
         {}
       end
@@ -122,19 +115,6 @@ module Export
 
       def traefik_managed_routing?
         self.class.traefik_managed_routing?(configuration)
-      end
-
-      # Whether an imported custom Traefik declares an `influxdb` entrypoint of
-      # its own. When it does, InfluxDB must not also publish a host port
-      # (Traefik owns it); when it doesn't, an exposed InfluxDB falls back to a
-      # direct port mapping. A Traefik without a captured command is
-      # HELIOS-generated and already handled by #traefik_managed_routing?.
-      def traefik_routes_influxdb?
-        return false unless Traefik.enabled?(configuration)
-
-        Array(configuration.reverse_proxy.command).any? do |arg|
-          arg.to_s.start_with?('--entrypoints.influxdb.')
-        end
       end
 
       # The second mount is the shared influx-backup staging directory.

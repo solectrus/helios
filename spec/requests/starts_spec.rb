@@ -78,6 +78,33 @@ RSpec.describe 'Starts' do
       end
     end
 
+    context 'when the stack carries a Traefik label HELIOS cannot write again' do
+      let(:dir) { with_config_yaml }
+
+      before do
+        File.write(File.join(dir, 'compose.yaml'), <<~YAML)
+          services:
+            dashboard:
+              image: ghcr.io/solectrus/solectrus:latest
+              labels:
+                - traefik.http.middlewares.auth.basicauth.users=admin:hash
+        YAML
+        File.write(File.join(dir, '.env'), "TZ=Europe/Berlin\n")
+      end
+
+      it 'names the label' do
+        get start_path
+
+        expect(response.body).to include('traefik.http.middlewares.auth.basicauth.users')
+      end
+
+      it 'does not offer the import button' do
+        get start_path
+
+        expect(response.body).not_to include(I18n.t('starts.show.agree'))
+      end
+    end
+
     context 'when the stack runs Ingest but an Ingest input is external' do
       let(:dir) { with_config_yaml }
 

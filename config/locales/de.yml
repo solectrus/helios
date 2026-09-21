@@ -606,6 +606,8 @@ de:
       unsupported_no_image: 'kein Image'
       unsupported_networks_reason: 'Folgende Docker-Netzwerke lassen sich nicht übernehmen:'
       unsupported_networks_hint: 'HELIOS schreibt das eigene Netzwerk des Stacks und ein weiteres, über das ein externer Reverse Proxy die Dienste erreicht. Ein zusätzliches Netzwerk ginge beim Export verloren. Ein Ausweg ist, die Dienste vor dem Import in das Stack-Netzwerk zurückzulegen.'
+      unsupported_routing_reason: 'Folgende Traefik-Labels lassen sich nicht übernehmen:'
+      unsupported_routing_hint: 'HELIOS schreibt die Traefik-Routen der eigenen Dienste selbst, immer auf die Adresse des Stacks. Ein Label mit einem anderen Ziel oder mit einer unbekannten Middleware würde beim Export durch ein eigenes ersetzt. Ein Ausweg ist, diese Labels vor dem Import zu entfernen oder die Route in einem Proxy neben dem Stack einzurichten.'
       unsupported_hint_html: 'HELIOS verwaltet die Dateien <code class="rounded bg-base-300 px-1 font-mono">compose.yaml</code> und <code class="rounded bg-base-300 px-1 font-mono">.env</code> vollständig und kann dabei nur bekannte Dienste übernehmen. Ein Ausweg ist, die oben genannten Dienste in eine separate Compose-Datei zu verlagern und den Import anschließend erneut zu starten.'
       external_ingest_heading: 'Nach dem Import bleibt ein Schritt offen'
       external_ingest_reason: 'Diese Konfiguration enthält ein Steckersolargerät, deshalb richtet HELIOS Ingest zur Neuberechnung des Hausverbrauchs ein. Folgende Werte kommen aus einer externen Quelle und müssen künftig bei Ingest ankommen statt in der InfluxDB:'

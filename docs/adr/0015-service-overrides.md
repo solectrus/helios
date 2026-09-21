@@ -1,5 +1,11 @@
 # ADR-0015: Generic Service Overrides for Managed Services
 
+> **Superseded by [ADR-0016](0016-helios-owns-its-routing.md).** The
+> `service_overrides` section is gone. Every label it held in practice was
+> either a router HELIOS writes itself or a middleware nothing referenced any
+> more. HELIOS now writes the routers of its own services, and the import
+> refuses a stack whose Traefik labels it cannot write again.
+
 ## Context
 
 HELIOS rebuilds managed services (`dashboard`, `mqtt-collector`, `influxdb`, …) from opinionated templates on every export (ADR-0009). Anything outside the template's known schema is silently dropped on round-trip. Real-world stacks routinely diverge on small but operationally important keys:

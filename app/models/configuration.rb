@@ -6,7 +6,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     deployment system dashboard postgresql influxdb redis
     watchtower forecast senec mqtt tibber senec_charger shelly reverse_proxy
     backup backup_schedule sensors ingest power_splitter
-    helios service_overrides
+    helios
   ].freeze
 
   # Sections hidden from the configuration UI (auto-managed). Ingest is not
@@ -290,9 +290,9 @@ class Configuration # rubocop:disable Metrics/ClassLength
   private :initialize_from_data
 
   # Dynamic singleton accessors: config.system, config.forecast, config.senec, etc.
-  # Excluded singletons have hash-of-hashes shape and need their own sanitation
-  # (see #sensors and #service_overrides).
-  (SINGLETONS - %w[sensors service_overrides]).each do |setting|
+  # Sensors are excluded: that section has a hash-of-hashes shape and needs
+  # its own sanitation (see #sensors).
+  (SINGLETONS - %w[sensors]).each do |setting|
     define_method(setting) do
       Data.wrap(@data[setting] || {})
     end
@@ -1027,12 +1027,6 @@ class Configuration # rubocop:disable Metrics/ClassLength
     collectors_only? && active_sources.any?
   end
 
-  # Per-service compose-key overrides for managed services (ADR-0015).
-  # Returns { service_name => { 'labels' => [...], 'ports' => [...], ... } }.
-  def service_overrides
-    Data.wrap(@data['service_overrides'] || {})
-  end
-
   # Access unmanaged services and env vars
   def unmanaged
     Data.wrap(@data[UNMANAGED_KEY] || {})
@@ -1091,7 +1085,6 @@ class Configuration # rubocop:disable Metrics/ClassLength
     stamp_schema_version!(result)
     YAML_ORDER.each { |key| result[key] = @data[key] if @data.key?(key) }
     sanitize_all_sensors!(result) if result.key?('sensors')
-    sanitize_service_overrides!(result) if result.key?('service_overrides')
     sanitize_sections!(result)
     prune_orphan_ingest!(result)
     result[UNMANAGED_KEY] = @data[UNMANAGED_KEY] if @data.key?(UNMANAGED_KEY)
@@ -1537,26 +1530,5 @@ class Configuration # rubocop:disable Metrics/ClassLength
     # Append any sensors not in GROUPS (shouldn't happen, but safe)
     raw.each { |name, v| ordered[name] ||= sanitize_sensor_data(v, name) }
     result['sensors'] = ordered
-  end
-
-  # Drop unknown override keys per service and remove empty service entries.
-  # The allowlist is the single gate — anything outside is silently discarded
-  # at save time, mirroring the import-time behavior (ADR-0015).
-  def sanitize_service_overrides!(result)
-    raw = result['service_overrides']
-    return result['service_overrides'] = nil unless raw.is_a?(Hash)
-
-    sanitized = raw.each_with_object({}) do |(service, overrides), hash|
-      next unless overrides.is_a?(Hash)
-
-      filtered = overrides.slice(*ConfigSchema::SERVICE_OVERRIDES_ALLOWED_KEYS).compact_blank
-      hash[service.to_s] = filtered if filtered.any?
-    end
-
-    if sanitized.any?
-      result['service_overrides'] = sanitized
-    else
-      result.delete('service_overrides')
-    end
   end
 end

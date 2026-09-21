@@ -5,7 +5,8 @@
     <%= render LanguageSelect::Component.new %>
   </div>
 
-  <% refusal = @compose_error.present? || @unsupported_services.present? || @unsupported_networks.present? %>
+  <% refusal = @compose_error.present? || @unsupported_services.present? || @unsupported_networks.present? ||
+               @unsupported_routing.present? %>
 
   <div class="hero-content z-10 w-full flex-col px-0 md:px-4 <%= refusal ? 'max-w-2xl' : 'max-w-lg' %>">
     <div class="mb-6 text-center">
@@ -73,6 +74,25 @@
                     <% end %>
                   </ul>
                 <% end %>
+
+                <% if @unsupported_routing.present? %>
+                  <p class="text-base-content/60 text-sm"><%= t('.unsupported_routing_reason') %></p>
+
+                  <ul
+                    class="
+                      border-base-content/10 divide-base-content/10 bg-base-100 divide-y overflow-hidden rounded-lg
+                      border
+                    "
+                  >
+                    <% @unsupported_routing.each do |entry| %>
+                      <li class="flex flex-col gap-0.5 px-3.5 py-2.5">
+                        <span class="font-mono text-sm font-medium"><%= entry['service'] %></span>
+
+                        <span class="text-base-content/50 font-mono text-xs break-all"><%= entry['label'] %></span>
+                      </li>
+                    <% end %>
+                  </ul>
+                <% end %>
               <% end %>
             </div>
 
@@ -85,6 +105,10 @@
 
               <% if @unsupported_networks.present? %>
                 <p class="text-base-content/70 text-sm leading-relaxed"><%= t('.unsupported_networks_hint') %></p>
+              <% end %>
+
+              <% if @unsupported_routing.present? %>
+                <p class="text-base-content/70 text-sm leading-relaxed"><%= t('.unsupported_routing_hint') %></p>
               <% end %>
             <% end %>
           </div>

@@ -1764,26 +1764,6 @@ RSpec.describe Configuration do
     end
   end
 
-  describe 'service overrides' do
-    before { with_config_yaml }
-
-    it 'keeps only the allowed compose keys' do
-      described_class.current.update('service_overrides', {
-                                       'dashboard' => { 'labels' => ['a=1'], 'image' => 'evil:latest' },
-                                     })
-
-      expect(described_class.current.service_overrides['dashboard']).to eq('labels' => ['a=1'])
-    end
-
-    # Nothing allowed survived, so the section goes rather than staying behind
-    # as an empty hash.
-    it 'drops the section when nothing allowed remains' do
-      described_class.current.update('service_overrides', { 'dashboard' => { 'image' => 'evil:latest' } })
-
-      expect(described_class.current.service_overrides).to be_blank
-    end
-  end
-
   describe 'a computed MQTT mapping' do
     before { with_config_yaml }
 

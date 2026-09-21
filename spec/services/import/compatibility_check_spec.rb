@@ -87,10 +87,86 @@ RSpec.describe Import::CompatibilityCheck do
         'networks' => { 'backend' => {} },
       }
       reader = instance_double(Import::StackReader, raw_compose: compose)
+      allow(reader).to receive(:service).and_return(nil)
       allow(reader).to receive(:service).with('dashboard').and_return(compose.dig('services', 'dashboard'))
 
       expect { described_class.new(reader).call! }
         .to raise_error(Import::UnsupportedStackError) { |error| expect(error.networks).to eq(['backend']) }
+    end
+  end
+
+  # HELIOS writes the routers of its own services, so a label that says
+  # something else would be replaced by its own on the next export.
+  describe '#unsupported_routing' do
+    def check_for_labels(labels, service: 'dashboard')
+      compose = { 'services' => { service => { 'labels' => labels } } }
+      reader = instance_double(Import::StackReader, raw_compose: compose)
+      allow(reader).to receive(:service).and_return(nil)
+      allow(reader).to receive(:service).with(service).and_return(compose.dig('services', service))
+      described_class.new(reader)
+    end
+
+    it 'accepts the labels HELIOS writes itself' do
+      labels = [
+        'traefik.enable=true',
+        'traefik.http.routers.app-solectrus.rule=Host(`solectrus.example.com`)',
+        'traefik.http.routers.app-solectrus.entrypoints=websecure',
+        'traefik.http.routers.app-solectrus.tls.certresolver=myresolver',
+        'traefik.http.services.app-solectrus.loadbalancer.server.port=3000',
+      ]
+
+      expect(check_for_labels(labels).unsupported_routing).to be_empty
+    end
+
+    # A stack an outside proxy routes over a shared network carries it, and
+    # HELIOS writes it again (see Export::Services::Base#network_label).
+    it 'accepts the network a routed service names' do
+      labels = [
+        'traefik.enable=true',
+        'traefik.http.routers.dashboard.rule=Host(`solectrus.example.com`)',
+        'traefik.docker.network=edge',
+      ]
+
+      expect(check_for_labels(labels).unsupported_routing).to be_empty
+    end
+
+    # The shape of the older SOLECTRUS setup: port 80 answers through a
+    # middleware. HELIOS does the same on the `web` entrypoint.
+    it 'accepts a router that only sends a request on to HTTPS' do
+      labels = [
+        'traefik.http.routers.app.rule=Host(`solectrus.example.com`)',
+        'traefik.http.middlewares.redirect-to-https.redirectscheme.scheme=https',
+        'traefik.http.routers.redirs.rule=hostregexp(`{host:.+}`)',
+        'traefik.http.routers.redirs.middlewares=redirect-to-https',
+      ]
+
+      expect(check_for_labels(labels).unsupported_routing).to be_empty
+    end
+
+    it 'flags a middleware HELIOS does not know' do
+      labels = ['traefik.http.middlewares.test-ratelimit.ratelimit.average=100']
+
+      expect(check_for_labels(labels).unsupported_routing)
+        .to contain_exactly('service' => 'dashboard',
+                            'label' => 'traefik.http.middlewares.test-ratelimit.ratelimit.average=100')
+    end
+
+    it 'flags a router that answers at another address' do
+      labels = [
+        'traefik.http.routers.app.rule=Host(`solectrus.example.com`)',
+        'traefik.http.routers.db.rule=Host(`influx.example.com`)',
+      ]
+
+      expect(check_for_labels(labels).unsupported_routing.pluck('label'))
+        .to contain_exactly('traefik.http.routers.db.rule=Host(`influx.example.com`)')
+    end
+
+    it 'raises with the label it cannot write again' do
+      labels = ['traefik.http.middlewares.auth.basicauth.users=admin:hash']
+      check = check_for_labels(labels)
+
+      expect { check.call! }
+        .to raise_error(Import::UnsupportedStackError) { |error| expect(error.routing.pluck('label')).to eq(labels) }
     end
   end
 

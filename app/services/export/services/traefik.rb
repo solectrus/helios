@@ -10,6 +10,15 @@ module Export
       # them (see alias_headers_supported?).
       ALIAS_HEADERS_MIN_VERSION = Gem::Version.new('3.7')
 
+      # Entrypoints HELIOS keeps for services of its own. It writes the routers
+      # for them, so it writes the entrypoints they name and the ports those
+      # bind. Every other entrypoint of an adopted command stays verbatim.
+      OWNED_ENTRYPOINTS = %w[influxdb helios].freeze
+
+      OWNED_ENTRYPOINT_FLAG = /\A--entrypoints\.(#{Regexp.union(OWNED_ENTRYPOINTS)})\./i
+      OWNED_ENTRYPOINT_ADDRESS = /\A--entrypoints\.(#{Regexp.union(OWNED_ENTRYPOINTS)})\.address=/i
+      OWNED_ENTRYPOINT_PORT = /\A--entrypoints\.(?:#{Regexp.union(OWNED_ENTRYPOINTS)})\.address=\S*?:(\d+)\z/i
+
       def self.service_name
         'traefik'
       end
@@ -81,7 +90,7 @@ module Export
           image: traefik_image,
           command: effective_traefik_command,
           environment: override_or(:environment, nil),
-          ports: traefik_ports_with_helios,
+          ports: effective_traefik_ports,
           volumes: override_or(:volumes, [
                                  '/var/run/docker.sock:/var/run/docker.sock:ro',
                                  bind_mount('/letsencrypt'),
@@ -103,11 +112,13 @@ module Export
 
       # The Traefik `command`, additively ensuring the bits HELIOS needs exist
       # while keeping every imported arg verbatim (idempotent, never appends a
-      # second time).
+      # second time). The owned entrypoints are the exception: those HELIOS
+      # rewrites.
       def effective_traefik_command
         command = override_or(:command, traefik_command)
         command = with_log_level(command)
-        command = with_helios_entrypoint(command)
+        command = with_https_redirection(command)
+        command = with_owned_entrypoints(command)
         with_alias_headers_strategy(command)
       end
 
@@ -119,11 +130,46 @@ module Export
         command + ['--log.level=INFO']
       end
 
-      def with_helios_entrypoint(command)
-        return command unless helios_routed?
-        return command if command.any? { |arg| arg.to_s.start_with?('--entrypoints.helios.') }
+      # Port 80 answers with a redirect to HTTPS. HELIOS writes this on the
+      # entrypoint, where an older SOLECTRUS setup wrote it as a middleware on
+      # the dashboard. An adopted command therefore arrives without it, and
+      # port 80 would answer nothing after the import.
+      def with_https_redirection(command)
+        return command unless entrypoints(command).intersect?(%w[web websecure])
+        return command if command.any? { |arg| arg.to_s.start_with?('--entrypoints.web.http.redirections') }
 
-        command + ["--entrypoints.helios.address=:#{Helios::HOST_PORT}"]
+        command + ['--entrypoints.web.http.redirections.entrypoint.to=websecure']
+      end
+
+      # The entrypoints of the services HELIOS routes, as they have to read.
+      # An adopted command that names one of them differently is corrected, and
+      # one it names for a service that is not routed goes, because nothing
+      # answers on it.
+      def with_owned_entrypoints(command)
+        wanted = owned_entrypoints
+        kept = command.reject { |arg| stale_owned_entrypoint?(arg, wanted) }.map(&:to_s)
+
+        kept + wanted.map { |name, port| entrypoint_flag(name, port) }.reject { |flag| kept.include?(flag) }
+      end
+
+      def stale_owned_entrypoint?(arg, wanted)
+        name = arg.to_s[OWNED_ENTRYPOINT_FLAG, 1]&.downcase
+        return false unless name
+        return true unless wanted.key?(name)
+
+        arg.to_s.match?(OWNED_ENTRYPOINT_ADDRESS) && arg.to_s != entrypoint_flag(name, wanted[name])
+      end
+
+      def entrypoint_flag(name, port)
+        "--entrypoints.#{name}.address=:#{port}"
+      end
+
+      # Name to port for every owned entrypoint this configuration routes.
+      def owned_entrypoints
+        {}.tap do |result|
+          result['influxdb'] = influxdb_host_port if influxdb_routed?
+          result['helios'] = Helios::HOST_PORT if helios_routed?
+        end
       end
 
       # Header names that differ only in their separators (`X_Forwarded_For` vs
@@ -173,15 +219,34 @@ module Export
         Gem::Version.new(version) >= ALIAS_HEADERS_MIN_VERSION
       end
 
-      # Published ports, additively ensuring the HELIOS entrypoint port is bound
-      # when routed through Traefik. Same additive/idempotent contract as
-      # effective_traefik_command.
-      def traefik_ports_with_helios
-        base = override_or(:ports, default_ports)
-        return base unless helios_routed?
+      # Published ports. HELIOS owns the ones its own entrypoints bind, so a
+      # port left behind by an entrypoint it dropped goes with it, and a port a
+      # newly routed service needs comes in. Every other port stays verbatim.
+      def effective_traefik_ports
+        wanted = owned_entrypoints.values.map { |port| "#{port}:#{port}" }
+        owned = owned_port_numbers
+        kept = override_or(:ports, default_ports).map(&:to_s).reject do |entry|
+          owned.include?(published_port_of(entry)) && wanted.exclude?(entry)
+        end
 
-        port = "#{Helios::HOST_PORT}:#{Helios::HOST_PORT}"
-        base.map(&:to_s).include?(port) ? base : base + [port]
+        kept + wanted.reject { |entry| kept.include?(entry) }
+      end
+
+      # Every host port an owned entrypoint binds, the ones an adopted command
+      # still names included, so a port that entrypoint leaves behind is not
+      # read as one the user published for something else.
+      def owned_port_numbers
+        adopted = Array(configuration.reverse_proxy.command)
+                  .filter_map { |arg| arg.to_s[OWNED_ENTRYPOINT_PORT, 1] }
+
+        (adopted + owned_entrypoints.values.map(&:to_s)).uniq
+      end
+
+      # The host port of a compose mapping, which may carry a bind address in
+      # front of it (`127.0.0.1:8086:8086`) or name the container port alone.
+      def published_port_of(entry)
+        parts = entry.split(':')
+        parts[-2] if parts.size >= 2
       end
 
       # Traefik lives under the reverse_proxy config section — override the

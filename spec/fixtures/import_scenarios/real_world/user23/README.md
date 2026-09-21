@@ -7,6 +7,11 @@ whole-house appliance metering, a four-plane **pvnode** forecast, the official
 **power-splitter**, and a **`nickfedor/watchtower`** fork. Anonymized but
 otherwise untouched.
 
+The same donor later sent a HELIOS support bundle, which is
+[`export_scenarios/v1_4_3_user23`](../../../export_scenarios/v1_4_3_user23/).
+That one starts at the `config.yaml` HELIOS wrote for this installation and
+covers the export side, where this one covers the import.
+
 This snapshot is the **real-world, scaled-up counterpart of the synthetic
 [`multi_shelly`](../../multi_shelly/) scenario**: same cloud-mode
 per-device-services Shelly topology, same divergent per-service

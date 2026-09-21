@@ -398,16 +398,6 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   # validated via SensorRegistry instead of a fixed field list.
   SENSORS_FIELDS = :dynamic
 
-  # Per-service compose-key overrides (ADR-0015). Keyed by managed service
-  # name; each value is a hash limited to SERVICE_OVERRIDES_ALLOWED_KEYS.
-  # Validated dynamically — see Configuration#sanitize_service_overrides.
-  SERVICE_OVERRIDES_FIELDS = :dynamic
-
-  # Compose keys a user may set on a managed service. Deliberately narrow:
-  # extending the list requires an ADR amendment. Anything outside is
-  # rejected at save time and dropped at import time.
-  SERVICE_OVERRIDES_ALLOWED_KEYS = %w[labels ports volumes environment].freeze
-
   # --- Registry ---
 
   FIELDS = {
@@ -431,7 +421,6 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     'sensors' => SENSORS_FIELDS,
     'power_splitter' => POWER_SPLITTER_FIELDS,
     'helios' => HELIOS_ALL,
-    'service_overrides' => SERVICE_OVERRIDES_FIELDS,
   }.freeze
 
   def self.fields_for(setting)

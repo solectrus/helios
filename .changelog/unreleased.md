@@ -37,6 +37,8 @@ Keep every section, an empty one included.
 - Settings: the Host card and the Custom Domain card are now one card, named Address & Domain. The address is entered once, and the form says what it stands for: the machine on the local network, the domain the built-in Traefik answers on, or the domain an external reverse proxy routes
 - Settings: a field now explains itself in the mode that is running. Making InfluxDB reachable names the address it leads to, the host port of the dashboard says when it has no effect, and the IP ranges of a proxy say when they are needed
 - Settings: the card Network is gone, and its two questions moved to the cards they belong to. The port of the dashboard is asked under Address & Domain, and only in the modes that publish one. The permission to embed the interface into another website is asked under Access protection
+- Import: an installation whose routing HELIOS cannot write again is now refused, with the Traefik labels named, instead of losing them on the first save after the import
+- Import: a Traefik rule HELIOS does not write itself is dropped, because HELIOS writes the routing of its own services now. A rule an earlier import took over, for example a rate limit or a password gate in front of the dashboard, belongs in the configuration of that Traefik from now on. An InfluxDB that such a rule made reachable stays reachable
 
 ## Fixes
 
@@ -49,6 +51,7 @@ Keep every section, an empty one included.
 - Import: an installation routed by a reverse proxy beside it now keeps the routes. The network, the entrypoint and the certificate resolver are read from the running stack and written again
 - Import: an InfluxDB that a reverse proxy routes is now recognized as reachable, so it stays reachable after the import
 - Import: an installation on a Docker network that HELIOS cannot write again is now refused, with the network named, instead of losing it without a word
+- Import: a reverse proxy taken over on import routes the installation as before. Port 80 sends a request on to HTTPS again, a port that answers nothing is closed, and making InfluxDB reachable takes effect behind such a proxy. Ingest is routed the same way
 - Generated for Docker: the .env file now lists only the settings the stack reads. It no longer names a certificate folder that the stack does not use
 - Backup to S3: a backup or a restore that fails now reports the reason, for example a rejected access key or a bucket that cannot be reached
 - Backup, restore and CSV import: the preparation no longer fails when a service is renewed at the same moment

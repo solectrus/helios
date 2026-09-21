@@ -52,8 +52,6 @@ services:
     - traefik.http.routers.dashboard.entrypoints=websecure
     - traefik.http.routers.dashboard.tls.certresolver=myresolver
     - traefik.http.services.dashboard.loadbalancer.server.port=3000
-    - traefik.http.middlewares.test-ratelimit.ratelimit.average=100
-    - traefik.http.middlewares.test-ratelimit.ratelimit.burst=200
     - com.centurylinklabs.watchtower.scope=solectrus
     depends_on:
       postgresql:
@@ -97,10 +95,10 @@ services:
     - "./influx-backup-staging:/influx-backup-staging"
     labels:
     - traefik.enable=true
-    - traefik.http.routers.influxdb-solectrus.rule=Host(`solectrus.example.com`)
-    - traefik.http.routers.influxdb-solectrus.entrypoints=influxdb
-    - traefik.http.routers.influxdb-solectrus.tls.certresolver=myresolver
-    - traefik.http.routers.influxdb-solectrus.tls=true
+    - traefik.http.routers.influxdb.rule=Host(`solectrus.example.com`)
+    - traefik.http.routers.influxdb.entrypoints=influxdb
+    - traefik.http.routers.influxdb.tls.certresolver=myresolver
+    - traefik.http.services.influxdb.loadbalancer.server.port=8086
     - com.centurylinklabs.watchtower.scope=solectrus
     healthcheck:
       interval: 10s
