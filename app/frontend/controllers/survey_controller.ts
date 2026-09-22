@@ -15,7 +15,7 @@ import {
 // itself comes back localized from the server). Kept here because they belong
 // to a transient UI state SurveyJS never sees.
 const TEST_LABELS = {
-  de: { pending: 'Prüfe Verbindung…', failed: 'Prüfung fehlgeschlagen' },
+  de: { pending: 'Verbindung wird geprüft…', failed: 'Prüfung fehlgeschlagen' },
   default: { pending: 'Testing connection…', failed: 'Check failed' },
 };
 

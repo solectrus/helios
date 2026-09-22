@@ -30,24 +30,25 @@ async function initRuntime(): Promise<SurveyRuntime> {
 
   const { Model, surveyLocalization } = core;
 
-  // HELIOS uses informal "Du", but survey-core/i18n/german ships with formal
-  // "Sie". Patch the strings the user is most likely to see (validation +
-  // commonly-rendered prompts) so surveys match the rest of the UI.
+  // survey-core/i18n/german addresses the reader directly ("Bitte geben Sie
+  // ein"). HELIOS phrases impersonally throughout, so the strings a user
+  // actually meets (validation + commonly-rendered prompts) are patched to
+  // match the rest of the UI.
   Object.assign(surveyLocalization.locales.de, {
-    requiredError: 'Bitte beantworte diese Frage.',
-    requiredErrorInPanel: 'Bitte beantworte mindestens eine Frage.',
-    requiredInAllRowsError: 'Bitte beantworte alle Fragen.',
-    minSelectError: 'Bitte wähle mindestens {0} Antwort(en) aus.',
-    maxSelectError: 'Bitte wähle nicht mehr als {0} Antwort(en) aus.',
-    minRowCountError: 'Bitte mach in mindestens {0} Zeilen eine Eingabe.',
-    textMinLength: 'Bitte gib mindestens {0} Zeichen ein.',
-    textMaxLength: 'Bitte gib nicht mehr als {0} Zeichen ein.',
-    textMinMaxLength: 'Bitte gib mindestens {0} und maximal {1} Zeichen ein.',
-    invalidEmail: 'Bitte gib eine gültige E-Mail-Adresse ein.',
+    requiredError: 'Diese Frage muss beantwortet werden.',
+    requiredErrorInPanel: 'Mindestens eine Frage muss beantwortet werden.',
+    requiredInAllRowsError: 'Alle Fragen müssen beantwortet werden.',
+    minSelectError: 'Mindestens {0} Antwort(en) sind erforderlich.',
+    maxSelectError: 'Höchstens {0} Antwort(en) sind möglich.',
+    minRowCountError: 'Mindestens {0} Zeilen brauchen eine Eingabe.',
+    textMinLength: 'Mindestens {0} Zeichen sind erforderlich.',
+    textMaxLength: 'Höchstens {0} Zeichen sind möglich.',
+    textMinMaxLength: 'Zwischen {0} und {1} Zeichen sind erforderlich.',
+    invalidEmail: 'Diese E-Mail-Adresse ist ungültig.',
     incompletePatternError:
-      'Bitte fülle den Wert aus, um dem erforderlichen Format zu entsprechen.',
-    commentText: 'Bitte hinterlasse einen Kommentar',
-    ratingOptionsCaption: 'Tippe hier, um zu bewerten...',
+      'Der Wert entspricht nicht dem erforderlichen Format.',
+    commentText: 'Kommentar',
+    ratingOptionsCaption: 'Zum Bewerten hier tippen…',
   });
 
   return { Model, theme: buildTheme(BorderlessDark) };

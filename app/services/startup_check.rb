@@ -32,7 +32,7 @@ class StartupCheck
         name: 'Data path',
         message:
           "Directory '#{data_path}' does not exist. " \
-          "Add this to your volumes: - .:#{data_path}",
+          "Add this to the volumes: - .:#{data_path}",
       )
     end
 
@@ -49,7 +49,7 @@ class StartupCheck
         name: 'Compose file',
         message:
           "No compose file found in '#{data_path}'. " \
-          "The volume should point to the directory containing your #{Compose::FILENAMES.first}.",
+          "The volume should point to the directory containing #{Compose::FILENAMES.first}.",
       )
     end
 
@@ -73,7 +73,7 @@ class StartupCheck
 
     def compose_project_name_message(compose_file)
       "The top-level `name:` in '#{compose_file}' must be set to " \
-        "'#{Orchestration::PROJECT_NAME}'. Add this line to your compose file: " \
+        "'#{Orchestration::PROJECT_NAME}'. Add this line to the compose file: " \
         "name: #{Orchestration::PROJECT_NAME}"
     end
 
@@ -85,7 +85,7 @@ class StartupCheck
         name: 'Environment file',
         message:
           "No .env file found in '#{data_path}'. " \
-          'The volume should point to the directory containing your .env file.',
+          'The volume should point to the directory containing the .env file.',
       )
     end
 
@@ -110,7 +110,7 @@ class StartupCheck
         name: 'Docker socket',
         message:
           'Docker socket not found. ' \
-          'Add this to your volumes: - /var/run/docker.sock:/var/run/docker.sock',
+          'Add this to the volumes: - /var/run/docker.sock:/var/run/docker.sock',
       )
     end
 

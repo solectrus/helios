@@ -179,7 +179,7 @@ module Surveys
           ),
           'description' => self.class.localized(
             en: 'Enable if power values are reported with negative sign',
-            de: 'Aktiviere dies, wenn die Leistungswerte mit negativem Vorzeichen gemeldet werden',
+            de: 'Nötig, wenn die Leistungswerte mit negativem Vorzeichen gemeldet werden',
           ),
           'defaultValue' => false,
         }

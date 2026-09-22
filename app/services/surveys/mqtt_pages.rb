@@ -20,7 +20,7 @@ module Surveys
       ),
       extraction_method: Base.localized(
         en: 'Define how a measurement is derived from the received message.',
-        de: 'Lege fest, wie aus der empfangenen Nachricht ein Messwert gewonnen wird.',
+        de: 'Bestimmt, wie aus der empfangenen Nachricht ein Messwert gewonnen wird.',
       ),
       extraction_value: Base.localized(
         en: 'Details of value extraction, depending on the kind chosen before.',
