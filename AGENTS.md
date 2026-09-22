@@ -31,7 +31,7 @@ Run them before you call the change done. `bin/brakeman` occasionally for securi
 
 ## Changelog
 
-If a user can see or feel a change, add a line to `.changelog/unreleased.md` in the same commit. The file carries the rules for the wording. The release skill turns it into the GitHub release notes and empties it.
+If a user can see or feel a change, add a line to `.changelog/unreleased.md` in the same commit. `.changelog/README.md` carries the rules for what goes in and how to word it. The release skill turns it into the GitHub release notes and empties it.
 
 ## Conventions
 
