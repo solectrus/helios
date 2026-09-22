@@ -1,0 +1,24 @@
+# An installation whose measurements all arrive over MQTT. Nothing is polled:
+# no device answers on the network, no cloud account is signed in. The devices
+# publish, and HELIOS runs the broker they publish to.
+browser_host: helios.local
+
+answers:
+  # The source comes first: a sensor offers the sources that are switched on
+  # under Data Sources, and the switch opens this survey. The broker screen
+  # opens on the internal broker, so the answers name the credentials alone.
+  - setting: mqtt
+    answers:
+      broker_external: false
+      password: dummy-mqtt-password
+
+  - setting: sensor
+    name: inverter_power
+    answers:
+      source: mqtt
+      mqtt_topic: solar/inverter/power
+
+  - setting: system_general
+    answers:
+      installation_date: '2024-03-15'
+      currency_preset: EUR

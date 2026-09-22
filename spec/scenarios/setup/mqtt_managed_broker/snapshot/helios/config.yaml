@@ -1,0 +1,49 @@
+# ============================================================
+# Managed by HELIOS — DO NOT EDIT MANUALLY!
+#
+# This file stores your HELIOS configuration.
+# It is rewritten whenever you apply changes in HELIOS.
+# Use the HELIOS web interface to modify your configuration.
+# ============================================================
+---
+_schema_version: 9
+system:
+  admin_password: dummy-admin-password
+  app_host: helios.local
+  currency: EUR
+  installation_date: '2024-03-15'
+  secret_key_base: dummy-secret-key-base-for-setup-scenarios
+  timezone: Europe/Berlin
+dashboard:
+  image: ghcr.io/solectrus/solectrus:latest
+postgresql:
+  image: postgres:18-alpine
+  password: minted-postgresql-password
+influxdb:
+  bucket: solectrus
+  image: influxdb:2.9-alpine
+  org: solectrus
+  password: minted-influxdb-password
+  token_admin: minted-influxdb-token-admin
+  token_read: minted-influxdb-token-admin
+  token_readwrite: minted-influxdb-token-admin
+  token_write: minted-influxdb-token-admin
+redis:
+  image: redis:8-alpine
+watchtower:
+  image: nickfedor/watchtower:latest
+mqtt:
+  broker_managed: true
+mosquitto:
+  password: dummy-mqtt-password
+  port: 1883
+  username: solectrus
+sensors:
+  inverter_power:
+    field: power
+    measurement: inverter
+    mqtt_payload_type: float
+    mqtt_topic: solar/inverter/power
+    source: mqtt
+helios:
+  image: ghcr.io/solectrus/helios:latest
