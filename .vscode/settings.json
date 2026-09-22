@@ -13,6 +13,10 @@
     "**/node_modules": true
   },
   "eslint.validate": ["javascript"],
+  // The SchemaStore maps "**/scenarios/*/*.yaml" to the CrowdSec scenario
+  // schema, which every file under spec/scenarios then fails against. An
+  // empty schema says nothing and keeps it out.
+  "yaml.schemas": { "./.vscode/empty-schema.json": ["**/spec/scenarios/**"] },
   "[ruby]": {
     "editor.defaultFormatter": "Shopify.ruby-lsp",
     "editor.formatOnSave": true
