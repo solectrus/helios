@@ -60,6 +60,7 @@ Keep every section, an empty one included.
 - **A failed S3 transfer names the reason.** A backup and a restore to S3 both report why they stopped, for example a rejected access key or a bucket that cannot be reached
 - **The preparation no longer fails.** Backup, restore and CSV import survive a service that restarts at the same moment
 - **The support bundle hides private data.** The address of the machine and the email address for the certificates appear as placeholders, so a bundle attached to a public forum post no longer carries them. Each service now contributes its last 2000 log lines, up from 500
+- **A reachable InfluxDB hides its statistics.** InfluxDB no longer answers at `/metrics` when it is reachable from outside. That page needs no login and shows the shards, the use of memory and which clients send requests
 
 ## Maintenance
 

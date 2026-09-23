@@ -103,6 +103,7 @@ services:
     - DOCKER_INFLUXDB_INIT_ORG=${INFLUX_ORG}
     - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUX_PASSWORD}
     - DOCKER_INFLUXDB_INIT_USERNAME=admin
+    - INFLUXD_METRICS_DISABLED=true
     volumes:
     - "${INFLUX_VOLUME_PATH}:/var/lib/influxdb2"
     - "./influx-backup-staging:/influx-backup-staging"

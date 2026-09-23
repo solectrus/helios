@@ -337,6 +337,7 @@ influxdb:
     - DOCKER_INFLUXDB_INIT_ORG
     - DOCKER_INFLUXDB_INIT_BUCKET
     - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN
+    - INFLUXD_METRICS_DISABLED
 
 postgresql:
   upstream: docker.io/postgres (entrypoint)

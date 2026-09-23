@@ -137,6 +137,9 @@ module Export
           'DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_ADMIN_TOKEN}',
         ]
         env << 'INFLUXD_USE_HASHED_TOKENS' if configuration.influxdb.use_hashed_tokens.present?
+        # /metrics answers without a login. Only this variable closes it for
+        # every route, because a published port has no proxy to block a path.
+        env << 'INFLUXD_METRICS_DISABLED=true' if exposed?
         env
       end
     end
