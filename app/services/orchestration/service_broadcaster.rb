@@ -19,11 +19,11 @@ module Orchestration
       @listener_id = listener_id
     end
 
-    def broadcast(service_name, created: false)
+    def broadcast(service_name, created_hash: nil)
       # Docker API calls outside executor.wrap — holding the interlock
       # shared lock during slow API calls would block the Rails reloader.
       Orchestration::Container.invalidate_cache
-      refresh_config_hashes(service_name, created:)
+      refresh_config_hashes(service_name, created_hash)
       container = Orchestration::Container.find(service_name)
       compose_service = ::Compose.load.services.find(service_name)
 
@@ -71,14 +71,15 @@ module Orchestration
       end
     end
 
-    # A `create` event means Docker Compose recreated the container with the
-    # current compose.yaml config, so the deployed hash for this service can
-    # be updated. Other events (start/stop/die) don't change config hashes,
-    # so no invalidation is needed.
-    def refresh_config_hashes(service_name, created:)
-      return unless created
+    # A `create` event does not tell who created the container. Watchtower
+    # and other recreate tools copy the old container config, including its
+    # config-hash label. So the deployed hash only moves when the label of the
+    # new container matches the current compose.yaml config. Other events
+    # (start/stop/die) don't change config hashes, so no invalidation is needed.
+    def refresh_config_hashes(service_name, created_hash)
+      return unless created_hash
 
-      Orchestration::AffectedServices.update_deployed_hash!(service_name)
+      Orchestration::AffectedServices.update_deployed_hash!(service_name, applied_hash: created_hash)
     end
 
     def log_error(service_name, error)

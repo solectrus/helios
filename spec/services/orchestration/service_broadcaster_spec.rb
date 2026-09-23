@@ -91,24 +91,25 @@ RSpec.describe Orchestration::ServiceBroadcaster do
       end
     end
 
-    context 'when created is true' do
+    context 'when a container was created' do
       let(:container) { mock_container(running: true, status: :ok) }
       let(:compose_service) { instance_double(Compose::Service) }
 
-      it 'updates deployed hash for the service' do
-        broadcaster.broadcast(service_name, created: true)
+      it 'updates deployed hash for the service with the applied hash' do
+        broadcaster.broadcast(service_name, created_hash: 'abc123')
 
-        expect(Orchestration::AffectedServices).to have_received(:update_deployed_hash!).with(service_name)
+        expect(Orchestration::AffectedServices).to have_received(:update_deployed_hash!)
+          .with(service_name, applied_hash: 'abc123')
       end
 
       it 'does not invalidate config hashes' do
-        broadcaster.broadcast(service_name, created: true)
+        broadcaster.broadcast(service_name, created_hash: 'abc123')
 
         expect(Orchestration::AffectedServices).not_to have_received(:invalidate_config_hashes)
       end
     end
 
-    context 'when created is false' do
+    context 'when no container was created' do
       let(:container) { mock_container(running: true, status: :ok) }
       let(:compose_service) { instance_double(Compose::Service) }
 

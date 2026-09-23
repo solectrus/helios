@@ -27,11 +27,21 @@ module Orchestration
     end
 
     def service_name
-      raw_event.actor&.attributes&.dig(COMPOSE_SERVICE_LABEL)
+      attribute(COMPOSE_SERVICE_LABEL)
+    end
+
+    # Config hash of the service container Docker just created. A one-off
+    # container (`docker compose run`) leaves the service container as it
+    # is, so it yields nil like every other event.
+    def created_config_hash
+      return unless action == 'create'
+      return if attribute(COMPOSE_ONEOFF_LABEL) == 'True'
+
+      attribute(COMPOSE_CONFIG_HASH_LABEL)
     end
 
     def container_name
-      raw_event.actor&.attributes&.dig('name')
+      attribute('name')
     end
 
     def to_h
@@ -45,6 +55,10 @@ module Orchestration
     private
 
     attr_reader :raw_event
+
+    def attribute(name)
+      raw_event.actor&.attributes&.dig(name)
+    end
 
     def container?
       type == 'container'

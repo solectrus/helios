@@ -1,6 +1,6 @@
 RSpec.describe Orchestration::Event do
-  def build_raw_event(type: 'container', action: 'start', service_name: 'postgresql', container_name: nil)
-    attributes = {}
+  def build_raw_event(type: 'container', action: 'start', service_name: 'postgresql', container_name: nil, labels: {})
+    attributes = labels.dup
     attributes['com.docker.compose.service'] = service_name if service_name
     attributes['name'] = container_name if container_name
     actor = Data.define(:attributes).new(attributes:)
@@ -42,6 +42,27 @@ RSpec.describe Orchestration::Event do
     it 'returns false for irrelevant actions' do
       event = described_class.new(build_raw_event(action: 'attach'))
       expect(event).not_to be_relevant
+    end
+  end
+
+  describe '#created_config_hash' do
+    let(:labels) { { 'com.docker.compose.config-hash' => 'abc123', 'com.docker.compose.oneoff' => 'False' } }
+
+    it 'returns the config hash label of a created service container' do
+      event = described_class.new(build_raw_event(action: 'create', labels:))
+      expect(event.created_config_hash).to eq('abc123')
+    end
+
+    it 'returns nil for a one-off container' do
+      event = described_class.new(
+        build_raw_event(action: 'create', labels: labels.merge('com.docker.compose.oneoff' => 'True')),
+      )
+      expect(event.created_config_hash).to be_nil
+    end
+
+    it 'returns nil for other actions' do
+      event = described_class.new(build_raw_event(action: 'start', labels:))
+      expect(event.created_config_hash).to be_nil
     end
   end
 

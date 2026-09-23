@@ -183,7 +183,7 @@ module Orchestration
     def process_event(event)
       if event.relevant?
         log_event(event)
-        schedule_broadcast(event.service_name, created: event.action == 'create')
+        schedule_broadcast(event.service_name, created_hash: event.created_config_hash)
       elsif event.helios_operation?
         log_event(event)
         broadcast_helios_operation
@@ -255,13 +255,13 @@ module Orchestration
       logger.error("[#{id}] Scheduler: #{e.class}: #{e.message}")
     end
 
-    def schedule_broadcast(service_name, created: false)
+    def schedule_broadcast(service_name, created_hash: nil)
       mutex.synchronize do
         existing = pending_broadcasts[service_name]
         pending_broadcasts[service_name] = {
           due_at: Time.current + BROADCAST_DELAY,
           retries: 0,
-          created: created || existing&.dig(:created),
+          created_hash: created_hash || existing&.dig(:created_hash),
         }
       end
     end
@@ -279,7 +279,7 @@ module Orchestration
 
     def process_pending_broadcasts
       collect_due_broadcasts.each do |name, entry|
-        execute_broadcast(name, retries: entry[:retries], created: entry[:created])
+        execute_broadcast(name, retries: entry[:retries], created_hash: entry[:created_hash])
       end
     end
 
@@ -292,8 +292,8 @@ module Orchestration
       end
     end
 
-    def execute_broadcast(service_name, retries: 0, created: false)
-      case broadcaster.broadcast(service_name, created:)
+    def execute_broadcast(service_name, retries: 0, created_hash: nil)
+      case broadcaster.broadcast(service_name, created_hash:)
       when :unknown_service then request_prune(service_name)
       when false then retry_broadcast(service_name, retries:)
       else log_broadcast(service_name)

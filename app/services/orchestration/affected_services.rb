@@ -75,14 +75,16 @@ module Orchestration
     # Update the deployed hash for a single service when its container
     # is recreated externally (e.g. via Docker CLI). This ensures the
     # "restart required" marker disappears after a manual restart that
-    # applies the current compose.yaml config.
-    def self.update_deployed_hash!(service_name)
+    # applies the current compose.yaml config. `applied_hash` is the
+    # config-hash label of the recreated container: when it differs from
+    # the current config, the container still runs an older config.
+    def self.update_deployed_hash!(service_name, applied_hash: nil)
       deployed = load_deployed_hashes_file
       return if deployed.empty?
 
       expected = Runner.config_hashes.except(Runner::SELF_SERVICE)
       hash = expected[service_name]
-      return unless hash
+      return unless hash && (applied_hash.nil? || applied_hash == hash)
 
       # Drop entries for services that no longer exist in compose.yaml
       pruned = deployed.slice(*expected.keys)

@@ -248,7 +248,21 @@ RSpec.describe Orchestration::EventsListener do
 
       expect(broadcaster).not_to have_received(:broadcast)
       travel(2.seconds) { listener.send(:run_scheduler_tick) }
-      expect(broadcaster).to have_received(:broadcast).with('db', created: nil)
+      expect(broadcaster).to have_received(:broadcast).with('db', created_hash: nil)
+    end
+
+    it 'hands the config hash of a created container to the broadcast' do
+      event = {
+        'Type' => 'container', 'Action' => 'create',
+        'Actor' => { 'Attributes' => {
+          'com.docker.compose.service' => 'db', 'com.docker.compose.config-hash' => 'abc123'
+        } }
+      }
+
+      listener.send(:process_chunk, +'', "#{JSON.dump(event)}\n")
+
+      travel(2.seconds) { listener.send(:run_scheduler_tick) }
+      expect(broadcaster).to have_received(:broadcast).with('db', created_hash: 'abc123')
     end
 
     it 'ignores a line that is not JSON' do
@@ -508,6 +522,7 @@ RSpec.describe Orchestration::EventsListener do
         helios_operation?: false,
         service_name: 'db',
         action: 'start',
+        created_config_hash: nil,
       )
     end
 

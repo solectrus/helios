@@ -305,6 +305,22 @@ RSpec.describe Orchestration::AffectedServices do
         expect(stored['redis']).to eq('new_redis')
       end
 
+      it 'updates the hash when the applied hash matches the current config' do
+        described_class.update_deployed_hash!('redis', applied_hash: 'new_redis')
+
+        stored = JSON.parse(File.read(deployed_hashes_path))
+        expect(stored['redis']).to eq('new_redis')
+      end
+
+      # Watchtower recreates a container from its old config, so the
+      # label still carries the old hash.
+      it 'keeps the old hash when the container runs an older config' do
+        described_class.update_deployed_hash!('redis', applied_hash: 'old_redis')
+
+        stored = JSON.parse(File.read(deployed_hashes_path))
+        expect(stored['redis']).to eq('old_redis')
+      end
+
       it 'preserves hashes of other services' do
         described_class.update_deployed_hash!('redis')
 
