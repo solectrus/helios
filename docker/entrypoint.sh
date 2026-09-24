@@ -1,6 +1,12 @@
 #!/bin/sh -e
+
+# The base image writes the Git metadata to this file. The env vars of the same
+# name can hold the values of an older image (see lib/build_info.rb).
+version=$(sed -n 's/^COMMIT_VERSION=//p' /etc/build-info)
+built=$(sed -n 's/^COMMIT_TIME=//p' /etc/build-info)
+
 echo "HELIOS — knows your SOLECTRUS configuration better than you do"
-echo "Version ${COMMIT_VERSION}, built on ${COMMIT_TIME}"
+echo "Version ${version}, built on ${built}"
 echo "Using $(ruby -v)"
 echo "Based on Alpine Linux $(cat /etc/alpine-release)"
 

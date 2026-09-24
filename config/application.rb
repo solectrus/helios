@@ -19,6 +19,7 @@ require 'action_cable/engine'
 Bundler.require(*Rails.groups)
 
 require_relative '../lib/startup_check_middleware'
+require_relative '../lib/build_info'
 
 module Helios
   class Application < Rails::Application
@@ -76,13 +77,18 @@ module Helios
       config.middleware.insert_before(Rails::Rack::Logger, Rails::Rack::SilenceRequest, path:)
     end
 
+    # The Docker image names its commit in a file, not in the environment,
+    # which can hold the values of an older image (see BuildInfo). A working
+    # copy has no such file and asks git.
+    build_info = BuildInfo.read
+
     config.x.git.commit_version =
-      ENV.fetch('COMMIT_VERSION') { `git describe --always --abbrev=7`.chomp }
+      build_info.fetch('COMMIT_VERSION') { `git describe --always --abbrev=7`.chomp }
 
     config.x.git.commit_time =
-      ENV.fetch('COMMIT_TIME') { `git show -s --format=%cI`.chomp }
+      build_info.fetch('COMMIT_TIME') { `git show -s --format=%cI`.chomp }
 
     config.x.git.commit_branch =
-      ENV.fetch('COMMIT_BRANCH') { `git rev-parse --abbrev-ref HEAD`.chomp }
+      build_info.fetch('COMMIT_BRANCH') { `git rev-parse --abbrev-ref HEAD`.chomp }
   end
 end

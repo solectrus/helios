@@ -20,9 +20,6 @@ RUN apk add --no-cache docker-cli docker-cli-compose
 # Run as root to access the Docker socket and manage containers on the host
 USER root
 
-# Enable YJIT
-ENV RUBY_YJIT_ENABLE=1
-
 # Entrypoint prepares the database.
 ENTRYPOINT ["docker/entrypoint.sh"]
 
