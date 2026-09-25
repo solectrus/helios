@@ -12,7 +12,7 @@ gem 'docker-api'
 gem 'aws-sdk-s3'
 
 # Zip archive generation (support bundle downloads)
-gem 'rubyzip', require: 'zip'
+gem 'rubyzip'
 
 # Frontend
 gem 'accept_language'
