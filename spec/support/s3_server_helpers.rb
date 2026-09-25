@@ -2,34 +2,28 @@ require 'open3'
 require 'aws-sdk-s3'
 
 # Helpers for integration specs that exercise the S3 backup adapter against
-# a throwaway, real S3-compatible server (MinIO).
+# a throwaway, real S3-compatible server (RustFS).
 #
-# MinIO is used as a deliberately **pinned** test fixture. MinIO stopped
-# publishing pre-built container images in October 2025, and the Docker Hub
-# repository is gone since then, so the image comes from quay.io, where
-# `RELEASE.2025-09-07T16-13-09Z` is the last officially published tag —
-# which suits a test fixture fine: a frozen, durably tag-pinnable image is
-# exactly what reproducible CI wants. MinIO validates SigV4, so it
-# returns the real `NoSuchBucket` / `SignatureDoesNotMatch` /
-# `InvalidAccessKeyId` codes the adapter classifies — a pure mock that
-# skips auth could not test that, and it is faster per request than the
-# maintained S3-compatible alternatives (SeaweedFS, Garage).
+# RustFS validates SigV4, so it returns the real `NoSuchBucket` /
+# `SignatureDoesNotMatch` / `InvalidAccessKeyId` codes the adapter
+# classifies — a pure mock that skips auth could not test that. The image
+# is pinned to a release tag so CI stays reproducible.
 #
-# MinIO publishes its API on a 127.0.0.1 host port (one per turbo_tests
+# RustFS publishes its API on a 127.0.0.1 host port (one per turbo_tests
 # worker via TEST_ENV_NUMBER). aws-sdk-s3 in the test process — and the
-# adapter under test in the runtime — both reach MinIO through the host
+# adapter under test in the runtime — both reach RustFS through the host
 # port, which keeps WebMock's `allow_localhost: true` default in play.
 #
 # The arrange steps here use a separate aws-sdk-s3 Client so a bug in
 # the adapter's own client cannot silently fix or mask itself by sharing
 # the seeding code path.
 module S3ServerHelpers
-  S3_SERVER_IMAGE = 'quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z'.freeze
+  S3_SERVER_IMAGE = 'rustfs/rustfs:1.0.0'.freeze
   S3_ACCESS_KEY = 'helios-integration-test'.freeze
   S3_SECRET_KEY = 'helios-integration-test-secret'.freeze
 
   # Each worker (turbo_tests) needs its own port so parallel runs don't
-  # collide on the same MinIO listener.
+  # collide on the same RustFS listener.
   S3_HOST_PORT_BASE = 19_000
 
   S3Server = Struct.new(:container, :endpoint, :access_key, :secret_key, keyword_init: true)
@@ -63,7 +57,7 @@ module S3ServerHelpers
     @s3_server = nil
   end
 
-  # Creates a bucket against the live MinIO via the seed client.
+  # Creates a bucket against the live RustFS via the seed client.
   def s3_create_bucket!(bucket)
     seed_client.create_bucket(bucket: bucket)
   end
@@ -86,11 +80,11 @@ module S3ServerHelpers
     output, status = Open3.capture2e(
       'docker', 'run', '-d', '--rm', '--name', name,
       '-p', "127.0.0.1:#{host_port}:9000",
-      '-e', "MINIO_ROOT_USER=#{S3_ACCESS_KEY}",
-      '-e', "MINIO_ROOT_PASSWORD=#{S3_SECRET_KEY}",
-      S3_SERVER_IMAGE, 'server', '/data'
+      '-e', "RUSTFS_ACCESS_KEY=#{S3_ACCESS_KEY}",
+      '-e', "RUSTFS_SECRET_KEY=#{S3_SECRET_KEY}",
+      S3_SERVER_IMAGE
     )
-    raise "Failed to start MinIO: #{output}" unless status.success?
+    raise "Failed to start RustFS: #{output}" unless status.success?
   end
 
   def s3_host_port
@@ -98,7 +92,7 @@ module S3ServerHelpers
   end
 
   # Independent aws-sdk-s3 client used by the spec's arrange steps. Built
-  # once per running fixture so the live MinIO endpoint is the single
+  # once per running fixture so the live RustFS endpoint is the single
   # source of truth for both seed and probe paths.
   def seed_client
     @seed_client ||= Aws::S3::Client.new(
@@ -118,7 +112,7 @@ module S3ServerHelpers
       seed_client.list_buckets
       return
     rescue Seahorse::Client::NetworkingError, Aws::S3::Errors::ServiceError
-      raise "MinIO did not become ready within #{timeout}s" if Time.current > deadline
+      raise "RustFS did not become ready within #{timeout}s" if Time.current > deadline
 
       sleep 1
     end

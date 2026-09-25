@@ -1,7 +1,7 @@
 require 'securerandom'
 
 # Integration coverage for the S3 backup adapter against a real
-# S3-compatible server (MinIO) reached through aws-sdk-s3 — the same
+# S3-compatible server (RustFS) reached through aws-sdk-s3 — the same
 # client construction the runtime uses, so a regression in SigV4
 # handling, endpoint resolution or force_path_style addressing breaks
 # here before it ever reaches a user.

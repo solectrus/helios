@@ -3,7 +3,7 @@ require 'securerandom'
 # End-to-end coverage of the S3 backup path: a real detached BackupRunner
 # `docker:cli` container dumps a live PostgreSQL + InfluxDB stack and
 # writes the tar into the staging dir, then the HELIOS-side uploader
-# pushes the tar to a real S3 bucket (MinIO) and records the DB row.
+# pushes the tar to a real S3 bucket (RustFS) and records the DB row.
 #
 # This is the only test that exercises the full chain at once — the
 # docker:cli container, the staging-dir hand-off, the aws-sdk-s3

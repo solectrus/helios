@@ -62,7 +62,7 @@ S3 access has no sidecar image at all: HELIOS talks to S3 directly through the `
 
 ### Verifying a bump
 
-The backup adapter parses the sidecar's output (`tar -tvf`) and classifies its error wording with regexes — a version bump can break this silently. Before raising the pin, run the integration suite, which exercises the docker:cli image and the S3 adapter against a real S3-compatible server (MinIO):
+The backup adapter parses the sidecar's output (`tar -tvf`) and classifies its error wording with regexes — a version bump can break this silently. Before raising the pin, run the integration suite, which exercises the docker:cli image and the S3 adapter against a real S3-compatible server (RustFS):
 
 ```bash
 bin/rspec --tag integration
