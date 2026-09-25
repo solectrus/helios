@@ -15,6 +15,10 @@
 #   HELIOS_ASSUME_YES=1 HELIOS_ACCEPT_LICENSE=1 \
 #     bash <(curl -fsSL https://raw.githubusercontent.com/solectrus/helios/main/bootstrap/install.sh)
 #
+# Development version, for throwaway hosts only:
+#   curl -fsSL https://raw.githubusercontent.com/solectrus/helios/develop/bootstrap/install.sh \
+#     | HELIOS_CHANNEL=develop bash
+#
 # Detects whether the current directory already contains a SOLECTRUS stack
 # (compose.yaml + .env) and either:
 #   - performs a FRESH install (creates compose.yaml + .env from scratch), or
@@ -25,14 +29,20 @@
 
 set -euo pipefail
 
-HELIOS_IMAGE="${HELIOS_IMAGE:-ghcr.io/solectrus/helios:latest}"
 ENV_FILE=".env"
 PROJECT_NAME="solectrus"
 
-# GitHub repo + branch the installer was published from. Used to fetch the
-# script's last-update timestamp from the GitHub API on welcome.
+# Release channel: "stable" (default) or "develop". It selects the branch the
+# installer was published from and the image tag. The branch is used to fetch
+# the script's last-update timestamp from the GitHub API on welcome and to
+# link the license. HELIOS_REF and HELIOS_IMAGE still override each part.
+case "${HELIOS_CHANNEL:-stable}" in
+  develop) channel_ref=develop channel_tag=develop ;;
+  *) channel_ref=main channel_tag=latest ;;
+esac
 HELIOS_REPO="${HELIOS_REPO:-solectrus/helios}"
-HELIOS_REF="${HELIOS_REF:-main}"
+HELIOS_REF="${HELIOS_REF:-$channel_ref}"
+HELIOS_IMAGE="${HELIOS_IMAGE:-ghcr.io/solectrus/helios:$channel_tag}"
 
 # Non-interactive opt-ins for unattended runs (Proxmox LXC helper, CI, …).
 # HELIOS_ASSUME_YES auto-confirms the operational prompts (install Docker,

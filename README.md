@@ -85,6 +85,12 @@ HELIOS_ASSUME_YES=1 HELIOS_ACCEPT_LICENSE=1 \
 
 An unattended run installs into the current directory. If it detects a SOLECTRUS stack already running in a _different_ directory, it aborts rather than create a colliding second stack or silently rewrite the live one — `cd` into that directory and re-run interactively to add HELIOS to it.
 
+**Development version** — to test the `develop` branch on a host you can throw away, set the channel to `develop`. The installer then uses the `develop` image and links the `develop` branch:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/solectrus/helios/develop/bootstrap/install.sh | HELIOS_CHANNEL=develop bash
+```
+
 ## First run
 
 On the first visit to `http://<your-host>:3999`:
