@@ -148,7 +148,6 @@ on request at info@solectrus.de.
 | `securerandom`         | Ruby, BSD-2-Clause |
 | `solid_cable`          | MIT                |
 | `sqlite3`              | BSD-3-Clause       |
-| `stimulus-rails`       | MIT                |
 | `thor`                 | MIT                |
 | `timeout`              | Ruby, BSD-2-Clause |
 | `tsort`                | Ruby, BSD-2-Clause |

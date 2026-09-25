@@ -19,7 +19,6 @@ gem 'accept_language'
 gem 'commonmarker'
 gem 'rack-brotli'
 gem 'rails_vite'
-gem 'stimulus-rails'
 gem 'turbo-rails'
 gem 'view_component'
 
@@ -43,7 +42,6 @@ group :development, :test do
   gem 'rubocop-rspec', require: false
   gem 'rubocop-rspec_rails', require: false
   gem 'rubocop-thread_safety', require: false
-  gem 'shoulda-matchers'
   gem 'simplecov', require: false
   gem 'turbo_tests'
   gem 'webmock'
@@ -54,6 +52,5 @@ group :development do
   gem 'annotaterb'
   gem 'foreman'
   gem 'herb'
-  gem 'syntax_tree'
   gem 'web-console'
 end

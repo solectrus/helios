@@ -87,10 +87,3 @@ RSpec.configure do |config|
   # at teardown, so a Backup created in one example never leaks into the next.
   config.use_transactional_fixtures = true
 end
-
-Shoulda::Matchers.configure do |config|
-  config.integrate do |with|
-    with.test_framework :rspec
-    with.library :rails
-  end
-end
