@@ -466,7 +466,6 @@ DEPENDENCIES
   sqlite3
   turbo-rails
   turbo_tests
-  tzinfo-data
   view_component
   web-console
   webmock

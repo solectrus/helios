@@ -22,18 +22,13 @@ gem 'rails_vite'
 gem 'turbo-rails'
 gem 'view_component'
 
-# Windows does not include zoneinfo files, so bundle the tzinfo-data gem
-gem 'tzinfo-data', platforms: %i[windows jruby]
-
 # Reduces boot times through caching; required in config/boot.rb
 gem 'bootsnap', require: false
 
 group :development, :test do
   gem 'brakeman', require: false
   gem 'bundler-audit', require: false
-  gem 'capybara'
-  gem 'capybara-playwright-driver'
-  gem 'debug', platforms: %i[mri windows], require: 'debug/prelude'
+  gem 'debug', require: 'debug/prelude'
   gem 'rspec-rails'
   gem 'rubocop', require: false
   gem 'rubocop-capybara', require: false
@@ -43,7 +38,12 @@ group :development, :test do
   gem 'rubocop-rspec_rails', require: false
   gem 'rubocop-thread_safety', require: false
   gem 'simplecov', require: false
-  gem 'turbo_tests'
+  gem 'turbo_tests', require: false
+end
+
+group :test do
+  gem 'capybara'
+  gem 'capybara-playwright-driver'
   gem 'webmock'
 end
 
