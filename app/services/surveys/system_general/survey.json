@@ -21,8 +21,8 @@
             "default": "Commissioning date of PV system"
           },
           "description": {
-            "de": "Wird für die Zeitraumauswahl benötigt",
-            "default": "Required for time range selection"
+            "de": "Der Tag, an dem die Module zum ersten Mal Strom erzeugt haben",
+            "default": "The day the solar modules first produced power"
           },
           "isRequired": true,
           "inputType": "date"
