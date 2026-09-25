@@ -1,8 +1,8 @@
 module ConfigNav
   class Component < ViewComponent::Base
     TAB_DEFINITIONS = [
-      { id: :sensors, path_helper: :sensors_path, icon: 'fa-solid fa-gauge-high' },
       { id: :datasources, path_helper: :datasources_path, icon: 'fa-solid fa-satellite-dish' },
+      { id: :sensors, path_helper: :sensors_path, icon: 'fa-solid fa-gauge-high' },
       { id: :settings, path_helper: :settings_path, icon: 'fa-solid fa-sliders' },
     ].freeze
 

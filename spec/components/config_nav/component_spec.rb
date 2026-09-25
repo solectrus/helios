@@ -1,6 +1,13 @@
 RSpec.describe ConfigNav::Component, type: :component do
   let(:dir) { config_yaml_dir }
 
+  # A sensor reads through a source, so the sources come first.
+  it 'lists the screens in the order of setup' do
+    rendered = render_inline(described_class.new(only: :tabs))
+
+    expect(rendered.css('a').pluck('href')).to eq(%w[/datasources /sensors /settings])
+  end
+
   describe 'the warning sign' do
     # A sensor reads through SENEC, which names no host yet. The data sources
     # are the only entry that can carry a sign: what the Settings screen holds

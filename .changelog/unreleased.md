@@ -34,6 +34,7 @@ Keep every section, an empty one included.
 
 ### Data sources
 
+- **Data Sources comes before Sensors.** The configuration lists its screens in the order of setup, because a sensor reads through a source
 - **Every data source is on the screen.** The screen shows them from the start, dimmed while a source is off. The switch on the card turns a source on, and off again. Switching off deletes the settings of the source and turns off the sensors that read through it. A question first says how many sensors this affects. A sensor can only use a source that is switched on
 - **Every card says where the data comes from.** The answer is the device on the local network, the vendor cloud, or what devices send. The cards now carry the name of the source alone: SENEC, Shelly, MQTT and PV forecast
 
