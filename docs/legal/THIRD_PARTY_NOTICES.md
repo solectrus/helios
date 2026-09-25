@@ -465,7 +465,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ## @rails/actioncable
 
-- Version: 8.1.301
+- Version: 8.1.400
 - License: MIT
 - Homepage: https://rubyonrails.org/
 
