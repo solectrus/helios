@@ -187,6 +187,24 @@ RSpec.describe ConfigSchema do
     end
   end
 
+  describe 'HELIOS image default' do
+    let(:dir) { without_config_yaml }
+    let(:default) { described_class.resolve_default(described_class::HELIOS_DEFAULTS['image']) }
+
+    it 'keeps the image the installer wrote into compose.yaml' do
+      File.write(File.join(dir, 'compose.yaml'),
+                 "name: solectrus\nservices:\n  helios:\n    image: ghcr.io/solectrus/helios:develop\n")
+
+      expect(default).to eq('ghcr.io/solectrus/helios:develop')
+    end
+
+    it 'falls back to the stable image without compose.yaml' do
+      dir
+
+      expect(default).to eq('ghcr.io/solectrus/helios:latest')
+    end
+  end
+
   describe 'consistency with surveys' do
     survey_settings = (Configuration::ALL - Configuration::HIDDEN - Configuration::READ_ONLY_SETTINGS)
     survey_settings.select { |s| Rails.root.join("app/services/surveys/#{s}/survey.json").exist? }.each do |setting|

@@ -190,8 +190,12 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
 
   # --- HELIOS: the management UI manages its own image channel too ---
 
+  # A fresh install keeps the image bootstrap/install.sh wrote into
+  # compose.yaml, so HELIOS_CHANNEL=develop stays on the develop channel.
   HELIOS_DEFAULTS = {
-    'image' => DockerImages.current(:HELIOS),
+    'image' => lambda {
+      Compose::File.load(Compose.path).services.find('helios')&.image || DockerImages.current(:HELIOS)
+    },
   }.freeze
 
   HELIOS_ALL = HELIOS_DEFAULTS.keys.freeze
