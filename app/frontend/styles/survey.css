@@ -379,13 +379,6 @@
   }
 }
 
-/* Closing a dropdown resets its search filter, so the list grows back to full
-   height while it fades out — the list appears to flare open once more. It has
-   been chosen at that point, so drop it right away instead. */
-.sv-popup--leave .sv-popup__container {
-  display: none;
-}
-
 /* View transition targets live at document root, outside .sd-root-modern.
 
    Both named groups run the same length: the modal frame and the survey body
