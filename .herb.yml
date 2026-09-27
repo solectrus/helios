@@ -36,3 +36,7 @@ linter:
     # whenever a `link_to`/`button_to` appears inside them
     actionview-no-silent-helper:
       enabled: false
+    # False positive in 0.11.0: flags every form helper inside a block helper
+    # like `turbo_frame_tag` or `render ... do` (marcoroth/herb#2708)
+    html-no-nested-forms:
+      enabled: false
