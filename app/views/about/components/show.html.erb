@@ -8,12 +8,7 @@
 
     <% if @payload[:url].present? %>
       <p class="mt-2">
-        <a
-          href="<%= @payload[:url] %>"
-          class="link link-primary text-xs"
-          rel="noopener noreferrer"
-          target="_blank"
-        >
+        <a href="<%= @payload[:url] %>" class="link link-primary text-xs" rel="noopener noreferrer" target="_blank">
           <%= @payload[:url] %>
         </a>
       </p>
