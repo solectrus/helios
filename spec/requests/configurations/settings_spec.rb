@@ -83,6 +83,55 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       end
     end
 
+    it 'stores the SENEC total when a PV string asks for it' do
+      sensor_data = { 'source' => 'senec', 'senec_field' => 'inverter_power', 'field' => 'mpp1_power' }
+
+      post configuration_settings_path,
+           params: { setting: 'sensor', name: 'inverter_power_1', data: sensor_data.to_json }
+
+      config = Configuration.current
+      aggregate_failures do
+        expect(config.sensor_config('inverter_power_1').to_h).to eq('source' => 'senec', 'field' => 'inverter_power')
+        expect(config.effective_sensor_mappings['inverter_power_1']).to eq('SENEC:inverter_power')
+      end
+    end
+
+    it 'stores no field when a PV string reads its own string' do
+      post configuration_settings_path,
+           params: { setting: 'sensor', name: 'inverter_power_1',
+                     data: { 'source' => 'senec', 'senec_field' => 'mpp1_power' }.to_json }
+
+      expect(Configuration.current.sensor_config('inverter_power_1').field).to be_nil
+    end
+
+    it 'ignores a SENEC field the sensor does not offer' do
+      post configuration_settings_path,
+           params: { setting: 'sensor', name: 'battery_soc',
+                     data: { 'source' => 'senec', 'senec_field' => 'inverter_power' }.to_json }
+
+      expect(Configuration.current.effective_sensor_mappings['battery_soc']).to eq('SENEC:bat_fuel_charge')
+    end
+
+    # An imported stack can read the SENEC total as a PV string. Opening that
+    # sensor and saving it unchanged turned it into the string alone before,
+    # and the generation before 2023 was gone.
+    it 'keeps the SENEC total of a PV string through edit and save' do
+      Configuration.current.update_sensor(
+        'inverter_power_1', { 'source' => 'senec', 'measurement' => 'SENEC', 'field' => 'inverter_power' }
+      )
+
+      get edit_configuration_setting_path(setting: 'sensor', name: 'inverter_power_1'),
+          headers: turbo_frame_headers
+      expect(response.body).to include('&quot;senec_field&quot;:&quot;inverter_power&quot;')
+
+      post configuration_settings_path,
+           params: { setting: 'sensor', name: 'inverter_power_1',
+                     data: { 'source' => 'senec', 'senec_field' => 'inverter_power' }.to_json }
+
+      Current.reset
+      expect(Configuration.current.effective_sensor_mappings['inverter_power_1']).to eq('SENEC:inverter_power')
+    end
+
     it 'follows the measurement the SENEC collector was given' do
       post configuration_settings_path,
            params: { setting: 'senec', data: { 'version' => 'v3', 'measurement' => 'MY_SENEC' }.to_json }

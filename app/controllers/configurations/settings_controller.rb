@@ -219,11 +219,16 @@ module Configurations
     #
     # A payload can still carry the names, from an older form or from a
     # request nothing typed, so they go before the sensor is written.
+    #
+    # The one exception is a SENEC field the form offers as a choice (see
+    # SensorMappings::SENEC_TOTAL_FIELD). It is stored as the field.
     def strip_fixed_source_mapping!(data)
       return unless fixed_source?(data['source'])
 
+      alternative = SensorMappings.senec_alternative_field(sensor_name, data.delete('senec_field'))
       data.delete('measurement')
       data.delete('field')
+      data['field'] = alternative if alternative
     end
 
     # The form shows what the collector dictates, which is what the sensor
@@ -231,8 +236,12 @@ module Configurations
     def inject_fixed_source_mapping!(data)
       return unless fixed_source?(data['source'])
 
-      data['measurement'] = collector_measurement(data['source'].to_s)
-      data['field'] = SensorMappings.default_field(sensor_name, data['source'].to_s)
+      source = data['source'].to_s
+      field = SensorMappings.senec_alternative_field(sensor_name, data['field']) ||
+              SensorMappings.default_field(sensor_name, source)
+      data['measurement'] = collector_measurement(source)
+      data['field'] = field
+      data['senec_field'] = field if SensorMappings::SENEC_TOTAL_CAPABLE_SENSORS.include?(sensor_name)
     end
 
     def fixed_source?(source)

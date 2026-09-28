@@ -983,6 +983,31 @@ RSpec.describe Configuration do
       end
     end
 
+    describe '#senec_total_reader' do
+      it 'names the total sensor when it reads through SENEC' do
+        config = described_class.current
+        config.update_sensor('inverter_power', { 'source' => 'senec' })
+
+        expect(config.senec_total_reader(except: 'inverter_power_1')).to eq('inverter_power')
+      end
+
+      it 'names a PV string that takes the total' do
+        config = described_class.current
+        config.update_sensor('inverter_power_2', { 'source' => 'senec', 'field' => 'inverter_power' })
+
+        expect(config.senec_total_reader(except: 'inverter_power_1')).to eq('inverter_power_2')
+      end
+
+      it 'passes over the sensor asking, a PV string on its own string and another source' do
+        config = described_class.current
+        config.update_sensor('inverter_power_1', { 'source' => 'senec', 'field' => 'inverter_power' })
+        config.update_sensor('inverter_power_2', { 'source' => 'senec' })
+        config.update_sensor('inverter_power', { 'source' => 'external', 'measurement' => 'pv', 'field' => 'power' })
+
+        expect(config.senec_total_reader(except: 'inverter_power_1')).to be_nil
+      end
+    end
+
     describe '#auto_enable_senec_sensors!' do
       it 'activates every SENEC-capable sensor that is not yet configured' do
         config = described_class.current
@@ -994,6 +1019,18 @@ RSpec.describe Configuration do
         expect(activated).to match_array(expected)
         expected.each do |name|
           expect(config.sensor_config(name).source).to eq('senec')
+        end
+      end
+
+      it 'leaves the total sensor out while a PV string reads the SENEC total' do
+        config = described_class.current
+        config.update_sensor('inverter_power_1', { 'source' => 'senec', 'field' => 'inverter_power' })
+
+        activated = config.auto_enable_senec_sensors!
+
+        aggregate_failures do
+          expect(activated).to include('inverter_power_2')
+          expect(activated).not_to include('inverter_power')
         end
       end
 

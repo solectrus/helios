@@ -45,7 +45,7 @@ module Surveys
         offered = sources.select { |source| offer?(source) }
         return if offered.empty?
 
-        element = find_source_element(survey)
+        element = Base.find_element(survey, 'source')
         return unless element
 
         element['choices'] = offered.map { |source| { 'value' => source, 'text' => TEXTS[source] || source } }
@@ -55,10 +55,6 @@ module Surveys
       private
 
       attr_reader :sensor_name
-
-      def find_source_element(survey)
-        survey['pages'].flat_map { |page| page['elements'] || [] }.find { |element| element['name'] == 'source' }
-      end
 
       # The source a sensor already reads through stays on the list whatever
       # its state, or opening the survey would silently drop it.

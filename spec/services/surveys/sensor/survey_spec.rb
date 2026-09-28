@@ -165,8 +165,8 @@ RSpec.describe Surveys::Sensor::Survey do
 
       it 'says that the total and the single producers are alternatives' do
         expect(source_page('inverter_power')['description']).to include(
-          'default' => a_string_including('PV string 1 to 5'),
-          'de' => a_string_including('PV-String 1 bis 5'),
+          'default' => a_string_including('PV generator 1 to 5'),
+          'de' => a_string_including('PV-Erzeuger 1 bis 5'),
         )
       end
 
@@ -174,6 +174,76 @@ RSpec.describe Surveys::Sensor::Survey do
         expect(source_page('inverter_power_1')['description']).to eq(
           source_page('custom_power_03')['description'],
         )
+      end
+
+      it 'names the SENEC total as a PV string once SENEC is set up' do
+        with_config_yaml('senec' => { 'host' => '192.168.1.10' })
+
+        expect(source_page('inverter_power')['description']).to include(
+          'default' => a_string_including('PV generator 1 can read the total generation'),
+          'de' => a_string_including('PV-Erzeuger 1 dafür die Gesamterzeugung'),
+        )
+      end
+
+      it 'leaves the SENEC total out without SENEC' do
+        expect(source_page('inverter_power')['description']['de']).not_to include('SENEC')
+      end
+    end
+
+    # The SENEC collector writes each string and the total, so a PV string can
+    # read either one.
+    describe 'the SENEC field of a PV string' do
+      def senec_field(sensor_name)
+        find_survey_element(described_class.new(sensor_name:).call, 'senec_field')
+      end
+
+      it 'offers the string and the total of the system' do
+        element = senec_field('inverter_power_2')
+
+        aggregate_failures do
+          expect(element['choices'].pluck('value')).to eq(%w[mpp2_power inverter_power])
+          expect(element['defaultValue']).to eq('mpp2_power')
+          expect(element['visibleIf']).to eq("{source} = 'senec'")
+        end
+      end
+
+      it 'accepts the total while no other sensor reads it' do
+        expect(senec_field('inverter_power_2')).not_to have_key('validators')
+      end
+
+      it 'refuses the total in the form while another sensor reads it' do
+        with_config_yaml('sensors' => { 'inverter_power' => { 'source' => 'senec' } })
+
+        expect(senec_field('inverter_power_2')['validators'].sole).to include(
+          'type' => 'expression',
+          'expression' => "{senec_field} <> 'inverter_power'",
+          'text' => a_hash_including(
+            'de' => 'Die Gesamterzeugung von SENEC ist bereits „Gesamte PV-Erzeugung“ zugeordnet.',
+          ),
+        )
+      end
+
+      it 'refuses SENEC for the total sensor while a PV string reads the total' do
+        with_config_yaml('sensors' => { 'inverter_power_1' => { 'source' => 'senec', 'field' => 'inverter_power' } })
+        survey = described_class.new(sensor_name: 'inverter_power').call
+
+        expect(find_survey_element(survey, 'source')['validators'].sole).to include(
+          'expression' => "{source} <> 'senec'",
+          'text' => a_hash_including(
+            'default' => 'The total generation of SENEC is already assigned to "PV generator 1".',
+          ),
+        )
+      end
+
+      it 'leaves SENEC open for the total sensor while no PV string reads the total' do
+        survey = described_class.new(sensor_name: 'inverter_power').call
+
+        expect(find_survey_element(survey, 'source')).not_to have_key('validators')
+      end
+
+      it 'asks only on a PV string SENEC can deliver' do
+        expect(senec_field('inverter_power_4')).to be_nil
+        expect(senec_field('inverter_power')).to be_nil
       end
     end
 

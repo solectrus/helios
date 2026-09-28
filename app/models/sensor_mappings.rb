@@ -35,6 +35,12 @@ class SensorMappings
     'wallbox_car_connected' => %w[SENEC ev_connected],
   }.freeze
 
+  # A PV string read through SENEC may take the total generation of the system
+  # instead of its own string. This is the one field a fixed-source sensor
+  # stores, because the collector writes both.
+  SENEC_TOTAL_FIELD = SENEC_DEFAULTS.dig('inverter_power', 1)
+  SENEC_TOTAL_CAPABLE_SENSORS = %w[inverter_power_1 inverter_power_2 inverter_power_3].freeze
+
   # Forecast collector mappings.
   # Field names must match exactly what the forecast-collector writes to
   # InfluxDB: `watt`, `watt_clearsky` and `temp` (not `temperature`).
@@ -115,6 +121,19 @@ class SensorMappings
     when 'shelly' then DEFAULTS.dig(sensor_name, 1) || 'power'
     else DEFAULTS.dig(sensor_name, 1) || 'value'
     end
+  end
+
+  # The field a SENEC sensor keeps of its own (see SENEC_TOTAL_FIELD), or nil
+  # when it reads the default one.
+  def self.senec_alternative_field(sensor_name, field)
+    field if SENEC_TOTAL_CAPABLE_SENSORS.include?(sensor_name) && field == SENEC_TOTAL_FIELD
+  end
+
+  # True when a sensor reads the total generation of SENEC, either as the
+  # total sensor or as a PV string that takes the total.
+  def self.senec_total?(sensor_name, source, field)
+    source.to_s == 'senec' &&
+      (field.presence || default_field(sensor_name, 'senec')) == SENEC_TOTAL_FIELD
   end
 
   # Names that cannot work, for two separate reasons. Line protocol itself is

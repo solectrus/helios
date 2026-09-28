@@ -94,7 +94,9 @@ module Surveys
 
       # The parts of the survey that are built by a class of their own.
       def run_injectors!(data)
-        [SourceInjector, MqttInjector, MappingInjector].each { |injector| injector.new(sensor_name).call(data) }
+        [SourceInjector, MqttInjector, MappingInjector, SenecTotalInjector].each do |injector|
+          injector.new(sensor_name).call(data)
+        end
       end
 
       def custom_power_sensor?
@@ -129,18 +131,30 @@ module Surveys
         page = find_page(data, 'p_source')
         return unless page
 
+        senec = senec_total_hint
         page['description'] = self.class.localized(
           en: 'Only fill this in when a measurement really covers the whole generation. An ' \
               'inverter does not know about a balcony power plant beside it, for example, so ' \
-              'each producer then belongs in PV string 1 to 5. While this sensor stays ' \
+              "each producer then belongs in PV generator 1 to 5. #{senec[:en]}While this sensor stays " \
               'empty, SOLECTRUS adds the parts up itself. Once it is filled, the ' \
               'delivered measurement counts, whatever the single producers report.',
           de: 'Nur belegen, wenn ein Messwert wirklich die gesamte Erzeugung wiedergibt. Ein ' \
               'Wechselrichter kennt zum Beispiel ein zusätzliches Steckersolargerät nicht, ' \
-              'jeder Erzeuger gehört dann als PV-String 1 bis 5 eingetragen. Bleibt dieser ' \
+              "jeder Erzeuger gehört dann als PV-Erzeuger 1 bis 5 eingetragen. #{senec[:de]}Bleibt dieser " \
               'Sensor leer, bildet SOLECTRUS die Summe aus den Teilen. Ist er belegt, ' \
               'gilt der angelieferte Messwert, egal was die einzelnen Erzeuger melden.',
         )
+      end
+
+      # Only SENEC delivers the total of the system as a PV string (see
+      # SenecTotalInjector).
+      def senec_total_hint
+        return { en: '', de: '' } unless configuration.source_available?('senec')
+
+        {
+          en: 'With SENEC, PV generator 1 can read the total generation of the system. ',
+          de: 'Bei SENEC kann PV-Erzeuger 1 dafür die Gesamterzeugung lesen. ',
+        }
       end
 
       def inject_label_page!(data)

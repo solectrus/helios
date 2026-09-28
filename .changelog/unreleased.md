@@ -53,6 +53,7 @@ Keep every section, an empty one included.
 
 ## Fixes
 
+- **A PV generator can read the SENEC total.** With SENEC as the source, PV generator 1 to 3 can read the total generation of the system instead of a single string. The history then stays complete when a balcony power plant joins as a further producer. Saving such a sensor keeps the total (solectrus/solectrus#5959)
 - **Collector and sensors use the same measurement.** A name entered by hand reaches every sensor of that source, and a later change carries through. Without a name, the forecast goes to `Forecast`, where the dashboard reads it. The dashboard no longer stays empty
 - **A failed update says what stopped it.** An update of the whole installation keeps its log and its exit code. The services screen names the last line of the log
 - **"Restart required" stays until the change runs.** An automatic update of a service no longer removes the note. It goes away when the service runs with the changed configuration

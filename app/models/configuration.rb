@@ -485,12 +485,23 @@ class Configuration # rubocop:disable Metrics/ClassLength
     candidates = SensorRegistry::SENSORS.each_key.select do |name|
       SensorRegistry.sources_for(name).include?('senec') && !sensor_enabled?(name)
     end
+    candidates.delete('inverter_power') if senec_total_reader(except: 'inverter_power')
     return [] if candidates.empty?
 
     @data['sensors'] ||= {}
     candidates.each { |name| @data['sensors'][name] = { 'source' => 'senec' } }
     save!
     candidates
+  end
+
+  # The sensor other than `except` that reads the total generation of SENEC.
+  # Only one sensor may read it, because a second one counts the same
+  # generation again.
+  def senec_total_reader(except:)
+    enabled_sensors.find do |name|
+      config = sensor_config(name)
+      name != except && SensorMappings.senec_total?(name, config.source, config.field)
+    end
   end
 
   # True while at most one sensor reads from SENEC. Callers run after saving

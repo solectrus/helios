@@ -27,6 +27,16 @@ module Surveys
       { 'default' => en, 'de' => de }
     end
 
+    # Also open to the injectors, which build parts of a survey outside it.
+    def self.find_element(data, name)
+      data['pages']&.each do |page|
+        page['elements']&.each do |element|
+          return element if element['name'] == name
+        end
+      end
+      nil
+    end
+
     # `index` identifies the entry of a list-backed survey (today only the
     # standalone MQTT mappings) so it can be told apart from its siblings, the
     # way `sensor_name` does for the sensor survey.
@@ -72,12 +82,7 @@ module Surveys
     end
 
     def find_element(data, name)
-      data['pages']&.each do |page|
-        page['elements']&.each do |element|
-          return element if element['name'] == name
-        end
-      end
-      nil
+      self.class.find_element(data, name)
     end
 
     def remove_element(data, name)
