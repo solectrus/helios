@@ -31,8 +31,8 @@ class StartupCheck
       Check.new(
         name: 'Data path',
         message:
-          "Directory '#{data_path}' does not exist. " \
-          "Add this to the volumes: - .:#{data_path}",
+          "Directory `#{data_path}` does not exist. " \
+          "Add `- .:#{data_path}` to the volumes.",
       )
     end
 
@@ -48,7 +48,7 @@ class StartupCheck
       Check.new(
         name: 'Compose file',
         message:
-          "No compose file found in '#{data_path}'. " \
+          "No compose file found in `#{data_path}`. " \
           "The volume should point to the directory containing #{Compose::FILENAMES.first}.",
       )
     end
@@ -59,10 +59,10 @@ class StartupCheck
       compose_file = existing_compose_file
       return unless compose_file
 
-      config = YAML.safe_load_file(compose_file) || {}
-      return if config['name'] == Orchestration::PROJECT_NAME
+      name = (YAML.safe_load_file(compose_file) || {})['name']
+      return if name == Orchestration::PROJECT_NAME
 
-      Check.new(name: 'Compose project name', message: compose_project_name_message(compose_file))
+      Check.new(name: 'Compose project name', message: compose_project_name_message(compose_file, name))
     rescue Psych::SyntaxError => e
       Check.new(name: 'Compose project name', message: "Could not parse compose file: #{e.message}")
     end
@@ -71,10 +71,18 @@ class StartupCheck
       Compose::FILENAMES.map { |filename| File.join(data_path, filename) }.find { |path| File.exist?(path) }
     end
 
-    def compose_project_name_message(compose_file)
-      "The top-level `name:` in '#{compose_file}' must be set to " \
-        "'#{Orchestration::PROJECT_NAME}'. Add this line to the compose file: " \
-        "name: #{Orchestration::PROJECT_NAME}"
+    def compose_project_name_message(compose_file, name)
+      line = "`name: #{Orchestration::PROJECT_NAME}`"
+      problem, fix =
+        if name
+          ["`#{compose_file}` sets the project name `#{name}`, but HELIOS requires " \
+           "`#{Orchestration::PROJECT_NAME}`.", "change the line to #{line}"]
+        else
+          ["`#{compose_file}` has no top-level project name.", "add #{line} as the first line of the file"]
+        end
+
+      "#{problem} Stop the stack with `docker compose down`, #{fix}, " \
+        'then start the stack with `docker compose up -d`.'
     end
 
     def check_env_file
@@ -84,7 +92,7 @@ class StartupCheck
       Check.new(
         name: 'Environment file',
         message:
-          "No .env file found in '#{data_path}'. " \
+          "No `.env` file found in `#{data_path}`. " \
           'The volume should point to the directory containing the .env file.',
       )
     end
@@ -95,7 +103,7 @@ class StartupCheck
 
       Check.new(
         name: 'Data path writable',
-        message: "Directory '#{data_path}' is not writable.",
+        message: "Directory `#{data_path}` is not writable.",
       )
     end
 
@@ -110,7 +118,7 @@ class StartupCheck
         name: 'Docker socket',
         message:
           'Docker socket not found. ' \
-          'Add this to the volumes: - /var/run/docker.sock:/var/run/docker.sock',
+          'Add `- /var/run/docker.sock:/var/run/docker.sock` to the volumes.',
       )
     end
 

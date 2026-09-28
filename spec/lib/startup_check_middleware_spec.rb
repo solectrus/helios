@@ -39,9 +39,19 @@ RSpec.describe StartupCheckMiddleware do
       html = body.first
 
       expect(headers['content-type']).to eq('text/html; charset=utf-8')
-      expect(html).to include('Startup Failed')
+      expect(html).to include('Startup failed')
       expect(html).to include('Docker socket')
       expect(html).to include('Not found')
+    end
+
+    it 'renders backtick spans as code and escapes the rest' do
+      allow(StartupCheck).to receive(:run).and_return(
+        [StartupCheck::Check.new(name: 'Compose project name', message: 'Add `name: <solectrus>` & restart.')],
+      )
+
+      html = get.last.first
+
+      expect(html).to include('Add <code>name: &lt;solectrus&gt;</code> &amp; restart.')
     end
 
     it 'allows the health check endpoint through' do

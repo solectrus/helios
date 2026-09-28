@@ -105,8 +105,7 @@ RSpec.describe StartupCheck do
       it 'reports compose project name mismatch' do
         failures = described_class.run
         failure = failures.find { |c| c.name == 'Compose project name' }
-        expect(failure).not_to be_nil
-        expect(failure.message).to include('solectrus')
+        expect(failure.message).to include('sets the project name `wrong`', 'change the line to `name: solectrus`')
       end
     end
 
@@ -123,8 +122,8 @@ RSpec.describe StartupCheck do
       end
 
       it 'reports compose project name missing' do
-        failures = described_class.run
-        expect(failures.map(&:name)).to include('Compose project name')
+        failure = described_class.run.find { |c| c.name == 'Compose project name' }
+        expect(failure.message).to include('has no top-level project name', 'add `name: solectrus` as the first line')
       end
     end
 

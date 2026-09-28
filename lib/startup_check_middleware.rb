@@ -47,7 +47,7 @@ class StartupCheckMiddleware
           <span class="icon">&#10007;</span>
           <div>
             <strong>#{escape(check.name)}</strong>
-            <p>#{escape(check.message)}</p>
+            <p>#{format_message(check.message)}</p>
           </div>
         </div>
       HTML
@@ -57,7 +57,7 @@ class StartupCheckMiddleware
       <!doctype html>
       <html lang="en">
         <head>
-          <title>HELIOS – Startup Failed</title>
+          <title>HELIOS – Startup failed</title>
           <meta charset="utf-8">
           <meta name="viewport" content="initial-scale=1, width=device-width">
           <meta name="robots" content="noindex, nofollow">
@@ -69,9 +69,9 @@ class StartupCheckMiddleware
               #{logo_svg}
             </header>
             <article>
-              <h1>Startup Failed</h1>
+              <h1>Startup failed</h1>
               <p class="subtitle">HELIOS cannot start because of configuration problems.<br>
-              Please check your <code>#{escape(::Compose.filename)}</code> and try again.</p>
+              Fix the problems below, then restart HELIOS.</p>
               #{checks_html}
             </article>
           </main>
@@ -82,6 +82,11 @@ class StartupCheckMiddleware
 
   def escape(text)
     Rack::Utils.escape_html(text)
+  end
+
+  # Check messages mark commands, paths and YAML snippets with backticks.
+  def format_message(text)
+    escape(text).gsub(/`([^`]+)`/, '<code>\\1</code>')
   end
 
   def logo_svg
@@ -116,13 +121,6 @@ class StartupCheckMiddleware
           place-items: center;
         }
 
-        @media (prefers-color-scheme: dark) {
-          body { background: #101010; color: #e0e0e0; }
-          .logo { fill: #e0e0e0; }
-          code { background: #2c2c2c; }
-          .check { background: #1a1a1a; border-color: #333; }
-        }
-
         .logo { fill: #B8860B; }
 
         main {
@@ -141,10 +139,6 @@ class StartupCheckMiddleware
           font-size: 1.25em;
           font-weight: 700;
           color: #d30001;
-        }
-
-        @media (prefers-color-scheme: dark) {
-          h1 { color: #FF6161; }
         }
 
         .subtitle {
@@ -179,9 +173,6 @@ class StartupCheckMiddleware
         }
 
         .check.fail .icon { color: #d30001; }
-        @media (prefers-color-scheme: dark) {
-          .check.fail .icon { color: #FF6161; }
-        }
 
         .check strong {
           display: block;
@@ -192,6 +183,14 @@ class StartupCheckMiddleware
           font-size: 0.65em;
           opacity: 0.8;
           margin-top: 0.15em;
+          overflow-wrap: anywhere;
+        }
+
+        @media (prefers-color-scheme: dark) {
+          body { background: #101010; color: #e0e0e0; }
+          h1, .check.fail .icon { color: #FF6161; }
+          code { background: #2c2c2c; }
+          .check { background: #1a1a1a; border-color: #333; }
         }
       </style>
     HTML
