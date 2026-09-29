@@ -18,6 +18,6 @@
     <% end %>
 
     <%# A CSV import fills sensors that exist, so it is dimmed until some do. %>
-    <%= render "csv_import_link", dimmed: nothing_in_use %>
+    <%= render "datasources/csv_import_link", dimmed: nothing_in_use %>
   </div>
 <% end %>

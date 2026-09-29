@@ -16,6 +16,6 @@ class RestartingController < ApplicationController
   # the one who started the restart and the only one it concerns.
   def show
     @boot_id = params[:boot_id]
-    @target = Export::HeliosEndpoint.url if params[:moved] && authenticated?
+    @target_url = Export::HeliosEndpoint.url if params[:moved] && authenticated?
   end
 end

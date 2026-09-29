@@ -74,10 +74,10 @@
 
         <ul tabindex="-1" class="dropdown-content menu bg-base-100 rounded-box z-10 mt-1 w-56 p-2 shadow-2xl">
           <li>
-            <a href="<%= helpers.new_support_path %>" data-turbo-frame="support-modal-content">
+            <%= link_to helpers.new_support_path, data: { turbo_frame: "support-modal-content" } do %>
               <i class="fa-solid fa-life-ring fa-fw"></i>
               <%= t(".support") %>
-            </a>
+            <% end %>
           </li>
 
           <li class="border-base-content/10 mt-2 border-t pt-2">
@@ -103,10 +103,10 @@
           </li>
 
           <li class="border-base-content/10 mt-2 border-t pt-2">
-            <a href="<%= helpers.about_path %>" data-turbo-frame="_top">
+            <%= link_to helpers.about_path, data: { turbo_frame: "_top" } do %>
               <i class="fa-solid fa-id-card fa-fw"></i>
               <%= t(".about") %>
-            </a>
+            <% end %>
           </li>
 
           <% if helpers.password_required? %>

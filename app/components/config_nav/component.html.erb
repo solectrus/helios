@@ -48,27 +48,23 @@
           <%= t('.files_label') %>
         </h3>
         <% docker_file_links.each do |link| %>
-          <a
-            href="<%= helpers.file_path(link[:key]) %>"
-            data-turbo-frame="file-modal-content"
-            class="<%= file_link_classes %>"
-          >
+          <%= link_to helpers.file_path(link[:key]),
+                      class: file_link_classes,
+                      data: { turbo_frame: "file-modal-content" } do %>
             <i class="fa-solid text-base-content/55 w-5 shrink-0 text-center <%= link[:icon] %>" aria-hidden="true"></i>
             <span><%= link[:label] %></span>
-          </a>
+          <% end %>
         <% end %>
         <% if show_traefik_file? %>
           <h3 class="text-base-content/50 mt-5 mb-2 px-3 text-xs font-semibold tracking-widest uppercase">
             <%= t('.traefik_files_label') %>
           </h3>
-          <a
-            href="<%= helpers.file_path('traefik') %>"
-            data-turbo-frame="file-modal-content"
-            class="<%= file_link_classes %>"
-          >
+          <%= link_to helpers.file_path('traefik'),
+                      class: file_link_classes,
+                      data: { turbo_frame: "file-modal-content" } do %>
             <i class="fa-solid fa-route text-base-content/55 w-5 shrink-0 text-center" aria-hidden="true"></i>
             <span>traefik.yml</span>
-          </a>
+          <% end %>
         <% end %>
       <% end %>
 

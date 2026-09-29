@@ -171,15 +171,13 @@
               <% end %>
 
               <% if group[:category] %>
-                <a
-                  href="<%= about_component_path(category: group[:category], name: component[:name]) %>"
-                  data-turbo-frame="about-modal-content"
-                  class="hover:bg-base-200/60 flex items-center gap-4 px-5 py-2.5 transition-colors"
-                >
+                <%= link_to about_component_path(category: group[:category], name: component[:name]),
+                            class: "hover:bg-base-200/60 flex items-center gap-4 px-5 py-2.5 transition-colors",
+                            data: { turbo_frame: "about-modal-content" } do %>
                   <%= label %>
 
                   <i class="fa-solid fa-chevron-right text-base-content/30 shrink-0 text-xs"></i>
-                </a>
+                <% end %>
               <% else %>
                 <div class="flex items-center gap-4 px-5 py-2.5"><%= label %></div>
               <% end %>

@@ -81,14 +81,12 @@
               class="tooltip tooltip-right tooltip-warning font-normal"
               data-tip="<%= t('configurations.show.incomplete') %>"
             >
-              <a
-                href="<%= datasources_path %>"
-                class="hover:underline"
-                aria-label="<%= t('configurations.show.incomplete') %>"
-                data-turbo-frame="_top"
-              >
+              <%= link_to datasources_path,
+                          class: "hover:underline",
+                          aria: { label: t('configurations.show.incomplete') },
+                          data: { turbo_frame: "_top" } do %>
                 <i class="fa-solid fa-triangle-exclamation text-warning"></i>
-              </a>
+              <% end %>
             </span>
           <% end %>
         </div>
@@ -262,14 +260,12 @@
         <% end %>
         <div id="<%= dom_id %>-logs" class="tooltip tooltip-info" data-tip="<%= t('.logs') %>">
           <% if logs_available? %>
-            <a
-              href="<%= service_log_path(service_name) %>"
-              data-turbo-frame="log-modal-content"
-              class="btn btn-ghost btn-sm btn-square"
-              aria-label="<%= t('.logs') %>"
-            >
+            <%= link_to service_log_path(service_name),
+                        class: "btn btn-ghost btn-sm btn-square",
+                        data: { turbo_frame: "log-modal-content" },
+                        aria: { label: t('.logs') } do %>
               <i class="fa-solid fa-file-lines"></i>
-            </a>
+            <% end %>
           <% else %>
             <span
               class="btn btn-ghost btn-sm btn-square btn-disabled"

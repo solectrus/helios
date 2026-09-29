@@ -1,3 +1,5 @@
+framework: actionview
+
 # Applies to both formatter and linter (additive to Herb's defaults).
 # public/ holds the unmodified Rails error page templates.
 # coverage/ holds a generated report of several megabytes. `bin/herb analyze .`
@@ -23,20 +25,12 @@ formatter:
 
 linter:
   rules:
-    # False positive: `>` is standard Stimulus action syntax (e.g. click->controller#method)
-    html-no-unescaped-entities:
-      enabled: false
-    # False positive: content_for :title, t('.title') is standard Rails usage (side effect, not unused)
-    erb-no-unused-expressions:
-      enabled: false
     # CSP is not enabled, so script nonces are not applicable
     html-require-script-nonce:
       enabled: false
-    # False positive in 0.9.6: flags enclosing `<% if/unless %>` blocks
-    # whenever a `link_to`/`button_to` appears inside them
-    actionview-no-silent-helper:
+    # False positive: `render` receives ViewComponent instances, not records
+    # with a partial. An array of components cannot be collection-rendered.
+    actionview-no-implicit-partial:
       enabled: false
-    # False positive in 0.11.0: flags every form helper inside a block helper
-    # like `turbo_frame_tag` or `render ... do` (marcoroth/herb#2708)
-    html-no-nested-forms:
+    actionview-prefer-collection-render:
       enabled: false

@@ -120,17 +120,17 @@
       </header>
 
       <article>
-        <p><strong><%= @target ? t('.moved_heading') : t('.heading') %></strong></p>
+        <p><strong><%= @target_url ? t('.moved_heading') : t('.heading') %></strong></p>
 
-        <% if @target %>
-          <p><a href="<%= @target %>"><%= @target %></a></p>
+        <% if @target_url %>
+          <p><%= link_to @target_url, @target_url %></p>
         <% end %>
 
         <p><span class="spinner"></span></p>
       </article>
     </main>
 
-    <% unless @target %>
+    <% unless @target_url %>
       <script>
         (function() {
           var oldBootId = <%= raw @boot_id.to_s.to_json %>;

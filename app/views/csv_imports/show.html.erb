@@ -39,13 +39,13 @@
       <%= render CsvImportProgress::Component.new(state: :running, progress: @progress) %>
     <% elsif @upload_error %>
       <%# Upload validation error wins over stale success/error state from a previous run %>
-      <%= render "form", upload_error: @upload_error, unavailable_reason: @unavailable_reason %>
+      <%= render "csv_imports/form", upload_error: @upload_error, unavailable_reason: @unavailable_reason %>
     <% elsif @error_message %>
       <%= render CsvImportProgress::Component.new(state: :failed, error_message: @error_message) %>
     <% elsif @success_count %>
       <%= render CsvImportProgress::Component.new(state: :succeeded, success_count: @success_count) %>
     <% else %>
-      <%= render "form", upload_error: @upload_error, unavailable_reason: @unavailable_reason %>
+      <%= render "csv_imports/form", upload_error: @upload_error, unavailable_reason: @unavailable_reason %>
     <% end %>
   <% end %>
 <% end %>
