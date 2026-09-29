@@ -155,8 +155,17 @@ module Configurations
     def save_section(data)
       return if loopback_app_host?(data)
       return if unknown_proxy_network?(data)
+      return if collector_measurement_taken?(data)
 
       persist_setting(data)
+    end
+
+    # SENEC, Forecast and Tibber carry a measurement of their own. A section
+    # that is switched off writes nothing.
+    def collector_measurement_taken?(data)
+      return false unless SensorMappings::DEFAULT_MEASUREMENTS.key?(setting) && data['enabled'] != false
+
+      influx_target_taken?(setting, data, redirect_target)
     end
 
     # A network name nothing on this host answers to. Compose refuses to start

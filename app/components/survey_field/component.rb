@@ -23,7 +23,11 @@ module SurveyField
     end
 
     def write_check_url
-      helpers.configuration_write_check_path(owner: "sensor:#{@sensor_name}") if @setting == 'sensor'
+      if @setting == 'sensor'
+        helpers.configuration_write_check_path(owner: "sensor:#{@sensor_name}")
+      elsif SensorMappings::DEFAULT_MEASUREMENTS.key?(@setting)
+        helpers.configuration_write_check_path(owner: @setting)
+      end
     end
 
     def initial_data_json

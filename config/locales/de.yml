@@ -518,6 +518,8 @@ de:
       title: 'Sensoren'
     errors:
       mqtt_name_in_use: 'Änderung nicht möglich, der MQTT-Name wird gelesen von: %{names}'
+      measurement_reserved: 'Das Measurement „%{measurement}“ gehört „%{name}“. Dort darf nichts anderes hineinschreiben.'
+      measurement_taken: 'In das Measurement „%{measurement}“ schreibt bereits ein anderer Sensor oder ein anderes Gerät. „%{name}“ braucht ein eigenes Measurement.'
       shelly_measurement_taken: 'In das Measurement „%{measurement}“ schreibt bereits ein anderer Sensor oder ein anderes Gerät. Jedes Shelly-Gerät braucht ein eigenes Measurement.'
       influx_target_taken: 'In „%{target}“ schreibt bereits ein anderer Sensor oder ein anderes Gerät. Beide würden sich gegenseitig überschreiben.'
       invalid_influx_name: 'Nicht gespeichert. "%{name}" ist als Name nicht zulässig: kein Komma, kein Doppelpunkt, kein Unterstrich am Anfang.'

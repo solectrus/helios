@@ -5,13 +5,30 @@ class SensorMappings
   FIXED_SOURCES = %w[senec forecast].freeze
 
   # What a fixed-source collector writes into when nothing tells it otherwise.
-  # Both names are the compiled-in default of the collector itself, capital F
+  # Each name is the compiled-in default of the collector itself, capital F
   # included (see Import::ConfigurationImporter::ForecastExtractor#measurement
   # for the source it is taken from).
   DEFAULT_MEASUREMENTS = {
     'senec' => 'SENEC',
     'forecast' => 'Forecast',
+    'tibber' => 'Prices',
   }.freeze
+
+  # Collectors that own their measurement alone. Nothing else may write into
+  # it, whichever field. SENEC is not one of them: it leaves a field to
+  # another writer through SENEC_IGNORE.
+  EXCLUSIVE_SOURCES = %w[forecast tibber].freeze
+
+  # Every field senec-collector writes (SolectrusRecord::KEYS in
+  # github.com/solectrus/senec-collector, without the timestamp). SENEC_IGNORE
+  # takes only these: the collector refuses to start on any other name.
+  SENEC_WRITTEN_FIELDS = %w[
+    case_temp inverter_power mpp1_power mpp2_power mpp3_power power_ratio house_power
+    bat_power_plus bat_power_minus bat_fuel_charge bat_charge_current bat_voltage
+    wallbox_charge_power wallbox_charge_power0 wallbox_charge_power1 wallbox_charge_power2 wallbox_charge_power3
+    ev_connected grid_power_plus grid_power_minus current_state current_state_code current_state_ok
+    application_version response_duration
+  ].freeze
 
   # Each mapping is [measurement, field].
 

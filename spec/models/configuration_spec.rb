@@ -975,6 +975,22 @@ RSpec.describe Configuration do
         expect(config.senec_ignore_fields).to eq(['wallbox_charge_power'])
       end
 
+      it 'ignores a SENEC field that an MQTT mapping writes' do
+        config = described_class.current
+        config.add_mqtt_topic('topic' => 'wb/p', 'measurement' => 'SENEC', 'field' => 'wallbox_charge_power1')
+
+        expect(config.senec_ignore_fields).to eq(['wallbox_charge_power1'])
+      end
+
+      it 'keeps a field that a SENEC sensor reads, and leaves out a field SENEC does not write' do
+        config = described_class.current
+        config.update_sensor('inverter_power', { 'source' => 'senec' })
+        config.add_mqtt_topic('topic' => 'pv/p', 'measurement' => 'SENEC', 'field' => 'inverter_power')
+        config.add_mqtt_topic('topic' => 'hp/p', 'measurement' => 'SENEC', 'field' => 'heatpump_power')
+
+        expect(config.senec_ignore_fields).to eq([])
+      end
+
       it 'ignores disabled sensors — only an active source counts' do
         config = described_class.current
         config.update_sensor('wallbox_power', { 'source' => 'senec' })

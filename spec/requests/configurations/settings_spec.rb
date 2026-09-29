@@ -1114,9 +1114,30 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
         expect(save(mqtt('CUSTOM', 'temp'))).to be_empty
       end
 
-      it 'refuses MQTT on a field that SENEC writes' do
+      it 'refuses MQTT on a field that a SENEC sensor reads' do
         expect(save(mqtt('SENEC', 'inverter_power'))).to be_empty
-        expect(flash[:alert]).to include('SENEC:inverter_power')
+        expect(flash[:alert]).to eq(I18n.t('sensors.errors.influx_target_taken', target: 'SENEC:inverter_power'))
+      end
+
+      it 'accepts MQTT on a SENEC field no sensor reads, which SENEC then leaves out' do
+        expect(save(mqtt('SENEC', 'grid_power_plus'))).to be_present
+        expect(Configuration.current.senec_ignore).to eq('grid_power_plus')
+      end
+
+      it 'refuses MQTT in the measurement of Tibber' do
+        Configuration.current.update('tibber', { 'token' => 'xyz' })
+
+        expect(save(mqtt('Prices', 'amount'))).to be_empty
+      end
+
+      it 'refuses a SENEC sensor on a field another writer uses' do
+        Configuration.current.update_sensor('house_power', mqtt('SENEC', 'grid_power_plus'))
+
+        patch configuration_setting_path(setting: 'sensor', name: 'grid_import_power'), params: {
+          data: { 'source' => 'senec' }.to_json,
+        }
+
+        expect(flash[:alert]).to eq(I18n.t('sensors.errors.influx_target_taken', target: 'SENEC:grid_power_plus'))
       end
 
       {
@@ -1127,6 +1148,39 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
         it "accepts #{description}" do
           expect(save(instance_exec(&data))).to be_present
         end
+      end
+    end
+
+    describe 'a collector measurement that another writer uses' do
+      before { Configuration.current.add_mqtt_topic('topic' => 'x/y', 'measurement' => 'CUSTOM', 'field' => 'power') }
+
+      def save(setting, data)
+        patch configuration_setting_path(setting:, name: setting), params: { data: data.to_json }
+        Configuration.current
+      end
+
+      it 'refuses SENEC on it when a SENEC sensor reads a field there' do
+        Configuration.current.update_sensor('inverter_power', { 'source' => 'senec' })
+        Configuration.current.add_mqtt_topic('topic' => 'p/v', 'measurement' => 'CUSTOM', 'field' => 'inverter_power')
+
+        expect(save('senec', 'version' => 'v3', 'measurement' => 'CUSTOM').senec.measurement).to be_nil
+        expect(flash[:alert]).to eq(I18n.t('sensors.errors.influx_target_taken', target: 'CUSTOM:inverter_power'))
+      end
+
+      it 'accepts SENEC beside another writer on other fields' do
+        Configuration.current.update_sensor('inverter_power', { 'source' => 'senec' })
+
+        expect(save('senec', 'version' => 'v3', 'measurement' => 'CUSTOM').senec.measurement).to eq('CUSTOM')
+      end
+
+      it 'refuses Tibber on it' do
+        expect(save('tibber', 'enabled' => true, 'token' => 'xyz', 'measurement' => 'CUSTOM')).not_to be_tibber_enabled
+      end
+
+      it 'switches Tibber off without asking' do
+        save('tibber', 'enabled' => false, 'measurement' => 'CUSTOM')
+
+        expect(flash[:alert]).to be_nil
       end
     end
 

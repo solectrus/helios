@@ -7,7 +7,7 @@ module Export
         tibber = configuration.tibber
         env.add_section('Tibber collector')
         entry('TIBBER_TOKEN', tibber.token, 'Tibber API access token')
-        entry('INFLUX_MEASUREMENT_PRICES', tibber.measurement.presence || 'Prices',
+        entry('INFLUX_MEASUREMENT_PRICES', tibber.measurement.presence || SensorMappings::DEFAULT_MEASUREMENTS['tibber'],
               'InfluxDB measurement name for electricity prices')
       end
     end

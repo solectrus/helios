@@ -24,6 +24,12 @@ RSpec.describe 'Configurations::WriteChecks', :with_admin_password do
         .to eq(I18n.t('sensors.errors.influx_target_taken', target: 'CUSTOM:temp'))
     end
 
+    it 'refuses a collector section on a measurement another writer uses' do
+      expect(check('tibber', 'measurement' => 'CUSTOM'))
+        .to eq(I18n.t('sensors.errors.measurement_taken', measurement: 'CUSTOM',
+                                                          name: I18n.t('configurations.settings.tibber.title')))
+    end
+
     it 'answers nothing for a free measurement:field' do
       expect(check('mqtt_topic:new', 'measurement' => 'CUSTOM', 'field' => 'dryer')).to be_nil
     end

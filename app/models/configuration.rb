@@ -345,33 +345,33 @@ class Configuration # rubocop:disable Metrics/ClassLength
     (@data['sensors'] || {}).select { |_name, config| config['source'] == source.to_s }
   end
 
-  # SENEC native fields to exclude from InfluxDB (SENEC_IGNORE), derived from
-  # the sensor configuration. A field is ignored only on a genuine collision:
-  # the sensor is fed by another source (Shelly, MQTT, external, ...) AND that
-  # source writes into the *same* measurement:field the SENEC collector would
-  # use. This is the "switched vendor, kept the measurement" case — e.g. a new
-  # wallbox feeding SENEC:wallbox_charge_power so history and live data line up;
-  # the SENEC collector must then stop writing that field. A foreign source
-  # writing into a different measurement does not overlap, so nothing is
-  # ignored. Disabled sensors are left untouched — only an active source counts.
+  # SENEC fields to exclude from InfluxDB (SENEC_IGNORE): the fields another
+  # writer uses in the SENEC measurement, while no SENEC sensor reads them.
+  # This is the "switched vendor, kept the measurement" case, for example a
+  # new wallbox feeding SENEC:wallbox_charge_power so history and live data
+  # line up. An external sensor counts as such a writer, because HELIOS does
+  # not know who writes its data.
   def senec_ignore_fields
-    senec_measurement = senec.measurement.presence || SensorMappings::DEFAULT_MEASUREMENTS['senec']
+    _, measurement, read = influx_write('senec', senec)
+    claimed = influx_writes(except: nil).flat_map do |writer, other_measurement, fields|
+      writer != 'senec' && other_measurement == measurement ? Array(fields) : []
+    end
+    SensorMappings::SENEC_WRITTEN_FIELDS & (claimed + external_fields(measurement) - read)
+  end
 
-    SensorMappings::SENEC_DEFAULTS.filter_map do |sensor_name, (_measurement, senec_field)|
-      senec_field if foreign_sensor_collides?(sensor_name, senec_measurement, senec_field)
+  # The fields that external sensors read in `measurement`.
+  def external_fields(measurement)
+    sensors_with_source('external').filter_map do |name, config|
+      mapping = SensorMappings.mapping_for(name, Data.wrap(config), source_measurement: nil).to_s
+      mapping.delete_prefix("#{measurement}:") if mapping.start_with?("#{measurement}:")
     end
   end
 
-  # True when sensor_name is fed by a non-SENEC source that writes into the
-  # exact measurement:field the SENEC collector would use itself.
-  def foreign_sensor_collides?(sensor_name, senec_measurement, senec_field)
-    config = sensor_config(sensor_name)
-    source = config.source.to_s
-    return false if source.blank? || source == 'senec'
-
-    measurement = config.measurement.presence || SensorMappings.default_measurement(sensor_name, source)
-    field = config.field.presence || SensorMappings.default_field(sensor_name, source)
-    measurement == senec_measurement && field == senec_field
+  # The fields the SENEC sensors read, which the collector must keep writing.
+  def senec_read_fields
+    sensors_with_source('senec').map do |name, config|
+      SensorMappings.mapping_for(name, Data.wrap(config), source_measurement: nil).split(':', 2).last
+    end
   end
 
   # Comma-separated form for the SENEC_IGNORE env var.
@@ -1075,18 +1075,24 @@ class Configuration # rubocop:disable Metrics/ClassLength
     end
   end
 
-  # The [measurement, field] that `config`, saved as `owner`, would write into
-  # while another sensor, Shelly device or MQTT mapping already writes there.
-  # Two writers on one measurement:field overwrite each other. The field is
-  # nil for a Shelly device, which writes all its fields.
+  # Why `config`, saved as `owner`, cannot write where it would, as
+  # [reason, measurement, detail], or nil. Two writers on one
+  # measurement:field overwrite each other. SENEC, Forecast and Tibber own
+  # their measurement alone, and a Shelly device writes all its fields. SENEC
+  # keeps only the fields its sensors read and leaves the rest to others.
+  #
+  # :reserved - the measurement belongs to the collector `detail` names
+  # :taken    - `config` needs the whole measurement, another writer is there
+  # :shelly   - a Shelly device needs all its fields, another writer uses one
+  # :field    - another writer uses the field `detail`
   def influx_write_conflict(owner, config)
-    device, measurement, fields = influx_write(owner, config)
+    writer, measurement, fields = influx_write(owner, config)
     return unless measurement
 
-    taken = influx_writes(except: owner).any? do |other_device, other_measurement, other_fields|
-      other_measurement == measurement && fields.intersect?(other_fields) && (device.nil? || other_device != device)
+    rival = influx_writes(except: owner).find do |other_writer, other_measurement, other_fields|
+      other_writer != writer && other_measurement == measurement && fields_overlap?(fields, other_fields)
     end
-    [measurement, (fields.first if fields.one?)] if taken
+    influx_conflict_reason(writer, measurement, fields, rival) if rival
   end
 
   # What the collector of a fixed source writes into. Nothing else has a
@@ -1304,37 +1310,71 @@ class Configuration # rubocop:disable Metrics/ClassLength
     ],
   }.freeze
 
+  # The collector behind a standalone entry on /datasources.
+  INFLUX_ENTRY_SOURCES = { 'shelly_device' => 'shelly', 'mqtt_topic' => 'mqtt' }.freeze
+  private_constant :INFLUX_ENTRY_SOURCES
+
   private
 
-  # One [device, measurement, fields] per sensor, standalone Shelly device and
-  # MQTT mapping, except `except`. All sensors of one Shelly device count as
-  # one writer, because the device writes all its fields at once.
+  # One [writer, measurement, fields] per sensor, standalone Shelly device,
+  # MQTT mapping and the Tibber collector, except `except`. The SENEC and
+  # Forecast collectors run exactly when a sensor reads them, so their sensors
+  # stand for them. All sensors of one collector or Shelly device count as one
+  # writer.
   def influx_writes(except:)
     owners = enabled_sensors.map { ["sensor:#{it}", @data['sensors'][it]] } +
              shelly_devices.map.with_index { |config, i| ["shelly_device:#{i}", config] } +
              mqtt_topics.map.with_index { |config, i| ["mqtt_topic:#{i}", config] }
+    owners << ['tibber', tibber] if tibber_enabled?
     owners.filter_map { |owner, config| influx_write(owner, config) unless owner == except }
   end
 
-  # `owner` is "sensor:<name>", "shelly_device:<index>" or "mqtt_topic:<index>".
-  # The device is nil for anything but Shelly. Nil for what no collector of
-  # HELIOS writes, like an external sensor.
+  # `owner` is "sensor:<name>", "shelly_device:<index>", "mqtt_topic:<index>"
+  # or the section of a collector with a measurement of its own, like
+  # "senec". Fields are nil for a collector that claims the whole
+  # measurement. Nil for what no collector of HELIOS writes, like an external
+  # sensor.
   def influx_write(owner, config)
     kind, name = owner.split(':', 2)
-    source = { 'shelly_device' => 'shelly', 'mqtt_topic' => 'mqtt' }.fetch(kind) { config['source'].to_s }
+    source = kind == 'sensor' ? config['source'].to_s : INFLUX_ENTRY_SOURCES.fetch(kind, kind)
     return if source.in?(['', 'external']) || config['skip_write']
 
-    mapping = if kind == 'sensor'
-                SensorMappings.mapping_for(name, Data.wrap(config), source_measurement: source_measurement(source))
-              else
-                "#{config['measurement']}:#{config['field']}"
-              end
-    measurement, field = mapping.split(':', 2)
-    return if measurement.blank?
-    return [nil, measurement, [field]] unless source == 'shelly'
+    measurement, field = influx_mapping(kind, name, source, config).split(':', 2)
+    influx_writer(owner, source, measurement, field, config) if measurement.present?
+  end
+
+  # A field is nil for the SENEC section, which stands for all its sensors.
+  def influx_writer(owner, source, measurement, field, config)
+    return [source, measurement, nil] if source.in?(SensorMappings::EXCLUSIVE_SOURCES)
+    return ['senec', measurement, field ? [field] : senec_read_fields] if source == 'senec'
+    return [owner, measurement, [field]] unless source == 'shelly'
 
     device = config.values_at('shelly_host', 'host', 'shelly_device_id', 'device_id').compact_blank.first
     ["shelly:#{device}", measurement, SensorMappings::SHELLY_WRITTEN_FIELDS]
+  end
+
+  def influx_conflict_reason(writer, measurement, fields, (other_writer, _, other_fields))
+    return [:reserved, measurement, other_writer] if other_writer.in?(SensorMappings::EXCLUSIVE_SOURCES)
+    return [:taken, measurement, writer] unless fields
+    return [:shelly, measurement] if writer.start_with?('shelly:')
+
+    [:field, measurement, fields.intersection(other_fields).first]
+  end
+
+  # Nil fields stand for the whole measurement.
+  def fields_overlap?(fields, other_fields)
+    fields.nil? || other_fields.nil? || fields.intersect?(other_fields)
+  end
+
+  def influx_mapping(kind, name, source, config)
+    case kind
+    when 'sensor'
+      SensorMappings.mapping_for(name, Data.wrap(config), source_measurement: source_measurement(source))
+    when *SensorMappings::DEFAULT_MEASUREMENTS.keys
+      config['measurement'].presence || SensorMappings::DEFAULT_MEASUREMENTS[kind]
+    else
+      "#{config['measurement']}:#{config['field']}"
+    end
   end
 
   # `_unmanaged.services` as it sits in the YAML, empty when the stack
