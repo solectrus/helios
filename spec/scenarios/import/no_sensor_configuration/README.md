@@ -23,8 +23,9 @@ fallbacks).
   become `volume_path` entries under `postgresql`, `influxdb`, `redis`.
 - **`FRAME_ANCESTORS` with a URL value** (`https://192.168.178.10:8123`) —
   tests quoted-string handling in `.env`.
-- No Shelly collector in `compose.yaml`, despite `SHELLY_HOST` being set —
-  `shelly:` block is imported but no device list.
+- **Shelly collector beside MQTT in one measurement.** The collector writes
+  its own fields into `musterhaus-pv-messung`, the MQTT sensors write other
+  fields there. The import keeps it as a standalone device.
 - **`INFLUX_EXCLUDE_FROM_HOUSE_POWER=HEATPUMP_POWER`** carried through to
   `heatpump_power.exclude_from_house_power: true` even though the heat pump
   is `source: external`.

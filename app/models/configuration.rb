@@ -449,14 +449,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   end
 
   # Enable/update a sensor. Returns true if data changed.
-  #
-  # `prune: false` defers shadowed-device cleanup to the caller — the batch
-  # importer persists sensors in alphabetical order, so a shadowing sensor
-  # (e.g. mqtt `heatpump_heating_power`) can land before the Shelly sensor
-  # that keeps the device alive (`heatpump_power`); pruning per sensor would
-  # then drop a device the later sensor still needs. The importer prunes once
-  # after the full batch instead.
-  def update_sensor(name, data, prune: true) # rubocop:disable Naming/PredicateMethod
+  def update_sensor(name, data) # rubocop:disable Naming/PredicateMethod
     @data['sensors'] ||= {}
     raw = data.is_a?(Data) ? data.to_h : data
     sanitized = sanitize_sensor_data(raw, name)
@@ -465,7 +458,6 @@ class Configuration # rubocop:disable Metrics/ClassLength
     rename_mapping_name!(sensor_mqtt_name(name), sanitized['mqtt_name'])
     @data['sensors'][name.to_s] = sanitized
     save!
-    prune_shadowed_shelly_devices! if prune
     true
   end
 
@@ -626,37 +618,19 @@ class Configuration # rubocop:disable Metrics/ClassLength
     write_shelly_devices(list)
   end
 
-  # Measurements already produced by a HELIOS-managed collector other than
-  # Shelly. A Shelly device targeting one of these would be a duplicate
-  # writer — `source: external` is excluded on purpose, since the external
-  # writer may well be the shelly-collector itself.
-  def shadowing_measurements
-    shadowing_sources = SOURCE_CONFIGS - %w[shelly]
-    (@data['sensors'] || {}).each_value.filter_map do |config|
-      config['measurement'] if shadowing_sources.include?(config['source'])
-    end.to_set
-  end
-
-  # Measurements still consumed by a `source: shelly` sensor. A device feeding
-  # one of these must survive even when another collector writes the same
-  # measurement into a different field — SOLECTRUS lets several collectors
-  # share a measurement (e.g. a Shelly power sensor and an MQTT heating-power
-  # sensor both writing `heatpump`).
-  def shelly_consumed_measurements
-    (@data['sensors'] || {}).each_value.filter_map do |config|
-      config['measurement'] if config['source'] == 'shelly'
-    end.to_set
-  end
-
-  # Shelly devices whose measurement another collector already writes and that
-  # no Shelly sensor still consumes — stale leftovers from moving the consuming
-  # sensor to a different source.
+  # Shelly devices that write where a sensor of another collector writes:
+  # stale leftovers from moving the consuming sensor to a different source.
+  # Shelly and external sensors do not count, since the external writer may
+  # well be the shelly-collector itself.
   def shadowed_shelly_devices
-    shadowing = shadowing_measurements
-    consumed = shelly_consumed_measurements
-    shelly_devices.select do |device|
-      measurement = device['measurement']
-      shadowing.include?(measurement) && consumed.exclude?(measurement)
+    writes = (@data['sensors'] || {}).slice(*enabled_sensors).filter_map do |name, config|
+      influx_write("sensor:#{name}", config) unless config['source'] == 'shelly'
+    end
+    shelly_devices.select.with_index do |device, i|
+      _, measurement, fields = influx_write("shelly_device:#{i}", device)
+      writes.any? do |_, other_measurement, other_fields|
+        other_measurement == measurement && fields_overlap?(fields, other_fields)
+      end
     end
   end
 

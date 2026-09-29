@@ -194,6 +194,35 @@ services:
         max-file: '3'
 
   # +-----------------------------------------------------------+
+  # |  Shelly Collector — Reads data from Shelly energy meters  |
+  # +-----------------------------------------------------------+
+  #
+  shelly-collector:
+    image: ghcr.io/solectrus/shelly-collector:latest
+    environment:
+    - TZ
+    - INFLUX_BUCKET
+    - INFLUX_HOST=influxdb
+    - INFLUX_MEASUREMENT
+    - INFLUX_ORG
+    - INFLUX_PORT=8086
+    - INFLUX_SCHEMA=http
+    - INFLUX_TOKEN=${INFLUX_TOKEN_WRITE}
+    - SHELLY_HOST
+    - SHELLY_INTERVAL
+    labels:
+    - com.centurylinklabs.watchtower.scope=solectrus
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  # +-----------------------------------------------------------+
   # |  MQTT Collector — Receives sensor data via MQTT protocol  |
   # +-----------------------------------------------------------+
   #

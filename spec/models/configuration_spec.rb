@@ -436,35 +436,16 @@ RSpec.describe Configuration do
       expect(config.prune_shadowed_shelly_devices!).to be(false)
       expect(config.shelly_devices.pluck('measurement')).to eq(%w[heatpump])
     end
-  end
 
-  describe '#update_sensor pruning shadowed Shelly devices' do
-    it 'drops a Shelly device once its measurement moves to another source' do
+    it 'keeps a device when another collector writes another field of its measurement' do
       with_config_yaml(
-        'shelly' => {
-          'connection' => 'local',
-          'devices' => [{ 'name' => 'oven', 'host' => 'oven.local', 'measurement' => 'oven' }],
+        'shelly' => { 'devices' => [{ 'name' => 'heatpump', 'host' => 'hp.local', 'measurement' => 'heatpump' }] },
+        'sensors' => {
+          'heatpump_heating_power' => { 'source' => 'mqtt', 'measurement' => 'heatpump', 'field' => 'heating_power' },
         },
       )
-      config = described_class.current
 
-      config.update_sensor('custom_power_01', { 'source' => 'mqtt', 'measurement' => 'oven', 'field' => 'power' })
-
-      expect(config.shelly_devices).to be_empty
-    end
-
-    it 'leaves Shelly devices intact when the saved sensor does not shadow them' do
-      with_config_yaml(
-        'shelly' => {
-          'connection' => 'local',
-          'devices' => [{ 'name' => 'oven', 'host' => 'oven.local', 'measurement' => 'oven' }],
-        },
-      )
-      config = described_class.current
-
-      config.update_sensor('custom_power_01', { 'source' => 'mqtt', 'measurement' => 'attic', 'field' => 'power' })
-
-      expect(config.shelly_devices.pluck('measurement')).to eq(%w[oven])
+      expect(described_class.current.prune_shadowed_shelly_devices!).to be(false)
     end
   end
 
