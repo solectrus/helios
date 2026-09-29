@@ -40,13 +40,6 @@ module InfluxNameValidation
   end
 
   def influx_target_message(owner, data)
-    reason, measurement, detail = Configuration.current.influx_write_conflict(owner, data)
-
-    case reason
-    when :reserved, :taken
-      t("sensors.errors.measurement_#{reason}", measurement:, name: t("configurations.settings.#{detail}.title"))
-    when :shelly then t('sensors.errors.shelly_measurement_taken', measurement:)
-    when :field then t('sensors.errors.influx_target_taken', target: "#{measurement}:#{detail}")
-    end
+    InfluxWriteConflict.message(Configuration.current, owner, data)
   end
 end

@@ -33,6 +33,30 @@ RSpec.describe SensorRow::Component, type: :component do
     end
   end
 
+  # An import or an older release can store two Shelly devices on one
+  # measurement. The row names the collision, the form alone would stay quiet
+  # until someone opens it.
+  describe 'the write conflict warning' do
+    let(:sensor_name) { 'custom_power_04' }
+
+    def shelly(host)
+      { 'source' => 'shelly', 'measurement' => 'CUSTOM', 'field' => 'power', 'shelly_host' => host }
+    end
+
+    before { Configuration.current.update_sensor('custom_power_04', shelly('10.0.0.1')) }
+
+    it 'names a Shelly device that shares the measurement' do
+      Configuration.current.update_sensor('custom_power_05', shelly('10.0.0.2'))
+
+      expect(rendered.css('[data-write-conflict]')).to be_present
+      expect(rendered).to have_text(I18n.t('sensors.errors.shelly_measurement_taken', measurement: 'CUSTOM'))
+    end
+
+    it 'stays away while the sensor writes alone' do
+      expect(rendered.css('[data-write-conflict]')).to be_empty
+    end
+  end
+
   # house_power is what the dashboard subtracts the excluded consumers from,
   # so the row names them.
   describe 'the house-power exclusion hint' do

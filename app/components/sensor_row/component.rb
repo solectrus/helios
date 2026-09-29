@@ -96,6 +96,14 @@ module SensorRow
       I18n.t('sensors.ingest_endpoint_hint_port', port: Export::IngestEndpoint::PORT)
     end
 
+    # A collision saved before HELIOS refused it, or brought in by an import.
+    # The form refuses to save the sensor until it writes elsewhere.
+    def write_conflict
+      return unless enabled?
+
+      @write_conflict ||= InfluxWriteConflict.message(configuration, "sensor:#{sensor_name}", sensor_config)
+    end
+
     def unit
       SensorRegistry.unit_for(sensor_name)
     end
