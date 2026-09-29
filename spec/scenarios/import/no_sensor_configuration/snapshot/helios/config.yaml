@@ -20,7 +20,7 @@ postgresql:
   password: XXXXXX
   volume_path: "/volume1/docker/solectrus/postgresql"
 influxdb:
-  bucket: klushygel-pv
+  bucket: musterhaus-pv
   image: influxdb:2.7-alpine
   org: solectrus
   password: XXXXXXX
@@ -54,49 +54,49 @@ mqtt:
   mqtt_password: lXXXXX
   mqtt_port: '1883'
   mqtt_ssl: 'false'
-  mqtt_username: thomas
+  mqtt_username: mqttuser
 shelly:
   connection: local
   interval: '5'
 sensors:
   battery_charging_power:
     field: bat_power_plus
-    measurement: klushygel-pv-messung
+    measurement: musterhaus-pv-messung
     mqtt_formula: IF({value} < 0, -{value}, 0)
     mqtt_payload_type: integer
     mqtt_topic: evcc/site/batteryPower
     source: mqtt
   battery_discharging_power:
     field: bat_power_minus
-    measurement: klushygel-pv-messung
+    measurement: musterhaus-pv-messung
     mqtt_formula: IF({value} > 0, {value}, 0)
     mqtt_payload_type: integer
     mqtt_topic: evcc/site/batteryPower
     source: mqtt
   battery_soc:
     field: bat_fuel_charge
-    measurement: klushygel-pv-messung
+    measurement: musterhaus-pv-messung
     mqtt_payload_type: float
     mqtt_topic: evcc/site/batterySoc
     source: mqtt
   case_temp:
     field: case_temp
-    measurement: klushygel-pv-messung
+    measurement: musterhaus-pv-messung
     source: external
   grid_export_limit:
     field: power_ratio
-    measurement: klushygel-pv-messung
+    measurement: musterhaus-pv-messung
     source: external
   grid_export_power:
     field: grid_power_minus
-    measurement: klushygel-pv-messung
+    measurement: musterhaus-pv-messung
     mqtt_formula: IF({value} < 0, -{value}, 0)
     mqtt_payload_type: integer
     mqtt_topic: evcc/site/gridPower
     source: mqtt
   grid_import_power:
     field: grid_power_plus
-    measurement: klushygel-pv-messung
+    measurement: musterhaus-pv-messung
     mqtt_formula: IF({value} > 0, {value}, 0)
     mqtt_payload_type: integer
     mqtt_topic: evcc/site/gridPower
@@ -104,17 +104,17 @@ sensors:
   heatpump_power:
     exclude_from_house_power: true
     field: heatpump_power
-    measurement: klushygel-pv-messung
+    measurement: musterhaus-pv-messung
     source: external
   house_power:
     field: house_power
-    measurement: klushygel-pv-messung
+    measurement: musterhaus-pv-messung
     mqtt_payload_type: integer
     mqtt_topic: evcc/site/homePower
     source: mqtt
   inverter_power:
     field: inverter_power
-    measurement: klushygel-pv-messung
+    measurement: musterhaus-pv-messung
     mqtt_payload_type: integer
     mqtt_topic: evcc/site/pvPower
     source: mqtt
@@ -122,15 +122,15 @@ sensors:
     source: forecast
   system_status:
     field: current_state
-    measurement: klushygel-pv-messung
+    measurement: musterhaus-pv-messung
     source: external
   system_status_ok:
     field: current_state_ok
-    measurement: klushygel-pv-messung
+    measurement: musterhaus-pv-messung
     source: external
   wallbox_power:
     field: wallbox_charge_power
-    measurement: klushygel-pv-messung
+    measurement: musterhaus-pv-messung
     mqtt_payload_type: integer
     mqtt_topic: evcc/loadpoints/1/chargePower
     source: mqtt
