@@ -248,12 +248,12 @@
       "name": "p_shelly_phase",
       "visibleIf": "{source} = 'shelly'",
       "title": {
-        "de": "Shelly: Phase",
-        "default": "Shelly: Phase"
+        "de": "Shelly: Kanal",
+        "default": "Shelly: Channel"
       },
       "description": {
-        "de": "Bitte beachten: Einige Shelly-Modelle messen nur die Summe",
-        "default": "Note: some Shelly models only measure the total"
+        "de": "Bei einem Drehstromzähler (3EM) ist jeder Kanal eine Phase. Für ein Gerät mit nur einem Kanal passt die Summe.",
+        "default": "On a three-phase meter (3EM), each channel is a phase. For a single-channel device, Total fits."
       },
       "elements": [
         {
@@ -275,22 +275,22 @@
             {
               "value": "power_a",
               "text": {
-                "de": "Phase A",
-                "default": "Phase A"
+                "de": "Kanal 1 (Phase A)",
+                "default": "Channel 1 (Phase A)"
               }
             },
             {
               "value": "power_b",
               "text": {
-                "de": "Phase B",
-                "default": "Phase B"
+                "de": "Kanal 2 (Phase B)",
+                "default": "Channel 2 (Phase B)"
               }
             },
             {
               "value": "power_c",
               "text": {
-                "de": "Phase C",
-                "default": "Phase C"
+                "de": "Kanal 3 (Phase C)",
+                "default": "Channel 3 (Phase C)"
               }
             }
           ]
