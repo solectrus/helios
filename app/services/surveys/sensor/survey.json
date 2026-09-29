@@ -292,6 +292,13 @@
                 "de": "Kanal 3 (Phase C)",
                 "default": "Channel 3 (Phase C)"
               }
+            },
+            {
+              "value": "power_d",
+              "text": {
+                "de": "Kanal 4",
+                "default": "Channel 4"
+              }
             }
           ]
         }

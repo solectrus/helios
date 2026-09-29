@@ -17,8 +17,9 @@ module Import
       # github.com/solectrus/shelly-collector). 1- and 2-channel devices fill
       # only `power`; 3-phase devices (Pro 3EM, Plus 3EM) additionally fill
       # `power_a`/`power_b`/`power_c` so a single Shelly can feed multiple
-      # HELIOS sensors from one measurement.
-      SHELLY_POWER_FIELDS = %w[power power_a power_b power_c].freeze
+      # HELIOS sensors from one measurement. A 4-channel switch (Pro 4PM) fills
+      # `power_d` for its fourth channel.
+      SHELLY_POWER_FIELDS = %w[power power_a power_b power_c power_d].freeze
 
       # Wildcard bind addresses are equivalent to "no explicit bind" — HELIOS
       # already defaults to all interfaces, so they name no host IP.

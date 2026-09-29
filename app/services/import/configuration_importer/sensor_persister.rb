@@ -83,8 +83,9 @@ module Import
       end
 
       # A shelly device claims a sensor whose mapping is
-      # `{measurement}:{power|power_a|power_b|power_c}` — `power` for the
-      # device total, the per-phase fields for 3-phase Shellys (Pro/Plus 3EM).
+      # `{measurement}:{power|power_a|...|power_d}` — `power` for the device
+      # total, the per-phase fields for 3-phase Shellys (Pro/Plus 3EM) and the
+      # fourth channel of a Pro 4PM.
       # Restricting to this fixed set avoids stealing unrelated sensors that
       # an mqtt-collector writes into the same measurement.
       def shelly_device_provides_sensor?(sensor_name)
