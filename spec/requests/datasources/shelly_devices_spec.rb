@@ -82,6 +82,15 @@ RSpec.describe 'Datasources::ShellyDevices', :with_admin_password do
       expect(Configuration.current.shelly_devices).to contain_exactly(local_device)
     end
 
+    it 'refuses the measurement of another device' do
+      Configuration.current.add_shelly_device(local_device)
+
+      post datasources_shelly_devices_path, params: { data: local_device.merge('host' => 'shelly-2.local').to_json }
+
+      expect(flash[:alert]).to eq(I18n.t('sensors.errors.shelly_measurement_taken', measurement: 'shelly_hp'))
+      expect(Configuration.current.shelly_devices.size).to eq(1)
+    end
+
     it 'keeps a measurement holding a space, which line protocol escapes' do
       post datasources_shelly_devices_path, params: { data: local_device.merge('measurement' => 'PQ Inverter').to_json }
 
@@ -112,6 +121,12 @@ RSpec.describe 'Datasources::ShellyDevices', :with_admin_password do
 
       expect(response).to redirect_to(datasources_shelly_devices_path)
       expect(Configuration.current.shelly_device(0)['measurement']).to eq('shelly_hp_v2')
+    end
+
+    it 'keeps its own measurement on a new host' do
+      patch datasources_shelly_device_path(0), params: { data: local_device.merge('host' => 'shelly-2.local').to_json }
+
+      expect(Configuration.current.shelly_device(0)['host']).to eq('shelly-2.local')
     end
 
     it 'leaves the stored device untouched when the new measurement is refused' do

@@ -146,6 +146,7 @@ module Configurations
       # actually gets stored is judged.
       strip_fixed_source_mapping!(data)
       return if invalid_influx_name?(data, redirect_target)
+      return if influx_target_taken?("sensor:#{sensor_name}", data, redirect_target)
 
       @configuration.update_sensor(sensor_name, data)
       @configuration.auto_enable_senec_sensors! if data['source'] == 'senec'

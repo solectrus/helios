@@ -1075,6 +1075,20 @@ class Configuration # rubocop:disable Metrics/ClassLength
     end
   end
 
+  # The [measurement, field] that `config`, saved as `owner`, would write into
+  # while another sensor, Shelly device or MQTT mapping already writes there.
+  # Two writers on one measurement:field overwrite each other. The field is
+  # nil for a Shelly device, which writes all its fields.
+  def influx_write_conflict(owner, config)
+    device, measurement, fields = influx_write(owner, config)
+    return unless measurement
+
+    taken = influx_writes(except: owner).any? do |other_device, other_measurement, other_fields|
+      other_measurement == measurement && fields.intersect?(other_fields) && (device.nil? || other_device != device)
+    end
+    [measurement, (fields.first if fields.one?)] if taken
+  end
+
   # What the collector of a fixed source writes into. Nothing else has a
   # measurement of its own: every other source carries it per sensor.
   def source_measurement(source)
@@ -1291,6 +1305,37 @@ class Configuration # rubocop:disable Metrics/ClassLength
   }.freeze
 
   private
+
+  # One [device, measurement, fields] per sensor, standalone Shelly device and
+  # MQTT mapping, except `except`. All sensors of one Shelly device count as
+  # one writer, because the device writes all its fields at once.
+  def influx_writes(except:)
+    owners = enabled_sensors.map { ["sensor:#{it}", @data['sensors'][it]] } +
+             shelly_devices.map.with_index { |config, i| ["shelly_device:#{i}", config] } +
+             mqtt_topics.map.with_index { |config, i| ["mqtt_topic:#{i}", config] }
+    owners.filter_map { |owner, config| influx_write(owner, config) unless owner == except }
+  end
+
+  # `owner` is "sensor:<name>", "shelly_device:<index>" or "mqtt_topic:<index>".
+  # The device is nil for anything but Shelly. Nil for what no collector of
+  # HELIOS writes, like an external sensor.
+  def influx_write(owner, config)
+    kind, name = owner.split(':', 2)
+    source = { 'shelly_device' => 'shelly', 'mqtt_topic' => 'mqtt' }.fetch(kind) { config['source'].to_s }
+    return if source.in?(['', 'external']) || config['skip_write']
+
+    mapping = if kind == 'sensor'
+                SensorMappings.mapping_for(name, Data.wrap(config), source_measurement: source_measurement(source))
+              else
+                "#{config['measurement']}:#{config['field']}"
+              end
+    measurement, field = mapping.split(':', 2)
+    return if measurement.blank?
+    return [nil, measurement, [field]] unless source == 'shelly'
+
+    device = config.values_at('shelly_host', 'host', 'shelly_device_id', 'device_id').compact_blank.first
+    ["shelly:#{device}", measurement, SensorMappings::SHELLY_WRITTEN_FIELDS]
+  end
 
   # `_unmanaged.services` as it sits in the YAML, empty when the stack
   # preserves none. Deliberately not routed through #unmanaged: that wraps

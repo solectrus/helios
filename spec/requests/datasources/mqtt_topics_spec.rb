@@ -160,6 +160,23 @@ RSpec.describe 'Datasources::MqttTopics', :with_admin_password do
       expect(response).to redirect_to(datasources_mqtt_topics_path)
       expect(Configuration.current.mqtt_topics).to contain_exactly(basic_topic)
     end
+
+    it 'refuses a measurement:field that another mapping writes' do
+      Configuration.current.add_mqtt_topic(basic_topic)
+
+      post datasources_mqtt_topics_path, params: { data: basic_topic.merge('topic' => 'other/power').to_json }
+
+      expect(flash[:alert]).to include('house:power')
+      expect(Configuration.current.mqtt_topics.size).to eq(1)
+    end
+
+    it 'accepts a mapping that writes nothing' do
+      Configuration.current.add_mqtt_topic(basic_topic)
+
+      post datasources_mqtt_topics_path, params: { data: basic_topic.merge('skip_write' => true).to_json }
+
+      expect(Configuration.current.mqtt_topics.size).to eq(2)
+    end
   end
 
   describe 'PATCH /datasources/mqtt-topics/:id' do
@@ -172,6 +189,12 @@ RSpec.describe 'Datasources::MqttTopics', :with_admin_password do
 
       expect(response).to redirect_to(datasources_mqtt_topics_path)
       expect(Configuration.current.mqtt_topic(0)['field']).to eq('energy')
+    end
+
+    it 'accepts the measurement:field the topic writes itself' do
+      patch datasources_mqtt_topic_path(0), params: { data: basic_topic.merge('topic' => 'new/power').to_json }
+
+      expect(Configuration.current.mqtt_topic(0)['topic']).to eq('new/power')
     end
   end
 

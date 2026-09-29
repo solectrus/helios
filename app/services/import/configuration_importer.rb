@@ -388,7 +388,7 @@ module Import
     def shelly_sensor_claims_measurement?(measurement)
       return false if measurement.blank?
 
-      claims = SHELLY_POWER_FIELDS.map { |field| "#{measurement}:#{field}" }
+      claims = SensorMappings::SHELLY_POWER_FIELDS.map { |field| "#{measurement}:#{field}" }
       sensors_data.values.any? { |mapping| claims.include?(mapping.to_s) }
     end
 

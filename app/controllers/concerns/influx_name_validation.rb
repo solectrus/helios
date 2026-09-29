@@ -12,11 +12,7 @@ module InfluxNameValidation
   # caller stops without writing anything.
   def invalid_influx_name?(data, path)
     name = invalid_name(data)
-    return false unless name
-
-    flash[:alert] = t('sensors.errors.invalid_influx_name', name:)
-    redirect_to path
-    true
+    refused?(name && t('sensors.errors.invalid_influx_name', name:), path)
   end
 
   def invalid_name(data)
@@ -25,5 +21,32 @@ module InfluxNameValidation
 
     field = data['field']
     field if field.present? && !SensorMappings.valid_field?(field)
+  end
+
+  # Refuses a write into a measurement:field that another sensor, Shelly
+  # device or MQTT mapping already writes. The two would overwrite each other.
+  # The survey asks before it closes (see WriteChecksController), so this only
+  # catches a request that bypasses the UI.
+  def influx_target_taken?(owner, data, path)
+    refused?(influx_target_message(owner, data), path)
+  end
+
+  def refused?(message, path)
+    return false unless message
+
+    flash[:alert] = message
+    redirect_to path
+    true
+  end
+
+  def influx_target_message(owner, data)
+    measurement, field = Configuration.current.influx_write_conflict(owner, data)
+    return unless measurement
+
+    if field
+      t('sensors.errors.influx_target_taken', target: "#{measurement}:#{field}")
+    else
+      t('sensors.errors.shelly_measurement_taken', measurement:)
+    end
   end
 end

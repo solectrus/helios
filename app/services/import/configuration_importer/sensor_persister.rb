@@ -95,7 +95,7 @@ module Import
         @devices.any? do |device|
           next unless device[:data].values_at(*SOURCE_FIELDS).include?('shelly')
 
-          SHELLY_POWER_FIELDS.any? { |f| sensor_mapping == "#{device[:name]}:#{f}" }
+          SensorMappings::SHELLY_POWER_FIELDS.any? { |f| sensor_mapping == "#{device[:name]}:#{f}" }
         end
       end
 

@@ -41,6 +41,18 @@ class SensorMappings
   SENEC_TOTAL_FIELD = SENEC_DEFAULTS.dig('inverter_power', 1)
   SENEC_TOTAL_CAPABLE_SENSORS = %w[inverter_power_1 inverter_power_2 inverter_power_3].freeze
 
+  # InfluxDB power fields the shelly-collector writes (per
+  # github.com/solectrus/shelly-collector). 1- and 2-channel devices fill
+  # only `power`; 3-phase devices (Pro 3EM, Plus 3EM) additionally fill
+  # `power_a`/`power_b`/`power_c` so a single Shelly can feed multiple
+  # HELIOS sensors from one measurement. A 4-channel switch (Pro 4PM) fills
+  # `power_d` for its fourth channel.
+  SHELLY_POWER_FIELDS = %w[power power_a power_b power_c power_d].freeze
+
+  # Every field shelly-collector writes for a device, whichever one a sensor
+  # reads.
+  SHELLY_WRITTEN_FIELDS = (SHELLY_POWER_FIELDS + %w[temp response_duration]).freeze
+
   # Forecast collector mappings.
   # Field names must match exactly what the forecast-collector writes to
   # InfluxDB: `watt`, `watt_clearsky` and `temp` (not `temperature`).

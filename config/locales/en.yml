@@ -542,6 +542,8 @@ en:
       title: 'Sensors'
     errors:
       mqtt_name_in_use: 'Cannot be changed, the MQTT name is read by: %{names}'
+      shelly_measurement_taken: 'Another sensor or device already writes to the measurement "%{measurement}". Each Shelly device needs a measurement of its own.'
+      influx_target_taken: 'Another sensor or device already writes to "%{target}". The two would overwrite each other.'
       invalid_influx_name: 'Not saved. "%{name}" is not a valid name: no comma, no colon, no leading underscore.'
     inverter_power: 'Total PV generation'
     inverter_power_1: 'PV generator 1'

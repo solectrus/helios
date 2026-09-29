@@ -24,6 +24,7 @@ module Datasources
       data = survey_data
       return unless data
       return if invalid_influx_name?(data, datasources_shelly_devices_path)
+      return if influx_target_taken?('shelly_device:new', data, datasources_shelly_devices_path)
 
       @configuration.add_shelly_device(data)
       Orchestration::StackStatus.mark_config_changed!
@@ -34,6 +35,7 @@ module Datasources
       data = survey_data
       return unless data
       return if invalid_influx_name?(data, datasources_shelly_devices_path)
+      return if influx_target_taken?("shelly_device:#{params[:id]}", data, datasources_shelly_devices_path)
 
       @configuration.update_shelly_device(params[:id], data)
       Orchestration::StackStatus.mark_config_changed!

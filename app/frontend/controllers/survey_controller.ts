@@ -40,6 +40,7 @@ export default class extends Controller<HTMLElement> {
     fieldName: { type: String, default: 'survey_data' },
     initialData: { type: Object, default: {} },
     connectionTestUrl: { type: String, default: '' },
+    writeCheckUrl: { type: String, default: '' },
   };
 
   declare containerTarget: HTMLElement;
@@ -51,6 +52,7 @@ export default class extends Controller<HTMLElement> {
   declare fieldNameValue: string;
   declare initialDataValue: Record<string, unknown>;
   declare connectionTestUrlValue: string;
+  declare writeCheckUrlValue: string;
 
   private survey: Model | null = null;
   private applyingPageChange = false;
@@ -197,6 +199,23 @@ export default class extends Controller<HTMLElement> {
         browserHostOffer,
         window.location.hostname,
       );
+    }
+
+    // Before leaving the page that asks for the measurement, the server tells
+    // whether another writer already uses that measurement:field. The error
+    // shows at the question, and the survey stays open.
+    if (this.writeCheckUrlValue) {
+      this.survey.onServerValidateQuestions.add((sender, options) => {
+        if (!('measurement' in options.data)) {
+          options.complete();
+          return;
+        }
+
+        void this.checkWrite(sender.data).then((message) => {
+          if (message) options.errors.measurement = message;
+          options.complete();
+        });
+      });
     }
 
     // Handle survey completing (fires before DOM changes)
@@ -376,24 +395,15 @@ export default class extends Controller<HTMLElement> {
     );
 
     try {
-      const response = await fetch(this.connectionTestUrlValue, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-          'X-CSRF-Token': this.csrfToken(),
-        },
-        body: JSON.stringify({
-          target: testTarget,
-          check: testCheck,
-          values,
-        }),
-      });
-      const result = (await response.json()) as {
+      const result = await this.postJson<{
         ok: boolean;
         state?: ConnectionStatusState;
         message: string;
-      };
+      }>(this.connectionTestUrlValue, {
+        target: testTarget,
+        check: testCheck,
+        values,
+      });
       // A probe may answer that it could not settle the question. That is a
       // note, not a failure, so it gets its own state instead of the red one.
       const state = result.state ?? (result.ok ? 'ok' : 'error');
@@ -438,6 +448,35 @@ export default class extends Controller<HTMLElement> {
         status.className = 'connection-test__status';
         status.textContent = '';
       });
+  }
+
+  // A failed request lets the page pass: saving checks the same again and
+  // refuses there.
+  private async checkWrite(
+    data: Record<string, unknown>,
+  ): Promise<string | null> {
+    try {
+      const result = await this.postJson<{ message: string | null }>(
+        this.writeCheckUrlValue,
+        { data: JSON.stringify(data) },
+      );
+      return result.message;
+    } catch {
+      return null;
+    }
+  }
+
+  private async postJson<T>(url: string, body: unknown): Promise<T> {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        'X-CSRF-Token': this.csrfToken(),
+      },
+      body: JSON.stringify(body),
+    });
+    return (await response.json()) as T;
   }
 
   private csrfToken(): string {

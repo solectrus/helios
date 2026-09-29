@@ -22,6 +22,10 @@ module SurveyField
       end
     end
 
+    def write_check_url
+      helpers.configuration_write_check_path(owner: "sensor:#{@sensor_name}") if @setting == 'sensor'
+    end
+
     def initial_data_json
       @data.presence&.to_json || '{}'
     end

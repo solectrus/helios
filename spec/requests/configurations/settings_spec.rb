@@ -1086,6 +1086,50 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(config.sensor_config('inverter_power').source).to eq('mqtt')
     end
 
+    describe 'a measurement:field that another writer writes' do
+      before do
+        Configuration.current.update_sensor('custom_power_04', shelly('10.0.0.1'))
+        Configuration.current.update_sensor('inverter_power', { 'source' => 'senec' })
+      end
+
+      def shelly(host, field = 'power', measurement: 'CUSTOM')
+        { 'source' => 'shelly', 'measurement' => measurement, 'field' => field, 'shelly_host' => host }
+      end
+
+      def mqtt(measurement, field)
+        { 'source' => 'mqtt', 'measurement' => measurement, 'field' => field, 'mqtt_topic' => 'a/b' }
+      end
+
+      def save(data)
+        patch configuration_setting_path(setting: 'sensor', name: 'custom_power_05'), params: { data: data.to_json }
+        Configuration.current.sensor_config('custom_power_05').to_h
+      end
+
+      it 'refuses a second Shelly device on the same measurement' do
+        expect(save(shelly('10.0.0.2', 'power_a'))).to be_empty
+        expect(flash[:alert]).to eq(I18n.t('sensors.errors.shelly_measurement_taken', measurement: 'CUSTOM'))
+      end
+
+      it 'refuses MQTT on a field that Shelly writes' do
+        expect(save(mqtt('CUSTOM', 'temp'))).to be_empty
+      end
+
+      it 'refuses MQTT on a field that SENEC writes' do
+        expect(save(mqtt('SENEC', 'inverter_power'))).to be_empty
+        expect(flash[:alert]).to include('SENEC:inverter_power')
+      end
+
+      {
+        'another phase of the same Shelly device' => -> { shelly('10.0.0.1', 'power_a') },
+        'another spelling of the measurement' => -> { shelly('10.0.0.2', measurement: 'custom') },
+        'MQTT beside Shelly in another field' => -> { mqtt('CUSTOM', 'dryer') },
+      }.each do |description, data|
+        it "accepts #{description}" do
+          expect(save(instance_exec(&data))).to be_present
+        end
+      end
+    end
+
     # Switching the source hides the whole MQTT page, so SurveyJS clears the
     # name and the survey's own mandatory-field rule cannot bite.
     it 'refuses a source change that would drop an MQTT name a formula reads' do

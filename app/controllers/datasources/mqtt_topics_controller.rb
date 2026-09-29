@@ -3,6 +3,7 @@ module Datasources
     include SurveyData
     include TurboFrameOnly
     include SensorReadings
+    include InfluxNameValidation
 
     before_action :set_configuration
     before_action :require_turbo_frame, only: %i[new edit]
@@ -27,6 +28,7 @@ module Datasources
     def create
       data = survey_data
       return unless data
+      return if influx_target_taken?('mqtt_topic:new', data, datasources_mqtt_topics_path)
 
       @configuration.add_mqtt_topic(data)
       Orchestration::StackStatus.mark_config_changed!
@@ -36,6 +38,7 @@ module Datasources
     def update
       data = survey_data
       return unless data
+      return if influx_target_taken?("mqtt_topic:#{params[:id]}", data, datasources_mqtt_topics_path)
 
       @configuration.update_mqtt_topic(params[:id], data)
       Orchestration::StackStatus.mark_config_changed!
