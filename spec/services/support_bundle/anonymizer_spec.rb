@@ -639,6 +639,18 @@ RSpec.describe SupportBundle::Anonymizer do
         .to eq("writing to bucket #{bucket_mask} org #{org_mask} failed\n")
     end
 
+    it 'masks each entry of a per-device SHELLY_PASSWORD list in logs' do
+      redactions = described_class.value_redactions("SHELLY_PASSWORD=shelly-pw,,shelly-pw,other-pw\n")
+      log = 'data: {"shelly_password":"shelly-pw"} {"password":"other-pw"}'
+
+      result = described_class.anonymize_text(log, redactions)
+
+      expect(result).to eq(
+        "data: {\"shelly_password\":\"#{described_class.mask('shelly-pw')}\"} " \
+        "{\"password\":\"#{described_class.mask('other-pw')}\"}",
+      )
+    end
+
     it 'masks only the public FQDN entries of a SHELLY_HOST list in logs' do
       env = "SHELLY_HOST=192.168.1.10,solar.example.com\n"
       redactions = described_class.value_redactions(env)

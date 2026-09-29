@@ -79,8 +79,8 @@ RSpec/ExampleLength:
 
 # Scenario-driven cross-class specs and system specs use string descriptions:
 # a scenario spec covers a whole pipeline, system specs describe end-to-end UI
-# flows, and log_silencing_spec covers middleware configuration — none of them
-# a single class.
+# flows, and log_silencing_spec and parameter_filtering_spec cover logging
+# configuration — none of them a single class.
 # A scenario spec states its expectations through ScenarioSnapshot, which
 # compares the produced stack against the recorded one or records it anew.
 RSpec/NoExpectationExample:
@@ -98,6 +98,7 @@ RSpec/DescribeClass:
     - spec/services/surveys/measurement_round_trip_spec.rb
     - spec/services/import/configuration_importer/**/*_spec.rb
     - spec/requests/log_silencing_spec.rb
+    - spec/requests/parameter_filtering_spec.rb
     - spec/system/**/*_spec.rb
 
 # Integration specs manage expensive external resources (Docker containers,

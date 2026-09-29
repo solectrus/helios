@@ -379,6 +379,12 @@ module SupportBundle
     def build_redactions(key, value)
       return coord_redactions(value) if COORD_KEYS.include?(key)
       return host_redactions(value) if HOST_KEYS.include?(key)
+      return value.split(',').map(&:strip).uniq.flat_map { |part| secret_redactions(part) } if key == 'SHELLY_PASSWORD'
+
+      secret_redactions(value)
+    end
+
+    def secret_redactions(value)
       return [] if value.length < LOG_REDACTION_MIN_LENGTH || safe_value?(value)
 
       [[value, mask(value)]]
