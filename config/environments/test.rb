@@ -20,6 +20,9 @@ Rails.application.configure do
     'cache-control' => 'public, max-age=3600',
   }
 
+  # A static key, so parallel workers don't race on generating tmp/local_secret.txt.
+  config.secret_key_base = 'test-secret-key-base'
+
   # Show full error reports.
   config.consider_all_requests_local = true
   config.cache_store = :null_store
