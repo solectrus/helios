@@ -14,7 +14,7 @@ Regenerate with `bin/rake licenses:generate`.
 
 ## Base Image
 
-The official HELIOS Docker image runs on Alpine Linux 3.24.1 and
+The official HELIOS Docker image runs on Alpine Linux 3.24.2 and
 contains the Ruby interpreter and the Docker CLI. The table below lists the
 packages in that image, read from its Alpine package database. Alpine ships
 no license text inside the image. The license text and the source code of
