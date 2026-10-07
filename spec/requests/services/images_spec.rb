@@ -1,7 +1,6 @@
 RSpec.describe 'Services::Images', :with_admin_password do
   before do
     login
-    allow(ComposeJob).to receive(:perform_later)
     allow(Orchestration::StackStatus).to receive(:mark_starting!)
   end
 
@@ -27,10 +26,11 @@ RSpec.describe 'Services::Images', :with_admin_password do
       with_startable_config_yaml('influxdb' => { 'image' => 'influxdb:2.5-alpine' })
       install_compose_with('influxdb', 'influxdb:2.5-alpine')
 
-      patch service_image_path(service_id: 'influxdb'), as: :turbo_stream
+      expect do
+        patch service_image_path(service_id: 'influxdb'), as: :turbo_stream
+      end.to have_enqueued_job(ComposeJob).with(:recreate, 'influxdb')
 
       expect(Configuration.current.influxdb.image).to eq(DockerImages.current(:INFLUXDB))
-      expect(ComposeJob).to have_received(:perform_later).with(:recreate, 'influxdb')
       expect(response).to have_http_status(:ok)
     end
 
@@ -47,9 +47,8 @@ RSpec.describe 'Services::Images', :with_admin_password do
       with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' })
       install_compose_with('helios', 'ghcr.io/solectrus/helios:develop')
 
-      patch service_image_path(service_id: 'helios'), as: :turbo_stream
+      expect { patch service_image_path(service_id: 'helios'), as: :turbo_stream }.not_to have_enqueued_job(ComposeJob)
 
-      expect(ComposeJob).not_to have_received(:perform_later)
       expect(response).to have_http_status(:forbidden)
     end
 
@@ -61,10 +60,11 @@ RSpec.describe 'Services::Images', :with_admin_password do
       )
       install_compose_with('mosquitto', 'eclipse-mosquitto:2')
 
-      patch service_image_path(service_id: 'mosquitto'), as: :turbo_stream
+      expect do
+        patch service_image_path(service_id: 'mosquitto'), as: :turbo_stream
+      end.not_to have_enqueued_job(ComposeJob)
 
       expect(Configuration.current.mosquitto.image).to be_nil
-      expect(ComposeJob).not_to have_received(:perform_later)
       expect(response).to have_http_status(:unprocessable_content)
     end
 
@@ -72,9 +72,8 @@ RSpec.describe 'Services::Images', :with_admin_password do
       with_startable_config_yaml
       install_compose_with('foobar', 'foobar:1.0')
 
-      patch service_image_path(service_id: 'foobar'), as: :turbo_stream
+      expect { patch service_image_path(service_id: 'foobar'), as: :turbo_stream }.not_to have_enqueued_job(ComposeJob)
 
-      expect(ComposeJob).not_to have_received(:perform_later)
       expect(response).to have_http_status(:unprocessable_content)
     end
   end

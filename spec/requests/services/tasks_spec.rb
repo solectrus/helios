@@ -2,7 +2,6 @@ RSpec.describe 'Services::Tasks', :with_admin_password do
   before do
     login
     with_startable_config_yaml
-    allow(ComposeJob).to receive(:perform_later)
   end
 
   def mock_compose_service(name)
@@ -40,9 +39,10 @@ RSpec.describe 'Services::Tasks', :with_admin_password do
       mock_compose_service('influxdb')
       allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(nil)
 
-      post service_task_path(service_id: 'influxdb')
+      expect do
+        post service_task_path(service_id: 'influxdb')
+      end.to have_enqueued_job(ComposeJob).with(:start, 'influxdb')
 
-      expect(ComposeJob).to have_received(:perform_later).with(:start, 'influxdb')
       expect(response).to redirect_to(services_path)
     end
 
@@ -50,9 +50,10 @@ RSpec.describe 'Services::Tasks', :with_admin_password do
       mock_compose_service('influxdb')
       allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(nil)
 
-      post service_task_path(service_id: 'influxdb'), as: :turbo_stream
+      expect do
+        post service_task_path(service_id: 'influxdb'), as: :turbo_stream
+      end.to have_enqueued_job(ComposeJob).with(:start, 'influxdb')
 
-      expect(ComposeJob).to have_received(:perform_later).with(:start, 'influxdb')
       expect(response).to have_http_status(:ok)
       expect(response.media_type).to eq('text/vnd.turbo-stream.html')
     end
@@ -61,9 +62,8 @@ RSpec.describe 'Services::Tasks', :with_admin_password do
       mock_compose_service('helios')
       allow(Orchestration::Container).to receive(:find).with('helios').and_return(nil)
 
-      post service_task_path(service_id: 'helios')
+      expect { post service_task_path(service_id: 'helios') }.not_to have_enqueued_job(ComposeJob)
 
-      expect(ComposeJob).not_to have_received(:perform_later)
       expect(response).to have_http_status(:forbidden)
     end
 
@@ -72,9 +72,8 @@ RSpec.describe 'Services::Tasks', :with_admin_password do
       mock_compose_service('influxdb')
       allow(Orchestration::Container).to receive(:find).with('influxdb').and_return(nil)
 
-      post service_task_path(service_id: 'influxdb')
+      expect { post service_task_path(service_id: 'influxdb') }.not_to have_enqueued_job(ComposeJob)
 
-      expect(ComposeJob).not_to have_received(:perform_later)
       expect(response).to redirect_to(services_path)
       expect(flash[:alert]).to be_present
     end
@@ -86,9 +85,8 @@ RSpec.describe 'Services::Tasks', :with_admin_password do
       container = mock_container('redis', running: true)
       allow(Orchestration::Container).to receive(:find).with('redis').and_return(container)
 
-      patch service_task_path(service_id: 'redis')
+      expect { patch service_task_path(service_id: 'redis') }.to have_enqueued_job(ComposeJob).with(:recreate, 'redis')
 
-      expect(ComposeJob).to have_received(:perform_later).with(:recreate, 'redis')
       expect(response).to redirect_to(services_path)
     end
 
@@ -97,9 +95,10 @@ RSpec.describe 'Services::Tasks', :with_admin_password do
       container = mock_container('helios', running: true)
       allow(Orchestration::Container).to receive(:find).with('helios').and_return(container)
 
-      patch service_task_path(service_id: 'helios')
+      expect do
+        patch service_task_path(service_id: 'helios')
+      end.to have_enqueued_job(ComposeJob).with(:self_recreate, 'helios')
 
-      expect(ComposeJob).to have_received(:perform_later).with(:self_recreate, 'helios')
       expect(response).to redirect_to(restarting_path(boot_id: Rails.application.config.boot_id))
     end
   end
@@ -110,18 +109,18 @@ RSpec.describe 'Services::Tasks', :with_admin_password do
       container = mock_container('postgresql', running: true)
       allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(container)
 
-      delete service_task_path(service_id: 'postgresql')
+      expect do
+        delete service_task_path(service_id: 'postgresql')
+      end.to have_enqueued_job(ComposeJob).with(:stop, 'postgresql')
 
-      expect(ComposeJob).to have_received(:perform_later).with(:stop, 'postgresql')
       expect(response).to redirect_to(services_path)
     end
 
     it 'rejects stop on helios service' do
       mock_compose_service('helios')
 
-      delete service_task_path(service_id: 'helios')
+      expect { delete service_task_path(service_id: 'helios') }.not_to have_enqueued_job(ComposeJob)
 
-      expect(ComposeJob).not_to have_received(:perform_later)
       expect(response).to have_http_status(:forbidden)
     end
   end

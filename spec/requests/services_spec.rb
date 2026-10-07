@@ -198,13 +198,13 @@ RSpec.describe 'Services', :with_admin_password do
         )
         stub_compose('dozzle' => { 'image' => 'amir20/dozzle:latest' })
         allow(Orchestration::Container).to receive(:find).with('dozzle').and_return(nil)
-        allow(ServiceRemovalJob).to receive(:perform_later)
       end
 
       it 'enqueues a removal job and renders a pending row' do
-        delete service_path('dozzle'), as: :turbo_stream
+        expect do
+          delete service_path('dozzle'), as: :turbo_stream
+        end.to have_enqueued_job(ServiceRemovalJob).with('dozzle')
 
-        expect(ServiceRemovalJob).to have_received(:perform_later).with('dozzle')
         expect(Orchestration::PendingOperations.get('dozzle')).to eq(:remove)
         expect(response).to have_http_status(:ok)
         expect(response.media_type).to eq('text/vnd.turbo-stream.html')
@@ -214,15 +214,10 @@ RSpec.describe 'Services', :with_admin_password do
     context 'with a managed service' do
       before do
         stub_compose('postgresql' => { 'image' => 'postgres:18-alpine' })
-        allow(ServiceRemovalJob).to receive(:perform_later)
-        allow(OrphanedStopJob).to receive(:perform_later)
       end
 
       it 'is forbidden' do
-        delete service_path('postgresql'), as: :turbo_stream
-
-        expect(ServiceRemovalJob).not_to have_received(:perform_later)
-        expect(OrphanedStopJob).not_to have_received(:perform_later)
+        expect { delete service_path('postgresql'), as: :turbo_stream }.not_to have_enqueued_job
         expect(response).to have_http_status(:forbidden)
       end
     end
@@ -230,16 +225,16 @@ RSpec.describe 'Services', :with_admin_password do
     context 'with an orphaned container' do
       before do
         stub_compose # no matching compose service
-        allow(OrphanedStopJob).to receive(:perform_later)
       end
 
       it 'stops and removes the orphaned container' do
         allow(Orchestration::Container).to receive(:find)
           .with('old-service').and_return(mock_container('old-service'))
 
-        delete service_path('old-service'), as: :turbo_stream
+        expect do
+          delete service_path('old-service'), as: :turbo_stream
+        end.to have_enqueued_job(OrphanedStopJob).with('old-service')
 
-        expect(OrphanedStopJob).to have_received(:perform_later).with('old-service')
         expect(response).to have_http_status(:ok)
         expect(response.media_type).to eq('text/vnd.turbo-stream.html')
       end
@@ -248,9 +243,8 @@ RSpec.describe 'Services', :with_admin_password do
         allow(Orchestration::Container).to receive(:find)
           .with('old-service').and_return(mock_container('old-service', stoppable: false))
 
-        delete service_path('old-service')
+        expect { delete service_path('old-service') }.not_to have_enqueued_job(OrphanedStopJob)
 
-        expect(OrphanedStopJob).not_to have_received(:perform_later)
         expect(response).to redirect_to(services_path)
       end
     end

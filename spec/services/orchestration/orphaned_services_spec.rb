@@ -190,31 +190,26 @@ RSpec.describe Orchestration::OrphanedServices do
       allow(Orchestration::Container).to receive(:all).and_return(
         [mock_container('postgresql', image: 'postgres:15-alpine'), orphan],
       )
-      allow(OrphanedStopJob).to receive(:perform_later)
     end
 
     it 'queues the removal of an orphan' do
-      described_class.prune!
-
-      expect(OrphanedStopJob).to have_received(:perform_later).with('db')
+      expect { described_class.prune! }.to have_enqueued_job(OrphanedStopJob).with('db')
     end
 
     # The job runs asynchronously, so the container is still listed on the
     # next refresh — and refresh runs on every Docker event.
     it 'queues it only once while the removal is still pending' do
-      2.times { described_class.prune! }
-
-      expect(OrphanedStopJob).to have_received(:perform_later).once
+      expect { 2.times { described_class.prune! } }.to have_enqueued_job(OrphanedStopJob).once
     end
 
     # Without this a container that reappears under the same name right after
     # a removal would be ignored for as long as the claim lasts.
     it 'queues again once the removal has finished' do
-      described_class.prune!
-      Orchestration::PendingOperations.clear('db')
-      described_class.prune!
-
-      expect(OrphanedStopJob).to have_received(:perform_later).twice
+      expect do
+        described_class.prune!
+        Orchestration::PendingOperations.clear('db')
+        described_class.prune!
+      end.to have_enqueued_job(OrphanedStopJob).twice
     end
 
     # Before the setup is finished compose.yaml does not describe the stack,
@@ -223,22 +218,19 @@ RSpec.describe Orchestration::OrphanedServices do
       before { with_config_yaml }
 
       it 'queues nothing' do
-        described_class.prune!
-
-        expect(OrphanedStopJob).not_to have_received(:perform_later)
+        expect { described_class.prune! }.not_to have_enqueued_job(OrphanedStopJob)
       end
     end
   end
 
   describe '.remove!' do
-    before { allow(OrphanedStopJob).to receive(:perform_later) }
-
     # The Remove button and the sweep share the claim, so a click while a
     # sweep is running adds no second job for the same container.
     it 'queues the removal and holds the name' do
-      expect(described_class.remove!('db')).to be(true)
-      expect(described_class.remove!('db')).to be(false)
-      expect(OrphanedStopJob).to have_received(:perform_later).once
+      expect do
+        expect(described_class.remove!('db')).to be(true)
+        expect(described_class.remove!('db')).to be(false)
+      end.to have_enqueued_job(OrphanedStopJob).once
     end
 
     # Nothing runs the job's `ensure` when the queue refuses the job, so the
@@ -250,7 +242,7 @@ RSpec.describe Orchestration::OrphanedServices do
 
       expect { described_class.remove!('db') }.to raise_error(Concurrent::RejectedExecutionError)
 
-      allow(OrphanedStopJob).to receive(:perform_later)
+      allow(OrphanedStopJob).to receive(:perform_later).and_call_original
       expect(described_class.remove!('db')).to be(true)
     end
   end
