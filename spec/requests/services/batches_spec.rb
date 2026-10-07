@@ -2,7 +2,6 @@ RSpec.describe 'Services::Batches', :with_admin_password do
   before do
     login
     with_startable_config_yaml
-    allow(ComposeJob).to receive(:perform_later)
     # Reading the real answer needs Docker. Its own spec covers what it reads.
     allow(Orchestration::SelfPorts).to receive(:drifted?).and_return(false)
   end
@@ -54,9 +53,8 @@ RSpec.describe 'Services::Batches', :with_admin_password do
       mock_compose_services('influxdb', 'redis', 'dashboard')
       mock_containers('influxdb' => false, 'redis' => false, 'dashboard' => false)
 
-      post batch_path
+      expect { post batch_path }.to have_enqueued_job(ComposeJob).with(:up)
 
-      expect(ComposeJob).to have_received(:perform_later).with(:up)
       expect(response).to redirect_to(services_path)
     end
 
@@ -64,9 +62,8 @@ RSpec.describe 'Services::Batches', :with_admin_password do
       mock_compose_services('influxdb', 'redis')
       mock_containers('influxdb' => false, 'redis' => false)
 
-      post batch_path, as: :turbo_stream
+      expect { post batch_path, as: :turbo_stream }.to have_enqueued_job(ComposeJob).with(:up)
 
-      expect(ComposeJob).to have_received(:perform_later).with(:up)
       expect(response).to have_http_status(:ok)
       expect(response.media_type).to eq('text/vnd.turbo-stream.html')
     end
@@ -92,10 +89,9 @@ RSpec.describe 'Services::Batches', :with_admin_password do
       end
 
       it 'enqueues a converge that carries HELIOS' do
-        post batch_path
-
-        expect(ComposeJob).to have_received(:perform_later).with(:self_converge)
-        expect(ComposeJob).not_to have_received(:perform_later).with(:up)
+        expect { post batch_path }
+          .to have_enqueued_job(ComposeJob).exactly(:once)
+          .and have_enqueued_job(ComposeJob).with(:self_converge)
       end
 
       it 'sends the reader to the restart screen, told the address moves' do
@@ -126,9 +122,8 @@ RSpec.describe 'Services::Batches', :with_admin_password do
       end
 
       it 'starts nothing and names the network' do
-        post batch_path
+        expect { post batch_path }.not_to have_enqueued_job(ComposeJob)
 
-        expect(ComposeJob).not_to have_received(:perform_later)
         expect(flash[:alert]).to include('edge')
       end
 
@@ -153,18 +148,15 @@ RSpec.describe 'Services::Batches', :with_admin_password do
       end
 
       it 'starts the stack' do
-        post batch_path
-
-        expect(ComposeJob).to have_received(:perform_later).with(:up)
+        expect { post batch_path }.to have_enqueued_job(ComposeJob).with(:up)
       end
     end
 
     it 'is blocked while the configuration is incomplete' do
       with_config_yaml('system' => { 'timezone' => 'Europe/Berlin' }) # no sensor, so nothing to run
 
-      post batch_path
+      expect { post batch_path }.not_to have_enqueued_job(ComposeJob)
 
-      expect(ComposeJob).not_to have_received(:perform_later)
       expect(response).to redirect_to(services_path)
       expect(flash[:alert]).to be_present
     end
@@ -179,10 +171,9 @@ RSpec.describe 'Services::Batches', :with_admin_password do
       mock_compose_services('influxdb', 'redis')
       mock_containers('influxdb' => true, 'redis' => true)
 
-      delete batch_path
+      expect { delete batch_path }.to have_enqueued_job(ComposeJob).with(:down)
 
       expect(Orchestration::StackStatus).to have_received(:mark_stopping!)
-      expect(ComposeJob).to have_received(:perform_later).with(:down)
       expect(response).to redirect_to(services_path)
     end
 
@@ -190,10 +181,9 @@ RSpec.describe 'Services::Batches', :with_admin_password do
       mock_compose_services('influxdb', 'redis')
       mock_containers('influxdb' => true, 'redis' => true)
 
-      delete batch_path, as: :turbo_stream
+      expect { delete batch_path, as: :turbo_stream }.to have_enqueued_job(ComposeJob).with(:down)
 
       expect(Orchestration::StackStatus).to have_received(:mark_stopping!)
-      expect(ComposeJob).to have_received(:perform_later).with(:down)
       expect(response).to have_http_status(:ok)
       expect(response.media_type).to eq('text/vnd.turbo-stream.html')
     end

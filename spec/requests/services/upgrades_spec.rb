@@ -2,7 +2,6 @@ RSpec.describe 'Services::Upgrades', :with_admin_password do
   before do
     login
     with_startable_config_yaml
-    allow(PostgresqlUpgradeJob).to receive(:perform_later)
   end
 
   after { Orchestration::PendingOperations.clear_all }
@@ -45,9 +44,10 @@ RSpec.describe 'Services::Upgrades', :with_admin_password do
       allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(container)
       allow(Orchestration::PostgresqlUpgrade).to receive(:available?).and_return(true)
 
-      post service_upgrade_path(service_id: 'postgresql'), as: :turbo_stream
+      expect do
+        post service_upgrade_path(service_id: 'postgresql'), as: :turbo_stream
+      end.to have_enqueued_job(PostgresqlUpgradeJob)
 
-      expect(PostgresqlUpgradeJob).to have_received(:perform_later)
       expect(Orchestration::PendingOperations.get('postgresql')).to eq(:upgrade)
       expect(response).to have_http_status(:ok)
       expect(response.media_type).to eq('text/vnd.turbo-stream.html')
@@ -57,16 +57,14 @@ RSpec.describe 'Services::Upgrades', :with_admin_password do
       allow(Orchestration::Container).to receive(:find).with('postgresql').and_return(nil)
       allow(Orchestration::PostgresqlUpgrade).to receive(:available?).and_return(false)
 
-      post service_upgrade_path(service_id: 'postgresql')
+      expect { post service_upgrade_path(service_id: 'postgresql') }.not_to have_enqueued_job(PostgresqlUpgradeJob)
 
-      expect(PostgresqlUpgradeJob).not_to have_received(:perform_later)
       expect(response).to have_http_status(:not_found)
     end
 
     it 'returns 404 for non-postgresql services' do
-      post service_upgrade_path(service_id: 'redis')
+      expect { post service_upgrade_path(service_id: 'redis') }.not_to have_enqueued_job(PostgresqlUpgradeJob)
 
-      expect(PostgresqlUpgradeJob).not_to have_received(:perform_later)
       expect(response).to have_http_status(:not_found)
     end
   end

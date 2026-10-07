@@ -61,15 +61,11 @@ RSpec.describe PostgresqlUpgradeJob do
     end
 
     describe '.recover_later' do
-      before { allow(described_class).to receive(:perform_later) }
-
       it 'does nothing when no upgrade was interrupted' do
         allow(Orchestration::PostgresqlUpgrade).to receive(:interrupted?).and_return(false)
 
-        described_class.recover_later
-
         aggregate_failures do
-          expect(described_class).not_to have_received(:perform_later)
+          expect { described_class.recover_later }.not_to have_enqueued_job(described_class)
           expect(Orchestration::PendingOperations.get('postgresql')).to be_nil
         end
       end
@@ -88,10 +84,9 @@ RSpec.describe PostgresqlUpgradeJob do
       it 'marks the service pending and enqueues the recovery' do
         allow(Orchestration::PostgresqlUpgrade).to receive(:interrupted?).and_return(true)
 
-        described_class.recover_later
-
         aggregate_failures do
-          expect(described_class).to have_received(:perform_later).with(recover: true)
+          expect { described_class.recover_later }
+            .to have_enqueued_job(described_class).with(recover: true)
           expect(Orchestration::PendingOperations.get('postgresql')).to eq(:upgrade)
         end
       end
