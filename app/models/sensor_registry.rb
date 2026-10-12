@@ -29,11 +29,29 @@ class SensorRegistry
     house_power
   ].freeze
 
+  # The cars of an installation, numbered like the dashboard numbers them.
+  # Car 1 reads the variables without a number (INFLUX_SENSOR_CAR_ODOMETER),
+  # which every dashboard version accepts. Cars 2 to 5 carry their number
+  # (INFLUX_SENSOR_CAR_ODOMETER_2).
+  CAR_UNITS = {
+    'car_battery_soc' => '%',
+    'car_odometer' => 'km',
+    'car_range' => 'km',
+    'car_connected' => '',
+    'car_latitude' => '°',
+    'car_longitude' => '°',
+  }.freeze
+  CAR_SENSORS = (1..5).index_with do |number|
+    CAR_UNITS.keys.map { |role| number == 1 ? role : "#{role}_#{number}" }.freeze
+  end.freeze
+  CAR_ROLES = CAR_SENSORS.values.flat_map { |sensors| sensors.zip(CAR_UNITS.keys) }.to_h.freeze
+
   # Sensors carrying a yes/no value instead of a numeric measurement. They have
   # no physical unit, so the UI shows a "yes/no" hint in place of the unit.
-  BOOLEAN_SENSORS = %w[
-    system_status_ok
-    wallbox_car_connected
+  BOOLEAN_SENSORS = [
+    'system_status_ok',
+    'wallbox_car_connected',
+    *CAR_ROLES.filter_map { |name, role| name if role == 'car_connected' },
   ].freeze
 
   # Sensor groups for UI display
@@ -64,9 +82,7 @@ class SensorRegistry
       wallbox_power
       wallbox_car_connected
     ],
-    car: %w[
-      car_battery_soc
-    ],
+    **CAR_SENSORS.to_h { |number, sensors| [:"car_#{number}", sensors] },
     heatpump: %w[
       heatpump_power
       heatpump_heating_power
@@ -129,7 +145,7 @@ class SensorRegistry
     'wallbox_car_connected' => { unit: '', sources: %w[senec mqtt external] },
 
     # Car
-    'car_battery_soc' => { unit: '%', sources: %w[mqtt external] },
+    **CAR_ROLES.transform_values { |role| { unit: CAR_UNITS.fetch(role), sources: %w[mqtt external] } },
 
     # Heatpump
     'heatpump_power' => { unit: 'W', sources: %w[shelly mqtt external] },
@@ -174,6 +190,12 @@ class SensorRegistry
 
   def self.unit_for(sensor_name)
     SENSORS.dig(sensor_name, :unit) || ''
+  end
+
+  # The sensor of a car without the number of the car, for example
+  # car_odometer for car_odometer_2. nil for any other sensor.
+  def self.car_role(sensor_name)
+    CAR_ROLES[sensor_name]
   end
 
   def self.boolean?(sensor_name)

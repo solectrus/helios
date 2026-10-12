@@ -110,8 +110,12 @@ class SensorMappings
     'wallbox_power' => %w[wallbox power],
     'wallbox_car_connected' => %w[wallbox connected],
 
-    # Car
-    'car_battery_soc' => %w[car battery_soc],
+    # Car: the measurement takes the number of the car from the sensor name,
+    # car_odometer into `car` and car_odometer_2 into `car_2`, so two cars
+    # never share a field
+    **SensorRegistry::CAR_ROLES.to_h do |name, role|
+      [name, ["car#{name.delete_prefix(role)}", role.delete_prefix('car_')]]
+    end,
 
     # Heatpump
     'heatpump_power' => %w[heatpump power],

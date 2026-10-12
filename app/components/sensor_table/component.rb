@@ -31,7 +31,7 @@ module SensorTable
       grid: 'fa-plug',
       battery: 'fa-car-battery',
       wallbox: 'fa-charging-station',
-      car: 'fa-car',
+      **SensorRegistry::CAR_SENSORS.keys.to_h { |number| [:"car_#{number}", 'fa-car'] },
       heatpump: 'fa-fan',
       forecast: 'fa-cloud-sun',
       custom: 'fa-gauge',

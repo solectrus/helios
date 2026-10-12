@@ -536,12 +536,17 @@ module Import
             LEGACY_CONSUMED_ENV_KEYS +
             MqttExtractor::DEPRECATED_TOPIC_VARS.keys +
             MqttExtractor::DEPRECATED_SPLIT_VARS.keys +
-            SensorRegistry::SENSORS.keys.map { |s| "INFLUX_SENSOR_#{s.upcase}" } +
+            sensor_env_keys +
             forecast_indexed_env_keys +
             pvnode_indexed_env_keys +
             mqtt_mapping_env_keys +
             forecast_regenerated_env_keys
         ).to_set
+      end
+
+      # The numbered variables of car 1 come back without the number
+      def sensor_env_keys
+        (SensorRegistry::SENSORS.keys + SensorsExtractor::CAR_1_ALIASES.keys).map { |s| "INFLUX_SENSOR_#{s.upcase}" }
       end
 
       # Forecast knobs HELIOS rebuilds from forecast.* on every export —

@@ -342,6 +342,23 @@ RSpec.describe Import::ConfigurationImporter::MqttExtractor do
     end
   end
 
+  describe '#device_data for a car' do
+    subject(:extractor) { described_class.new(reader, { 'car_odometer_2' => 'car_2:odometer' }) }
+
+    let(:env) do
+      {
+        'MAPPING_0_TOPIC' => 'car2/odometer',
+        'MAPPING_0_MEASUREMENT' => 'car_2',
+        'MAPPING_0_FIELD' => 'odometer',
+        'MAPPING_0_TYPE' => 'float',
+      }
+    end
+
+    it 'infers a car from any of its sensors' do
+      expect(extractor.device_data).to contain_exactly(hash_including(type: 'car', name: 'car_2'))
+    end
+  end
+
   describe '#mappings with the write-behavior options of mqtt-collector 0.8' do
     let(:env) do
       {

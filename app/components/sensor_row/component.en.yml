@@ -1,0 +1,10 @@
+en:
+  in_development: 'In development'
+  in_development_hint: 'The evaluation of this sensor is planned for SOLECTRUS v1.4.'
+  car_roles:
+    car_battery_soc: 'Battery level'
+    car_odometer: 'Odometer'
+    car_range: 'Range'
+    car_connected: 'Plugged in'
+    car_latitude: 'Latitude'
+    car_longitude: 'Longitude'

@@ -3,6 +3,10 @@ module Import
     class SensorsExtractor
       include Helpers
 
+      # The dashboard also reads car 1 under its number (INFLUX_SENSOR_CAR_ODOMETER_1),
+      # and that variable wins over the one without. HELIOS imports it as car 1.
+      CAR_1_ALIASES = SensorRegistry::CAR_SENSORS.fetch(1).index_by { |name| "#{name}_1" }.freeze
+
       def initialize(reader, senec_measurement: nil, forecast_measurement: nil)
         @reader = reader
         @senec_measurement = senec_measurement
@@ -49,10 +53,20 @@ module Import
       # literal placeholders (e.g. `=false`, `=0`) that some stacks use to stub
       # disabled sensors before the dashboard manages them as DB settings.
       def collect_sensor_mappings(env)
-        env.select { |k, _| k.start_with?('INFLUX_SENSOR_') }
-           .compact_blank
-           .select { |_, v| well_formed_mapping?(v) }
-           .transform_keys { |k| k.delete_prefix('INFLUX_SENSOR_').downcase }
+        mappings = env.select { |k, _| k.start_with?('INFLUX_SENSOR_') }
+                      .compact_blank
+                      .select { |_, v| well_formed_mapping?(v) }
+                      .transform_keys { |k| k.delete_prefix('INFLUX_SENSOR_').downcase }
+        unnumber_first_car(mappings)
+      end
+
+      # The numbered variable of car 1 wins, as in the dashboard
+      def unnumber_first_car(mappings)
+        CAR_1_ALIASES.each do |numbered, name|
+          value = mappings.delete(numbered)
+          mappings[name] = value if value
+        end
+        mappings
       end
 
       def well_formed_mapping?(value)

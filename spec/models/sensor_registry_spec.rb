@@ -23,6 +23,12 @@ RSpec.describe SensorRegistry do
       expect(described_class.payload_type_for('wallbox_car_connected')).to eq('boolean')
     end
 
+    it 'returns the type of each car sensor' do
+      expect(described_class.payload_type_for('car_odometer')).to eq('float')
+      expect(described_class.payload_type_for('car_connected_3')).to eq('boolean')
+      expect(described_class.payload_type_for('car_longitude_5')).to eq('float')
+    end
+
     it 'returns text for a unit-less sensor that is not boolean' do
       expect(described_class.payload_type_for('system_status')).to eq('string')
     end
@@ -49,6 +55,13 @@ RSpec.describe SensorRegistry do
 
     it 'returns group for battery sensor' do
       expect(described_class.group_for('battery_soc')).to eq(:battery)
+    end
+
+    it 'puts car 1 without a number and the other cars with one into a group per car' do
+      expect(described_class.sensors_in_group('car_1')).to eq(
+        %w[car_battery_soc car_odometer car_range car_connected car_latitude car_longitude],
+      )
+      expect(described_class.group_for('car_range_5').to_s).to eq('car_5')
     end
 
     it 'returns nil for unknown sensor' do

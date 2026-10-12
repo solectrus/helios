@@ -22,8 +22,38 @@ RSpec.describe SensorRow::Component, type: :component do
     end
   end
 
+  context 'with a car sensor' do
+    let(:sensor_name) { 'car_odometer_2' }
+
+    it 'marks it as in development' do
+      expect(rendered.css('[data-in-development]').attr('aria-label').value).to eq('In development')
+    end
+
+    it 'says nothing for the battery level of car 1, which is older' do
+      row = render_inline(described_class.new(sensor_name: 'car_battery_soc', configuration: Configuration.current))
+
+      expect(row.css('[data-in-development]')).to be_empty
+    end
+
+    it 'names the role alone, as the group names the car' do
+      expect(rendered).to have_text('Odometer')
+      expect(rendered).to have_no_text(I18n.t('sensors.car_odometer_2'))
+    end
+  end
+
+  context 'with a coordinate' do
+    let(:sensor_name) { 'car_latitude_2' }
+    let(:reading) { Reading.new(value: 48.1371234, time: Time.zone.now) }
+
+    it 'renders it with five decimals' do
+      Configuration.current.update_sensor(sensor_name, { 'source' => 'mqtt' })
+
+      expect(rendered).to have_text('48.13712')
+    end
+  end
+
   context 'with a boolean reading' do
-    let(:sensor_name) { 'car_battery_soc' }
+    let(:sensor_name) { 'car_connected' }
     let(:reading) { Reading.new(value: 'true', time: Time.zone.now) }
 
     it 'renders a label instead of the raw value' do

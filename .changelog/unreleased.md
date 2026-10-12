@@ -10,6 +10,8 @@ Keep every section, an empty one included.
 
 ## New features
 
+- **Sensors for up to five electric cars.** Each car has its own group with odometer, range, battery level, plug state and location. The car evaluation of SOLECTRUS 1.4 reads these sensors. Older dashboard versions ignore them. (#570)
+
 ## Improvements
 
 ## Fixes

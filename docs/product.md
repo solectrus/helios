@@ -53,7 +53,7 @@ Scenarios A and B can coexist (e.g. SENEC collector for the inverter + ioBroker 
 
 ### Sensor Mapping
 
-- Registry of ~50 SOLECTRUS sensors (inverter / grid / battery / wallbox / car / heat pump / system / forecasts / 20 custom consumer slots) — see [`SensorRegistry::SENSORS`](../app/models/sensor_registry.rb).
+- Registry of ~75 SOLECTRUS sensors (inverter / grid / battery / wallbox / 5 cars / heat pump / system / forecasts / 20 custom consumer slots) — see [`SensorRegistry::SENSORS`](../app/models/sensor_registry.rb).
 - Each sensor is mapped to a `measurement:field` combination and written to `.env` as `INFLUX_SENSOR_*`.
 - Fresh installs are pre-filled with service defaults; existing installs are pre-filled from the current `.env`.
 - Live readings are shown in the mapping UI, queried from the running InfluxDB.

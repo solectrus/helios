@@ -56,11 +56,11 @@ module Import
 
       # Maps sensor names to the device type they indicate.
       # Sensors not listed here are either shared (forecast)
-      # or handled via pattern matching (inverter_power_*, custom_power_*).
+      # or handled via pattern matching (inverter_power_*, custom_power_*, car
+      # sensors).
       SENSOR_DEVICE_TYPE = {
         'wallbox_power' => 'wallbox',
         'wallbox_car_connected' => 'wallbox',
-        'car_battery_soc' => 'car',
         'heatpump_power' => 'heatpump',
         'heatpump_heating_power' => 'heatpump',
         'heatpump_status' => 'heatpump',
@@ -327,6 +327,7 @@ module Import
 
           return 'inverter' if sensor_name.match?(/\Ainverter_power(_\d)?\z/)
           return 'consumer' if sensor_name.match?(/\Acustom_power_\d{2}\z/)
+          return 'car' if SensorRegistry.car_role(sensor_name)
           return SENSOR_DEVICE_TYPE[sensor_name] if SENSOR_DEVICE_TYPE.key?(sensor_name)
         end
 

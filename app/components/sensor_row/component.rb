@@ -126,11 +126,23 @@ module SensorRow
     end
 
     # Prominent, human-readable label. Custom sensors prefer the user-supplied
-    # name and fall back to the generic "Consumer N" description.
+    # name and fall back to the generic "Consumer N" description. A car sensor
+    # names its role alone, because the group above names the car.
     def display_label
       return custom_name if custom_sensor? && custom_name
+      return t(".car_roles.#{car_role}") if car_role
 
       description
+    end
+
+    def car_role
+      SensorRegistry.car_role(sensor_name)
+    end
+
+    # The dashboard reads the car sensors from SOLECTRUS 1.4 on. Only the
+    # battery level of car 1 is older.
+    def in_development?
+      car_role.present? && sensor_name != 'car_battery_soc'
     end
 
     def custom_sensor?
@@ -159,8 +171,9 @@ module SensorRow
       reading&.boolean? || false
     end
 
+    # A coordinate needs five decimals to place a car to about one meter
     def formatted_value
-      reading&.formatted(precision: 1) || Reading::EMPTY_DISPLAY
+      reading&.formatted(precision: unit == '°' ? 5 : 1) || Reading::EMPTY_DISPLAY
     end
 
     # Sensors excluded from house power in SOLECTRUS

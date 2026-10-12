@@ -24,6 +24,18 @@
           <% end %>
         <% end %>
 
+        <% if in_development? %>
+          <span
+            class="badge badge-secondary badge-xs tooltip tooltip-right relative -top-px ml-1.5 size-4 p-0 align-middle"
+            data-tip="<%= t('.in_development_hint') %>"
+            role="img"
+            aria-label="<%= t('.in_development') %>"
+            data-in-development
+          >
+            <i aria-hidden="true" class="fa-solid fa-flask text-[0.5625rem]"></i>
+          </span>
+        <% end %>
+
         <% if house_power_exclusions? %>
           <%= render Hint::Component.new(
                 text: house_power_exclusion_hint,

@@ -1,0 +1,10 @@
+de:
+  in_development: 'In Entwicklung'
+  in_development_hint: 'Die Auswertung dieses Sensors ist für SOLECTRUS v1.4 geplant.'
+  car_roles:
+    car_battery_soc: 'Ladestand'
+    car_odometer: 'Kilometerstand'
+    car_range: 'Reichweite'
+    car_connected: 'Eingesteckt'
+    car_latitude: 'Breitengrad'
+    car_longitude: 'Längengrad'

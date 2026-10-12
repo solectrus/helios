@@ -25,6 +25,8 @@ RSpec.describe SensorMappings do
       %w[house_power mqtt] => 'house',
       %w[case_temp mqtt] => 'case',
       %w[custom_power_03 shelly] => 'custom_03',
+      %w[car_odometer mqtt] => 'car',
+      %w[car_odometer_2 mqtt] => 'car_2',
     }.each do |(sensor, source), expected|
       it "returns '#{expected}' for #{sensor} with #{source} source" do
         expect(described_class.default_measurement(sensor, source)).to eq(expected)
@@ -62,6 +64,8 @@ RSpec.describe SensorMappings do
       %w[wallbox_car_connected mqtt] => 'connected',
       %w[case_temp mqtt] => 'temperature',
       %w[custom_power_03 shelly] => 'power',
+      %w[car_battery_soc mqtt] => 'battery_soc',
+      %w[car_longitude_5 external] => 'longitude',
     }.each do |(sensor, source), expected|
       it "returns '#{expected}' for #{sensor} with #{source} source" do
         expect(described_class.default_field(sensor, source)).to eq(expected)
