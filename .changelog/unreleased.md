@@ -14,4 +14,6 @@ Keep every section, an empty one included.
 
 ## Fixes
 
+- **New sensors suggest a matching field.** A sensor from MQTT or an external source starts with its own field, for example `soc` for the battery level.
+
 ## Maintenance

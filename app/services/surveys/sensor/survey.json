@@ -263,7 +263,6 @@
           "clearIfInvisible": "none",
           "titleLocation": "hidden",
           "isRequired": true,
-          "defaultValue": "power",
           "choices": [
             {
               "value": "power",

@@ -120,6 +120,18 @@ RSpec.describe Surveys::Sensor::Survey do
       end
     end
 
+    # The Shelly channel writes into `field` as well. A static default there
+    # wins over the expression of the mapping page, and every sensor would
+    # start with `power`, a car battery level included.
+    it 'leaves the default of the field to the mapping page' do
+      survey = described_class.new(sensor_name: 'car_battery_soc').call
+      field_questions = survey['pages'].flat_map { |p| p['elements'] }
+                                       .select { |e| 'field'.in?([e['name'], e['valueName']]) }
+
+      expect(field_questions.pluck('defaultValue').compact).to be_empty
+      expect(described_class.find_element(survey, 'field')['defaultValueExpression']).to include("'battery_soc'")
+    end
+
     it 'clears invisible values so filters of an abandoned source do not leak into config' do
       expect(result['clearInvisibleValues']).to eq('onHidden')
     end
