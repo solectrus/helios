@@ -84,7 +84,7 @@ module Export
       end
 
       def optional_vars
-        optional_system_vars + optional_house_power_vars
+        optional_system_vars + optional_nominatim_vars + optional_house_power_vars
       end
 
       def optional_system_vars
@@ -98,6 +98,11 @@ module Export
           'LOCKUP_CODEWORD' => dashboard.lockup_codeword,
           'TRUSTED_PROXY_RANGES' => dashboard.trusted_proxy_ranges,
         }.filter_map { |key, value| key if value.present? }
+      end
+
+      # Passed through when empty as well: empty turns the lookup off.
+      def optional_nominatim_vars
+        configuration.dashboard.nominatim_url.nil? ? [] : %w[NOMINATIM_URL]
       end
 
       def optional_house_power_vars

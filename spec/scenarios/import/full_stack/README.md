@@ -21,3 +21,6 @@ export byte-identical files again.
 - **Shelly collector** with 11 devices and an inline per-index
   `SHELLY_PASSWORD=,,,,,,secret,,,,` (password for the TV only).
 - **System options** `ui_theme`, `lockup_codeword`, `app_host` all set.
+- **Empty `NOMINATIM_URL=`**, which turns the dashboard's address lookup for
+  cars off. It must survive the round-trip as an empty value, not vanish like
+  the other empty variables.

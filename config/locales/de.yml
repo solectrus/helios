@@ -441,6 +441,9 @@ de:
       dashboard_theme:
         title: 'Farbschema'
         description: 'Helles oder dunkles Farbschema für das Dashboard'
+      dashboard_geocoding:
+        title: 'Geokodierung'
+        description: 'Adressen für Standorte und Ladevorgänge von E-Autos'
       reverse_proxy:
         title: 'Adresse & Domain'
         description: 'Unter welcher Adresse SOLECTRUS erreichbar ist, auf Wunsch über eine eigene Domain mit HTTPS'

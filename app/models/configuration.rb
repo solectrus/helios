@@ -25,6 +25,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'system_security' => { singleton: 'system', keys: %w[admin_password] },
     'dashboard_co2' => { singleton: 'dashboard', keys: %w[co2_emission_factor] },
     'dashboard_theme' => { singleton: 'dashboard', keys: %w[ui_theme] },
+    'dashboard_geocoding' => { singleton: 'dashboard', keys: %w[nominatim_url] },
     'ingest_settings' => { singleton: 'ingest', keys: %w[active retention_hours] },
   }.freeze
 
@@ -133,7 +134,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   SETTINGS = %w[
     deployment software
     system_general system_security
-    dashboard_co2 dashboard_theme
+    dashboard_co2 dashboard_theme dashboard_geocoding
     influxdb reverse_proxy
     tibber
     storage
@@ -154,7 +155,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'access' => %w[reverse_proxy influxdb system_security],
     'data' => %w[ingest_settings storage],
     'energy_management' => %w[tibber],
-    'dashboard' => %w[dashboard_co2 dashboard_theme],
+    'dashboard' => %w[dashboard_co2 dashboard_theme dashboard_geocoding],
   }.freeze
 
   # Settings shown in the configuration UI in collectors_only mode. The host
@@ -179,7 +180,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   DASHBOARD_ONLY_SETTINGS = %w[
     deployment software
     system_general system_security
-    dashboard_co2 dashboard_theme
+    dashboard_co2 dashboard_theme dashboard_geocoding
     reverse_proxy
     tibber
     storage
@@ -876,6 +877,14 @@ class Configuration # rubocop:disable Metrics/ClassLength
     !collectors_only? && balcony_sensors.any?
   end
 
+  # Dashboard 1.4 (develop channel only so far) looks up addresses for any
+  # car, not only one with a location sensor: a charging session entered by
+  # hand gets an address too.
+  def geocoding_offered?
+    software_channel_for(:DASHBOARD, dashboard.image) == 'develop' &&
+      enabled_sensors.any? { |name| SensorRegistry.car_role(name) }
+  end
+
   # Enabled Ingest inputs (INGEST_SENSORS) fed by an external source. They only
   # reach the house_power recalculation when that source writes to Ingest
   # instead of InfluxDB, so every place that explains the endpoint asks for
@@ -1016,6 +1025,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
            when ConfigSchema::MODE_DASHBOARD_ONLY then DASHBOARD_ONLY_SETTINGS
            else SETTINGS
            end
+    base -= %w[dashboard_geocoding] unless geocoding_offered?
     return base unless ingest_offered?
 
     insert_at = base.index('influxdb')

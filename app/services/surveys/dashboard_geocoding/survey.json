@@ -1,0 +1,81 @@
+{
+  "locale": "de",
+  "title": {
+    "de": "Geokodierung",
+    "default": "Geocoding"
+  },
+  "description": {
+    "de": "Adressen für Standorte und Ladevorgänge von E-Autos",
+    "default": "Addresses for locations and charging sessions of cars"
+  },
+  "pages": [
+    {
+      "name": "p_geocoding",
+      "elements": [
+        {
+          "type": "radiogroup",
+          "name": "nominatim",
+          "title": {
+            "de": "Adressen ermitteln über",
+            "default": "Look up addresses via"
+          },
+          "description": {
+            "de": "Das Dashboard schickt Koordinaten und Adressen an Nominatim, den Adressdienst von OpenStreetMap. Ausgeschaltet verlässt kein Standort das System.",
+            "default": "The dashboard sends coordinates and addresses to Nominatim, the address service of OpenStreetMap. Switched off, no location leaves the system."
+          },
+          "defaultValue": "public",
+          "choices": [
+            {
+              "value": "public",
+              "text": {
+                "de": "Öffentlicher Server von OpenStreetMap (nominatim.openstreetmap.org)",
+                "default": "Public server of OpenStreetMap (nominatim.openstreetmap.org)"
+              }
+            },
+            {
+              "value": "custom",
+              "text": {
+                "de": "Eigener Nominatim-Server",
+                "default": "Custom Nominatim server"
+              }
+            },
+            {
+              "value": "off",
+              "text": {
+                "de": "Aus",
+                "default": "Off"
+              }
+            }
+          ]
+        },
+        {
+          "type": "text",
+          "name": "nominatim_url",
+          "visibleIf": "{nominatim} = 'custom'",
+          "isRequired": true,
+          "title": {
+            "de": "URL des Servers",
+            "default": "Server URL"
+          },
+          "placeholder": "http://192.168.1.10:8080",
+          "validators": [
+            {
+              "type": "regex",
+              "regex": "^\\s*https?://\\S+\\s*$",
+              "text": {
+                "de": "Die URL beginnt mit http:// oder https://",
+                "default": "The URL starts with http:// or https://"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "showQuestionNumbers": "off",
+  "completeText": {
+    "de": "Speichern",
+    "default": "Save"
+  },
+  "showCompletePage": false
+}

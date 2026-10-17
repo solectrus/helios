@@ -16,6 +16,7 @@ system:
 dashboard:
   image: ghcr.io/solectrus/solectrus:latest
   lockup_codeword: secret
+  nominatim_url: ''
   ui_theme: light
 postgresql:
   image: postgres:18-alpine

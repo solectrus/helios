@@ -43,6 +43,11 @@ module Export
         # An empty UI_THEME is dropped: an unset value already means "user
         # picks the theme", so writing UI_THEME= adds nothing.
         optional_entry('UI_THEME', dashboard.ui_theme, 'UI theme (light, dark, or empty for user choice)')
+        # An empty NOMINATIM_URL turns the lookup off, so only nil is dropped.
+        unless dashboard.nominatim_url.nil?
+          entry('NOMINATIM_URL', dashboard.nominatim_url,
+                'Nominatim server for the addresses of car locations (empty = off)')
+        end
         optional_entry('LOCKUP_CODEWORD', dashboard.lockup_codeword, 'Codeword for lockup page protection')
         optional_entry('TRUSTED_PROXY_RANGES', dashboard.trusted_proxy_ranges, 'Trusted proxy IP ranges')
         excluded = configuration.excluded_from_house_power.join(',').presence

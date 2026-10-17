@@ -206,6 +206,25 @@ RSpec.describe ConfigSchema do
   end
 
   describe 'consistency with surveys' do
+    # UI-only toggles that drive visibility but are not persisted: the
+    # boolean `enabled` flag, system_general's `currency_preset` dropdown
+    # (drives the `currency` freetext field, only `currency` is stored),
+    # tibber's `charging` flag (re-derived from the senec_charger section),
+    # reverse_proxy's `proxy_transport` radio (re-derived from whether a
+    # shared network is named), mqtt's `broker_external` choice (the
+    # stored `broker_managed` is its opposite) and dashboard_geocoding's
+    # `nominatim` choice (re-derived from the stored `nominatim_url`).
+    def ui_only_fields(setting)
+      case setting
+      when 'system_general' then %w[enabled currency_preset]
+      when 'dashboard_geocoding' then %w[enabled nominatim]
+      when 'tibber' then %w[enabled charging]
+      when 'reverse_proxy' then %w[enabled proxy_transport]
+      when 'mqtt' then %w[enabled broker_external]
+      else %w[enabled]
+      end
+    end
+
     survey_settings = (Configuration::ALL - Configuration::HIDDEN - Configuration::READ_ONLY_SETTINGS)
     survey_settings.select { |s| Rails.root.join("app/services/surveys/#{s}/survey.json").exist? }.each do |setting|
       next if setting == 'software' # custom channel-token persistence, not a simple field map
@@ -220,22 +239,7 @@ RSpec.describe ConfigSchema do
         # section that actually stores them.
         parent = Configuration::SETTING_GROUPS.dig(setting, :singleton) || setting
         borrowed = Configuration::BORROWED_FIELDS.fetch(setting, {})
-
-        # UI-only toggles that drive visibility but are not persisted: the
-        # boolean `enabled` flag, system_general's `currency_preset` dropdown
-        # (drives the `currency` freetext field, only `currency` is stored),
-        # tibber's `charging` flag (re-derived from the senec_charger section),
-        # reverse_proxy's `proxy_transport` radio (re-derived from whether a
-        # shared network is named) and mqtt's `broker_external` choice (the
-        # stored `broker_managed` is its opposite).
-        ui_only =
-          case setting
-          when 'system_general' then %w[enabled currency_preset]
-          when 'tibber' then %w[enabled charging]
-          when 'reverse_proxy' then %w[enabled proxy_transport]
-          when 'mqtt' then %w[enabled broker_external]
-          else %w[enabled]
-          end
+        ui_only = ui_only_fields(setting)
 
         survey_fields.reject { |f| ui_only.include?(f) }.each do |field|
           section = borrowed[field] || parent

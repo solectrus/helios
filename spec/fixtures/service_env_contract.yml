@@ -42,6 +42,7 @@ dashboard:
     - ADMIN_PASSWORD
     - LOCKUP_CODEWORD
     - UI_THEME
+    - NOMINATIM_URL # an empty value turns the address lookup off
     - SKIP_BROWSER_CHECK
     - REDIS_URL
     - DB_HOST

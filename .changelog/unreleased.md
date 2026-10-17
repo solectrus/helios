@@ -14,6 +14,8 @@ Keep every section, an empty one included.
 
 ## Improvements
 
+- **The address lookup for cars has a setting.** SOLECTRUS 1.4 gets the addresses of car locations and charging sessions from Nominatim, the address service of OpenStreetMap. The new "Geocoding" setting selects the public server, a server of the operator's own, or no lookup at all. It appears when a car is configured and the dashboard runs on the "Development" channel.
+
 ## Fixes
 
 ## Maintenance

@@ -71,7 +71,7 @@ module SettingPersistence
   # so clearing this one never touches them — Configuration#update routes
   # them to their own section regardless of the toggle.
   def persist_setting(data)
-    strip_theme_sentinel!(data)
+    strip_survey_sentinels!(data)
 
     return persist_deployment(data) if setting == 'deployment'
     return persist_reverse_proxy(data) if setting == 'reverse_proxy'
@@ -139,15 +139,15 @@ module SettingPersistence
     data.except!(*Configuration::SENEC_CHARGER_SURVEY_FIELDS)
   end
 
-  # The "user-selectable" theme is stored as an empty string (the dashboard's
-  # UI_THEME convention). The survey carries a `user` sentinel instead, because
-  # SurveyJS cannot preselect a radio option with an empty value, so translate
-  # it back on the way in (see SettingsController#inject_theme_sentinel! for
-  # the way out).
-  def strip_theme_sentinel!(data)
-    return unless setting == 'dashboard_theme'
-
-    data['ui_theme'] = '' if data['ui_theme'] == 'user'
+  # Translates the sentinels SettingsController#inject_survey_sentinels!
+  # puts into a form back into what config.yaml stores.
+  def strip_survey_sentinels!(data)
+    case setting
+    when 'dashboard_theme' then data['ui_theme'] = '' if data['ui_theme'] == 'user'
+    when 'dashboard_geocoding'
+      url = Surveys::DashboardGeocoding::Survey.url(data.delete('nominatim'), data.delete('nominatim_url'))
+      data['nominatim_url'] = url unless url.nil?
+    end
   end
 
   # reverse_proxy uses a tri-state `mode` (none/internal/external) instead of

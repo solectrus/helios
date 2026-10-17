@@ -37,7 +37,7 @@ module Configurations
       else
         data = @configuration.setting_data(setting)
         inject_enabled_flag!(data)
-        inject_theme_sentinel!(data)
+        inject_survey_sentinels!(data)
         render SettingForm::Component.new(setting:, data:)
       end
     end
@@ -288,14 +288,14 @@ module Configurations
       data['proxy_transport'] = data['proxy_network'].present? ? 'network' : 'ports'
     end
 
-    # The "user-selectable" theme is stored as an empty string (the dashboard's
-    # UI_THEME convention), but SurveyJS can't preselect a radio option with an
-    # empty value. The survey uses a `user` sentinel instead: inject it on load
-    # when no theme is fixed, and translate it back to `''` on save.
-    def inject_theme_sentinel!(data)
-      return unless setting == 'dashboard_theme'
-
-      data['ui_theme'] = 'user' if data['ui_theme'].blank?
+    # Stored values SurveyJS cannot preselect, asked through a sentinel
+    # instead (see SettingPersistence#strip_survey_sentinels! for the way
+    # back). No radio option can carry the empty "user-selectable" theme.
+    def inject_survey_sentinels!(data)
+      case setting
+      when 'dashboard_theme' then data['ui_theme'] = 'user' if data['ui_theme'].blank?
+      when 'dashboard_geocoding' then data['nominatim'] = Surveys::DashboardGeocoding::Survey.choice(data['nominatim_url'])
+      end
     end
 
     # Derive UI-only state (kind, extraction mode, formula of a calculated

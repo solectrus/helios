@@ -465,6 +465,9 @@ en:
       dashboard_theme:
         title: 'Color theme'
         description: 'Light or dark color theme for the dashboard'
+      dashboard_geocoding:
+        title: 'Geocoding'
+        description: 'Addresses for locations and charging sessions of cars'
       reverse_proxy:
         title: 'Address & domain'
         description: 'The address SOLECTRUS is reachable at, optionally via a custom domain with HTTPS'

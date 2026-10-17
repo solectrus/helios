@@ -71,9 +71,16 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   # `force_ssl` (FORCE_SSL) marks that TLS is terminated by a proxy the user
   # runs themselves. A HELIOS-managed Traefik implies it, so the field only
   # carries the cases HELIOS cannot derive: `true` or absent, never `false`.
+  #
+  # `nominatim_url` (NOMINATIM_URL) is the server the dashboard asks for the
+  # address at a car location. It has three states, as the variable has:
+  # absent leaves the variable out, so the dashboard asks the public server of
+  # OpenStreetMap. An empty string turns the lookup off. A URL names a server
+  # of the user's own.
   DASHBOARD_FIELDS = %w[
     co2_emission_factor
     ui_theme
+    nominatim_url
     frame_ancestors
     lockup_codeword
     trusted_proxy_ranges

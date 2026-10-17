@@ -19,6 +19,7 @@ module Import
           'trusted_proxy_ranges' => dashboard_env['TRUSTED_PROXY_RANGES'],
           'force_ssl' => force_ssl(dashboard_env),
           'host_port' => host_port,
+          'nominatim_url' => dashboard_env['NOMINATIM_URL']&.strip,
         ).compact
       end
 

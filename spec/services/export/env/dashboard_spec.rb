@@ -67,4 +67,26 @@ RSpec.describe Export::Env::Dashboard do
       expect(env).to include('FORCE_SSL=true')
     end
   end
+
+  # Unlike the other optional variables, an empty NOMINATIM_URL carries a
+  # meaning of its own: it turns the address lookup off.
+  describe 'NOMINATIM_URL' do
+    it 'is left out by default, so the dashboard asks the public server' do
+      with_config_yaml
+
+      expect(env).not_to include('NOMINATIM_URL')
+    end
+
+    it 'is written empty when the lookup is off' do
+      with_config_yaml('dashboard' => { 'nominatim_url' => '' })
+
+      expect(env).to include("NOMINATIM_URL=\n")
+    end
+
+    it 'names a custom server' do
+      with_config_yaml('dashboard' => { 'nominatim_url' => 'http://192.168.1.10:8080' })
+
+      expect(env).to include("NOMINATIM_URL=http://192.168.1.10:8080\n")
+    end
+  end
 end

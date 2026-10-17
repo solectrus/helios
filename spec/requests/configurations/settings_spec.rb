@@ -702,6 +702,56 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
   end
 
+  # One field holds the three states of NOMINATIM_URL, and the form asks
+  # them as a choice.
+  describe 'POST /configuration/settings for the address lookup' do
+    def save(data)
+      post configuration_settings_path, params: { setting: 'dashboard_geocoding', data: data.to_json }
+    end
+
+    def edit_form
+      get edit_configuration_setting_path(setting: 'dashboard_geocoding', name: 'dashboard_geocoding'),
+          headers: turbo_frame_headers
+      response.body
+    end
+
+    let(:dashboard) { Configuration.current.dashboard }
+
+    it 'stores the lookup as off' do
+      save('nominatim' => 'off', 'nominatim_url' => 'http://ignored')
+
+      expect(response).to redirect_to(settings_path)
+      expect(dashboard['nominatim_url']).to eq('')
+    end
+
+    it 'stores the URL of a custom server' do
+      save('nominatim' => 'custom', 'nominatim_url' => ' http://192.168.1.10:8080 ')
+
+      expect(dashboard['nominatim_url']).to eq('http://192.168.1.10:8080')
+    end
+
+    it 'stores nothing for the public server' do
+      Configuration.current.update('dashboard_geocoding', 'nominatim_url' => '')
+
+      save('nominatim' => 'public')
+
+      expect(dashboard).not_to have_key('nominatim_url')
+      expect(dashboard).not_to have_key('nominatim')
+    end
+
+    {
+      nil => 'public',
+      '' => 'off',
+      'http://192.168.1.10:8080' => 'custom',
+    }.each do |stored, choice|
+      it "prefills the choice #{choice}" do
+        Configuration.current.update('dashboard_geocoding', 'nominatim_url' => stored) unless stored.nil?
+
+        expect(edit_form).to include("&quot;nominatim&quot;:&quot;#{choice}&quot;")
+      end
+    end
+  end
+
   describe 'the survey payload' do
     # The dashboard stores "user-selectable" as an empty string, which SurveyJS
     # cannot preselect — the form gets a `user` sentinel instead.
