@@ -136,6 +136,20 @@ PG_FILE="$1"
 CONFIG_FILE="$WORK_DIR/helios/config.yaml"
 [ -f "$CONFIG_FILE" ] || fail "HELIOS configuration is missing"
 
+# Some NAS shares (seen on UGOS) deny root in the postgres container a mkdir
+# inside its bind-mounted data dir, so PostgreSQL never starts. Probe with
+# the real service before `compose down` and the wipe below destroy
+# anything. On success the wipe also removes the probe dir.
+PG_PROBE_DIR="$POSTGRES_DATA_PATH/.helios-write-probe"
+PG_PROBE_LOG="$WORK_DIR/postgresql-probe.log"
+{ rm -rf "$PG_PROBE_DIR" && mkdir -p "$PG_PROBE_DIR"; } \
+  || fail "Failed to prepare PostgreSQL write probe: $PG_PROBE_DIR"
+if ! compose run --rm --no-deps -T -v "$PG_PROBE_DIR:/probe" \
+       --entrypoint mkdir postgresql /probe/x > "$PG_PROBE_LOG" 2>&1; then
+  rm -rf "$PG_PROBE_DIR"
+  fail "PostgreSQL cannot write to its data directory $POSTGRES_DATA_PATH. Check the folder permissions on the host: $(tail -n 5 "$PG_PROBE_LOG" | tr '\n' ' ')"
+fi
+
 # `down -v` removes anonymous volumes. Required because InfluxDB's image
 # declares `/etc/influxdb2` as a volume holding the CLI config; if that
 # survives the wipe of the bind-mounted data dir, the next setup run

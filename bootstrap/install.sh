@@ -608,6 +608,49 @@ MSG
   die "Installation directory not writable."
 }
 
+# Verify that root inside a container can write here too. Some NAS shares (seen
+# on UGOS) pass ensure_writable_dir, yet deny root in a container a mkdir
+# inside a bind-mounted folder, so PostgreSQL never starts. Pulls
+# HELIOS_IMAGE, so it runs after ensure_disk_space.
+ensure_container_writable_dir() {
+  bold "Pulling HELIOS image..."
+  run_quiet docker pull "$HELIOS_IMAGE"
+
+  local probe output status=0
+  probe="$(mktemp -d "$(pwd)/.helios-write-probe.XXXXXX")"
+  output="$(docker run --rm -v "$probe:/probe" --entrypoint sh "$HELIOS_IMAGE" \
+              -c 'mkdir /probe/x && rmdir /probe/x' 2>&1)" || status=$?
+  rmdir "$probe" 2>/dev/null || true
+
+  if [ "$status" -eq 0 ]; then
+    success "  ✓ Services can write to: $(pwd)"
+    return
+  fi
+
+  cat >&2 <<MSG
+
+  Your user can write here, but root inside a container cannot. The
+  database of SOLECTRUS would fail at its first start.
+
+  Services start as root (UID 0). Root needs read and write access to
+  this folder, and new subfolders must inherit that access. On a NAS,
+  the permissions (ACL) of the shared folder control this. The web
+  interface can show read/write while the ACL underneath denies root.
+
+  Check the ACL with:
+
+      getfacl "$(pwd)"
+
+  Grant the access, or install into another folder, then re-run the
+  installer. It repeats this check.
+
+  Docker reported:
+$(tail -n 5 <<<"$output" | sed 's/^/      /')
+
+MSG
+  warn_or_abort "  ⚠ Services cannot write to: $(pwd)"
+}
+
 # Can the current user create or write into DIR *without sudo*? If DIR exists
 # it must be a writable directory; otherwise its nearest existing ancestor must
 # be writable and traversable. Used to flag infeasible menu choices up front so
@@ -1204,6 +1247,7 @@ install_into_existing_stack() {
 
   ensure_disk_space existing
   ensure_ram
+  ensure_container_writable_dir
   ensure_project_name
   append_helios_service
   ensure_helios_secrets
@@ -1221,6 +1265,7 @@ install_fresh() {
 
   ensure_disk_space fresh
   ensure_ram
+  ensure_container_writable_dir
 
   COMPOSE_FILE="${COMPOSE_CANDIDATES[0]}"
 
