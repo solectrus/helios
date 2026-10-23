@@ -21,3 +21,5 @@ Keep every section, an empty one included.
 - **Installer and restore detect folders that services cannot write to.** On some NAS shares, the database cannot write to its data folder and never starts. The installer warns and names the folder permissions that are required. The restore stops before it deletes any data and names the folder. (solectrus/solectrus#6048)
 
 ## Maintenance
+
+- Updated to Ruby 4.0.8
