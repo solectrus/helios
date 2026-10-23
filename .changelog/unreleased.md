@@ -22,4 +22,4 @@ Keep every section, an empty one included.
 
 ## Maintenance
 
-- Updated to Ruby 4.0.8
+- Updated to Ruby 4.0.9
