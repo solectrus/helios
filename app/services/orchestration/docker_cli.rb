@@ -68,23 +68,25 @@ module Orchestration
     # at the same moment ("unable to lease content: lease does not exist").
     # The containerd image store, the default since Docker 29, collects the
     # garbage of the whole namespace, and HELIOS removes the replaced image
-    # of a service while a runner may be pulling its own. The second attempt
-    # gets a fresh lease. A pull that fails for a real reason (unknown tag,
-    # no registry) fails again and costs one more attempt.
-    PULL_ATTEMPTS = 2
+    # of a service while a runner may be pulling its own. The next attempt
+    # gets a fresh lease. Removals can follow each other within seconds, so
+    # one retry is not always enough. Only the lost lease is retried: a pull
+    # that fails for a real reason (unknown tag, no registry) fails at once.
+    PULL_ATTEMPTS = 4
     PULL_RETRY_DELAY = 2
+    LEASE_LOST = 'unable to lease content'.freeze
 
     def pull_image(image)
-      result = nil
+      output = nil
 
       PULL_ATTEMPTS.times do |attempt|
         sleep(PULL_RETRY_DELAY) if attempt.positive?
         output, status = Open3.capture2e('docker', 'pull', image)
-        result = [status.success?, output]
-        break if status.success?
+        return [true, output] if status.success?
+        break unless output.include?(LEASE_LOST)
       end
 
-      result
+      [false, output]
     end
 
     # Names of the Docker networks on the host, or nil when the daemon does

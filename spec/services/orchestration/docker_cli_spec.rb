@@ -91,11 +91,18 @@ RSpec.describe Orchestration::DockerCli do
       expect(Open3).to have_received(:capture2e).twice
     end
 
-    it 'reports the output of the last attempt when every attempt fails' do
+    it 'gives up after the last attempt when the lease keeps getting lost' do
+      stub_capture2e('unable to lease content: lease does not exist: not found', success: false)
+
+      expect(described_class.pull_image('docker:29-cli').first).to be(false)
+      expect(Open3).to have_received(:capture2e).exactly(described_class::PULL_ATTEMPTS).times
+    end
+
+    it 'fails at once when the pull fails for another reason' do
       stub_capture2e("manifest unknown\n", success: false)
 
       expect(described_class.pull_image('influxdb:nope')).to eq([false, "manifest unknown\n"])
-      expect(Open3).to have_received(:capture2e).twice
+      expect(Open3).to have_received(:capture2e).once
     end
   end
 
