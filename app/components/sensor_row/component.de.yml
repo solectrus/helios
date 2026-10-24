@@ -1,6 +1,6 @@
 de:
-  in_development: 'In Entwicklung'
-  in_development_hint: 'Die Auswertung dieses Sensors ist für SOLECTRUS v1.4 geplant.'
+  dashboard_beta: 'Beta'
+  dashboard_beta_hint: 'Die Auswertung dieses Sensors ist für SOLECTRUS v1.4 geplant.'
   car_roles:
     car_battery_soc: 'Ladestand'
     car_odometer: 'Kilometerstand'

@@ -24,13 +24,13 @@
           <% end %>
         <% end %>
 
-        <% if in_development? %>
+        <% if dashboard_beta? %>
           <span
             class="badge badge-secondary badge-xs tooltip tooltip-right relative -top-px ml-1.5 size-4 p-0 align-middle"
-            data-tip="<%= t('.in_development_hint') %>"
+            data-tip="<%= t('.dashboard_beta_hint') %>"
             role="img"
-            aria-label="<%= t('.in_development') %>"
-            data-in-development
+            aria-label="<%= t('.dashboard_beta') %>"
+            data-dashboard-beta
           >
             <i aria-hidden="true" class="fa-solid fa-flask text-[0.5625rem]"></i>
           </span>

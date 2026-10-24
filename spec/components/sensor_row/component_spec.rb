@@ -25,14 +25,14 @@ RSpec.describe SensorRow::Component, type: :component do
   context 'with a car sensor' do
     let(:sensor_name) { 'car_odometer_2' }
 
-    it 'marks it as in development' do
-      expect(rendered.css('[data-in-development]').attr('aria-label').value).to eq('In development')
+    it 'marks it as beta in the dashboard' do
+      expect(rendered.css('[data-dashboard-beta]').attr('aria-label').value).to eq('Beta')
     end
 
     it 'says nothing for the battery level of car 1, which is older' do
       row = render_inline(described_class.new(sensor_name: 'car_battery_soc', configuration: Configuration.current))
 
-      expect(row.css('[data-in-development]')).to be_empty
+      expect(row.css('[data-dashboard-beta]')).to be_empty
     end
 
     it 'names the role alone, as the group names the car' do

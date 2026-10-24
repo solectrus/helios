@@ -141,7 +141,7 @@ module SensorRow
 
     # The dashboard reads the car sensors from SOLECTRUS 1.4 on. Only the
     # battery level of car 1 is older.
-    def in_development?
+    def dashboard_beta?
       car_role.present? && sensor_name != 'car_battery_soc'
     end
 
