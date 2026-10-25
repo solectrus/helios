@@ -10,14 +10,8 @@ Keep every section, an empty one included.
 
 ## New features
 
-- **Sensors for up to five electric cars.** Each car has its own group with odometer, range, battery level, plug state and location. The car evaluation of SOLECTRUS 1.4 reads these sensors. Older dashboard versions ignore them. SOLECTRUS 1.4 gets the addresses of car locations and charging sessions from Nominatim, the address service of OpenStreetMap. The "Geocoding" setting selects the public server, a server of the operator's own, or no lookup at all. The setting appears when a car is configured and the dashboard runs on the "Development" channel. (#570)
-
 ## Improvements
 
 ## Fixes
 
-- **Installer and restore detect folders that services cannot write to.** On some NAS shares, the database cannot write to its data folder and never starts. The installer warns and names the folder permissions that are required. The restore stops before it deletes any data and names the folder. (solectrus/solectrus#6048)
-
 ## Maintenance
-
-- Updated to Ruby 4.0.9
