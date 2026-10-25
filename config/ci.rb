@@ -16,7 +16,7 @@ CI.run do
   step 'Security: Brakeman code analysis',
        'bin/brakeman --quiet --no-pager --exit-on-warn --exit-on-error'
 
-  step 'Build: Vite assets', 'bunx vite build --mode test'
+  step 'Build: Vite assets', 'bun vite build --mode test'
 
   step 'Test: Bats', 'bats --recursive spec/bats/'
 

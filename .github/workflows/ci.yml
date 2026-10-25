@@ -53,8 +53,8 @@ jobs:
 
       - name: Check JS size limit
         run: |
-          bunx vite build
-          bunx size-limit
+          bun vite build
+          bun size-limit
 
       - name: Shellcheck shell scripts
         run: shellcheck $(git ls-files '*.sh')
@@ -143,7 +143,7 @@ jobs:
 
       - name: Build Vite assets for test
         if: steps.vite-cache.outputs.cache-hit != 'true'
-        run: bunx vite build --mode test
+        run: bun vite build --mode test
 
       # Restore the per-file runtime log from a previous run so turbo_tests
       # can balance shards by execution time instead of file size. The key is
