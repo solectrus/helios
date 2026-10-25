@@ -35,24 +35,27 @@ module DockerStackHelpers
     )
   end
 
-  # Empties `data_path` but keeps the directory itself. Docker Desktop shares
-  # the host directory into the VM by path: deleting it and creating it again
-  # between two examples leaves the share pointing at the gone directory, and
-  # the next `up` fails with "error while creating mount source path ...: no
-  # such file or directory" even though the path exists on the host. Linux
-  # binds the path directly and does not care, so this only ever failed
-  # locally, never in CI.
+  # Empties `data_path` but keeps the directory itself and the directories
+  # below `helios/`, which hold the runners' bind-mount sources. Docker Desktop
+  # shares the host directory into the VM by path: once a directory that holds
+  # a bind-mount source is deleted and created again, the VM keeps seeing the
+  # gone one. `-v` then fails with "error while creating mount source path
+  # ...: no such file or directory", and `--mount` with "bind source path does
+  # not exist", even though the path exists on the host. Linux binds the path
+  # directly and does not care, so this only ever failed locally, never in CI.
+  # The database directories go completely, as their images initialize only
+  # an empty one.
   #
-  # A plain rm_rf of the contents succeeds wherever the bind mount maps the
-  # container's files to the host user (e.g. Docker Desktop). Only when files
-  # survive — on Linux, where database files stay root-owned — fall back to
-  # emptying the directory from inside a container. `cleanup_image` only needs
-  # a `find` binary.
+  # Deleting the files succeeds wherever the bind mount maps the container's
+  # files to the host user (e.g. Docker Desktop). Only when files survive or
+  # a directory cannot be entered — on Linux, where database files stay
+  # root-owned — fall back to emptying the directory from inside a container.
+  # `cleanup_image` only needs a `find` binary.
   def clear_data_path!(data_path, cleanup_image:)
     data_path = disposable!(data_path)
     CLEARED_PATHS << data_path
-    delete_children(data_path)
-    return if children_of(data_path).empty?
+    delete_files(data_path)
+    return unless leftovers?(data_path)
 
     system(
       'docker', 'run', '--rm', '--entrypoint', 'find',
@@ -60,7 +63,7 @@ module DockerStackHelpers
       '/cleanup', '-mindepth', '1', '-delete',
       out: File::NULL, err: File::NULL
     )
-    delete_children(data_path)
+    FileUtils.rm_rf(children_of(data_path))
   end
 
   private
@@ -79,8 +82,26 @@ module DockerStackHelpers
           "refusing to clear #{resolved.inspect}: only paths below #{scratch}/ are disposable"
   end
 
-  def delete_children(data_path)
-    FileUtils.rm_rf(children_of(data_path))
+  def delete_files(data_path)
+    children_of(data_path).each do |child|
+      next FileUtils.rm_rf(child) unless File.basename(child) == 'helios' && real_directory?(child)
+
+      FileUtils.rm_f(entries_below(child).reject { |path| real_directory?(path) })
+    end
+  end
+
+  def leftovers?(data_path)
+    entries_below(data_path).any? do |path|
+      !real_directory?(path) || !File.readable?(path) || !File.executable?(path)
+    end
+  end
+
+  def entries_below(data_path)
+    Dir.glob('**/*', File::FNM_DOTMATCH, base: data_path).map { |entry| File.join(data_path, entry) }
+  end
+
+  def real_directory?(path)
+    File.directory?(path) && !File.symlink?(path)
   end
 
   def children_of(data_path)
