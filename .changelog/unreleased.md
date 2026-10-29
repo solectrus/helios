@@ -14,4 +14,6 @@ Keep every section, an empty one included.
 
 ## Fixes
 
+- **Access code and embedding list can be removed again.** The settings for access protection now save an empty access code or an empty list of embedding sites. (#627)
+
 ## Maintenance

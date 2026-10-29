@@ -48,7 +48,7 @@ module SettingPersistence
   # Surveys whose payload needs reshaping beyond the `enabled` flag.
   PERSISTERS = {
     'deployment' => :persist_deployment, 'reverse_proxy' => :persist_reverse_proxy, 'tibber' => :persist_tibber,
-    'mqtt' => :persist_mqtt
+    'mqtt' => :persist_mqtt, 'system_security' => :persist_system_security
   }.freeze
 
   private
@@ -102,6 +102,15 @@ module SettingPersistence
     end
 
     @configuration.update('deployment', data)
+  end
+
+  # Configuration#update only reaches a borrowed field the payload names, and
+  # survey-core drops a cleared one. The security form shows both fields on
+  # every save, so a missing answer is a cleared one.
+  def persist_system_security(data)
+    borrowed = Configuration::BORROWED_FIELDS.fetch('system_security').keys
+
+    @configuration.update('system_security', data.reverse_merge(borrowed.index_with(nil)))
   end
 
   # Translates the sentinels SettingsController#inject_survey_sentinels!

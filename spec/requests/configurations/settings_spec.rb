@@ -267,6 +267,20 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       expect(config.system.admin_password).to eq('new-secret')
       expect(config.system.timezone).to eq('UTC')
     end
+
+    # survey-core leaves a cleared field out of the payload.
+    it 'clears the codeword and the embedding list the security form leaves out' do
+      Configuration.current.update('dashboard', { 'lockup_codeword' => 'geheim', 'frame_ancestors' => 'https://ha.local',
+                                                  'co2_emission_factor' => '401' })
+
+      post configuration_settings_path,
+           params: { setting: 'system_security', data: { admin_password: 'secret' }.to_json }
+
+      dashboard = Configuration.current.dashboard
+      expect(dashboard.lockup_codeword).to be_blank
+      expect(dashboard.frame_ancestors).to be_blank
+      expect(dashboard.co2_emission_factor).to eq('401')
+    end
   end
 
   # bootstrap/install.sh writes no APP_HOST, so a fresh installation has none
