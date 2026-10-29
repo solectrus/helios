@@ -6,6 +6,8 @@ module SettingPersistence
 
   # The broker half of the MQTT survey, which drives a section of its own.
   include SettingPersistence::Broker
+  # The charger half of the prices survey, likewise.
+  include SettingPersistence::Charger
 
   # Which answers each reverse-proxy mode owns. The form shows exactly these
   # per mode (see the visibleIf / requiredIf rules in
@@ -43,6 +45,12 @@ module SettingPersistence
   REVERSE_PROXY_ADOPTED_FIELDS =
     (ConfigSchema::REVERSE_PROXY_FIELDS - REVERSE_PROXY_MODE_FIELDS.values.flatten).freeze
 
+  # Surveys whose payload needs reshaping beyond the `enabled` flag.
+  PERSISTERS = {
+    'deployment' => :persist_deployment, 'reverse_proxy' => :persist_reverse_proxy, 'tibber' => :persist_tibber,
+    'mqtt' => :persist_mqtt
+  }.freeze
+
   private
 
   # What a saved survey triggers besides the write itself. Both screens that
@@ -73,10 +81,8 @@ module SettingPersistence
   def persist_setting(data)
     strip_survey_sentinels!(data)
 
-    return persist_deployment(data) if setting == 'deployment'
-    return persist_reverse_proxy(data) if setting == 'reverse_proxy'
-    return persist_tibber(data) if setting == 'tibber'
-    return persist_mqtt(data) if setting == 'mqtt'
+    persister = PERSISTERS[setting]
+    return send(persister, data) if persister
 
     return @configuration.update(setting, {}) if data.key?('enabled') && data.delete('enabled') == false
 
@@ -96,47 +102,6 @@ module SettingPersistence
     end
 
     @configuration.update('deployment', data)
-  end
-
-  # The prices survey drives two services through two UI-only flags. `enabled`
-  # owns the Tibber collector (its own section), `charging` owns the SENEC
-  # charger, whose fields BORROWED_FIELDS routes into `senec_charger`. Neither
-  # flag is stored: whichever is off has its section's fields blanked, and
-  # Configuration#update drops a section once its last field goes.
-  def persist_tibber(data)
-    enabled = data.delete('enabled') == true
-    charging = data.delete('charging') == true
-
-    data = {} unless enabled
-
-    # Whether this survey run actually put the charging question on screen:
-    # where the charger's dependencies don't hold, Surveys::Tibber::Survey
-    # drops the charging pages server-side, so this save must not speak for
-    # the charger in either direction (see #blank_senec_charger! /
-    # #ignore_senec_charger!).
-    if @configuration.senec_charger_configurable?
-      blank_senec_charger!(data) unless enabled && charging
-    else
-      ignore_senec_charger!(data)
-    end
-    preserve_software_owned_image!(data) if enabled
-
-    @configuration.update('tibber', data)
-  end
-
-  # Charging was offered and turned off (or the prices went with it): clear
-  # the tuning. Configuration#update drops the section with its last field.
-  def blank_senec_charger!(data)
-    Configuration::SENEC_CHARGER_SURVEY_FIELDS.each { |field| data[field] = nil }
-  end
-
-  # Charging was never offered, so a missing `charging` flag means "not
-  # asked", not "switched off". Drop the charger fields from the payload
-  # instead: blanking would delete a tuning the user was never shown and
-  # cannot re-enter until the dependency returns, while storing would let a
-  # payload configure what the survey refused to render.
-  def ignore_senec_charger!(data)
-    data.except!(*Configuration::SENEC_CHARGER_SURVEY_FIELDS)
   end
 
   # Translates the sentinels SettingsController#inject_survey_sentinels!
