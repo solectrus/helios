@@ -153,8 +153,7 @@ GEM
     drb (2.2.3)
     erb (6.0.7)
     erubi (1.13.1)
-    excon (1.8.0)
-      logger
+    excon (1.9.0)
     foreman (0.90.0)
       thor (~> 1.4)
     globalid (1.4.0)
