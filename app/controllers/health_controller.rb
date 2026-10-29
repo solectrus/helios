@@ -1,6 +1,7 @@
 # Extends Rails health check with X-Boot-Id and X-Version headers
 # for restart detection and version reporting, plus X-Action-Required
-# so the SOLECTRUS dashboard can point the user to HELIOS.
+# so the SOLECTRUS dashboard can point the user to HELIOS, and X-Browser-Url
+# so it links to the URL HELIOS was opened at (see BrowserUrl).
 # Intentionally inherits from Rails::HealthController to preserve default behavior.
 class HealthController < Rails::HealthController
   # Stack states the status bar paints amber or red. :starting and :stopping
@@ -14,6 +15,8 @@ class HealthController < Rails::HealthController
       Rails.application.config.x.git.commit_version,
     )
     response.set_header('X-Action-Required', '1') if action_required?
+    browser_url = BrowserUrl.current
+    response.set_header('X-Browser-Url', browser_url) if browser_url
     super
   end
 

@@ -8,10 +8,15 @@ class ApplicationController < ActionController::Base
   before_action :require_consent
   before_action :require_commissioning
   before_action :set_locale
+  after_action :remember_browser_url, if: :authorized?
 
   helper_method :authorized?, :password_required?, :show_app_chrome?, :preferences, :rendering_content_frame?
 
   private
+
+  def remember_browser_url
+    BrowserUrl.remember(request)
+  end
 
   # True when the request originates from the named lazy content frame (the
   # second round-trip), not the initial shell render. Lets a page paint its
