@@ -17,7 +17,10 @@ RSpec.describe Orchestration::Runner do
 
   after { FileUtils.rm_rf(data_path) }
 
-  describe '.up' do
+  # `.up` and `.recreate` end with ImageCleanup. It reads the containers of
+  # the real `solectrus` project and removes images, so it must not run while
+  # a :docker_stack spec owns that project. The lock serializes them.
+  describe '.up', :docker_stack do
     before { skip_without_docker }
 
     context 'with minimal compose file' do
@@ -270,7 +273,7 @@ RSpec.describe Orchestration::Runner do
     end
   end
 
-  describe '.recreate' do
+  describe '.recreate', :docker_stack do
     before { skip_without_docker }
 
     context 'when the user changes a service tag' do
