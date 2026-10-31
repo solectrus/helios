@@ -13,7 +13,7 @@
         "@rails/actioncable": "^8.1.400",
         "highlight.js": "^11.12.0",
         "stimulus-vite-helpers": "^3.1.0",
-        "survey-core": "^3.2.2",
+        "survey-core": "^3.2.3",
         "survey-js-ui": "^3.2.3",
       },
       "devDependencies": {
@@ -485,7 +485,7 @@
 
     "supports-preserve-symlinks-flag": ["supports-preserve-symlinks-flag@1.0.0", "", {}, "sha512-ot0WnXS9fgdkgIcePe6RHNk1WA8+muPa6cSjeR3V8K27q9BB1rTE3R1p7Hv0z1ZyAc8s6Vvv8DIyWf681MAt0w=="],
 
-    "survey-core": ["survey-core@3.2.2", "", {}, "sha512-S3YSPFywObmObHz/4VLnGof+I0R21IlBcrzLuhocIeISbv2I/MSvBUrIwCq2Bx6r34dxCOrJZ0H7i54b+gFxlQ=="],
+    "survey-core": ["survey-core@3.2.3", "", {}, "sha512-9ST5G/Pidoud15ATNsvgl9OauuLN5ukTcw0lgrgmzBd99ntZs+s80KpMm9WSb62A3ZjxFJ7TDRNoNyDkK284PQ=="],
 
     "survey-js-ui": ["survey-js-ui@3.2.3", "", { "peerDependencies": { "@types/react": "*", "@types/react-dom": "*", "survey-core": "3.2.3" } }, "sha512-ooM6Hpm4wqeAUwYWx+wJSdY7APsXn00SeeiFcPOkt5XJ0ng7+GwuIlOQ8nBYZrpJN2SjtLjdxhn+Os7OjJWjiQ=="],
 
