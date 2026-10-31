@@ -3,6 +3,8 @@
 CI.run do
   step 'Setup', 'bin/setup --skip-server'
 
+  step 'Deps: JavaScript tree', 'bun run deps:check'
+
   step 'Style: Ruby', 'bin/rubocop'
   step 'Style: ERB', 'bun run erb:check'
   step 'Style: JavaScript', 'bun run lint'

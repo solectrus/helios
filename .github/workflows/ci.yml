@@ -30,6 +30,9 @@ jobs:
       - name: Install Bun packages
         run: bun install --frozen-lockfile
 
+      - name: Check dependency tree
+        run: bun run deps:check
+
       - name: Lint with RuboCop
         run: bin/rubocop --parallel
 
