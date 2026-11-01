@@ -18,7 +18,7 @@ require 'aws-sdk-s3'
 # the adapter's own client cannot silently fix or mask itself by sharing
 # the seeding code path.
 module S3ServerHelpers
-  S3_SERVER_IMAGE = 'rustfs/rustfs:1.0.0'.freeze
+  S3_SERVER_IMAGE = 'rustfs/rustfs:1.0.4'.freeze
   S3_ACCESS_KEY = 'helios-integration-test'.freeze
   S3_SECRET_KEY = 'helios-integration-test-secret'.freeze
 
