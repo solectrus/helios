@@ -203,6 +203,12 @@ module DockerImages # rubocop:disable Metrics/ModuleLength
       ghcr.io/solectrus/power-splitter:develop
     ],
   }.freeze
+  PUBLIC_DATA_COLLECTOR = {
+    current: %w[
+      ghcr.io/solectrus/public-data-collector:latest
+      ghcr.io/solectrus/public-data-collector:develop
+    ],
+  }.freeze
 
   TRAEFIK = {
     current: 'traefik:v3.7',

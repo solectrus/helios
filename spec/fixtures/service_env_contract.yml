@@ -210,6 +210,30 @@ tibber-collector:
     - INFLUX_ORG
     - INFLUX_BUCKET
 
+public-data-collector:
+  upstream: public-data-collector/lib/config.rb, lib/providers/*/provider.rb, lib/providers/country.rb
+  reads:
+    - TZ
+    - COUNTRY
+    - INTERVAL
+    - ENABLE_FUEL # Providers::Base reads <switch> of each provider
+    - ENABLE_GAS
+    - ENABLE_PUBLIC_GRID
+    - BIDDING_ZONE
+    - INFLUX_HOST
+    - INFLUX_PORT
+    - INFLUX_SCHEMA
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+  requires:
+    - COUNTRY # Env::Error without it
+    - ENABLE_FUEL # at least one source must be on
+    - INFLUX_HOST
+    - INFLUX_TOKEN
+    - INFLUX_ORG
+    - INFLUX_BUCKET
+
 senec-charger:
   upstream: senec-charger/app/config.rb
   reads:

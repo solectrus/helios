@@ -11,16 +11,13 @@ module Surveys
         element = find_element(data, 'schedule_time')
         return unless element
 
+        timezone = configuration.timezone
         element['description'] = self.class.localized(
           en: "Applies in the \"#{timezone}\" timezone. Only the five most recent " \
               'backups are kept; older ones are removed automatically.',
           de: "Gilt in der Zeitzone \"#{timezone}\". Es werden weiterhin nur die " \
               'fünf neuesten Sicherungen aufbewahrt, ältere automatisch entfernt.',
         )
-      end
-
-      def timezone
-        configuration.system.timezone.presence || 'Europe/Berlin'
       end
     end
   end

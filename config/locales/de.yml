@@ -347,6 +347,35 @@ de:
         image_pull_failed: 'Hintergrundprozess konnte nicht vorbereitet werden: %{output}'
         start_failed: 'Hintergrundprozess konnte nicht gestartet werden: %{output}'
 
+  countries:
+    AT: 'Österreich'
+    BE: 'Belgien'
+    BG: 'Bulgarien'
+    CY: 'Zypern'
+    CZ: 'Tschechien'
+    DE: 'Deutschland'
+    DK: 'Dänemark'
+    EE: 'Estland'
+    ES: 'Spanien'
+    FI: 'Finnland'
+    FR: 'Frankreich'
+    GR: 'Griechenland'
+    HR: 'Kroatien'
+    HU: 'Ungarn'
+    IE: 'Irland'
+    IT: 'Italien'
+    LT: 'Litauen'
+    LU: 'Luxemburg'
+    LV: 'Lettland'
+    MT: 'Malta'
+    NL: 'Niederlande'
+    PL: 'Polen'
+    PT: 'Portugal'
+    RO: 'Rumänien'
+    SE: 'Schweden'
+    SI: 'Slowenien'
+    SK: 'Slowakei'
+
   configurations:
     show:
       configured: 'Konfiguriert'
@@ -416,6 +445,8 @@ de:
       shelly:
         title: 'Shelly'
         description: 'Fragt Shelly-Geräte direkt ab, lokal oder per Hersteller-Cloud.'
+      public_data_collector:
+        title: 'Public-Data-Collector'
       forecast:
         title: 'PV-Prognose'
         description: 'Holt die PV-Prognose von pvnode, Solcast oder Forecast.Solar.'
@@ -428,7 +459,7 @@ de:
           dashboard_only: 'Nur Dashboard'
       system_general:
         title: 'Grundeinstellungen'
-        description: 'Inbetriebnahme, Zeitzone und Währung'
+        description: 'Inbetriebnahme, Land, Zeitzone und Währung'
       system_security:
         title: 'Zugriffsschutz'
         description: 'Admin-Passwort, Zugangscode und erlaubte Einbettung in andere Webseiten'

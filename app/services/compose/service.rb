@@ -12,6 +12,7 @@ module Compose
       'postgresql' => 'PostgreSQL',
       'postgresql-backup' => 'PostgreSQL-Backup',
       'power-splitter' => 'Power-Splitter',
+      'public-data-collector' => 'Public-Data-Collector',
       'redis' => 'Redis',
       'senec-collector' => 'SENEC-Collector',
       'shelly-collector' => 'Shelly-Collector',

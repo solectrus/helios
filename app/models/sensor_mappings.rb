@@ -17,7 +17,7 @@ class SensorMappings
   # Collectors that own their measurement alone. Nothing else may write into
   # it, whichever field. SENEC is not one of them: it leaves a field to
   # another writer through SENEC_IGNORE.
-  EXCLUSIVE_SOURCES = %w[forecast tibber].freeze
+  EXCLUSIVE_SOURCES = %w[forecast tibber public_data_collector].freeze
 
   # Every field senec-collector writes (SolectrusRecord::KEYS in
   # github.com/solectrus/senec-collector, without the timestamp). SENEC_IGNORE

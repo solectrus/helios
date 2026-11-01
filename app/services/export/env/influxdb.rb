@@ -33,7 +33,7 @@ module Export
         entry('INFLUX_ADMIN_TOKEN', influx.token_admin,
               'Admin token — used by InfluxDB init and backup')
         entry('INFLUX_TOKEN_READWRITE', influx.token_readwrite,
-              'Read+write token — used by power-splitter')
+              'Read+write token')
         entry('INFLUX_TOKEN_WRITE', influx.token_write,
               'Write token — used by all collectors')
         entry('INFLUX_TOKEN_READ', influx.token_read,

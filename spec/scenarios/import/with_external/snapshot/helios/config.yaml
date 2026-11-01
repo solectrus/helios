@@ -12,6 +12,7 @@ deployment:
 system:
   admin_password: example-admin-password
   app_host: 192.168.1.100
+  country: DE
   installation_date: '2025-01-01'
   secret_key_base: example-secret-key-base
   timezone: Europe/Berlin
@@ -52,6 +53,10 @@ sensors:
     source: external
   car_battery_soc:
     field: battery_soc
+    measurement: car
+    source: external
+  car_odometer:
+    field: odometer
     measurement: car
     source: external
   case_temp:
@@ -161,5 +166,7 @@ sensors:
     source: external
 power_splitter:
   image: ghcr.io/solectrus/power-splitter:develop
+public_data_collector:
+  image: ghcr.io/solectrus/public-data-collector:latest
 helios:
   image: ghcr.io/solectrus/helios:develop

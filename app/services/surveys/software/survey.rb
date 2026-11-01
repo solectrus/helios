@@ -19,6 +19,7 @@ module Surveys
         'senec_charger' => ->(c) { Export::Services::SenecCharger.enabled?(c) },
         'ingest' => ->(c) { c.ingest_required? },
         'power_splitter' => ->(c) { Export::Services::PowerSplitter.enabled?(c) },
+        'public_data_collector' => ->(c) { Export::Services::PublicDataCollector.enabled?(c) },
         'helios' => ->(c) { Export::Services::Helios.enabled?(c) },
       }.freeze
 
@@ -32,6 +33,7 @@ module Surveys
         'senec_charger' => { de: 'SENEC-Charger', en: 'SENEC Charger' },
         'ingest' => { de: 'Ingest', en: 'Ingest' },
         'power_splitter' => { de: 'Power Splitter', en: 'Power Splitter' },
+        'public_data_collector' => { de: 'Public-Data-Collector', en: 'Public Data Collector' },
         'helios' => { de: 'HELIOS', en: 'HELIOS' },
       }.freeze
 

@@ -33,6 +33,7 @@ module Import
       'senec-charger' => %w[ghcr.io/solectrus/senec-charger],
       'shelly-collector' => %w[ghcr.io/solectrus/shelly-collector],
       'power-splitter' => %w[ghcr.io/solectrus/power-splitter],
+      'public-data-collector' => %w[ghcr.io/solectrus/public-data-collector],
       'helios' => %w[ghcr.io/solectrus/helios],
       'postgresql-backup' => %w[ghcr.io/solectrus/postgres-s3-backup ghcr.io/solectrus/postgresql-backup],
       'influxdb-backup' => %w[ghcr.io/solectrus/influxdb2-s3-backup ghcr.io/solectrus/influxdb-backup],

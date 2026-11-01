@@ -29,6 +29,7 @@ module Export
       Services::MqttCollector,
       Services::ForecastCollector,
       Services::TibberCollector,
+      Services::PublicDataCollector,
       Services::SenecCharger,
       Services::PowerSplitter,
       Services::Traefik,

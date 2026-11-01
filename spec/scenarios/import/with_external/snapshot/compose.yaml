@@ -46,6 +46,7 @@ services:
     - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
     - INFLUX_SENSOR_BATTERY_SOC
     - INFLUX_SENSOR_CAR_BATTERY_SOC
+    - INFLUX_SENSOR_CAR_ODOMETER
     - INFLUX_SENSOR_CASE_TEMP
     - INFLUX_SENSOR_CUSTOM_POWER_01
     - INFLUX_SENSOR_CUSTOM_POWER_02
@@ -208,6 +209,34 @@ services:
         max-file: '3'
 
   # +----------------------------------------------------------+
+  # |  Public Data Collector — Fetches public fuel prices      |
+  # +----------------------------------------------------------+
+  #
+  public-data-collector:
+    image: ghcr.io/solectrus/public-data-collector:latest
+    environment:
+    - TZ
+    - COUNTRY
+    - ENABLE_FUEL=true
+    - INFLUX_BUCKET
+    - INFLUX_HOST=influxdb
+    - INFLUX_ORG
+    - INFLUX_PORT=8086
+    - INFLUX_SCHEMA=http
+    - INFLUX_TOKEN=${INFLUX_TOKEN_READWRITE}
+    labels:
+    - com.centurylinklabs.watchtower.scope=solectrus
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  # +----------------------------------------------------------+
   # |  Power Splitter — Calculates derived power values        |
   # +----------------------------------------------------------+
   #
@@ -228,6 +257,7 @@ services:
     - INFLUX_SENSOR_BATTERY_DISCHARGING_POWER
     - INFLUX_SENSOR_BATTERY_SOC
     - INFLUX_SENSOR_CAR_BATTERY_SOC
+    - INFLUX_SENSOR_CAR_ODOMETER
     - INFLUX_SENSOR_CASE_TEMP
     - INFLUX_SENSOR_CUSTOM_POWER_01
     - INFLUX_SENSOR_CUSTOM_POWER_02

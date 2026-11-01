@@ -157,4 +157,22 @@ RSpec.describe Import::ConfigurationImporter::UnmanagedDetector do
       expect(detected).to be_nil
     end
   end
+
+  context 'with the public-data-collector of HELIOS' do
+    let(:services) do
+      {
+        'public-data-collector' => {
+          'image' => 'ghcr.io/solectrus/public-data-collector:latest',
+          'environment' => ['COUNTRY', 'ENABLE_FUEL=true'],
+        },
+      }
+    end
+    let(:env_vars) { { 'COUNTRY' => 'DE' } }
+
+    # The export writes COUNTRY only while the collector runs. A copy kept
+    # as a variable of the user's own would outlast it.
+    it 'drops the country it regenerates itself' do
+      expect(detected).to be_nil
+    end
+  end
 end

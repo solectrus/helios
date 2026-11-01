@@ -5,8 +5,8 @@
     "default": "Basic settings"
   },
   "description": {
-    "de": "Inbetriebnahme, Zeitzone und Währung",
-    "default": "Commissioning date, timezone and currency"
+    "de": "Inbetriebnahme, Land, Zeitzone und Währung",
+    "default": "Commissioning date, country, timezone and currency"
   },
   "pages": [
     {
@@ -26,6 +26,34 @@
           },
           "isRequired": true,
           "inputType": "date"
+        }
+      ]
+    },
+    {
+      "name": "p_country",
+      "visibleIfMode": "not_collectors_only",
+      "elements": [
+        {
+          "type": "dropdown",
+          "name": "country",
+          "title": {
+            "de": "Land",
+            "default": "Country"
+          },
+          "description": {
+            "de": "Für öffentliche Energiepreise und Vergleichswerte, die es nur für EU-Staaten gibt",
+            "default": "For public energy prices and reference values, which exist for EU member states only"
+          },
+          "choices": [
+            {
+              "value": "other",
+              "text": {
+                "de": "Außerhalb der EU",
+                "default": "Outside the EU"
+              }
+            }
+          ],
+          "isRequired": true
         }
       ]
     },

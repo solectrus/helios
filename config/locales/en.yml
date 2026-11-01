@@ -371,6 +371,35 @@ en:
         image_pull_failed: 'Background process could not be prepared: %{output}'
         start_failed: 'Background process could not be started: %{output}'
 
+  countries:
+    AT: 'Austria'
+    BE: 'Belgium'
+    BG: 'Bulgaria'
+    CY: 'Cyprus'
+    CZ: 'Czechia'
+    DE: 'Germany'
+    DK: 'Denmark'
+    EE: 'Estonia'
+    ES: 'Spain'
+    FI: 'Finland'
+    FR: 'France'
+    GR: 'Greece'
+    HR: 'Croatia'
+    HU: 'Hungary'
+    IE: 'Ireland'
+    IT: 'Italy'
+    LT: 'Lithuania'
+    LU: 'Luxembourg'
+    LV: 'Latvia'
+    MT: 'Malta'
+    NL: 'Netherlands'
+    PL: 'Poland'
+    PT: 'Portugal'
+    RO: 'Romania'
+    SE: 'Sweden'
+    SI: 'Slovenia'
+    SK: 'Slovakia'
+
   configurations:
     show:
       configured: 'Configured'
@@ -440,6 +469,8 @@ en:
       shelly:
         title: 'Shelly'
         description: 'Queries Shelly devices directly, locally or via the vendor cloud.'
+      public_data_collector:
+        title: 'Public Data Collector'
       forecast:
         title: 'PV forecast'
         description: 'Fetches the PV forecast from pvnode, Solcast or Forecast.Solar.'
@@ -452,7 +483,7 @@ en:
           dashboard_only: 'Dashboard only'
       system_general:
         title: 'Basic settings'
-        description: 'Commissioning date, timezone and currency'
+        description: 'Commissioning date, country, timezone and currency'
       system_security:
         title: 'Access protection'
         description: 'Admin password, access code and permitted embedding into other websites'

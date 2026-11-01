@@ -68,8 +68,7 @@ module Export
       # Variables with service-specific values (internal Docker references, remappings).
       # The splitter reads and writes InfluxDB directly, never through Ingest.
       def explicit_vars
-        influx_endpoint_vars + %w[
-          INFLUX_TOKEN=${INFLUX_TOKEN_READWRITE}
+        influx_endpoint_vars + [influx_token_readwrite_var] + %w[
           REDIS_URL=redis://redis:6379/1
           DB_HOST=postgresql
           DB_USER=postgres

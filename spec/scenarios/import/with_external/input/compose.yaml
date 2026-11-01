@@ -63,6 +63,7 @@ services:
       - INFLUX_SENSOR_HEATPUMP_TANK_TEMP
       - INFLUX_SENSOR_OUTDOOR_TEMP
       - INFLUX_SENSOR_CAR_BATTERY_SOC
+      - INFLUX_SENSOR_CAR_ODOMETER
       - INFLUX_SENSOR_INVERTER_POWER_FORECAST
       - INFLUX_SENSOR_INVERTER_POWER_FORECAST_CLEARSKY
       - INFLUX_SENSOR_OUTDOOR_TEMP_FORECAST
@@ -154,6 +155,23 @@ services:
       - DB_PASSWORD=${POSTGRES_PASSWORD}
       - DB_USER
       - POWER_SPLITTER_INTERVAL
+    restart: unless-stopped
+
+  public-data-collector:
+    image: ghcr.io/solectrus/public-data-collector:latest
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    environment:
+      - TZ
+      - COUNTRY=DE
+      - ENABLE_FUEL=true
+      - INFLUX_HOST
+      - INFLUX_SCHEMA
+      - INFLUX_PORT
+      - INFLUX_TOKEN=${INFLUX_ADMIN_TOKEN}
+      - INFLUX_ORG
+      - INFLUX_BUCKET
     restart: unless-stopped
 
   watchtower:

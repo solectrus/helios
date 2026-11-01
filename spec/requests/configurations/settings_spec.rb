@@ -1194,6 +1194,16 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
         expect(save(mqtt('Prices', 'amount'))).to be_empty
       end
 
+      it 'refuses MQTT in the measurement of the public-data collector' do
+        Configuration.current.update('dashboard', { 'image' => 'ghcr.io/solectrus/solectrus:develop' })
+        Configuration.current.update_sensor('car_odometer', mqtt('car', 'odometer'))
+
+        expect(save(mqtt('Fuel', 'price_petrol'))).to be_empty
+        expect(flash[:alert]).to eq(
+          I18n.t('sensors.errors.measurement_reserved', measurement: 'Fuel', name: 'Public Data Collector'),
+        )
+      end
+
       it 'refuses a SENEC sensor on a field another writer uses' do
         Configuration.current.update_sensor('house_power', mqtt('SENEC', 'grid_power_plus'))
 

@@ -5,7 +5,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   SINGLETONS = %w[
     deployment system dashboard postgresql influxdb redis
     watchtower forecast senec mqtt mosquitto tibber senec_charger shelly reverse_proxy
-    backup backup_schedule sensors ingest power_splitter
+    backup backup_schedule sensors ingest power_splitter public_data_collector
     helios
   ].freeze
 
@@ -14,14 +14,16 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # via #visible_settings whenever a balcony sensor activates it.
   # `senec_charger` has no survey of its own: the prices survey configures it
   # alongside the Tibber collector (see BORROWED_FIELDS).
-  HIDDEN = %w[postgresql redis watchtower power_splitter senec_charger mosquitto helios].freeze
+  HIDDEN = %w[
+    postgresql redis watchtower power_splitter public_data_collector senec_charger mosquitto helios
+  ].freeze
 
   # Mini-surveys persist into a slice of one singleton section in config.yaml.
   # On save the listed keys overwrite, missing ones are cleared, and any
   # sibling keys in the singleton (owned by other mini-surveys) survive
   # untouched. `#setting_data` returns the slice the mini-survey owns.
   SETTING_GROUPS = {
-    'system_general' => { singleton: 'system', keys: %w[installation_date timezone currency] },
+    'system_general' => { singleton: 'system', keys: %w[installation_date timezone country currency] },
     'system_security' => { singleton: 'system', keys: %w[admin_password] },
     'dashboard_co2' => { singleton: 'dashboard', keys: %w[co2_emission_factor] },
     'dashboard_theme' => { singleton: 'dashboard', keys: %w[ui_theme] },
@@ -98,6 +100,59 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # the survey prefills with, and `#update` refuses writes.
   READ_ONLY_SETTINGS = %w[storage].freeze
 
+  # The country a timezone stands for, as long as none is chosen. A fixed
+  # list, because TZInfo answers from the tz files of the host, and Alpine
+  # gives no country for Europe/Amsterdam. Only the member states of the
+  # European Union.
+  COUNTRY_BY_TIMEZONE = {
+    'Europe/Vienna' => 'AT',
+    'Europe/Brussels' => 'BE',
+    'Europe/Sofia' => 'BG',
+    'Asia/Nicosia' => 'CY',
+    'Asia/Famagusta' => 'CY',
+    'Europe/Nicosia' => 'CY',
+    'Europe/Prague' => 'CZ',
+    'Europe/Berlin' => 'DE',
+    'Europe/Busingen' => 'DE',
+    'Europe/Copenhagen' => 'DK',
+    'Europe/Tallinn' => 'EE',
+    'Europe/Madrid' => 'ES',
+    'Africa/Ceuta' => 'ES',
+    'Atlantic/Canary' => 'ES',
+    'Europe/Helsinki' => 'FI',
+    'Europe/Mariehamn' => 'FI',
+    'Europe/Paris' => 'FR',
+    'Europe/Athens' => 'GR',
+    'Europe/Zagreb' => 'HR',
+    'Europe/Budapest' => 'HU',
+    'Europe/Dublin' => 'IE',
+    'Europe/Rome' => 'IT',
+    'Europe/Vilnius' => 'LT',
+    'Europe/Luxembourg' => 'LU',
+    'Europe/Riga' => 'LV',
+    'Europe/Malta' => 'MT',
+    'Europe/Amsterdam' => 'NL',
+    'Europe/Warsaw' => 'PL',
+    'Europe/Lisbon' => 'PT',
+    'Atlantic/Azores' => 'PT',
+    'Atlantic/Madeira' => 'PT',
+    'Europe/Bucharest' => 'RO',
+    'Europe/Stockholm' => 'SE',
+    'Europe/Ljubljana' => 'SI',
+    'Europe/Bratislava' => 'SK',
+  }.freeze
+
+  # The member states of the European Union, the only countries HELIOS tells
+  # apart so far. ISO 3166 codes.
+  EU_COUNTRIES = COUNTRY_BY_TIMEZONE.values.uniq.sort.freeze
+
+  # The zones of each member state, the main one first.
+  TIMEZONES_BY_COUNTRY = COUNTRY_BY_TIMEZONE.group_by(&:last).transform_values { it.map(&:first) }.freeze
+
+  # The choice for a country outside the European Union. Stored as a value of
+  # its own, so it outlasts a timezone that stands for a country.
+  OTHER_COUNTRY = 'other'.freeze
+
   # The Software survey shows a matrix of services (rows) × release
   # channels (columns). Each row stores its persisted image in a different
   # singleton, so we translate between the survey's channel tokens
@@ -113,6 +168,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
     'forecast_collector' => { singleton: 'forecast', registry: :FORECAST_COLLECTOR },
     'ingest' => { singleton: 'ingest', registry: :INGEST },
     'power_splitter' => { singleton: 'power_splitter', registry: :POWER_SPLITTER },
+    'public_data_collector' => { singleton: 'public_data_collector', registry: :PUBLIC_DATA_COLLECTOR },
     'helios' => { singleton: 'helios', registry: :HELIOS },
   }.freeze
 
@@ -877,12 +933,39 @@ class Configuration # rubocop:disable Metrics/ClassLength
     !collectors_only? && balcony_sensors.any?
   end
 
-  # Dashboard 1.4 (develop channel only so far) looks up addresses for any
-  # car, not only one with a location sensor: a charging session entered by
-  # hand gets an address too.
+  # The dashboard looks up addresses for any car, not only one with a location
+  # sensor: a charging session entered by hand gets an address too.
   def geocoding_offered?
-    software_channel_for(:DASHBOARD, dashboard.image) == 'develop' &&
-      enabled_sensors.any? { |name| SensorRegistry.car_role(name) }
+    develop_dashboard? && mapped_car_roles.any?
+  end
+
+  # Only Dashboard 1.4 has the car features, and it is on this channel alone.
+  def develop_dashboard?
+    software_channel_for(:DASHBOARD, dashboard.image) == 'develop'
+  end
+
+  # The roles of the mapped car sensors, without the number of the car. Only
+  # a sensor with a complete mapping reaches the dashboard.
+  def mapped_car_roles
+    effective_sensor_mappings.keys.filter_map { |name| SensorRegistry.car_role(name) }
+  end
+
+  def timezone
+    system.timezone.presence || 'Europe/Berlin'
+  end
+
+  # ISO 4217 code. The dropdown stores the code directly (common choices and
+  # the free-text "other" value alike), upcased so config.yaml casing never
+  # leaks into .env.
+  def currency
+    system.currency.presence&.strip&.upcase || 'EUR'
+  end
+
+  # ISO 3166 code of the chosen country, else the one of the timezone. Nil
+  # outside the European Union.
+  def country
+    chosen = system.country.presence || COUNTRY_BY_TIMEZONE[timezone]
+    chosen if EU_COUNTRIES.include?(chosen)
   end
 
   # Enabled Ingest inputs (INGEST_SENSORS) fed by an external source. They only
@@ -1061,9 +1144,10 @@ class Configuration # rubocop:disable Metrics/ClassLength
 
   # Why `config`, saved as `owner`, cannot write where it would, as
   # [reason, measurement, detail], or nil. Two writers on one
-  # measurement:field overwrite each other. SENEC, Forecast and Tibber own
-  # their measurement alone, and a Shelly device writes all its fields. SENEC
-  # keeps only the fields its sensors read and leaves the rest to others.
+  # measurement:field overwrite each other. SENEC, Forecast, Tibber and the
+  # public-data collector own their measurement alone, and a Shelly device
+  # writes all its fields. SENEC keeps only the fields its sensors read and
+  # leaves the rest to others.
   #
   # :reserved - the measurement belongs to the collector `detail` names
   # :taken    - `config` needs the whole measurement, another writer is there
@@ -1301,16 +1385,25 @@ class Configuration # rubocop:disable Metrics/ClassLength
   private
 
   # One [writer, measurement, fields] per sensor, standalone Shelly device,
-  # MQTT mapping and the Tibber collector, except `except`. The SENEC and
-  # Forecast collectors run exactly when a sensor reads them, so their sensors
-  # stand for them. All sensors of one collector or Shelly device count as one
-  # writer.
+  # MQTT mapping, the Tibber and the public-data collector, except `except`.
+  # The SENEC and Forecast collectors run exactly when a sensor reads them, so
+  # their sensors stand for them. All sensors of one collector or Shelly
+  # device count as one writer.
   def influx_writes(except:)
     owners = enabled_sensors.map { ["sensor:#{it}", @data['sensors'][it]] } +
              shelly_devices.map.with_index { |config, i| ["shelly_device:#{i}", config] } +
-             mqtt_topics.map.with_index { |config, i| ["mqtt_topic:#{i}", config] }
-    owners << ['tibber', tibber] if tibber_enabled?
+             mqtt_topics.map.with_index { |config, i| ["mqtt_topic:#{i}", config] } +
+             collector_owners
     owners.filter_map { |owner, config| influx_write(owner, config) unless owner == except }
+  end
+
+  # The running collectors that no sensor stands for. The measurement of the
+  # public-data collector is fixed, it takes no setting for it.
+  def collector_owners
+    owners = []
+    owners << ['tibber', tibber] if tibber_enabled?
+    owners << ['public_data_collector', { 'measurement' => 'Fuel' }] if Export::Services::PublicDataCollector.enabled?(self)
+    owners
   end
 
   # `owner` is "sensor:<name>", "shelly_device:<index>", "mqtt_topic:<index>"

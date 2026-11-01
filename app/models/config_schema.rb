@@ -2,6 +2,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
   # Fields configurable via the setup wizard or system survey
   SYSTEM_FIELDS = %w[
     timezone
+    country
     currency
     installation_date
     app_host
@@ -112,7 +113,8 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
 
   # --- InfluxDB ---
 
-  # Four roles — admin (init/backup), readwrite (power-splitter), write
+  # Four roles — admin (init/backup), readwrite (power-splitter,
+  # public-data-collector), write
   # (collectors), read (dashboard) — kept as distinct fields so a stack with
   # privilege-separated authorizations round-trips losslessly.
   #
@@ -383,6 +385,8 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
 
   POWER_SPLITTER_FIELDS = %w[image].freeze
 
+  PUBLIC_DATA_COLLECTOR_FIELDS = %w[image].freeze
+
   # `proxy_network` names a Docker network an external proxy is already on. It
   # is the second way such a proxy reaches the stack: instead of routing to
   # published host ports, it joins the services on a network the two stacks
@@ -462,6 +466,7 @@ class ConfigSchema # rubocop:disable Metrics/ClassLength
     'backup_schedule' => BACKUP_SCHEDULE_ALL,
     'sensors' => SENSORS_FIELDS,
     'power_splitter' => POWER_SPLITTER_FIELDS,
+    'public_data_collector' => PUBLIC_DATA_COLLECTOR_FIELDS,
     'helios' => HELIOS_ALL,
   }.freeze
 

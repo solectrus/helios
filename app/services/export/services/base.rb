@@ -168,6 +168,11 @@ module Export
         'INFLUX_TOKEN=${INFLUX_TOKEN_READ}'
       end
 
+      # For services that read what they write, like the power-splitter.
+      def influx_token_readwrite_var
+        'INFLUX_TOKEN=${INFLUX_TOKEN_READWRITE}'
+      end
+
       # InfluxDB env vars every collector passes through unchanged: TZ plus the
       # org/bucket names, and the external connection vars (host/port/schema) in
       # collectors_only mode. Services that read more (senec, dashboard, …)

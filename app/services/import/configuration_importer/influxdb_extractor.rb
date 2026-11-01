@@ -45,7 +45,7 @@ module Import
       # `INFLUX_TOKEN: ${POWER_SPLITTER_INFLUX_TOKEN}` on power-splitter).
       ROLE_CONSUMERS = {
         'token_admin' => %w[influxdb],
-        'token_readwrite' => %w[power-splitter],
+        'token_readwrite' => %w[power-splitter public-data-collector],
         'token_write' => %w[mqtt-collector senec-collector shelly-collector
                             forecast-collector ingest],
         'token_read' => %w[dashboard],

@@ -46,6 +46,7 @@ module Import
 
         {
           'timezone' => env_or_raw(dashboard_env, 'TZ'),
+          'country' => imported_country,
           'currency' => env_or_raw(dashboard_env, 'CURRENCY')&.strip&.upcase,
           'installation_date' => dashboard_env['INSTALLATION_DATE'],
           # Direct raw_env (no .presence) preserves an explicit empty .env value,
@@ -73,6 +74,20 @@ module Import
 
       def update_mode
         ConfigSchema::UPDATE_MODE_TIME if update_time
+      end
+
+      # Only the public-data-collector reads the country so far, and only the
+      # COUNTRY it sees counts. One in .env may belong to another service.
+      # A member state keeps its ISO code, any other country becomes the choice
+      # outside the European Union. A value that is no country code at all is
+      # dropped, and the timezone decides.
+      def imported_country
+        code = service_env('public-data-collector')['COUNTRY'].to_s.strip.upcase
+        # The European Union writes Greece as EL, and the collector takes it.
+        code = 'GR' if code == 'EL'
+        return unless code.match?(/\A[A-Z]{2}\z/)
+
+        Configuration::EU_COUNTRIES.include?(code) ? code : Configuration::OTHER_COUNTRY
       end
 
       # Prefer the value referenced by the dashboard service, but fall back to

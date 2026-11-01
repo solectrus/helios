@@ -1502,6 +1502,47 @@ RSpec.describe Configuration do
     end
   end
 
+  describe '#country' do
+    def country_for(country: nil, timezone: nil)
+      described_class.from_data('system' => { 'country' => country, 'timezone' => timezone }.compact).country
+    end
+
+    it 'is the chosen country' do
+      expect(country_for(country: 'AT', timezone: 'Europe/Berlin')).to eq('AT')
+    end
+
+    it 'follows the timezone while none is chosen' do
+      expect(country_for(timezone: 'Europe/Vienna')).to eq('AT')
+      expect(country_for).to eq('DE')
+    end
+
+    it 'is nil for a timezone outside the European Union' do
+      expect(country_for(timezone: 'Europe/Zurich')).to be_nil
+    end
+
+    it 'is nil for the choice outside the European Union, whatever the timezone' do
+      expect(country_for(country: 'other', timezone: 'Europe/Berlin')).to be_nil
+      expect(country_for(country: 'CH', timezone: 'Europe/Berlin')).to be_nil
+    end
+
+    # TZInfo lists only the canonical zones of a country, not the links to them.
+    it 'knows the links to a zone of a member state' do
+      expect(country_for(timezone: 'Europe/Mariehamn')).to eq('FI')
+      expect(country_for(timezone: 'Europe/Nicosia')).to eq('CY')
+    end
+
+    # zone.tab (macOS) lists the own zones of a country. zone1970.tab (Alpine,
+    # Ubuntu) lists the zones it shares: Europe/Berlin for Sweden,
+    # Europe/Zurich for Germany. A zone of a country outside the Union is
+    # therefore no gap.
+    it 'knows every zone of every member state' do
+      members, others = TZInfo::Country.all.partition { described_class::EU_COUNTRIES.include?(it.code) }
+      zones = members.flat_map(&:zone_identifiers) - others.flat_map(&:zone_identifiers)
+
+      expect(described_class::COUNTRY_BY_TIMEZONE.keys).to include(*zones)
+    end
+  end
+
   describe '#visible_settings' do
     it 'omits ingest_settings by default in full mode' do
       with_config_yaml
