@@ -14,16 +14,20 @@ function fakeQuestion() {
 }
 
 // The nesting SurveyJS renders for a dropdown: the list sits in a wrapper next
-// to the field, both inside the question.
-function renderQuestion(selected = 'Europe/Berlin') {
+// to the field, both inside the question. Until the list first opens, the
+// wrapper is empty.
+function renderQuestion(selected = 'Europe/Berlin', { opened = true } = {}) {
+  const list = opened
+    ? `<div class="sv-popup"><div class="sd-selectlist">
+        <div class="sd-selectlist__item sd-selectlist__item--selected">${selected}</div>
+      </div></div>`
+    : '';
   const question = document.createElement('div');
   question.className = 'sd-question';
   question.innerHTML = `
     <div class="sv-dropdown_select-wrapper">
       <div class="sd-formbox sd-dropdown"><input type="text" value="${selected}"></div>
-      <div><div class="sv-popup"><div class="sd-selectlist">
-        <div class="sd-selectlist__item sd-selectlist__item--selected">${selected}</div>
-      </div></div></div>
+      <div class="popup-wrapper">${list}</div>
     </div>`;
   document.querySelector('.sd-root-modern')!.append(question);
 
@@ -72,6 +76,15 @@ describe('SurveyDropdowns', () => {
     expect(question.querySelector('.sv-popup')).toBeNull();
     expect(host()!.querySelector('.sv-popup')).not.toBeNull();
     expect(document.querySelector('.modal-box .sv-popup')).toBeNull();
+  });
+
+  it('moves the wrapper before the list first opens and renders into it', () => {
+    const question = renderQuestion('Europe/Berlin', { opened: false });
+
+    dropdowns.lift(fakeQuestion(), question);
+
+    expect(question.querySelector('.popup-wrapper')).toBeNull();
+    expect(host()!.querySelector('.popup-wrapper')).not.toBeNull();
   });
 
   it('carries the theme of the survey root over to the host', () => {

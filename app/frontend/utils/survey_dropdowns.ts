@@ -18,7 +18,7 @@ type DropdownQuestion = {
 // names.
 export class SurveyDropdowns {
   // Lists moved next to the dialog, each with the field it belongs to.
-  private readonly lifted = new Map<HTMLElement, HTMLElement>();
+  private readonly lifted = new Map<Element, HTMLElement>();
   private host: HTMLElement | null = null;
 
   constructor(
@@ -31,9 +31,10 @@ export class SurveyDropdowns {
     if (!popup) return;
 
     // SurveyJS looks the list up inside the wrapper around .sv-popup, so the
-    // wrapper moves along; the list on its own would lose its position.
-    const wrapper = htmlElement.querySelector('.sv-popup')?.parentElement;
+    // wrapper moves along; the list on its own would lose its position. The
+    // wrapper follows the field, and stays empty until the list first opens.
     const field = htmlElement.querySelector<HTMLElement>('.sd-dropdown');
+    const wrapper = field?.nextElementSibling;
     if (!wrapper || !field || this.lifted.has(wrapper)) return;
 
     // Only surveys that actually have a dropdown get a host.
