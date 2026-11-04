@@ -1,7 +1,7 @@
 source 'https://rubygems.org'
 
 gem 'puma'
-gem 'rails', '~> 8.1.4'
+gem 'rails', '~> 8.1.4', '>= 8.1.4.1'
 gem 'solid_cable'
 gem 'sqlite3'
 

@@ -444,7 +444,7 @@ DEPENDENCIES
   herb
   puma
   rack-brotli
-  rails (~> 8.1.4)
+  rails (~> 8.1.4, >= 8.1.4.1)
   rails_vite
   rspec-rails
   rubocop
