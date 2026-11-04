@@ -10,7 +10,6 @@ _schema_version: 9
 system:
   admin_password: dummy-admin-password
   app_host: solectrus.example.com
-  country: DE
   currency: EUR
   installation_date: '2025-04-01'
   secret_key_base: dummy-secret-key-base-for-setup-scenarios

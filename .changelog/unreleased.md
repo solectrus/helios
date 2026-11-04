@@ -10,7 +10,7 @@ Keep every section, an empty one included.
 
 ## New features
 
-- **HELIOS sets up a service for fuel prices.** The dashboard on the development channel compares the cost of an electric car with a combustion car. The new service reads the prices of petrol, diesel and LPG once a week for this comparison. HELIOS adds it when a car with an odometer is set up, the country is a member state of the European Union and the currency is the euro. The basic settings have a new question for the country. Until it is answered, HELIOS takes the country from the timezone. After the update, the service must be started once in HELIOS.
+- **Development channel gets a service for fuel prices.** The dashboard on the development channel compares the cost of an electric car with a combustion car. The new service reads the prices of petrol, diesel and LPG once a week for this comparison. HELIOS adds it when a car with an odometer is set up, the country is a member state of the European Union and the currency is the euro. On this channel, the basic settings have a new question for the country. Until it is answered, HELIOS takes the country from the timezone. After the update, the service must be started once in HELIOS. Installations on the stable channel see no change.
 
 ## Improvements
 

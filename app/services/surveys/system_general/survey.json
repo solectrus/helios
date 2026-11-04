@@ -5,8 +5,8 @@
     "default": "Basic settings"
   },
   "description": {
-    "de": "Inbetriebnahme, Land, Zeitzone und Währung",
-    "default": "Commissioning date, country, timezone and currency"
+    "de": "Inbetriebnahme, Zeitzone und Währung",
+    "default": "Commissioning date, timezone and currency"
   },
   "pages": [
     {

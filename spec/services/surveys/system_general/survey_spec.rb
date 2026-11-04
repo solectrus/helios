@@ -2,7 +2,8 @@ RSpec.describe Surveys::SystemGeneral::Survey do
   describe '#call' do
     subject(:result) { described_class.new.call }
 
-    before { with_config_yaml }
+    # The country belongs to the dashboard of the development channel.
+    before { with_config_yaml('dashboard' => { 'image' => 'ghcr.io/solectrus/solectrus:develop' }) }
 
     it 'exposes installation_date and timezone in full mode' do
       expect(find_survey_element(result, 'installation_date')).to be_present
@@ -22,6 +23,14 @@ RSpec.describe Surveys::SystemGeneral::Survey do
       expect(find_survey_element(result, 'country')).to be_nil
       expect(section_names(result)).to eq(%w[p_timezone p_currency])
       expect(find_survey_element(result, 'timezone')).to include('defaultValue' => 'Europe/Berlin')
+    end
+
+    it 'leaves out the country with the dashboard of the stable channel' do
+      Configuration.current.update('dashboard', { 'image' => 'ghcr.io/solectrus/solectrus:latest' })
+
+      expect(section_names(result)).to eq(%w[p_installation p_timezone p_currency])
+      expect(find_survey_element(result, 'timezone')).to include('defaultValue' => 'Europe/Berlin')
+      expect(find_survey_element(result, 'timezone')['validators']).to be_nil
     end
 
     describe 'timezone choices' do

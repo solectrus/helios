@@ -459,7 +459,7 @@ de:
           dashboard_only: 'Nur Dashboard'
       system_general:
         title: 'Grundeinstellungen'
-        description: 'Inbetriebnahme, Land, Zeitzone und Währung'
+        description: 'Inbetriebnahme, Zeitzone und Währung'
       system_security:
         title: 'Zugriffsschutz'
         description: 'Admin-Passwort, Zugangscode und erlaubte Einbettung in andere Webseiten'
