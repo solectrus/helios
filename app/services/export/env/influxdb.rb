@@ -31,13 +31,13 @@ module Export
       def local_token_entries
         influx = configuration.influxdb
         entry('INFLUX_ADMIN_TOKEN', influx.token_admin,
-              'Admin token — used by InfluxDB init and backup')
+              'Admin token — full access to InfluxDB')
         entry('INFLUX_TOKEN_READWRITE', influx.token_readwrite,
-              'Read+write token')
+              'Read+write token — for services that read and write the bucket')
         entry('INFLUX_TOKEN_WRITE', influx.token_write,
-              'Write token — used by all collectors')
+              'Write token — for services that only write to the bucket')
         entry('INFLUX_TOKEN_READ', influx.token_read,
-              'Read token — used by the dashboard')
+              'Read token — for services that only read from the bucket')
       end
 
       def external_section
