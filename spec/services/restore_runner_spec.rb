@@ -115,6 +115,43 @@ RSpec.describe RestoreRunner do
       end
     end
 
+    # Moving to a new host: the tar was uploaded to the fresh install's local
+    # dir, while the archive's config points at the old host's NAS mount.
+    it 'mounts the directory holding the tar, not the destination from the restored config' do
+      write_archive_with_backup_config("  destination: external\n  external_path: /mnt/nas\n")
+
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      expect(run).to include('--mount', "type=bind,source=#{host_data_path}/helios/backups,target=/output")
+    end
+
+    it 'keeps the local tar when the restored config names an S3 destination' do
+      write_archive_with_backup_config("  destination: s3\n  aws_bucket: my-bucket\n")
+
+      described_class.start(filename)
+
+      run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
+      expect(run[run.index('_') + 10]).to eq('0')
+    end
+
+    it 'keeps the backup destination of the target, not the one from the archive' do
+      Configuration.current.update('backup', { 'destination' => 'local' })
+      write_archive_with_backup_config("  destination: external\n  external_path: /mnt/source\n")
+
+      described_class.start(filename)
+
+      expect(Configuration.load_file(Configuration.path)['backup']).to eq('destination' => 'local')
+    end
+
+    it 'falls back to the default destination when the target has none configured' do
+      write_archive_with_backup_config("  destination: external\n  external_path: /mnt/source\n")
+
+      described_class.start(filename)
+
+      expect(Configuration.load_file(Configuration.path)).not_to have_key('backup')
+    end
+
     it 'passes runtime values as positional shell args' do
       described_class.start(filename)
 
@@ -593,6 +630,17 @@ RSpec.describe RestoreRunner do
                 ''
               end
     [payload, instance_double(Process::Status, success?: success)]
+  end
+
+  def write_archive_with_backup_config(backup_yaml)
+    File.binwrite(
+      File.join(data_path, 'helios', 'backups', filename),
+      tar_archive(
+        'helios/config.yaml' => "#{restored_config_yaml}backup:\n#{backup_yaml}",
+        'solectrus-postgresql-backup-2026-05-08.sql.gz' => 'postgres dump',
+        'solectrus-influxdb-backup-2026-05-08/data.tar.gz' => 'influx backup',
+      ),
+    )
   end
 
   def restored_config_yaml

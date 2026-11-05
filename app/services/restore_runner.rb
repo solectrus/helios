@@ -171,6 +171,7 @@ class RestoreRunner < DetachedRunner
   def prepare_restored_stack!
     restored = restored_configuration_data.deep_dup
     preserve_target_volume_paths!(restored)
+    preserve_target_backup_destination!(restored)
     write_restored_configuration!(restored)
     Export::Builder.new(Configuration.current).write!
     raise Error, error(:missing_token) if influx_admin_token.blank?
@@ -194,6 +195,20 @@ class RestoreRunner < DetachedRunner
       else
         restored[setting]&.delete('volume_path')
       end
+    end
+  end
+
+  # The backup destination is host infrastructure as well: an external path
+  # names a mount of the source host that may not exist on the target. The
+  # target's destination is known to work, the restore has just read the
+  # tar from it, so it wins over the archive's.
+  def preserve_target_backup_destination!(restored)
+    target = Configuration.load_file(Configuration.path)['backup']
+
+    if target.present?
+      restored['backup'] = target
+    else
+      restored.delete('backup')
     end
   end
 
