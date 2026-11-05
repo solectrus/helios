@@ -28,12 +28,13 @@ RSpec.describe RestoreRunner, :docker_stack do
   end
 
   describe '.start (real restore against a freshly initialized data directory)' do
-    it 'rebuilds the stack from the backup tar and restores the seeded marker row' do
+    it 'rebuilds the stack from the backup tar and restores both seeded markers' do
       Orchestration::Runner.start('postgresql', 'influxdb')
       wait_for_postgresql_ready!
       wait_for_healthy!('influxdb')
       create_production_database!
       seed_marker_row!
+      seed_influx_point!
 
       filename = produce_backup_tar!
       expect(filename).not_to be_nil, 'no backup tar was produced'
@@ -49,11 +50,42 @@ RSpec.describe RestoreRunner, :docker_stack do
         # restore script got past the bootstrap-server race.
         wait_for_postgresql_ready!
         expect(marker_rows).to eq(['restored'])
+        wait_for_healthy!('influxdb')
+        expect(influx_marker_values).to eq(['42'])
       end
     end
   end
 
   # --- helpers ---
+
+  def seed_influx_point!
+    _stdout, stderr, code = Orchestration::Runner.compose_exec(
+      'influxdb', 'influx', 'write', *influx_auth_args, '--bucket', influx_env('INFLUX_BUCKET'),
+      'restore_marker value=42'
+    )
+    raise "influx write failed: #{stderr}" unless code&.zero?
+  end
+
+  def influx_marker_values
+    flux = %(from(bucket: "#{influx_env('INFLUX_BUCKET')}") |> range(start: -1d) ) \
+           '|> filter(fn: (r) => r._measurement == "restore_marker") |> keep(columns: ["_value"])'
+    stdout, stderr, code = Orchestration::Runner.compose_exec(
+      'influxdb', 'influx', 'query', *influx_auth_args, '--raw', flux
+    )
+    raise "influx query failed: #{stderr}" unless code&.zero?
+
+    lines = stdout.lines.map(&:strip).reject { |line| line.empty? || line.start_with?('#') }
+    header, *rows = lines.map { |line| line.split(',') }
+    rows.map { |row| row[header.index('_value')] }
+  end
+
+  def influx_auth_args
+    ['--org', influx_env('INFLUX_ORG'), '--token', influx_env('INFLUX_ADMIN_TOKEN')]
+  end
+
+  def influx_env(key)
+    Env.load[key]
+  end
 
   # Minimal HELIOS configuration with a local backup destination —
   # Export::Builder.ensure_defaults! materializes postgresql, influxdb,
