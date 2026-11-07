@@ -16,4 +16,6 @@ Keep every section, an empty one included.
 
 ## Fixes
 
+- **HELIOS follows a regional browser language.** A browser that sends only a regional language such as "de-DE" now gets the German interface.
+
 ## Maintenance

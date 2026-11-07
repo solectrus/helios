@@ -15,7 +15,6 @@ gem 'aws-sdk-s3'
 gem 'rubyzip'
 
 # Frontend
-gem 'accept_language'
 gem 'commonmarker'
 gem 'rack-brotli'
 gem 'rails_vite'

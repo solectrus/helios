@@ -34,6 +34,10 @@ RSpec.describe UserPreferences do
       expect(described_class.new({}).resolved_locale('de-DE,de;q=0.9')).to eq(:de)
     end
 
+    it 'matches a regional browser language to its language' do
+      expect(described_class.new({}).resolved_locale('de-DE')).to eq(:de)
+    end
+
     it 'falls back to the default locale for a language HELIOS does not ship' do
       expect(described_class.new({}).resolved_locale('fr-FR')).to eq(I18n.default_locale)
     end

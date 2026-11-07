@@ -1,7 +1,6 @@
 GEM
   remote: https://rubygems.org/
   specs:
-    accept_language (2.2.0)
     action_text-trix (2.1.19)
       railties
     actioncable (8.1.4.1)
@@ -428,7 +427,6 @@ PLATFORMS
   x86_64-linux-musl
 
 DEPENDENCIES
-  accept_language
   amazing_print
   annotaterb
   aws-sdk-s3

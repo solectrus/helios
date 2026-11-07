@@ -18,7 +18,7 @@ class UserPreferences
 
   def resolved_locale(accept_language)
     locale&.to_sym ||
-      AcceptLanguage.parse(accept_language).match(*I18n.available_locales) ||
+      AcceptLanguage.locale_from(accept_language, I18n.available_locales) ||
       I18n.default_locale
   end
 
