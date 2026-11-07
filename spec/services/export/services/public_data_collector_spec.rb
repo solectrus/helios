@@ -40,6 +40,16 @@ RSpec.describe Export::Services::PublicDataCollector do
       expect(described_class.enabled?(config)).to be(true)
     end
 
+    it 'is enabled for the heat of a heat pump, to compare it with an oil or a gas heating' do
+      config = config_with(sensors: { 'heatpump_heating_power' => { 'source' => 'mqtt' } })
+      expect(described_class.enabled?(config)).to be(true)
+    end
+
+    it 'is disabled for a heat pump without the sensor of its heat' do
+      config = config_with(sensors: { 'heatpump_power' => { 'source' => 'mqtt' } })
+      expect(described_class.enabled?(config)).to be(false)
+    end
+
     it 'is disabled outside the European Union, where the bulletin has no prices' do
       expect(described_class.enabled?(config_with(system: { 'country' => 'other' }))).to be(false)
     end
@@ -74,6 +84,12 @@ RSpec.describe Export::Services::PublicDataCollector do
         'COUNTRY', 'ENABLE_FUEL=true'
       )
       expect(service[:depends_on]).to eq(influxdb: { condition: 'service_healthy' })
+    end
+
+    it 'switches on the gas price for the heat of a heat pump' do
+      config = config_with(sensors: { 'heatpump_heating_power' => { 'source' => 'mqtt' } })
+
+      expect(described_class.new(config).to_h[:environment]).to include('ENABLE_FUEL=true', 'ENABLE_GAS=true')
     end
 
     it 'defaults to the stable image' do

@@ -1204,6 +1204,16 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
         )
       end
 
+      it 'refuses MQTT in the gas measurement of the public-data collector for a heat pump' do
+        Configuration.current.update('dashboard', { 'image' => 'ghcr.io/solectrus/solectrus:develop' })
+        Configuration.current.update_sensor('heatpump_heating_power', mqtt('heatpump', 'heating_power'))
+
+        expect(save(mqtt('Gas', 'price'))).to be_empty
+        expect(flash[:alert]).to eq(
+          I18n.t('sensors.errors.measurement_reserved', measurement: 'Gas', name: 'Public Data Collector'),
+        )
+      end
+
       it 'refuses a SENEC sensor on a field another writer uses' do
         Configuration.current.update_sensor('house_power', mqtt('SENEC', 'grid_power_plus'))
 

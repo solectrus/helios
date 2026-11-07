@@ -10,6 +10,8 @@ Keep every section, an empty one included.
 
 ## New features
 
+- **Public Data Collector fetches heating oil and gas prices.** This applies only to the dashboard on the development channel. The dashboard compares the costs of the heat pump with an oil or a gas heating. HELIOS sets up the collector also when the sensor of the generated heat of the heat pump is set up. Where the collector is new, it must be started once in HELIOS.
+
 ## Improvements
 
 ## Fixes

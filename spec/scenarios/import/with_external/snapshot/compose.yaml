@@ -218,6 +218,7 @@ services:
     - TZ
     - COUNTRY
     - ENABLE_FUEL=true
+    - ENABLE_GAS=true
     - INFLUX_BUCKET
     - INFLUX_HOST=influxdb
     - INFLUX_ORG

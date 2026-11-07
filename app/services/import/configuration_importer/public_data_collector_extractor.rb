@@ -10,7 +10,7 @@ module Import
       def section_data
         return unless @reader.service('public-data-collector')
 
-        # SystemExtractor takes COUNTRY, ENABLE_FUEL follows on export.
+        # SystemExtractor takes COUNTRY, the ENABLE_* switches follow on export.
         image_data_for('public-data-collector')
       end
     end

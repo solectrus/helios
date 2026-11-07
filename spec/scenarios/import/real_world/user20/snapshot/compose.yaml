@@ -308,6 +308,35 @@ services:
         max-file: '3'
 
   # +----------------------------------------------------------+
+  # |  Public Data Collector — Fetches public fuel prices      |
+  # +----------------------------------------------------------+
+  #
+  public-data-collector:
+    image: ghcr.io/solectrus/public-data-collector:latest
+    environment:
+    - TZ
+    - COUNTRY
+    - ENABLE_FUEL=true
+    - ENABLE_GAS=true
+    - INFLUX_BUCKET
+    - INFLUX_HOST=influxdb
+    - INFLUX_ORG
+    - INFLUX_PORT=8086
+    - INFLUX_SCHEMA=http
+    - INFLUX_TOKEN=${INFLUX_TOKEN_READWRITE}
+    labels:
+    - com.centurylinklabs.watchtower.scope=solectrus
+    depends_on:
+      influxdb:
+        condition: service_healthy
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: '3'
+
+  # +----------------------------------------------------------+
   # |  Power Splitter — Calculates derived power values        |
   # +----------------------------------------------------------+
   #

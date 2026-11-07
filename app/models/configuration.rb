@@ -1397,13 +1397,14 @@ class Configuration # rubocop:disable Metrics/ClassLength
     owners.filter_map { |owner, config| influx_write(owner, config) unless owner == except }
   end
 
-  # The running collectors that no sensor stands for. The measurement of the
-  # public-data collector is fixed, it takes no setting for it.
+  # The running collectors that no sensor stands for. The measurements of the
+  # public-data collector are fixed, it takes no setting for them.
   def collector_owners
     owners = []
     owners << ['tibber', tibber] if tibber_enabled?
-    owners << ['public_data_collector', { 'measurement' => 'Fuel' }] if Export::Services::PublicDataCollector.enabled?(self)
-    owners
+    owners + Export::Services::PublicDataCollector.measurements(self).map do |measurement|
+      ['public_data_collector', { 'measurement' => measurement }]
+    end
   end
 
   # `owner` is "sensor:<name>", "shelly_device:<index>", "mqtt_topic:<index>"
