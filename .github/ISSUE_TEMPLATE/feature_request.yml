@@ -64,7 +64,8 @@ body:
 
         If your suggestion relates to your specific setup (current configuration, installed services,
         host environment), attaching a **support bundle ZIP** can help illustrate the context.
-        It is generated via the *Download support bundle* action in the HELIOS UI and contains
+        To generate it, open the **⋮ menu** at the top right of HELIOS, choose **Support** and click
+        **Download ZIP**. It contains
         `compose.yaml`, `.env`, `config.yaml`, system info and recent container logs — passwords,
         tokens and coordinates are anonymized automatically.
 

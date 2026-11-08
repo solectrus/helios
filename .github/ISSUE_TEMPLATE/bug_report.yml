@@ -72,8 +72,9 @@ body:
         and the last log lines per container. **Passwords, tokens and coordinates are anonymized
         automatically**, so the archive is safe to share publicly.
 
-        Generate it via the *Download support bundle* action in the HELIOS UI and **drag & drop the ZIP
-        file into the comment box below** before submitting this issue.
+        To generate it, open the **⋮ menu** at the top right of HELIOS, choose **Support** and click
+        **Download ZIP**. Then **drag & drop the ZIP file into the comment box below** before submitting
+        this issue.
 
   - type: checkboxes
     id: support-bundle
