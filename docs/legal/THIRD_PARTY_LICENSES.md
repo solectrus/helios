@@ -69,7 +69,6 @@ on request at info@solectrus.de.
 
 | Package                | License            |
 | ---------------------- | ------------------ |
-| `accept_language`      | MIT                |
 | `action_text-trix`     | MIT                |
 | `actioncable`          | MIT                |
 | `actionmailbox`        | MIT                |

@@ -465,7 +465,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ## @rails/actioncable
 
-- Version: 8.1.400
+- Version: 8.1.401
 - License: MIT
 - Homepage: https://rubyonrails.org/
 
@@ -547,7 +547,7 @@ Source: https://github.com/ElMassimo/stimulus-vite-helpers
 
 ## survey-core
 
-- Version: 3.2.3
+- Version: 3.2.4
 - License: MIT
 - Homepage: https://surveyjs.io/
 
@@ -577,7 +577,7 @@ SOFTWARE.
 
 ## survey-js-ui
 
-- Version: 3.2.3
+- Version: 3.2.4
 - License: MIT
 - Homepage: https://surveyjs.io/
 
