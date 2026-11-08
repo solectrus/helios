@@ -207,6 +207,7 @@ jobs:
           printf '%s\n' \
             alpine:latest \
             docker:29-cli \
+            influxdb:2.8-alpine \
             influxdb:2.9-alpine \
             postgres:13-alpine \
             postgres:18-alpine \

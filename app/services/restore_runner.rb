@@ -65,7 +65,8 @@
 #                               source instance had hashed tokens
 #                               (InfluxDB OSS 2.9+ default), otherwise
 #                               auth breaks after --full overwrites the
-#                               bolt
+#                               bolt. Passed only when the influx CLI
+#                               knows the flag
 #        :starting_services   → only if every non-HELIOS service was
 #                               running before the restore; otherwise
 #                               leave manually-stopped services alone

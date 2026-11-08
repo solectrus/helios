@@ -11,6 +11,7 @@
 # real restore (which itself starts the stack twice).
 RSpec.describe RestoreRunner, :docker_stack do
   let(:data_path) { Rails.root.join("tmp/restore-itest#{ENV.fetch('TEST_ENV_NUMBER', nil)}").to_s }
+  let(:influxdb_image) { DockerImages.current(:INFLUXDB) }
 
   before do
     skip_without_docker
@@ -27,7 +28,7 @@ RSpec.describe RestoreRunner, :docker_stack do
     clear_data_path!(data_path, cleanup_image: described_class::IMAGE)
   end
 
-  describe '.start (real restore against a freshly initialized data directory)' do
+  shared_examples 'a restore from a freshly initialized data directory' do
     it 'rebuilds the stack from the backup tar and restores both seeded markers' do
       Orchestration::Runner.start('postgresql', 'influxdb')
       wait_for_postgresql_ready!
@@ -53,6 +54,17 @@ RSpec.describe RestoreRunner, :docker_stack do
         wait_for_healthy!('influxdb')
         expect(influx_marker_values).to eq(['42'])
       end
+    end
+  end
+
+  describe '.start (real restore against a freshly initialized data directory)' do
+    it_behaves_like 'a restore from a freshly initialized data directory'
+
+    # Legacy InfluxDB images ship an influx CLI without `--operator-token`.
+    context 'with a legacy InfluxDB image' do
+      let(:influxdb_image) { 'influxdb:2.8-alpine' }
+
+      it_behaves_like 'a restore from a freshly initialized data directory'
     end
   end
 
@@ -96,6 +108,7 @@ RSpec.describe RestoreRunner, :docker_stack do
   # Configuration#dashboard_required?).
   def write_config!
     data = { 'backup' => { 'destination' => 'local' },
+             'influxdb' => { 'image' => influxdb_image },
              'sensors' => { 'house_power' => { 'source' => 'external', 'measurement' => 'm', 'field' => 'f' } } }
     FileUtils.mkdir_p(File.dirname(Configuration.path))
     File.write(Configuration.path, YAML.dump(data))
@@ -216,9 +229,7 @@ RSpec.describe RestoreRunner, :docker_stack do
   end
 
   def restore_error_message
-    File.read(File.join(data_path, 'helios', 'backups', RestoreRunner::ERROR_FILENAME)).strip.presence
-  rescue Errno::ENOENT
-    nil
+    BackupRepository.storage.read_error_file(RestoreRunner::ERROR_FILENAME)
   end
 
   # Container state plus its last log lines — surfaced in the failure

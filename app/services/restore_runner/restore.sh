@@ -230,13 +230,18 @@ INFLUX_RESTORE_LOG="$WORK_DIR/influx-restore.log"
 # `influx restore` reads from the shared staging mount in place —
 # same path inside both containers, no stdio pipe, no /tmp copy.
 # --operator-token sets a known operator token after the restore.
-# Required when the backup was taken from an instance with hashed
-# tokens enabled (InfluxDB OSS 2.9+ default) — those backups contain
-# no plaintext operator token, so without this flag authentication
-# would break after --full overwrites the bolt. Harmless otherwise.
+# Backups with hashed tokens (InfluxDB OSS 2.9+ default) contain no
+# plaintext operator token, so auth would break after --full overwrites
+# the bolt. The CLI of 2.8 and older lacks the flag, so pass it only
+# when the help lists it.
+INFLUX_RESTORE_HELP="$(docker exec "$INFLUXDB_CONTAINER" influx restore --help 2>&1 || true)"
+set --
+case "$INFLUX_RESTORE_HELP" in
+  *--operator-token*) set -- --operator-token "$TOKEN" ;;
+esac
 if ! docker exec "$INFLUXDB_CONTAINER" \
        influx restore --full --host http://localhost:8086 \
-         -t "$TOKEN" --operator-token "$TOKEN" "$INFLUX_STAGED_DIR" \
+         -t "$TOKEN" "$@" "$INFLUX_STAGED_DIR" \
      > "$INFLUX_RESTORE_LOG" 2>&1; then
   fail "InfluxDB restore failed: $(tail -n 20 "$INFLUX_RESTORE_LOG" | tr '\n' ' ')"
 fi

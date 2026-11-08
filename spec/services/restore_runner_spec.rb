@@ -290,7 +290,8 @@ RSpec.describe RestoreRunner do
       run = state[:open3_calls].find { |args| args[0..1] == %w[docker run] }
       script = run[run.index('-c') + 1]
       expect(script).to include('influx restore --full --host http://localhost:8086 \\')
-      expect(script).to include('-t "$TOKEN" --operator-token "$TOKEN" "$INFLUX_STAGED_DIR"')
+      expect(script).to include('-t "$TOKEN" "$@" "$INFLUX_STAGED_DIR"')
+      expect(script).to include('set -- --operator-token "$TOKEN"')
     end
 
     it 'reports PostgreSQL restore command output on failure' do
