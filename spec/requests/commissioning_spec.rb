@@ -15,6 +15,7 @@ RSpec.describe 'Commissioning' do
         get commissioning_path
 
         expect(response.body).not_to include(%(href="#{backups_path}"))
+        expect(response.body).to include('<body class="bg-base-200 min-h-dvh">')
       end
     end
 

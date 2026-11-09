@@ -15,3 +15,5 @@ Keep every section, an empty one included.
 ## Fixes
 
 ## Maintenance
+
+- **Start screens no longer scroll without need.** The basic settings, the login and the start screen now fit the window.
