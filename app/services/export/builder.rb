@@ -78,7 +78,7 @@ module Export
         defaults.each do |key, default|
           updates[key] = ConfigSchema.resolve_default(default, current.merge(updates))
         end
-        link_influxdb_tokens!(updates) if section == 'influxdb'
+        link_influxdb_tokens!(updates, current) if section == 'influxdb'
         @configuration.update(section, current.merge(updates))
       end
     end
@@ -137,14 +137,20 @@ module Export
     # ConfigurationMigrations::SplitInfluxdbTokens). For anything HELIOS mints
     # itself the four .env entries must share one value, or collectors and
     # dashboard would authenticate against tokens InfluxDB never issued.
-    def link_influxdb_tokens!(updates)
-      tokens = updates.slice(*ConfigSchema::INFLUXDB_TOKEN_FIELDS)
-      return if tokens.empty?
+    #
+    # A token that goes missing beside existing ones (a hand-edited
+    # config.yaml) takes the value of an existing one, the admin token first:
+    # InfluxDB already knows that value, a fresh random one it never issued.
+    def link_influxdb_tokens!(updates, current)
+      generated = ConfigSchema::INFLUXDB_TOKEN_FIELDS.select { |field| updates.key?(field) }
+      return if generated.empty?
 
-      shared = tokens.values.first
-      ConfigSchema::INFLUXDB_TOKEN_FIELDS.each do |field|
-        updates[field] = shared if updates.key?(field)
-      end
+      shared = existing_influxdb_token(current) || updates[generated.first]
+      generated.each { |field| updates[field] = shared }
+    end
+
+    def existing_influxdb_token(current)
+      ConfigSchema::INFLUXDB_TOKEN_FIELDS.filter_map { |field| current[field].presence }.first
     end
   end
 end

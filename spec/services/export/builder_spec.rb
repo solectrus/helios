@@ -2747,6 +2747,29 @@ RSpec.describe Export::Builder do
       expect(second_password).to eq(first_password)
     end
 
+    # Only the admin token is known to InfluxDB, so a token missing from a
+    # hand-edited config.yaml must not get a random value of its own.
+    it 'fills a missing influx token from the existing admin token' do
+      described_class.new(configuration).write!
+      admin = Configuration.current.influxdb.token_admin
+      Configuration.current.update('influxdb', Configuration.current.influxdb.to_h.except('token_readwrite'))
+
+      described_class.new(Configuration.current).write!
+
+      expect(Env.load['INFLUX_TOKEN_READWRITE']).to eq(admin)
+    end
+
+    it 'falls back to another existing influx token without an admin token' do
+      described_class.new(configuration).write!
+      Configuration.current.update('influxdb', Configuration.current.influxdb.to_h
+        .merge('token_write' => 'known-write').except('token_admin', 'token_readwrite'))
+
+      described_class.new(Configuration.current).write!
+
+      env = Env.load
+      expect([env['INFLUX_ADMIN_TOKEN'], env['INFLUX_TOKEN_READWRITE']]).to all(eq('known-write'))
+    end
+
     it 'uses existing secrets instead of generating new ones' do
       configuration.update(
         'postgresql',
