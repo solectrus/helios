@@ -100,7 +100,24 @@
               <p class="text-base-content/70 text-sm leading-relaxed"><%= t('.invalid_hint') %></p>
             <% else %>
               <% if @unsupported_services.present? %>
-                <p class="text-base-content/70 text-sm leading-relaxed"><%= t('.unsupported_hint_html') %></p>
+                <% reasons = @unsupported_services.pluck('reason') %>
+
+                <div class="text-base-content/70 flex flex-col gap-2 text-sm leading-relaxed">
+                  <p><%= t('.unsupported_hint_html') %></p>
+                  <p><%= t('.unsupported_way_out_html') %></p>
+
+                  <% if reasons.include?('broker') || reasons.include?('broker_proxy') %>
+                    <p>
+                      <% if reasons.include?('broker') %>
+                        <%= t('.unsupported_broker_hint') %>
+                      <% end %>
+
+                      <% if reasons.include?('broker_proxy') %>
+                        <%= t('.unsupported_broker_proxy_hint') %>
+                      <% end %>
+                    </p>
+                  <% end %>
+                </div>
               <% end %>
 
               <% if @unsupported_networks.present? %>

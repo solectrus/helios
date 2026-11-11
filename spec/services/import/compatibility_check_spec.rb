@@ -28,8 +28,8 @@ RSpec.describe Import::CompatibilityCheck do
     # in an imported stack is reproducible. Every one is refused: the user
     # takes it out of the stack and switches the managed broker on afterwards.
     it 'flags a self-hosted mosquitto broker (user2)' do
-      names = check_for('real_world/user2').unsupported_services.pluck('service')
-      expect(names).to contain_exactly('mosquitto')
+      services = check_for('real_world/user2').unsupported_services
+      expect(services.pluck('service', 'reason')).to contain_exactly(%w[mosquitto broker])
     end
 
     # Removing the broker service alone leaves the proxy routing a broker
@@ -46,7 +46,7 @@ RSpec.describe Import::CompatibilityCheck do
       allow(reader).to receive(:service) { |name| reader.raw_compose['services'][name] }
 
       expect(described_class.new(reader).unsupported_services)
-        .to contain_exactly('service' => 'traefik', 'image' => 'traefik:v3.7')
+        .to contain_exactly('service' => 'traefik', 'image' => 'traefik:v3.7', 'reason' => 'broker_proxy')
     end
 
     # Traefik reads its flags case-insensitively, its own documentation spells
@@ -69,7 +69,7 @@ RSpec.describe Import::CompatibilityCheck do
         allow(reader).to receive(:service) { |name| reader.raw_compose['services'][name] }
 
         expect(described_class.new(reader).unsupported_services)
-          .to contain_exactly('service' => 'traefik', 'image' => 'traefik:v3.7')
+          .to contain_exactly('service' => 'traefik', 'image' => 'traefik:v3.7', 'reason' => 'broker_proxy')
       end
     end
 
@@ -87,7 +87,7 @@ RSpec.describe Import::CompatibilityCheck do
       allow(reader).to receive(:service) { |name| reader.raw_compose['services'][name] }
 
       expect(described_class.new(reader).unsupported_services)
-        .to contain_exactly('service' => 'traefik', 'image' => 'traefik:v3.7')
+        .to contain_exactly('service' => 'traefik', 'image' => 'traefik:v3.7', 'reason' => 'broker_proxy')
     end
 
     # user6 routes its own broker through its own Traefik, so both the broker

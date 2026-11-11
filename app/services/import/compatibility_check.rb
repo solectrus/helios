@@ -96,11 +96,12 @@ module Import
     end
 
     # Offending services as [{ 'service' => name, 'image' => image }, ...];
-    # empty when every service is recognized.
+    # empty when every service is recognized. A service refused for the
+    # broker carries a 'reason' as well (see #refusal_reason).
     def unsupported_services
       service_configs
         .reject { |_name, config| supported?(config) }
-        .map { |name, config| { 'service' => name, 'image' => config['image'] } }
+        .map { |name, config| unsupported_entry(name, config) }
     end
 
     # Networks a service joins that the export would not write again. The
@@ -158,6 +159,20 @@ module Import
       return false if routes_a_broker?(config)
 
       StackReader.image_matches?(image, ALLOWED_IMAGE_PREFIXES)
+    end
+
+    def unsupported_entry(name, config)
+      { 'service' => name, 'image' => config['image'], 'reason' => refusal_reason(config) }.compact
+    end
+
+    # The way out differs for the broker: 'broker' for the broker itself,
+    # which HELIOS runs on request, 'broker_proxy' for a proxy that only has
+    # to drop its MQTT entrypoints. nil for a service HELIOS does not know.
+    def refusal_reason(config)
+      image = config['image']
+      return 'broker' if image.present? && StackReader.image_matches?(image, UNADOPTABLE_IMAGE_PREFIXES)
+
+      'broker_proxy' if routes_a_broker?(config)
     end
 
     # A reverse proxy that fronts a broker is the second trace of one, and it

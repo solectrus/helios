@@ -76,6 +76,37 @@ RSpec.describe 'Starts' do
 
         expect(response.body).not_to include(I18n.t('starts.show.agree'))
       end
+
+      it 'keeps the broker advice away from a stack without a broker' do
+        get start_path
+
+        expect(response.body).not_to include(I18n.t('starts.show.unsupported_broker_hint'))
+        expect(response.body).not_to include(I18n.t('starts.show.unsupported_broker_proxy_hint'))
+      end
+    end
+
+    # The broker and a proxy in front of it each get a way out of their own.
+    context 'when the stack contains a broker and a proxy that fronts it' do
+      let(:dir) { without_config_yaml }
+
+      before do
+        File.write(File.join(dir, 'compose.yaml'), <<~YAML)
+          services:
+            mosquitto:
+              image: eclipse-mosquitto:2
+            traefik:
+              image: traefik:v3.7
+              command: ["--entrypoints.mqtt.address=:1883"]
+        YAML
+        File.write(File.join(dir, '.env'), "TZ=Europe/Berlin\n")
+      end
+
+      it 'names the way out for both' do
+        get start_path
+
+        expect(response.body).to include(I18n.t('starts.show.unsupported_broker_hint'))
+          .and include(I18n.t('starts.show.unsupported_broker_proxy_hint'))
+      end
     end
 
     context 'when the stack carries a Traefik label HELIOS cannot write again' do

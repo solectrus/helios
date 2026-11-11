@@ -5,7 +5,8 @@ module Import
   # replace with one of its own. Carries all three so the UI can list what
   # stands in the way.
   class UnsupportedStackError < StandardError
-    # Array of { 'service' => name, 'image' => image }.
+    # Array of { 'service' => name, 'image' => image }, plus 'reason' for a
+    # service refused for the broker (see CompatibilityCheck#refusal_reason).
     attr_reader :services
 
     # Array of network names.

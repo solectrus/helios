@@ -12,6 +12,8 @@ Keep every section, an empty one included.
 
 ## Improvements
 
+- **A refused import explains how to split the stack.** When HELIOS cannot take over some services, it now says to move them into a directory of their own with their own `.env`, and to leave the `.env` of SOLECTRUS unchanged. The advice about the MQTT broker appears only when a broker is listed. (solectrus/solectrus#6149)
+
 ## Fixes
 
 - **A missing database token takes the existing one.** When a token for InfluxDB is missing from `config.yaml`, HELIOS now copies the existing admin token. InfluxDB knows this token, so Power Splitter keeps its access. (solectrus/solectrus#6149)
