@@ -6,8 +6,7 @@ require 'aws-sdk-s3'
 #
 # RustFS validates SigV4, so it returns the real `NoSuchBucket` /
 # `SignatureDoesNotMatch` / `InvalidAccessKeyId` codes the adapter
-# classifies — a pure mock that skips auth could not test that. The image
-# is pinned to a release tag so CI stays reproducible.
+# classifies — a pure mock that skips auth could not test that.
 #
 # RustFS publishes its API on a 127.0.0.1 host port (one per turbo_tests
 # worker via TEST_ENV_NUMBER). aws-sdk-s3 in the test process — and the
@@ -18,7 +17,7 @@ require 'aws-sdk-s3'
 # the adapter's own client cannot silently fix or mask itself by sharing
 # the seeding code path.
 module S3ServerHelpers
-  S3_SERVER_IMAGE = 'rustfs/rustfs:1.0.4'.freeze
+  S3_SERVER_IMAGE = 'rustfs/rustfs:latest'.freeze
   S3_ACCESS_KEY = 'helios-integration-test'.freeze
   S3_SECRET_KEY = 'helios-integration-test-secret'.freeze
 
