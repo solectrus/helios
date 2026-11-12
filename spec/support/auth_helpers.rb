@@ -35,4 +35,8 @@ RSpec.configure do |config|
   config.after(:each, :with_admin_password) { clear_admin_password }
 
   config.before(:each, :without_admin_password) { clear_admin_password }
+
+  # Every request spec signs in from the same address, so the counter would
+  # otherwise run out across examples.
+  config.before(:each, type: :request) { SessionsController::LOGIN_ATTEMPTS.clear }
 end

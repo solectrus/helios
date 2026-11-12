@@ -705,6 +705,7 @@ de:
   flash:
     session:
       invalid_password: 'Ungültiges Passwort'
+      too_many_attempts: 'Zu viele Anmeldeversuche. Bitte in einigen Minuten erneut versuchen.'
 
   storage_paths:
     docker_volume: 'Docker-Volume: %{name}'

@@ -256,9 +256,7 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
 
     it 'merges a mini-survey into its parent singleton without dropping siblings' do
-      Configuration.current.update('system',
-                                   { 'admin_password' => 'secret', 'timezone' => 'UTC',
-                                     'installation_date' => '2024-01-15' })
+      Configuration.current.update('system', { 'timezone' => 'UTC', 'installation_date' => '2024-01-15' })
 
       post configuration_settings_path,
            params: { setting: 'system_security', data: { admin_password: 'new-secret' }.to_json }
@@ -266,6 +264,14 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
       config = Configuration.current
       expect(config.system.admin_password).to eq('new-secret')
       expect(config.system.timezone).to eq('UTC')
+    end
+
+    it 'keeps the browser that changed the password signed in' do
+      post configuration_settings_path,
+           params: { setting: 'system_security', data: { admin_password: 'new-secret' }.to_json }
+      get sensors_path
+
+      expect(response).to have_http_status(:ok)
     end
 
     # survey-core leaves a cleared field out of the payload.

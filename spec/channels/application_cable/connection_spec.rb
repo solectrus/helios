@@ -21,9 +21,16 @@ RSpec.describe ApplicationCable::Connection do
     end
 
     it 'accepts authenticated connections' do
-      connect '/cable', session: { authenticated: true }
+      connect '/cable',
+              session: { password_fingerprint: Authentication.password_fingerprint(admin_password_for_config) }
 
       expect(connection).to be_present
+    end
+
+    it 'rejects a session opened with an earlier password' do
+      expect do
+        connect '/cable', session: { password_fingerprint: Authentication.password_fingerprint('old') }
+      end.to have_rejected_connection
     end
   end
 end

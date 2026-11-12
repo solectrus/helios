@@ -49,6 +49,24 @@ RSpec.describe 'Sessions', :with_admin_password do
     end
   end
 
+  describe 'POST /session rate limit' do
+    it 'refuses the eleventh attempt within three minutes, even with the right password' do
+      10.times { post session_path, params: { password: 'wrongpassword' } }
+      post session_path, params: { password: 'test' }
+
+      expect(response).to have_http_status(:too_many_requests)
+      expect(response.body).to include('Too many login attempts')
+    end
+  end
+
+  it 'signs out every browser when the password changes' do
+    login
+    Configuration.current.update('system', { 'admin_password' => 'changed' })
+    get sensors_path
+
+    expect(response).to redirect_to(new_session_path)
+  end
+
   describe 'DELETE /session' do
     it 'logs out user' do
       login

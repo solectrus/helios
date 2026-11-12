@@ -76,6 +76,8 @@ module Configurations
       return if performed?
 
       finish_setting_save!
+      # A new admin password would otherwise sign out the browser that set it.
+      remember_authentication if setting == 'system_security'
       redirect_to redirect_target
     end
 

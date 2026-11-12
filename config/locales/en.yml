@@ -729,6 +729,7 @@ en:
   flash:
     session:
       invalid_password: 'Invalid password'
+      too_many_attempts: 'Too many login attempts. Please try again in a few minutes.'
 
   storage_paths:
     docker_volume: 'Docker volume: %{name}'
