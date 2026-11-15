@@ -1,4 +1,5 @@
 import type { Model, ITheme } from 'survey-core';
+import type { renderSurvey } from 'survey-js-ui';
 
 // Lazily loads the SurveyJS runtime (survey-core + survey-js-ui, ~370 KB gzip)
 // so it is only downloaded on pages that actually render a survey — not on
@@ -8,6 +9,7 @@ import type { Model, ITheme } from 'survey-core';
 
 export interface SurveyRuntime {
   Model: typeof Model;
+  renderSurvey: typeof renderSurvey;
   theme: ITheme;
 }
 
@@ -20,11 +22,11 @@ export function loadSurveyRuntime(): Promise<SurveyRuntime> {
 }
 
 async function initRuntime(): Promise<SurveyRuntime> {
-  const [core, { BorderlessDark }] = await Promise.all([
+  const [core, { BorderlessDark }, { renderSurvey }] = await Promise.all([
     import('survey-core'),
     import('./survey_theme'),
-    // Side-effect imports: register UI components + German translations.
     import('survey-js-ui'),
+    // Side-effect import: registers the German translations.
     import('survey-core/i18n/german'),
   ]);
 
@@ -51,7 +53,7 @@ async function initRuntime(): Promise<SurveyRuntime> {
     ratingOptionsCaption: 'Zum Bewerten hier tippen…',
   });
 
-  return { Model, theme: buildTheme(BorderlessDark) };
+  return { Model, renderSurvey, theme: buildTheme(BorderlessDark) };
 }
 
 // SurveyJS sets these as inline CSS variables on the root element, beating any

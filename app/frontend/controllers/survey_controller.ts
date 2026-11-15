@@ -1,6 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
 import type { Model } from 'survey-core';
-import { loadSurveyRuntime } from '../utils/survey_loader';
+import { loadSurveyRuntime, type SurveyRuntime } from '../utils/survey_loader';
 import { readLocale } from '../utils/preferences_cookie';
 import { prefersReducedMotion } from '../utils/prefers_reduced_motion';
 import { loadingSpinner } from '../utils/loading_spinner';
@@ -55,6 +55,7 @@ export default class extends Controller<HTMLElement> {
   declare writeCheckUrlValue: string;
 
   private survey: Model | null = null;
+  private renderInto: SurveyRuntime['renderSurvey'] | null = null;
   private applyingPageChange = false;
   private lastProgress = -1;
   private readonly resetTestsOnInput = () => this.resetConnectionTests();
@@ -99,9 +100,9 @@ export default class extends Controller<HTMLElement> {
 
   // Replace the spinner with the rendered survey.
   private renderSurvey() {
-    if (!this.survey) return;
+    if (!this.survey || !this.renderInto) return;
     this.containerTarget.replaceChildren();
-    this.survey.render(this.containerTarget);
+    this.renderInto(this.survey, this.containerTarget);
   }
 
   // Render the survey inside a view transition so the modal box animates to
@@ -128,7 +129,7 @@ export default class extends Controller<HTMLElement> {
 
     // Fetch the survey JSON while the SurveyJS runtime chunk downloads in
     // parallel — the spinner covers both.
-    const [{ Model, theme }, surveyJson] = await Promise.all([
+    const [{ Model, renderSurvey, theme }, surveyJson] = await Promise.all([
       loadSurveyRuntime(),
       fetch(this.urlValue).then((response) => response.json()),
     ]);
@@ -141,6 +142,7 @@ export default class extends Controller<HTMLElement> {
     delete surveyJson.offerBrowserHost;
 
     this.survey = new Model(surveyJson);
+    this.renderInto = renderSurvey;
     this.survey.applyTheme(theme);
 
     // Built-in progress bar is replaced by a CSS underline driven by
