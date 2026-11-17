@@ -32,7 +32,7 @@
     "@size-limit/file": "^14.3.0",
     "@tailwindcss/vite": "^4.3.5",
     "daisyui": "^5.8.0",
-    "eslint": "^10.14.0",
+    "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.7",
     "happy-dom": "^21.0.4",
