@@ -41,7 +41,6 @@ Dockerfile
 docs
 !docs/legal
 eslint.config.mjs
-Guardfile
 log/*
 node_modules
 Procfile*
