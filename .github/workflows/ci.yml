@@ -208,7 +208,7 @@ jobs:
             alpine:latest \
             docker:29-cli \
             influxdb:2.8-alpine \
-            influxdb:2.9-alpine \
+            influxdb:2.10-alpine \
             postgres:13-alpine \
             postgres:18-alpine \
             redis:8-alpine \

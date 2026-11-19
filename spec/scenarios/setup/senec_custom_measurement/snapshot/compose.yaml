@@ -94,7 +94,7 @@ services:
   # +-----------------------------------------------------------+
   #
   influxdb:
-    image: influxdb:2.9-alpine
+    image: influxdb:2.10-alpine
     environment:
     - TZ
     - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUX_ADMIN_TOKEN}

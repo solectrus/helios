@@ -21,7 +21,7 @@ postgresql:
   password: minted-postgresql-password
 influxdb:
   bucket: solectrus
-  image: influxdb:2.9-alpine
+  image: influxdb:2.10-alpine
   org: solectrus
   password: minted-influxdb-password
   token_admin: minted-influxdb-token-admin
