@@ -23,3 +23,4 @@ Keep every section, an empty one included.
 ## Maintenance
 
 - **Start screens no longer scroll without need.** The basic settings, the login and the start screen now fit the window.
+- Updated to Ruby 4.0.10
