@@ -220,6 +220,8 @@ RSpec.describe Surveys::Sensor::Survey do
       end
 
       it 'accepts the total while no other sensor reads it' do
+        with_config_yaml
+
         expect(senec_field('inverter_power_2')).not_to have_key('validators')
       end
 
