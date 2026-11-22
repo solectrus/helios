@@ -72,10 +72,13 @@ class SensorMappings
 
   # Forecast collector mappings.
   # Field names must match exactly what the forecast-collector writes to
-  # InfluxDB: `watt`, `watt_clearsky` and `temp` (not `temperature`).
+  # InfluxDB: `watt`, `watt_clearsky`, `watt_min`, `watt_max` and `temp`
+  # (not `temperature`).
   FORECAST_DEFAULTS = {
     'inverter_power_forecast' => %w[Forecast watt],
     'inverter_power_forecast_clearsky' => %w[Forecast watt_clearsky],
+    'inverter_power_forecast_min' => %w[Forecast watt_min],
+    'inverter_power_forecast_max' => %w[Forecast watt_max],
     'outdoor_temp_forecast' => %w[Forecast temp],
   }.freeze
 
@@ -93,6 +96,8 @@ class SensorMappings
     # Forecast (when imported via external instead of the forecast collector)
     'inverter_power_forecast' => %w[inverter_forecast power],
     'inverter_power_forecast_clearsky' => %w[inverter_forecast_clearsky power],
+    'inverter_power_forecast_min' => %w[inverter_forecast power_min],
+    'inverter_power_forecast_max' => %w[inverter_forecast power_max],
     'outdoor_temp_forecast' => %w[outdoor_forecast temperature],
 
     # Grid / House

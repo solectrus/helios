@@ -10,6 +10,8 @@ Keep every section, an empty one included.
 
 ## New features
 
+- **Sensors for the range of the PV forecast.** Two new sensors read the lower and the upper limit of the PV forecast. The dashboard draws the range between them. The forecast collector delivers them with pvnode, a site ID and the Plus plan. Another software can also write them externally.
+
 ## Improvements
 
 ## Fixes

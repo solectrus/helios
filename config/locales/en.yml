@@ -642,6 +642,8 @@ en:
     outdoor_temp: 'Outdoor temperature'
     inverter_power_forecast: 'PV forecast'
     inverter_power_forecast_clearsky: 'PV forecast (clear sky)'
+    inverter_power_forecast_min: 'PV forecast (lower limit)'
+    inverter_power_forecast_max: 'PV forecast (upper limit)'
     outdoor_temp_forecast: 'Outdoor temperature forecast'
     custom_power_01: 'Consumer 1'
     custom_power_02: 'Consumer 2'

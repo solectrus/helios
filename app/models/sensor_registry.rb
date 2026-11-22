@@ -54,6 +54,15 @@ class SensorRegistry
     *CAR_ROLES.filter_map { |name, role| name if role == 'car_connected' },
   ].freeze
 
+  # The variability band of the PV forecast. Of all forecast providers only
+  # the pvnode API v2 delivers it, so the forecast source is on offer for these
+  # sensors only while the forecast uses that API. Another software can still
+  # write the band externally.
+  PVNODE_V2_SENSORS = %w[
+    inverter_power_forecast_min
+    inverter_power_forecast_max
+  ].freeze
+
   # Sensor groups for UI display
   GROUPS = {
     inverter: %w[
@@ -94,6 +103,8 @@ class SensorRegistry
     forecast: %w[
       inverter_power_forecast
       inverter_power_forecast_clearsky
+      inverter_power_forecast_min
+      inverter_power_forecast_max
       outdoor_temp_forecast
     ],
     custom: %w[
@@ -163,6 +174,8 @@ class SensorRegistry
     # Forecast
     'inverter_power_forecast' => { unit: 'W', sources: %w[forecast external] },
     'inverter_power_forecast_clearsky' => { unit: 'W', sources: %w[forecast external] },
+    'inverter_power_forecast_min' => { unit: 'W', sources: %w[forecast external] },
+    'inverter_power_forecast_max' => { unit: 'W', sources: %w[forecast external] },
     'outdoor_temp_forecast' => { unit: '°C', sources: %w[forecast external] },
 
     # Custom

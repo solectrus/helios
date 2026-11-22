@@ -59,7 +59,26 @@ module Surveys
       # The source a sensor already reads through stays on the list whatever
       # its state, or opening the survey would silently drop it.
       def offer?(source)
-        configuration.source_available?(source) || source == current_source
+        return true if source == current_source
+        return false if source == 'forecast' && pvnode_v2_missing?
+
+        configuration.source_available?(source)
+      end
+
+      # The forecast collector is set up, but its provider cannot deliver
+      # this sensor.
+      def pvnode_v2_missing?
+        SensorRegistry::PVNODE_V2_SENSORS.include?(sensor_name) &&
+          configuration.source_available?('forecast') &&
+          !configuration.forecast_pvnode_v2? &&
+          current_source != 'forecast'
+      end
+
+      def pvnode_v2_hint
+        Base.localized(
+          en: 'The Forecast Collector delivers this value only with pvnode and a site ID.',
+          de: 'Der Forecast-Collector liefert diesen Wert nur mit pvnode und Site-ID.',
+        )
       end
 
       def current_source
@@ -69,6 +88,7 @@ module Surveys
       # Named so that missing choices do not look like a defect. Dashboard-only
       # mode has a reason of its own and states that instead.
       def hint(dropped:)
+        return pvnode_v2_hint if pvnode_v2_missing?
         return dashboard_only_hint if configuration.dashboard_only?
         return unless dropped
 

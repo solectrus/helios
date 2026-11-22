@@ -55,6 +55,11 @@ RSpec.describe SensorMappings do
       expect(described_class.default_field('outdoor_temp_forecast', 'forecast')).to eq('temp')
     end
 
+    it 'returns the variability band fields for forecast source' do
+      expect(described_class.default_field('inverter_power_forecast_min', 'forecast')).to eq('watt_min')
+      expect(described_class.default_field('inverter_power_forecast_max', 'forecast')).to eq('watt_max')
+    end
+
     {
       %w[heatpump_power shelly] => 'power',
       %w[inverter_power mqtt] => 'power',

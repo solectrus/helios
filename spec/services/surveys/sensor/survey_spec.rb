@@ -306,6 +306,43 @@ RSpec.describe Surveys::Sensor::Survey do
       end
     end
 
+    # Only the pvnode API v2 writes the variability band. Another software can
+    # still write it, so the external source stays.
+    describe 'the sources of the forecast band' do
+      let(:survey) { described_class.new(sensor_name: 'inverter_power_forecast_min').call }
+
+      def offered_sources
+        find_survey_element(survey, 'source')['choices'].pluck('value')
+      end
+
+      def description
+        find_survey_element(survey, 'source')['description']
+      end
+
+      it 'offers the forecast collector with the pvnode API v2' do
+        with_config_yaml('forecast' => { 'forecast' => 'pvnode', 'forecast_pvnode_site_id' => 'site-1' })
+
+        expect(offered_sources).to eq(%w[forecast external])
+        expect(description).to be_nil
+      end
+
+      it 'leaves out the forecast collector with another provider and says why' do
+        with_config_yaml('forecast' => { 'forecast' => 'forecast.solar' })
+
+        expect(offered_sources).to eq(%w[external])
+        expect(description).to include('de' => a_string_including('nur mit pvnode und Site-ID'))
+      end
+
+      it 'keeps the forecast collector the sensor already reads through' do
+        with_config_yaml(
+          'forecast' => { 'forecast' => 'forecast.solar' },
+          'sensors' => { 'inverter_power_forecast_min' => { 'source' => 'forecast' } },
+        )
+
+        expect(offered_sources).to eq(%w[forecast external])
+      end
+    end
+
     describe 'source choices in dashboard_only mode' do
       before { with_config_yaml('deployment' => { 'mode' => 'dashboard_only' }) }
 

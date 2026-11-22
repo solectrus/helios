@@ -618,6 +618,8 @@ de:
     outdoor_temp: 'Außentemperatur'
     inverter_power_forecast: 'PV-Prognose'
     inverter_power_forecast_clearsky: 'PV-Prognose (klarer Himmel)'
+    inverter_power_forecast_min: 'PV-Prognose (Untergrenze)'
+    inverter_power_forecast_max: 'PV-Prognose (Obergrenze)'
     outdoor_temp_forecast: 'Außentemperatur-Prognose'
     custom_power_01: 'Verbraucher 1'
     custom_power_02: 'Verbraucher 2'
