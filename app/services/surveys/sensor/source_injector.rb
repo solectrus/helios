@@ -76,8 +76,8 @@ module Surveys
 
       def pvnode_v2_hint
         Base.localized(
-          en: 'The Forecast Collector delivers this value only with pvnode and a site ID.',
-          de: 'Der Forecast-Collector liefert diesen Wert nur mit pvnode und Site-ID.',
+          en: 'The Forecast Collector delivers this value only with pvnode, a site ID and the Plus plan.',
+          de: 'Der Forecast-Collector liefert diesen Wert nur mit pvnode, Site-ID und Plus-Tarif.',
         )
       end
 

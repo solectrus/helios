@@ -330,7 +330,7 @@ RSpec.describe Surveys::Sensor::Survey do
         with_config_yaml('forecast' => { 'forecast' => 'forecast.solar' })
 
         expect(offered_sources).to eq(%w[external])
-        expect(description).to include('de' => a_string_including('nur mit pvnode und Site-ID'))
+        expect(description).to include('de' => a_string_including('nur mit pvnode, Site-ID und Plus-Tarif'))
       end
 
       it 'keeps the forecast collector the sensor already reads through' do
