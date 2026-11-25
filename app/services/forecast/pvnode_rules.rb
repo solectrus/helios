@@ -17,6 +17,11 @@ module Forecast
       value.present? && value.to_s != 'false'
     end
 
+    # The collector names the Plus plan `nowcast`.
+    def plus_plan?(value)
+      value.to_s == 'nowcast'
+    end
+
     # The full, ordered v2 env-var key list for the given pvnode settings.
     # PVNODE_REQUEST_LIMIT is optional in both API versions: without it the
     # collector schedules against the full request budget of the plan.

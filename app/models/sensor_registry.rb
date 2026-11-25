@@ -55,8 +55,8 @@ class SensorRegistry
   ].freeze
 
   # The variability band of the PV forecast. Of all forecast providers only
-  # the pvnode API v2 delivers it, so the forecast source is on offer for these
-  # sensors only while the forecast uses that API. Another software can still
+  # the pvnode API v2 with the Plus plan delivers it, so the forecast source is
+  # on offer for these sensors only with that setup. Another software can still
   # write the band externally.
   PVNODE_V2_SENSORS = %w[
     inverter_power_forecast_min

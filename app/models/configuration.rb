@@ -872,6 +872,11 @@ class Configuration # rubocop:disable Metrics/ClassLength
     fc.forecast == 'pvnode' && fc.forecast_pvnode_site_id.present?
   end
 
+  # The forecast collector writes the variability band of the PV forecast.
+  def forecast_band_written?
+    forecast_pvnode_v2? && Forecast::PvnodeRules.plus_plan?(forecast.forecast_pvnode_paid)
+  end
+
   # The location-based pvnode API v1 cannot produce a forecast without the
   # site location and the first roof string (these are exactly the fields the
   # survey marks required for pvnode v1). A pvnode setup without a site ID uses

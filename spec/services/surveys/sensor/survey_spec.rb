@@ -306,10 +306,11 @@ RSpec.describe Surveys::Sensor::Survey do
       end
     end
 
-    # Only the pvnode API v2 writes the variability band. Another software can
-    # still write it, so the external source stays.
+    # Only the pvnode API v2 with the Plus plan writes the variability band.
+    # Another software can still write it, so the external source stays.
     describe 'the sources of the forecast band' do
       let(:survey) { described_class.new(sensor_name: 'inverter_power_forecast_min').call }
+      let(:pvnode_v2) { { 'forecast' => 'pvnode', 'forecast_pvnode_site_id' => 'site-1' } }
 
       def offered_sources
         find_survey_element(survey, 'source')['choices'].pluck('value')
@@ -319,11 +320,18 @@ RSpec.describe Surveys::Sensor::Survey do
         find_survey_element(survey, 'source')['description']
       end
 
-      it 'offers the forecast collector with the pvnode API v2' do
-        with_config_yaml('forecast' => { 'forecast' => 'pvnode', 'forecast_pvnode_site_id' => 'site-1' })
+      it 'offers the forecast collector with the pvnode API v2 and the Plus plan' do
+        with_config_yaml('forecast' => pvnode_v2.merge('forecast_pvnode_paid' => 'nowcast'))
 
         expect(offered_sources).to eq(%w[forecast external])
         expect(description).to be_nil
+      end
+
+      it 'leaves out the forecast collector with the pvnode API v2 and another plan and says why' do
+        with_config_yaml('forecast' => pvnode_v2.merge('forecast_pvnode_paid' => 'true'))
+
+        expect(offered_sources).to eq(%w[external])
+        expect(description).to include('de' => a_string_including('nur mit pvnode, Site-ID und Plus-Tarif'))
       end
 
       it 'leaves out the forecast collector with another provider and says why' do
