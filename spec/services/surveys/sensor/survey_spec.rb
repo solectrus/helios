@@ -2,6 +2,14 @@ RSpec.describe Surveys::Sensor::Survey do
   describe '#call' do
     subject(:result) { described_class.new(sensor_name: 'custom_power_03').call }
 
+    def offered_sources(survey)
+      find_survey_element(survey, 'source')['choices'].pluck('value')
+    end
+
+    def source_description(survey)
+      find_survey_element(survey, 'source')['description']
+    end
+
     it 'returns nil for an unknown sensor' do
       expect(described_class.new(sensor_name: 'no_such_sensor').call).to be_nil
     end
@@ -265,10 +273,6 @@ RSpec.describe Surveys::Sensor::Survey do
     # up. Offering one that is off would let a sensor bring a source into
     # being, which is a decision of the data sources screen alone.
     describe 'the sources a sensor is offered' do
-      def offered_sources(survey)
-        find_survey_element(survey, 'source')['choices'].pluck('value')
-      end
-
       it 'leaves out a source that is switched off' do
         expect(offered_sources(result)).to eq(%w[external])
       end
@@ -289,7 +293,7 @@ RSpec.describe Surveys::Sensor::Survey do
       end
 
       it 'says where the missing sources come from' do
-        expect(find_survey_element(result, 'source')['description']).to include(
+        expect(source_description(result)).to include(
           'default' => a_string_including('Data Sources'),
           'de' => a_string_including('Datenquellen'),
         )
@@ -302,7 +306,14 @@ RSpec.describe Surveys::Sensor::Survey do
         )
 
         expect(offered_sources(result)).to eq(%w[shelly mqtt external])
-        expect(find_survey_element(result, 'source')['description']).to be_nil
+        expect(source_description(result)).to be_nil
+      end
+
+      it 'offers the forecast collector for the PV forecast with every provider' do
+        with_config_yaml('forecast' => { 'forecast' => 'forecast.solar' })
+        survey = described_class.new(sensor_name: 'inverter_power_forecast').call
+
+        expect(offered_sources(survey)).to eq(%w[forecast external])
       end
     end
 
@@ -312,33 +323,25 @@ RSpec.describe Surveys::Sensor::Survey do
       let(:survey) { described_class.new(sensor_name: 'inverter_power_forecast_min').call }
       let(:pvnode_v2) { { 'forecast' => 'pvnode', 'forecast_pvnode_site_id' => 'site-1' } }
 
-      def offered_sources
-        find_survey_element(survey, 'source')['choices'].pluck('value')
-      end
-
-      def description
-        find_survey_element(survey, 'source')['description']
-      end
-
       it 'offers the forecast collector with the pvnode API v2 and the Plus plan' do
         with_config_yaml('forecast' => pvnode_v2.merge('forecast_pvnode_paid' => 'nowcast'))
 
-        expect(offered_sources).to eq(%w[forecast external])
-        expect(description).to be_nil
+        expect(offered_sources(survey)).to eq(%w[forecast external])
+        expect(source_description(survey)).to be_nil
       end
 
       it 'leaves out the forecast collector with the pvnode API v2 and another plan and says why' do
         with_config_yaml('forecast' => pvnode_v2.merge('forecast_pvnode_paid' => 'true'))
 
-        expect(offered_sources).to eq(%w[external])
-        expect(description).to include('de' => a_string_including('nur mit pvnode, Site-ID und Plus-Tarif'))
+        expect(offered_sources(survey)).to eq(%w[external])
+        expect(source_description(survey)['de']).to include('nur mit pvnode, Site-ID und Plus-Tarif')
       end
 
       it 'leaves out the forecast collector with another provider and says why' do
         with_config_yaml('forecast' => { 'forecast' => 'forecast.solar' })
 
-        expect(offered_sources).to eq(%w[external])
-        expect(description).to include('de' => a_string_including('nur mit pvnode, Site-ID und Plus-Tarif'))
+        expect(offered_sources(survey)).to eq(%w[external])
+        expect(source_description(survey)['de']).to include('nur mit pvnode, Site-ID und Plus-Tarif')
       end
 
       it 'keeps the forecast collector the sensor already reads through' do
@@ -347,7 +350,35 @@ RSpec.describe Surveys::Sensor::Survey do
           'sensors' => { 'inverter_power_forecast_min' => { 'source' => 'forecast' } },
         )
 
-        expect(offered_sources).to eq(%w[forecast external])
+        expect(offered_sources(survey)).to eq(%w[forecast external])
+      end
+    end
+
+    # Only pvnode writes the clear-sky and the temperature forecast.
+    describe 'the sources of a pvnode-only forecast sensor' do
+      let(:survey) { described_class.new(sensor_name: 'outdoor_temp_forecast').call }
+
+      it 'offers the forecast collector with pvnode' do
+        with_config_yaml('forecast' => { 'forecast' => 'pvnode' })
+
+        expect(offered_sources(survey)).to eq(%w[forecast external])
+        expect(source_description(survey)).to be_nil
+      end
+
+      it 'leaves out the forecast collector with another provider and says why' do
+        with_config_yaml('forecast' => { 'forecast' => 'forecast.solar' })
+
+        expect(offered_sources(survey)).to eq(%w[external])
+        expect(source_description(survey)['de']).to eq('Der Forecast-Collector liefert diesen Wert nur mit pvnode.')
+      end
+
+      it 'keeps the forecast collector the sensor already reads through' do
+        with_config_yaml(
+          'forecast' => { 'forecast' => 'solcast' },
+          'sensors' => { 'outdoor_temp_forecast' => { 'source' => 'forecast' } },
+        )
+
+        expect(offered_sources(survey)).to eq(%w[forecast external])
       end
     end
 

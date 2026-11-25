@@ -18,4 +18,6 @@ Keep every section, an empty one included.
 
 ## Fixes
 
+- **Temperature forecast and clear-sky forecast only with pvnode.** Of all forecast providers, only pvnode delivers these two values. With forecast.solar or Solcast, the sensor settings no longer offer the forecast collector as their source and say why.
+
 ## Maintenance

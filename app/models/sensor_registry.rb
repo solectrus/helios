@@ -54,6 +54,14 @@ class SensorRegistry
     *CAR_ROLES.filter_map { |name, role| name if role == 'car_connected' },
   ].freeze
 
+  # The clear-sky forecast and the temperature forecast. Of all forecast
+  # providers only pvnode delivers them, in both API versions. Another
+  # software can still write them externally.
+  PVNODE_SENSORS = %w[
+    inverter_power_forecast_clearsky
+    outdoor_temp_forecast
+  ].freeze
+
   # The variability band of the PV forecast. Of all forecast providers only
   # the pvnode API v2 with the Plus plan delivers it, so the forecast source is
   # on offer for these sensors only with that setup. Another software can still

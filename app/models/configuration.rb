@@ -874,8 +874,21 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # exporters read this as the single server-side switch (the survey re-derives
   # the same decision client-side from {forecast_pvnode_site_id}).
   def forecast_pvnode_v2?
-    fc = forecast
-    fc.forecast == 'pvnode' && fc.forecast_pvnode_site_id.present?
+    forecast_pvnode? && forecast.forecast_pvnode_site_id.present?
+  end
+
+  # The forecast collector writes the clear-sky and the temperature forecast.
+  def forecast_pvnode?
+    forecast.forecast == 'pvnode'
+  end
+
+  # Of all forecast sensors, the provider decides only on the band and on
+  # the clear-sky and temperature forecast.
+  def forecast_writes?(sensor_name)
+    return forecast_pvnode? if SensorRegistry::PVNODE_SENSORS.include?(sensor_name)
+    return forecast_band_written? if SensorRegistry::PVNODE_V2_SENSORS.include?(sensor_name)
+
+    true
   end
 
   # The forecast collector writes the variability band of the PV forecast.
@@ -913,9 +926,9 @@ class Configuration # rubocop:disable Metrics/ClassLength
   def incomplete_forecast_location?
     return false unless forecast_required?
 
-    fc = forecast
-    return false unless fc.forecast == 'pvnode' && !forecast_pvnode_v2?
+    return false unless forecast_pvnode? && !forecast_pvnode_v2?
 
+    fc = forecast
     PVNODE_V1_REQUIRED_FIELDS.any? { |field| fc.public_send(field).blank? }
   end
 
