@@ -132,8 +132,11 @@ module Configurations
       data = survey_data
       return unless data
 
+      band_delivered = @configuration.forecast_band_delivered?
       sensor_setting? ? save_sensor(data) : save_section(data)
       return if performed?
+
+      @configuration.auto_enable_forecast_band_sensors! unless band_delivered
 
       # Re-anchor the schedule so the next run is the next occurrence of the
       # chosen time (today if still ahead, tomorrow if already passed) rather

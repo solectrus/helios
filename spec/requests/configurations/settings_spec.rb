@@ -1087,6 +1087,92 @@ RSpec.describe 'Configurations::Settings', :with_admin_password do
     end
   end
 
+  # The forecast collector delivers the band of the PV forecast with pvnode, a
+  # site ID and the Plus plan. The save that makes the band available enables
+  # its sensors, and no other save does.
+  describe 'POST /configuration/settings and the PV forecast band' do
+    let(:pvnode) { { 'forecast' => 'pvnode', 'forecast_pvnode_apikey' => 'k', 'forecast_pvnode_site_id' => 'site-1' } }
+    let(:band_sensors) { SensorRegistry::PVNODE_V2_SENSORS }
+
+    def post_forecast(plan)
+      post configuration_settings_path,
+           params: { setting: 'forecast', data: pvnode.merge('forecast_pvnode_paid' => plan).to_json }
+    end
+
+    def post_forecast_sensor
+      post configuration_settings_path,
+           params: { setting: 'sensor', name: 'inverter_power_forecast', data: { 'source' => 'forecast' }.to_json }
+    end
+
+    def enabled_band_sensors
+      Current.reset
+      band_sensors.select { |name| Configuration.current.sensor_enabled?(name) }
+    end
+
+    context 'when the forecast form switches to the Plus plan' do
+      before do
+        with_config_yaml(
+          'forecast' => pvnode.merge('forecast_pvnode_paid' => 'true'),
+          'sensors' => { 'inverter_power_forecast' => { 'source' => 'forecast' } },
+        )
+      end
+
+      it 'enables both sensors of the band' do
+        post_forecast('nowcast')
+
+        expect(enabled_band_sensors).to match_array(band_sensors)
+      end
+
+      it 'leaves removed sensors removed on the next save' do
+        post_forecast('nowcast')
+        band_sensors.each { |name| Configuration.current.remove_sensor(name) }
+
+        post_forecast('nowcast')
+
+        expect(enabled_band_sensors).to be_empty
+      end
+    end
+
+    context 'when the forecast form keeps a plan without the band' do
+      before do
+        with_config_yaml(
+          'forecast' => pvnode.merge('forecast_pvnode_paid' => 'false'),
+          'sensors' => { 'inverter_power_forecast' => { 'source' => 'forecast' } },
+        )
+      end
+
+      it 'enables nothing' do
+        post_forecast('true')
+
+        expect(enabled_band_sensors).to be_empty
+      end
+    end
+
+    context 'when the PV forecast sensor newly reads from the collector' do
+      before do
+        with_config_yaml(
+          'forecast' => pvnode.merge('forecast_pvnode_paid' => 'nowcast'),
+          'sensors' => { 'inverter_power' => { 'source' => 'senec' } },
+        )
+      end
+
+      it 'enables both sensors of the band' do
+        post_forecast_sensor
+
+        expect(enabled_band_sensors).to match_array(band_sensors)
+      end
+
+      it 'leaves removed sensors removed on the next save' do
+        post_forecast_sensor
+        band_sensors.each { |name| Configuration.current.remove_sensor(name) }
+
+        post_forecast_sensor
+
+        expect(enabled_band_sensors).to be_empty
+      end
+    end
+  end
+
   describe 'GET /configuration/:setting/:name/edit' do
     it 'renders the survey form for an existing sensor' do
       config = Configuration.current

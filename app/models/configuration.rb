@@ -535,11 +535,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
       SensorRegistry.sources_for(name).include?('senec') && !sensor_enabled?(name)
     end
     candidates.delete('inverter_power') if senec_total_reader(except: 'inverter_power')
-    return [] if candidates.empty?
-
-    @data['sensors'] ||= {}
-    candidates.each { |name| @data['sensors'][name] = { 'source' => 'senec' } }
-    save!
+    add_sensors(candidates, 'senec')
     candidates
   end
 
@@ -573,6 +569,16 @@ class Configuration # rubocop:disable Metrics/ClassLength
     names.each { |name| @data['sensors']&.delete(name.to_s) }
     save!
   end
+
+  # Adds sensors that read from `source` alone, with one write.
+  def add_sensors(names, source)
+    return if names.empty?
+
+    @data['sensors'] ||= {}
+    names.each { |name| @data['sensors'][name] = { 'source' => source } }
+    save!
+  end
+  private :add_sensors
 
   # Check if a sensor is enabled
   def sensor_enabled?(name)
@@ -875,6 +881,20 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # The forecast collector writes the variability band of the PV forecast.
   def forecast_band_written?
     forecast_pvnode_v2? && Forecast::PvnodeRules.plus_plan?(forecast.forecast_pvnode_paid)
+  end
+
+  # The same, and a sensor reads the PV forecast itself from that collector.
+  def forecast_band_delivered?
+    forecast_band_written? && sensor_config('inverter_power_forecast').source == 'forecast'
+  end
+
+  # Enables the sensors of the band that are not yet configured.
+  def auto_enable_forecast_band_sensors!
+    return [] unless forecast_band_delivered?
+
+    candidates = SensorRegistry::PVNODE_V2_SENSORS.reject { |name| sensor_enabled?(name) }
+    add_sensors(candidates, 'forecast')
+    candidates
   end
 
   # The location-based pvnode API v1 cannot produce a forecast without the

@@ -38,6 +38,7 @@ module Import
       persist_singletons!(config)
       sensor_persister.persist!(config) unless collectors_only?
       mark_balcony_sensor!(config)
+      config.auto_enable_forecast_band_sensors!
       # Snapshot which env keys HELIOS will canonically emit. Runs after the
       # singleton sections have been persisted (so Configuration is fully
       # populated) but before unmanaged detection consumes the snapshot.

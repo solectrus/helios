@@ -1097,6 +1097,38 @@ RSpec.describe Configuration do
         expect(config.effective_sensor_mappings).to include('inverter_power_4' => 'balcony:power')
       end
     end
+
+    describe '#auto_enable_forecast_band_sensors!' do
+      before do
+        with_config_yaml(
+          'forecast' => { 'forecast' => 'pvnode', 'forecast_pvnode_site_id' => 'site-1',
+                          'forecast_pvnode_paid' => 'nowcast' },
+          'sensors' => { 'inverter_power_forecast' => { 'source' => 'forecast' } },
+        )
+      end
+
+      it 'enables the sensors of the band' do
+        expect(described_class.current.auto_enable_forecast_band_sensors!).to eq(SensorRegistry::PVNODE_V2_SENSORS)
+      end
+
+      it 'keeps sensors of the band that read from another source' do
+        config = described_class.current
+        external = { 'source' => 'external', 'measurement' => 'band', 'field' => 'value' }
+        SensorRegistry::PVNODE_V2_SENSORS.each { |name| config.update_sensor(name, external) }
+
+        aggregate_failures do
+          expect(config.auto_enable_forecast_band_sensors!).to eq([])
+          expect(config.sensor_config('inverter_power_forecast_min').source).to eq('external')
+        end
+      end
+
+      it 'enables nothing without the band' do
+        config = described_class.current
+        config.update('forecast', { 'forecast' => 'pvnode', 'forecast_pvnode_site_id' => 'site-1' })
+
+        expect(config.auto_enable_forecast_band_sensors!).to eq([])
+      end
+    end
   end
 
   describe '#mqtt_required?' do
