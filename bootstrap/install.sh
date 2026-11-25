@@ -34,7 +34,7 @@ PROJECT_NAME="solectrus"
 
 # The release this script belongs to. The release skill sets it on the
 # release branch, and spec/bootstrap/version_drift_spec.rb guards it.
-HELIOS_VERSION="1.7.0"
+HELIOS_VERSION="1.8.0"
 
 # Release channel: "stable" (default) or "develop". It selects the branch the
 # installer was published from, the image tag and the version on welcome. On
