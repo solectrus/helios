@@ -32,13 +32,18 @@ set -euo pipefail
 ENV_FILE=".env"
 PROJECT_NAME="solectrus"
 
+# The release this script belongs to. The release skill sets it on the
+# release branch, and spec/bootstrap/version_drift_spec.rb guards it.
+HELIOS_VERSION="1.7.0"
+
 # Release channel: "stable" (default) or "develop". It selects the branch the
-# installer was published from and the image tag. The branch is used to fetch
-# the script's last-update timestamp from the GitHub API on welcome and to
-# link the license. HELIOS_REF and HELIOS_IMAGE still override each part.
+# installer was published from, the image tag and the version on welcome. On
+# develop, HELIOS_VERSION still names the last release, so the welcome names
+# the channel instead. The branch also links the license. HELIOS_REF and
+# HELIOS_IMAGE still override each part.
 case "${HELIOS_CHANNEL:-stable}" in
-  develop) channel_ref=develop channel_tag=develop ;;
-  *) channel_ref=main channel_tag=latest ;;
+  develop) channel_ref=develop channel_tag=develop channel_version=develop ;;
+  *) channel_ref=main channel_tag=latest channel_version="v$HELIOS_VERSION" ;;
 esac
 HELIOS_REPO="${HELIOS_REPO:-solectrus/helios}"
 HELIOS_REF="${HELIOS_REF:-$channel_ref}"
@@ -201,44 +206,6 @@ warn_or_abort() {
 need openssl
 need awk
 
-# Best-effort: prints nothing on network failure, missing curl, or
-# unparseable response so a flaky network can't stall the install — the
-# welcome banner simply omits the line.
-fetch_last_updated() {
-  command -v curl >/dev/null 2>&1 || return 0
-  local response iso
-  response="$(
-    curl -fsSL --max-time 3 \
-      "https://api.github.com/repos/${HELIOS_REPO}/commits?path=bootstrap/install.sh&sha=${HELIOS_REF}&per_page=1" \
-      2>/dev/null
-  )" || return 0
-  # GitHub returns both author.date and committer.date; we want the latter
-  # so rebased commits show the rebase time, not the original authoring time.
-  iso="$(printf '%s' "$response" \
-    | awk -F'"' '/"committer":/{c=1} c && /"date":/ {print $4; exit}')"
-  [ -n "$iso" ] || return 0
-
-  # GNU `date -d` (Linux) parses the trailing Z natively; BSD `date` (macOS)
-  # ignores it and treats the parsed time as local, so on macOS we parse
-  # under TZ=UTC to get the correct epoch, then re-format in the host TZ.
-  local formatted epoch
-  formatted="$(date -d "$iso" +'%Y-%m-%d %H:%M %Z' 2>/dev/null)" || formatted=""
-  if [ -z "$formatted" ]; then
-    epoch="$(TZ=UTC date -j -f '%Y-%m-%dT%H:%M:%SZ' "$iso" +%s 2>/dev/null)" || epoch=""
-    if [ -n "$epoch" ]; then
-      formatted="$(date -r "$epoch" +'%Y-%m-%d %H:%M %Z' 2>/dev/null)" || formatted=""
-    fi
-  fi
-
-  if [ -n "$formatted" ]; then
-    printf '%s\n' "$formatted"
-    return 0
-  fi
-
-  printf '%s' "$iso" \
-    | awk -F'[T:Z]' '{ printf "%s %s:%s UTC\n", $1, $2, $3 }'
-}
-
 banner() {
   clear_screen
   printf '\n'
@@ -256,14 +223,7 @@ welcome() {
   banner
   bold "  Installing HELIOS — your SOLECTRUS configuration manager"
   printf '\n'
-  # Synchronous GitHub fetch (up to 3s). Placed here so the timestamp sits
-  # next to the description of what the script does, rather than dangling
-  # under "Working directory".
-  local last_updated
-  last_updated="$(fetch_last_updated)"
-  if [ -n "$last_updated" ]; then
-    printf '  Script last updated at: %s\n\n' "$last_updated"
-  fi
+  printf '  Version: %s\n\n' "$channel_version"
   cat <<TEXT
   This installer will:
     • Install Docker if missing (via https://get.docker.com)

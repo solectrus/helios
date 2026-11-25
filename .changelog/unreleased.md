@@ -14,6 +14,8 @@ Keep every section, an empty one included.
 
 ## Improvements
 
+- **The installer shows the version of HELIOS.** Its welcome screen names the release, for example v1.7.0, instead of the date of the last change to the script.
+
 ## Fixes
 
 ## Maintenance
