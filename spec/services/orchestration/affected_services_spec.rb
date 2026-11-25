@@ -1,11 +1,16 @@
 RSpec.describe Orchestration::AffectedServices do
   let(:deployed_hashes_path) { described_class.deployed_hashes_path }
+  let(:fingerprints_path) { Orchestration::ConfigFingerprints.path }
+  let(:services) { {} }
 
-  before { FileUtils.rm_f(deployed_hashes_path) }
+  before do
+    FileUtils.rm_f([deployed_hashes_path, fingerprints_path])
+    allow(Orchestration::Runner).to receive(:config_services) { services }
+  end
 
   after do
     described_class.invalidate_cache
-    FileUtils.rm_f(deployed_hashes_path)
+    FileUtils.rm_f([deployed_hashes_path, fingerprints_path])
   end
 
   describe '.compute' do
@@ -408,6 +413,92 @@ RSpec.describe Orchestration::AffectedServices do
 
       # Verify cache was populated with fresh hashes
       expect(Orchestration::Runner).to have_received(:config_hashes).once
+    end
+  end
+
+  describe 'the reason for a restart' do
+    let(:hashes) { { 'dashboard' => 'h1', 'helios' => 'h0' } }
+    let(:services) do
+      { 'dashboard' => { 'image' => 'solectrus:latest', 'environment' => { 'INFLUX_TOKEN' => 'a' } } }
+    end
+
+    before do
+      allow(Orchestration::Runner).to receive(:config_hashes) { hashes }
+    end
+
+    def change_env
+      services['dashboard']['environment']['INFLUX_SENSOR_HOUSE_POWER'] = 'SENEC:house_power'
+      hashes['dashboard'] = 'h2'
+    end
+
+    it 'is known after a deploy of the whole stack' do
+      described_class.store_deployed_hashes!
+      change_env
+
+      expect(described_class.change_for('dashboard').added).to eq(['INFLUX_SENSOR_HOUSE_POWER'])
+    end
+
+    it 'is known after a deploy of a single service' do
+      write_deployed_hashes('dashboard' => 'h0')
+      described_class.update_deployed_hash!('dashboard')
+      change_env
+
+      expect(described_class.change_for('dashboard').added).to eq(['INFLUX_SENSOR_HOUSE_POWER'])
+    end
+
+    it 'is known after the first baseline' do
+      described_class.seed_baseline_if_missing!
+      change_env
+
+      expect(described_class.change_for('dashboard').added).to eq(['INFLUX_SENSOR_HOUSE_POWER'])
+    end
+
+    it 'is known after the lazy baseline of the first compute' do
+      allow(Orchestration::Container).to receive(:all).and_return([])
+      described_class.compute
+      change_env
+
+      expect(described_class.change_for('dashboard').added).to eq(['INFLUX_SENSOR_HOUSE_POWER'])
+    end
+
+    it 'is known when the fingerprint is taken before a config change' do
+      write_deployed_hashes('dashboard' => 'h1')
+      described_class.seed_baseline_if_missing!
+      change_env
+
+      expect(described_class.change_for('dashboard').added).to eq(['INFLUX_SENSOR_HOUSE_POWER'])
+    end
+
+    it 'is unknown when the config changed before the first fingerprint' do
+      write_deployed_hashes('dashboard' => 'h1')
+      change_env
+      described_class.sync_fingerprints!
+
+      expect(described_class.change_for('dashboard')).to be_nil
+    end
+
+    it 'takes no fingerprint without a deployed baseline' do
+      described_class.sync_fingerprints!
+
+      expect(File.exist?(fingerprints_path)).to be(false)
+    end
+
+    it 'does not ask compose when every fingerprint is current' do
+      described_class.store_deployed_hashes!
+      described_class.invalidate_config_hashes
+
+      described_class.sync_fingerprints!
+
+      expect(Orchestration::Runner).to have_received(:config_hashes).once
+    end
+
+    it 'logs a failing compose call while fingerprinting' do
+      write_deployed_hashes('dashboard' => 'h1')
+      allow(Orchestration::Runner).to receive(:config_hashes).and_raise(
+        Orchestration::Runner::CommandError, 'boom'
+      )
+
+      expect { described_class.sync_fingerprints! }.not_to raise_error
     end
   end
 

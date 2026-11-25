@@ -476,4 +476,28 @@ RSpec.describe Orchestration::Runner do
       expect(with_stale_a).to eq(with_stale_b)
     end
   end
+
+  describe '.config_services' do
+    before do
+      skip_without_docker
+
+      File.write(File.join(data_path, 'compose.yaml'), <<~YAML)
+        name: helios-test
+        services:
+          dashboard:
+            image: alpine:latest
+            environment:
+              INFLUX_SENSOR_HOUSE_POWER: ${INFLUX_SENSOR_HOUSE_POWER}
+              UNSET_ONE: ${HELIOS_SPEC_UNSET_VARIABLE}
+      YAML
+      File.write(File.join(data_path, '.env'), "INFLUX_SENSOR_HOUSE_POWER=SENEC:house_power\n")
+    end
+
+    it 'resolves the .env values and survives a warning about an unset variable' do
+      service = described_class.config_services.fetch('dashboard')
+
+      expect(service['image']).to eq('alpine:latest')
+      expect(service['environment']).to include('INFLUX_SENSOR_HOUSE_POWER' => 'SENEC:house_power')
+    end
+  end
 end

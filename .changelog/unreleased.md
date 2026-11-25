@@ -12,6 +12,8 @@ Keep every section, an empty one included.
 
 ## Improvements
 
+- **A pending update of a service names its reason.** The tooltip of the update button lists the changed settings, for example a new sensor or a new version. For a change made before the update of HELIOS, the reason stays unknown.
+
 ## Fixes
 
 ## Maintenance

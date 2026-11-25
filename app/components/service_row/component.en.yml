@@ -33,8 +33,8 @@ en:
   legacy_image_confirm: 'Update image to %{image} and recreate the service?'
   recreate_pending:
     image: 'New version available'
-    config: 'Configuration changed'
-    image_and_config: 'New version available and configuration changed'
+    config: 'Configuration changed, restart required'
+    image_and_config: 'New version available and configuration changed, restart required'
   self_recreate_confirm: 'HELIOS will be updated and restarted, the interface will be briefly unavailable. Continue?'
   recalculating: 'Recalculation in progress'
   recalculate: 'Recalculate'

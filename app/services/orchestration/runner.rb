@@ -2,7 +2,7 @@ require 'open3'
 require 'tempfile'
 
 module Orchestration
-  class Runner
+  class Runner # rubocop:disable Metrics/ClassLength
     extend Loggable
 
     class CommandError < StandardError
@@ -180,6 +180,18 @@ module Orchestration
           name, hash = line.strip.split
           [name, hash]
         end
+      end
+
+      # The resolved service definitions, with the .env values filled in.
+      # Reads stdout alone: a warning on stderr would break the JSON.
+      def config_services
+        validate_data_path!
+
+        cmd = compose_base_command + %w[config --format json]
+        stdout, stderr, status = Open3.capture3(::Env.spawn_overrides, *cmd)
+        raise_command_error('config', stderr, status) unless status.success?
+
+        JSON.parse(stdout).fetch('services', {})
       end
 
       def ps

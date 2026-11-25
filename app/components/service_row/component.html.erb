@@ -313,9 +313,15 @@
 
           <div
             id="<%= dom_id %>-recreate"
-            class="tooltip join-item <%= recreate_warning? ? 'tooltip-warning' : 'tooltip-info' %>"
-            data-tip="<%= recreate_tooltip %>"
+            class="tooltip join-item <%= recreate_warning? ? 'tooltip-warning' : 'tooltip-info' %> <%= 'tooltip-left' if restart_reason_shown? %>"
+            <% unless restart_reason_shown? %>
+              data-tip="<%= recreate_tooltip %>"
+            <% end %>
           >
+            <% if restart_reason_shown? %>
+              <%= render restart_reason %>
+            <% end %>
+
             <%= button_to service_task_path(service_name), method: :patch, disabled: recreate_disabled?, class: "btn btn-ghost btn-sm btn-square", aria: { label: recreate_tooltip }, data: { service_row__component_target: "recreateButton" } do %>
               <i class="fa-solid fa-arrows-rotate <%= 'text-warning' if recreate_warning? %>"></i>
             <% end %>

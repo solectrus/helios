@@ -304,6 +304,21 @@ module ServiceRow
       recreate_reason ? t(".recreate_pending.#{recreate_reason}") : t('.recreate')
     end
 
+    # The list of what a pending restart applies, when the stored fingerprints
+    # can name it. It replaces the one-line tooltip.
+    def restart_reason
+      return unless restart_pending?
+
+      @restart_reason ||= RestartReason::Component.new(
+        change: Orchestration::AffectedServices.change_for(service_name),
+        new_version: outdated_image?,
+      )
+    end
+
+    def restart_reason_shown?
+      restart_reason&.render? || false
+    end
+
     # Starting any service is blocked until the whole configuration is complete
     # (sources, InfluxDB target, and the mandatory installation date). Mirrors
     # the global start button and the server-side require_configuration_complete

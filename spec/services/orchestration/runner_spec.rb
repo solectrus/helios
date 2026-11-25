@@ -126,7 +126,7 @@ RSpec.describe Orchestration::Runner do
     end
 
     def stub_capture3(stdout: '', stderr: '', exitstatus: 0)
-      status = instance_double(Process::Status, exitstatus:)
+      status = instance_double(Process::Status, exitstatus:, success?: exitstatus.zero?)
       allow(Open3).to receive(:capture3) do |*args, **opts|
         captured[:args] = args
         captured[:opts] = opts
@@ -248,6 +248,21 @@ RSpec.describe Orchestration::Runner do
       expect(described_class.compose_run('postgresql', '-c', 'ls', entrypoint: 'sh'))
         .to eq(['done', '', 0])
       expect(captured[:args]).to include('run', '--rm', '--no-deps', '-T', '--entrypoint', 'sh', 'postgresql')
+    end
+
+    it 'reads the resolved services from stdout alone' do
+      stub_capture3(stdout: '{"services":{"redis":{"image":"redis:8-alpine"}}}', stderr: 'WARN unset variable')
+
+      expect(described_class.config_services).to eq('redis' => { 'image' => 'redis:8-alpine' })
+      expect(captured[:args].last(3)).to eq(%w[config --format json])
+    end
+
+    it 'raises when compose cannot render the config' do
+      stub_capture3(stderr: 'invalid compose file', exitstatus: 1)
+
+      expect { described_class.config_services }.to raise_error(
+        Orchestration::Runner::CommandError, /invalid compose file/
+      )
     end
   end
 

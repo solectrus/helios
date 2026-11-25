@@ -6,13 +6,15 @@
 # "container restart pending" markers in unrelated places.
 #
 # The write is idempotent: identical exporter output leaves the deployed
-# config hashes unchanged.
+# config hashes unchanged. The fingerprints are taken before the write, while
+# compose.yaml still holds the deployed config.
 Rails.application.config.after_initialize do
   next if Rails.env.test?
 
   configuration = Configuration.current
   next unless configuration.setup_completed?
 
+  Orchestration::AffectedServices.sync_fingerprints!
   Export::Builder.new(configuration).write!
 rescue StandardError => e
   Rails.logger.error("Boot stack refresh failed: #{e.class}: #{e.message}")

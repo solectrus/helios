@@ -76,6 +76,46 @@ RSpec.describe ServiceRow::Component, type: :component do
     end
   end
 
+  describe 'the reason of a pending restart' do
+    subject(:recreate) { rendered.css('[id$="-recreate"]') }
+
+    before do
+      with_config_yaml
+      allow(Orchestration::AffectedServices).to receive(:compute).and_return([service_name])
+    end
+
+    def stub_change(**attrs)
+      change = Orchestration::ConfigFingerprints::Change.new(
+        added: [], removed: [], changed: [], parts: [], **attrs,
+      )
+      allow(Orchestration::AffectedServices).to receive(:change_for).with(service_name).and_return(change)
+    end
+
+    it 'lists what the restart applies below the reason' do
+      stub_change(added: ['INFLUX_SENSOR_GRID_EXPORT_POWER'])
+
+      expect(recreate.css('.tooltip-content p').text).to eq('Restart required for these changes:')
+      expect(recreate.css('.tooltip-content li').map(&:text)).to eq(
+        ["New sensor: #{I18n.t('sensors.grid_export_power')}"],
+      )
+    end
+
+    # daisyUI would draw a second bubble from data-tip.
+    it 'drops the one-line tooltip while the list shows' do
+      stub_change(added: ['INFLUX_SENSOR_GRID_EXPORT_POWER'])
+
+      expect(recreate.attr('data-tip')).to be_nil
+      expect(recreate.css('button').attr('aria-label').value).to eq('Configuration changed, restart required')
+    end
+
+    it 'keeps the one-line tooltip when nothing can be named' do
+      allow(Orchestration::AffectedServices).to receive(:change_for).and_return(nil)
+
+      expect(recreate.attr('data-tip').value).to eq('Configuration changed, restart required')
+      expect(recreate.css('.tooltip-content')).to be_empty
+    end
+  end
+
   # An incomplete configuration blocks every start, and it belongs to the
   # installation rather than to one service, so no row marks it. The start
   # button it refuses is where the row can still say it.

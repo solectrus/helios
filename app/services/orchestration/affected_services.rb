@@ -34,6 +34,7 @@ module Orchestration
     # cache (stale config hashes make the affected-services cache meaningless).
     def self.invalidate_config_hashes
       Rails.cache.delete(CONFIG_HASH_CACHE_KEY)
+      ConfigFingerprints.invalidate_cache
       invalidate_affected_caches
     end
 
@@ -61,7 +62,7 @@ module Orchestration
     # as the baseline and the change would never be flagged as needing a restart
     # (no deploy happens on import, so the baseline is absent until then).
     def self.seed_baseline_if_missing!
-      return unless load_deployed_hashes_file.empty?
+      return sync_fingerprints! if load_deployed_hashes_file.present?
 
       hashes = Runner.config_hashes.except(Runner::SELF_SERVICE)
       return if hashes.empty?
@@ -70,6 +71,31 @@ module Orchestration
       invalidate_affected_caches
     rescue Runner::CommandError, ConnectionError => e
       logger.error("failed to seed deployed baseline: #{e.message}")
+    end
+
+    # Fingerprints the services that still run their deployed config. Must
+    # run *before* a rewrite of compose.yaml, like #seed_baseline_if_missing!:
+    # afterwards, the deployed state of a changed service is gone.
+    def self.sync_fingerprints!
+      deployed = load_deployed_hashes_file
+      return if deployed.empty? || fingerprints_current?(deployed)
+
+      current = Rails.cache.read(CONFIG_HASH_CACHE_KEY) ||
+                Runner.config_hashes.except(Runner::SELF_SERVICE)
+      ConfigFingerprints.sync!(deployed, current)
+    rescue Runner::CommandError, ConnectionError => e
+      logger.error("failed to sync config fingerprints: #{e.message}")
+    end
+
+    def self.fingerprints_current?(deployed)
+      stored = ConfigFingerprints.load_file
+      deployed.all? { |name, hash| stored.dig(name, 'hash') == hash }
+    end
+    private_class_method :fingerprints_current?
+
+    # Why a service needs a restart, as far as the stored fingerprints tell.
+    def self.change_for(service_name)
+      ConfigFingerprints.change(service_name, load_deployed_hashes_file[service_name])
     end
 
     # Update the deployed hash for a single service when its container
@@ -91,7 +117,7 @@ module Orchestration
       pruned[service_name] = hash
       return if pruned == deployed
 
-      write_deployed_hashes_file!(pruned)
+      write_deployed_hashes_file!(pruned, current: expected)
       Rails.cache.delete(CONFIG_HASH_CACHE_KEY)
       invalidate_affected_caches
     rescue StandardError => e
@@ -116,9 +142,12 @@ module Orchestration
       File.join(Rails.configuration.data_path, 'helios', 'deployed_config_hashes.json')
     end
 
-    def self.write_deployed_hashes_file!(hashes)
+    # `current` are the hashes of compose.yaml as it is now. The services
+    # whose deployed hash matches get a fresh fingerprint.
+    def self.write_deployed_hashes_file!(hashes, current: hashes)
       FileUtils.mkdir_p(::File.dirname(deployed_hashes_path))
       ::File.write(deployed_hashes_path, hashes.to_json)
+      ConfigFingerprints.sync!(hashes, current)
     end
 
     def compute
