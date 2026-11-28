@@ -1671,25 +1671,21 @@ RSpec.describe Configuration do
     end
 
     describe 'the address lookup' do
-      def dashboard_settings(image:, sensors:)
-        with_config_yaml('dashboard' => { 'image' => "ghcr.io/solectrus/solectrus:#{image}" }, 'sensors' => sensors)
+      def dashboard_settings(sensors:)
+        with_config_yaml('sensors' => sensors)
         described_class.current.grouped_settings.fetch('dashboard')
       end
 
-      let(:car) { { 'car_odometer_2' => { 'source' => 'mqtt' } } }
+      it 'is offered for a car' do
+        sensors = { 'car_odometer_2' => { 'source' => 'mqtt' } }
 
-      it 'is offered for a car on the development channel' do
-        expect(dashboard_settings(image: 'develop', sensors: car)).to include('dashboard_geocoding')
-      end
-
-      it 'stays away on the stable channel' do
-        expect(dashboard_settings(image: 'latest', sensors: car)).not_to include('dashboard_geocoding')
+        expect(dashboard_settings(sensors:)).to include('dashboard_geocoding')
       end
 
       it 'stays away without a car' do
         sensors = { 'inverter_power' => { 'source' => 'mqtt' } }
 
-        expect(dashboard_settings(image: 'develop', sensors:)).not_to include('dashboard_geocoding')
+        expect(dashboard_settings(sensors:)).not_to include('dashboard_geocoding')
       end
     end
 

@@ -139,12 +139,6 @@ module SensorRow
       SensorRegistry.car_role(sensor_name)
     end
 
-    # The dashboard reads the car sensors from SOLECTRUS 1.4 on. Only the
-    # battery level of car 1 is older.
-    def dashboard_beta?
-      car_role.present? && sensor_name != 'car_battery_soc'
-    end
-
     def custom_sensor?
       sensor_name.start_with?('custom_power_')
     end

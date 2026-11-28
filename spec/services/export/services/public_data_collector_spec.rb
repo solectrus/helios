@@ -1,10 +1,9 @@
 RSpec.describe Export::Services::PublicDataCollector do
-  def config_with(channel: 'develop', system: { 'country' => 'DE' }, mode: 'full',
+  def config_with(system: { 'country' => 'DE' }, mode: 'full',
                   sensors: { 'car_odometer' => { 'source' => 'mqtt' } }, image: nil)
     Configuration.from_data(
       'deployment' => { 'mode' => mode },
       'system' => system,
-      'dashboard' => { 'image' => "ghcr.io/solectrus/solectrus:#{channel}" },
       'influxdb' => { 'org' => 'solectrus', 'bucket' => 'solectrus' },
       'sensors' => sensors,
       'public_data_collector' => { 'image' => image }.compact,
@@ -12,12 +11,8 @@ RSpec.describe Export::Services::PublicDataCollector do
   end
 
   describe '.enabled?' do
-    it 'is enabled for a car on the develop channel of the dashboard' do
+    it 'is enabled for a car' do
       expect(described_class.enabled?(config_with)).to be(true)
-    end
-
-    it 'is disabled on the stable channel' do
-      expect(described_class.enabled?(config_with(channel: 'latest'))).to be(false)
     end
 
     it 'is disabled without a car' do
@@ -110,7 +105,7 @@ RSpec.describe Export::Services::PublicDataCollector do
     end
 
     it 'is left out while the service does not run' do
-      expect(env_for(config_with(system: { 'country' => 'AT' }, channel: 'latest'))).not_to include('COUNTRY')
+      expect(env_for(config_with(system: { 'country' => 'AT' }, sensors: {}))).not_to include('COUNTRY')
     end
   end
 end

@@ -22,8 +22,7 @@ module Export
       def self.enabled?(configuration)
         return false if configuration.collectors_only?
 
-        configuration.develop_dashboard? &&
-          (configuration.mapped_car_roles.include?('car_odometer') || heating_comparison?(configuration)) &&
+        (configuration.mapped_car_roles.include?('car_odometer') || heating_comparison?(configuration)) &&
           configuration.country.present? &&
           configuration.currency == 'EUR'
       end

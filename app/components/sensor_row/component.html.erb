@@ -24,18 +24,6 @@
           <% end %>
         <% end %>
 
-        <% if dashboard_beta? %>
-          <span
-            class="badge badge-secondary badge-xs tooltip tooltip-right relative -top-px ml-1.5 size-4 p-0 align-middle"
-            data-tip="<%= t('.dashboard_beta_hint') %>"
-            role="img"
-            aria-label="<%= t('.dashboard_beta') %>"
-            data-dashboard-beta
-          >
-            <i aria-hidden="true" class="fa-solid fa-flask text-[0.5625rem]"></i>
-          </span>
-        <% end %>
-
         <% if house_power_exclusions? %>
           <%= render Hint::Component.new(
                 text: house_power_exclusion_hint,

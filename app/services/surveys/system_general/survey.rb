@@ -9,9 +9,6 @@ module Surveys
 
         timezone['choices'] = timezone_choices
 
-        # Only the public-data collector reads the country, and it runs with
-        # the dashboard of the development channel alone.
-        data['pages'].reject! { it['name'] == 'p_country' } unless configuration.develop_dashboard?
         country = find_element(data, 'country')
         customize_country!(country, timezone) if country
       end

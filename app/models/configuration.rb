@@ -974,12 +974,7 @@ class Configuration # rubocop:disable Metrics/ClassLength
   # The dashboard looks up addresses for any car, not only one with a location
   # sensor: a charging session entered by hand gets an address too.
   def geocoding_offered?
-    develop_dashboard? && mapped_car_roles.any?
-  end
-
-  # Only Dashboard 1.4 has the car features, and it is on this channel alone.
-  def develop_dashboard?
-    software_channel_for(:DASHBOARD, dashboard.image) == 'develop'
+    mapped_car_roles.any?
   end
 
   # The roles of the mapped car sensors, without the number of the car. Only
